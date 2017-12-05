@@ -63,7 +63,7 @@ static void DepthFirstSearch(const BBType* bb, SuccessorLambda successors,
 }
 
 // Wrapper around CFA::DepthFirstTraversal to provide an interface to perform
-// depth first search on generic BasicBlock types. This overload is only
+// depth first search on generic BasicBlock types. This overload is for only
 // performing user defined post order.
 //
 // BBType - BasicBlock type. Will either be ir::BasicBlock or DominatorTreeNode
@@ -115,7 +115,7 @@ class BasicBlockSuccessorHelper {
   using GetBlocksFunction =
       std::function<const std::vector<BasicBlock*>*(const BasicBlock*)>;
 
-  // Return the list of predecessor functions.
+  // Returns the list of predecessor functions.
   GetBlocksFunction GetPredFunctor() {
     return [this](const BasicBlock* bb) {
       BasicBlockListTy* v = &this->predecessors_[bb];
@@ -123,7 +123,7 @@ class BasicBlockSuccessorHelper {
     };
   }
 
-  // Return a vector of the list of successor nodes from a given node.
+  // Returns a vector of the list of successor nodes from a given node.
   GetBlocksFunction GetSuccessorFunctor() {
     return [this](const BasicBlock* bb) {
       BasicBlockListTy* v = &this->successors_[bb];
@@ -388,9 +388,8 @@ void DominatorTree::DumpTreeAsDot(std::ostream& out_stream) const {
   out_stream << "}\n";
 }
 
-bool DominatorTree::Visit(
-    DominatorTreeNode* node,
-    std::function<bool(DominatorTreeNode*)> func) {
+bool DominatorTree::Visit(DominatorTreeNode* node,
+                          std::function<bool(DominatorTreeNode*)> func) {
   // Apply the function to the node.
   if (!func(node)) return false;
 

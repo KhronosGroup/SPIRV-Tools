@@ -29,57 +29,57 @@ class DominatorAnalysisBase {
  public:
   explicit DominatorAnalysisBase(bool is_post_dom) : tree_(is_post_dom) {}
 
-  // Calculate the dominator (or postdominator) tree for given function |f|.
+  // Calculates the dominator (or postdominator) tree for given function |f|.
   inline void InitializeTree(const ir::Function* f, const ir::CFG& cfg) {
     tree_.InitializeTree(f, cfg);
   }
 
-  // Return true if BasicBlock |a| dominates BasicBlock |b|.
+  // Returns true if BasicBlock |a| dominates BasicBlock |b|.
   inline bool Dominates(const ir::BasicBlock* a,
                         const ir::BasicBlock* b) const {
     if (!a || !b) return false;
     return Dominates(a->id(), b->id());
   }
 
-  // Return true if BasicBlock |a| dominates BasicBlock |b|. Same as above only
+  // Returns true if BasicBlock |a| dominates BasicBlock |b|. Same as above only
   // using the BasicBlock IDs.
   inline bool Dominates(uint32_t a, uint32_t b) const {
     return tree_.Dominates(a, b);
   }
 
-  // Return true if BasicBlock |a| strictly dominates BasicBlock |b|.
+  // Returns true if BasicBlock |a| strictly dominates BasicBlock |b|.
   inline bool StrictlyDominates(const ir::BasicBlock* a,
                                 const ir::BasicBlock* b) const {
     if (!a || !b) return false;
     return StrictlyDominates(a->id(), b->id());
   }
 
-  // Return true if BasicBlock |a| strictly dominates BasicBlock |b|. Same as
+  // Returns true if BasicBlock |a| strictly dominates BasicBlock |b|. Same as
   // above only using the BasicBlock IDs.
   inline bool StrictlyDominates(uint32_t a, uint32_t b) const {
     return tree_.StrictlyDominates(a, b);
   }
 
-  // Return the immediate dominator of |node| or return nullptr if it is has no
-  // dominator.
+  // Returns the immediate dominator of |node| or returns nullptr if it is has
+  // no dominator.
   inline ir::BasicBlock* ImmediateDominator(const ir::BasicBlock* node) const {
     if (!node) return nullptr;
     return tree_.ImmediateDominator(node);
   }
 
-  // Return the immediate dominator of |node_id| or return nullptr if it is has
-  // no dominator. Same as above but operates on IDs.
+  // Returns the immediate dominator of |node_id| or returns nullptr if it is
+  // has no dominator. Same as above but operates on IDs.
   inline ir::BasicBlock* ImmediateDominator(uint32_t node_id) const {
     return tree_.ImmediateDominator(node_id);
   }
 
-  // Return true if |node| is reachable from the entry.
+  // Returns true if |node| is reachable from the entry.
   inline bool IsReachable(const ir::BasicBlock* node) const {
     if (!node) return false;
     return tree_.ReachableFromRoots(node->id());
   }
 
-  // Return true if |node_id| is reachable from the entry.
+  // Returns true if |node_id| is reachable from the entry.
   inline bool IsReachable(uint32_t node_id) const {
     return tree_.ReachableFromRoots(node_id);
   }
@@ -87,10 +87,11 @@ class DominatorAnalysisBase {
   // Dump the tree structure into the given |out| stream in the dot format.
   inline void DumpAsDot(std::ostream& out) const { tree_.DumpTreeAsDot(out); }
 
-  // Return true if this is a postdominator tree.
+  // Returns true if this is a postdomiator tree.
   inline bool IsPostDominator() const { return tree_.IsPostDominator(); }
 
-  // Return the tree itself for manual operations, such as traversing the roots.
+  // Returns the tree itself for manual operations, such as traversing the
+  // roots.
   // For normal dominance relationships the methods above should be used.
   inline DominatorTree& GetDomTree() { return tree_; }
   inline const DominatorTree& GetDomTree() const { return tree_; }

@@ -126,7 +126,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
-    EXPECT_TRUE(dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
+    EXPECT_TRUE(
+        dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
 
     // (strict) dominance checks
     for (uint32_t id : {10, 11, 12, 13, 14, 15})
@@ -239,8 +240,7 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 15)),
               cfg.pseudo_exit_block());
 
-    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()),
-              nullptr);
+    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()), nullptr);
   }
 }
 
@@ -291,7 +291,8 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
-    EXPECT_TRUE(dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
+    EXPECT_TRUE(
+        dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
 
     // (strict) dominance checks
     for (uint32_t id : {8, 9, 10, 11, 12})
@@ -362,8 +363,7 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 12)),
               cfg.pseudo_exit_block());
 
-    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()),
-              nullptr);
+    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()), nullptr);
   }
 }
 
@@ -412,7 +412,8 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
-    EXPECT_TRUE(dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
+    EXPECT_TRUE(
+        dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
 
     // (strict) dominance checks
     for (uint32_t id : {10, 11, 12}) check_dominance(dom_tree, fn, id, id);
@@ -454,8 +455,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 11)),
               spvtest::GetBasicBlock(fn, 12));
 
-    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()),
-              nullptr);
+    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()), nullptr);
 
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 12)),
               cfg.pseudo_exit_block());
@@ -513,7 +513,8 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
-    EXPECT_TRUE(dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
+    EXPECT_TRUE(
+        dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
 
     // (strict) dominance checks
     for (uint32_t id : {10, 11, 12, 13, 14, 15})
@@ -583,8 +584,7 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 12)),
               spvtest::GetBasicBlock(fn, 14));
 
-    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()),
-              nullptr);
+    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()), nullptr);
 
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 15)),
               cfg.pseudo_exit_block());
@@ -643,7 +643,8 @@ TEST_F(PassClassTest, DominatorInfinitLoop) {
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
-    EXPECT_TRUE(dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
+    EXPECT_TRUE(
+        dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
 
     // (strict) dominance checks
     for (uint32_t id : {10, 11, 12, 13}) check_dominance(dom_tree, fn, id, id);
@@ -690,8 +691,7 @@ TEST_F(PassClassTest, DominatorInfinitLoop) {
     check_no_dominance(dom_tree, fn, 11, 13);
     check_no_dominance(dom_tree, fn, 10, 13);
 
-    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()),
-              nullptr);
+    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()), nullptr);
 
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 12)),
               cfg.pseudo_exit_block());
@@ -747,7 +747,8 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
-    EXPECT_TRUE(dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
+    EXPECT_TRUE(
+        dom_tree.Dominates(cfg.pseudo_entry_block()->id(), entry->id()));
 
     // (strict) dominance checks
     for (uint32_t id : {8, 9}) check_dominance(dom_tree, fn, id, id);
@@ -786,8 +787,7 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
     EXPECT_EQ(dom_tree.ImmediateDominator(entry),
               spvtest::GetBasicBlock(fn, 9));
 
-    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()),
-              nullptr);
+    EXPECT_EQ(dom_tree.ImmediateDominator(cfg.pseudo_exit_block()), nullptr);
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 9)),
               cfg.pseudo_exit_block());
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 10)),
