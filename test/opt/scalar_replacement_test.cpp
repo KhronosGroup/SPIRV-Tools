@@ -449,7 +449,7 @@ OpFunctionEnd
   )";
 
   SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
-;
+  ;
 }
 
 TEST_F(ScalarReplacementTest, NonUniformCompositeInitialization) {
@@ -526,7 +526,7 @@ OpFunctionEnd
   )";
 
   SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
-;
+  ;
 }
 
 TEST_F(ScalarReplacementTest, ElideUncombinedAccessChains) {
@@ -985,6 +985,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
 }
-#endif // SPIRV_EFFCEE
+#endif  // SPIRV_EFFCEE
 
-} // namespace anonymous
+}  // namespace
