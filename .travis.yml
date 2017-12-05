@@ -98,7 +98,7 @@ script:
 
 after_success:
   # Create tarball for deployment
-  - if [[ "${CC}" == "clang" && "${BUILD_ANDROID_MK}" != "ON" && "${BUILD_ANDROID_CMAKE}" != "ON" ]]; then
+  - if [[ "${CC}" == "clang" && "${BUILD_ANDROID_MK}" != "ON" && "${BUILD_ANDROID_CMAKE}" != "ON" && "${CHECK_FORMAT}" != "ON" ]]; then
       cd install;
       export TARBALL=SPIRV-Tools-master-${TRAVIS_OS_NAME}-${BUILD_TYPE}.zip;
       find . -print | zip -@ ${TARBALL};
@@ -117,7 +117,7 @@ deploy:
   api_key: ${spirvtoken}
   on:
     branch: master
-    condition: ${CC} == clang && ${BUILD_ANDROID_MK} != ON && ${BUILD_ANDROID_CMAKE} != ON
+    condition: ${CC} == clang && ${BUILD_ANDROID_MK} != ON && ${BUILD_ANDROID_CMAKE} != ON && ${CHECK_FORMAT} != ON
   file: ${TARBALL}
   skip_cleanup: true
   overwrite: true
