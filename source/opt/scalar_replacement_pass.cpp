@@ -412,7 +412,7 @@ void ScalarReplacementPass::GetOrCreateInitialValue(ir::Instruction* source,
 
 size_t ScalarReplacementPass::GetIntegerLiteral(const ir::Operand& op) const {
   assert(op.words.size() <= 2);
-  uint64_t len = 0;
+  size_t len = 0;
   for (uint32_t i = 0; i != op.words.size(); ++i) {
     len |= (op.words[i] << (32 * i));
   }
@@ -443,7 +443,7 @@ size_t ScalarReplacementPass::GetNumElements(
          type->opcode() == SpvOpTypeMatrix);
   const ir::Operand& op = type->GetInOperand(1u);
   assert(op.words.size() <= 2);
-  uint64_t len = 0;
+  size_t len = 0;
   for (uint32_t i = 0; i != op.words.size(); ++i) {
     len |= (op.words[i] << (32 * i));
   }
