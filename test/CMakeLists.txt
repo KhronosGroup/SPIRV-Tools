@@ -23,7 +23,7 @@ if (NOT "${SPIRV_SKIP_TESTS}")
   if (TARGET gmock_main)
     message(STATUS "Found Google Mock, building tests.")
   else()
-    message(STATUS "Did not find googletest, tests will not be built."
+    message(STATUS "Did not find googletest, tests will not be built. "
       "To enable tests place googletest in '<spirv-dir>/external/googletest'.")
   endif()
 endif()
