@@ -172,10 +172,10 @@ uint32_t OperateWords(SpvOp opcode,
 // result in 32 bit word. Scalar constants with longer than 32-bit width are
 // not accepted in this function.
 uint32_t FoldScalars(SpvOp opcode,
-                     const std::vector<analysis::Constant*>& operands) {
+                     const std::vector<const analysis::Constant*>& operands) {
   std::vector<uint32_t> operand_values_in_raw_words;
-  for (analysis::Constant* operand : operands) {
-    if (analysis::ScalarConstant* scalar = operand->AsScalarConstant()) {
+  for (const auto& operand : operands) {
+    if (const analysis::ScalarConstant* scalar = operand->AsScalarConstant()) {
       const auto& scalar_words = scalar->words();
       assert(scalar_words.size() == 1 &&
              "Scalar constants with longer than 32-bit width are not allowed "
@@ -199,12 +199,12 @@ uint32_t FoldScalars(SpvOp opcode,
 // function.
 std::vector<uint32_t> FoldVectors(
     SpvOp opcode, uint32_t num_dims,
-    const std::vector<analysis::Constant*>& operands) {
+    const std::vector<const analysis::Constant*>& operands) {
   std::vector<uint32_t> result;
   for (uint32_t d = 0; d < num_dims; d++) {
     std::vector<uint32_t> operand_values_for_one_dimension;
-    for (analysis::Constant* operand : operands) {
-      if (analysis::VectorConstant* vector_operand =
+    for (const auto& operand : operands) {
+      if (const analysis::VectorConstant* vector_operand =
               operand->AsVectorConstant()) {
         // Extract the raw value of the scalar component constants
         // in 32-bit words here. The reason of not using FoldScalars() here
@@ -238,6 +238,48 @@ std::vector<uint32_t> FoldVectors(
     result.push_back(OperateWords(opcode, operand_values_for_one_dimension));
   }
   return result;
+}
+
+bool IsFoldableOpcode(SpvOp opcode) {
+  // NOTE: Extend to more opcodes as new cases are handled in the folder
+  // functions.
+  switch (opcode) {
+    case SpvOp::SpvOpBitwiseAnd:
+    case SpvOp::SpvOpBitwiseOr:
+    case SpvOp::SpvOpBitwiseXor:
+    case SpvOp::SpvOpIAdd:
+    case SpvOp::SpvOpIEqual:
+    case SpvOp::SpvOpIMul:
+    case SpvOp::SpvOpINotEqual:
+    case SpvOp::SpvOpISub:
+    case SpvOp::SpvOpLogicalAnd:
+    case SpvOp::SpvOpLogicalEqual:
+    case SpvOp::SpvOpLogicalNot:
+    case SpvOp::SpvOpLogicalNotEqual:
+    case SpvOp::SpvOpLogicalOr:
+    case SpvOp::SpvOpNot:
+    case SpvOp::SpvOpSDiv:
+    case SpvOp::SpvOpSelect:
+    case SpvOp::SpvOpSGreaterThan:
+    case SpvOp::SpvOpSGreaterThanEqual:
+    case SpvOp::SpvOpShiftLeftLogical:
+    case SpvOp::SpvOpShiftRightArithmetic:
+    case SpvOp::SpvOpShiftRightLogical:
+    case SpvOp::SpvOpSLessThan:
+    case SpvOp::SpvOpSLessThanEqual:
+    case SpvOp::SpvOpSMod:
+    case SpvOp::SpvOpSNegate:
+    case SpvOp::SpvOpSRem:
+    case SpvOp::SpvOpUDiv:
+    case SpvOp::SpvOpUGreaterThan:
+    case SpvOp::SpvOpUGreaterThanEqual:
+    case SpvOp::SpvOpULessThan:
+    case SpvOp::SpvOpULessThanEqual:
+    case SpvOp::SpvOpUMod:
+      return true;
+    default:
+      return false;
+  }
 }
 
 }  // namespace opt

@@ -187,9 +187,13 @@ class SSAPropagator {
   SSAPropagator(ir::IRContext* context, const VisitFunction& visit_fn)
       : ctx_(context), visit_fn_(visit_fn) {}
 
-  // Run the propagator on function |fn|. Returns true if changes were made to
+  // Runs the propagator on function |fn|. Returns true if changes were made to
   // the function. Otherwise, it returns false.
   bool Run(ir::Function* fn);
+
+  // Returns true if the |i|th argument for |phi| comes through a CFG edge that
+  // has been marked executable.
+  bool IsPhiArgExecutable(ir::Instruction* phi, uint32_t i) const;
 
  private:
   // Initialize processing.
@@ -216,7 +220,7 @@ class SSAPropagator {
   }
 
   // Returns true if |block| has been simulated already.
-  bool BlockHasBeenSimulated(ir::BasicBlock* block) {
+  bool BlockHasBeenSimulated(ir::BasicBlock* block) const {
     return simulated_blocks_.find(block) != simulated_blocks_.end();
   }
 
@@ -232,7 +236,7 @@ class SSAPropagator {
   }
 
   // Returns true if |edge| has been marked as executable.
-  bool IsEdgeExecutable(const Edge& edge) {
+  bool IsEdgeExecutable(const Edge& edge) const {
     return executable_edges_.find(edge) != executable_edges_.end();
   }
 

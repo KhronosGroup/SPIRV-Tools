@@ -326,10 +326,14 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return spvOpcodeIsBlockTerminator(opcode());
   }
 
-  // Return true if |this| is an instruction that define an opaque type.  Since
+  // Returns true if |this| is an instruction that define an opaque type.  Since
   // runtime array have similar characteristics they are included as opaque
   // types.
   bool IsOpaqueType() const;
+
+  // Returns true if |this| is an instruction which could be folded into a
+  // constant value.
+  bool IsFoldable() const;
 
   inline bool operator==(const Instruction&) const;
   inline bool operator!=(const Instruction&) const;

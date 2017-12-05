@@ -25,11 +25,13 @@ namespace spvtools {
 namespace opt {
 
 uint32_t FoldScalars(SpvOp opcode,
-                     const std::vector<analysis::Constant*>& operands);
+                     const std::vector<const analysis::Constant*>& operands);
 
 std::vector<uint32_t> FoldVectors(
     SpvOp opcode, uint32_t num_dims,
-    const std::vector<analysis::Constant*>& operands);
+    const std::vector<const analysis::Constant*>& operands);
+
+bool IsFoldableOpcode(SpvOp opcode);
 
 }  // namespace opt
 }  // namespace spvtools

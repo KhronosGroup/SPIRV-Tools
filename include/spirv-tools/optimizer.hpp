@@ -452,6 +452,18 @@ Optimizer::PassToken CreateScalarReplacementPass();
 // used in only one function.  Those variables are moved to the function storage
 // class in the function that they are used.
 Optimizer::PassToken CreatePrivateToLocalPass();
+
+// Creates a conditional constant propagation (CCP) pass.
+// This pass implements the SSA-CCP algorithm in
+//
+//      Constant propagation with conditional branches,
+//      Wegman and Zadeck, ACM TOPLAS 13(2):181-210.
+//
+// Constant values in expressions and conditional jumps are folded and
+// simplified. This may reduce code size by removing never executed jump targets
+// and computations with constant operands.
+Optimizer::PassToken CreateCCPPass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

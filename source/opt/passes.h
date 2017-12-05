@@ -19,6 +19,7 @@
 
 #include "aggressive_dead_code_elim_pass.h"
 #include "block_merge_pass.h"
+#include "ccp_pass.h"
 #include "cfg_cleanup_pass.h"
 #include "common_uniform_elim_pass.h"
 #include "compact_ids_pass.h"

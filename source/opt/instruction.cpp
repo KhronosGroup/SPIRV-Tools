@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "instruction.h"
-#include "ir_context.h"
-
 #include <initializer_list>
 
+#include "fold.h"
+#include "instruction.h"
 #include "ir_context.h"
 #include "reflect.h"
 
@@ -444,5 +443,8 @@ bool Instruction::IsOpaqueType() const {
            spvOpcodeIsBaseOpaqueType(opcode());
   }
 }
+
+bool Instruction::IsFoldable() const { return opt::IsFoldableOpcode(opcode()); }
+
 }  // namespace ir
 }  // namespace spvtools

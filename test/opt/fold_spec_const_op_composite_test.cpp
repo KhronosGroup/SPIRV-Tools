@@ -330,9 +330,9 @@ INSTANTIATE_TEST_CASE_P(
 // Tests for operations that resulting in different types.
 INSTANTIATE_TEST_CASE_P(
     Cast, FoldSpecConstantOpAndCompositePassTest,
-    ::testing::ValuesIn(std::vector<
-                        FoldSpecConstantOpAndCompositePassTestCase>({
-        // clang-format off
+    ::testing::ValuesIn(
+        std::vector<FoldSpecConstantOpAndCompositePassTestCase>({
+            // clang-format off
             // int -> bool scalar
             {
               // original
@@ -441,13 +441,13 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%true = OpConstantTrue %bool",
                 "%true_0 = OpConstantTrue %bool",
-                "%spec_bool_t_vec = OpConstantComposite %v2bool %true %true_0",
+                "%spec_bool_t_vec = OpConstantComposite %v2bool %true_0 %true_0",
                 "%false = OpConstantFalse %bool",
                 "%false_0 = OpConstantFalse %bool",
-                "%spec_bool_f_vec = OpConstantComposite %v2bool %false %false_0",
+                "%spec_bool_f_vec = OpConstantComposite %v2bool %false_0 %false_0",
                 "%false_1 = OpConstantFalse %bool",
                 "%false_2 = OpConstantFalse %bool",
-                "%spec_bool_from_null = OpConstantComposite %v2bool %false_1 %false_2",
+                "%spec_bool_from_null = OpConstantComposite %v2bool %false_2 %false_2",
               },
             },
 
@@ -463,13 +463,13 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%true = OpConstantTrue %bool",
                 "%true_0 = OpConstantTrue %bool",
-                "%spec_bool_t_vec = OpConstantComposite %v2bool %true %true_0",
+                "%spec_bool_t_vec = OpConstantComposite %v2bool %true_0 %true_0",
                 "%false = OpConstantFalse %bool",
                 "%false_0 = OpConstantFalse %bool",
-                "%spec_bool_f_vec = OpConstantComposite %v2bool %false %false_0",
+                "%spec_bool_f_vec = OpConstantComposite %v2bool %false_0 %false_0",
                 "%false_1 = OpConstantFalse %bool",
                 "%false_2 = OpConstantFalse %bool",
-                "%spec_bool_from_null = OpConstantComposite %v2bool %false_1 %false_2",
+                "%spec_bool_from_null = OpConstantComposite %v2bool %false_2 %false_2",
               },
             },
 
@@ -485,13 +485,13 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%int_1 = OpConstant %int 1",
                 "%int_1_0 = OpConstant %int 1",
-                "%spec_int_one_vec = OpConstantComposite %v2int %int_1 %int_1_0",
+                "%spec_int_one_vec = OpConstantComposite %v2int %int_1_0 %int_1_0",
                 "%int_0 = OpConstant %int 0",
                 "%int_0_0 = OpConstant %int 0",
-                "%spec_int_zero_vec = OpConstantComposite %v2int %int_0 %int_0_0",
+                "%spec_int_zero_vec = OpConstantComposite %v2int %int_0_0 %int_0_0",
                 "%int_0_1 = OpConstant %int 0",
                 "%int_0_2 = OpConstant %int 0",
-                "%spec_int_from_null = OpConstantComposite %v2int %int_0_1 %int_0_2",
+                "%spec_int_from_null = OpConstantComposite %v2int %int_0_2 %int_0_2",
               },
             },
 
@@ -507,13 +507,13 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%int_1 = OpConstant %int 1",
                 "%int_1_0 = OpConstant %int 1",
-                "%spec_int_one_vec = OpConstantComposite %v2int %int_1 %int_1_0",
+                "%spec_int_one_vec = OpConstantComposite %v2int %int_1_0 %int_1_0",
                 "%int_0 = OpConstant %int 0",
                 "%int_0_0 = OpConstant %int 0",
-                "%spec_int_zero_vec = OpConstantComposite %v2int %int_0 %int_0_0",
+                "%spec_int_zero_vec = OpConstantComposite %v2int %int_0_0 %int_0_0",
                 "%int_0_1 = OpConstant %int 0",
                 "%int_0_2 = OpConstant %int 0",
-                "%spec_int_from_null = OpConstantComposite %v2int %int_0_1 %int_0_2",
+                "%spec_int_from_null = OpConstantComposite %v2int %int_0_2 %int_0_2",
               },
             },
 
@@ -529,13 +529,13 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%uint_1 = OpConstant %uint 1",
                 "%uint_1_0 = OpConstant %uint 1",
-                "%spec_uint_one_vec = OpConstantComposite %v2uint %uint_1 %uint_1_0",
+                "%spec_uint_one_vec = OpConstantComposite %v2uint %uint_1_0 %uint_1_0",
                 "%uint_0 = OpConstant %uint 0",
                 "%uint_0_0 = OpConstant %uint 0",
-                "%spec_uint_zero_vec = OpConstantComposite %v2uint %uint_0 %uint_0_0",
+                "%spec_uint_zero_vec = OpConstantComposite %v2uint %uint_0_0 %uint_0_0",
                 "%uint_0_1 = OpConstant %uint 0",
                 "%uint_0_2 = OpConstant %uint 0",
-                "%spec_uint_from_null = OpConstantComposite %v2uint %uint_0_1 %uint_0_2",
+                "%spec_uint_from_null = OpConstantComposite %v2uint %uint_0_2 %uint_0_2",
               },
             },
 
@@ -551,17 +551,17 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%uint_1 = OpConstant %uint 1",
                 "%uint_1_0 = OpConstant %uint 1",
-                "%spec_uint_one_vec = OpConstantComposite %v2uint %uint_1 %uint_1_0",
+                "%spec_uint_one_vec = OpConstantComposite %v2uint %uint_1_0 %uint_1_0",
                 "%uint_0 = OpConstant %uint 0",
                 "%uint_0_0 = OpConstant %uint 0",
-                "%spec_uint_zero_vec = OpConstantComposite %v2uint %uint_0 %uint_0_0",
+                "%spec_uint_zero_vec = OpConstantComposite %v2uint %uint_0_0 %uint_0_0",
                 "%uint_0_1 = OpConstant %uint 0",
                 "%uint_0_2 = OpConstant %uint 0",
-                "%spec_uint_from_null = OpConstantComposite %v2uint %uint_0_1 %uint_0_2",
+                "%spec_uint_from_null = OpConstantComposite %v2uint %uint_0_2 %uint_0_2",
               },
             },
-        // clang-format on
-    })));
+            // clang-format on
+        })));
 
 // Tests about boolean scalar logical operations and comparison operations with
 // scalar int/uint type.
@@ -836,13 +836,13 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%int_n1 = OpConstant %int -1",
                 "%int_n1_0 = OpConstant %int -1",
-                "%v2int_minus_1 = OpConstantComposite %v2int %int_n1 %int_n1_0",
+                "%v2int_minus_1 = OpConstantComposite %v2int %int_n1_0 %int_n1_0",
                 "%int_n2 = OpConstant %int -2",
                 "%int_n2_0 = OpConstant %int -2",
-                "%v2int_minus_2 = OpConstantComposite %v2int %int_n2 %int_n2_0",
+                "%v2int_minus_2 = OpConstantComposite %v2int %int_n2_0 %int_n2_0",
                 "%int_0 = OpConstant %int 0",
                 "%int_0_0 = OpConstant %int 0",
-                "%v2int_neg_null = OpConstantComposite %v2int %int_0 %int_0_0",
+                "%v2int_neg_null = OpConstantComposite %v2int %int_0_0 %int_0_0",
               },
             },
             // vector integer (including null vetors) add, sub, div, mul
@@ -865,35 +865,35 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%int_5 = OpConstant %int 5",
                 "%int_5_0 = OpConstant %int 5",
-                "%spec_v2int_iadd = OpConstantComposite %v2int %int_5 %int_5_0",
+                "%spec_v2int_iadd = OpConstantComposite %v2int %int_5_0 %int_5_0",
                 "%int_n4 = OpConstant %int -4",
                 "%int_n4_0 = OpConstant %int -4",
-                "%spec_v2int_isub = OpConstantComposite %v2int %int_n4 %int_n4_0",
+                "%spec_v2int_isub = OpConstantComposite %v2int %int_n4_0 %int_n4_0",
                 "%int_n2 = OpConstant %int -2",
                 "%int_n2_0 = OpConstant %int -2",
-                "%spec_v2int_sdiv = OpConstantComposite %v2int %int_n2 %int_n2_0",
+                "%spec_v2int_sdiv = OpConstantComposite %v2int %int_n2_0 %int_n2_0",
                 "%int_n6 = OpConstant %int -6",
                 "%int_n6_0 = OpConstant %int -6",
-                "%spec_v2int_imul = OpConstantComposite %v2int %int_n6 %int_n6_0",
+                "%spec_v2int_imul = OpConstantComposite %v2int %int_n6_0 %int_n6_0",
                 "%int_n6_1 = OpConstant %int -6",
                 "%int_n6_2 = OpConstant %int -6",
-                "%spec_v2int_iadd_null = OpConstantComposite %v2int %int_n6_1 %int_n6_2",
+                "%spec_v2int_iadd_null = OpConstantComposite %v2int %int_n6_2 %int_n6_2",
 
                 "%uint_5 = OpConstant %uint 5",
                 "%uint_5_0 = OpConstant %uint 5",
-                "%spec_v2uint_iadd = OpConstantComposite %v2uint %uint_5 %uint_5_0",
+                "%spec_v2uint_iadd = OpConstantComposite %v2uint %uint_5_0 %uint_5_0",
                 "%uint_4294967292 = OpConstant %uint 4294967292",
                 "%uint_4294967292_0 = OpConstant %uint 4294967292",
-                "%spec_v2uint_isub = OpConstantComposite %v2uint %uint_4294967292 %uint_4294967292_0",
+                "%spec_v2uint_isub = OpConstantComposite %v2uint %uint_4294967292_0 %uint_4294967292_0",
                 "%uint_1431655764 = OpConstant %uint 1431655764",
                 "%uint_1431655764_0 = OpConstant %uint 1431655764",
-                "%spec_v2uint_udiv = OpConstantComposite %v2uint %uint_1431655764 %uint_1431655764_0",
+                "%spec_v2uint_udiv = OpConstantComposite %v2uint %uint_1431655764_0 %uint_1431655764_0",
                 "%uint_2863311528 = OpConstant %uint 2863311528",
                 "%uint_2863311528_0 = OpConstant %uint 2863311528",
-                "%spec_v2uint_imul = OpConstantComposite %v2uint %uint_2863311528 %uint_2863311528_0",
+                "%spec_v2uint_imul = OpConstantComposite %v2uint %uint_2863311528_0 %uint_2863311528_0",
                 "%uint_2863311528_1 = OpConstant %uint 2863311528",
                 "%uint_2863311528_2 = OpConstant %uint 2863311528",
-                "%spec_v2uint_isub_null = OpConstantComposite %v2uint %uint_2863311528_1 %uint_2863311528_2",
+                "%spec_v2uint_isub_null = OpConstantComposite %v2uint %uint_2863311528_2 %uint_2863311528_2",
               },
             },
             // vector integer rem, mod
@@ -938,33 +938,33 @@ INSTANTIATE_TEST_CASE_P(
                 // srem
                 "%int_1 = OpConstant %int 1",
                 "%int_1_0 = OpConstant %int 1",
-                "%7_srem_3 = OpConstantComposite %v2int %int_1 %int_1_0",
+                "%7_srem_3 = OpConstantComposite %v2int %int_1_0 %int_1_0",
                 "%int_n1 = OpConstant %int -1",
                 "%int_n1_0 = OpConstant %int -1",
-                "%minus_7_srem_3 = OpConstantComposite %v2int %int_n1 %int_n1_0",
+                "%minus_7_srem_3 = OpConstantComposite %v2int %int_n1_0 %int_n1_0",
                 "%int_1_1 = OpConstant %int 1",
                 "%int_1_2 = OpConstant %int 1",
-                "%7_srem_minus_3 = OpConstantComposite %v2int %int_1_1 %int_1_2",
+                "%7_srem_minus_3 = OpConstantComposite %v2int %int_1_2 %int_1_2",
                 "%int_n1_1 = OpConstant %int -1",
                 "%int_n1_2 = OpConstant %int -1",
-                "%minus_7_srem_minus_3 = OpConstantComposite %v2int %int_n1_1 %int_n1_2",
+                "%minus_7_srem_minus_3 = OpConstantComposite %v2int %int_n1_2 %int_n1_2",
                 // smod
                 "%int_1_3 = OpConstant %int 1",
                 "%int_1_4 = OpConstant %int 1",
-                "%7_smod_3 = OpConstantComposite %v2int %int_1_3 %int_1_4",
+                "%7_smod_3 = OpConstantComposite %v2int %int_1_4 %int_1_4",
                 "%int_2 = OpConstant %int 2",
                 "%int_2_0 = OpConstant %int 2",
-                "%minus_7_smod_3 = OpConstantComposite %v2int %int_2 %int_2_0",
+                "%minus_7_smod_3 = OpConstantComposite %v2int %int_2_0 %int_2_0",
                 "%int_n2 = OpConstant %int -2",
                 "%int_n2_0 = OpConstant %int -2",
-                "%7_smod_minus_3 = OpConstantComposite %v2int %int_n2 %int_n2_0",
+                "%7_smod_minus_3 = OpConstantComposite %v2int %int_n2_0 %int_n2_0",
                 "%int_n1_3 = OpConstant %int -1",
                 "%int_n1_4 = OpConstant %int -1",
-                "%minus_7_smod_minus_3 = OpConstantComposite %v2int %int_n1_3 %int_n1_4",
+                "%minus_7_smod_minus_3 = OpConstantComposite %v2int %int_n1_4 %int_n1_4",
                 // umod
                 "%uint_1 = OpConstant %uint 1",
                 "%uint_1_0 = OpConstant %uint 1",
-                "%7_umod_3 = OpConstantComposite %v2uint %uint_1 %uint_1_0",
+                "%7_umod_3 = OpConstantComposite %v2uint %uint_1_0 %uint_1_0",
               },
             },
             // vector integer bitwise, shift
@@ -985,25 +985,25 @@ INSTANTIATE_TEST_CASE_P(
               {
                 "%int_2 = OpConstant %int 2",
                 "%int_2_0 = OpConstant %int 2",
-                "%xor_1_3 = OpConstantComposite %v2int %int_2 %int_2_0",
+                "%xor_1_3 = OpConstantComposite %v2int %int_2_0 %int_2_0",
                 "%int_0 = OpConstant %int 0",
                 "%int_0_0 = OpConstant %int 0",
-                "%and_1_2 = OpConstantComposite %v2int %int_0 %int_0_0",
+                "%and_1_2 = OpConstantComposite %v2int %int_0_0 %int_0_0",
                 "%int_3 = OpConstant %int 3",
                 "%int_3_0 = OpConstant %int 3",
-                "%or_1_2 = OpConstantComposite %v2int %int_3 %int_3_0",
+                "%or_1_2 = OpConstantComposite %v2int %int_3_0 %int_3_0",
 
                 "%unsigned_31 = OpConstant %uint 31",
                 "%v2unsigned_31 = OpConstantComposite %v2uint %unsigned_31 %unsigned_31",
                 "%uint_2147483648 = OpConstant %uint 2147483648",
                 "%uint_2147483648_0 = OpConstant %uint 2147483648",
-                "%unsigned_left_shift_max = OpConstantComposite %v2uint %uint_2147483648 %uint_2147483648_0",
+                "%unsigned_left_shift_max = OpConstantComposite %v2uint %uint_2147483648_0 %uint_2147483648_0",
                 "%uint_1 = OpConstant %uint 1",
                 "%uint_1_0 = OpConstant %uint 1",
-                "%unsigned_right_shift_logical = OpConstantComposite %v2uint %uint_1 %uint_1_0",
+                "%unsigned_right_shift_logical = OpConstantComposite %v2uint %uint_1_0 %uint_1_0",
                 "%int_n1 = OpConstant %int -1",
                 "%int_n1_0 = OpConstant %int -1",
-                "%signed_right_shift_arithmetic = OpConstantComposite %v2int %int_n1 %int_n1_0",
+                "%signed_right_shift_arithmetic = OpConstantComposite %v2int %int_n1_0 %int_n1_0",
               },
             },
             // Skip folding if any vector operands or components of the operands
@@ -1140,7 +1140,7 @@ INSTANTIATE_TEST_CASE_P(
                 "%float_1 = OpConstant %float 1",
                 "%inner = OpConstantComposite %inner_struct %bool_true %signed_null %float_1",
                 "%outer = OpConstantComposite %outer_struct %inner %signed_one",
-                "%extract_inner = OpConstantComposite %inner_struct %bool_true %signed_null %float_1",
+                "%extract_inner = OpConstantComposite %flat_struct %bool_true %signed_null %float_1",
                 "%extract_int = OpConstant %int 1",
                 "%extract_inner_float = OpConstant %float 1",
               },

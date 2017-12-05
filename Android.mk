@@ -59,6 +59,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/build_module.cpp \
 		source/opt/cfg.cpp \
 		source/opt/cfg_cleanup_pass.cpp \
+		source/opt/ccp_pass.cpp \
 		source/opt/compact_ids_pass.cpp \
 		source/opt/common_uniform_elim_pass.cpp \
 		source/opt/constants.cpp \

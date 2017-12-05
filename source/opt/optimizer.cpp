@@ -122,12 +122,14 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
+      .RegisterPass(CreateCFGCleanupPass())
       // Currently exposing driver bugs resulting in crashes (#946)
       // .RegisterPass(CreateCommonUniformElimPass())
       .RegisterPass(CreateDeadVariableEliminationPass());
@@ -142,12 +144,14 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
+      .RegisterPass(CreateCFGCleanupPass())
       // Currently exposing driver bugs resulting in crashes (#946)
       // .RegisterPass(CreateCommonUniformElimPass())
       .RegisterPass(CreateDeadVariableEliminationPass());
@@ -336,4 +340,9 @@ Optimizer::PassToken CreatePrivateToLocalPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::PrivateToLocalPass>());
 }
+
+Optimizer::PassToken CreateCCPPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::CCPPass>());
+}
+
 }  // namespace spvtools

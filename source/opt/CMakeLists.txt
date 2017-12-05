@@ -16,6 +16,7 @@ add_library(SPIRV-Tools-opt
   basic_block.h
   block_merge_pass.h
   build_module.h
+  ccp_pass.h
   cfg_cleanup_pass.h
   cfg.h
   common_uniform_elim_pass.h
@@ -74,6 +75,7 @@ add_library(SPIRV-Tools-opt
   basic_block.cpp
   block_merge_pass.cpp
   build_module.cpp
+  ccp_pass.cpp
   cfg_cleanup_pass.cpp
   cfg.cpp
   common_uniform_elim_pass.cpp

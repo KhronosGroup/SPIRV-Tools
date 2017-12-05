@@ -49,6 +49,16 @@ void SSAPropagator::AddSSAEdges(uint32_t id) {
   });
 }
 
+bool SSAPropagator::IsPhiArgExecutable(ir::Instruction* phi, uint32_t i) const {
+  ir::BasicBlock* phi_bb = ctx_->get_instr_block(phi);
+
+  uint32_t in_label_id = phi->GetSingleWordOperand(i + 1);
+  ir::Instruction* in_label_instr = get_def_use_mgr()->GetDef(in_label_id);
+  ir::BasicBlock* in_bb = ctx_->get_instr_block(in_label_instr);
+
+  return IsEdgeExecutable(Edge(in_bb, phi_bb));
+}
+
 bool SSAPropagator::Simulate(ir::Instruction* instr) {
   bool changed = false;
 
@@ -98,7 +108,6 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
   // defined at an instruction D that should be simulated again, then the output
   // of D might affect |instr|, so we should simulate |instr| again.
   bool has_operands_to_simulate = false;
-  ir::BasicBlock* instr_bb = ctx_->get_instr_block(instr);
   if (instr->opcode() == SpvOpPhi) {
     // For Phi instructions, an operand causes the Phi to be simulated again if
     // the operand comes from an edge that has not yet been traversed or if its
@@ -111,12 +120,7 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
 
       uint32_t arg_id = instr->GetSingleWordOperand(i);
       ir::Instruction* arg_def_instr = get_def_use_mgr()->GetDef(arg_id);
-      uint32_t in_label_id = instr->GetSingleWordOperand(i + 1);
-      ir::Instruction* in_label_instr = get_def_use_mgr()->GetDef(in_label_id);
-      ir::BasicBlock* in_bb = ctx_->get_instr_block(in_label_instr);
-      Edge edge(in_bb, instr_bb);
-
-      if (!IsEdgeExecutable(edge) || ShouldSimulateAgain(arg_def_instr)) {
+      if (!IsPhiArgExecutable(instr, i) || ShouldSimulateAgain(arg_def_instr)) {
         has_operands_to_simulate = true;
         break;
       }
