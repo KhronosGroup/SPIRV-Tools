@@ -152,7 +152,7 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
 
   opt::DominatorTree& tree = analysis->GetDomTree();
 
-  EXPECT_EQ(tree.GetRoot()->bb_, spvtest::GetBasicBlock(f, 5));
+  EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
   EXPECT_TRUE(analysis->Dominates(5, 18));
   EXPECT_TRUE(analysis->Dominates(5, 53));
   EXPECT_TRUE(analysis->Dominates(5, 19));

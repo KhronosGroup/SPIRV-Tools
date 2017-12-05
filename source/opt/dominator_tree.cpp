@@ -337,10 +337,9 @@ void DominatorTree::InitializeTree(const ir::Function* f, const ir::CFG& cfg) {
   // Transform the vector<pair> into the tree structure which we can use to
   // efficiently query dominance.
   for (auto edge : edges) {
-    if (dummy_start_node == edge.first) continue;
     DominatorTreeNode* first = GetOrInsertNode(edge.first);
 
-    if (dummy_start_node == edge.second) {
+    if (edge.first == edge.second) {
       if (std::find(roots_.begin(), roots_.end(), first) == roots_.end())
         roots_.push_back(first);
       continue;
@@ -368,7 +367,6 @@ void DominatorTree::InitializeTree(const ir::Function* f, const ir::CFG& cfg) {
 
 void DominatorTree::DumpTreeAsDot(std::ostream& out_stream) const {
   out_stream << "digraph {\n";
-  out_stream << "Dummy [label=\"Entry\"];\n";
   Visit([&out_stream](const DominatorTreeNode* node) {
 
     // Print the node.
@@ -382,8 +380,6 @@ void DominatorTree::DumpTreeAsDot(std::ostream& out_stream) const {
     if (node->parent_) {
       out_stream << node->parent_->bb_->id() << " -> " << node->bb_->id()
                  << ";\n";
-    } else {
-      out_stream << "Dummy -> " << node->bb_->id() << " [style=dotted];\n";
     }
 
     // Return true to continue the traversal.
