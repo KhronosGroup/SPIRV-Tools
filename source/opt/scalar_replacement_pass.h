@@ -134,18 +134,18 @@ class ScalarReplacementPass : public Pass {
   // Returns the value of an OpConstant of integer type.
   //
   // |constant| must use two or fewer words to generate the value.
-  uint64_t GetConstantInteger(const ir::Instruction* constant) const;
+  size_t GetConstantInteger(const ir::Instruction* constant) const;
 
   // Returns the integer literal for |op|.
-  uint64_t GetIntegerLiteral(const ir::Operand& op) const;
+  size_t GetIntegerLiteral(const ir::Operand& op) const;
 
   // Returns the array length for |arrayInst|.
-  uint64_t GetArrayLength(const ir::Instruction* arrayInst) const;
+  size_t GetArrayLength(const ir::Instruction* arrayInst) const;
 
   // Returns the number of elements in |type|.
   //
   // |type| must be a vector or matrix type.
-  uint64_t GetNumElements(const ir::Instruction* type) const;
+  size_t GetNumElements(const ir::Instruction* type) const;
 
   // Returns an id for a pointer to |id|.
   uint32_t GetOrCreatePointerType(uint32_t id);

@@ -209,7 +209,7 @@ bool ScalarReplacementPass::ReplaceAccessChain(
   // indexes) or a direct use of the replacement variable.
   uint32_t indexId = chain->GetSingleWordInOperand(1u);
   const ir::Instruction* index = get_def_use_mgr()->GetDef(indexId);
-  uint64_t indexValue = GetConstantInteger(index);
+  size_t indexValue = GetConstantInteger(index);
   if (indexValue > replacements.size()) {
     // Out of bounds access, this is illegal IR.
     return false;
@@ -410,7 +410,7 @@ void ScalarReplacementPass::GetOrCreateInitialValue(ir::Instruction* source,
   }
 }
 
-uint64_t ScalarReplacementPass::GetIntegerLiteral(const ir::Operand& op) const {
+size_t ScalarReplacementPass::GetIntegerLiteral(const ir::Operand& op) const {
   assert(op.words.size() <= 2);
   uint64_t len = 0;
   for (uint32_t i = 0; i != op.words.size(); ++i) {
@@ -419,7 +419,7 @@ uint64_t ScalarReplacementPass::GetIntegerLiteral(const ir::Operand& op) const {
   return len;
 }
 
-uint64_t ScalarReplacementPass::GetConstantInteger(const ir::Instruction* constant) const {
+size_t ScalarReplacementPass::GetConstantInteger(const ir::Instruction* constant) const {
   assert(constant->opcode() == SpvOpConstant || constant->opcode() == SpvOpConstantNull);
   if (constant->opcode() == SpvOpConstantNull) {
     return 0;
@@ -429,7 +429,7 @@ uint64_t ScalarReplacementPass::GetConstantInteger(const ir::Instruction* consta
   return GetIntegerLiteral(op);
 }
 
-uint64_t ScalarReplacementPass::GetArrayLength(
+size_t ScalarReplacementPass::GetArrayLength(
     const ir::Instruction* arrayType) const {
   assert(arrayType->opcode() == SpvOpTypeArray);
   const ir::Instruction* length =
@@ -437,7 +437,7 @@ uint64_t ScalarReplacementPass::GetArrayLength(
   return GetConstantInteger(length);
 }
 
-uint64_t ScalarReplacementPass::GetNumElements(
+size_t ScalarReplacementPass::GetNumElements(
     const ir::Instruction* type) const {
   assert(type->opcode() == SpvOpTypeVector ||
          type->opcode() == SpvOpTypeMatrix);
