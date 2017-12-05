@@ -88,6 +88,7 @@ script:
             -DSPIRV_SKIP_TESTS=ON ..;
       make -j${NPROC};
     elif [[ "$CHECK_FORMAT" == "ON" ]]; then
+      cd ..;
       ./utils/check_code_format.sh;
     else
       cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_INSTALL_PREFIX=install ..;
