@@ -76,26 +76,27 @@ bool ScalarReplacementPass::ReplaceVariable(
   bool ok = true;
   std::vector<ir::Instruction*> dead;
   dead.push_back(inst);
-  get_def_use_mgr()->ForEachUser(inst, [this, &ok, replacements, &dead](ir::Instruction* user) {
-    switch (user->opcode()) {
-      case SpvOpLoad:
-        ReplaceWholeLoad(user, replacements);
-        dead.push_back(user);
-        break;
-      case SpvOpStore:
-        ReplaceWholeStore(user, replacements);
-        dead.push_back(user);
-        break;
-      case SpvOpAccessChain:
-      case SpvOpInBoundsAccessChain:
-        ok &= ReplaceAccessChain(user, replacements);
-        dead.push_back(user);
-        break;
-      default:
-        assert(false && "Unexpected opcode");
-        break;
-    }
-  });
+  get_def_use_mgr()->ForEachUser(
+      inst, [this, &ok, replacements, &dead](ir::Instruction* user) {
+        switch (user->opcode()) {
+          case SpvOpLoad:
+            ReplaceWholeLoad(user, replacements);
+            dead.push_back(user);
+            break;
+          case SpvOpStore:
+            ReplaceWholeStore(user, replacements);
+            dead.push_back(user);
+            break;
+          case SpvOpAccessChain:
+          case SpvOpInBoundsAccessChain:
+            ok &= ReplaceAccessChain(user, replacements);
+            dead.push_back(user);
+            break;
+          default:
+            assert(false && "Unexpected opcode");
+            break;
+        }
+      });
 
   // There was an illegal access.
   if (!ok) return false;
@@ -121,8 +122,7 @@ bool ScalarReplacementPass::ReplaceVariable(
 }
 
 void ScalarReplacementPass::ReplaceWholeLoad(
-    ir::Instruction* load,
-    const std::vector<ir::Instruction*>& replacements) {
+    ir::Instruction* load, const std::vector<ir::Instruction*>& replacements) {
   // Replaces the load of the entire composite with a load from each replacement
   // variable followed by a composite construction.
   ir::BasicBlock* block = context()->get_instr_block(load);
@@ -154,7 +154,8 @@ void ScalarReplacementPass::ReplaceWholeLoad(
   std::unique_ptr<ir::Instruction> compositeConstruct(new ir::Instruction(
       context(), SpvOpCompositeConstruct, load->type_id(), compositeId, {}));
   for (auto l : loads) {
-    ir::Operand op(SPV_OPERAND_TYPE_ID, std::initializer_list<uint32_t>{l->result_id()});
+    ir::Operand op(SPV_OPERAND_TYPE_ID,
+                   std::initializer_list<uint32_t>{l->result_id()});
     compositeConstruct->AddOperand(std::move(op));
   }
   where = where.InsertBefore(std::move(compositeConstruct));
@@ -164,8 +165,7 @@ void ScalarReplacementPass::ReplaceWholeLoad(
 }
 
 void ScalarReplacementPass::ReplaceWholeStore(
-    ir::Instruction* store,
-    const std::vector<ir::Instruction*>& replacements) {
+    ir::Instruction* store, const std::vector<ir::Instruction*>& replacements) {
   // Replaces a store to the whole composite with a series of extract and stores
   // to each element.
   uint32_t storeInput = store->GetSingleWordInOperand(1u);
@@ -203,8 +203,7 @@ void ScalarReplacementPass::ReplaceWholeStore(
 }
 
 bool ScalarReplacementPass::ReplaceAccessChain(
-    ir::Instruction* chain,
-    const std::vector<ir::Instruction*>& replacements) {
+    ir::Instruction* chain, const std::vector<ir::Instruction*>& replacements) {
   // Replaces the access chain with either another access chain (with one fewer
   // indexes) or a direct use of the replacement variable.
   uint32_t indexId = chain->GetSingleWordInOperand(1u);
@@ -357,9 +356,9 @@ void ScalarReplacementPass::GetOrCreateInitialValue(ir::Instruction* source,
     if (iter == type_to_null_.end()) {
       newInitId = TakeNextId();
       type_to_null_[storageId] = newInitId;
-      context()->AddGlobalValue(
-          MakeUnique<ir::Instruction>(context(), SpvOpConstantNull, storageId, newInitId,
-                                      std::initializer_list<ir::Operand>{}));
+      context()->AddGlobalValue(MakeUnique<ir::Instruction>(
+          context(), SpvOpConstantNull, storageId, newInitId,
+          std::initializer_list<ir::Operand>{}));
       ir::Instruction* newNull = &*--context()->types_values_end();
       get_def_use_mgr()->AnalyzeInstDefUse(newNull);
     } else {
@@ -377,7 +376,7 @@ void ScalarReplacementPass::GetOrCreateInitialValue(ir::Instruction* source,
       context()->AddGlobalValue(MakeUnique<ir::Instruction>(
           context(), SpvOpConstant, int_id_, constantId,
           std::initializer_list<ir::Operand>{
-            {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}}));
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}}));
       ir::Instruction* constant = &*--context()->types_values_end();
       get_def_use_mgr()->AnalyzeInstDefUse(constant);
     } else {
@@ -419,8 +418,10 @@ size_t ScalarReplacementPass::GetIntegerLiteral(const ir::Operand& op) const {
   return len;
 }
 
-size_t ScalarReplacementPass::GetConstantInteger(const ir::Instruction* constant) const {
-  assert(constant->opcode() == SpvOpConstant || constant->opcode() == SpvOpConstantNull);
+size_t ScalarReplacementPass::GetConstantInteger(
+    const ir::Instruction* constant) const {
+  assert(constant->opcode() == SpvOpConstant ||
+         constant->opcode() == SpvOpConstantNull);
   if (constant->opcode() == SpvOpConstantNull) {
     return 0;
   }

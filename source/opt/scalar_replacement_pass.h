@@ -28,9 +28,7 @@ class ScalarReplacementPass : public Pass {
  public:
   ScalarReplacementPass() = default;
 
-  const char* name() const override {
-    return "scalar-replacement";
-  }
+  const char* name() const override { return "scalar-replacement"; }
 
   // Attempts to scalarize all appropriate function scope variables. Returns
   // SuccessWithChange if any change is made.
@@ -169,19 +167,22 @@ class ScalarReplacementPass : public Pass {
   // composite by combining all of the loads.
   //
   // |load| must be a load.
-  void ReplaceWholeLoad(ir::Instruction* load, const std::vector<ir::Instruction*>& replacements);
+  void ReplaceWholeLoad(ir::Instruction* load,
+                        const std::vector<ir::Instruction*>& replacements);
 
   // Replaces the store to the entire composite.
   //
   // Generates a composite extract and store for each element in the scalarized
   // variable from the original store data input.
-  void ReplaceWholeStore(ir::Instruction* store, const std::vector<ir::Instruction*>& replacements);
+  void ReplaceWholeStore(ir::Instruction* store,
+                         const std::vector<ir::Instruction*>& replacements);
 
   // Replaces an access chain to the composite variable with either a direct use
   // of the appropriate replacement variable or another access chain with the
   // replacement variable as the base and one fewer indexes. Returns false if
   // the chain has an out of bounds access.
-  bool ReplaceAccessChain(ir::Instruction* chain, const std::vector<ir::Instruction*>& replacements);
+  bool ReplaceAccessChain(ir::Instruction* chain,
+                          const std::vector<ir::Instruction*>& replacements);
 
   // Maps storage type to a pointer type enclosing that type.
   std::unordered_map<uint32_t, uint32_t> pointee_to_pointer_;
@@ -196,7 +197,7 @@ class ScalarReplacementPass : public Pass {
   uint32_t int_id_;
 };
 
-} // namespace opt
-} // namespace spvtools
+}  // namespace opt
+}  // namespace spvtools
 
-#endif // LIBSPIRV_OPT_SCALAR_REPLACEMENT_PASS_H_
+#endif  // LIBSPIRV_OPT_SCALAR_REPLACEMENT_PASS_H_

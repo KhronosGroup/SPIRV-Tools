@@ -202,7 +202,8 @@ class IRContext {
     return get_instr_block(def);
   }
 
-  // Sets the basic block for |inst|. Re-builds the mapping if it has become invalid.
+  // Sets the basic block for |inst|. Re-builds the mapping if it has become
+  // invalid.
   void set_instr_block(ir::Instruction* inst, ir::BasicBlock* block) {
     if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
       instr_to_block_[inst] = block;
