@@ -61,6 +61,7 @@ std::string GetSizePasses() {
 }
 
 void PrintUsage(const char* program) {
+  // NOTE: Please maintain flags in lexicographical order.
   printf(
       R"(%s - Optimize a SPIR-V binary file.
 
@@ -73,41 +74,14 @@ standard output.
 
 NOTE: The optimizer is a work in progress.
 
-Options:
-  --strip-debug
-               Remove all debug instructions.
-  --freeze-spec-const
-               Freeze the values of specialization constants to their default
-               values.
-  --eliminate-dead-const
-               Eliminate dead constants.
-  --fold-spec-const-op-composite
-               Fold the spec constants defined by OpSpecConstantOp or
-               OpSpecConstantComposite instructions to front-end constants
-               when possible.
-  --set-spec-const-default-value "<spec id>:<default value> ..."
-               Set the default values of the specialization constants with
-               <spec id>:<default value> pairs specified in a double-quoted
-               string. <spec id>:<default value> pairs must be separated by
-               blank spaces, and in each pair, spec id and default value must
-               be separated with colon ':' without any blank spaces in between.
-               e.g.: --set-spec-const-default-value "1:100 2:400"
-  --unify-const
-               Remove the duplicated constants.
-  --flatten-decorations
-               Replace decoration groups with repeated OpDecorate and
-               OpMemberDecorate instructions.
-  --compact-ids
-               Remap result ids to a compact range starting from %%1 and without
-               any gaps.
+Options (in lexicographical order):
   --cfg-cleanup
                Cleanup the control flow graph. This will remove any unnecessary
                code from the CFG like unreachable code. Performed on entry
                point call tree functions and exported functions.
-  --inline-entry-points-exhaustive
-               Exhaustively inline all function calls in entry point call tree
-               functions. Currently does not inline calls to functions with
-               early return in a loop.
+  --compact-ids
+               Remap result ids to a compact range starting from %%1 and without
+               any gaps.
   --convert-local-access-chains
                Convert constant index access chain loads/stores into
                equivalent load/stores with inserts and extracts. Performed
@@ -120,6 +94,29 @@ Options:
                its equivalent load and extract. Some loads will be moved
                to facilitate sharing. Performed only on entry point
                call tree functions.
+  --eliminate-dead-branches
+               Convert conditional branches with constant condition to the
+               indicated unconditional brranch. Delete all resulting dead
+               code. Performed only on entry point call tree functions.
+  --eliminate-dead-code-aggressive
+               Delete instructions which do not contribute to a function's
+               output. Performed only on entry point call tree functions.
+  --eliminate-dead-const
+               Eliminate dead constants.
+  --eliminate-dead-functions
+               Deletes functions that cannot be reached from entry points or
+               exported functions.
+  --eliminate-dead-variables
+               Deletes module scope variables that are not referenced.
+  --eliminate-insert-extract
+               Replace extract from a sequence of inserts with the
+               corresponding value. Performed only on entry point call tree
+               functions.
+  --eliminate-local-multi-store
+               Replace stores and loads of function scope variables that are
+               stored multiple times. Performed on variables referenceed only
+               with loads and stores. Performed only on entry point call tree
+               functions.
   --eliminate-local-single-block
                Perform single-block store/load and load/load elimination.
                Performed only on function scope variables in entry point
@@ -129,25 +126,20 @@ Options:
                only stored once. Performed on variables referenceed only with
                loads and stores. Performed only on entry point call tree
                functions.
-  --eliminate-local-multi-store
-               Replace stores and loads of function scope variables that are
-               stored multiple times. Performed on variables referenceed only
-               with loads and stores. Performed only on entry point call tree
-               functions.
-  --eliminate-insert-extract
-               Replace extract from a sequence of inserts with the
-               corresponding value. Performed only on entry point call tree
-               functions.
-  --eliminate-dead-code-aggressive
-               Delete instructions which do not contribute to a function's
-               output. Performed only on entry point call tree functions.
-  --eliminate-dead-branches
-               Convert conditional branches with constant condition to the
-               indicated unconditional brranch. Delete all resulting dead
-               code. Performed only on entry point call tree functions.
-  --eliminate-dead-functions
-               Deletes functions that cannot be reached from entry points or
-               exported functions.
+  --flatten-decorations
+               Replace decoration groups with repeated OpDecorate and
+               OpMemberDecorate instructions.
+  --fold-spec-const-op-composite
+               Fold the spec constants defined by OpSpecConstantOp or
+               OpSpecConstantComposite instructions to front-end constants
+               when possible.
+  --freeze-spec-const
+               Freeze the values of specialization constants to their default
+               values.
+  --inline-entry-points-exhaustive
+               Exhaustively inline all function calls in entry point call tree
+               functions. Currently does not inline calls to functions with
+               early return in a loop.
   --merge-blocks
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
@@ -155,20 +147,13 @@ Options:
   --merge-return
                Replace all return instructions with unconditional branches to
                a new basic block containing an unified return.
-
                This pass does not currently support structured control flow. It
                makes no changes if the shader capability is detected.
   --strength-reduction
                Replaces instructions with equivalent and less expensive ones.
-  --eliminate-dead-variables
-               Deletes module scope variables that are not referenced.
   --local-redundancy-elimination
                Looks for instructions in the same basic block that compute the
                same value, and deletes the redundant ones.
-  --relax-store-struct
-               Allow store from one struct type to a different type with
-               compatible layout and members. This option is forwarded to the
-               validator.
   -O
                Optimize for performance. Apply a sequence of transformations
                in an attempt to improve the performance of the generated
@@ -212,6 +197,21 @@ Options:
                'spirv-opt --merge-blocks -O ...' applies the transformation
                --merge-blocks followed by all the transformations implied by
                -O.
+  --relax-store-struct
+               Allow store from one struct type to a different type with
+               compatible layout and members. This option is forwarded to the
+               validator.
+  --set-spec-const-default-value "<spec id>:<default value> ..."
+               Set the default values of the specialization constants with
+               <spec id>:<default value> pairs specified in a double-quoted
+               string. <spec id>:<default value> pairs must be separated by
+               blank spaces, and in each pair, spec id and default value must
+               be separated with colon ':' without any blank spaces in between.
+               e.g.: --set-spec-const-default-value "1:100 2:400"
+  --strip-debug
+               Remove all debug instructions.
+  --unify-const
+               Remove the duplicated constants.
   -h, --help
                Print this help.
   --version
