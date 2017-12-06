@@ -432,7 +432,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
               spvtest::GetBasicBlock(fn, 11));
 
     uint32_t entry_id = cfg.pseudo_entry_block()->id();
-    std::array<uint32_t, 4> node_order({{entry_id, 10, 11, 12}});
+    std::array<uint32_t, 4> node_order = {{entry_id, 10, 11, 12}};
     {
       // Test dominator tree iteration order.
       opt::DominatorTree::iterator node_it = dom_tree.GetDomTree().begin();
@@ -445,7 +445,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
       EXPECT_EQ(node_it, node_end);
     }
     {
-      // same as above, but with const iterators.
+      // Same as above, but with const iterators.
       opt::DominatorTree::const_iterator node_it =
           dom_tree.GetDomTree().cbegin();
       opt::DominatorTree::const_iterator node_end =
@@ -489,7 +489,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
               cfg.pseudo_exit_block());
 
     uint32_t entry_id = cfg.pseudo_exit_block()->id();
-    std::array<uint32_t, 4> node_order({{entry_id, 12, 11, 10}});
+    std::array<uint32_t, 4> node_order = {{entry_id, 12, 11, 10}};
     {
       // Test dominator tree iteration order.
       opt::DominatorTree::iterator node_it = tree.begin();
@@ -502,7 +502,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
       EXPECT_EQ(node_it, node_end);
     }
     {
-      // same as above, but with const iterators.
+      // Same as above, but with const iterators.
       opt::DominatorTree::const_iterator node_it = tree.cbegin();
       opt::DominatorTree::const_iterator node_end = tree.cend();
       for (uint32_t id : node_order) {
