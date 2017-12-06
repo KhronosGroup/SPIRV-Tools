@@ -58,7 +58,7 @@ class TreeDFIterator {
       parent_iterators_.emplace(make_pair(current_, current_->begin()));
   }
 
-  // end iterator.
+  // end() iterator.
   inline TreeDFIterator() : TreeDFIterator(nullptr) {}
 
   bool operator==(const TreeDFIterator& x) const {
@@ -84,10 +84,10 @@ class TreeDFIterator {
 
  private:
   // Moves the iterator to the next node in the tree.
-  // if we are at the end, do nothing, otherwise
+  // If we are at the end, do nothing, otherwise
   // if our current node has children, use the children iterator and push the
-  // current into the stack.
-  // If we reach the end of the local iterator, pop the parent one.
+  // current node into the stack.
+  // If we reach the end of the local iterator, pop it.
   inline void MoveToNextNode() {
     if (!current_) return;
     if (parent_iterators_.empty()) {
@@ -111,7 +111,7 @@ class TreeDFIterator {
   // State of the tree walk: each pair contains the parent node (which has been
   // already visited) and the iterator of the next children to visit.
   // When all the children has been visited, we pop the entry, get the next
-  // child and push back the pair if the iterator is not end().
+  // child and push back the pair if the children iterator is not end().
   std::stack<std::pair<NodePtr, NodeIterator>> parent_iterators_;
 };
 
