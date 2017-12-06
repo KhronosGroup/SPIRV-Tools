@@ -50,6 +50,10 @@ class ScalarReplacementPass : public Pass {
     uint32_t num_full_accesses;
   };
 
+  // Initializes the context, next id and checks for the presence of the
+  // variable pointers extension.
+  void InitializeProcessing(ir::IRContext* c) override;
+
   // Attempts to scalarize all appropriate function scope variables in
   // |function|. Returns SuccessWithChange if any changes are mode.
   Status ProcessFunction(ir::Function* function);
@@ -190,11 +194,11 @@ class ScalarReplacementPass : public Pass {
   // Maps type id to OpConstantNull for that type.
   std::unordered_map<uint32_t, uint32_t> type_to_null_;
 
-  // Maps index to an integer constant for that index.
-  std::unordered_map<uint32_t, uint32_t> index_to_constant_;
-
   // Cached integer type id
   uint32_t int_id_;
+
+  // Indicates whether the variable pointers extension has been enabled.
+  bool enables_variable_pointers_;
 };
 
 }  // namespace opt

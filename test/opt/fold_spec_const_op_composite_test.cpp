@@ -209,7 +209,7 @@ TEST_P(FoldSpecConstantOpAndCompositePassTest, ParamTestCase) {
   auto status = opt::Pass::Status::SuccessWithoutChange;
   std::tie(optimized, status) =
       SinglePassRunAndDisassemble<opt::FoldSpecConstantOpAndCompositePass>(
-          original, /* skip_nop = */ true);
+          original, /* skip_nop = */ true, /* do_validation = */ false);
 
   // Check the optimized code, but ignore the OpName instructions.
   EXPECT_NE(opt::Pass::Status::Failure, status);

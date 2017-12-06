@@ -14,6 +14,8 @@
 
 #include "scalar_replacement_pass.h"
 
+#include "enum_string_mapping.h"
+#include "extensions.h"
 #include "make_unique.h"
 #include "reflect.h"
 
@@ -24,6 +26,21 @@ namespace opt {
 
 // Heuristic aggregate element limit.
 const uint32_t MAX_NUM_ELEMENTS = 100u;
+
+void ScalarReplacementPass::InitializeProcessing(ir::IRContext* c) {
+  Pass::InitializeProcessing(c);
+
+  enables_variable_pointers_ = false;
+  for (auto ext : get_module()->extensions()) {
+    const std::string extName =
+        reinterpret_cast<const char*>(ext.GetInOperand(0u).words.data());
+    if (extName == libspirv::ExtensionToString(
+                       libspirv::Extension::kSPV_KHR_variable_pointers)) {
+      enables_variable_pointers_ = true;
+      break;
+    }
+  }
+}
 
 Pass::Status ScalarReplacementPass::Process(ir::IRContext* c) {
   InitializeProcessing(c);
@@ -77,7 +94,7 @@ bool ScalarReplacementPass::ReplaceVariable(
   std::vector<ir::Instruction*> dead;
   dead.push_back(inst);
   get_def_use_mgr()->ForEachUser(
-      inst, [this, &ok, replacements, &dead](ir::Instruction* user) {
+      inst, [this, &ok, &replacements, &dead](ir::Instruction* user) {
         switch (user->opcode()) {
           case SpvOpLoad:
             ReplaceWholeLoad(user, replacements);
@@ -295,7 +312,26 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
   auto iter = pointee_to_pointer_.find(id);
   if (iter != pointee_to_pointer_.end()) return iter->second;
 
-  uint32_t ptrId = TakeNextId();
+  uint32_t ptrId = 0;
+  for (auto global : context()->types_values()) {
+    if (global.opcode() == SpvOpTypePointer &&
+        global.GetSingleWordInOperand(0u) == SpvStorageClassFunction &&
+        global.GetSingleWordInOperand(1u) == id) {
+      if (!enables_variable_pointers_ ||
+          get_decoration_mgr()->GetDecorationsFor(id, false).empty()) {
+        // If variable pointers is enabled, only reuse a decoration-less pointer
+        // of the correct type
+        ptrId = global.result_id();
+      }
+    }
+  }
+
+  if (ptrId != 0) {
+    pointee_to_pointer_[id] = ptrId;
+    return ptrId;
+  }
+
+  ptrId = TakeNextId();
   context()->AddType(MakeUnique<ir::Instruction>(
       context(), SpvOpTypePointer, 0, ptrId,
       std::initializer_list<ir::Operand>{
@@ -365,31 +401,14 @@ void ScalarReplacementPass::GetOrCreateInitialValue(ir::Instruction* source,
       newInitId = iter->second;
     }
   } else if (ir::IsSpecConstantInst(init->opcode())) {
-    // Generate a constant for the extraction.
-    uint32_t constantId = 0;
-    auto iter = index_to_constant_.find(index);
-    if (iter == index_to_constant_.end()) {
-      if (int_id_ == 0) {
-        int_id_ = GetIntId();
-      }
-      constantId = TakeNextId();
-      context()->AddGlobalValue(MakeUnique<ir::Instruction>(
-          context(), SpvOpConstant, int_id_, constantId,
-          std::initializer_list<ir::Operand>{
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}}));
-      ir::Instruction* constant = &*--context()->types_values_end();
-      get_def_use_mgr()->AnalyzeInstDefUse(constant);
-    } else {
-      constantId = iter->second;
-    }
-
     // Create a new constant extract.
     newInitId = TakeNextId();
     context()->AddGlobalValue(MakeUnique<ir::Instruction>(
         context(), SpvOpSpecConstantOp, storageId, newInitId,
         std::initializer_list<ir::Operand>{
             {SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER, {SpvOpCompositeExtract}},
-            {SPV_OPERAND_TYPE_ID, {constantId}}}));
+            {SPV_OPERAND_TYPE_ID, {init->result_id()}},
+            {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}}));
     ir::Instruction* newSpecConst = &*--context()->types_values_end();
     get_def_use_mgr()->AnalyzeInstDefUse(newSpecConst);
   } else if (init->opcode() == SpvOpConstantComposite) {
@@ -420,6 +439,8 @@ size_t ScalarReplacementPass::GetIntegerLiteral(const ir::Operand& op) const {
 
 size_t ScalarReplacementPass::GetConstantInteger(
     const ir::Instruction* constant) const {
+  assert(get_def_use_mgr()->GetDef(constant->type_id())->opcode() ==
+         SpvOpTypeInt);
   assert(constant->opcode() == SpvOpConstant ||
          constant->opcode() == SpvOpConstantNull);
   if (constant->opcode() == SpvOpConstantNull) {

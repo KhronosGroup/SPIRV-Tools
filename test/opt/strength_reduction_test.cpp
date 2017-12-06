@@ -55,7 +55,7 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8) {
   };
 
   auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
-      JoinAllInsts(text), /* skip_nop = */ true);
+      JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);
@@ -99,7 +99,7 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy16) {
 ; CHECK: OpFunctionEnd
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::StrengthReductionPass>(text);
+  SinglePassRunAndMatch<opt::StrengthReductionPass>(text, false);
 }
 #endif
 
@@ -127,7 +127,7 @@ TEST_F(StrengthReductionBasicTest, BasicTwoPowersOf2) {
 )";
   // clang-format on
   auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
-      text, /* skip_nop = */ true);
+      text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);
@@ -158,7 +158,7 @@ TEST_F(StrengthReductionBasicTest, BasicDontReplace0) {
   };
 
   auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
-      JoinAllInsts(text), /* skip_nop = */ true);
+      JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -187,7 +187,7 @@ TEST_F(StrengthReductionBasicTest, BasicNoChange) {
   };
 
   auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
-      JoinAllInsts(text), /* skip_nop = */ true);
+      JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -215,7 +215,7 @@ TEST_F(StrengthReductionBasicTest, NoDuplicateConstantsAndTypes) {
   };
 
   auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
-      JoinAllInsts(text), /* skip_nop = */ true);
+      JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);
@@ -249,7 +249,7 @@ TEST_F(StrengthReductionBasicTest, BasicCreateOneConst) {
   };
 
   auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
-      JoinAllInsts(text), /* skip_nop = */ true);
+      JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);

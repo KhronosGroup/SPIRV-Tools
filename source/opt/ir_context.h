@@ -197,6 +197,11 @@ class IRContext {
     auto entry = instr_to_block_.find(instr);
     return (entry != instr_to_block_.end()) ? entry->second : nullptr;
   }
+
+  // Returns the basic block for |id|. Re-builds the instruction block map, if
+  // needed.
+  //
+  // |id| must be a registered definition.
   ir::BasicBlock* get_instr_block(uint32_t id) {
     ir::Instruction* def = get_def_use_mgr()->GetDef(id);
     return get_instr_block(def);

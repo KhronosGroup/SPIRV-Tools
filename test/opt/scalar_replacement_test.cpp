@@ -30,8 +30,8 @@ TEST_F(ScalarReplacementTest, SimpleStruct) {
 ;
 ; CHECK: [[struct:%\w+]] = OpTypeStruct [[elem:%\w+]]
 ; CHECK: [[struct_ptr:%\w+]] = OpTypePointer Function [[struct]]
-; CHECK: OpConstantNull [[struct]]
 ; CHECK: [[elem_ptr:%\w+]] = OpTypePointer Function [[elem]]
+; CHECK: OpConstantNull [[struct]]
 ; CHECK: [[null:%\w+]] = OpConstantNull [[elem]]
 ; CHECK-NOT: OpVariable [[struct_ptr]]
 ; CHECK: [[one:%\w+]] = OpVariable [[elem_ptr]] Function [[null]]
@@ -71,7 +71,7 @@ OpReturnValue %19
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, StructInitialization) {
@@ -80,11 +80,11 @@ TEST_F(ScalarReplacementTest, StructInitialization) {
 ; CHECK: [[elem:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[struct:%\w+]] = OpTypeStruct [[elem]] [[elem]] [[elem]] [[elem]]
 ; CHECK: [[struct_ptr:%\w+]] = OpTypePointer Function [[struct]]
+; CHECK: [[elem_ptr:%\w+]] = OpTypePointer Function [[elem]]
 ; CHECK: [[zero:%\w+]] = OpConstant [[elem]] 0
 ; CHECK: [[undef:%\w+]] = OpUndef [[elem]]
 ; CHECK: [[two:%\w+]] = OpConstant [[elem]] 2
 ; CHECK: [[null:%\w+]] = OpConstantNull [[elem]]
-; CHECK: [[elem_ptr:%\w+]] = OpTypePointer Function [[elem]]
 ; CHECK-NOT: OpVariable [[struct_ptr]]
 ; CHECK: OpVariable [[elem_ptr]] Function [[null]]
 ; CHECK-NEXT: OpVariable [[elem_ptr]] Function [[two]]
@@ -125,7 +125,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, SpecConstantInitialization) {
@@ -134,12 +134,10 @@ TEST_F(ScalarReplacementTest, SpecConstantInitialization) {
 ; CHECK: [[int:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[struct:%\w+]] = OpTypeStruct [[int]] [[int]]
 ; CHECK: [[struct_ptr:%\w+]] = OpTypePointer Function [[struct]]
-; CHECK: [[spec_comp:%\w+]] = OpSpecConstantComposite [[struct]]
 ; CHECK: [[int_ptr:%\w+]] = OpTypePointer Function [[int]]
-; CHECK: [[const0:%\w+]] = OpConstant [[int]] 0
-; CHECK-NEXT: [[ex0:%\w+]] = OpSpecConstantOp [[int]] CompositeExtract [[const0]]
-; CHECK: [[const1:%\w+]] = OpConstant [[int]] 1
-; CHECK-NEXT: [[ex1:%\w+]] = OpSpecConstantOp [[int]] CompositeExtract [[const1]]
+; CHECK: [[spec_comp:%\w+]] = OpSpecConstantComposite [[struct]]
+; CHECK: [[ex0:%\w+]] = OpSpecConstantOp [[int]] CompositeExtract [[spec_comp]] 0
+; CHECK: [[ex1:%\w+]] = OpSpecConstantOp [[int]] CompositeExtract [[spec_comp]] 1
 ; CHECK-NOT: OpVariable [[struct]]
 ; CHECK: OpVariable [[int_ptr]] Function [[ex1]]
 ; CHECK-NEXT: OpVariable [[int_ptr]] Function [[ex0]]
@@ -171,7 +169,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, VectorInitialization) {
@@ -180,11 +178,11 @@ TEST_F(ScalarReplacementTest, VectorInitialization) {
 ; CHECK: [[elem:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[vector:%\w+]] = OpTypeVector [[elem]] 4
 ; CHECK: [[vector_ptr:%\w+]] = OpTypePointer Function [[vector]]
+; CHECK: [[elem_ptr:%\w+]] = OpTypePointer Function [[elem]]
 ; CHECK: [[zero:%\w+]] = OpConstant [[elem]] 0
 ; CHECK: [[undef:%\w+]] = OpUndef [[elem]]
 ; CHECK: [[two:%\w+]] = OpConstant [[elem]] 2
 ; CHECK: [[null:%\w+]] = OpConstantNull [[elem]]
-; CHECK: [[elem_ptr:%\w+]] = OpTypePointer Function [[elem]]
 ; CHECK-NOT: OpVariable [[vector_ptr]]
 ; CHECK: OpVariable [[elem_ptr]] Function [[zero]]
 ; CHECK-NOT: OpVariable [[elem_ptr]] Function [[undef]]
@@ -225,7 +223,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, MatrixInitialization) {
@@ -235,13 +233,13 @@ TEST_F(ScalarReplacementTest, MatrixInitialization) {
 ; CHECK: [[vector:%\w+]] = OpTypeVector [[float]] 2
 ; CHECK: [[matrix:%\w+]] = OpTypeMatrix [[vector]] 2
 ; CHECK: [[matrix_ptr:%\w+]] = OpTypePointer Function [[matrix]]
+; CHECK: [[float_ptr:%\w+]] = OpTypePointer Function [[float]]
+; CHECK: [[vec_ptr:%\w+]] = OpTypePointer Function [[vector]]
 ; CHECK: [[zerof:%\w+]] = OpConstant [[float]] 0
 ; CHECK: [[onef:%\w+]] = OpConstant [[float]] 1
 ; CHECK: [[one_zero:%\w+]] = OpConstantComposite [[vector]] [[onef]] [[zerof]]
 ; CHECK: [[zero_one:%\w+]] = OpConstantComposite [[vector]] [[zerof]] [[onef]]
 ; CHECK: [[const_mat:%\w+]] = OpConstantComposite [[matrix]] [[one_zero]] [[zero_one]]
-; CHECK: [[vec_ptr:%\w+]] = OpTypePointer Function [[vector]]
-; CHECK: [[float_ptr:%\w+]] = OpTypePointer Function [[float]]
 ; CHECK-NOT: OpVariable [[matrix]]
 ; CHECK-NOT: OpVariable [[vector]] Function [[one_zero]]
 ; CHECK: [[f1:%\w+]] = OpVariable [[float_ptr]] Function [[zerof]]
@@ -253,7 +251,7 @@ TEST_F(ScalarReplacementTest, MatrixInitialization) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpName %6 "matrix_init"
+OpName %7 "matrix_init"
 %1 = OpTypeVoid
 %2 = OpTypeFloat 32
 %3 = OpTypeVector %2 2
@@ -284,7 +282,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ElideAccessChain) {
@@ -318,7 +316,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ElideMultipleAccessChains) {
@@ -356,7 +354,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceAccessChain) {
@@ -397,7 +395,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ArrayInitialization) {
@@ -406,10 +404,10 @@ TEST_F(ScalarReplacementTest, ArrayInitialization) {
 ; CHECK: [[float:%\w+]] = OpTypeFloat 32
 ; CHECK: [[array:%\w+]] = OpTypeArray
 ; CHECK: [[array_ptr:%\w+]] = OpTypePointer Function [[array]]
+; CHECK: [[float_ptr:%\w+]] = OpTypePointer Function [[float]]
 ; CHECK: [[float0:%\w+]] = OpConstant [[float]] 0
 ; CHECK: [[float1:%\w+]] = OpConstant [[float]] 1
 ; CHECK: [[float2:%\w+]] = OpConstant [[float]] 2
-; CHECK: [[float_ptr:%\w+]] = OpTypePointer Function [[float]]
 ; CHECK-NOT: OpVariable [[array_ptr]]
 ; CHECK: [[var0:%\w+]] = OpVariable [[float_ptr]] Function [[float0]]
 ; CHECK-NEXT: [[var1:%\w+]] = OpVariable [[float_ptr]] Function [[float1]]
@@ -448,7 +446,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
   ;
 }
 
@@ -460,15 +458,15 @@ TEST_F(ScalarReplacementTest, NonUniformCompositeInitialization) {
 ; CHECK: [[matrix:%\w+]] = OpTypeMatrix
 ; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]]
 ; CHECK: [[struct2:%\w+]] = OpTypeStruct [[struct1]] [[matrix]] [[array]] [[uint]]
+; CHECK: [[struct1_ptr:%\w+]] = OpTypePointer Function [[struct1]]
+; CHECK: [[matrix_ptr:%\w+]] = OpTypePointer Function [[matrix]]
+; CHECK: [[array_ptr:%\w+]] = OpTypePointer Function [[array]]
+; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
 ; CHECK: [[struct2_ptr:%\w+]] = OpTypePointer Function [[struct2]]
 ; CHECK: [[const_uint:%\w+]] = OpConstant [[uint]]
 ; CHECK: [[const_array:%\w+]] = OpConstantComposite [[array]]
 ; CHECK: [[const_matrix:%\w+]] = OpConstantNull [[matrix]]
 ; CHECK: [[const_struct1:%\w+]] = OpConstantComposite [[struct1]]
-; CHECK: [[struct1_ptr:%\w+]] = OpTypePointer Function [[struct1]]
-; CHECK: [[matrix_ptr:%\w+]] = OpTypePointer Function [[matrix]]
-; CHECK: [[array_ptr:%\w+]] = OpTypePointer Function [[array]]
-; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
 ; CHECK-NOT: OpVariable [[struct2_ptr]] Function
 ; CHECK: OpVariable [[uint_ptr]] Function [[const_uint]]
 ; CHECK-NEXT: OpVariable [[array_ptr]] Function [[const_array]]
@@ -525,7 +523,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
   ;
 }
 
@@ -533,8 +531,8 @@ TEST_F(ScalarReplacementTest, ElideUncombinedAccessChains) {
   const std::string text = R"(
 ;
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
-; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
 ; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
+; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
 ; CHECK: [[var:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK-NOT: OpAccessChain
 ; CHECK: OpStore [[var]] [[const]]
@@ -562,18 +560,18 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ElideSingleUncombinedAccessChains) {
   const std::string text = R"(
 ;
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
-; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]]
+; CHECK: [[array:%\w+]] = OpTypeArray [[uint]]
+; CHECK: [[array_ptr:%\w+]] = OpTypePointer Function [[array]]
 ; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
-; CHECK: [[struct1_ptr:%\w+]] = OpTypePointer Function [[struct1]]
 ; CHECK: [[param:%\w+]] = OpFunctionParameter [[uint]]
-; CHECK: [[var:%\w+]] = OpVariable [[struct1_ptr]] Function
+; CHECK: [[var:%\w+]] = OpVariable [[array_ptr]] Function
 ; CHECK: [[access:%\w+]] = OpAccessChain {{.*}} [[var]] [[param]]
 ; CHECK: OpStore [[access]] [[const]]
 ;
@@ -583,10 +581,11 @@ OpMemoryModel Logical GLSL450
 OpName %func "elide_single_uncombined_access_chains"
 %void = OpTypeVoid
 %uint = OpTypeInt 32 0
-%struct1 = OpTypeStruct %uint
-%struct2 = OpTypeStruct %struct1
+%uint_1 = OpConstant %uint 1
+%array = OpTypeArray %uint %uint_1
+%struct2 = OpTypeStruct %array
 %uint_ptr = OpTypePointer Function %uint
-%struct1_ptr = OpTypePointer Function %struct1
+%array_ptr = OpTypePointer Function %array
 %struct2_ptr = OpTypePointer Function %struct2
 %uint_0 = OpConstant %uint 0
 %func = OpTypeFunction %void %uint
@@ -594,14 +593,14 @@ OpName %func "elide_single_uncombined_access_chains"
 %param = OpFunctionParameter %uint
 %2 = OpLabel
 %var = OpVariable %struct2_ptr Function
-%3 = OpAccessChain %struct1_ptr %var %uint_0
+%3 = OpAccessChain %array_ptr %var %uint_0
 %4 = OpAccessChain %uint_ptr %3 %param
 OpStore %4 %uint_0
 OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeLoad) {
@@ -609,8 +608,8 @@ TEST_F(ScalarReplacementTest, ReplaceWholeLoad) {
 ;
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]] [[uint]]
-; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
 ; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
+; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
 ; CHECK: [[var1:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK: [[var0:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK: [[l1:%\w+]] = OpLoad [[uint]] [[var1]]
@@ -638,7 +637,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeLoadCopyMemoryAccess) {
@@ -646,8 +645,8 @@ TEST_F(ScalarReplacementTest, ReplaceWholeLoadCopyMemoryAccess) {
 ;
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]] [[uint]]
-; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
 ; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
+; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
 ; CHECK: [[var1:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK: [[var0:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK: [[l1:%\w+]] = OpLoad [[uint]] [[var1]] Nontemporal
@@ -675,7 +674,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeStore) {
@@ -683,9 +682,9 @@ TEST_F(ScalarReplacementTest, ReplaceWholeStore) {
 ;
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
 ; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
 ; CHECK: [[const_struct:%\w+]] = OpConstantComposite [[struct1]] [[const]] [[const]]
-; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
 ; CHECK: [[var1:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK: [[var0:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK: [[ex0:%\w+]] = OpCompositeExtract [[uint]] [[const_struct]] 0
@@ -715,7 +714,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeStoreCopyMemoryAccess) {
@@ -723,9 +722,9 @@ TEST_F(ScalarReplacementTest, ReplaceWholeStoreCopyMemoryAccess) {
 ;
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
 ; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
 ; CHECK: [[const_struct:%\w+]] = OpConstantComposite [[struct1]] [[const]] [[const]]
-; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
 ; CHECK: [[var1:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK: [[var0:%\w+]] = OpVariable [[uint_ptr]] Function
 ; CHECK: [[ex0:%\w+]] = OpCompositeExtract [[uint]] [[const_struct]] 0
@@ -755,7 +754,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchVolatileLoad) {
@@ -787,7 +786,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchVolatileStore) {
@@ -819,7 +818,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchSpecNonFunctionVariable) {
@@ -851,16 +850,16 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchSpecConstantAccessChain) {
   const std::string text = R"(
 ;
-; CHECK: [[struct:%\w+]] = OpTypeStruct
-; CHECK: [[struct_ptr:%\w+]] = OpTypePointer Function [[struct]]
+; CHECK: [[array:%\w+]] = OpTypeArray
+; CHECK: [[array_ptr:%\w+]] = OpTypePointer Function [[array]]
 ; CHECK: OpLabel
-; CHECK-NEXT: OpVariable [[struct_ptr]]
+; CHECK-NEXT: OpVariable [[array_ptr]]
 ; CHECK-NOT: OpVariable
 ;
 OpCapability Shader
@@ -869,22 +868,23 @@ OpMemoryModel Logical GLSL450
 OpName %func "dont_touch_spec_constant_access_chain"
 %void = OpTypeVoid
 %uint = OpTypeInt 32 0
-%struct1 = OpTypeStruct %uint
+%uint_1 = OpConstant %uint 1
+%array = OpTypeArray %uint %uint_1
 %uint_ptr = OpTypePointer Function %uint
-%struct1_ptr = OpTypePointer Function %struct1
+%array_ptr = OpTypePointer Function %array
 %uint_0 = OpConstant %uint 0
 %spec_const = OpSpecConstant %uint 0
 %func = OpTypeFunction %void
 %1 = OpFunction %void None %func
 %2 = OpLabel
-%var = OpVariable %struct1_ptr Function
+%var = OpVariable %array_ptr Function
 %3 = OpAccessChain %uint_ptr %var %spec_const
 OpStore %3 %uint_0 Volatile
 OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, NoPartialAccesses) {
@@ -915,7 +915,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchPtrAccessChain) {
@@ -949,7 +949,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, false);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchInBoundsPtrAccessChain) {
@@ -983,7 +983,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, false);
 }
 #endif  // SPIRV_EFFCEE
 

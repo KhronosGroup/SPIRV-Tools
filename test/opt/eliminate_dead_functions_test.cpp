@@ -99,7 +99,7 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepLiveFunction) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   std::string assembly = JoinAllInsts(text);
   auto result = SinglePassRunAndDisassemble<opt::EliminateDeadFunctionsPass>(
-      assembly, /* skip_nop = */ true);
+      assembly, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
   EXPECT_EQ(assembly, std::get<0>(result));
 }
@@ -138,7 +138,7 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepExportFunctions) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   std::string assembly = JoinAllInsts(text);
   auto result = SinglePassRunAndDisassemble<opt::EliminateDeadFunctionsPass>(
-      assembly, /* skip_nop = */ true);
+      assembly, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
   EXPECT_EQ(assembly, std::get<0>(result));
 }
