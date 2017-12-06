@@ -82,9 +82,7 @@ class DominatorTree {
   iterator end() { return iterator(); }
   const_iterator begin() const { return cbegin(); }
   const_iterator end() const { return cend(); }
-  const_iterator cbegin() const {
-    return const_iterator(GetRoot());
-  }
+  const_iterator cbegin() const { return const_iterator(GetRoot()); }
   const_iterator cend() const { return const_iterator(); }
 
   roots_iterator roots_begin() { return roots_.begin(); }
