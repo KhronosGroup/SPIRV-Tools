@@ -109,6 +109,9 @@ bool ScalarReplacementPass::ReplaceVariable(
             ok &= ReplaceAccessChain(user, replacements);
             dead.push_back(user);
             break;
+          case SpvOpName:
+          case SpvOpMemberName:
+            break;
           default:
             assert(false && "Unexpected opcode");
             break;
@@ -284,6 +287,36 @@ void ScalarReplacementPass::CreateReplacementVariables(
       assert(false && "Unexpected type.");
       break;
   }
+
+  TransferAnnotations(inst, replacements);
+}
+
+void ScalarReplacementPass::TransferAnnotations(
+    const ir::Instruction* source,
+    std::vector<ir::Instruction*>* replacements) {
+  // Only transfer invariant and restrict decorations on the variable. There are
+  // no type or member decorations that are necessary to transfer.
+  for (auto inst :
+       get_decoration_mgr()->GetDecorationsFor(source->result_id(), false)) {
+    assert(inst->opcode() == SpvOpDecorate);
+    uint32_t decoration = inst->GetSingleWordInOperand(1u);
+    if (decoration == SpvDecorationInvariant ||
+        decoration == SpvDecorationRestrict) {
+      for (auto var : *replacements) {
+        std::unique_ptr<ir::Instruction> annotation(new ir::Instruction(
+            context(), SpvOpDecorate, 0, 0,
+            std::initializer_list<ir::Operand>{
+                {SPV_OPERAND_TYPE_ID, {var->result_id()}},
+                {SPV_OPERAND_TYPE_DECORATION, {decoration}}}));
+        for (uint32_t i = 2; i < inst->NumInOperands(); ++i) {
+          ir::Operand copy(inst->GetInOperand(i));
+          annotation->AddOperand(std::move(copy));
+        }
+        context()->AddAnnotationInst(std::move(annotation));
+        get_def_use_mgr()->AnalyzeInstUse(&*--context()->annotation_end());
+      }
+    }
+  }
 }
 
 void ScalarReplacementPass::CreateVariable(
@@ -319,8 +352,8 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
         global.GetSingleWordInOperand(1u) == id) {
       if (!enables_variable_pointers_ ||
           get_decoration_mgr()->GetDecorationsFor(id, false).empty()) {
-        // If variable pointers is enabled, only reuse a decoration-less pointer
-        // of the correct type
+        // If variable pointers is enabled, only reuse a decoration-less
+        // pointer of the correct type
         ptrId = global.result_id();
       }
     }
@@ -353,12 +386,8 @@ uint32_t ScalarReplacementPass::GetIntId() {
       if (GetIntegerLiteral(type.GetInOperand(0u)) == 32 &&
           (GetIntegerLiteral(type.GetInOperand(1u)) == 0 ||
            GetIntegerLiteral(type.GetInOperand(1u)) == 1)) {
-        std::vector<ir::Instruction*> decorations =
-            get_decoration_mgr()->GetDecorationsFor(type.result_id(), true);
-        if (decorations.empty()) {
-          id = type.result_id();
-          break;
-        }
+        id = type.result_id();
+        break;
       }
     }
   }
@@ -490,8 +519,12 @@ bool ScalarReplacementPass::CanReplaceVariable(
   if (varInst->GetSingleWordInOperand(0u) != SpvStorageClassFunction)
     return false;
 
+  if (!CheckTypeAnnotations(get_def_use_mgr()->GetDef(varInst->type_id()))) return false;
+
   const ir::Instruction* typeInst = GetStorageType(varInst);
   if (!CheckType(typeInst)) return false;
+
+  if (!CheckAnnotations(varInst)) return false;
 
   if (!CheckUses(varInst)) return false;
 
@@ -499,6 +532,8 @@ bool ScalarReplacementPass::CanReplaceVariable(
 }
 
 bool ScalarReplacementPass::CheckType(const ir::Instruction* typeInst) const {
+  if (!CheckTypeAnnotations(typeInst)) return false;
+
   switch (typeInst->opcode()) {
     case SpvOpTypeStruct:
       // Don't bother with empty structs or very large structs.
@@ -522,13 +557,68 @@ bool ScalarReplacementPass::CheckType(const ir::Instruction* typeInst) const {
   }
 }
 
+bool ScalarReplacementPass::CheckTypeAnnotations(
+    const ir::Instruction* typeInst) const {
+  for (auto inst :
+       get_decoration_mgr()->GetDecorationsFor(typeInst->result_id(), false)) {
+    uint32_t decoration;
+    if (inst->opcode() == SpvOpDecorate) {
+      decoration = inst->GetSingleWordInOperand(1u);
+    } else if (inst->opcode() == SpvOpMemberDecorate) {
+      decoration = inst->GetSingleWordInOperand(2u);
+    } else {
+      assert(false);
+    }
+
+    switch (decoration) {
+      case SpvDecorationRowMajor:
+      case SpvDecorationColMajor:
+      case SpvDecorationArrayStride:
+      case SpvDecorationMatrixStride:
+      case SpvDecorationCPacked:
+      case SpvDecorationInvariant:
+      case SpvDecorationRestrict:
+      case SpvDecorationOffset:
+      case SpvDecorationAlignment:
+      case SpvDecorationAlignmentId:
+      case SpvDecorationMaxByteOffset:
+        break;
+      default:
+        return false;
+    }
+  }
+
+  return true;
+}
+
+bool ScalarReplacementPass::CheckAnnotations(
+    const ir::Instruction* varInst) const {
+  for (auto inst :
+       get_decoration_mgr()->GetDecorationsFor(varInst->result_id(), false)) {
+    assert(inst->opcode() == SpvOpDecorate);
+    uint32_t decoration = inst->GetSingleWordInOperand(1u);
+    switch (decoration) {
+      case SpvDecorationInvariant:
+      case SpvDecorationRestrict:
+      case SpvDecorationAlignment:
+      case SpvDecorationAlignmentId:
+      case SpvDecorationMaxByteOffset:
+        break;
+      default:
+        return false;
+    }
+  }
+
+  return true;
+}
+
 bool ScalarReplacementPass::CheckUses(const ir::Instruction* inst) const {
   bool ok = true;
   VariableStats stats = {0, 0};
   CheckUses(inst, &stats, &ok);
 
-  // TODO(alanbaker): Extend this to some meaningful heuristics about when SRoA
-  // is valuable.
+  // TODO(alanbaker): Extend this to some meaningful heuristics about when
+  // SRoA is valuable.
   if (stats.num_partial_accesses == 0) ok = false;
 
   return ok;
@@ -538,35 +628,39 @@ void ScalarReplacementPass::CheckUses(const ir::Instruction* inst,
                                       VariableStats* stats, bool* ok) const {
   get_def_use_mgr()->ForEachUse(
       inst, [this, stats, ok](const ir::Instruction* user, uint32_t index) {
-        switch (user->opcode()) {
-          case SpvOpAccessChain:
-          case SpvOpInBoundsAccessChain:
-            if (index == 2u) {
-              uint32_t id = user->GetSingleWordOperand(3u);
-              const ir::Instruction* opInst = get_def_use_mgr()->GetDef(id);
-              if (!ir::IsCompileTimeConstantInst(opInst->opcode())) {
-                *ok = false;
+        // Annotations are check as a group separately.
+        if (!ir::IsAnnotationInst(user->opcode())) {
+          switch (user->opcode()) {
+            case SpvOpAccessChain:
+            case SpvOpInBoundsAccessChain:
+              if (index == 2u) {
+                uint32_t id = user->GetSingleWordOperand(3u);
+                const ir::Instruction* opInst = get_def_use_mgr()->GetDef(id);
+                if (!ir::IsCompileTimeConstantInst(opInst->opcode())) {
+                  *ok = false;
+                } else {
+                  CheckUsesRelaxed(user, ok);
+                }
+                stats->num_partial_accesses++;
               } else {
-                CheckUsesRelaxed(user, ok);
+                *ok = false;
               }
-              stats->num_partial_accesses++;
-            } else {
+              break;
+            case SpvOpLoad:
+              if (!CheckLoad(user, index)) *ok = false;
+              stats->num_full_accesses++;
+              break;
+            case SpvOpStore:
+              if (!CheckStore(user, index)) *ok = false;
+              stats->num_full_accesses++;
+              break;
+            case SpvOpName:
+            case SpvOpMemberName:
+              break;
+            default:
               *ok = false;
-            }
-            break;
-
-          case SpvOpLoad:
-            if (!CheckLoad(user, index)) *ok = false;
-            stats->num_full_accesses++;
-            break;
-          case SpvOpStore:
-            if (!CheckStore(user, index)) *ok = false;
-            stats->num_full_accesses++;
-            break;
-
-          default:
-            *ok = false;
-            break;
+              break;
+          }
         }
       });
 }

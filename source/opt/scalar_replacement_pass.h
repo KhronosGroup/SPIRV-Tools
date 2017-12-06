@@ -70,6 +70,14 @@ class ScalarReplacementPass : public Pass {
   // that the number of elements that would be scalarized is within bounds.
   bool CheckType(const ir::Instruction* typeInst) const;
 
+  // Returns true if all the decorations for |varInst| are acceptable for
+  // scalarization.
+  bool CheckAnnotations(const ir::Instruction* varInst) const;
+
+  // Returns true if all the decorations for |typeInst| are acceptable for
+  // scalarization.
+  bool CheckTypeAnnotations(const ir::Instruction* typeInst) const;
+
   // Returns true if the uses of |inst| are acceptable for scalarization.
   //
   // Recursively checks all the uses of |inst|. For |inst| specifically, only
@@ -88,6 +96,10 @@ class ScalarReplacementPass : public Pass {
 
   // Relaxed helper function for |CheckUses|.
   void CheckUsesRelaxed(const ir::Instruction* inst, bool* ok) const;
+
+  // Transfers appropriate decorations from |source| to |replacements|.
+  void TransferAnnotations(const ir::Instruction* source,
+                           std::vector<ir::Instruction*>* replacements);
 
   // Scalarizes |inst| and updates its uses.
   //
