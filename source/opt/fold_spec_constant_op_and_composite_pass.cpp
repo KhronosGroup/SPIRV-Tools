@@ -19,9 +19,9 @@
 #include <tuple>
 
 #include "constants.h"
+#include "fold.h"
 #include "ir_context.h"
 #include "make_unique.h"
-#include "fold.h"
 
 namespace spvtools {
 namespace opt {
