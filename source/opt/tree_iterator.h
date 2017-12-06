@@ -25,7 +25,7 @@ namespace opt {
 // Helper class to iterate over a tree in a depth first order.
 // The class assumes the data structure is a tree, tree node type implements a
 // forward iterator.
-// At each steps, the iterator hold the pointer to the current node and state of
+// At each step, the iterator holds the pointer to the current node and state of
 // the walk.
 // The state is recorded by stacking the iteration position of the node
 // children. To move to the next node, the iterator:
@@ -38,7 +38,7 @@ template <typename NodeTy>
 class TreeDFIterator {
   static_assert(!std::is_pointer<NodeTy>::value &&
                     !std::is_reference<NodeTy>::value,
-                "NodeTy should to be a class");
+                "NodeTy should be a class");
   // Type alias to keep track of the const qualifier.
   using NodeIterator =
       typename std::conditional<std::is_const<NodeTy>::value,
@@ -83,7 +83,7 @@ class TreeDFIterator {
   }
 
  private:
-  // Move the iterator to the next node in the tree.
+  // Moves the iterator to the next node in the tree.
   // if we are at the end, do nothing, otherwise
   // if our current node has children, use the children iterator and push the
   // current into the stack.
@@ -95,20 +95,20 @@ class TreeDFIterator {
       return;
     }
     std::pair<NodePtr, NodeIterator>& next_it = parent_iterators_.top();
-    // set the new node.
+    // Set the new node.
     current_ = *next_it.second;
-    // update the iterator for the next child.
+    // Update the iterator for the next child.
     ++next_it.second;
-    // if we finished with node, pop it.
+    // If we finished with node, pop it.
     if (next_it.first->end() == next_it.second) parent_iterators_.pop();
-    // If our current node is not a leaf, store the iteration state for latter.
+    // If our current node is not a leaf, store the iteration state for later.
     if (current_->begin() != current_->end())
       parent_iterators_.emplace(make_pair(current_, current_->begin()));
   }
 
   // The current node of the tree.
   NodePtr current_;
-  // State of the tree walk: each pairs contains the parent node (which has been
+  // State of the tree walk: each pair contains the parent node (which has been
   // already visited) and the iterator of the next children to visit.
   // When all the children has been visited, we pop the entry, get the next
   // child and push back the pair if the iterator is not end().
