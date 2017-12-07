@@ -26,6 +26,7 @@ namespace opt {
 namespace {
 
 const uint32_t kStoreValIdInIdx = 1;
+const uint32_t kVariableInitIdInIdx = 1;
 
 }  // anonymous namespace
 
@@ -58,41 +59,50 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     uint32_t instIdx = 0;
     for (auto ii = bi->begin(); ii != bi->end(); ++ii, ++instIdx) {
+      uint32_t varId = 0;
+      ir::Instruction* ptrInst;
       switch (ii->opcode()) {
         case SpvOpStore: {
-          // Verify store variable is target type
-          uint32_t varId;
-          ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-          if (non_ssa_vars_.find(varId) != non_ssa_vars_.end()) continue;
-          if (ptrInst->opcode() != SpvOpVariable) {
-            non_ssa_vars_.insert(varId);
-            ssa_var2store_.erase(varId);
-            continue;
+          ptrInst = GetPtr(&*ii, &varId);
+        } break;
+        case SpvOpVariable: {
+          // If initializer, treat like store
+          if (ii->NumInOperands() > 1) {
+            varId = ii->result_id();
+            ptrInst = &*ii;
           }
-          // Verify target type and function storage class
-          if (!IsTargetVar(varId)) {
-            non_ssa_vars_.insert(varId);
-            continue;
-          }
-          if (!HasOnlySupportedRefs(varId)) {
-            non_ssa_vars_.insert(varId);
-            continue;
-          }
-          // Ignore variables with multiple stores
-          if (ssa_var2store_.find(varId) != ssa_var2store_.end()) {
-            non_ssa_vars_.insert(varId);
-            ssa_var2store_.erase(varId);
-            continue;
-          }
-          // Remember pointer to variable's store and it's
-          // ordinal position in block
-          ssa_var2store_[varId] = &*ii;
-          store2idx_[&*ii] = instIdx;
-          store2blk_[&*ii] = &*bi;
         } break;
         default:
           break;
       }  // switch
+      if (varId == 0) continue;
+      // Verify variable is target type
+      if (non_ssa_vars_.find(varId) != non_ssa_vars_.end()) continue;
+      if (ptrInst->opcode() != SpvOpVariable) {
+        non_ssa_vars_.insert(varId);
+        ssa_var2store_.erase(varId);
+        continue;
+      }
+      // Verify target type and function storage class
+      if (!IsTargetVar(varId)) {
+        non_ssa_vars_.insert(varId);
+        continue;
+      }
+      if (!HasOnlySupportedRefs(varId)) {
+        non_ssa_vars_.insert(varId);
+        continue;
+      }
+      // Ignore variables with multiple stores
+      if (ssa_var2store_.find(varId) != ssa_var2store_.end()) {
+        non_ssa_vars_.insert(varId);
+        ssa_var2store_.erase(varId);
+        continue;
+      }
+      // Remember pointer to variable's store and it's
+      // ordinal position in block
+      ssa_var2store_[varId] = &*ii;
+      store2idx_[&*ii] = instIdx;
+      store2blk_[&*ii] = &*bi;
     }
   }
 }
@@ -135,12 +145,10 @@ void LocalSingleStoreElimPass::CalculateImmediateDominators(
   augmented_predecessors_map_.clear();
   successors_map_[cfg()->pseudo_exit_block()] = {};
   predecessors_map_[cfg()->pseudo_entry_block()] = {};
-  auto succ_func = [this](const ir::BasicBlock* b) {
-    return &successors_map_[b];
-  };
-  auto pred_func = [this](const ir::BasicBlock* b) {
-    return &predecessors_map_[b];
-  };
+  auto succ_func =
+      [this](const ir::BasicBlock* b) { return &successors_map_[b]; };
+  auto pred_func =
+      [this](const ir::BasicBlock* b) { return &predecessors_map_[b]; };
   CFA<ir::BasicBlock>::ComputeAugmentedCFG(
       ordered_blocks, cfg()->pseudo_entry_block(), cfg()->pseudo_exit_block(),
       &augmented_successors_map_, &augmented_predecessors_map_, succ_func,
@@ -188,9 +196,14 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       if (!Dominates(store2blk_[vsi->second], store2idx_[vsi->second], &*bi,
                      instIdx))
         continue;
-      // Use store value as replacement id
-      uint32_t replId = vsi->second->GetSingleWordInOperand(kStoreValIdInIdx);
-      // replace all instances of the load's id with the SSA value's id
+      // Determine replacement id depending on OpStore or OpVariable
+      uint32_t replId;
+      if (vsi->second->opcode() == SpvOpStore)
+        replId = vsi->second->GetSingleWordInOperand(kStoreValIdInIdx);
+      else
+        replId = vsi->second->GetSingleWordInOperand(kVariableInitIdInIdx);
+      // Replace all instances of the load's id with the SSA value's id
+      // and add load to removal list
       context()->KillNamesAndDecorates(&*ii);
       context()->ReplaceAllUsesWith(ii->result_id(), replId);
       dead_instructions.push_back(&*ii);
@@ -199,27 +212,28 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
 
     // Define the function that will update the data structures as instructions
     // are deleted.
-    auto update_function = [&dead_instructions,
-                            this](ir::Instruction* other_inst) {
-      // Update dead_instructions.
-      auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
-                         other_inst);
-      if (i != dead_instructions.end()) {
-        dead_instructions.erase(i);
-      }
+    auto update_function =
+        [&dead_instructions, this](ir::Instruction* other_inst) {
+          // Update dead_instructions.
+          auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
+                             other_inst);
+          if (i != dead_instructions.end()) {
+            dead_instructions.erase(i);
+          }
 
-      // Update the variable to store map.
-      if (other_inst->opcode() != SpvOpStore) {
-        return;
-      }
+          // Update the variable-to-store map if any of its members is DCE'd.
+          uint32_t id;
+          if (other_inst->opcode() == SpvOpStore) GetPtr(other_inst, &id);
+          if (other_inst->opcode() == SpvOpVariable)
+            id = other_inst->result_id();
+          else
+            return;
 
-      uint32_t id;
-      GetPtr(other_inst, &id);
-      auto store = ssa_var2store_.find(id);
-      if (store != ssa_var2store_.end()) {
-        ssa_var2store_.erase(store);
-      }
-    };
+          auto store = ssa_var2store_.find(id);
+          if (store != ssa_var2store_.end()) {
+            ssa_var2store_.erase(store);
+          }
+        };
 
     while (!dead_instructions.empty()) {
       ir::Instruction* inst = dead_instructions.back();
@@ -237,7 +251,7 @@ bool LocalSingleStoreElimPass::SingleStoreDCE() {
     // check that it hasn't already been DCE'd
     if (already_deleted.find(v.second) != already_deleted.end()) continue;
     if (non_ssa_vars_.find(v.first) != non_ssa_vars_.end()) continue;
-    if (!IsLiveStore(v.second)) {
+    if (!IsLiveVar(v.first)) {
       DCEInst(v.second, [&already_deleted](ir::Instruction* inst) {
         already_deleted.insert(inst);
       });
@@ -302,9 +316,8 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
   // Process all entry point functions
-  ProcessFunction pfn = [this](ir::Function* fp) {
-    return LocalSingleStoreElim(fp);
-  };
+  ProcessFunction pfn =
+      [this](ir::Function* fp) { return LocalSingleStoreElim(fp); };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
