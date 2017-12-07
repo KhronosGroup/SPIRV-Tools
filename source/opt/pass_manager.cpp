@@ -27,8 +27,11 @@ Pass::Status PassManager::Run(ir::IRContext* context) {
   }
 
   // Set the Id bound in the header in case a pass forgot to do so.
+  //
+  // TODO(dnovillo): This should be unnecessary and automatically maintained by
+  // the IRContext.
   if (status == Pass::Status::SuccessWithChange) {
-    context->SetIdBound(context->module()->ComputeIdBound());
+    context->module()->SetIdBound(context->module()->ComputeIdBound());
   }
   passes_.clear();
   return status;

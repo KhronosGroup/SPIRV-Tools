@@ -128,13 +128,8 @@ class Pass {
 
  protected:
   // Initialize basic data structures for the pass. This sets up the def-use
-  // manager, module and other attributes. TODO(dnovillo): Some of this should
-  // be done during pass instantiation. Other things should be outside the pass
-  // altogether (e.g., def-use manager).
-  virtual void InitializeProcessing(ir::IRContext* c) {
-    context_ = c;
-    next_id_ = context_->IdBound();
-  }
+  // manager, module and other attributes.
+  virtual void InitializeProcessing(ir::IRContext* c) { context_ = c; }
 
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
@@ -144,19 +139,11 @@ class Pass {
   // Return type id for |ptrInst|'s pointee
   uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
 
-  // Return the next available Id and increment it.
-  inline uint32_t TakeNextId() {
-    assert(context_ && next_id_ > 0);
-    uint32_t retval = next_id_++;
-    context_->SetIdBound(next_id_);
-    return retval;
-  }
+  // Return the next available SSA id and increment it.
+  uint32_t TakeNextId() { return context_->TakeNextId(); }
 
  private:
   MessageConsumer consumer_;  // Message consumer.
-
-  // Next unused ID
-  uint32_t next_id_;
 
   // The context that this pass belongs to.
   ir::IRContext* context_;

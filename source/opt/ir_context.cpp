@@ -13,10 +13,11 @@
 // limitations under the License.
 
 #include "ir_context.h"
-#include <spirv/1.0/GLSL.std.450.h>
-#include <cstring>
 #include "log.h"
 #include "mem_pass.h"
+#include "spirv/1.0/GLSL.std.450.h"
+
+#include <cstring>
 
 namespace spvtools {
 namespace ir {
