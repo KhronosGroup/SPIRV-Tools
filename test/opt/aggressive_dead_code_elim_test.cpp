@@ -78,11 +78,11 @@ OpName %gl_FragColor "gl_FragColor"
       R"(%main = OpFunction %void None %9
 %15 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
-%dv = OpVariable %_ptr_Function_v4float Function 
+%dv = OpVariable %_ptr_Function_v4float Function
 %16 = OpLoad %v4float %BaseColor
 OpStore %v %16
 %17 = OpLoad %v4float %Dead
-%18 = OpExtInst %v4float %1 Sqrt %17 
+%18 = OpExtInst %v4float %1 Sqrt %17
 OpStore %dv %18
 %19 = OpLoad %v4float %v
 OpStore %gl_FragColor %19
@@ -176,7 +176,7 @@ OpName %Color "Color"
       R"(%main = OpFunction %void None %11
 %20 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
-%dv = OpVariable %_ptr_Function_v4float Function 
+%dv = OpVariable %_ptr_Function_v4float Function
 %21 = OpLoad %v4float %BaseColor
 OpStore %v %21
 %22 = OpLoad %v4float %Dead
@@ -267,7 +267,7 @@ OpName %gl_FragColor "gl_FragColor"
       R"(%main = OpFunction %void None %10
 %17 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
-%dv = OpVariable %_ptr_Function_v4float Function 
+%dv = OpVariable %_ptr_Function_v4float Function
 %18 = OpLoad %v4float %BaseColor
 OpStore %v %18
 %19 = OpLoad %v4float %Dead
@@ -352,7 +352,7 @@ OpName %gl_FragColor "gl_FragColor"
       R"(%main = OpFunction %void None %9
 %15 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
-%dv = OpVariable %_ptr_Function_v4float Function 
+%dv = OpVariable %_ptr_Function_v4float Function
 %16 = OpLoad %v4float %BaseColor
 OpStore %v %16
 %17 = OpLoad %v4float %Dead
@@ -437,7 +437,7 @@ OpName %gl_FragColor "gl_FragColor"
       R"(%main = OpFunction %void None %9
 %15 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
-%dv = OpVariable %_ptr_Function_v4float Function 
+%dv = OpVariable %_ptr_Function_v4float Function
 %16 = OpLoad %v4float %BaseColor
 OpStore %v %16
 %17 = OpLoad %v4float %Dead
@@ -546,14 +546,14 @@ OpEntryPoint Fragment %main "main" %i1 %i2 %gl_FragColor
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
-OpName %nothing_vf4_ "nothing(vf4;" 
+OpName %nothing_vf4_ "nothing(vf4;"
 OpName %v "v"
 OpName %v1 "v1"
 OpName %i1 "i1"
 OpName %v2 "v2"
 OpName %i2 "i2"
-OpName %param "param" 
-OpName %gl_FragColor "gl_FragColor" 
+OpName %param "param"
+OpName %gl_FragColor "gl_FragColor"
 %void = OpTypeVoid
 %12 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -566,7 +566,7 @@ OpName %gl_FragColor "gl_FragColor"
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
 %float_0 = OpConstant %float 0
-%20 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0 
+%20 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 )";
 
   const std::string defs_after =
@@ -602,8 +602,8 @@ OpName %gl_FragColor "gl_FragColor"
   const std::string func_before =
       R"(%main = OpFunction %void None %12
 %21 = OpLabel
-%v1 = OpVariable %_ptr_Function_v4float Function 
-%v2 = OpVariable %_ptr_Function_v4float Function 
+%v1 = OpVariable %_ptr_Function_v4float Function
+%v2 = OpVariable %_ptr_Function_v4float Function
 %param = OpVariable %_ptr_Function_v4float Function
 %22 = OpLoad %v4float %i1
 OpStore %v1 %22
@@ -673,14 +673,14 @@ OpEntryPoint Fragment %main "main" %gl_FragColor %BaseColor
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
-OpName %foo_vf4_vf4_ "foo(vf4;vf4;" 
+OpName %foo_vf4_vf4_ "foo(vf4;vf4;"
 OpName %v1 "v1"
 OpName %v2 "v2"
 OpName %t "t"
-OpName %gl_FragColor "gl_FragColor" 
+OpName %gl_FragColor "gl_FragColor"
 OpName %dead "dead"
 OpName %BaseColor "BaseColor"
-OpName %param "param" 
+OpName %param "param"
 OpName %param_0 "param"
 %void = OpTypeVoid
 %13 = OpTypeFunction %void
@@ -754,10 +754,10 @@ OpFunctionEnd
 %v2 = OpFunctionParameter %_ptr_Function_v4float
 %24 = OpLabel
 %t = OpVariable %_ptr_Function_v4float Function
-%25 = OpLoad %v4float %v1 
+%25 = OpLoad %v4float %v1
 %26 = OpFNegate %v4float %25
-OpStore %t %26 
-%27 = OpLoad %v4float %v2 
+OpStore %t %26
+%27 = OpLoad %v4float %v2
 OpReturnValue %27
 OpFunctionEnd
 )";
@@ -862,9 +862,9 @@ OpDecorate %sampler15 DescriptorSet 0
   const std::string func_before =
       R"(%main = OpFunction %void None %9
 %25 = OpLabel
-%s0 = OpVariable %_ptr_Function_S_t Function 
+%s0 = OpVariable %_ptr_Function_S_t Function
 %26 = OpLoad %v2float %texCoords
-%27 = OpLoad %S_t %s0 
+%27 = OpLoad %S_t %s0
 %28 = OpCompositeInsert %S_t %26 %27 0
 %29 = OpLoad %15 %sampler15
 %30 = OpCompositeInsert %S_t %29 %28 2
@@ -1310,7 +1310,7 @@ OpDecorate %OutColor Location 0
 %d = OpVariable %_ptr_Function_float Function
 %23 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
 %24 = OpLoad %float %23
-%25 = OpFOrdEqual %bool %24 %float_0 
+%25 = OpFOrdEqual %bool %24 %float_0
 OpSelectionMerge %26 None
 OpBranchConditional %25 %27 %28
 %27 = OpLabel
@@ -1426,7 +1426,7 @@ OpDecorate %OutColor Location 0
 %d = OpVariable %_ptr_Function_float Function
 %22 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
 %23 = OpLoad %float %22
-%24 = OpFOrdEqual %bool %23 %float_0 
+%24 = OpFOrdEqual %bool %23 %float_0
 OpSelectionMerge %25 None
 OpBranchConditional %24 %26 %25
 %26 = OpLabel
@@ -1662,34 +1662,34 @@ OpDecorate %OutColor Location 0
 %d = OpVariable %_ptr_Function_float Function
 %25 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
 %26 = OpLoad %float %25
-%27 = OpFOrdEqual %bool %26 %float_0 
+%27 = OpFOrdEqual %bool %26 %float_0
 OpSelectionMerge %28 None
 OpBranchConditional %27 %29 %30
 %29 = OpLabel
 %31 = OpAccessChain %_ptr_Input_float %BaseColor %uint_1
 %32 = OpLoad %float %31
-%33 = OpFOrdEqual %bool %32 %float_0 
+%33 = OpFOrdEqual %bool %32 %float_0
 OpSelectionMerge %34 None
 OpBranchConditional %33 %35 %36
 %35 = OpLabel
 OpStore %d %float_0
 OpBranch %34
 %36 = OpLabel
-OpStore %d %float_0_25 
+OpStore %d %float_0_25
 OpBranch %34
 %34 = OpLabel
 OpBranch %28
 %30 = OpLabel
 %37 = OpAccessChain %_ptr_Input_float %BaseColor %uint_1
 %38 = OpLoad %float %37
-%39 = OpFOrdEqual %bool %38 %float_0 
+%39 = OpFOrdEqual %bool %38 %float_0
 OpSelectionMerge %40 None
 OpBranchConditional %39 %41 %42
 %41 = OpLabel
 OpStore %d %float_0_5
 OpBranch %40
 %42 = OpLabel
-OpStore %d %float_0_75 
+OpStore %d %float_0_75
 OpBranch %40
 %40 = OpLabel
 OpBranch %28
@@ -1957,11 +1957,11 @@ OpFunctionEnd
 TEST_F(AggressiveDCETest, NoEliminateIfBreak) {
   // Note: Assembly optimized from GLSL
   //
-  // #version 450 
-  // 
+  // #version 450
+  //
   // layout(location=0) in vec4 InColor;
   // layout(location=0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     float f = 0.0;
@@ -1970,7 +1970,7 @@ TEST_F(AggressiveDCETest, NoEliminateIfBreak) {
   //         if (f > 20.0)
   //             break;
   //     }
-  // 
+  //
   //     OutColor = InColor / f;
   // }
 
@@ -2118,7 +2118,7 @@ OpDecorate %_ DescriptorSet 0
       R"(%main = OpFunction %void None %11
 %27 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
-%df = OpVariable %_ptr_Function_float Function 
+%df = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 %28 = OpLoad %v4float %BaseColor
 OpStore %v %28
@@ -2176,15 +2176,15 @@ TEST_F(AggressiveDCETest, NoEliminateBusyLoop) {
   // Note: SPIR-V edited to replace AtomicAdd(i,0) with AtomicLoad(i)
   //
   // #version 450
-  // 
+  //
   // layout(std430) buffer I_t
   // {
   // 	int g_I;
   // 	int g_I2;
   // };
-  // 
+  //
   // layout(location = 0) out int o;
-  // 
+  //
   // void main(void)
   // {
   // 	while (atomicAdd(g_I, 0) == 0) {}
@@ -2254,14 +2254,14 @@ TEST_F(AggressiveDCETest, NoEliminateLiveLoop) {
   // Note: SPIR-V optimized
   //
   // #version 430
-  // 
+  //
   // layout(std430) buffer U_t
   // {
   //     float g_F[10];
   // };
-  // 
+  //
   // layout(location = 0)out float o;
-  // 
+  //
   // void main(void)
   // {
   //     float s = 0.0;
@@ -2417,7 +2417,7 @@ OpDecorate %OutColor Location 0
 %d = OpVariable %_ptr_Function_float Function
 %21 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
 %22 = OpLoad %float %21
-%23 = OpFOrdEqual %bool %22 %float_0 
+%23 = OpFOrdEqual %bool %22 %float_0
 OpSelectionMerge %24 None
 OpBranchConditional %23 %25 %26
 %25 = OpLabel
@@ -2450,14 +2450,14 @@ OpFunctionEnd
 
 TEST_F(AggressiveDCETest, EliminateUselessInnerLoop) {
   // #version 430
-  // 
+  //
   // layout(std430) buffer U_t
   // {
   //     float g_F[10];
   // };
-  // 
+  //
   // layout(location = 0)out float o;
-  // 
+  //
   // void main(void)
   // {
   //     float s = 0.0;
@@ -2482,19 +2482,19 @@ OpName %i "i"
 OpName %j "j"
 OpName %U_t "U_t"
 OpMemberName %U_t 0 "g_F"
-OpName %_ "" 
+OpName %_ ""
 OpName %o "o"
 OpDecorate %_arr_float_uint_10 ArrayStride 4
 OpMemberDecorate %U_t 0 Offset 0
 OpDecorate %U_t BufferBlock
 OpDecorate %_ DescriptorSet 0
-OpDecorate %o Location 0 
+OpDecorate %o Location 0
 %void = OpTypeVoid
 %11 = OpTypeFunction %void
 %float = OpTypeFloat 32
 %_ptr_Function_float = OpTypePointer Function %float
 %float_0 = OpConstant %float 0
-%int = OpTypeInt 32 1 
+%int = OpTypeInt 32 1
 %_ptr_Function_int = OpTypePointer Function %int
 %int_0 = OpConstant %int 0
 %int_10 = OpConstant %int 10
@@ -2559,11 +2559,11 @@ OpDecorate %o Location 0
 %i = OpVariable %_ptr_Function_int Function
 %j = OpVariable %_ptr_Function_int Function
 OpStore %s %float_0
-OpStore %i %int_0 
-OpBranch %27 
+OpStore %i %int_0
+OpBranch %27
 %27 = OpLabel
 OpLoopMerge %28 %29 None
-OpBranch %30 
+OpBranch %30
 %30 = OpLabel
 %31 = OpLoad %int %i
 %32 = OpSLessThan %bool %31 %int_10
@@ -2579,7 +2579,7 @@ OpBranch %37
 %39 = OpSLessThan %bool %38 %int_10
 OpBranchConditional %39 %40 %35
 %40 = OpLabel
-OpBranch %36 
+OpBranch %36
 %36 = OpLabel
 %41 = OpLoad %int %j
 %42 = OpIAdd %int %41 %int_1
@@ -2591,16 +2591,16 @@ OpBranch %34
 %45 = OpLoad %float %44
 %46 = OpLoad %float %s
 %47 = OpFAdd %float %46 %45
-OpStore %s %47 
-OpBranch %29 
+OpStore %s %47
+OpBranch %29
 %29 = OpLabel
 %48 = OpLoad %int %i
 %49 = OpIAdd %int %48 %int_1
-OpStore %i %49 
-OpBranch %27 
+OpStore %i %49
+OpBranch %27
 %28 = OpLabel
 %50 = OpLoad %float %s
-OpStore %o %50 
+OpStore %o %50
 OpReturn
 OpFunctionEnd
 )";
@@ -2650,14 +2650,14 @@ OpFunctionEnd
 
 TEST_F(AggressiveDCETest, EliminateUselessNestedLoopWithIf) {
   // #version 430
-  // 
+  //
   // layout(std430) buffer U_t
   // {
   //     float g_F[10][10];
   // };
-  // 
+  //
   // layout(location = 0)out float o;
-  // 
+  //
   // void main(void)
   // {
   //     float s = 0.0;
@@ -2697,7 +2697,7 @@ OpDecorate %o Location 0
 %float = OpTypeFloat 32
 %_ptr_Function_float = OpTypePointer Function %float
 %float_0 = OpConstant %float 0
-%int = OpTypeInt 32 1 
+%int = OpTypeInt 32 1
 %_ptr_Function_int = OpTypePointer Function %int
 %int_0 = OpConstant %int 0
 %int_10 = OpConstant %int 10
@@ -2761,10 +2761,10 @@ OpDecorate %o Location 0
 %27 = OpLabel
 %s = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
-%j = OpVariable %_ptr_Function_int Function 
+%j = OpVariable %_ptr_Function_int Function
 OpStore %s %float_0
 OpStore %i %int_0
-OpBranch %28 
+OpBranch %28
 %28 = OpLabel
 OpLoopMerge %29 %30 None
 OpBranch %31
@@ -2777,7 +2777,7 @@ OpStore %j %int_0
 OpBranch %35
 %35 = OpLabel
 OpLoopMerge %36 %37 None
-OpBranch %38 
+OpBranch %38
 %38 = OpLabel
 %39 = OpLoad %int %j
 %40 = OpSLessThan %bool %39 %int_10
@@ -2786,7 +2786,7 @@ OpBranchConditional %40 %41 %36
 %42 = OpLoad %int %i
 %43 = OpLoad %int %j
 %44 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %42 %43
-%45 = OpLoad %float %44 
+%45 = OpLoad %float %44
 %46 = OpFOrdGreaterThan %bool %45 %float_0
 OpSelectionMerge %47 None
 OpBranchConditional %46 %48 %47
@@ -2835,14 +2835,14 @@ TEST_F(AggressiveDCETest, NoEliminateLiveNestedLoopWithIf) {
   // Note: SPIR-V optimized
   //
   // #version 430
-  // 
+  //
   // layout(std430) buffer U_t
   // {
   //     float g_F[10][10];
   // };
-  // 
+  //
   // layout(location = 0)out float o;
-  // 
+  //
   // void main(void)
   // {
   //     float s = 0.0;
