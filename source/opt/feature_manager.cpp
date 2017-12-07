@@ -21,7 +21,8 @@ namespace opt {
 
 void FeatureManager::Analyze(ir::Module* module) {
   for (auto ext : module->extensions()) {
-    const std::string name = reinterpret_cast<const char*>(ext.GetInOperand(0u).words.data());
+    const std::string name =
+        reinterpret_cast<const char*>(ext.GetInOperand(0u).words.data());
     libspirv::Extension extension;
     if (libspirv::GetExtensionFromString(name, &extension)) {
       extensions_.Add(extension);
@@ -29,5 +30,5 @@ void FeatureManager::Analyze(ir::Module* module) {
   }
 }
 
-}
-}
+}  // namespace opt
+}  // namespace spvtools

@@ -627,7 +627,8 @@ bool ScalarReplacementPass::CheckUses(const ir::Instruction* inst,
   return ok;
 }
 
-bool ScalarReplacementPass::CheckUsesRelaxed(const ir::Instruction* inst) const {
+bool ScalarReplacementPass::CheckUsesRelaxed(
+    const ir::Instruction* inst) const {
   bool ok = true;
   get_def_use_mgr()->ForEachUse(
       inst, [this, &ok](const ir::Instruction* user, uint32_t index) {
