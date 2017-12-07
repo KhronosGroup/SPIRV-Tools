@@ -27,21 +27,6 @@ namespace opt {
 // Heuristic aggregate element limit.
 const uint32_t MAX_NUM_ELEMENTS = 100u;
 
-void ScalarReplacementPass::InitializeProcessing(ir::IRContext* c) {
-  Pass::InitializeProcessing(c);
-
-  enables_variable_pointers_ = false;
-  for (auto ext : get_module()->extensions()) {
-    const std::string extName =
-        reinterpret_cast<const char*>(ext.GetInOperand(0u).words.data());
-    if (extName == libspirv::ExtensionToString(
-                       libspirv::Extension::kSPV_KHR_variable_pointers)) {
-      enables_variable_pointers_ = true;
-      break;
-    }
-  }
-}
-
 Pass::Status ScalarReplacementPass::Process(ir::IRContext* c) {
   InitializeProcessing(c);
 
@@ -95,26 +80,28 @@ bool ScalarReplacementPass::ReplaceVariable(
   dead.push_back(inst);
   get_def_use_mgr()->ForEachUser(
       inst, [this, &ok, &replacements, &dead](ir::Instruction* user) {
-        switch (user->opcode()) {
-          case SpvOpLoad:
-            ReplaceWholeLoad(user, replacements);
-            dead.push_back(user);
-            break;
-          case SpvOpStore:
-            ReplaceWholeStore(user, replacements);
-            dead.push_back(user);
-            break;
-          case SpvOpAccessChain:
-          case SpvOpInBoundsAccessChain:
-            ok &= ReplaceAccessChain(user, replacements);
-            dead.push_back(user);
-            break;
-          case SpvOpName:
-          case SpvOpMemberName:
-            break;
-          default:
-            assert(false && "Unexpected opcode");
-            break;
+        if (!ir::IsAnnotationInst(user->opcode())) {
+          switch (user->opcode()) {
+            case SpvOpLoad:
+              ReplaceWholeLoad(user, replacements);
+              dead.push_back(user);
+              break;
+            case SpvOpStore:
+              ReplaceWholeStore(user, replacements);
+              dead.push_back(user);
+              break;
+            case SpvOpAccessChain:
+            case SpvOpInBoundsAccessChain:
+              ok &= ReplaceAccessChain(user, replacements);
+              dead.push_back(user);
+              break;
+            case SpvOpName:
+            case SpvOpMemberName:
+              break;
+            default:
+              assert(false && "Unexpected opcode");
+              break;
+          }
         }
       });
 
@@ -350,11 +337,13 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
     if (global.opcode() == SpvOpTypePointer &&
         global.GetSingleWordInOperand(0u) == SpvStorageClassFunction &&
         global.GetSingleWordInOperand(1u) == id) {
-      if (!enables_variable_pointers_ ||
+      if (!context()->get_feature_mgr()->HasExtension(
+              libspirv::Extension::kSPV_KHR_variable_pointers) ||
           get_decoration_mgr()->GetDecorationsFor(id, false).empty()) {
         // If variable pointers is enabled, only reuse a decoration-less
         // pointer of the correct type
         ptrId = global.result_id();
+        break;
       }
     }
   }
@@ -519,7 +508,8 @@ bool ScalarReplacementPass::CanReplaceVariable(
   if (varInst->GetSingleWordInOperand(0u) != SpvStorageClassFunction)
     return false;
 
-  if (!CheckTypeAnnotations(get_def_use_mgr()->GetDef(varInst->type_id()))) return false;
+  if (!CheckTypeAnnotations(get_def_use_mgr()->GetDef(varInst->type_id())))
+    return false;
 
   const ir::Instruction* typeInst = GetStorageType(varInst);
   if (!CheckType(typeInst)) return false;
@@ -564,10 +554,9 @@ bool ScalarReplacementPass::CheckTypeAnnotations(
     uint32_t decoration;
     if (inst->opcode() == SpvOpDecorate) {
       decoration = inst->GetSingleWordInOperand(1u);
-    } else if (inst->opcode() == SpvOpMemberDecorate) {
-      decoration = inst->GetSingleWordInOperand(2u);
     } else {
-      assert(false);
+      assert(inst->opcode() == SpvOpMemberDecorate);
+      decoration = inst->GetSingleWordInOperand(2u);
     }
 
     switch (decoration) {

@@ -50,10 +50,6 @@ class ScalarReplacementPass : public Pass {
     uint32_t num_full_accesses;
   };
 
-  // Initializes the context, next id and checks for the presence of the
-  // variable pointers extension.
-  void InitializeProcessing(ir::IRContext* c) override;
-
   // Attempts to scalarize all appropriate function scope variables in
   // |function|. Returns SuccessWithChange if any changes are mode.
   Status ProcessFunction(ir::Function* function);

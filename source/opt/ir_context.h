@@ -20,6 +20,7 @@
 #include "decoration_manager.h"
 #include "def_use_manager.h"
 #include "dominator_analysis.h"
+#include "feature_manager.h"
 #include "module.h"
 #include "type_manager.h"
 
@@ -370,6 +371,14 @@ class IRContext {
   // Return the next available SSA id and increment it.
   inline uint32_t TakeNextId() { return module()->TakeNextIdBound(); }
 
+  opt::FeatureManager* get_feature_mgr() {
+    if (!feature_mgr_.get()) {
+      AnalyzeFeatures();
+    }
+    return feature_mgr_.get();
+  }
+
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -400,6 +409,11 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisCFG;
   }
 
+  void AnalyzeFeatures() {
+    feature_mgr_.reset(new opt::FeatureManager());
+    feature_mgr_->Analyze(module());
+  }
+
   // Scans a module looking for it capabilities, and initializes combinator_ops_
   // accordingly.
   void InitializeCombinators();
@@ -428,6 +442,7 @@ class IRContext {
 
   // The instruction decoration manager for |module_|.
   std::unique_ptr<opt::analysis::DecorationManager> decoration_mgr_;
+  std::unique_ptr<opt::FeatureManager> feature_mgr_;
 
   // A map from instructions the the basic block they belong to. This mapping is
   // built on-demand when get_instr_block() is called.

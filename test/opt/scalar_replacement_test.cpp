@@ -985,6 +985,156 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, false);
 }
+
+TEST_F(ScalarReplacementTest, DonTouchAliasedDecoration) {
+  const std::string text = R"(
+;
+; CHECK: [[struct:%\w+]] = OpTypeStruct
+; CHECK: [[struct_ptr:%\w+]] = OpTypePointer Function [[struct]]
+; CHECK: OpLabel
+; CHECK-NEXT: OpVariable [[struct_ptr]]
+; CHECK-NOT: OpVariable
+;
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %func "aliased"
+OpDecorate %var Aliased
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%struct1 = OpTypeStruct %uint
+%uint_ptr = OpTypePointer Function %uint
+%struct1_ptr = OpTypePointer Function %struct1
+%uint_0 = OpConstant %uint 0
+%func = OpTypeFunction %void
+%1 = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct1_ptr Function
+%3 = OpAccessChain %uint_ptr %var %uint_0
+%4 = OpLoad %uint %3
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
+}
+
+TEST_F(ScalarReplacementTest, CopyRestrictDecoration) {
+  const std::string text = R"(
+;
+; CHECK: OpName
+; CHECK-NEXT: OpDecorate [[var0:%\w+]] Restrict
+; CHECK-NEXT: OpDecorate [[var1:%\w+]] Restrict
+; CHECK: [[int:%\w+]] = OpTypeInt
+; CHECK: [[struct:%\w+]] = OpTypeStruct
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer Function [[int]]
+; CHECK: [[struct_ptr:%\w+]] = OpTypePointer Function [[struct]]
+; CHECK: OpLabel
+; CHECK-NEXT: [[var1]] = OpVariable [[int_ptr]]
+; CHECK-NEXT: [[var0]] = OpVariable [[int_ptr]]
+; CHECK-NOT: OpVariable [[struct_ptr]]
+;
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %func "restrict"
+OpDecorate %var Restrict
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%struct1 = OpTypeStruct %uint %uint
+%uint_ptr = OpTypePointer Function %uint
+%struct1_ptr = OpTypePointer Function %struct1
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%func = OpTypeFunction %void
+%1 = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct1_ptr Function
+%3 = OpAccessChain %uint_ptr %var %uint_0
+%4 = OpLoad %uint %3
+%5 = OpAccessChain %uint_ptr %var %uint_1
+%6 = OpLoad %uint %5
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
+}
+
+TEST_F(ScalarReplacementTest, DontClobberDecoratesOnSubtypes) {
+  const std::string text = R"(
+;
+; CHECK: OpDecorate [[array:%\w+]] ArrayStride 1
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[array]] = OpTypeArray [[uint]]
+; CHECK: [[array_ptr:%\w+]] = OpTypePointer Function [[array]]
+; CHECK: OpLabel
+; CHECK-NEXT: OpVariable [[array_ptr]] Function
+; CHECK-NOT: OpVariable
+;
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %func "array_stride"
+OpDecorate %array ArrayStride 1
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%array = OpTypeArray %uint %uint_1
+%struct1 = OpTypeStruct %array
+%uint_ptr = OpTypePointer Function %uint
+%struct1_ptr = OpTypePointer Function %struct1
+%uint_0 = OpConstant %uint 0
+%func = OpTypeFunction %void %uint
+%1 = OpFunction %void None %func
+%param = OpFunctionParameter %uint
+%2 = OpLabel
+%var = OpVariable %struct1_ptr Function
+%3 = OpAccessChain %uint_ptr %var %uint_0 %param
+%4 = OpLoad %uint %3
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
+}
+
+TEST_F(ScalarReplacementTest, DontCopyMemberDecorate) {
+  const std::string text = R"(
+;
+; CHECK-NOT: OpDecorate
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct:%\w+]] = OpTypeStruct [[uint]]
+; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
+; CHECK: [[struct_ptr:%\w+]] = OpTypePointer Function [[struct]]
+; CHECK: OpLabel
+; CHECK-NEXT: OpVariable [[uint_ptr]] Function
+; CHECK-NOT: OpVariable
+;
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %func "member_decorate"
+OpMemberDecorate %struct1 0 Offset 1
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%struct1 = OpTypeStruct %uint
+%uint_ptr = OpTypePointer Function %uint
+%struct1_ptr = OpTypePointer Function %struct1
+%uint_0 = OpConstant %uint 0
+%func = OpTypeFunction %void %uint
+%1 = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct1_ptr Function
+%3 = OpAccessChain %uint_ptr %var %uint_0
+%4 = OpLoad %uint %3
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 }  // namespace
