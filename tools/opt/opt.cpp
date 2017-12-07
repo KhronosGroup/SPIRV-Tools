@@ -140,6 +140,9 @@ Options (in lexicographical order):
                Exhaustively inline all function calls in entry point call tree
                functions. Currently does not inline calls to functions with
                early return in a loop.
+  --local-redundancy-elimination
+               Looks for instructions in the same basic block that compute the
+               same value, and deletes the redundant ones.
   --merge-blocks
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
@@ -149,11 +152,6 @@ Options (in lexicographical order):
                a new basic block containing an unified return.
                This pass does not currently support structured control flow. It
                makes no changes if the shader capability is detected.
-  --strength-reduction
-               Replaces instructions with equivalent and less expensive ones.
-  --local-redundancy-elimination
-               Looks for instructions in the same basic block that compute the
-               same value, and deletes the redundant ones.
   -O
                Optimize for performance. Apply a sequence of transformations
                in an attempt to improve the performance of the generated
@@ -211,6 +209,12 @@ Options (in lexicographical order):
                blank spaces, and in each pair, spec id and default value must
                be separated with colon ':' without any blank spaces in between.
                e.g.: --set-spec-const-default-value "1:100 2:400"
+  --skip-validation
+               Will not validate the SPIR-V before optimizing.  If the SPIR-V
+               is invalid, the optimizer may fail or generate incorrect code.
+               This options should be used rarely, and with caution.
+  --strength-reduction
+               Replaces instructions with equivalent and less expensive ones.
   --strip-debug
                Remove all debug instructions.
   --unify-const
@@ -260,7 +264,7 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
 
 OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
                      const char** in_file, const char** out_file,
-                     spv_validator_options options);
+                     spv_validator_options options, bool* skip_validator);
 
 // Parses and handles the -Oconfig flag. |prog_name| contains the name of
 // the spirv-opt binary (used to build a new argv vector for the recursive
@@ -293,8 +297,9 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
     new_argv[i] = flags[i].c_str();
   }
 
+  bool skip_validator = false;
   return ParseFlags(static_cast<int>(flags.size()), new_argv, optimizer,
-                    in_file, out_file, nullptr);
+                    in_file, out_file, nullptr, &skip_validator);
 }
 
 // Parses command-line flags. |argc| contains the number of command-line flags.
@@ -307,7 +312,7 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
 // success.
 OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
                      const char** in_file, const char** out_file,
-                     spv_validator_options options) {
+                     spv_validator_options options, bool* skip_validator) {
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
@@ -396,6 +401,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateRedundancyEliminationPass());
       } else if (0 == strcmp(cur_arg, "--relax-store-struct")) {
         options->relax_struct_store = true;
+      } else if (0 == strcmp(cur_arg, "--skip-validation")) {
+        *skip_validator = true;
       } else if (0 == strcmp(cur_arg, "-O")) {
         optimizer->RegisterPerformancePasses();
       } else if (0 == strcmp(cur_arg, "-Os")) {
@@ -439,6 +446,7 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
 int main(int argc, const char** argv) {
   const char* in_file = nullptr;
   const char* out_file = nullptr;
+  bool skip_validator = false;
 
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;
   spv_validator_options options = spvValidatorOptionsCreate();
@@ -451,8 +459,8 @@ int main(int argc, const char** argv) {
               << std::endl;
   });
 
-  OptStatus status =
-      ParseFlags(argc, argv, &optimizer, &in_file, &out_file, options);
+  OptStatus status = ParseFlags(argc, argv, &optimizer, &in_file, &out_file,
+                                options, &skip_validator);
 
   if (status.action == OPT_STOP) {
     return status.code;
@@ -468,22 +476,24 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  // Let's do validation first.
-  spv_context context = spvContextCreate(target_env);
-  spv_diagnostic diagnostic = nullptr;
-  spv_const_binary_t binary_struct = {binary.data(), binary.size()};
-  spv_result_t error =
-      spvValidateWithOptions(context, options, &binary_struct, &diagnostic);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
+  if (!skip_validator) {
+    // Let's do validation first.
+    spv_context context = spvContextCreate(target_env);
+    spv_diagnostic diagnostic = nullptr;
+    spv_const_binary_t binary_struct = {binary.data(), binary.size()};
+    spv_result_t error =
+        spvValidateWithOptions(context, options, &binary_struct, &diagnostic);
+    if (error) {
+      spvDiagnosticPrint(diagnostic);
+      spvDiagnosticDestroy(diagnostic);
+      spvValidatorOptionsDestroy(options);
+      spvContextDestroy(context);
+      return error;
+    }
     spvDiagnosticDestroy(diagnostic);
     spvValidatorOptionsDestroy(options);
     spvContextDestroy(context);
-    return error;
   }
-  spvDiagnosticDestroy(diagnostic);
-  spvValidatorOptionsDestroy(options);
-  spvContextDestroy(context);
 
   // By using the same vector as input and output, we save time in the case
   // that there was no change.
