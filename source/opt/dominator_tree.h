@@ -78,6 +78,8 @@ class DominatorTree {
   DominatorTree() : postdominator_(false) {}
   explicit DominatorTree(bool post) : postdominator_(post) {}
 
+  // Depth first iterators.
+  // Traverse the dominator tree in a depth first pre-order.
   iterator begin() { return iterator(GetRoot()); }
   iterator end() { return iterator(); }
   const_iterator begin() const { return cbegin(); }
@@ -154,6 +156,7 @@ class DominatorTree {
   }
 
   // Applies the std::function |func| to all nodes in the dominator tree.
+  // Tree nodes are visited in a depth first pre-order.
   bool Visit(std::function<bool(DominatorTreeNode*)> func) {
     for (auto n : *this) {
       if (!func(&n)) return false;
@@ -162,6 +165,7 @@ class DominatorTree {
   }
 
   // Applies the std::function |func| to all nodes in the dominator tree.
+  // Tree nodes are visited in a depth first pre-order.
   bool Visit(std::function<bool(const DominatorTreeNode*)> func) const {
     for (auto n : *this) {
       if (!func(&n)) return false;
