@@ -94,9 +94,10 @@ spv_result_t AtomicsPass(ValidationState_t& _,
           break;
         default:
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << spvOpcodeString(opcode)
-              << ": expected Pointer Storage Class to be Uniform, "
-              << "Workgroup, CrossWorkgroup, Generic, AtomicCounter or Image";
+                 << spvOpcodeString(opcode)
+                 << ": expected Pointer Storage Class to be Uniform, "
+                 << "Workgroup, CrossWorkgroup, Generic, AtomicCounter or "
+                    "Image";
       }
 
       if (opcode == SpvOpAtomicFlagTestAndSet ||
