@@ -644,6 +644,84 @@ OpFunctionEnd
                                                        true);
 }
 
+TEST_F(LocalSingleStoreElimTest, OptInitializedVariableLikeStore) {
+  // Initialized variable f is optimized like it was a store.
+  // Note: The SPIR-V was edited to turn the store to f to an
+  // an initialization.
+  //
+  // #version 140
+  //
+  // void main()
+  // {
+  //     float f = 0.0;
+  //     gl_FragColor = vec4(f);
+  // }
+
+  const std::string predefs_before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %f "f"
+OpName %gl_FragColor "gl_FragColor"
+OpDecorate %gl_FragColor Location 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %gl_FragColor "gl_FragColor"
+OpDecorate %gl_FragColor Location 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %6
+%12 = OpLabel
+%f = OpVariable %_ptr_Function_float Function %float_0
+%13 = OpLoad %float %f
+%14 = OpCompositeConstruct %v4float %13 %13 %13 %13
+OpStore %gl_FragColor %14
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %6
+%12 = OpLabel
+%14 = OpCompositeConstruct %v4float %float_0 %float_0 %float_0 %float_0
+OpStore %gl_FragColor %14
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+      predefs_before + before, predefs_after + after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Other types
