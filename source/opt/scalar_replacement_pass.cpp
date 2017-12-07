@@ -489,13 +489,7 @@ bool ScalarReplacementPass::CanReplaceVariable(
     return false;
 
   const ir::Instruction* typeInst = GetStorageType(varInst);
-  if (!CheckType(typeInst)) return false;
-
-  if (!CheckAnnotations(varInst)) return false;
-
-  if (!CheckUses(varInst)) return false;
-
-  return true;
+  return CheckType(typeInst) && CheckAnnotations(varInst) && CheckUses(varInst);
 }
 
 bool ScalarReplacementPass::CheckType(const ir::Instruction* typeInst) const {
@@ -579,9 +573,8 @@ bool ScalarReplacementPass::CheckAnnotations(
 }
 
 bool ScalarReplacementPass::CheckUses(const ir::Instruction* inst) const {
-  bool ok = true;
   VariableStats stats = {0, 0};
-  CheckUses(inst, &stats, &ok);
+  bool ok = CheckUses(inst, &stats);
 
   // TODO(alanbaker): Extend this to some meaningful heuristics about when
   // SRoA is valuable.
@@ -590,10 +583,11 @@ bool ScalarReplacementPass::CheckUses(const ir::Instruction* inst) const {
   return ok;
 }
 
-void ScalarReplacementPass::CheckUses(const ir::Instruction* inst,
-                                      VariableStats* stats, bool* ok) const {
+bool ScalarReplacementPass::CheckUses(const ir::Instruction* inst,
+                                      VariableStats* stats) const {
+  bool ok = true;
   get_def_use_mgr()->ForEachUse(
-      inst, [this, stats, ok](const ir::Instruction* user, uint32_t index) {
+      inst, [this, stats, &ok](const ir::Instruction* user, uint32_t index) {
         // Annotations are check as a group separately.
         if (!ir::IsAnnotationInst(user->opcode())) {
           switch (user->opcode()) {
@@ -603,58 +597,62 @@ void ScalarReplacementPass::CheckUses(const ir::Instruction* inst,
                 uint32_t id = user->GetSingleWordOperand(3u);
                 const ir::Instruction* opInst = get_def_use_mgr()->GetDef(id);
                 if (!ir::IsCompileTimeConstantInst(opInst->opcode())) {
-                  *ok = false;
+                  ok = false;
                 } else {
-                  CheckUsesRelaxed(user, ok);
+                  if (!CheckUsesRelaxed(user)) ok = false;
                 }
                 stats->num_partial_accesses++;
               } else {
-                *ok = false;
+                ok = false;
               }
               break;
             case SpvOpLoad:
-              if (!CheckLoad(user, index)) *ok = false;
+              if (!CheckLoad(user, index)) ok = false;
               stats->num_full_accesses++;
               break;
             case SpvOpStore:
-              if (!CheckStore(user, index)) *ok = false;
+              if (!CheckStore(user, index)) ok = false;
               stats->num_full_accesses++;
               break;
             case SpvOpName:
             case SpvOpMemberName:
               break;
             default:
-              *ok = false;
+              ok = false;
               break;
           }
         }
       });
+
+  return ok;
 }
 
-void ScalarReplacementPass::CheckUsesRelaxed(const ir::Instruction* inst,
-                                             bool* ok) const {
+bool ScalarReplacementPass::CheckUsesRelaxed(const ir::Instruction* inst) const {
+  bool ok = true;
   get_def_use_mgr()->ForEachUse(
-      inst, [this, ok](const ir::Instruction* user, uint32_t index) {
+      inst, [this, &ok](const ir::Instruction* user, uint32_t index) {
         switch (user->opcode()) {
           case SpvOpAccessChain:
           case SpvOpInBoundsAccessChain:
             if (index != 2u) {
-              *ok = false;
+              ok = false;
             } else {
-              CheckUsesRelaxed(user, ok);
+              if (!CheckUsesRelaxed(user)) ok = false;
             }
             break;
           case SpvOpLoad:
-            if (!CheckLoad(user, index)) *ok = false;
+            if (!CheckLoad(user, index)) ok = false;
             break;
           case SpvOpStore:
-            if (!CheckStore(user, index)) *ok = false;
+            if (!CheckStore(user, index)) ok = false;
             break;
           default:
-            *ok = false;
+            ok = false;
             break;
         }
       });
+
+  return ok;
 }
 
 bool ScalarReplacementPass::CheckLoad(const ir::Instruction* inst,

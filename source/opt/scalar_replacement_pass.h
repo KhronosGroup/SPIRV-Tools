@@ -88,11 +88,10 @@ class ScalarReplacementPass : public Pass {
   //
   // This version tracks some stats about the current OpVariable. These stats
   // are used to drive heuristics about when to scalarize.
-  void CheckUses(const ir::Instruction* inst, VariableStats* stats,
-                 bool* ok) const;
+  bool CheckUses(const ir::Instruction* inst, VariableStats* stats) const;
 
   // Relaxed helper function for |CheckUses|.
-  void CheckUsesRelaxed(const ir::Instruction* inst, bool* ok) const;
+  bool CheckUsesRelaxed(const ir::Instruction* inst) const;
 
   // Transfers appropriate decorations from |source| to |replacements|.
   void TransferAnnotations(const ir::Instruction* source,
