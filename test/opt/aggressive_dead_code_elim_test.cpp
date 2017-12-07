@@ -2831,6 +2831,135 @@ OpFunctionEnd
       predefs_before + func_before, predefs_after + func_after, true, true);
 }
 
+TEST_F(AggressiveDCETest, NoEliminateLiveNestedLoopWithIf) {
+  // Note: SPIR-V optimized
+  //
+  // #version 430
+  // 
+  // layout(std430) buffer U_t
+  // {
+  //     float g_F[10][10];
+  // };
+  // 
+  // layout(location = 0)out float o;
+  // 
+  // void main(void)
+  // {
+  //     float s = 0.0;
+  //     for (int i=0; i<10; i++) {
+  //         for (int j=0; j<10; j++) {
+  //             float t = g_F[i][j];
+  //             if (t > 0.0)
+  //                 s += t;
+  //         }
+  //     }
+  //     o = s;
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %o
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpName %main "main"
+OpName %s "s"
+OpName %i "i"
+OpName %j "j"
+OpName %U_t "U_t"
+OpMemberName %U_t 0 "g_F"
+OpName %_ ""
+OpName %o "o"
+OpDecorate %_arr_float_uint_10 ArrayStride 4
+OpDecorate %_arr__arr_float_uint_10_uint_10 ArrayStride 40
+OpMemberDecorate %U_t 0 Offset 0
+OpDecorate %U_t BufferBlock
+OpDecorate %_ DescriptorSet 0
+OpDecorate %o Location 0
+%void = OpTypeVoid
+%12 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%uint = OpTypeInt 32 0
+%uint_10 = OpConstant %uint 10
+%_arr_float_uint_10 = OpTypeArray %float %uint_10
+%_arr__arr_float_uint_10_uint_10 = OpTypeArray %_arr_float_uint_10 %uint_10
+%U_t = OpTypeStruct %_arr__arr_float_uint_10_uint_10
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+%_ = OpVariable %_ptr_Uniform_U_t Uniform
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%o = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %12
+%27 = OpLabel
+%s = OpVariable %_ptr_Function_float Function
+%i = OpVariable %_ptr_Function_int Function
+%j = OpVariable %_ptr_Function_int Function
+OpStore %s %float_0
+OpStore %i %int_0
+OpBranch %28
+%28 = OpLabel
+OpLoopMerge %29 %30 None
+OpBranch %31
+%31 = OpLabel
+%32 = OpLoad %int %i
+%33 = OpSLessThan %bool %32 %int_10
+OpBranchConditional %33 %34 %29
+%34 = OpLabel
+OpStore %j %int_0
+OpBranch %35
+%35 = OpLabel
+OpLoopMerge %36 %37 None
+OpBranch %38
+%38 = OpLabel
+%39 = OpLoad %int %j
+%40 = OpSLessThan %bool %39 %int_10
+OpBranchConditional %40 %41 %36
+%41 = OpLabel
+%42 = OpLoad %int %i
+%43 = OpLoad %int %j
+%44 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %42 %43
+%45 = OpLoad %float %44
+%46 = OpFOrdGreaterThan %bool %45 %float_0
+OpSelectionMerge %47 None
+OpBranchConditional %46 %48 %47
+%48 = OpLabel
+%49 = OpLoad %float %s
+%50 = OpFAdd %float %49 %45
+OpStore %s %50
+OpBranch %47
+%47 = OpLabel
+OpBranch %37
+%37 = OpLabel
+%51 = OpLoad %int %j
+%52 = OpIAdd %int %51 %int_1
+OpStore %j %52
+OpBranch %35
+%36 = OpLabel
+OpBranch %30
+%30 = OpLabel
+%53 = OpLoad %int %i
+%54 = OpIAdd %int %53 %int_1
+OpStore %i %54
+OpBranch %28
+%29 = OpLabel
+%55 = OpLoad %float %s
+OpStore %o %55
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
