@@ -409,6 +409,7 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisCFG;
   }
 
+  // Analyzes the features in the owned module. Builds the manager if required.
   void AnalyzeFeatures() {
     feature_mgr_.reset(new opt::FeatureManager());
     feature_mgr_->Analyze(module());

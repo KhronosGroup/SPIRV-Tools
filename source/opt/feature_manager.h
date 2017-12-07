@@ -21,17 +21,21 @@
 namespace spvtools {
 namespace opt {
 
+// Tracks features enabled by a module. The IRContext has a FeatureManager.
 class FeatureManager {
  public:
   FeatureManager() = default;
 
+  // Returns true if |ext| is an enabled extension in the module.
   bool HasExtension(libspirv::Extension ext) const {
     return extensions_.Contains(ext);
   }
 
+  // Analyzes |module| and records enabled extensions.
   void Analyze(ir::Module* module);
  private:
 
+  // The enabled extensions.
   libspirv::ExtensionSet extensions_;
 };
 
