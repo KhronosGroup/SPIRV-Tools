@@ -28,7 +28,7 @@ const uint32_t kTypePointerTypeIdInIdx = 1;
 
 }  // namespace
 
-Pass::Pass() : consumer_(nullptr), next_id_(0), context_(nullptr) {}
+Pass::Pass() : consumer_(nullptr), context_(nullptr) {}
 
 void Pass::AddCalls(ir::Function* func, std::queue<uint32_t>* todo) {
   for (auto bi = func->begin(); bi != func->end(); ++bi)
