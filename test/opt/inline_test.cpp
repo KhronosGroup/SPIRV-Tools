@@ -2498,6 +2498,57 @@ OpFunctionEnd
       predefs + before + nonEntryFuncs, predefs + after + nonEntryFuncs, false,
       true);
 }
+
+TEST_F(InlineTest, DeleteName) {
+  // Test that the name of the result id of the call is deleted.
+  const std::string before =
+      R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpName %main "main"
+               OpName %main_entry "main_entry"
+               OpName %foo_result "foo_result"
+               OpName %void_fn "void_fn"
+               OpName %foo "foo"
+               OpName %foo_entry "foo_entry"
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+        %foo = OpFunction %void None %void_fn
+  %foo_entry = OpLabel
+               OpReturn
+               OpFunctionEnd
+       %main = OpFunction %void None %void_fn
+ %main_entry = OpLabel
+ %foo_result = OpFunctionCall %void %foo
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpName %main "main"
+OpName %main_entry "main_entry"
+OpName %void_fn "void_fn"
+OpName %foo "foo"
+OpName %foo_entry "foo_entry"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%foo_entry = OpLabel
+OpReturn
+OpFunctionEnd
+%main = OpFunction %void None %void_fn
+%main_entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(before, after, false, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules

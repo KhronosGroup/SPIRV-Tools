@@ -33,6 +33,12 @@ bool InlineExhaustivePass::InlineExhaustive(ir::Function* func) {
         // succeeding phis at new last block.
         if (newBlocks.size() > 1) UpdateSucceedingPhis(newBlocks);
         // Replace old calling block with new block(s).
+
+        // We need to kill the name and decorations for the call, which
+        // will be deleted.  Other instructions in the block will be moved to
+        // newBlocks.  We don't need to do anything with those.
+        context()->KillNamesAndDecorates(&*ii);
+
         bi = bi.Erase();
         bi = bi.InsertBefore(&newBlocks);
         // Insert new function variables.
