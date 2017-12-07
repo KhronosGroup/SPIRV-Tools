@@ -18,6 +18,7 @@
 #include "extensions.h"
 #include "make_unique.h"
 #include "reflect.h"
+#include "types.h"
 
 #include <queue>
 
@@ -144,7 +145,8 @@ void ScalarReplacementPass::ReplaceWholeLoad(
         new ir::Instruction(context(), SpvOpLoad, type->result_id(), loadId,
                             std::initializer_list<ir::Operand>{
                                 {SPV_OPERAND_TYPE_ID, {var->result_id()}}}));
-    // Copy memory access attributes.
+    // Copy memory access attributes which start at index 1. Index 0 is the
+    // pointer to load.
     for (uint32_t i = 1; i < load->NumInOperands(); ++i) {
       ir::Operand copy(load->GetInOperand(i));
       newLoad->AddOperand(std::move(copy));
@@ -198,7 +200,8 @@ void ScalarReplacementPass::ReplaceWholeStore(
                             std::initializer_list<ir::Operand>{
                                 {SPV_OPERAND_TYPE_ID, {var->result_id()}},
                                 {SPV_OPERAND_TYPE_ID, {extractId}}}));
-    // Copy memory access attributes.
+    // Copy memory access attributes which start at index 2. Index 0 is the
+    // pointer and index 1 is the data.
     for (uint32_t i = 2; i < store->NumInOperands(); ++i) {
       ir::Operand copy(store->GetInOperand(i));
       newStore->AddOperand(std::move(copy));
@@ -332,6 +335,7 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
   auto iter = pointee_to_pointer_.find(id);
   if (iter != pointee_to_pointer_.end()) return iter->second;
 
+  // TODO(alanbaker): Make the type manager useful and then replace this code.
   uint32_t ptrId = 0;
   for (auto global : context()->types_values()) {
     if (global.opcode() == SpvOpTypePointer &&
@@ -366,34 +370,6 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
   return ptrId;
 }
 
-uint32_t ScalarReplacementPass::GetIntId() {
-  if (int_id_ != 0) return int_id_;
-
-  uint32_t id = 0;
-  for (auto type : context()->types_values()) {
-    if (type.opcode() == SpvOpTypeInt) {
-      if (GetIntegerLiteral(type.GetInOperand(0u)) == 32 &&
-          (GetIntegerLiteral(type.GetInOperand(1u)) == 0 ||
-           GetIntegerLiteral(type.GetInOperand(1u)) == 1)) {
-        id = type.result_id();
-        break;
-      }
-    }
-  }
-  if (id != 0) return id;
-
-  id = TakeNextId();
-  context()->AddType(MakeUnique<ir::Instruction>(
-      context(), SpvOpTypeInt, 0, id,
-      std::initializer_list<ir::Operand>{
-          {SPV_OPERAND_TYPE_LITERAL_INTEGER, {32}},
-          {SPV_OPERAND_TYPE_LITERAL_INTEGER, {0}}}));
-  ir::Instruction* integer = &*--context()->types_values_end();
-  get_def_use_mgr()->AnalyzeInstDef(integer);
-
-  return id;
-}
-
 void ScalarReplacementPass::GetOrCreateInitialValue(ir::Instruction* source,
                                                     uint32_t index,
                                                     ir::Instruction* newVar) {
@@ -404,6 +380,7 @@ void ScalarReplacementPass::GetOrCreateInitialValue(ir::Instruction* source,
   uint32_t storageId = GetStorageType(newVar)->result_id();
   ir::Instruction* init = get_def_use_mgr()->GetDef(initId);
   uint32_t newInitId = 0;
+  // TODO(dnovillo): Refactor this with constant propagation.
   if (init->opcode() == SpvOpConstantNull) {
     // Initialize to appropriate NULL.
     auto iter = type_to_null_.find(storageId);

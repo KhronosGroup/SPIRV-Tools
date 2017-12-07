@@ -17,6 +17,7 @@
 
 #include "function.h"
 #include "pass.h"
+#include "type_manager.h"
 
 #include <queue>
 
@@ -168,11 +169,6 @@ class ScalarReplacementPass : public Pass {
   void GetOrCreateInitialValue(ir::Instruction* source, uint32_t index,
                                ir::Instruction* newVar);
 
-  // Returns the result id of a 32 bit integer.
-  //
-  // Searches all types for a decoration-less integer before creating one.
-  uint32_t GetIntId();
-
   // Replaces the load to the entire composite.
   //
   // Generates a load for each replacement variable and then creates a new
@@ -201,12 +197,6 @@ class ScalarReplacementPass : public Pass {
 
   // Maps type id to OpConstantNull for that type.
   std::unordered_map<uint32_t, uint32_t> type_to_null_;
-
-  // Cached integer type id
-  uint32_t int_id_;
-
-  // Indicates whether the variable pointers extension has been enabled.
-  bool enables_variable_pointers_;
 };
 
 }  // namespace opt

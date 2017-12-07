@@ -33,13 +33,13 @@ class FeatureManager {
 
   // Analyzes |module| and records enabled extensions.
   void Analyze(ir::Module* module);
- private:
 
+ private:
   // The enabled extensions.
   libspirv::ExtensionSet extensions_;
 };
 
-} // namespace opt
-} // namespace spvtools
+}  // namespace opt
+}  // namespace spvtools
 
-#endif // LIBSPIRV_OPT_FEATURE_MANAGER_H_
+#endif  // LIBSPIRV_OPT_FEATURE_MANAGER_H_
