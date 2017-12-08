@@ -16,10 +16,12 @@
 #define SPIRV_TOOLS_IR_CONTEXT_H
 
 #include "cfg.h"
+#include "constants.h"
 #include "decoration_manager.h"
 #include "def_use_manager.h"
 #include "dominator_analysis.h"
 #include "module.h"
+#include "type_manager.h"
 
 #include <algorithm>
 #include <iostream>
@@ -59,13 +61,15 @@ class IRContext {
   friend inline Analysis operator<<(Analysis a, int shift);
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
-  // Create an |IRContext| that contains an owned |Module|
+  // Creates an |IRContext| that contains an owned |Module|
   IRContext(spvtools::MessageConsumer c)
       : unique_id_(0),
         module_(new Module()),
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone) {
+        valid_analyses_(kAnalysisNone),
+        constant_mgr_(nullptr),
+        type_mgr_(nullptr) {
     module_->SetContext(this);
   }
 
@@ -74,14 +78,13 @@ class IRContext {
         module_(std::move(m)),
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone) {
+        valid_analyses_(kAnalysisNone),
+        constant_mgr_(nullptr),
+        type_mgr_(nullptr) {
     module_->SetContext(this);
     InitializeCombinators();
   }
   Module* module() const { return module_.get(); }
-
-  inline void SetIdBound(uint32_t i);
-  inline uint32_t IdBound() const;
 
   // Returns a vector of pointers to constant-creation instructions in this
   // context.
@@ -203,6 +206,24 @@ class IRContext {
     }
     return decoration_mgr_.get();
   };
+
+  // Returns a pointer to the constant manager.  If no constant manager has been
+  // created yet, it creates one.  NOTE: Once created, the constant manager
+  // remains active and it is never re-built.
+  opt::analysis::ConstantManager* get_constant_mgr() {
+    if (!constant_mgr_)
+      constant_mgr_.reset(new opt::analysis::ConstantManager(this));
+    return constant_mgr_.get();
+  }
+
+  // Returns a pointer to the type manager.  If no type manager has been created
+  // yet, it creates one. NOTE: Once created, the type manager remains active it
+  // is never re-built.
+  opt::analysis::TypeManager* get_type_mgr() {
+    if (!type_mgr_)
+      type_mgr_.reset(new opt::analysis::TypeManager(consumer(), *module()));
+    return type_mgr_.get();
+  }
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
@@ -327,6 +348,9 @@ class IRContext {
     post_dominator_trees_.erase(f);
   }
 
+  // Return the next available SSA id and increment it.
+  inline uint32_t TakeNextId() { return module()->TakeNextIdBound(); }
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -367,16 +391,23 @@ class IRContext {
   // Add the combinator opcode for the given extension to combinator_ops_.
   void AddCombinatorsForExtension(ir::Instruction* extension);
 
-  // An unique identifier for this instruction. Can be used to order
+  // An unique identifier for instructions in |module_|. Can be used to order
   // instructions in a container.
   //
   // This member is initialized to 0, but always issues this value plus one.
   // Therefore, 0 is not a valid unique id for an instruction.
   uint32_t unique_id_;
 
+  // The module being processed within this IR context.
   std::unique_ptr<Module> module_;
+
+  // A message consumer for diagnostics.
   spvtools::MessageConsumer consumer_;
+
+  // The def-use manager for |module_|.
   std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;
+
+  // The instruction decoration manager for |module_|.
   std::unique_ptr<opt::analysis::DecorationManager> decoration_mgr_;
 
   // A map from instructions the the basic block they belong to. This mapping is
@@ -401,6 +432,12 @@ class IRContext {
   std::map<const ir::Function*, opt::DominatorAnalysis> dominator_trees_;
   std::map<const ir::Function*, opt::PostDominatorAnalysis>
       post_dominator_trees_;
+
+  // Constant manager for |module_|.
+  std::unique_ptr<opt::analysis::ConstantManager> constant_mgr_;
+
+  // Type manager for |module_|.
+  std::unique_ptr<opt::analysis::TypeManager> type_mgr_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,
@@ -426,10 +463,6 @@ inline ir::IRContext::Analysis& operator<<=(ir::IRContext::Analysis& a,
   a = static_cast<ir::IRContext::Analysis>(static_cast<int>(a) << shift);
   return a;
 }
-
-void IRContext::SetIdBound(uint32_t i) { module_->SetIdBound(i); }
-
-uint32_t IRContext::IdBound() const { return module()->IdBound(); }
 
 std::vector<Instruction*> spvtools::ir::IRContext::GetConstants() {
   return module()->GetConstants();

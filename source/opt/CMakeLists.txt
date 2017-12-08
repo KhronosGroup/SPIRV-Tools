@@ -75,6 +75,7 @@ add_library(SPIRV-Tools-opt
   cfg.cpp
   common_uniform_elim_pass.cpp
   compact_ids_pass.cpp
+  constants.cpp
   dead_branch_elim_pass.cpp
   dead_variable_elimination.cpp
   decoration_manager.cpp

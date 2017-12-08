@@ -52,39 +52,57 @@ class Module {
 
   // Sets the header to the given |header|.
   void SetHeader(const ModuleHeader& header) { header_ = header; }
+
   // Sets the Id bound.
   void SetIdBound(uint32_t bound) { header_.bound = bound; }
+
   // Returns the Id bound.
   uint32_t IdBound() { return header_.bound; }
+
+  // Returns the current Id bound and increases it to the next available value.
+  uint32_t TakeNextIdBound() { return header_.bound++; }
+
   // Appends a capability instruction to this module.
   inline void AddCapability(std::unique_ptr<Instruction> c);
+
   // Appends an extension instruction to this module.
   inline void AddExtension(std::unique_ptr<Instruction> e);
+
   // Appends an extended instruction set instruction to this module.
   inline void AddExtInstImport(std::unique_ptr<Instruction> e);
+
   // Set the memory model for this module.
   inline void SetMemoryModel(std::unique_ptr<Instruction> m);
+
   // Appends an entry point instruction to this module.
   inline void AddEntryPoint(std::unique_ptr<Instruction> e);
+
   // Appends an execution mode instruction to this module.
   inline void AddExecutionMode(std::unique_ptr<Instruction> e);
+
   // Appends a debug 1 instruction (excluding OpLine & OpNoLine) to this module.
   // "debug 1" instructions are the ones in layout section 7.a), see section
   // 2.4 Logical Layout of a Module from the SPIR-V specification.
   inline void AddDebug1Inst(std::unique_ptr<Instruction> d);
+
   // Appends a debug 2 instruction (excluding OpLine & OpNoLine) to this module.
   // "debug 2" instructions are the ones in layout section 7.b), see section
   // 2.4 Logical Layout of a Module from the SPIR-V specification.
   inline void AddDebug2Inst(std::unique_ptr<Instruction> d);
+
   // Appends a debug 3 instruction (OpModuleProcessed) to this module.
   // This is due to decision by the SPIR Working Group, pending publication.
   inline void AddDebug3Inst(std::unique_ptr<Instruction> d);
+
   // Appends an annotation instruction to this module.
   inline void AddAnnotationInst(std::unique_ptr<Instruction> a);
+
   // Appends a type-declaration instruction to this module.
   inline void AddType(std::unique_ptr<Instruction> t);
+
   // Appends a constant, global variable, or OpUndef instruction to this module.
   inline void AddGlobalValue(std::unique_ptr<Instruction> v);
+
   // Appends a function to this module.
   inline void AddFunction(std::unique_ptr<Function> f);
 
