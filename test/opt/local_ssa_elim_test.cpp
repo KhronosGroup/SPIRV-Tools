@@ -1510,7 +1510,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
-      predefs_before + func_before, predefs_after  + func_after, true, true);
+      predefs_before + func_before, predefs_after + func_after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
