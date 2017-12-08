@@ -145,10 +145,12 @@ void LocalSingleStoreElimPass::CalculateImmediateDominators(
   augmented_predecessors_map_.clear();
   successors_map_[cfg()->pseudo_exit_block()] = {};
   predecessors_map_[cfg()->pseudo_entry_block()] = {};
-  auto succ_func =
-      [this](const ir::BasicBlock* b) { return &successors_map_[b]; };
-  auto pred_func =
-      [this](const ir::BasicBlock* b) { return &predecessors_map_[b]; };
+  auto succ_func = [this](const ir::BasicBlock* b) {
+    return &successors_map_[b];
+  };
+  auto pred_func = [this](const ir::BasicBlock* b) {
+    return &predecessors_map_[b];
+  };
   CFA<ir::BasicBlock>::ComputeAugmentedCFG(
       ordered_blocks, cfg()->pseudo_entry_block(), cfg()->pseudo_exit_block(),
       &augmented_successors_map_, &augmented_predecessors_map_, succ_func,
@@ -212,28 +214,28 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
 
     // Define the function that will update the data structures as instructions
     // are deleted.
-    auto update_function =
-        [&dead_instructions, this](ir::Instruction* other_inst) {
-          // Update dead_instructions.
-          auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
-                             other_inst);
-          if (i != dead_instructions.end()) {
-            dead_instructions.erase(i);
-          }
+    auto update_function = [&dead_instructions,
+                            this](ir::Instruction* other_inst) {
+      // Update dead_instructions.
+      auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
+                         other_inst);
+      if (i != dead_instructions.end()) {
+        dead_instructions.erase(i);
+      }
 
-          // Update the variable-to-store map if any of its members is DCE'd.
-          uint32_t id;
-          if (other_inst->opcode() == SpvOpStore) GetPtr(other_inst, &id);
-          if (other_inst->opcode() == SpvOpVariable)
-            id = other_inst->result_id();
-          else
-            return;
+      // Update the variable-to-store map if any of its members is DCE'd.
+      uint32_t id;
+      if (other_inst->opcode() == SpvOpStore) GetPtr(other_inst, &id);
+      if (other_inst->opcode() == SpvOpVariable)
+        id = other_inst->result_id();
+      else
+        return;
 
-          auto store = ssa_var2store_.find(id);
-          if (store != ssa_var2store_.end()) {
-            ssa_var2store_.erase(store);
-          }
-        };
+      auto store = ssa_var2store_.find(id);
+      if (store != ssa_var2store_.end()) {
+        ssa_var2store_.erase(store);
+      }
+    };
 
     while (!dead_instructions.empty()) {
       ir::Instruction* inst = dead_instructions.back();
@@ -316,8 +318,9 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
   // Process all entry point functions
-  ProcessFunction pfn =
-      [this](ir::Function* fp) { return LocalSingleStoreElim(fp); };
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return LocalSingleStoreElim(fp);
+  };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
