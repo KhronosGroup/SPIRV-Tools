@@ -54,6 +54,9 @@ class SameTypeTest : public ::testing::Test {
         EXPECT_TRUE(types[i]->IsSame(types[j].get()))                     \
             << "expected '" << types[i]->str() << "' is the same as '"    \
             << types[j]->str() << "'";                                    \
+        EXPECT_TRUE(*types[i] == *types[j])                               \
+            << "expected '" << types[i]->str() << "' is the same as '"    \
+            << types[j]->str() << "'";                                    \
       }                                                                   \
     }                                                                     \
   }

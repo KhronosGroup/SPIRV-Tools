@@ -274,4 +274,31 @@ TEST(TypeManager, BeginEnd) {
   }
 }
 
+TEST(TypeManager, LookupType) {
+  const std::string text = R"(
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%int  = OpTypeInt 32 1
+%vec2 = OpTypeVector %int 2
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  opt::analysis::TypeManager manager(nullptr, *context->module());
+
+  opt::analysis::Void voidTy;
+  EXPECT_EQ(manager.GetId(&voidTy), 1);
+
+  opt::analysis::Integer uintTy(32, false);
+  EXPECT_EQ(manager.GetId(&uintTy), 2);
+
+  opt::analysis::Integer intTy(32, true);
+  EXPECT_EQ(manager.GetId(&intTy), 3);
+
+  opt::analysis::Integer intTy2(32, true);
+  opt::analysis::Vector vecTy(&intTy2, 2);
+  EXPECT_EQ(manager.GetId(&vecTy), 4);
+}
+
 }  // anonymous namespace

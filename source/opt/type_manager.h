@@ -28,6 +28,28 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
+// Hashing functor.
+//
+// All type pointers must be non-null.
+struct HashTypePointer {
+  size_t operator()(const Type* type) const {
+    assert(type);
+    return type->HashValue();
+  }
+};
+
+// Equality functor.
+//
+// Checks if two types pointers are the same type.
+//
+// All type pointers must be non-null.
+struct CompareTypePointers {
+  bool operator()(const Type* lhs, const Type* rhs) const {
+    assert(lhs && rhs);
+    return lhs->IsSame(rhs);
+  }
+};
+
 // A class for managing the SPIR-V type hierarchy.
 class TypeManager {
  public:
@@ -69,7 +91,8 @@ class TypeManager {
   void AnalyzeTypes(const spvtools::ir::Module& module);
 
  private:
-  using TypeToIdMap = std::unordered_map<const Type*, uint32_t>;
+  using TypeToIdMap = std::unordered_map<const Type*, uint32_t, HashTypePointer,
+                                         CompareTypePointers>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
 
   // Creates and returns a type from the given SPIR-V |inst|. Returns nullptr if
