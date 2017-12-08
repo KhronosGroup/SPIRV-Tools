@@ -101,17 +101,6 @@ void AggressiveDCEPass::ProcessLoad(uint32_t varId) {
   live_local_vars_.insert(varId);
 }
 
-bool AggressiveDCEPass::IsStructuredHeader(ir::BasicBlock* bp, SpvOp mergeOp,
-                                           ir::Instruction** mergeInst,
-                                           ir::Instruction** branchInst,
-                                           uint32_t* mergeBlockId) {
-  ir::Instruction* tempMergeInst;
-  if (!IsStructuredIfOrLoopHeader(bp, &tempMergeInst, branchInst, mergeBlockId))
-    return false;
-  if (mergeInst != nullptr) *mergeInst = tempMergeInst;
-  return tempMergeInst->opcode() == mergeOp;
-}
-
 bool AggressiveDCEPass::IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
                                                    ir::Instruction** mergeInst,
                                                    ir::Instruction** branchInst,
@@ -151,9 +140,10 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
     ir::Instruction* mergeInst;
     ir::Instruction* branchInst;
     uint32_t mergeBlockId;
+    bool is_header = IsStructuredIfOrLoopHeader(*bi, &mergeInst, &branchInst,
+                                                &mergeBlockId);
     // If there is live code in loop header, the loop is live
-    if (IsStructuredHeader(*bi, SpvOpLoopMerge, &mergeInst, &branchInst,
-                           &mergeBlockId)) {
+    if (is_header && mergeInst->opcode() == SpvOpLoopMerge) {
       currentMergeBlockId.push(mergeBlockId);
       currentMergeInst.push(mergeInst);
       currentBranchInst.push(branchInst);
@@ -161,8 +151,7 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
     block2headerMerge_[*bi] = currentMergeInst.top();
     block2headerBranch_[*bi] = currentBranchInst.top();
     // If there is live code following if header, the if is live
-    if (IsStructuredHeader(*bi, SpvOpSelectionMerge, &mergeInst, &branchInst,
-                           &mergeBlockId)) {
+    if (is_header && mergeInst->opcode() == SpvOpSelectionMerge) {
       currentMergeBlockId.push(mergeBlockId);
       currentMergeInst.push(mergeInst);
       currentBranchInst.push(branchInst);
