@@ -105,18 +105,17 @@ bool AggressiveDCEPass::IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
                                                    ir::Instruction** mergeInst,
                                                    ir::Instruction** branchInst,
                                                    uint32_t* mergeBlockId) {
-  auto brii = bp->end();
-  --brii;
-  if (brii == bp->begin()) return false;
-  auto mii = brii;
-  --mii;
-  if (mii->opcode() == SpvOpSelectionMerge) {
-    if (brii->opcode() != SpvOpBranchConditional) return false;
-  } else if (mii->opcode() != SpvOpLoopMerge)
+  ir::Instruction* mi = bp->GetMergeInst();
+  if (mi == nullptr) return false;
+  ir::Instruction* bri = &*bp->tail();
+  if (mi->opcode() == SpvOpSelectionMerge) {
+    // Make sure it is not a Switch
+    if (bri->opcode() != SpvOpBranchConditional) return false;
+  } else if (mi->opcode() != SpvOpLoopMerge)
     return false;
-  if (branchInst != nullptr) *branchInst = &*brii;
-  if (mergeInst != nullptr) *mergeInst = &*mii;
-  if (mergeBlockId != nullptr) *mergeBlockId = mii->GetSingleWordInOperand(0);
+  if (branchInst != nullptr) *branchInst = bri;
+  if (mergeInst != nullptr) *mergeInst = mi;
+  if (mergeBlockId != nullptr) *mergeBlockId = mi->GetSingleWordInOperand(0);
   return true;
 }
 
