@@ -22,11 +22,12 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-analysis::Type* ConstantManager::GetType(const ir::Instruction* inst) {
+analysis::Type* ConstantManager::GetType(const ir::Instruction* inst) const {
   return context()->get_type_mgr()->GetType(inst->type_id());
 }
 
-uint32_t ConstantManager::FindRecordedConstant(const analysis::Constant* c) {
+uint32_t ConstantManager::FindRecordedConstant(
+    const analysis::Constant* c) const {
   auto iter = const_val_to_id_.find(c);
   if (iter == const_val_to_id_.end()) {
     return 0;
@@ -36,7 +37,7 @@ uint32_t ConstantManager::FindRecordedConstant(const analysis::Constant* c) {
 }
 
 std::vector<const analysis::Constant*> ConstantManager::GetConstantsFromIds(
-    const std::vector<uint32_t>& ids) {
+    const std::vector<uint32_t>& ids) const {
   std::vector<const analysis::Constant*> constants;
   for (uint32_t id : ids) {
     if (analysis::Constant* c = FindRecordedConstant(id)) {
@@ -63,7 +64,7 @@ ir::Instruction* ConstantManager::BuildInstructionAndAddToModule(
   return new_inst_ptr;
 }
 
-analysis::Constant* ConstantManager::FindRecordedConstant(uint32_t id) {
+analysis::Constant* ConstantManager::FindRecordedConstant(uint32_t id) const {
   auto iter = id_to_const_val_.find(id);
   if (iter == id_to_const_val_.end()) {
     return nullptr;
@@ -74,7 +75,7 @@ analysis::Constant* ConstantManager::FindRecordedConstant(uint32_t id) {
 
 std::unique_ptr<analysis::Constant> ConstantManager::CreateConstant(
     const analysis::Type* type,
-    const std::vector<uint32_t>& literal_words_or_ids) {
+    const std::vector<uint32_t>& literal_words_or_ids) const {
   std::unique_ptr<analysis::Constant> new_const;
   if (literal_words_or_ids.size() == 0) {
     // Constant declared with OpConstantNull
@@ -124,7 +125,7 @@ std::unique_ptr<analysis::Constant> ConstantManager::CreateConstant(
 }
 
 std::unique_ptr<analysis::Constant> ConstantManager::CreateConstantFromInst(
-    ir::Instruction* inst) {
+    ir::Instruction* inst) const {
   std::vector<uint32_t> literal_words_or_ids;
   std::unique_ptr<analysis::Constant> new_const;
 
@@ -156,7 +157,7 @@ std::unique_ptr<analysis::Constant> ConstantManager::CreateConstantFromInst(
 }
 
 std::unique_ptr<ir::Instruction> ConstantManager::CreateInstruction(
-    uint32_t id, analysis::Constant* c) {
+    uint32_t id, analysis::Constant* c) const {
   if (c->AsNullConstant()) {
     return MakeUnique<ir::Instruction>(
         context(), SpvOp::SpvOpConstantNull,
@@ -190,7 +191,7 @@ std::unique_ptr<ir::Instruction> ConstantManager::CreateInstruction(
 }
 
 std::unique_ptr<ir::Instruction> ConstantManager::CreateCompositeInstruction(
-    uint32_t result_id, analysis::CompositeConstant* cc) {
+    uint32_t result_id, analysis::CompositeConstant* cc) const {
   std::vector<ir::Operand> operands;
   for (const analysis::Constant* component_const : cc->GetComponents()) {
     uint32_t id = FindRecordedConstant(component_const);

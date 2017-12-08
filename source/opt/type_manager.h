@@ -62,12 +62,15 @@ class TypeManager {
   // Returns the number of forward pointer types hold in this manager.
   size_t NumForwardPointers() const { return forward_pointers_.size(); }
 
+  // Analyzes the types and decorations on types in the given |module|.
+  // TODO(dnovillo): This should be private and the type manager should know how
+  // to update itself when new types are added
+  // (https://github.com/KhronosGroup/SPIRV-Tools/issues/1071).
+  void AnalyzeTypes(const spvtools::ir::Module& module);
+
  private:
   using TypeToIdMap = std::unordered_map<const Type*, uint32_t>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
-
-  // Analyzes the types and decorations on types in the given |module|.
-  void AnalyzeTypes(const spvtools::ir::Module& module);
 
   // Creates and returns a type from the given SPIR-V |inst|. Returns nullptr if
   // the given instruction is not for defining a type.

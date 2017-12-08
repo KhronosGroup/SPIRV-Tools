@@ -308,14 +308,15 @@ class ConstantManager {
   // creation will fail and nullptr will be returned. If the vector is empty,
   // a NullConstant instance will be created with the given type.
   std::unique_ptr<Constant> CreateConstant(
-      const Type* type, const std::vector<uint32_t>& literal_words_or_ids);
+      const Type* type,
+      const std::vector<uint32_t>& literal_words_or_ids) const;
 
   // Creates a Constant instance to hold the constant value of the given
   // instruction. If the given instruction defines a normal constants whose
   // value is already known in the module, returns the unique pointer to the
   // created Constant instance. Otherwise does not create anything and returns a
   // nullptr.
-  std::unique_ptr<Constant> CreateConstantFromInst(ir::Instruction* inst);
+  std::unique_ptr<Constant> CreateConstantFromInst(ir::Instruction* inst) const;
 
   // Creates a constant defining instruction for the given Constant instance
   // and inserts the instruction at the position specified by the given
@@ -331,34 +332,34 @@ class ConstantManager {
   // represented by the given Constant instance. Returns an unique pointer to
   // the created instruction if the instruction can be created successfully.
   // Otherwise, returns a null pointer.
-  std::unique_ptr<ir::Instruction> CreateInstruction(uint32_t result_id,
-                                                     analysis::Constant* c);
+  std::unique_ptr<ir::Instruction> CreateInstruction(
+      uint32_t result_id, analysis::Constant* c) const;
 
   // Creates an OpConstantComposite instruction with the given result id and
   // the CompositeConst instance which represents a composite constant. Returns
   // an unique pointer to the created instruction if succeeded. Otherwise
   // returns a null pointer.
   std::unique_ptr<ir::Instruction> CreateCompositeInstruction(
-      uint32_t result_id, analysis::CompositeConstant* cc);
+      uint32_t result_id, analysis::CompositeConstant* cc) const;
 
   // A helper function to get the result type of the given instruction. Returns
   // nullptr if the instruction does not have a type id (type id is 0).
-  analysis::Type* GetType(const ir::Instruction* inst);
+  analysis::Type* GetType(const ir::Instruction* inst) const;
 
   // A helper function to get the collected normal constant with the given id.
   // Returns the pointer to the Constant instance in case it is found.
   // Otherwise, returns null pointer.
-  analysis::Constant* FindRecordedConstant(uint32_t id);
+  analysis::Constant* FindRecordedConstant(uint32_t id) const;
 
   // A helper function to get the id of a collected constant with the pointer
   // to the Constant instance. Returns 0 in case the constant is not found.
-  uint32_t FindRecordedConstant(const analysis::Constant* c);
+  uint32_t FindRecordedConstant(const analysis::Constant* c) const;
 
   // A helper function to get a vector of Constant instances with the specified
   // ids. If can not find the Constant instance for any one of the ids, returns
   // an empty vector.
   std::vector<const analysis::Constant*> GetConstantsFromIds(
-      const std::vector<uint32_t>& ids);
+      const std::vector<uint32_t>& ids) const;
 
   // Records a new mapping between |inst| and |const_value|.
   // This updates the two mappings |id_to_const_val_| and |const_val_to_id_|.

@@ -68,7 +68,8 @@ class IRContext {
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
-        constant_mgr_(nullptr) {
+        constant_mgr_(nullptr),
+        type_mgr_(nullptr) {
     module_->SetContext(this);
   }
 
@@ -78,7 +79,8 @@ class IRContext {
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
-        constant_mgr_(nullptr) {
+        constant_mgr_(nullptr),
+        type_mgr_(nullptr) {
     module_->SetContext(this);
     InitializeCombinators();
   }
