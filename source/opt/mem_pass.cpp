@@ -34,6 +34,7 @@ const uint32_t kStorePtrIdInIdx = 0;
 const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kTypePointerTypeIdInIdx = 1;
+const uint32_t kVariableInitIdInIdx = 1;
 
 }  // namespace
 
@@ -581,6 +582,15 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
           // Register new stored value for the variable
           label2ssa_map_[label][varId] =
               inst->GetSingleWordInOperand(kStoreValIdInIdx);
+        } break;
+        case SpvOpVariable: {
+          // Treat initialized OpVariable like an OpStore
+          if (inst->NumInOperands() < 2) break;
+          uint32_t varId = inst->result_id();
+          if (!IsTargetVar(varId)) break;
+          // Register new stored value for the variable
+          label2ssa_map_[label][varId] =
+              inst->GetSingleWordInOperand(kVariableInitIdInIdx);
         } break;
         case SpvOpLoad: {
           uint32_t varId;
