@@ -291,8 +291,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   while (!worklist_.empty()) {
     ir::Instruction* liveInst = worklist_.front();
     // Add all operand instructions if not already live
-    SpvOp op = liveInst->opcode();
-    liveInst->ForEachInId([&op, &liveInst, this](const uint32_t* iid) {
+    liveInst->ForEachInId([&liveInst, this](const uint32_t* iid) {
       ir::Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
       // Do not add label if an operand of a branch. This is not needed
       // as part of live code discovery and can create false live code,
