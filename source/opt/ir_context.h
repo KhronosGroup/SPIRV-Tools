@@ -241,7 +241,7 @@ class IRContext {
   // is never re-built.
   opt::analysis::TypeManager* get_type_mgr() {
     if (!type_mgr_)
-      type_mgr_.reset(new opt::analysis::TypeManager(consumer(), *module()));
+      type_mgr_.reset(new opt::analysis::TypeManager(consumer(), this));
     return type_mgr_.get();
   }
 

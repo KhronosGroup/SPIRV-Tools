@@ -50,12 +50,13 @@ std::vector<const analysis::Constant*> ConstantManager::GetConstantsFromIds(
 }
 
 ir::Instruction* ConstantManager::BuildInstructionAndAddToModule(
-    std::unique_ptr<analysis::Constant> c, ir::Module::inst_iterator* pos) {
+    std::unique_ptr<analysis::Constant> c, ir::Module::inst_iterator* pos,
+    uint32_t type_id) {
   analysis::Constant* new_const = c.get();
   uint32_t new_id = context()->TakeNextId();
   const_val_to_id_[new_const] = new_id;
   id_to_const_val_[new_id] = std::move(c);
-  auto new_inst = CreateInstruction(new_id, new_const);
+  auto new_inst = CreateInstruction(new_id, new_const, type_id);
   if (!new_inst) return nullptr;
   auto* new_inst_ptr = new_inst.get();
   *pos = pos->InsertBefore(std::move(new_inst));
@@ -157,41 +158,40 @@ std::unique_ptr<analysis::Constant> ConstantManager::CreateConstantFromInst(
 }
 
 std::unique_ptr<ir::Instruction> ConstantManager::CreateInstruction(
-    uint32_t id, analysis::Constant* c) const {
+    uint32_t id, analysis::Constant* c, uint32_t type_id) const {
+  uint32_t type =
+      (type_id == 0) ? context()->get_type_mgr()->GetId(c->type()) : type_id;
   if (c->AsNullConstant()) {
-    return MakeUnique<ir::Instruction>(
-        context(), SpvOp::SpvOpConstantNull,
-        context()->get_type_mgr()->GetId(c->type()), id,
-        std::initializer_list<ir::Operand>{});
+    return MakeUnique<ir::Instruction>(context(), SpvOp::SpvOpConstantNull,
+                                       type, id,
+                                       std::initializer_list<ir::Operand>{});
   } else if (analysis::BoolConstant* bc = c->AsBoolConstant()) {
     return MakeUnique<ir::Instruction>(
         context(),
         bc->value() ? SpvOp::SpvOpConstantTrue : SpvOp::SpvOpConstantFalse,
-        context()->get_type_mgr()->GetId(c->type()), id,
-        std::initializer_list<ir::Operand>{});
+        type, id, std::initializer_list<ir::Operand>{});
   } else if (analysis::IntConstant* ic = c->AsIntConstant()) {
     return MakeUnique<ir::Instruction>(
-        context(), SpvOp::SpvOpConstant,
-        context()->get_type_mgr()->GetId(c->type()), id,
+        context(), SpvOp::SpvOpConstant, type, id,
         std::initializer_list<ir::Operand>{ir::Operand(
             spv_operand_type_t::SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
             ic->words())});
   } else if (analysis::FloatConstant* fc = c->AsFloatConstant()) {
     return MakeUnique<ir::Instruction>(
-        context(), SpvOp::SpvOpConstant,
-        context()->get_type_mgr()->GetId(c->type()), id,
+        context(), SpvOp::SpvOpConstant, type, id,
         std::initializer_list<ir::Operand>{ir::Operand(
             spv_operand_type_t::SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
             fc->words())});
   } else if (analysis::CompositeConstant* cc = c->AsCompositeConstant()) {
-    return CreateCompositeInstruction(id, cc);
+    return CreateCompositeInstruction(id, cc, type_id);
   } else {
     return nullptr;
   }
 }
 
 std::unique_ptr<ir::Instruction> ConstantManager::CreateCompositeInstruction(
-    uint32_t result_id, analysis::CompositeConstant* cc) const {
+    uint32_t result_id, analysis::CompositeConstant* cc,
+    uint32_t type_id) const {
   std::vector<ir::Operand> operands;
   for (const analysis::Constant* component_const : cc->GetComponents()) {
     uint32_t id = FindRecordedConstant(component_const);
@@ -204,10 +204,10 @@ std::unique_ptr<ir::Instruction> ConstantManager::CreateCompositeInstruction(
     operands.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
                           std::initializer_list<uint32_t>{id});
   }
-  return MakeUnique<ir::Instruction>(
-      context(), SpvOp::SpvOpConstantComposite,
-      context()->get_type_mgr()->GetId(cc->type()), result_id,
-      std::move(operands));
+  uint32_t type =
+      (type_id == 0) ? context()->get_type_mgr()->GetId(cc->type()) : type_id;
+  return MakeUnique<ir::Instruction>(context(), SpvOp::SpvOpConstantComposite,
+                                     type, result_id, std::move(operands));
 }
 
 }  // namespace analysis

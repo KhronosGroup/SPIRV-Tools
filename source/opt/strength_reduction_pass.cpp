@@ -125,18 +125,13 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
 }
 
 void StrengthReductionPass::FindIntTypesAndConstants() {
+  analysis::Integer int32(32, true);
+  int32_type_id_ = context()->get_type_mgr()->GetId(&int32);
+  analysis::Integer uint32(32, false);
+  uint32_type_id_ = context()->get_type_mgr()->GetId(&uint32);
   for (auto iter = get_module()->types_values_begin();
        iter != get_module()->types_values_end(); ++iter) {
     switch (iter->opcode()) {
-      case SpvOp::SpvOpTypeInt:
-        if (iter->GetSingleWordOperand(1) == 32) {
-          if (iter->GetSingleWordOperand(2) == 1) {
-            int32_type_id_ = iter->result_id();
-          } else {
-            uint32_type_id_ = iter->result_id();
-          }
-        }
-        break;
       case SpvOp::SpvOpConstant:
         if (iter->type_id() == uint32_type_id_) {
           uint32_t value = iter->GetSingleWordOperand(2);
@@ -155,7 +150,8 @@ uint32_t StrengthReductionPass::GetConstantId(uint32_t val) {
 
   if (constant_ids_[val] == 0) {
     if (uint32_type_id_ == 0) {
-      uint32_type_id_ = CreateUint32Type();
+      analysis::Integer uint(32, false);
+      uint32_type_id_ = context()->get_type_mgr()->GetTypeInstruction(&uint);
     }
 
     // Construct the constant.
@@ -197,18 +193,6 @@ bool StrengthReductionPass::ScanFunctions() {
     }
   }
   return modified;
-}
-
-uint32_t StrengthReductionPass::CreateUint32Type() {
-  uint32_t type_id = TakeNextId();
-  ir::Operand widthOperand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                           {32});
-  ir::Operand signOperand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                          {0});
-  std::unique_ptr<ir::Instruction> newType(new ir::Instruction(
-      context(), SpvOp::SpvOpTypeInt, type_id, 0, {widthOperand, signOperand}));
-  context()->AddType(std::move(newType));
-  return type_id;
 }
 
 }  // namespace opt

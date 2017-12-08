@@ -15,13 +15,158 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#ifdef SPIRV_EFFCEE
+#include "effcee/effcee.h"
+#endif
+
 #include "opt/build_module.h"
 #include "opt/instruction.h"
 #include "opt/type_manager.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace {
 
 using namespace spvtools;
+using namespace spvtools::opt::analysis;
+
+bool Validate(const std::vector<uint32_t>& bin) {
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;
+  spv_context spvContext = spvContextCreate(target_env);
+  spv_diagnostic diagnostic = nullptr;
+  spv_const_binary_t binary = {bin.data(), bin.size()};
+  spv_result_t error = spvValidate(spvContext, &binary, &diagnostic);
+  if (error != 0) spvDiagnosticPrint(diagnostic);
+  spvDiagnosticDestroy(diagnostic);
+  spvContextDestroy(spvContext);
+  return error == 0;
+}
+
+#ifdef SPIRV_EFFCEE
+void Match(const std::string& original, ir::IRContext* context,
+           bool do_validation = true) {
+  std::vector<uint32_t> bin;
+  context->module()->ToBinary(&bin, true);
+  if (do_validation) {
+    EXPECT_TRUE(Validate(bin));
+  }
+  std::string assembly;
+  SpirvTools tools(SPV_ENV_UNIVERSAL_1_2);
+  EXPECT_TRUE(
+      tools.Disassemble(bin, &assembly, SpirvTools::kDefaultDisassembleOption))
+      << "Disassembling failed for shader:\n"
+      << assembly << std::endl;
+  auto match_result = effcee::Match(assembly, original);
+  EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())
+      << match_result.message() << "\nChecking result:\n"
+      << assembly;
+}
+#endif
+
+std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
+  // Types in this test case are only equal to themselves, nothing else.
+  std::vector<std::unique_ptr<Type>> types;
+
+  // Void, Bool
+  types.emplace_back(new Void());
+  auto* voidt = types.back().get();
+  types.emplace_back(new Bool());
+  auto* boolt = types.back().get();
+
+  // Integer
+  types.emplace_back(new Integer(32, true));
+  auto* s32 = types.back().get();
+  types.emplace_back(new Integer(32, false));
+  types.emplace_back(new Integer(64, true));
+  types.emplace_back(new Integer(64, false));
+  auto* u64 = types.back().get();
+
+  // Float
+  types.emplace_back(new Float(32));
+  auto* f32 = types.back().get();
+  types.emplace_back(new Float(64));
+
+  // Vector
+  types.emplace_back(new Vector(s32, 2));
+  types.emplace_back(new Vector(s32, 3));
+  auto* v3s32 = types.back().get();
+  types.emplace_back(new Vector(u64, 4));
+  types.emplace_back(new Vector(f32, 3));
+  auto* v3f32 = types.back().get();
+
+  // Matrix
+  types.emplace_back(new Matrix(v3s32, 3));
+  types.emplace_back(new Matrix(v3s32, 4));
+  types.emplace_back(new Matrix(v3f32, 4));
+
+  // Images
+  types.emplace_back(new Image(s32, SpvDim2D, 0, 0, 0, 0, SpvImageFormatRg8,
+                               SpvAccessQualifierReadOnly));
+  auto* image1 = types.back().get();
+  types.emplace_back(new Image(s32, SpvDim2D, 0, 1, 0, 0, SpvImageFormatRg8,
+                               SpvAccessQualifierReadOnly));
+  types.emplace_back(new Image(s32, SpvDim3D, 0, 1, 0, 0, SpvImageFormatRg8,
+                               SpvAccessQualifierReadOnly));
+  types.emplace_back(new Image(voidt, SpvDim3D, 0, 1, 0, 1, SpvImageFormatRg8,
+                               SpvAccessQualifierReadWrite));
+  auto* image2 = types.back().get();
+
+  // Sampler
+  types.emplace_back(new Sampler());
+
+  // Sampled Image
+  types.emplace_back(new SampledImage(image1));
+  types.emplace_back(new SampledImage(image2));
+
+  // Array
+  types.emplace_back(new Array(f32, 100));
+  types.emplace_back(new Array(f32, 42));
+  auto* a42f32 = types.back().get();
+  types.emplace_back(new Array(u64, 24));
+
+  // RuntimeArray
+  types.emplace_back(new RuntimeArray(v3f32));
+  types.emplace_back(new RuntimeArray(v3s32));
+  auto* rav3s32 = types.back().get();
+
+  // Struct
+  types.emplace_back(new Struct(std::vector<Type*>{s32}));
+  types.emplace_back(new Struct(std::vector<Type*>{s32, f32}));
+  auto* sts32f32 = types.back().get();
+  types.emplace_back(new Struct(std::vector<Type*>{u64, a42f32, rav3s32}));
+
+  // Opaque
+  types.emplace_back(new Opaque(""));
+  types.emplace_back(new Opaque("hello"));
+  types.emplace_back(new Opaque("world"));
+
+  // Pointer
+  types.emplace_back(new Pointer(f32, SpvStorageClassInput));
+  types.emplace_back(new Pointer(sts32f32, SpvStorageClassFunction));
+  types.emplace_back(new Pointer(a42f32, SpvStorageClassFunction));
+
+  // Function
+  types.emplace_back(new Function(voidt, {}));
+  types.emplace_back(new Function(voidt, {boolt}));
+  types.emplace_back(new Function(voidt, {boolt, s32}));
+  types.emplace_back(new Function(s32, {boolt, s32}));
+
+  // Event, Device Event, Reserve Id, Queue,
+  types.emplace_back(new Event());
+  types.emplace_back(new DeviceEvent());
+  types.emplace_back(new ReserveId());
+  types.emplace_back(new Queue());
+
+  // Pipe, Forward Pointer, PipeStorage, NamedBarrier
+  types.emplace_back(new Pipe(SpvAccessQualifierReadWrite));
+  types.emplace_back(new Pipe(SpvAccessQualifierReadOnly));
+  types.emplace_back(new ForwardPointer(1, SpvStorageClassInput));
+  types.emplace_back(new ForwardPointer(2, SpvStorageClassInput));
+  types.emplace_back(new ForwardPointer(2, SpvStorageClassUniform));
+  types.emplace_back(new PipeStorage());
+  types.emplace_back(new NamedBarrier());
+
+  return types;
+}
 
 TEST(TypeManager, TypeStrings) {
   const std::string text = R"(
@@ -90,7 +235,7 @@ TEST(TypeManager, TypeStrings) {
 
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   EXPECT_EQ(type_id_strs.size(), manager.NumTypes());
   EXPECT_EQ(2u, manager.NumForwardPointers());
@@ -120,7 +265,7 @@ TEST(TypeManager, DecorationOnStruct) {
   )";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(7u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -170,7 +315,7 @@ TEST(TypeManager, DecorationOnMember) {
   )";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(10u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -208,7 +353,7 @@ TEST(TypeManager, DecorationEmpty) {
   )";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(5u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -230,7 +375,7 @@ TEST(TypeManager, BeginEndForEmptyModule) {
   const std::string text = "";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
   ASSERT_EQ(0u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
 
@@ -247,7 +392,7 @@ TEST(TypeManager, BeginEnd) {
   )";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
   ASSERT_EQ(5u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
 
@@ -273,5 +418,296 @@ TEST(TypeManager, BeginEnd) {
     }
   }
 }
+
+TEST(TypeManager, LookupType) {
+  const std::string text = R"(
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%int  = OpTypeInt 32 1
+%vec2 = OpTypeVector %int 2
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  TypeManager manager(nullptr, context.get());
+
+  Void voidTy;
+  EXPECT_EQ(manager.GetId(&voidTy), 1u);
+
+  Integer uintTy(32, false);
+  EXPECT_EQ(manager.GetId(&uintTy), 2u);
+
+  Integer intTy(32, true);
+  EXPECT_EQ(manager.GetId(&intTy), 3u);
+
+  Integer intTy2(32, true);
+  Vector vecTy(&intTy2, 2u);
+  EXPECT_EQ(manager.GetId(&vecTy), 4u);
+}
+
+TEST(TypeManager, RemoveId) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 32 1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  context->get_type_mgr()->RemoveId(1u);
+  ASSERT_EQ(context->get_type_mgr()->GetType(1u), nullptr);
+  ASSERT_NE(context->get_type_mgr()->GetType(2u), nullptr);
+
+  context->get_type_mgr()->RemoveId(2u);
+  ASSERT_EQ(context->get_type_mgr()->GetType(1u), nullptr);
+  ASSERT_EQ(context->get_type_mgr()->GetType(2u), nullptr);
+}
+
+TEST(TypeManager, RemoveIdNonDuplicateAmbiguousType) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  Integer u32(32, false);
+  Struct st({&u32});
+  ASSERT_EQ(context->get_type_mgr()->GetId(&st), 2u);
+  context->get_type_mgr()->RemoveId(2u);
+  ASSERT_EQ(context->get_type_mgr()->GetType(2u), nullptr);
+  ASSERT_EQ(context->get_type_mgr()->GetId(&st), 0u);
+}
+
+TEST(TypeManager, RemoveIdDuplicateAmbiguousType) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+%3 = OpTypeStruct %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  Integer u32(32, false);
+  Struct st({&u32});
+  uint32_t id = context->get_type_mgr()->GetId(&st);
+  ASSERT_NE(id, 0u);
+  uint32_t toRemove = id == 2u ? 2u : 3u;
+  uint32_t toStay = id == 2u ? 3u : 2u;
+  context->get_type_mgr()->RemoveId(toRemove);
+  ASSERT_EQ(context->get_type_mgr()->GetType(toRemove), nullptr);
+  ASSERT_EQ(context->get_type_mgr()->GetId(&st), toStay);
+}
+
+TEST(TypeManager, GetTypeAndPointerType) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  Integer u32(32, false);
+  Pointer u32Ptr(&u32, SpvStorageClassFunction);
+  Struct st({&u32});
+  Pointer stPtr(&st, SpvStorageClassInput);
+
+  auto pair = context->get_type_mgr()->GetTypeAndPointerType(
+      3u, SpvStorageClassFunction);
+  ASSERT_EQ(nullptr, pair.first);
+  ASSERT_EQ(nullptr, pair.second);
+
+  pair = context->get_type_mgr()->GetTypeAndPointerType(
+      1u, SpvStorageClassFunction);
+  ASSERT_TRUE(pair.first->IsSame(&u32));
+  ASSERT_TRUE(pair.second->IsSame(&u32Ptr));
+
+  pair =
+      context->get_type_mgr()->GetTypeAndPointerType(2u, SpvStorageClassInput);
+  ASSERT_TRUE(pair.first->IsSame(&st));
+  ASSERT_TRUE(pair.second->IsSame(&stPtr));
+}
+
+#ifdef SPIRV_EFFCEE
+TEST(TypeManager, GetTypeInstructionInt) {
+  const std::string text = R"(
+; CHECK: OpTypeInt 32 0
+; CHECK: OpTypeInt 16 1
+OpCapability Shader
+OpCapability Int16
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(context, nullptr);
+
+  Integer uint_32(32, false);
+  context->get_type_mgr()->GetTypeInstruction(&uint_32);
+
+  Integer int_16(16, true);
+  context->get_type_mgr()->GetTypeInstruction(&int_16);
+
+  Match(text, context.get());
+}
+
+TEST(TypeManager, GetTypeInstructionDuplicateInts) {
+  const std::string text = R"(
+; CHECK: OpTypeInt 32 0
+; CHECK-NOT: OpType
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(context, nullptr);
+
+  Integer uint_32(32, false);
+  uint32_t id = context->get_type_mgr()->GetTypeInstruction(&uint_32);
+
+  Integer other(32, false);
+  EXPECT_EQ(context->get_type_mgr()->GetTypeInstruction(&other), id);
+
+  Match(text, context.get());
+}
+
+TEST(TypeManager, GetTypeInstructionAllTypes) {
+  const std::string text = R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[input_ptr:%\w+]] = OpTypePointer Input [[uint]]
+; CHECK: [[uniform_ptr:%\w+]] = OpTypePointer Uniform [[uint]]
+; CHECK: [[uint24:%\w+]] = OpConstant [[uint]] 24
+; CHECK: [[uint42:%\w+]] = OpConstant [[uint]] 42
+; CHECK: [[uint100:%\w+]] = OpConstant [[uint]] 100
+; CHECK: [[void:%\w+]] = OpTypeVoid
+; CHECK: [[bool:%\w+]] = OpTypeBool
+; CHECK: [[s32:%\w+]] = OpTypeInt 32 1
+; CHECK: OpTypeInt 64 1
+; CHECK: [[u64:%\w+]] = OpTypeInt 64 0
+; CHECK: [[f32:%\w+]] = OpTypeFloat 32
+; CHECK: OpTypeFloat 64
+; CHECK: OpTypeVector [[s32]] 2
+; CHECK: [[v3s32:%\w+]] = OpTypeVector [[s32]] 3
+; CHECK: OpTypeVector [[u64]] 4
+; CHECK: [[v3f32:%\w+]] = OpTypeVector [[f32]] 3
+; CHECK: OpTypeMatrix [[v3s32]] 3
+; CHECK: OpTypeMatrix [[v3s32]] 4
+; CHECK: OpTypeMatrix [[v3f32]] 4
+; CHECK: [[image1:%\w+]] = OpTypeImage [[s32]] 2D 0 0 0 0 Rg8 ReadOnly
+; CHECK: OpTypeImage [[s32]] 2D 0 1 0 0 Rg8 ReadOnly
+; CHECK: OpTypeImage [[s32]] 3D 0 1 0 0 Rg8 ReadOnly
+; CHECK: [[image2:%\w+]] = OpTypeImage [[void]] 3D 0 1 0 1 Rg8 ReadWrite
+; CHECK: OpTypeSampler
+; CHECK: OpTypeSampledImage [[image1]]
+; CHECK: OpTypeSampledImage [[image2]]
+; CHECK: OpTypeArray [[f32]] [[uint100]]
+; CHECK: [[a42f32:%\w+]] = OpTypeArray [[f32]] [[uint42]]
+; CHECK: OpTypeArray [[u64]] [[uint24]]
+; CHECK: OpTypeRuntimeArray [[v3f32]]
+; CHECK: [[rav3s32:%\w+]] = OpTypeRuntimeArray [[v3s32]]
+; CHECK: OpTypeStruct [[s32]]
+; CHECK: [[sts32f32:%\w+]] = OpTypeStruct [[s32]] [[f32]]
+; CHECK: OpTypeStruct [[u64]] [[a42f32]] [[rav3s32]]
+; CHECK: OpTypeOpaque ""
+; CHECK: OpTypeOpaque "hello"
+; CHECK: OpTypeOpaque "world"
+; CHECK: OpTypePointer Input [[f32]]
+; CHECK: OpTypePointer Function [[sts32f32]]
+; CHECK: OpTypePointer Function [[a42f32]]
+; CHECK: OpTypeFunction [[void]]
+; CHECK: OpTypeFunction [[void]] [[bool]]
+; CHECK: OpTypeFunction [[void]] [[bool]] [[s32]]
+; CHECK: OpTypeFunction [[s32]] [[bool]] [[s32]]
+; CHECK: OpTypeEvent
+; CHECK: OpTypeDeviceEvent
+; CHECK: OpTypeReserveId
+; CHECK: OpTypeQueue
+; CHECK: OpTypePipe ReadWrite
+; CHECK: OpTypePipe ReadOnly
+; CHECK: OpTypeForwardPointer [[input_ptr]] Input
+; CHECK: OpTypeForwardPointer [[uniform_ptr]] Input
+; CHECK: OpTypeForwardPointer [[uniform_ptr]] Uniform
+; CHECK: OpTypePipeStorage
+; CHECK: OpTypeNamedBarrier
+OpCapability Shader
+OpCapability Int64
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%uint = OpTypeInt 32 0
+%1 = OpTypePointer Input %uint
+%2 = OpTypePointer Uniform %uint
+%24 = OpConstant %uint 24
+%42 = OpConstant %uint 42
+%100 = OpConstant %uint 100
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  std::vector<std::unique_ptr<Type>> types = GenerateAllTypes();
+  for (auto& t : types) {
+    context->get_type_mgr()->GetTypeInstruction(t.get());
+  }
+
+  Match(text, context.get(), false);
+}
+
+TEST(TypeManager, GetTypeInstructionWithDecorations) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[struct:%\w+]] CPacked
+; CHECK: OpMemberDecorate [[struct]] 1 Offset 4
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct]] = OpTypeStruct [[uint]] [[uint]]
+OpCapability Shader
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%uint = OpTypeInt 32 0
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  Integer u32(32, false);
+  Struct st({&u32, &u32});
+  st.AddDecoration({10});
+  st.AddMemberDecoration(1, {{35, 4}});
+  (void)context->get_def_use_mgr();
+  context->get_type_mgr()->GetTypeInstruction(&st);
+
+  Match(text, context.get());
+}
+#endif  // SPIRV_EFFCEE
 
 }  // anonymous namespace
