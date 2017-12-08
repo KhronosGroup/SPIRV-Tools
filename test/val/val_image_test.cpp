@@ -43,6 +43,7 @@ OpCapability Sampled1D
 OpCapability SampledRect
 OpCapability ImageQuery
 OpCapability Int64
+OpCapability SparseResidency
 )";
 
   ss << capabilities_and_extensions;
@@ -96,6 +97,18 @@ OpCapability Int64
 %u32vec2arr3 = OpTypeArray %u32vec2 %u32_3
 %u32arr4 = OpTypeArray %u32 %u32_4
 %u32vec3arr4 = OpTypeArray %u32vec3 %u32_4
+
+%struct_u32_f32vec4 = OpTypeStruct %u32 %f32vec4
+%struct_u64_f32vec4 = OpTypeStruct %u64 %f32vec4
+%struct_u32_u32vec4 = OpTypeStruct %u32 %u32vec4
+%struct_u32_f32vec3 = OpTypeStruct %u32 %f32vec3
+%struct_f32_f32vec4 = OpTypeStruct %f32 %f32vec4
+%struct_u32_u32 = OpTypeStruct %u32 %u32
+%struct_f32_f32 = OpTypeStruct %f32 %f32
+%struct_u32 = OpTypeStruct %u32
+%struct_u32_f32_u32 = OpTypeStruct %u32 %f32 %u32
+%struct_u32_f32vec4_u32 = OpTypeStruct %u32 %f32vec4 %u32
+%struct_u32_u32arr4 = OpTypeStruct %u32 %u32arr4
 
 %u32vec2_01 = OpConstantComposite %u32vec2 %u32_0 %u32_1
 %u32vec2_12 = OpConstantComposite %u32vec2 %u32_1 %u32_2
@@ -174,7 +187,7 @@ OpCapability Int64
 
 %type_image_f32_2d_0002 = OpTypeImage %f32 2D 0 0 0 2 Unknown
 %ptr_image_f32_2d_0002 = OpTypePointer UniformConstant %type_image_f32_2d_0002
-%uniform_image_f32_2d_0002 = OpVariable %ptr_image_f32_2d_0001 UniformConstant
+%uniform_image_f32_2d_0002 = OpVariable %ptr_image_f32_2d_0002 UniformConstant
 %type_sampled_image_f32_2d_0002 = OpTypeSampledImage %type_image_f32_2d_0002
 
 %type_image_f32_spd_0002 = OpTypeImage %f32 SubpassData 0 0 0 2 Unknown
@@ -338,94 +351,96 @@ OpEntryPoint Fragment %main "main"
 }
 
 TEST_F(ValidateImage, TypeImageWrongSampledType) {
-  const std::string code = GetShaderHeader() +  R"(
+  const std::string code = GetShaderHeader() + R"(
 %img_type = OpTypeImage %bool 2D 0 0 0 1 Unknown
 )";
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "TypeImage: expected Sampled Type to be either void or numerical scalar "
-      "type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: expected Sampled Type to be either void or "
+                        "numerical scalar "
+                        "type"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongDepth) {
-  const std::string code = GetShaderHeader() +  R"(
+  const std::string code = GetShaderHeader() + R"(
 %img_type = OpTypeImage %f32 2D 3 0 0 1 Unknown
 )";
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "TypeImage: invalid Depth 3 (must be 0, 1 or 2)"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: invalid Depth 3 (must be 0, 1 or 2)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongArrayed) {
-  const std::string code = GetShaderHeader() +  R"(
+  const std::string code = GetShaderHeader() + R"(
 %img_type = OpTypeImage %f32 2D 0 2 0 1 Unknown
 )";
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "TypeImage: invalid Arrayed 2 (must be 0 or 1)"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: invalid Arrayed 2 (must be 0 or 1)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongMS) {
-  const std::string code = GetShaderHeader() +  R"(
+  const std::string code = GetShaderHeader() + R"(
 %img_type = OpTypeImage %f32 2D 0 0 2 1 Unknown
 )";
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "TypeImage: invalid MS 2 (must be 0 or 1)"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: invalid MS 2 (must be 0 or 1)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongSampled) {
-  const std::string code = GetShaderHeader() +  R"(
+  const std::string code = GetShaderHeader() + R"(
 %img_type = OpTypeImage %f32 2D 0 0 0 3 Unknown
 )";
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "TypeImage: invalid Sampled 3 (must be 0, 1 or 2)"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: invalid Sampled 3 (must be 0, 1 or 2)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongSampledForSubpassData) {
   const std::string code = GetShaderHeader("OpCapability InputAttachment\n") +
-      R"(
+                           R"(
 %img_type = OpTypeImage %f32 SubpassData 0 0 0 1 Unknown
 )";
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "TypeImage: Dim SubpassData requires Sampled to be 2"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: Dim SubpassData requires Sampled to be 2"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongFormatForSubpassData) {
   const std::string code = GetShaderHeader("OpCapability InputAttachment\n") +
-      R"(
+                           R"(
 %img_type = OpTypeImage %f32 SubpassData 0 0 0 2 Rgba32f
 )";
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "TypeImage: Dim SubpassData requires format Unknown"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: Dim SubpassData requires format Unknown"));
 }
 
 TEST_F(ValidateImage, TypeSampledImageNotImage) {
-  const std::string code = GetShaderHeader() +  R"(
+  const std::string code = GetShaderHeader() + R"(
 %simg_type = OpTypeSampledImage %f32
 )";
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "TypeSampledImage: expected Image to be of type OpTypeImage"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("TypeSampledImage: expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, SampledImageSuccess) {
@@ -3369,8 +3384,566 @@ TEST_F(ValidateImage, ReadSubpassDataWrongExecutionModel) {
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Vertex").c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Dim SubpassData requires Fragment execution model: ImageRead"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Dim SubpassData requires Fragment execution model: ImageRead"));
+}
+
+TEST_F(ValidateImage, SparseSampleImplicitLodSuccess) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4 %simg %f32vec2_hh
+%res2 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4 %simg %f32vec2_hh Bias %f32_0_25
+%res4 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4 %simg %f32vec2_hh ConstOffset %s32vec2_01
+%res5 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4 %simg %f32vec2_hh Offset %s32vec2_01
+%res6 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4 %simg %f32vec2_hh MinLod %f32_0_5
+%res7 = OpImageSparseSampleImplicitLod %struct_u64_f32vec4 %simg %f32vec2_hh Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotStruct) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleImplicitLod %f32 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseSampleImplicitLod: "
+                        "expected Result Type to be OpTypeStruct"));
+}
+
+TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotTwoMembers1) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleImplicitLod %struct_u32 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseSampleImplicitLod: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotTwoMembers2) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4_u32 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseSampleImplicitLod: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeFirstMemberNotInt) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleImplicitLod %struct_f32_f32vec4 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseSampleImplicitLod: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeTexelNotVector) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleImplicitLod %struct_u32_u32 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type's second member to be int or "
+                        "float vector type: ImageSparseSampleImplicitLod"));
+}
+
+TEST_F(ValidateImage, SparseSampleImplicitLodWrongNumComponentsTexel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleImplicitLod %struct_u32_f32vec3 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type's second member to have 4 "
+                        "components: ImageSparseSampleImplicitLod"));
+}
+
+TEST_F(ValidateImage, SparseSampleImplicitLodWrongComponentTypeTexel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleImplicitLod %struct_u32_u32vec4 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled Type' to be the same as "
+                        "Result Type's second member components: "
+                        "ImageSparseSampleImplicitLod"));
+}
+
+TEST_F(ValidateImage, SparseSampleDrefImplicitLodSuccess) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0001 %uniform_image_u32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_u32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1
+%res2 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 Bias %f32_0_25
+%res4 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 ConstOffset %s32vec2_01
+%res5 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 Offset %s32vec2_01
+%res6 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 MinLod %f32_0_5
+%res7 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotStruct) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleDrefImplicitLod %f32 %simg %f32vec2_hh %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseSampleDrefImplicitLod: "
+                        "expected Result Type to be OpTypeStruct"));
+}
+
+TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotTwoMembers1) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleDrefImplicitLod %struct_u32 %simg %f32vec2_hh %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ImageSparseSampleDrefImplicitLod: expected Result Type "
+                "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotTwoMembers2) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleDrefImplicitLod %struct_u32_f32_u32 %simg %f32vec2_hh %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ImageSparseSampleDrefImplicitLod: expected Result Type "
+                "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeFirstMemberNotInt) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleDrefImplicitLod %struct_f32_f32 %simg %f32vec2_hh %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ImageSparseSampleDrefImplicitLod: expected Result Type "
+                "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseSampleDrefImplicitLodDifferentSampledType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled Type' to be the same as "
+                        "Result Type's second member: "
+                        "ImageSparseSampleDrefImplicitLod"));
+}
+
+TEST_F(ValidateImage, SparseFetchSuccess) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%res1 = OpImageSparseFetch %struct_u32_f32vec4 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, SparseFetchResultTypeNotStruct) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%res1 = OpImageSparseFetch %f32 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseFetch: "
+                        "expected Result Type to be OpTypeStruct"));
+}
+
+TEST_F(ValidateImage, SparseFetchResultTypeNotTwoMembers1) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%res1 = OpImageSparseFetch %struct_u32 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseFetch: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseFetchResultTypeNotTwoMembers2) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%res1 = OpImageSparseFetch %struct_u32_f32vec4_u32 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseFetch: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseFetchResultTypeFirstMemberNotInt) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%res1 = OpImageSparseFetch %struct_f32_f32vec4 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseFetch: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseFetchResultTypeTexelNotVector) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%res1 = OpImageSparseFetch %struct_u32_u32 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type's second member to be int or "
+                        "float vector type: ImageSparseFetch"));
+}
+
+TEST_F(ValidateImage, SparseFetchWrongNumComponentsTexel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%res1 = OpImageSparseFetch %struct_u32_f32vec3 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type's second member to have 4 "
+                        "components: ImageSparseFetch"));
+}
+
+TEST_F(ValidateImage, SparseFetchWrongComponentTypeTexel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%res1 = OpImageSparseFetch %struct_u32_u32vec4 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled Type' to be the same as "
+                        "Result Type's second member components: "
+                        "ImageSparseFetch"));
+}
+
+TEST_F(ValidateImage, SparseReadSuccess) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
+%res1 = OpImageSparseRead %struct_u32_f32vec4 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, SparseReadResultTypeNotStruct) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
+%res1 = OpImageSparseRead %f32 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseRead: "
+                        "expected Result Type to be OpTypeStruct"));
+}
+
+TEST_F(ValidateImage, SparseReadResultTypeNotTwoMembers1) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
+%res1 = OpImageSparseRead %struct_u32 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseRead: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseReadResultTypeNotTwoMembers2) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
+%res1 = OpImageSparseRead %struct_u32_f32vec4_u32 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseRead: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseReadResultTypeFirstMemberNotInt) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
+%res1 = OpImageSparseRead %struct_f32_f32vec4 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseRead: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseReadResultTypeTexelWrongType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
+%res1 = OpImageSparseRead %struct_u32_u32arr4 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type's second member to be int or "
+                        "float scalar or vector type: ImageSparseRead"));
+}
+
+TEST_F(ValidateImage, SparseReadWrongComponentTypeTexel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
+%res1 = OpImageSparseRead %struct_u32_u32vec4 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled Type' to be the same as "
+                        "Result Type's second member components: "
+                        "ImageSparseRead"));
+}
+
+TEST_F(ValidateImage, SparseGatherSuccess) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %struct_u32_f32vec4 %simg %f32vec4_0000 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, SparseGatherResultTypeNotStruct) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %f32 %simg %f32vec2_hh %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseGather: "
+                        "expected Result Type to be OpTypeStruct"));
+}
+
+TEST_F(ValidateImage, SparseGatherResultTypeNotTwoMembers1) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %struct_u32 %simg %f32vec2_hh %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseGather: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseGatherResultTypeNotTwoMembers2) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %struct_u32_f32vec4_u32 %simg %f32vec2_hh %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseGather: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseGatherResultTypeFirstMemberNotInt) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %struct_f32_f32vec4 %simg %f32vec2_hh %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseGather: expected Result Type "
+                        "to be a struct containing an int scalar and a texel"));
+}
+
+TEST_F(ValidateImage, SparseGatherResultTypeTexelNotVector) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %struct_u32_u32 %simg %f32vec2_hh %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type's second member to be int or "
+                        "float vector type: ImageSparseGather"));
+}
+
+TEST_F(ValidateImage, SparseGatherWrongNumComponentsTexel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %struct_u32_f32vec3 %simg %f32vec2_hh %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type's second member to have 4 "
+                        "components: ImageSparseGather"));
+}
+
+TEST_F(ValidateImage, SparseGatherWrongComponentTypeTexel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %struct_u32_u32vec4 %simg %f32vec2_hh %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled Type' to be the same as "
+                        "Result Type's second member components: "
+                        "ImageSparseGather"));
+}
+
+TEST_F(ValidateImage, SparseTexelsResidentSuccess) {
+  const std::string body = R"(
+%res1 = OpImageSparseTexelsResident %bool %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, SparseTexelsResidentResultTypeNotBool) {
+  const std::string body = R"(
+%res1 = OpImageSparseTexelsResident %u32 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageSparseTexelsResident: "
+                        "expected Result Type to be bool scalar type"));
 }
 
 }  // anonymous namespace
