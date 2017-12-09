@@ -1638,8 +1638,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 17 is not allowed by OpenCL 1.2 Full Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 17 is not allowed by OpenCL 1.2 Full Profile"));
 }
 
 TEST_F(ValidateCapability, OpenCL12FullEnabledByCapability) {
@@ -1670,8 +1672,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 43 is not allowed by OpenCL 1.2 Full Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 1.2 Full Profile"));
 }
 
 TEST_F(ValidateCapability, NonOpenCL12EmbeddedCapability) {
@@ -1686,8 +1690,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 11 is not allowed by OpenCL 1.2 Embedded Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 11 is not allowed by OpenCL 1.2 Embedded Profile"));
 }
 
 TEST_F(ValidateCapability, OpenCL12EmbeddedEnabledByCapability) {
@@ -1718,8 +1724,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 43 is not allowed by OpenCL 1.2 Embedded Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 1.2 Embedded Profile"));
 }
 
 TEST_F(ValidateCapability, OpenCL20FullCapability) {
@@ -1747,8 +1755,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_0);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_2_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 0 is not allowed by OpenCL 2.0/2.1 Full Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 0 is not allowed by OpenCL 2.0/2.1 Full Profile"));
 }
 
 TEST_F(ValidateCapability, OpenCL20FullEnabledByCapability) {
@@ -1779,8 +1789,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_0);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_2_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 43 is not allowed by OpenCL 2.0/2.1 Full Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 2.0/2.1 Full Profile"));
 }
 
 TEST_F(ValidateCapability, NonOpenCL20EmbeddedCapability) {
@@ -1796,7 +1808,8 @@ OpMemoryModel Physical64 OpenCL
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 11 is not allowed by OpenCL 2.0/2.1 Embedded Profile"));
+              HasSubstr("Capability value 11 is not allowed by OpenCL 2.0/2.1 "
+                        "Embedded Profile"));
 }
 
 TEST_F(ValidateCapability, OpenCL20EmbeddedEnabledByCapability) {
@@ -1828,7 +1841,8 @@ OpMemoryModel Physical64 OpenCL
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 43 is not allowed by OpenCL 2.0/2.1 Embedded Profile"));
+              HasSubstr("Capability value 43 is not allowed by OpenCL 2.0/2.1 "
+                        "Embedded Profile"));
 }
 
 TEST_F(ValidateCapability, OpenCL22FullCapability) {
@@ -1856,8 +1870,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_2);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_2_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 0 is not allowed by OpenCL 2.2 Full Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 0 is not allowed by OpenCL 2.2 Full Profile"));
 }
 
 TEST_F(ValidateCapability, OpenCL22FullEnabledByCapability) {
@@ -1888,8 +1904,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_2);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_2_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 43 is not allowed by OpenCL 2.2 Full Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 2.2 Full Profile"));
 }
 
 TEST_F(ValidateCapability, NonOpenCL22EmbeddedCapability) {
@@ -1904,8 +1922,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_2_2);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 11 is not allowed by OpenCL 2.2 Embedded Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 11 is not allowed by OpenCL 2.2 Embedded Profile"));
 }
 
 TEST_F(ValidateCapability, OpenCL22EmbeddedEnabledByCapability) {
@@ -1936,8 +1956,10 @@ OpMemoryModel Physical64 OpenCL
   CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_2_2);
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_2));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability value 43 is not allowed by OpenCL 2.2 Embedded Profile"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 2.2 Embedded Profile"));
 }
 
 }  // namespace
