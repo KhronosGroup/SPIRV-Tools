@@ -110,7 +110,8 @@ bool AggressiveDCEPass::IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
   ir::Instruction* bri = &*bp->tail();
   // Make sure it is not a Switch
   if (mi->opcode() == SpvOpSelectionMerge &&
-      bri->opcode() != SpvOpBranchConditional) return false;
+      bri->opcode() != SpvOpBranchConditional)
+    return false;
   if (branchInst != nullptr) *branchInst = bri;
   if (mergeInst != nullptr) *mergeInst = mi;
   if (mergeBlockId != nullptr) *mergeBlockId = mi->GetSingleWordInOperand(0);
@@ -137,8 +138,8 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
     ir::Instruction* mergeInst;
     ir::Instruction* branchInst;
     uint32_t mergeBlockId;
-    bool is_header = IsStructuredIfOrLoopHeader(*bi, &mergeInst, &branchInst,
-                                                &mergeBlockId);
+    bool is_header =
+        IsStructuredIfOrLoopHeader(*bi, &mergeInst, &branchInst, &mergeBlockId);
     // If there is live code in loop header, the loop is live
     if (is_header && mergeInst->opcode() == SpvOpLoopMerge) {
       currentMergeBlockId.push(mergeBlockId);
