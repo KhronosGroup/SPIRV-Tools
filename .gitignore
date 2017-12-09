@@ -2,6 +2,7 @@
 .ycm_extra_conf.py*
 compile_commands.json
 /external/googletest
+/external/SPIRV-Headers
 /external/spirv-headers
 /external/effcee
 /external/re2
