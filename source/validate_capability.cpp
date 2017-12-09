@@ -201,6 +201,7 @@ spv_result_t CapabilityPass(ValidationState_t& _,
                                env == SPV_ENV_OPENCL_EMBEDDED_2_0 ||
                                env == SPV_ENV_OPENCL_EMBEDDED_2_1 ||
                                env == SPV_ENV_OPENCL_EMBEDDED_2_2;
+  const std::string opencl_profile = opencl_embedded ? "Embedded" : "Full";
   if (env == SPV_ENV_VULKAN_1_0) {
     if (!IsSupportGuaranteedVulkan_1_0(capability) &&
         !IsSupportOptionalVulkan_1_0(capability) &&
@@ -217,8 +218,9 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsEnabledByCapabilityOpenCL_1_2(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
              << "Capability value " << capability
-             << " is not allowed by OpenCL 1.2 specification"
-             << " (or requires extension)";
+             << " is not allowed by OpenCL 1.2 " << opencl_profile
+             << " Profile specification"
+             << " (or requires extension or capability)";
     }
   } else if (env == SPV_ENV_OPENCL_2_0 || env == SPV_ENV_OPENCL_EMBEDDED_2_0 ||
              env == SPV_ENV_OPENCL_2_1 || env == SPV_ENV_OPENCL_EMBEDDED_2_1) {
@@ -228,8 +230,9 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
              << "Capability value " << capability
-             << " is not allowed by OpenCL 2.0/2.1 specification"
-             << " (or requires extension)";
+             << " is not allowed by OpenCL 2.0/2.1 " << opencl_profile
+             << " Profile specification"
+             << " (or requires extension or capability)";
     }
   } else if (env == SPV_ENV_OPENCL_2_2 || env == SPV_ENV_OPENCL_EMBEDDED_2_2) {
     if (!IsSupportGuaranteedOpenCL_2_2(capability, opencl_embedded) &&
@@ -238,8 +241,9 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
              << "Capability value " << capability
-             << " is not allowed by OpenCL 2.2 specification"
-             << " (or requires extension)";
+             << " is not allowed by OpenCL 2.2 " << opencl_profile
+             << " Profile specification"
+             << " (or requires extension or capability)";
     }
   }
 
