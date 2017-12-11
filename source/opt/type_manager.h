@@ -99,6 +99,10 @@ class TypeManager {
   // necessary to fully define |type|.
   uint32_t GetTypeInstruction(const Type* type);
 
+  // Find pointer to type and storage in module, return its resultId.  If it is
+  // not found, a new type is created, and its id is returned.
+  uint32_t FindPointerToType(uint32_t type_id, SpvStorageClass storage_class);
+
   // Registers |id| to |type|.
   //
   // If GetId(|type|) already returns a non-zero id, the return value will be

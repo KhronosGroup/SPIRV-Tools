@@ -241,3 +241,8 @@ add_spvtools_unittest(TARGET redundancy_elimination
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET private_to_local
+  SRCS private_to_local_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+

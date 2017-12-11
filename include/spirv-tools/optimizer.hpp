@@ -442,6 +442,12 @@ Optimizer::PassToken CreateRedundancyEliminationPass();
 // This pass replaces composite function scope variables with variables for each
 // element if those elements are accessed individually.
 Optimizer::PassToken CreateScalarReplacementPass();
+
+// Create a private to local pass.
+// This pass looks for variables delcared in the private storage class that are
+// used in only one function.  Those variables are moved to the function storage
+// class in the function that they are used.
+Optimizer::PassToken CreatePrivateToLocalPass();
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

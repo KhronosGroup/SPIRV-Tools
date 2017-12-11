@@ -39,6 +39,7 @@
 #include "local_ssa_elim_pass.h"
 #include "merge_return_pass.h"
 #include "null_pass.h"
+#include "private_to_local_pass.h"
 #include "redundancy_elimination.h"
 #include "remove_duplicates_pass.h"
 #include "scalar_replacement_pass.h"

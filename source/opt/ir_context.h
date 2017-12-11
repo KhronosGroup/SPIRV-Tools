@@ -301,6 +301,10 @@ class IRContext {
   // actually valid.
   bool IsConsistent();
 
+  // The IRContext will look at the def and uses of |inst| and update any valid
+  // analyses will be updated accordingly.
+  inline void AnalyzeDefUse(Instruction* inst);
+
   // Informs the IRContext that the uses of |inst| are going to change, and that
   // is should forget everything it know about the current uses.  Any valid
   // analyses will be updated accordingly.
@@ -668,6 +672,12 @@ void IRContext::AddGlobalValue(std::unique_ptr<Instruction>&& v) {
 
 void IRContext::AddFunction(std::unique_ptr<Function>&& f) {
   module()->AddFunction(std::move(f));
+}
+
+void IRContext::AnalyzeDefUse(Instruction* inst) {
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstDefUse(inst);
+  }
 }
 
 }  // namespace ir

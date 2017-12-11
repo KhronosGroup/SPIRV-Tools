@@ -23,6 +23,11 @@
 #include "make_unique.h"
 #include "reflect.h"
 
+namespace {
+const int kSpvTypePointerStorageClass = 1;
+const int kSpvTypePointerTypeIdInIdx = 2;
+}  // namespace
+
 namespace spvtools {
 namespace opt {
 namespace analysis {
@@ -267,11 +272,44 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       break;
   }
   context()->AddType(std::move(typeInst));
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(
-      &*--context()->types_values_end());
+  context()->AnalyzeDefUse(&*--context()->types_values_end());
   AttachDecorations(id, type);
-
   return id;
+}
+
+uint32_t TypeManager::FindPointerToType(uint32_t type_id,
+                                        SpvStorageClass storage_class) {
+  opt::analysis::Type* pointeeTy = context()->get_type_mgr()->GetType(type_id);
+  opt::analysis::Pointer pointerTy(pointeeTy, storage_class);
+  if (type_id == context()->get_type_mgr()->GetId(pointeeTy)) {
+    // Non-ambiguous type. Get the pointer type through the type manager.
+    return context()->get_type_mgr()->GetTypeInstruction(&pointerTy);
+  }
+
+  // Ambiguous type, do a linear search.
+  ir::Module::inst_iterator type_itr =
+      context()->module()->types_values_begin();
+  for (; type_itr != context()->module()->types_values_end(); ++type_itr) {
+    const ir::Instruction* type_inst = &*type_itr;
+    if (type_inst->opcode() == SpvOpTypePointer &&
+        type_inst->GetSingleWordOperand(kSpvTypePointerTypeIdInIdx) ==
+            type_id &&
+        type_inst->GetSingleWordOperand(kSpvTypePointerStorageClass) ==
+            storage_class)
+      return type_inst->result_id();
+  }
+
+  // Must create the pointer type.
+  uint32_t resultId = context()->TakeNextId();
+  std::unique_ptr<ir::Instruction> type_inst(new ir::Instruction(
+      context(), SpvOpTypePointer, 0, resultId,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
+        {uint32_t(storage_class)}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {type_id}}}));
+  context()->AnalyzeDefUse(type_inst.get());
+  context()->AddType(std::move(type_inst));
+  context()->get_type_mgr()->RegisterType(resultId, pointerTy);
+  return resultId;
 }
 
 void TypeManager::AttachDecorations(uint32_t id, const Type* type) {

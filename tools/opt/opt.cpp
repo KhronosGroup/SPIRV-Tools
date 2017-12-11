@@ -198,6 +198,9 @@ Options (in lexicographical order):
                'spirv-opt --merge-blocks -O ...' applies the transformation
                --merge-blocks followed by all the transformations implied by
                -O.
+  --private-to-local
+               Change the scope of private variables that are used in a single
+               function to that function.
   --redundancy-elimination
                Looks for instructions in the same function that compute the
                same value, and deletes the redundant ones.
@@ -408,6 +411,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateLocalRedundancyEliminationPass());
       } else if (0 == strcmp(cur_arg, "--redundancy-elimination")) {
         optimizer->RegisterPass(CreateRedundancyEliminationPass());
+      } else if (0 == strcmp(cur_arg, "--private-to-local")) {
+        optimizer->RegisterPass(CreatePrivateToLocalPass());
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options->relax_struct_store = true;
       } else if (0 == strcmp(cur_arg, "--skip-validation")) {

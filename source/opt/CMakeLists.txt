@@ -55,6 +55,7 @@ add_library(SPIRV-Tools-opt
   passes.h
   pass.h
   pass_manager.h
+  private_to_local_pass.h
   propagator.h
   redundancy_elimination.h
   reflect.h
@@ -110,6 +111,7 @@ add_library(SPIRV-Tools-opt
   optimizer.cpp
   pass.cpp
   pass_manager.cpp
+  private_to_local_pass.cpp
   propagator.cpp
   redundancy_elimination.cpp
   remove_duplicates_pass.cpp

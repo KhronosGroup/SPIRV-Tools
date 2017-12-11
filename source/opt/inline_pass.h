@@ -43,9 +43,6 @@ class InlinePass : public Pass {
   virtual ~InlinePass() = default;
 
  protected:
-  // Find pointer to type and storage in module, return its resultId,
-  // 0 if not found. TODO(greg-lunarg): Move this into type manager.
-  uint32_t FindPointerToType(uint32_t type_id, SpvStorageClass storage_class);
 
   // Add pointer to type to module and return resultId.
   uint32_t AddPointerToType(uint32_t type_id, SpvStorageClass storage_class);

@@ -300,4 +300,9 @@ Optimizer::PassToken CreateScalarReplacementPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::ScalarReplacementPass>());
 }
+
+Optimizer::PassToken CreatePrivateToLocalPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::PrivateToLocalPass>());
+}
 }  // namespace spvtools
