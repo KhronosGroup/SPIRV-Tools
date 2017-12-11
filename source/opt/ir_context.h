@@ -378,7 +378,6 @@ class IRContext {
     return feature_mgr_.get();
   }
 
-
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
