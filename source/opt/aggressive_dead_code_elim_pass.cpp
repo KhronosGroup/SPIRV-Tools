@@ -36,6 +36,7 @@ const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 }  // namespace
 
 bool AggressiveDCEPass::IsVarOfStorage(uint32_t varId, uint32_t storageClass) {
+  if (varId == 0) return false;
   const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
   const SpvOp op = varInst->opcode();
   if (op != SpvOpVariable) return false;
@@ -355,7 +356,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     if (liveInst->opcode() == SpvOpLoad) {
       uint32_t varId;
       (void)GetPtr(liveInst, &varId);
-      ProcessLoad(varId);
+      if (varId != 0) {
+        ProcessLoad(varId);
+      }
     }
     // If function call, treat as if it loads from all pointer arguments
     else if (liveInst->opcode() == SpvOpFunctionCall) {
@@ -466,7 +469,8 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // TODO(greg-lunarg): Handle additional capabilities
   if (!get_module()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
-  // Current functionality assumes logical addressing only
+  // Current functionality assumes relaxed logical addressing (see
+  // instruction.h)
   // TODO(greg-lunarg): Handle non-logical addressing
   if (get_module()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;

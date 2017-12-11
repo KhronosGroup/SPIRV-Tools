@@ -35,6 +35,19 @@ class IRContext;
 class Module;
 class InstructionList;
 
+// Relaxed logcial addressing:
+//
+// In the logical addressing model, pointers cannot be stored or loaded.  This
+// is a useful assumption because it simplifies the aliasing significantly.
+// However, for the purpose of legalizing code generated from HLSL, we will have
+// to allow storing and loading of pointers to opaque objects and runtime
+// arrays.  This relaxation of the rule still implies that function and private
+// scope variables do not have any aliasing, so we can treat them as before.
+// This will be call the relaxed logical addressing model.
+//
+// This relaxation of the rule will be allowed by |GetBaseAddress|, but it will
+// enforce that no other pointers are stored or loaded.
+
 // About operand:
 //
 // In the SPIR-V specification, the term "operand" is used to mean any single
@@ -257,8 +270,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Returns the instruction that gives the base address of an address
   // calculation.  The instruction must be a load instruction.  In logical
   // addressing mode, will return an OpVariable or OpFunctionParameter
-  // instruction. For physical addressing mode, could return other types of
-  // instructions.
+  // instruction. For relaxed logical addressing, it would also return a load of
+  // a pointer to an opaque object.  For physical addressing mode, could return
+  // other types of instructions.
   Instruction* GetBaseAddress() const;
 
   // Returns true if the instruction is a load from memory into a result id. It
@@ -312,6 +326,11 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return spvOpcodeIsBlockTerminator(opcode());
   }
 
+  // Return true if |this| is an instruction that define an opaque type.  Since
+  // runtime array have similar characteristics they are included as opaque
+  // types.
+  bool IsOpaqueType() const;
+
   inline bool operator==(const Instruction&) const;
   inline bool operator!=(const Instruction&) const;
   inline bool operator<(const Instruction&) const;
@@ -331,6 +350,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // kernel.
   bool IsReadOnlyVariableShaders() const;
   bool IsReadOnlyVariableKernel() const;
+
+  // Returns true if it is valid to use the result of |inst| as the base
+  // pointer for a load or store.  In this case, valid is defined by the relaxed
+  // logical addressing rules when using logical addressing.  Normal validation
+  // rules for physical addressing.
+  bool IsValidBasePointer() const;
 
   IRContext* context_;  // IR Context
   SpvOp opcode_;        // Opcode

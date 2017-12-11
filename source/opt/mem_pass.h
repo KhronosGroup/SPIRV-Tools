@@ -58,11 +58,13 @@ class MemPass : public Pass {
   bool IsPtr(uint32_t ptrId);
 
   // Given the id of a pointer |ptrId|, return the top-most non-CopyObj.
-  // Also return the base variable's id in |varId|.
+  // Also return the base variable's id in |varId|.  If no base variable is
+  // found, |varId| will be 0.
   ir::Instruction* GetPtr(uint32_t ptrId, uint32_t* varId);
 
   // Given a load or store |ip|, return the pointer instruction.
-  // Also return the base variable's id in |varId|.
+  // Also return the base variable's id in |varId|.  If no base variable is
+  // found, |varId| will be 0.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
   // Return true if all uses of |id| are only name or decorate ops.
@@ -89,7 +91,7 @@ class MemPass : public Pass {
   // useless. If a load is deleted and its variable has no other loads,
   // delete all its variable's stores.
   void DCEInst(ir::Instruction* inst,
-               const std::function<void(ir::Instruction * )>&);
+               const std::function<void(ir::Instruction*)>&);
 
   // Call all the cleanup helper functions on |func|.
   bool CFGCleanup(ir::Function* func);

@@ -156,8 +156,11 @@ bool Instruction::IsReadOnlyLoad() const {
 }
 
 Instruction* Instruction::GetBaseAddress() const {
-  assert(IsLoad() &&
-         "GetBaseAddress should only be called on load instructions.");
+  assert((IsLoad() || opcode() == SpvOpStore || opcode() == SpvOpAccessChain ||
+          opcode() == SpvOpInBoundsAccessChain ||
+          opcode() == SpvOpCopyObject) &&
+         "GetBaseAddress should only be called on instructions that take a "
+         "pointer or image.");
   uint32_t base = GetSingleWordInOperand(kLoadBaseIndex);
   ir::Instruction* base_inst = context()->get_def_use_mgr()->GetDef(base);
   bool done = false;
@@ -179,6 +182,9 @@ Instruction* Instruction::GetBaseAddress() const {
         break;
     }
   }
+
+  assert(base_inst->IsValidBasePointer() &&
+         "We cannot have a base pointer come from this load");
   return base_inst;
 }
 
@@ -388,6 +394,55 @@ Instruction* Instruction::InsertBefore(
 Instruction* Instruction::InsertBefore(std::unique_ptr<Instruction>&& i) {
   i.get()->InsertBefore(this);
   return i.release();
+}
+
+bool Instruction::IsValidBasePointer() const {
+  uint32_t tid = type_id();
+  if (tid == 0) {
+    return false;
+  }
+
+  ir::Instruction* type = context()->get_def_use_mgr()->GetDef(tid);
+  if (type->opcode() != SpvOpTypePointer) {
+    return false;
+  }
+
+  if (context()->module()->HasCapability(SpvCapabilityAddresses)) {
+    // TODO: The rules here could be more restrictive.
+    return true;
+  }
+
+  if (opcode() == SpvOpVariable || opcode() == SpvOpFunctionParameter) {
+    return true;
+  }
+
+  uint32_t pointee_type_id = type->GetSingleWordInOperand(1);
+  ir::Instruction* pointee_type_inst =
+      context()->get_def_use_mgr()->GetDef(pointee_type_id);
+
+  if (pointee_type_inst->IsOpaqueType()) {
+    return true;
+  }
+  return false;
+}
+
+bool Instruction::IsOpaqueType() const {
+  if (opcode() == SpvOpTypeStruct) {
+    bool is_opaque = false;
+    ForEachInOperand([&is_opaque, this](const uint32_t* op_id) {
+      ir::Instruction* type_inst = context()->get_def_use_mgr()->GetDef(*op_id);
+      is_opaque |= type_inst->IsOpaqueType();
+    });
+    return is_opaque;
+  } else if (opcode() == SpvOpTypeArray) {
+    uint32_t sub_type_id = GetSingleWordInOperand(0);
+    ir::Instruction* sub_type_inst =
+        context()->get_def_use_mgr()->GetDef(sub_type_id);
+    return sub_type_inst->IsOpaqueType();
+  } else {
+    return opcode() == SpvOpTypeRuntimeArray ||
+           spvOpcodeIsBaseOpaqueType(opcode());
+  }
 }
 }  // namespace ir
 }  // namespace spvtools

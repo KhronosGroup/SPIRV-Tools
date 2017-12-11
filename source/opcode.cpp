@@ -417,3 +417,23 @@ bool spvOpcodeIsBlockTerminator(SpvOp opcode) {
   return spvOpcodeIsBranch(opcode) || spvOpcodeIsReturn(opcode) ||
          opcode == SpvOpKill || opcode == SpvOpUnreachable;
 }
+
+bool spvOpcodeIsBaseOpaqueType(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpTypeImage:
+    case SpvOpTypeSampler:
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeOpaque:
+    case SpvOpTypeEvent:
+    case SpvOpTypeDeviceEvent:
+    case SpvOpTypeReserveId:
+    case SpvOpTypeQueue:
+    case SpvOpTypePipe:
+    case SpvOpTypeForwardPointer:
+    case SpvOpTypePipeStorage:
+    case SpvOpTypeNamedBarrier:
+      return true;
+    default:
+      return false;
+  }
+}

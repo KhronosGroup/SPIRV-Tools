@@ -31,6 +31,7 @@ using ir::Operand;
 using spvtest::MakeInstruction;
 using ::testing::Eq;
 using DescriptorTypeTest = PassTest<::testing::Test>;
+using OpaqueTypeTest = PassTest<::testing::Test>;
 
 TEST(InstructionTest, CreateTrivial) {
   Instruction empty;
@@ -508,5 +509,72 @@ TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyVariable());
+}
+
+TEST_F(OpaqueTypeTest, BaseOpaqueTypesShader) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeFloat 32
+          %6 = OpTypeImage %5 2D 1 0 0 1 Unknown
+          %7 = OpTypeSampler
+          %8 = OpTypeSampledImage %6
+          %9 = OpTypeRuntimeArray %5
+          %2 = OpFunction %3 None %4
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* image_type = context->get_def_use_mgr()->GetDef(6);
+  EXPECT_TRUE(image_type->IsOpaqueType());
+  Instruction* sampler_type = context->get_def_use_mgr()->GetDef(7);
+  EXPECT_TRUE(sampler_type->IsOpaqueType());
+  Instruction* sampled_image_type = context->get_def_use_mgr()->GetDef(8);
+  EXPECT_TRUE(sampled_image_type->IsOpaqueType());
+  Instruction* runtime_array_type = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_TRUE(runtime_array_type->IsOpaqueType());
+  Instruction* float_type = context->get_def_use_mgr()->GetDef(5);
+  EXPECT_FALSE(float_type->IsOpaqueType());
+  Instruction* void_type = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_FALSE(void_type->IsOpaqueType());
+}
+
+TEST_F(OpaqueTypeTest, OpaqueStructTypes) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeFloat 32
+          %6 = OpTypeRuntimeArray %5
+          %7 = OpTypeStruct %6 %6
+          %8 = OpTypeStruct %5 %6
+          %9 = OpTypeStruct %6 %5
+         %10 = OpTypeStruct %7
+          %2 = OpFunction %3 None %4
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  for (int i = 7; i <= 10; i++) {
+    Instruction* type = context->get_def_use_mgr()->GetDef(i);
+    EXPECT_TRUE(type->IsOpaqueType());
+  }
 }
 }  // anonymous namespace

@@ -49,7 +49,8 @@ class AggressiveDCEPass : public MemPass {
   }
 
  private:
-  // Return true if |varId| is variable of |storageClass|.
+  // Return true if |varId| is a variable of |storageClass|. |varId| must either
+  // be 0 or the result of an instruction.
   bool IsVarOfStorage(uint32_t varId, uint32_t storageClass);
 
   // Return true if |varId| is variable of function storage class or is

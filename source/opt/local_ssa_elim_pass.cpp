@@ -79,7 +79,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // TODO(greg-lunarg): Do SSA rewrite for non-structured control flow
   if (!get_module()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
-  // Assumes logical addressing only
+  // Assumes relaxed logical addressing only (see instruction.h)
   // TODO(greg-lunarg): Add support for physical addressing
   if (get_module()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;

@@ -3500,6 +3500,113 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
 }
 
+TEST_F(AggressiveDCETest, PointerVariable) {
+  // ADCE is able to handle code that contains a load whose base address
+  // comes from a load and not an OpVariable.  I want to see an instruction
+  // removed to be sure that ADCE is not exiting early.
+
+  const std::string before =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main" %2
+OpExecutionMode %1 OriginUpperLeft
+OpMemberDecorate %_struct_3 0 Offset 0
+OpDecorate %_runtimearr__struct_3 ArrayStride 16
+OpMemberDecorate %_struct_5 0 Offset 0
+OpDecorate %_struct_5 BufferBlock
+OpMemberDecorate %_struct_6 0 Offset 0
+OpDecorate %_struct_6 BufferBlock
+OpDecorate %2 Location 0
+OpDecorate %7 DescriptorSet 0
+OpDecorate %7 Binding 0
+OpDecorate %8 DescriptorSet 0
+OpDecorate %8 Binding 1
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Uniform_v4float = OpTypePointer Uniform %v4float
+%_struct_3 = OpTypeStruct %v4float
+%_runtimearr__struct_3 = OpTypeRuntimeArray %_struct_3
+%_struct_5 = OpTypeStruct %_runtimearr__struct_3
+%_ptr_Uniform__struct_5 = OpTypePointer Uniform %_struct_5
+%_struct_6 = OpTypeStruct %int
+%_ptr_Uniform__struct_6 = OpTypePointer Uniform %_struct_6
+%_ptr_Function__ptr_Uniform__struct_5 = OpTypePointer Function %_ptr_Uniform__struct_5
+%_ptr_Function__ptr_Uniform__struct_6 = OpTypePointer Function %_ptr_Uniform__struct_6
+%int_0 = OpConstant %int 0
+%uint_0 = OpConstant %uint 0
+%2 = OpVariable %_ptr_Output_v4float Output
+%7 = OpVariable %_ptr_Uniform__struct_5 Uniform
+%8 = OpVariable %_ptr_Uniform__struct_6 Uniform
+%1 = OpFunction %void None %10
+%23 = OpLabel
+%24 = OpVariable %_ptr_Function__ptr_Uniform__struct_5 Function
+OpStore %24 %7
+%26 = OpLoad %_ptr_Uniform__struct_5 %24
+%27 = OpAccessChain %_ptr_Uniform_v4float %26 %int_0 %uint_0 %int_0
+%28 = OpLoad %v4float %27
+%29 = OpCopyObject %v4float %28
+OpStore %2 %28
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main" %2
+OpExecutionMode %1 OriginUpperLeft
+OpMemberDecorate %_struct_3 0 Offset 0
+OpDecorate %_runtimearr__struct_3 ArrayStride 16
+OpMemberDecorate %_struct_5 0 Offset 0
+OpDecorate %_struct_5 BufferBlock
+OpMemberDecorate %_struct_6 0 Offset 0
+OpDecorate %_struct_6 BufferBlock
+OpDecorate %2 Location 0
+OpDecorate %7 DescriptorSet 0
+OpDecorate %7 Binding 0
+OpDecorate %8 DescriptorSet 0
+OpDecorate %8 Binding 1
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Uniform_v4float = OpTypePointer Uniform %v4float
+%_struct_3 = OpTypeStruct %v4float
+%_runtimearr__struct_3 = OpTypeRuntimeArray %_struct_3
+%_struct_5 = OpTypeStruct %_runtimearr__struct_3
+%_ptr_Uniform__struct_5 = OpTypePointer Uniform %_struct_5
+%_struct_6 = OpTypeStruct %int
+%_ptr_Uniform__struct_6 = OpTypePointer Uniform %_struct_6
+%_ptr_Function__ptr_Uniform__struct_5 = OpTypePointer Function %_ptr_Uniform__struct_5
+%_ptr_Function__ptr_Uniform__struct_6 = OpTypePointer Function %_ptr_Uniform__struct_6
+%int_0 = OpConstant %int 0
+%uint_0 = OpConstant %uint 0
+%2 = OpVariable %_ptr_Output_v4float Output
+%7 = OpVariable %_ptr_Uniform__struct_5 Uniform
+%8 = OpVariable %_ptr_Uniform__struct_6 Uniform
+%1 = OpFunction %void None %10
+%23 = OpLabel
+%24 = OpVariable %_ptr_Function__ptr_Uniform__struct_5 Function
+OpStore %24 %7
+%25 = OpLoad %_ptr_Uniform__struct_5 %24
+%26 = OpAccessChain %_ptr_Uniform_v4float %25 %int_0 %uint_0 %int_0
+%27 = OpLoad %v4float %26
+OpStore %2 %27
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required

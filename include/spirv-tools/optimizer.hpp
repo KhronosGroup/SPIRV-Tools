@@ -271,7 +271,8 @@ Optimizer::PassToken CreateInlineOpaquePass();
 // The presence of access chain references and function calls can inhibit
 // the above optimization.
 //
-// Only modules with logical addressing are currently processed.
+// Only modules with relaxed logical addressing (see opt/instruction.h) are
+// currently processed.
 //
 // This pass is most effective if preceeded by Inlining and
 // LocalAccessChainConvert. This pass will reduce the work needed to be done
@@ -305,9 +306,9 @@ Optimizer::PassToken CreateDeadBranchElimPass();
 // The presence of access chain references and function calls can inhibit
 // the above optimization.
 //
-// Only shader modules with logical addressing are currently processed.
-// Currently modules with any extensions enabled are not processed. This
-// is left for future work.
+// Only shader modules with relaxed logical addressing (see opt/instruction.h)
+// are currently processed. Currently modules with any extensions enabled are
+// not processed. This is left for future work.
 //
 // This pass is most effective if preceeded by Inlining and
 // LocalAccessChainConvert. LocalSingleStoreElim and LocalSingleBlockElim
@@ -343,6 +344,9 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 // more effective. In additional, many non-load/store memory operations are
 // not supported and will prohibit optimization of a function. Support of
 // these operations are future work.
+//
+// Only shader modules with relaxed logical addressing (see opt/instruction.h)
+// are currently processed.
 //
 // This pass will reduce the work needed to be done by LocalSingleBlockElim
 // and LocalMultiStoreElim and can improve the effectiveness of other passes
@@ -384,8 +388,8 @@ Optimizer::PassToken CreateCommonUniformElimPass();
 // time cost over standard dead code elimination.
 //
 // This pass only processes entry point functions. It also only processes
-// shaders with logical addressing. It currently will not process functions
-// with function calls.
+// shaders with relaxed logical addressing (see opt/instruction.h). It currently
+// will not process functions with function calls.
 //
 // This pass will be made more effective by first running passes that remove
 // dead control flow and inlines function calls.
