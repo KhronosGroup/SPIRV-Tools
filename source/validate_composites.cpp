@@ -253,9 +253,6 @@ spv_result_t CompositesPass(ValidationState_t& _,
       break;
     }
 
-#if 0
-    // TODO(atgoo@github.com) Reenable this after this check passes Vulkan CTS.
-    // A change to Vulkan CTS has been sent for review.
     case SpvOpCopyObject: {
       if (!spvOpcodeGeneratesType(_.GetIdOpcode(result_type))) {
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -272,7 +269,6 @@ spv_result_t CompositesPass(ValidationState_t& _,
 
       break;
     }
-#endif
 
     case SpvOpTranspose: {
       uint32_t result_num_rows = 0;

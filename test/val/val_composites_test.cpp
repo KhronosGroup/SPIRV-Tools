@@ -479,9 +479,7 @@ TEST_F(ValidateComposites, CopyObjectSuccess) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-// TODO(atgoo@github.com) Reenable this after this check passes Vulkan CTS.
-// A change to Vulkan CTS has been sent for review.
-TEST_F(ValidateComposites, DISABLED_CopyObjectResultTypeNotType) {
+TEST_F(ValidateComposites, CopyObjectResultTypeNotType) {
   const std::string body = R"(
 %val1 = OpCopyObject %f32_0 %f32_0
 )";
@@ -492,9 +490,7 @@ TEST_F(ValidateComposites, DISABLED_CopyObjectResultTypeNotType) {
               HasSubstr("CopyObject: expected Result Type to be a type"));
 }
 
-// TODO(atgoo@github.com) Reenable this after this check passes Vulkan CTS.
-// A change to Vulkan CTS has been sent for review.
-TEST_F(ValidateComposites, DISABLED_CopyObjectWrongOperandType) {
+TEST_F(ValidateComposites, CopyObjectWrongOperandType) {
   const std::string body = R"(
 %val1 = OpCopyObject %f32 %u32_0
 )";
