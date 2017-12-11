@@ -290,8 +290,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
       if (!_.IsFloatScalarType(type_id)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected Image Operand Lod to be float scalar when used "
-                  "with "
-               << "ExplicitLod: " << spvOpcodeString(opcode);
+               << "with ExplicitLod: " << spvOpcodeString(opcode);
       }
     } else {
       if (!_.IsIntScalarType(type_id)) {
@@ -693,8 +692,7 @@ spv_result_t ImagePass(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_DATA)
                << spvOpcodeString(opcode)
                << ": expected Sampled Type to be either void or numerical "
-                  "scalar "
-               << "type";
+               << "scalar type";
       }
 
       // Dim is checked elsewhere.
