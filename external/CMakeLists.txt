@@ -39,6 +39,13 @@ if (NOT ${SPIRV_SKIP_TESTS})
   else()
     set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock)
     if(EXISTS ${GMOCK_DIR})
+      if(MSVC)
+        # Our tests use ::testing::Combine.  Work around a compiler
+        # detection problem in googletest, where that template is
+        # accidentally disabled for VS 2017.
+        # See https://github.com/google/googletest/issues/1352
+        add_definitions(-DGTEST_HAS_COMBINE=1)
+      endif()
       if(WIN32)
         option(gtest_force_shared_crt
           "Use shared (DLL) run-time lib even when Google Test is built as static lib."
