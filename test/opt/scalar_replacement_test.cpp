@@ -246,7 +246,7 @@ OpFunctionEnd
 //[[float_ptr]] Function [[zerof]] ; CHECK-NEXT: [[f2:%\w+]] = OpVariable
 //[[float_ptr]] Function [[onef]] ; CHECK-NEXT: [[vec_var:%\w+]] = OpVariable
 //[[vec_ptr]] Function [[zero_one]] ; CHECK-NOT: OpVariable [[matrix]] ;
-//CHECK-NOT: OpVariable [[vector]] Function [[one_zero]]
+// CHECK-NOT: OpVariable [[vector]] Function [[one_zero]]
 //;
 // OpCapability Shader
 // OpCapability Linkage
