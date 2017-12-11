@@ -40,6 +40,10 @@ bool InlineExhaustivePass::InlineExhaustive(ir::Function* func) {
         context()->KillNamesAndDecorates(&*ii);
 
         bi = bi.Erase();
+
+        for (auto& bb : newBlocks) {
+          bb->SetParent(func);
+        }
         bi = bi.InsertBefore(&newBlocks);
         // Insert new function variables.
         if (newVars.size() > 0)

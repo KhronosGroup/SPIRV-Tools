@@ -2549,6 +2549,44 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(before, after, false, true);
 }
 
+TEST_F(InlineTest, SetParent) {
+  // Test that after inlining all basic blocks have the correct parent.
+  const std::string text =
+      R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpName %main "main"
+               OpName %main_entry "main_entry"
+               OpName %foo_result "foo_result"
+               OpName %void_fn "void_fn"
+               OpName %foo "foo"
+               OpName %foo_entry "foo_entry"
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+        %foo = OpFunction %void None %void_fn
+  %foo_entry = OpLabel
+               OpReturn
+               OpFunctionEnd
+       %main = OpFunction %void None %void_fn
+ %main_entry = OpLabel
+ %foo_result = OpFunctionCall %void %foo
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  opt::InlineExhaustivePass pass;
+  pass.Run(context.get());
+
+  for (ir::Function& func : *context->module()) {
+    for (ir::BasicBlock& bb : func) {
+      EXPECT_TRUE(bb.GetParent() == &func);
+    }
+  }
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules
