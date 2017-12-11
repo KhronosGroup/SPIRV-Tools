@@ -4,10 +4,12 @@
 # version format
 version: "{build}"
 
+# The most recent compiler gives the most interesting new results.
+# Put it first so we get its feedback first.
 os:
-  - Visual Studio 2013
-  - Visual Studio 2015
   - Visual Studio 2017
+  - Visual Studio 2015
+  - Visual Studio 2013
 
 platform:
   - x64
