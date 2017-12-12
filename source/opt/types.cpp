@@ -78,6 +78,57 @@ bool Type::HasSameDecorations(const Type* that) const {
   return CompareTwoVectors(decorations_, that->decorations_);
 }
 
+bool Type::IsUniqueType(bool allowVariablePointers) const {
+  switch (kind_) {
+    case kPointer:
+      return !allowVariablePointers;
+    case kStruct:
+    case kArray:
+    case kRuntimeArray:
+      return false;
+    default:
+      return true;
+  }
+}
+
+std::unique_ptr<Type> Type::RemoveDecorations() const {
+  std::unique_ptr<Type> type;
+  switch (kind_) {
+#define DeclareKindCase(kind)                \
+  case k##kind:                              \
+    type.reset(new kind(*this->As##kind())); \
+    break;
+    DeclareKindCase(Void);
+    DeclareKindCase(Bool);
+    DeclareKindCase(Integer);
+    DeclareKindCase(Float);
+    DeclareKindCase(Vector);
+    DeclareKindCase(Matrix);
+    DeclareKindCase(Image);
+    DeclareKindCase(Sampler);
+    DeclareKindCase(SampledImage);
+    DeclareKindCase(Array);
+    DeclareKindCase(RuntimeArray);
+    DeclareKindCase(Struct);
+    DeclareKindCase(Opaque);
+    DeclareKindCase(Pointer);
+    DeclareKindCase(Function);
+    DeclareKindCase(Event);
+    DeclareKindCase(DeviceEvent);
+    DeclareKindCase(ReserveId);
+    DeclareKindCase(Queue);
+    DeclareKindCase(Pipe);
+    DeclareKindCase(ForwardPointer);
+    DeclareKindCase(PipeStorage);
+    DeclareKindCase(NamedBarrier);
+#undef DeclareKindCase
+    default:
+      assert(false && "Unhandled type");
+  }
+  type->ClearDecorations();
+  return std::move(type);
+}
+
 bool Type::operator==(const Type& other) const {
   if (kind_ != other.kind_) return false;
 

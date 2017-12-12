@@ -17,6 +17,7 @@
 #ifndef LIBSPIRV_OPT_TYPES_H_
 #define LIBSPIRV_OPT_TYPES_H_
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -108,6 +109,16 @@ class Type {
   // and the struct members.
   virtual bool decoration_empty() const { return decorations_.empty(); }
 
+  // Returns a clone of |this| minus any decorations.
+  std::unique_ptr<Type> RemoveDecorations() const;
+
+  // Returns true if this type must be unique.
+  //
+  // If variable pointers are allowed, then pointers are not required to be
+  // unique.
+  // TODO(alanbaker): Update this if variable pointers become a core feature.
+  bool IsUniqueType(bool allowVariablePointers = false) const;
+
 // A bunch of methods for casting this type to a given type. Returns this if the
 // cast can be done, nullptr otherwise.
 #define DeclareCastMethod(target)                  \
@@ -157,6 +168,10 @@ class Type {
   std::vector<std::vector<uint32_t>> decorations_;
 
  private:
+  // Removes decorations on this type. For struct types, also removes element
+  // decorations.
+  virtual void ClearDecorations() { decorations_.clear(); }
+
   Kind kind_;
 };
 
@@ -343,6 +358,11 @@ class Struct : public Type {
   void GetExtraHashWords(std::vector<uint32_t>* words) const override;
 
  private:
+  void ClearDecorations() {
+    decorations_.clear();
+    element_decorations_.clear();
+  }
+
   std::vector<Type*> element_types_;
   // We can attach decorations to struct members and that should not affect the
   // underlying element type. So we need an extra data structure here to keep
