@@ -60,7 +60,7 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
     uint32_t instIdx = 0;
     for (auto ii = bi->begin(); ii != bi->end(); ++ii, ++instIdx) {
       uint32_t varId = 0;
-      ir::Instruction* ptrInst;
+      ir::Instruction* ptrInst = nullptr;
       switch (ii->opcode()) {
         case SpvOpStore: {
           ptrInst = GetPtr(&*ii, &varId);
