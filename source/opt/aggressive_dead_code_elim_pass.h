@@ -93,8 +93,8 @@ class AggressiveDCEPass : public MemPass {
                                   ir::Instruction** branchInst,
                                   uint32_t* mergeBlockId);
 
-  // Initialize block2branch_ and block2merge_ using |structuredOrder| to
-  // order blocks.
+  // Initialize block2headerBranch_ and branch2merge_ using |structuredOrder|
+  // to order blocks.
   void ComputeBlock2HeaderMaps(std::list<ir::BasicBlock*>& structuredOrder);
 
   // Initialize inst2block_ for |func|.
@@ -103,8 +103,9 @@ class AggressiveDCEPass : public MemPass {
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
-  // Add all branches targeting |labelId| to worklist if not already live
-  void AddBranchesToWorklist(uint32_t labelId);
+  // Add all break and continue branches in the loop associated with
+  // |mergeInst| to worklist if not already live
+  void AddBreaksAndContinuesToWorklist(ir::Instruction* mergeInst);
 
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
@@ -137,12 +138,13 @@ class AggressiveDCEPass : public MemPass {
   std::queue<ir::Instruction*> worklist_;
 
   // Map from block to the branch instruction in the header of the most
-  // immediate controlling structured if.
+  // immediate controlling structured if or loop.  A loop header block points
+  // to its own branch instruction.  An if-selection block points to the branch
+  // of an enclosing construct's header, if one exists.
   std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerBranch_;
 
-  // Map from block to the merge instruction in the header of the most
-  // immediate controlling structured if.
-  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerMerge_;
+  // Map from branch to its associated merge instruction, if any
+  std::unordered_map<ir::Instruction*, ir::Instruction*> branch2merge_;
 
   // Map from instruction containing block
   std::unordered_map<ir::Instruction*, ir::BasicBlock*> inst2block_;

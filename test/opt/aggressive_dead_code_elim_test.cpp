@@ -2035,6 +2035,105 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
 }
 
+TEST_F(AggressiveDCETest, NoEliminateIfBreak2) {
+  // Do not eliminate break as conditional branch with merge instruction
+  // Note: SPIR-V edited to add merge instruction before break.
+  //
+  // #version 430
+  //
+  // layout(std430) buffer U_t
+  // {
+  //     float g_F[10];
+  // };
+  //
+  // layout(location = 0)out float o;
+  //
+  // void main(void)
+  // {
+  //     float s = 0.0;
+  //     for (int i=0; i<10; i++)
+  //         s += g_F[i];
+  //     o = s;
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %o
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpName %main "main"
+OpName %s "s"
+OpName %i "i"
+OpName %U_t "U_t"
+OpMemberName %U_t 0 "g_F"
+OpName %_ ""
+OpName %o "o"
+OpDecorate %_arr_float_uint_10 ArrayStride 4
+OpMemberDecorate %U_t 0 Offset 0
+OpDecorate %U_t BufferBlock
+OpDecorate %_ DescriptorSet 0
+OpDecorate %o Location 0
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%int_2 = OpConstant %int 2
+%uint = OpTypeInt 32 0
+%uint_10 = OpConstant %uint 10
+%_arr_float_uint_10 = OpTypeArray %float %uint_10
+%U_t = OpTypeStruct %_arr_float_uint_10
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+%_ = OpVariable %_ptr_Uniform_U_t Uniform
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%o = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %10
+%26 = OpLabel
+%s = OpVariable %_ptr_Function_float Function
+%i = OpVariable %_ptr_Function_int Function
+OpStore %s %float_0
+OpStore %i %int_0
+OpBranch %27
+%27 = OpLabel
+OpLoopMerge %28 %29 None
+OpBranch %30
+%30 = OpLabel
+%31 = OpLoad %int %i
+%32 = OpSLessThan %bool %31 %int_10
+OpSelectionMerge %33 None
+OpBranchConditional %32 %33 %28
+%33 = OpLabel
+%34 = OpLoad %int %i
+%35 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %34
+%36 = OpLoad %float %35
+%37 = OpLoad %float %s
+%38 = OpFAdd %float %37 %36
+OpStore %s %38
+OpBranch %29
+%29 = OpLabel
+%39 = OpLoad %int %i
+%40 = OpIAdd %int %39 %int_1
+OpStore %i %40
+OpBranch %27
+%28 = OpLabel
+%41 = OpLoad %float %s
+OpStore %o %41
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
+}
+
 TEST_F(AggressiveDCETest, EliminateEntireUselessLoop) {
   // #version 140
   // in vec4 BaseColor;
@@ -2831,6 +2930,130 @@ OpFunctionEnd
       predefs_before + func_before, predefs_after + func_after, true, true);
 }
 
+TEST_F(AggressiveDCETest, EliminateEmptyIfBeforeContinue) {
+  // #version 430
+  //
+  // layout(location = 0)out float o;
+  //
+  // void main(void)
+  // {
+  //     float s = 0.0;
+  //     for (int i=0; i<10; i++) {
+  //         s += 1.0;
+  //         if (i > s) {}
+  //     }
+  //     o = s;
+  // }
+
+  const std::string predefs_before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %3
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+OpSourceExtension "GL_GOOGLE_include_directive"
+OpName %main "main"
+OpDecorate %3 Location 0
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%float_1 = OpConstant %float 1
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%3 = OpVariable %_ptr_Output_float Output
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %3
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+OpSourceExtension "GL_GOOGLE_include_directive"
+OpName %main "main"
+OpDecorate %3 Location 0
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%float_1 = OpConstant %float 1
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%3 = OpVariable %_ptr_Output_float Output
+)";
+
+  const std::string func_before =
+      R"(%main = OpFunction %void None %5
+%16 = OpLabel
+OpBranch %17
+%17 = OpLabel
+%18 = OpPhi %float %float_0 %16 %19 %20
+%21 = OpPhi %int %int_0 %16 %22 %20
+OpLoopMerge %23 %20 None
+OpBranch %24
+%24 = OpLabel
+%25 = OpSLessThan %bool %21 %int_10
+OpBranchConditional %25 %26 %23
+%26 = OpLabel
+%19 = OpFAdd %float %18 %float_1
+%27 = OpConvertFToS %int %19
+%28 = OpSGreaterThan %bool %21 %27
+OpSelectionMerge %20 None
+OpBranchConditional %28 %29 %20
+%29 = OpLabel
+OpBranch %20
+%20 = OpLabel
+%22 = OpIAdd %int %21 %int_1
+OpBranch %17
+%23 = OpLabel
+OpStore %3 %18
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string func_after =
+      R"(%main = OpFunction %void None %5
+%16 = OpLabel
+OpBranch %17
+%17 = OpLabel
+%18 = OpPhi %float %float_0 %16 %19 %20
+%21 = OpPhi %int %int_0 %16 %22 %20
+OpLoopMerge %23 %20 None
+OpBranch %24
+%24 = OpLabel
+%25 = OpSLessThan %bool %21 %int_10
+OpBranchConditional %25 %26 %23
+%26 = OpLabel
+%19 = OpFAdd %float %18 %float_1
+OpBranch %20
+%20 = OpLabel
+%22 = OpIAdd %int %21 %int_1
+OpBranch %17
+%23 = OpLabel
+OpStore %3 %18
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      predefs_before + func_before, predefs_after + func_after, true, true);
+}
+
 TEST_F(AggressiveDCETest, NoEliminateLiveNestedLoopWithIf) {
   // Note: SPIR-V optimized
   //
@@ -2953,6 +3176,323 @@ OpBranch %28
 %29 = OpLabel
 %55 = OpLoad %float %s
 OpStore %o %55
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
+}
+
+TEST_F(AggressiveDCETest, NoEliminateIfContinue) {
+  // Do not eliminate continue embedded in if construct
+  //
+  // #version 430
+  //
+  // layout(std430) buffer U_t
+  // {
+  //     float g_F[10];
+  // };
+  //
+  // layout(location = 0)out float o;
+  //
+  // void main(void)
+  // {
+  //     float s = 0.0;
+  //     for (int i=0; i<10; i++) {
+  //         if (i % 2 == 0) continue;
+  //         s += g_F[i];
+  //     }
+  //     o = s;
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %o
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpName %main "main"
+OpName %s "s"
+OpName %i "i"
+OpName %U_t "U_t"
+OpMemberName %U_t 0 "g_F"
+OpName %_ ""
+OpName %o "o"
+OpDecorate %_arr_float_uint_10 ArrayStride 4
+OpMemberDecorate %U_t 0 Offset 0
+OpDecorate %U_t BufferBlock
+OpDecorate %_ DescriptorSet 0
+OpDecorate %o Location 0
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%int_2 = OpConstant %int 2
+%uint = OpTypeInt 32 0
+%uint_10 = OpConstant %uint 10
+%_arr_float_uint_10 = OpTypeArray %float %uint_10
+%U_t = OpTypeStruct %_arr_float_uint_10
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+%_ = OpVariable %_ptr_Uniform_U_t Uniform
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%o = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %10
+%26 = OpLabel
+%s = OpVariable %_ptr_Function_float Function
+%i = OpVariable %_ptr_Function_int Function
+OpStore %s %float_0
+OpStore %i %int_0
+OpBranch %27
+%27 = OpLabel
+OpLoopMerge %28 %29 None
+OpBranch %30
+%30 = OpLabel
+%31 = OpLoad %int %i
+%32 = OpSLessThan %bool %31 %int_10
+OpBranchConditional %32 %33 %28
+%33 = OpLabel
+%34 = OpLoad %int %i
+%35 = OpSMod %int %34 %int_2
+%36 = OpIEqual %bool %35 %int_0
+OpSelectionMerge %37 None
+OpBranchConditional %36 %38 %37
+%38 = OpLabel
+OpBranch %29
+%37 = OpLabel
+%39 = OpLoad %int %i
+%40 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %39
+%41 = OpLoad %float %40
+%42 = OpLoad %float %s
+%43 = OpFAdd %float %42 %41
+OpStore %s %43
+OpBranch %29
+%29 = OpLabel
+%44 = OpLoad %int %i
+%45 = OpIAdd %int %44 %int_1
+OpStore %i %45
+OpBranch %27
+%28 = OpLabel
+%46 = OpLoad %float %s
+OpStore %o %46
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
+}
+
+TEST_F(AggressiveDCETest, NoEliminateIfContinue2) {
+  // Do not eliminate continue not embedded in if construct
+  //
+  // #version 430
+  //
+  // layout(std430) buffer U_t
+  // {
+  //     float g_F[10];
+  // };
+  //
+  // layout(location = 0)out float o;
+  //
+  // void main(void)
+  // {
+  //     float s = 0.0;
+  //     for (int i=0; i<10; i++) {
+  //         if (i % 2 == 0) continue;
+  //         s += g_F[i];
+  //     }
+  //     o = s;
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %o
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpName %main "main"
+OpName %s "s"
+OpName %i "i"
+OpName %U_t "U_t"
+OpMemberName %U_t 0 "g_F"
+OpName %_ ""
+OpName %o "o"
+OpDecorate %_arr_float_uint_10 ArrayStride 4
+OpMemberDecorate %U_t 0 Offset 0
+OpDecorate %U_t BufferBlock
+OpDecorate %_ DescriptorSet 0
+OpDecorate %o Location 0
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%int_2 = OpConstant %int 2
+%uint = OpTypeInt 32 0
+%uint_10 = OpConstant %uint 10
+%_arr_float_uint_10 = OpTypeArray %float %uint_10
+%U_t = OpTypeStruct %_arr_float_uint_10
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+%_ = OpVariable %_ptr_Uniform_U_t Uniform
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%o = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %10
+%26 = OpLabel
+%s = OpVariable %_ptr_Function_float Function
+%i = OpVariable %_ptr_Function_int Function
+OpStore %s %float_0
+OpStore %i %int_0
+OpBranch %27
+%27 = OpLabel
+OpLoopMerge %28 %29 None
+OpBranch %30
+%30 = OpLabel
+%31 = OpLoad %int %i
+%32 = OpSLessThan %bool %31 %int_10
+OpBranchConditional %32 %33 %28
+%33 = OpLabel
+%34 = OpLoad %int %i
+%35 = OpSMod %int %34 %int_2
+%36 = OpIEqual %bool %35 %int_0
+OpBranchConditional %36 %29 %37
+%37 = OpLabel
+%38 = OpLoad %int %i
+%39 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %38
+%40 = OpLoad %float %39
+%41 = OpLoad %float %s
+%42 = OpFAdd %float %41 %40
+OpStore %s %42
+OpBranch %29
+%29 = OpLabel
+%43 = OpLoad %int %i
+%44 = OpIAdd %int %43 %int_1
+OpStore %i %44
+OpBranch %27
+%28 = OpLabel
+%45 = OpLoad %float %s
+OpStore %o %45
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
+}
+
+TEST_F(AggressiveDCETest, NoEliminateIfContinue3) {
+  // Do not eliminate continue as conditional branch with merge instruction
+  // Note: SPIR-V edited to add merge instruction before continue.
+  //
+  // #version 430
+  //
+  // layout(std430) buffer U_t
+  // {
+  //     float g_F[10];
+  // };
+  //
+  // layout(location = 0)out float o;
+  //
+  // void main(void)
+  // {
+  //     float s = 0.0;
+  //     for (int i=0; i<10; i++) {
+  //         if (i % 2 == 0) continue;
+  //         s += g_F[i];
+  //     }
+  //     o = s;
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %o
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpName %main "main"
+OpName %s "s"
+OpName %i "i"
+OpName %U_t "U_t"
+OpMemberName %U_t 0 "g_F"
+OpName %_ ""
+OpName %o "o"
+OpDecorate %_arr_float_uint_10 ArrayStride 4
+OpMemberDecorate %U_t 0 Offset 0
+OpDecorate %U_t BufferBlock
+OpDecorate %_ DescriptorSet 0
+OpDecorate %o Location 0
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%int_2 = OpConstant %int 2
+%uint = OpTypeInt 32 0
+%uint_10 = OpConstant %uint 10
+%_arr_float_uint_10 = OpTypeArray %float %uint_10
+%U_t = OpTypeStruct %_arr_float_uint_10
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+%_ = OpVariable %_ptr_Uniform_U_t Uniform
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%o = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %10
+%26 = OpLabel
+%s = OpVariable %_ptr_Function_float Function
+%i = OpVariable %_ptr_Function_int Function
+OpStore %s %float_0
+OpStore %i %int_0
+OpBranch %27
+%27 = OpLabel
+OpLoopMerge %28 %29 None
+OpBranch %30
+%30 = OpLabel
+%31 = OpLoad %int %i
+%32 = OpSLessThan %bool %31 %int_10
+OpBranchConditional %32 %33 %28
+%33 = OpLabel
+%34 = OpLoad %int %i
+%35 = OpSMod %int %34 %int_2
+%36 = OpIEqual %bool %35 %int_0
+OpSelectionMerge %37 None
+OpBranchConditional %36 %29 %37
+%37 = OpLabel
+%38 = OpLoad %int %i
+%39 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %38
+%40 = OpLoad %float %39
+%41 = OpLoad %float %s
+%42 = OpFAdd %float %41 %40
+OpStore %s %42
+OpBranch %29
+%29 = OpLabel
+%43 = OpLoad %int %i
+%44 = OpIAdd %int %43 %int_1
+OpStore %i %44
+OpBranch %27
+%28 = OpLabel
+%45 = OpLoad %float %s
+OpStore %o %45
 OpReturn
 OpFunctionEnd
 )";
