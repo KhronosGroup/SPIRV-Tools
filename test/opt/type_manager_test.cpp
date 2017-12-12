@@ -288,17 +288,17 @@ TEST(TypeManager, LookupType) {
   opt::analysis::TypeManager manager(nullptr, *context->module());
 
   opt::analysis::Void voidTy;
-  EXPECT_EQ(manager.GetId(&voidTy), 1);
+  EXPECT_EQ(manager.GetId(&voidTy), 1u);
 
   opt::analysis::Integer uintTy(32, false);
-  EXPECT_EQ(manager.GetId(&uintTy), 2);
+  EXPECT_EQ(manager.GetId(&uintTy), 2u);
 
   opt::analysis::Integer intTy(32, true);
-  EXPECT_EQ(manager.GetId(&intTy), 3);
+  EXPECT_EQ(manager.GetId(&intTy), 3u);
 
   opt::analysis::Integer intTy2(32, true);
-  opt::analysis::Vector vecTy(&intTy2, 2);
-  EXPECT_EQ(manager.GetId(&vecTy), 4);
+  opt::analysis::Vector vecTy(&intTy2, 2u);
+  EXPECT_EQ(manager.GetId(&vecTy), 4u);
 }
 
 }  // anonymous namespace

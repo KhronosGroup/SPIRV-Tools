@@ -187,7 +187,6 @@ void TypeManager::AttachIfTypeDecoration(const ir::Instruction& inst) {
   if (!id_to_type_.count(id)) return;
 
   Type* target_type = id_to_type_[id].get();
-  assert(!target_type->IsUniqueType());
   switch (opcode) {
     case SpvOpDecorate: {
       const auto count = inst.NumOperands();

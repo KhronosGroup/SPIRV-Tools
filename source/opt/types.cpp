@@ -126,7 +126,7 @@ std::unique_ptr<Type> Type::RemoveDecorations() const {
       assert(false && "Unhandled type");
   }
   type->ClearDecorations();
-  return std::move(type);
+  return type;
 }
 
 bool Type::operator==(const Type& other) const {

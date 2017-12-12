@@ -358,7 +358,7 @@ class Struct : public Type {
   void GetExtraHashWords(std::vector<uint32_t>* words) const override;
 
  private:
-  void ClearDecorations() {
+  void ClearDecorations() override {
     decorations_.clear();
     element_decorations_.clear();
   }
