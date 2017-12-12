@@ -25,6 +25,9 @@
 #include "types.h"
 
 namespace spvtools {
+namespace ir {
+class IRContext;
+}  // namespace ir
 namespace opt {
 namespace analysis {
 
@@ -60,7 +63,7 @@ class TypeManager {
   // This instance only keeps a reference to the |consumer|, so the |consumer|
   // should outlive this instance.
   TypeManager(const MessageConsumer& consumer,
-              const spvtools::ir::Module& module);
+              spvtools::ir::IRContext* context);
 
   TypeManager(const TypeManager&) = delete;
   TypeManager(TypeManager&&) = delete;
@@ -84,16 +87,36 @@ class TypeManager {
   // Returns the number of forward pointer types hold in this manager.
   size_t NumForwardPointers() const { return forward_pointers_.size(); }
 
-  // Analyzes the types and decorations on types in the given |module|.
-  // TODO(dnovillo): This should be private and the type manager should know how
-  // to update itself when new types are added
-  // (https://github.com/KhronosGroup/SPIRV-Tools/issues/1071).
-  void AnalyzeTypes(const spvtools::ir::Module& module);
+  // Returns an id for a declaration representing |type|.
+  //
+  // If |type| is registered, then the registered id is returned. Otherwise,
+  // this function recursively adds type and annotation instructions as
+  // necessary to fully define |type|.
+  uint32_t GetTypeInstruction(const Type* type);
+
+  // Registers |type| to |id|.
+  void RegisterType(uint32_t id, const Type& type);
 
  private:
   using TypeToIdMap = std::unordered_map<const Type*, uint32_t, HashTypePointer,
                                          CompareTypePointers>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
+
+  // Analyzes the types and decorations on types in the given |module|.
+  void AnalyzeTypes(const spvtools::ir::Module& module);
+
+  spvtools::ir::IRContext* context() { return context_; }
+
+  // Attachs the decorations on |type| to |id|.
+  void AttachDecorations(uint32_t id, const Type* type);
+
+  // Create the annotation instruction.
+  //
+  // If |element| is zero, an OpDecorate is created, other an OpMemberDecorate
+  // is created. The annotation is registered with the DefUseManager and the
+  // DecorationManager.
+  void CreateDecoration(uint32_t id, const std::vector<uint32_t>& decoration,
+                        uint32_t element = 0);
 
   // Creates and returns a type from the given SPIR-V |inst|. Returns nullptr if
   // the given instruction is not for defining a type.
@@ -103,6 +126,7 @@ class TypeManager {
   void AttachIfTypeDecoration(const spvtools::ir::Instruction& inst);
 
   const MessageConsumer& consumer_;  // Message consumer.
+  spvtools::ir::IRContext* context_;
   IdToTypeMap id_to_type_;  // Mapping from ids to their type representations.
   TypeToIdMap type_to_id_;  // Mapping from types to their defining ids.
   ForwardPointerVector forward_pointers_;  // All forward pointer declarations.
@@ -110,12 +134,6 @@ class TypeManager {
   // Refers the contents in the above vector.
   std::unordered_set<ForwardPointer*> unresolved_forward_pointers_;
 };
-
-inline TypeManager::TypeManager(const spvtools::MessageConsumer& consumer,
-                                const spvtools::ir::Module& module)
-    : consumer_(consumer) {
-  AnalyzeTypes(module);
-}
 
 }  // namespace analysis
 }  // namespace opt

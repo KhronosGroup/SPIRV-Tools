@@ -104,10 +104,18 @@ class Type {
   // Returns a human-readable string to represent this type.
   virtual std::string str() const = 0;
 
+  Kind kind() const { return kind_; }
+  const std::vector<std::vector<uint32_t>>& decorations() const {
+    return decorations_;
+  }
+
   // Returns true if there is no decoration on this type. For struct types,
   // returns true only when there is no decoration for both the struct type
   // and the struct members.
   virtual bool decoration_empty() const { return decorations_.empty(); }
+
+  // Creates a clone of |this|.
+  std::unique_ptr<Type> Clone() const;
 
   // Returns a clone of |this| minus any decorations.
   std::unique_ptr<Type> RemoveDecorations() const;
@@ -267,6 +275,15 @@ class Image : public Type {
   Image* AsImage() override { return this; }
   const Image* AsImage() const override { return this; }
 
+  const Type* sampled_type() const { return sampled_type_; }
+  SpvDim dim() const { return dim_; }
+  uint32_t depth() const { return depth_; }
+  uint32_t arrayed() const { return arrayed_; }
+  uint32_t ms() const { return ms_; }
+  uint32_t sampled() const { return sampled_; }
+  SpvImageFormat format() const { return format_; }
+  SpvAccessQualifier access_qualifier() const { return access_qualifier_; }
+
   void GetExtraHashWords(std::vector<uint32_t>* words) const override;
 
  private:
@@ -291,6 +308,8 @@ class SampledImage : public Type {
 
   SampledImage* AsSampledImage() override { return this; }
   const SampledImage* AsSampledImage() const override { return this; }
+
+  const Type* image_type() const { return image_type_; }
 
   void GetExtraHashWords(std::vector<uint32_t>* words) const override;
 
@@ -351,6 +370,10 @@ class Struct : public Type {
   bool decoration_empty() const override {
     return decorations_.empty() && element_decorations_.empty();
   }
+  const std::unordered_map<uint32_t, std::vector<std::vector<uint32_t>>>&
+  element_decorations() const {
+    return element_decorations_;
+  }
 
   Struct* AsStruct() override { return this; }
   const Struct* AsStruct() const override { return this; }
@@ -382,6 +405,8 @@ class Opaque : public Type {
   Opaque* AsOpaque() override { return this; }
   const Opaque* AsOpaque() const override { return this; }
 
+  const std::string& name() const { return name_; }
+
   void GetExtraHashWords(std::vector<uint32_t>* words) const override;
 
  private:
@@ -396,6 +421,7 @@ class Pointer : public Type {
   bool IsSame(const Type* that) const override;
   std::string str() const override;
   const Type* pointee_type() const { return pointee_type_; }
+  SpvStorageClass storage_class() const { return storage_class_; }
 
   Pointer* AsPointer() override { return this; }
   const Pointer* AsPointer() const override { return this; }
@@ -418,6 +444,9 @@ class Function : public Type {
   Function* AsFunction() override { return this; }
   const Function* AsFunction() const override { return this; }
 
+  const Type* return_type() const { return return_type_; }
+  const std::vector<Type*>& param_types() const { return param_types_; }
+
   void GetExtraHashWords(std::vector<uint32_t>* words) const override;
 
  private:
@@ -437,6 +466,8 @@ class Pipe : public Type {
   Pipe* AsPipe() override { return this; }
   const Pipe* AsPipe() const override { return this; }
 
+  SpvAccessQualifier access_qualifier() const { return access_qualifier_; }
+
   void GetExtraHashWords(std::vector<uint32_t>* words) const override;
 
  private:
@@ -454,6 +485,7 @@ class ForwardPointer : public Type {
 
   uint32_t target_id() const { return target_id_; }
   void SetTargetPointer(Pointer* pointer) { pointer_ = pointer; }
+  SpvStorageClass storage_class() const { return storage_class_; }
 
   bool IsSame(const Type* that) const override;
   std::string str() const override;

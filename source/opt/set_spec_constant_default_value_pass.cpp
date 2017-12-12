@@ -189,6 +189,8 @@ ir::Instruction* GetSpecIdTargetFromDecorationGroup(
 
 Pass::Status SetSpecConstantDefaultValuePass::Process(
     ir::IRContext* irContext) {
+  InitializeProcessing(irContext);
+
   // The operand index of decoration target in an OpDecorate instruction.
   const uint32_t kTargetIdOperandIndex = 0;
   // The operand index of the decoration literal in an OpDecorate instruction.
@@ -202,8 +204,6 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(
   const uint32_t kOpSpecConstantLiteralInOperandIndex = 0;
 
   bool modified = false;
-  analysis::DefUseManager def_use_mgr(irContext->module());
-  analysis::TypeManager type_mgr(consumer(), *irContext->module());
   // Scan through all the annotation instructions to find 'OpDecorate SpecId'
   // instructions. Then extract the decoration target of those instructions.
   // The decoration targets should be spec constant defining instructions with
@@ -229,10 +229,10 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(
     // Find the spec constant defining instruction. Note that the
     // target_id might be a decoration group id.
     ir::Instruction* spec_inst = nullptr;
-    if (ir::Instruction* target_inst = def_use_mgr.GetDef(target_id)) {
+    if (ir::Instruction* target_inst = get_def_use_mgr()->GetDef(target_id)) {
       if (target_inst->opcode() == SpvOp::SpvOpDecorationGroup) {
         spec_inst =
-            GetSpecIdTargetFromDecorationGroup(*target_inst, &def_use_mgr);
+            GetSpecIdTargetFromDecorationGroup(*target_inst, get_def_use_mgr());
       } else {
         spec_inst = target_inst;
       }
@@ -255,7 +255,8 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(
       // with the type of the spec constant.
       const std::string& default_value_str = iter->second;
       bit_pattern = ParseDefaultValueStr(
-          default_value_str.c_str(), type_mgr.GetType(spec_inst->type_id()));
+          default_value_str.c_str(),
+          context()->get_type_mgr()->GetType(spec_inst->type_id()));
 
     } else {
       // Search for the new bit-pattern-form default value for this spec id.
@@ -266,7 +267,8 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(
 
       // Gets the bit-pattern of the default value from the map directly.
       bit_pattern = ParseDefaultValueBitPattern(
-          iter->second, type_mgr.GetType(spec_inst->type_id()));
+          iter->second,
+          context()->get_type_mgr()->GetType(spec_inst->type_id()));
     }
 
     if (bit_pattern.empty()) continue;

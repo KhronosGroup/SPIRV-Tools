@@ -469,10 +469,6 @@ void IRContext::InitializeCombinators() {
   valid_analyses_ |= kAnalysisCombinators;
 }
 
-// ir::Instruction* IRContext::GetTypeInstruction(const Type* type) {
-//
-//}
-
 // Gets the dominator analysis for function |f|.
 opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(const ir::Function* f,
                                                         const ir::CFG& in_cfg) {

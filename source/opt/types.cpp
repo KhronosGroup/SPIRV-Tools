@@ -91,7 +91,7 @@ bool Type::IsUniqueType(bool allowVariablePointers) const {
   }
 }
 
-std::unique_ptr<Type> Type::RemoveDecorations() const {
+std::unique_ptr<Type> Type::Clone() const {
   std::unique_ptr<Type> type;
   switch (kind_) {
 #define DeclareKindCase(kind)                \
@@ -125,6 +125,11 @@ std::unique_ptr<Type> Type::RemoveDecorations() const {
     default:
       assert(false && "Unhandled type");
   }
+  return type;
+}
+
+std::unique_ptr<Type> Type::RemoveDecorations() const {
+  std::unique_ptr<Type> type(Clone());
   type->ClearDecorations();
   return type;
 }

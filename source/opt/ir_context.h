@@ -241,7 +241,7 @@ class IRContext {
   // is never re-built.
   opt::analysis::TypeManager* get_type_mgr() {
     if (!type_mgr_)
-      type_mgr_.reset(new opt::analysis::TypeManager(consumer(), *module()));
+      type_mgr_.reset(new opt::analysis::TypeManager(consumer(), this));
     return type_mgr_.get();
   }
 
@@ -383,7 +383,7 @@ class IRContext {
   // If an instruction already exists that matches |type|, then that
   // instruction is returned, otherwise a new instruction is
   // created.
-  // ir::Instruction* GetTypeInstruction(const Type* type);
+  ir::Instruction* GetTypeInstruction(const opt::analysis::Type* type);
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.

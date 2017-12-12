@@ -90,7 +90,7 @@ TEST(TypeManager, TypeStrings) {
 
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   EXPECT_EQ(type_id_strs.size(), manager.NumTypes());
   EXPECT_EQ(2u, manager.NumForwardPointers());
@@ -120,7 +120,7 @@ TEST(TypeManager, DecorationOnStruct) {
   )";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(7u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -170,7 +170,7 @@ TEST(TypeManager, DecorationOnMember) {
   )";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(10u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -208,7 +208,7 @@ TEST(TypeManager, DecorationEmpty) {
   )";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(5u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -230,7 +230,7 @@ TEST(TypeManager, BeginEndForEmptyModule) {
   const std::string text = "";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
   ASSERT_EQ(0u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
 
@@ -247,7 +247,7 @@ TEST(TypeManager, BeginEnd) {
   )";
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
   ASSERT_EQ(5u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
 
@@ -285,7 +285,7 @@ TEST(TypeManager, LookupType) {
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(context, nullptr);
-  opt::analysis::TypeManager manager(nullptr, *context->module());
+  opt::analysis::TypeManager manager(nullptr, context.get());
 
   opt::analysis::Void voidTy;
   EXPECT_EQ(manager.GetId(&voidTy), 1u);

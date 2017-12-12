@@ -33,6 +33,14 @@ namespace opt {
 
 uint32_t InlinePass::FindPointerToType(uint32_t type_id,
                                        SpvStorageClass storage_class) {
+  opt::analysis::Type* pointeeTy = context()->get_type_mgr()->GetType(type_id);
+  opt::analysis::Pointer pointerTy(pointeeTy, storage_class);
+  if (type_id == context()->get_type_mgr()->GetId(pointeeTy)) {
+    // Non-ambiguous type. Get the pointer type through the type manager.
+    return context()->get_type_mgr()->GetTypeInstruction(&pointerTy);
+  }
+
+  // Ambiguous type, do a linear search.
   ir::Module::inst_iterator type_itr = get_module()->types_values_begin();
   for (; type_itr != get_module()->types_values_end(); ++type_itr) {
     const ir::Instruction* type_inst = &*type_itr;
@@ -53,7 +61,12 @@ uint32_t InlinePass::AddPointerToType(uint32_t type_id,
       {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
         {uint32_t(storage_class)}},
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {type_id}}}));
+  opt::analysis::Type* pointeeTy = context()->get_type_mgr()->GetType(type_id);
   context()->AddType(std::move(type_inst));
+  opt::analysis::Pointer pointerTy(pointeeTy, storage_class);
+  if (context()->get_type_mgr()->GetId(&pointerTy) == 0) {
+    context()->get_type_mgr()->RegisterType(resultId, pointerTy);
+  }
   return resultId;
 }
 
