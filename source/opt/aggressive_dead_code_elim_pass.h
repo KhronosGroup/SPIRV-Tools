@@ -103,8 +103,9 @@ class AggressiveDCEPass : public MemPass {
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
-  // Add all branches targeting |labelId| to worklist if not already live
-  void AddBranchesToWorklist(uint32_t labelId);
+  // Add all break and continue branches in the loop associated with
+  // |mergeInst| to worklist if not already live
+  void AddBreaksAndContinuesToWorklist(ir::Instruction* mergeInst);
 
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
@@ -140,9 +141,8 @@ class AggressiveDCEPass : public MemPass {
   // immediate controlling structured if.
   std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerBranch_;
 
-  // Map from block to the merge instruction in the header of the most
-  // immediate controlling structured if.
-  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerMerge_;
+  // Map from branch to its associated merge instruction, if any 
+  std::unordered_map<ir::Instruction*, ir::Instruction*> branch2merge_;
 
   // Map from instruction containing block
   std::unordered_map<ir::Instruction*, ir::BasicBlock*> inst2block_;
