@@ -17,7 +17,7 @@
 #include <sstream>
 #include <string>
 
-#include "spirv/1.1/spirv.h"
+#include "latest_version_spirv_header.h"
 #include "test_fixture.h"
 #include "tools/stats/stats_analyzer.h"
 

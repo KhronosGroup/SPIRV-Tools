@@ -15,7 +15,7 @@
 #ifndef LIBSPIRV_TABLE_H_
 #define LIBSPIRV_TABLE_H_
 
-#include "spirv/1.2/spirv.h"
+#include "latest_version_spirv_header.h"
 
 #include "extensions.h"
 #include "message.h"

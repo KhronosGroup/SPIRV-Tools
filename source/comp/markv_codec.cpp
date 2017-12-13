@@ -34,9 +34,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "spirv/1.2/GLSL.std.450.h"
-#include "spirv/1.2/OpenCL.std.h"
-#include "spirv/1.2/spirv.h"
+#include "latest_version_glsl_std_450_header.h"
+#include "latest_version_opencl_std_header.h"
+#include "latest_version_spirv_header.h"
 
 #include "binary.h"
 #include "diagnostic.h"

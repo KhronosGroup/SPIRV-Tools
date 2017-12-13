@@ -24,8 +24,8 @@
 #include "operand.h"
 #include "util/ilist_node.h"
 
+#include "latest_version_spirv_header.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv/1.2/spirv.h"
 
 namespace spvtools {
 namespace ir {

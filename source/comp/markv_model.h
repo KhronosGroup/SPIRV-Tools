@@ -19,8 +19,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "latest_version_spirv_header.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv/1.2/spirv.h"
 #include "util/huffman_codec.h"
 
 namespace spvtools {

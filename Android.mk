@@ -108,12 +108,12 @@ SPVTOOLS_OPT_SRC_FILES := \
 SPV_CORE10_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.0/spirv.core.grammar.json
 SPV_CORE11_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.1/spirv.core.grammar.json
 SPV_CORE12_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/spirv.core.grammar.json
-SPV_GLSL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.0/extinst.glsl.std.450.grammar.json
-SPV_OPENCL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.0/extinst.opencl.std.100.grammar.json
+SPV_GLSL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/extinst.glsl.std.450.grammar.json
+SPV_OPENCL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/extinst.opencl.std.100.grammar.json
 
 define gen_spvtools_grammar_tables
 $(call generate-file-dir,$(1)/core.insts-1.0.inc)
-$(1)/core.insts-1.0.inc $(1)/operand.kinds-1.0.inc $(1)/glsl.std.450.insts-1.0.inc $(1)/opencl.std.insts-1.0.inc: \
+$(1)/core.insts-1.0.inc $(1)/operand.kinds-1.0.inc $(1)/glsl.std.450.insts.inc $(1)/opencl.std.insts.inc: \
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
         $(SPV_CORE10_GRAMMAR) \
         $(SPV_GLSL_GRAMMAR) \
@@ -123,8 +123,8 @@ $(1)/core.insts-1.0.inc $(1)/operand.kinds-1.0.inc $(1)/glsl.std.450.insts-1.0.i
 		                --extinst-glsl-grammar=$(SPV_GLSL_GRAMMAR) \
 		                --extinst-opencl-grammar=$(SPV_OPENCL_GRAMMAR) \
 		                --core-insts-output=$(1)/core.insts-1.0.inc \
-		                --glsl-insts-output=$(1)/glsl.std.450.insts-1.0.inc \
-		                --opencl-insts-output=$(1)/opencl.std.insts-1.0.inc \
+		                --glsl-insts-output=$(1)/glsl.std.450.insts.inc \
+		                --opencl-insts-output=$(1)/opencl.std.insts.inc \
 		                --operand-kinds-output=$(1)/operand.kinds-1.0.inc
 		@echo "[$(TARGET_ARCH_ABI)] Grammar v1.0   : instructions & operands <= grammar JSON files"
 $(1)/core.insts-1.1.inc $(1)/operand.kinds-1.1.inc: \
@@ -145,7 +145,7 @@ $(1)/core.insts-1.2.inc $(1)/operand.kinds-1.2.inc: \
 		@echo "[$(TARGET_ARCH_ABI)] Grammar v1.2   : instructions & operands <= grammar JSON files"
 $(LOCAL_PATH)/source/opcode.cpp: $(1)/core.insts-1.0.inc $(1)/core.insts-1.1.inc $(1)/core.insts-1.2.inc
 $(LOCAL_PATH)/source/operand.cpp: $(1)/operand.kinds-1.0.inc $(1)/operand.kinds-1.1.inc $(1)/operand.kinds-1.2.inc
-$(LOCAL_PATH)/source/ext_inst.cpp: $(1)/glsl.std.450.insts-1.0.inc $(1)/opencl.std.insts-1.0.inc
+$(LOCAL_PATH)/source/ext_inst.cpp: $(1)/glsl.std.450.insts.inc $(1)/opencl.std.insts.inc
 endef
 $(eval $(call gen_spvtools_grammar_tables,$(SPVTOOLS_OUT_PATH)))
 

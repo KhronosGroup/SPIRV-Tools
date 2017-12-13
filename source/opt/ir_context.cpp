@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "ir_context.h"
+#include "latest_version_glsl_std_450_header.h"
 #include "log.h"
 #include "mem_pass.h"
-#include "spirv/1.0/GLSL.std.450.h"
 
 #include <cstring>
 
