@@ -26,9 +26,9 @@ namespace opt {
 namespace analysis {
 
 TypeManager::TypeManager(const MessageConsumer& consumer,
-                         spvtools::ir::IRContext* context)
-    : consumer_(consumer), context_(context) {
-  AnalyzeTypes(*context->module());
+                         spvtools::ir::IRContext* c)
+    : consumer_(consumer), context_(c) {
+  AnalyzeTypes(*c->module());
 }
 
 Type* TypeManager::GetType(uint32_t id) const {

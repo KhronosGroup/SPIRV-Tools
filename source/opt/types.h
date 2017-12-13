@@ -86,7 +86,7 @@ class Type {
     kNamedBarrier,
   };
 
-  Type(Kind kind) : kind_(kind) {}
+  Type(Kind k) : kind_(k) {}
 
   virtual ~Type() {}
 
@@ -264,9 +264,9 @@ class Matrix : public Type {
 
 class Image : public Type {
  public:
-  Image(Type* sampled_type, SpvDim dim, uint32_t depth, uint32_t arrayed,
-        uint32_t ms, uint32_t sampled, SpvImageFormat format,
-        SpvAccessQualifier access_qualifier = SpvAccessQualifierReadOnly);
+  Image(Type* type, SpvDim dimen, uint32_t d, uint32_t array,
+        uint32_t multisample, uint32_t sampling, SpvImageFormat f,
+        SpvAccessQualifier qualifier = SpvAccessQualifierReadOnly);
   Image(const Image&) = default;
 
   bool IsSame(const Type* that) const override;
@@ -299,8 +299,7 @@ class Image : public Type {
 
 class SampledImage : public Type {
  public:
-  SampledImage(Type* image_type)
-      : Type(kSampledImage), image_type_(image_type) {}
+  SampledImage(Type* image) : Type(kSampledImage), image_type_(image) {}
   SampledImage(const SampledImage&) = default;
 
   bool IsSame(const Type* that) const override;
@@ -396,7 +395,7 @@ class Struct : public Type {
 
 class Opaque : public Type {
  public:
-  Opaque(std::string name) : Type(kOpaque), name_(std::move(name)) {}
+  Opaque(std::string n) : Type(kOpaque), name_(std::move(n)) {}
   Opaque(const Opaque&) = default;
 
   bool IsSame(const Type* that) const override;
@@ -415,7 +414,7 @@ class Opaque : public Type {
 
 class Pointer : public Type {
  public:
-  Pointer(Type* pointee_type, SpvStorageClass storage_class);
+  Pointer(Type* pointee, SpvStorageClass sc);
   Pointer(const Pointer&) = default;
 
   bool IsSame(const Type* that) const override;
@@ -435,7 +434,7 @@ class Pointer : public Type {
 
 class Function : public Type {
  public:
-  Function(Type* return_type, const std::vector<Type*>& param_types);
+  Function(Type* ret_type, const std::vector<Type*>& params);
   Function(const Function&) = default;
 
   bool IsSame(const Type* that) const override;
@@ -456,8 +455,8 @@ class Function : public Type {
 
 class Pipe : public Type {
  public:
-  Pipe(SpvAccessQualifier access_qualifier)
-      : Type(kPipe), access_qualifier_(access_qualifier) {}
+  Pipe(SpvAccessQualifier qualifier)
+      : Type(kPipe), access_qualifier_(qualifier) {}
   Pipe(const Pipe&) = default;
 
   bool IsSame(const Type* that) const override;
@@ -476,10 +475,10 @@ class Pipe : public Type {
 
 class ForwardPointer : public Type {
  public:
-  ForwardPointer(uint32_t id, SpvStorageClass storage_class)
+  ForwardPointer(uint32_t id, SpvStorageClass sc)
       : Type(kForwardPointer),
         target_id_(id),
-        storage_class_(storage_class),
+        storage_class_(sc),
         pointer_(nullptr) {}
   ForwardPointer(const ForwardPointer&) = default;
 

@@ -62,8 +62,7 @@ class TypeManager {
   // will be communicated to the outside via the given message |consumer|.
   // This instance only keeps a reference to the |consumer|, so the |consumer|
   // should outlive this instance.
-  TypeManager(const MessageConsumer& consumer,
-              spvtools::ir::IRContext* context);
+  TypeManager(const MessageConsumer& consumer, spvtools::ir::IRContext* c);
 
   TypeManager(const TypeManager&) = delete;
   TypeManager(TypeManager&&) = delete;

@@ -303,18 +303,18 @@ void Matrix::GetExtraHashWords(std::vector<uint32_t>* words) const {
   words->push_back(count_);
 }
 
-Image::Image(Type* sampled_type, SpvDim dim, uint32_t depth, uint32_t arrayed,
-             uint32_t ms, uint32_t sampled, SpvImageFormat format,
-             SpvAccessQualifier access_qualifier)
+Image::Image(Type* type, SpvDim dimen, uint32_t d, uint32_t array,
+             uint32_t multisample, uint32_t sampling, SpvImageFormat f,
+             SpvAccessQualifier qualifier)
     : Type(kImage),
-      sampled_type_(sampled_type),
-      dim_(dim),
-      depth_(depth),
-      arrayed_(arrayed),
-      ms_(ms),
-      sampled_(sampled),
-      format_(format),
-      access_qualifier_(access_qualifier) {
+      sampled_type_(type),
+      dim_(dimen),
+      depth_(d),
+      arrayed_(array),
+      ms_(multisample),
+      sampled_(sampling),
+      format_(f),
+      access_qualifier_(qualifier) {
   // TODO(antiagainst): check sampled_type
 }
 
@@ -487,8 +487,8 @@ void Opaque::GetExtraHashWords(std::vector<uint32_t>* words) const {
   }
 }
 
-Pointer::Pointer(Type* type, SpvStorageClass storage_class)
-    : Type(kPointer), pointee_type_(type), storage_class_(storage_class) {
+Pointer::Pointer(Type* type, SpvStorageClass sc)
+    : Type(kPointer), pointee_type_(type), storage_class_(sc) {
   assert(!type->AsVoid());
 }
 
@@ -507,9 +507,9 @@ void Pointer::GetExtraHashWords(std::vector<uint32_t>* words) const {
   words->push_back(storage_class_);
 }
 
-Function::Function(Type* return_type, const std::vector<Type*>& param_types)
-    : Type(kFunction), return_type_(return_type), param_types_(param_types) {
-  for (auto* t : param_types) {
+Function::Function(Type* ret_type, const std::vector<Type*>& params)
+    : Type(kFunction), return_type_(ret_type), param_types_(params) {
+  for (auto* t : params) {
     (void)t;
     assert(!t->AsVoid());
   }
