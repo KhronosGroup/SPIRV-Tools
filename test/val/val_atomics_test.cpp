@@ -202,7 +202,8 @@ OpAtomicStore %f32_var_function %scope %memory_semantics %f32_1
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("AtomicStore: expected Pointer Storage Class to be Uniform, "
-                "Workgroup, CrossWorkgroup, Generic, AtomicCounter or Image"));
+                "Workgroup, CrossWorkgroup, Generic, AtomicCounter, Image or "
+                "StorageBuffer"));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreWrongScopeType) {
