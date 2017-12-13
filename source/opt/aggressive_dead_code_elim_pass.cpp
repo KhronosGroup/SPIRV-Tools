@@ -122,38 +122,37 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
     std::list<ir::BasicBlock*>& structuredOrder) {
   block2headerBranch_.clear();
   branch2merge_.clear();
-  std::stack<ir::Instruction*> currentMergeInst;
-  std::stack<ir::Instruction*> currentBranchInst;
-  std::stack<uint32_t> currentMergeBlockId;
-  currentMergeInst.push(nullptr);
-  currentBranchInst.push(nullptr);
-  currentMergeBlockId.push(0);
+  std::stack<ir::Instruction*> currentHeaderBranch;
+  currentHeaderBranch.push(nullptr);
+  uint32_t currentMergeBlockId = 0;
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
-    // If leaving an if or loop, update stacks
-    if ((*bi)->id() == currentMergeBlockId.top()) {
-      currentMergeBlockId.pop();
-      currentMergeInst.pop();
-      currentBranchInst.pop();
+    // If this block is the merge block of the current control construct,
+    // we are leaving the current construct so we must update state
+    if ((*bi)->id() == currentMergeBlockId) {
+      currentHeaderBranch.pop();
+      ir::Instruction* chb = currentHeaderBranch.top();
+      if (chb != nullptr)
+        currentMergeBlockId = branch2merge_[chb]->GetSingleWordInOperand(0);
     }
     ir::Instruction* mergeInst;
     ir::Instruction* branchInst;
     uint32_t mergeBlockId;
     bool is_header =
         IsStructuredIfOrLoopHeader(*bi, &mergeInst, &branchInst, &mergeBlockId);
-    // If there is live code in loop header, the loop is live
+    // If this is a loop header, update state first so the block will map to
+    // the loop.
     if (is_header && mergeInst->opcode() == SpvOpLoopMerge) {
-      currentMergeBlockId.push(mergeBlockId);
-      currentMergeInst.push(mergeInst);
-      currentBranchInst.push(branchInst);
+      currentHeaderBranch.push(branchInst);
+      branch2merge_[branchInst] = mergeInst;
+      currentMergeBlockId = mergeBlockId;
     }
-    ir::Instruction* cbi = currentBranchInst.top();
-    block2headerBranch_[*bi] = cbi;
-    branch2merge_[cbi] = currentMergeInst.top();
-    // If there is live code following if header, the if is live
+    // Map the block to the current construct.
+    block2headerBranch_[*bi] = currentHeaderBranch.top();
+    // If this is an if header, update state so following blocks map to the if.
     if (is_header && mergeInst->opcode() == SpvOpSelectionMerge) {
-      currentMergeBlockId.push(mergeBlockId);
-      currentMergeInst.push(mergeInst);
-      currentBranchInst.push(branchInst);
+      currentHeaderBranch.push(branchInst);
+      branch2merge_[branchInst] = mergeInst;
+      currentMergeBlockId = mergeBlockId;
     }
   }
 }
