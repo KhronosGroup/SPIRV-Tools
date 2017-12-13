@@ -18,7 +18,7 @@
 
 #include "cfa.h"
 #include "iterator.h"
-#include "spirv/1.0/GLSL.std.450.h"
+#include "latest_version_glsl_std_450_header.h"
 
 #include <stack>
 

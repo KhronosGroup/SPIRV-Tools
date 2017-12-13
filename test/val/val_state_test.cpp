@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "spirv/1.1/spirv.h"
+#include "latest_version_spirv_header.h"
 
 #include "enum_set.h"
 #include "extensions.h"

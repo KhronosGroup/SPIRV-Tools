@@ -17,9 +17,9 @@
 #include <vector>
 
 #include "gmock/gmock.h"
+#include "latest_version_opencl_std_header.h"
 #include "source/message.h"
 #include "source/table.h"
-#include "spirv/1.0/OpenCL.std.h"
 #include "test_fixture.h"
 #include "unit_spirv.h"
 

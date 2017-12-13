@@ -21,7 +21,7 @@
 #include <set>
 #include <utility>
 
-#include "spirv/1.2/spirv.h"
+#include "latest_version_spirv_header.h"
 
 namespace libspirv {
 

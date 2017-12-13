@@ -15,9 +15,9 @@
 #ifndef LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 #define LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 
+#include "latest_version_spirv_header.h"
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv/1.2/spirv.h"
 #include "table.h"
 
 namespace libspirv {

@@ -18,8 +18,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "latest_version_spirv_header.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv/1.2/spirv.h"
 
 // Describes an instruction.
 struct spv_instruction_t {

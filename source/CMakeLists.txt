@@ -70,7 +70,7 @@ endmacro(spvtools_vimsyntax)
 macro(spvtools_glsl_tables VERSION)
   set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
   set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.glsl.std.450.grammar.json")
-  set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/glsl.std.450.insts-${VERSION}.inc")
+  set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/glsl.std.450.insts.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
       --spirv-core-grammar=${CORE_GRAMMAR_JSON_FILE}
@@ -84,7 +84,7 @@ endmacro(spvtools_glsl_tables)
 macro(spvtools_opencl_tables VERSION)
   set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
   set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.opencl.std.100.grammar.json")
-  set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/opencl.std.insts-${VERSION}.inc")
+  set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/opencl.std.insts.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
       --spirv-core-grammar=${CORE_GRAMMAR_JSON_FILE}
@@ -113,8 +113,8 @@ spvtools_core_tables("1.0")
 spvtools_core_tables("1.1")
 spvtools_core_tables("1.2")
 spvtools_enum_string_mapping("1.2")
-spvtools_opencl_tables("1.0")
-spvtools_glsl_tables("1.0")
+spvtools_opencl_tables("1.2")
+spvtools_glsl_tables("1.2")
 spvtools_vendor_tables("spv-amd-shader-explicit-vertex-parameter")
 spvtools_vendor_tables("spv-amd-shader-trinary-minmax")
 spvtools_vendor_tables("spv-amd-gcn-shader")
@@ -210,6 +210,9 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
   ${CMAKE_CURRENT_SOURCE_DIR}/id_descriptor.h
   ${CMAKE_CURRENT_SOURCE_DIR}/instruction.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/latest_version_glsl_std_450_header.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/latest_version_opencl_std_header.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/latest_version_spirv_header.h
   ${CMAKE_CURRENT_SOURCE_DIR}/macro.h
   ${CMAKE_CURRENT_SOURCE_DIR}/name_mapper.h
   ${CMAKE_CURRENT_SOURCE_DIR}/opcode.h
