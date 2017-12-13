@@ -517,14 +517,14 @@ bool ScalarReplacementPass::CheckType(const ir::Instruction* typeInst) const {
     case SpvOpTypeArray:
       if (GetArrayLength(typeInst) > MAX_NUM_ELEMENTS) return false;
       return true;
-      // TODO(alanbaker): Develop some heuristics for when this should be
-      // re-enabled.
-      //// Specifically including matrix and vector in an attempt to reduce the
-      //// number of vector registers required.
-      // case SpvOpTypeMatrix:
-      // case SpvOpTypeVector:
-      //  if (GetNumElements(typeInst) > MAX_NUM_ELEMENTS) return false;
-      //  return true;
+    // TODO(alanbaker): Develop some heuristics for when this should be
+    // re-enabled.
+    //// Specifically including matrix and vector in an attempt to reduce the
+    //// number of vector registers required.
+    // case SpvOpTypeMatrix:
+    // case SpvOpTypeVector:
+    //  if (GetNumElements(typeInst) > MAX_NUM_ELEMENTS) return false;
+    //  return true;
 
     case SpvOpTypeRuntimeArray:
     default:
