@@ -141,7 +141,7 @@ class AggressiveDCEPass : public MemPass {
   // immediate controlling structured if.
   std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerBranch_;
 
-  // Map from branch to its associated merge instruction, if any 
+  // Map from branch to its associated merge instruction, if any
   std::unordered_map<ir::Instruction*, ir::Instruction*> branch2merge_;
 
   // Map from instruction containing block
