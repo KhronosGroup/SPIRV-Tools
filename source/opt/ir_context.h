@@ -378,13 +378,6 @@ class IRContext {
     return feature_mgr_.get();
   }
 
-  // Returns an instruction for the instruction representing |type|.
-  //
-  // If an instruction already exists that matches |type|, then that
-  // instruction is returned, otherwise a new instruction is
-  // created.
-  ir::Instruction* GetTypeInstruction(const opt::analysis::Type* type);
-
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {

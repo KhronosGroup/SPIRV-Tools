@@ -93,7 +93,10 @@ class TypeManager {
   // necessary to fully define |type|.
   uint32_t GetTypeInstruction(const Type* type);
 
-  // Registers |type| to |id|.
+  // Registers |id| to |type|.
+  //
+  // If GetId(|type|) already returns a non-zero id, the return value will be
+  // unchanged.
   void RegisterType(uint32_t id, const Type& type);
 
  private:

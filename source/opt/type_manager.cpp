@@ -15,6 +15,7 @@
 #include "type_manager.h"
 
 #include <cassert>
+#include <cstring>
 #include <utility>
 
 #include "ir_context.h"
@@ -166,27 +167,12 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       break;
     }
     case Type::kOpaque: {
-      std::vector<uint32_t> words;
-      uint32_t word = 0;
       const Opaque* opaque = type->AsOpaque();
       size_t size = opaque->name().size();
       // Convert to null-terminated packed UTF-8 string.
-      for (size_t i = 0; i != size; ++i) {
-        word <<= 8;
-        word |= (opaque->name()[i] & 0xff);
-        if (i % 4 == 3) {
-          words.push_back(word);
-          word = 0;
-        }
-        if (i == size - 1) {
-          if (i % 4 == 3) {
-            words.push_back('\0' << 24);
-          } else {
-            words.back() <<= 8;
-            words.back() |= '\0';
-          }
-        }
-      }
+      std::vector<uint32_t> words(size / 4 + 1, 0);
+      char* dst = reinterpret_cast<char*>(words.data());
+      strncpy(dst, opaque->name().c_str(), size);
       typeInst.reset(
           new ir::Instruction(context(), SpvOpTypeOpaque, 0, id,
                               std::initializer_list<ir::Operand>{
@@ -225,7 +211,7 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       break;
     case Type::kForwardPointer:
       typeInst.reset(new ir::Instruction(
-          context(), SpvOpTypeForwardPointer, 0, id,
+          context(), SpvOpTypeForwardPointer, 0, 0,
           std::initializer_list<ir::Operand>{
               {SPV_OPERAND_TYPE_ID, {type->AsForwardPointer()->target_id()}},
               {SPV_OPERAND_TYPE_STORAGE_CLASS,
@@ -262,11 +248,11 @@ void TypeManager::CreateDecoration(uint32_t target,
                                    uint32_t element) {
   std::vector<ir::Operand> ops;
   ops.push_back(ir::Operand(SPV_OPERAND_TYPE_ID, {target}));
-  ops.push_back(ir::Operand(SPV_OPERAND_TYPE_ID, {decoration[0]}));
   if (element != 0) {
     ops.push_back(ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {element}));
   }
-  for (size_t i = 1; i != decoration.size(); ++i) {
+  ops.push_back(ir::Operand(SPV_OPERAND_TYPE_DECORATION, {decoration[0]}));
+  for (size_t i = 1; i < decoration.size(); ++i) {
     ops.push_back(
         ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {decoration[i]}));
   }
@@ -275,13 +261,14 @@ void TypeManager::CreateDecoration(uint32_t target,
       ops));
   ir::Instruction* inst = &*--context()->annotation_end();
   context()->get_def_use_mgr()->AnalyzeInstUse(inst);
-  context()->get_decoration_mgr()->AddDecoration(inst);
 }
 
 void TypeManager::RegisterType(uint32_t id, const Type& type) {
   auto& t = id_to_type_[id];
-  t = type.Clone();
-  type_to_id_[t.get()] = id;
+  t.reset(type.Clone().release());
+  if (GetId(t.get()) == 0) {
+    type_to_id_[t.get()] = id;
+  }
 }
 
 Type* TypeManager::RecordIfTypeDefinition(

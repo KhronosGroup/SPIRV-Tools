@@ -377,9 +377,7 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
   get_def_use_mgr()->AnalyzeInstDefUse(ptr);
   pointee_to_pointer_[id] = ptrId;
   // Register with the type manager if necessary.
-  if (context()->get_type_mgr()->GetId(&pointerTy) == 0) {
-    context()->get_type_mgr()->RegisterType(ptrId, pointerTy);
-  }
+  context()->get_type_mgr()->RegisterType(ptrId, pointerTy);
 
   return ptrId;
 }
@@ -519,14 +517,14 @@ bool ScalarReplacementPass::CheckType(const ir::Instruction* typeInst) const {
     case SpvOpTypeArray:
       if (GetArrayLength(typeInst) > MAX_NUM_ELEMENTS) return false;
       return true;
-    // TODO(alanbaker): Develop some heuristics for when this should be
-    // re-enabled.
-    //// Specifically including matrix and vector in an attempt to reduce the
-    //// number of vector registers required.
-    // case SpvOpTypeMatrix:
-    // case SpvOpTypeVector:
-    //  if (GetNumElements(typeInst) > MAX_NUM_ELEMENTS) return false;
-    //  return true;
+      // TODO(alanbaker): Develop some heuristics for when this should be
+      // re-enabled.
+      //// Specifically including matrix and vector in an attempt to reduce the
+      //// number of vector registers required.
+      // case SpvOpTypeMatrix:
+      // case SpvOpTypeVector:
+      //  if (GetNumElements(typeInst) > MAX_NUM_ELEMENTS) return false;
+      //  return true;
 
     case SpvOpTypeRuntimeArray:
     default:

@@ -64,9 +64,7 @@ uint32_t InlinePass::AddPointerToType(uint32_t type_id,
   opt::analysis::Type* pointeeTy = context()->get_type_mgr()->GetType(type_id);
   context()->AddType(std::move(type_inst));
   opt::analysis::Pointer pointerTy(pointeeTy, storage_class);
-  if (context()->get_type_mgr()->GetId(&pointerTy) == 0) {
-    context()->get_type_mgr()->RegisterType(resultId, pointerTy);
-  }
+  context()->get_type_mgr()->RegisterType(resultId, pointerTy);
   return resultId;
 }
 

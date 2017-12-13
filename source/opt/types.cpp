@@ -583,7 +583,7 @@ std::string ForwardPointer::str() const {
 void ForwardPointer::GetExtraHashWords(std::vector<uint32_t>* words) const {
   words->push_back(target_id_);
   words->push_back(storage_class_);
-  pointer_->GetHashWords(words);
+  if (pointer_) pointer_->GetHashWords(words);
 }
 
 }  // namespace analysis
