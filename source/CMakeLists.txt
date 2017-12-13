@@ -290,6 +290,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_datarules.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_decorations.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_derivatives.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_image.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp

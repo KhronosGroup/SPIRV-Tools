@@ -147,6 +147,10 @@ spv_result_t AtomicsPass(ValidationState_t& _,
 spv_result_t LiteralsPass(ValidationState_t& _,
                           const spv_parsed_instruction_t* inst);
 
+/// Validates correctness of ExtInst instructions.
+spv_result_t ExtInstPass(ValidationState_t& _,
+                         const spv_parsed_instruction_t* inst);
+
 // Validates that capability declarations use operands allowed in the current
 // context.
 spv_result_t CapabilityPass(ValidationState_t& _,
