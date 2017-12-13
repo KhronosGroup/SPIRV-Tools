@@ -595,7 +595,7 @@ OpMemoryModel Logical GLSL450
 
   Integer u32(32, false);
   Struct st({&u32, &u32});
-  st.AddDecoration({{10}});
+  st.AddDecoration({10});
   st.AddMemberDecoration(1, {{35, 4}});
   (void)context->get_def_use_mgr();
   context->get_type_mgr()->GetTypeInstruction(&st);
