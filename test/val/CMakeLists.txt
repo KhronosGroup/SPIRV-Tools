@@ -128,6 +128,12 @@ add_spvtools_unittest(TARGET val_primitives
   LIBS ${SPIRV_TOOLS}
 )
 
+add_spvtools_unittest(TARGET val_ext_inst
+	SRCS val_ext_inst_test.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET val_limits
 	SRCS val_limits_test.cpp
        ${VAL_TEST_COMMON_SRCS}

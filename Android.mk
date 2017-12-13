@@ -43,6 +43,7 @@ SPVTOOLS_SRC_FILES := \
 		source/validate_datarules.cpp \
 		source/validate_decorations.cpp \
 		source/validate_derivatives.cpp \
+		source/validate_ext_inst.cpp \
 		source/validate_id.cpp \
 		source/validate_image.cpp \
 		source/validate_instruction.cpp \
