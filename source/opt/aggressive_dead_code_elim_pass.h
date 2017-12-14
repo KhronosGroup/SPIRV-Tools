@@ -93,8 +93,8 @@ class AggressiveDCEPass : public MemPass {
                                   ir::Instruction** branchInst,
                                   uint32_t* mergeBlockId);
 
-  // Initialize block2branch_ and block2merge_ using |structuredOrder| to
-  // order blocks.
+  // Initialize block2headerBranch_ and branch2merge_ using |structuredOrder|
+  // to order blocks.
   void ComputeBlock2HeaderMaps(std::list<ir::BasicBlock*>& structuredOrder);
 
   // Initialize inst2block_ for |func|.
