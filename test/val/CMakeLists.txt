@@ -122,6 +122,12 @@ add_spvtools_unittest(TARGET val_atomics
   LIBS ${SPIRV_TOOLS}
 )
 
+add_spvtools_unittest(TARGET val_primitives
+        SRCS val_primitives_test.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET val_limits
 	SRCS val_limits_test.cpp
        ${VAL_TEST_COMMON_SRCS}
