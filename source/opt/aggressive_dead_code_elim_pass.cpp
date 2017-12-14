@@ -197,13 +197,21 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
       loopMerge->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
   get_def_use_mgr()->ForEachUser(contId, [&contId,
                                           this](ir::Instruction* user) {
-    // A conditional branch can only be a continue if it does not have a merge
-    // instruction. An unconditional branch can only be a continue if it is not
-    // branching to its own merge block.
     SpvOp op = user->opcode();
     if (op == SpvOpBranchConditional) {
-      if (branch2merge_[user] != nullptr) return;
+      // A conditional branch can only be a continue if it does not have a merge
+      // instruction or its merge block is not the continue block.
+      ir::Instruction* hdrMerge = branch2merge_[user];
+      if (hdrMerge != nullptr && hdrMerge->opcode() == SpvOpSelectionMerge) {
+        uint32_t hdrMergeId =
+            hdrMerge->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
+        if (hdrMergeId == contId) return;
+        // Need to mark merge instruction too
+        if (!IsLive(hdrMerge)) AddToWorklist(hdrMerge);
+      }
     } else if (op == SpvOpBranch) {
+      // An unconditional branch can only be a continue if it is not
+      // branching to its own merge block.
       ir::BasicBlock* blk = inst2block_[user];
       ir::Instruction* hdrBranch = block2headerBranch_[blk];
       if (hdrBranch == nullptr) return;
