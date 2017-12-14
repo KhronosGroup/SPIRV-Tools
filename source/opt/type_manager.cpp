@@ -118,16 +118,18 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
           context(), SpvOpTypeImage, 0, id,
           std::initializer_list<ir::Operand>{
               {SPV_OPERAND_TYPE_ID, {subtype}},
-              {SPV_OPERAND_TYPE_DIMENSIONALITY, {image->dim()}},
+              {SPV_OPERAND_TYPE_DIMENSIONALITY,
+               {static_cast<uint32_t>(image->dim())}},
               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->depth()}},
               {SPV_OPERAND_TYPE_LITERAL_INTEGER,
                {(image->is_arrayed() ? 1u : 0u)}},
               {SPV_OPERAND_TYPE_LITERAL_INTEGER,
                {(image->is_multisampled() ? 1u : 0u)}},
               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->sampled()}},
-              {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT, {image->format()}},
+              {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
+               {static_cast<uint32_t>(image->format())}},
               {SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
-               {image->access_qualifier()}}}));
+               {static_cast<uint32_t>(image->access_qualifier())}}}));
       break;
     }
     case Type::kSampledImage: {
@@ -187,7 +189,8 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       typeInst.reset(new ir::Instruction(
           context(), SpvOpTypePointer, 0, id,
           std::initializer_list<ir::Operand>{
-              {SPV_OPERAND_TYPE_STORAGE_CLASS, {pointer->storage_class()}},
+              {SPV_OPERAND_TYPE_STORAGE_CLASS,
+               {static_cast<uint32_t>(pointer->storage_class())}},
               {SPV_OPERAND_TYPE_ID, {subtype}}}));
       break;
     }
@@ -205,11 +208,11 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       break;
     }
     case Type::kPipe:
-      typeInst.reset(
-          new ir::Instruction(context(), SpvOpTypePipe, 0, id,
-                              std::initializer_list<ir::Operand>{
-                                  {SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
-                                   {type->AsPipe()->access_qualifier()}}}));
+      typeInst.reset(new ir::Instruction(
+          context(), SpvOpTypePipe, 0, id,
+          std::initializer_list<ir::Operand>{
+              {SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
+               {static_cast<uint32_t>(type->AsPipe()->access_qualifier())}}}));
       break;
     case Type::kForwardPointer:
       typeInst.reset(new ir::Instruction(
@@ -217,7 +220,8 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
           std::initializer_list<ir::Operand>{
               {SPV_OPERAND_TYPE_ID, {type->AsForwardPointer()->target_id()}},
               {SPV_OPERAND_TYPE_STORAGE_CLASS,
-               {type->AsForwardPointer()->storage_class()}}}));
+               {static_cast<uint32_t>(
+                   type->AsForwardPointer()->storage_class())}}}));
       break;
     default:
       assert(false && "Unexpected type");
