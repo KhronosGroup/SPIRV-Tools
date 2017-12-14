@@ -191,7 +191,13 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
           if (hdrMerge == loopMerge) break;
           branchInst = hdrBranch;
         }
-        if (!IsLive(user)) AddToWorklist(user);
+        if (!IsLive(user)) {
+          AddToWorklist(user);
+          // Add branch's merge if there is one
+          ir::Instruction* userMerge = branch2merge_[user];
+          if (userMerge != nullptr)
+            AddToWorklist(userMerge);
+        }
       });
   const uint32_t contId =
       loopMerge->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
