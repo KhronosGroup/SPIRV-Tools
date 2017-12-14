@@ -39,48 +39,57 @@ bool IsLiteralNumber(const spv_parsed_operand_t*  operand) {
 }
 
 // Verifies that the upper bits of the given upper |word| with given
-// lower |width| are zero- or sign-extended when |sign| is true
-bool verifyUpperBits(uint32_t word, uint32_t width, bool sign) {
+// lower |width| are zero- or sign-extended when |signed_int| is true
+bool VerifyUpperBits(uint32_t word, uint32_t width, bool signed_int) {
   assert(width < 32);
-  uint32_t upper_mask = (0xFFFFFFFF >> width) << width;
-  uint32_t upper_bits = word & upper_mask;
-  if (upper_bits == 0x00000000)
-      return true; // zero-extended
-  if (sign && upper_bits == upper_mask)
-      return true; // sign-extended
-  return false;
+  assert(0 < width);
+  const uint32_t upper_mask = 0xFFFFFFFFu << width;
+  const uint32_t upper_bits = word & upper_mask;
+
+  bool result = false;
+  if (signed_int) {
+    const uint32_t sign_bit = word & (1u << (width - 1));
+    if (sign_bit) {
+      result = upper_bits == upper_mask;
+    } else {
+      result = upper_bits == 0;
+    }
+  } else {
+    result = upper_bits == 0;
+  }
+  return result;
 }
 
 }  // namespace
 
 // Validates that literal numbers are represented according to the spec
 spv_result_t LiteralsPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst) {
+                          const spv_parsed_instruction_t* inst) {
   // For every operand that is a literal number
-  for (uint16_t i=0; i<inst->num_operands; i++) {
+  for (uint16_t i = 0; i < inst->num_operands; i++) {
     const spv_parsed_operand_t* operand = inst->operands + i;
     if (!IsLiteralNumber(operand)) continue;
 
     // The upper bits are always in the last word (little-endian)
     int last_index = operand->offset + operand->num_words - 1;
-    uint32_t upper_word = inst->words[last_index];
+    const uint32_t upper_word = inst->words[last_index];
 
     // TODO(jcaraban): is the |word size| defined in some header?
     const uint32_t word_size = 32;
     uint32_t bit_width = operand->number_bit_width;
 
     // Bit widths that are a multiple of the word size have no upper bits
-    if (bit_width % word_size == 0) continue;
+    const auto remaining_bits = bit_width % word_size;
+    if (remaining_bits == 0) continue;
 
-    uint32_t lower_width = bit_width % word_size;
-    bool signedness = operand->number_kind == SPV_NUMBER_SIGNED_INT;
+    const bool signedness = operand->number_kind == SPV_NUMBER_SIGNED_INT;
 
-    if (!verifyUpperBits(upper_word,lower_width,signedness)) {
+    if (!VerifyUpperBits(upper_word, remaining_bits, signedness)) {
       return _.diag(SPV_ERROR_INVALID_VALUE)
-          << "The high-order bits of a literal number in instruction <id> "
-          << inst->result_id << " must be 0 for a floating-point type, "
-          << "or 0 for an integer type with Signedness of 0, "
-          << "or sign extended when Signedness is 1";
+             << "The high-order bits of a literal number in instruction <id> "
+             << inst->result_id << " must be 0 for a floating-point type, "
+             << "or 0 for an integer type with Signedness of 0, "
+             << "or sign extended when Signedness is 1";
     }
   }
   return SPV_SUCCESS;

@@ -65,17 +65,19 @@ std::string GenerateKernelCode() {
 
 TEST_F(ValidateLiterals, LiteralsShaderGood) {
   std::string str = GenerateShaderCode() + R"(
-%11 = OpConstant %int16   !0xFFFFABCD
-%12 = OpConstant %uint16  !0x0000ABCD
-%13 = OpConstant %int16  -32768
-%14 = OpConstant %uint16  65535
-%15 = OpConstant %int32  -2147483648
-%16 = OpConstant %uint32  4294967295
-%17 = OpConstant %int64  -9223372036854775808
-%18 = OpConstant %uint64  18446744073709551615
-%19 = OpConstant %half    !0x0000FFFF
-%20 = OpConstant %float   !0xFFFFFFFF
-%21 = OpConstant %double  !0xFFFFFFFF !0xFFFFFFFF
+%11 = OpConstant %int16   !0x00007FFF
+%12 = OpConstant %int16   !0xFFFF8000
+%13 = OpConstant %int16   !0xFFFFABCD
+%14 = OpConstant %uint16  !0x0000ABCD
+%15 = OpConstant %int16  -32768
+%16 = OpConstant %uint16  65535
+%17 = OpConstant %int32  -2147483648
+%18 = OpConstant %uint32  4294967295
+%19 = OpConstant %int64  -9223372036854775808
+%20 = OpConstant %uint64  18446744073709551615
+%21 = OpConstant %half    !0x0000FFFF
+%22 = OpConstant %float   !0xFFFFFFFF
+%23 = OpConstant %double  !0xFFFFFFFF !0xFFFFFFFF
   )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -95,9 +97,13 @@ TEST_P(ValidateLiteralsShader, LiteralsShaderBad) {
 
 INSTANTIATE_TEST_CASE_P(LiteralsShaderCases, ValidateLiteralsShader,
     ::testing::Values(
+      "%11 = OpConstant %int16  !0xFFFF0000", // Sign bit is 0
+      "%11 = OpConstant %int16  !0x00008000", // Sign bit is 1
+      "%11 = OpConstant %int16  !0xABCD8000", // Sign bit is 1
       "%11 = OpConstant %int16  !0xABCD0000",
       "%11 = OpConstant %uint16 !0xABCD0000",
-      "%11 = OpConstant %half   !0xABCD0000"
+      "%11 = OpConstant %half   !0xABCD0000",
+      "%11 = OpConstant %half   !0x00010000"
     ));
 
 TEST_F(ValidateLiterals, LiteralsKernelGood) {
