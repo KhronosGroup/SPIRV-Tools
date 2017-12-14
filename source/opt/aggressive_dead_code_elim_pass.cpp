@@ -195,8 +195,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
           AddToWorklist(user);
           // Add branch's merge if there is one
           ir::Instruction* userMerge = branch2merge_[user];
-          if (userMerge != nullptr)
-            AddToWorklist(userMerge);
+          if (userMerge != nullptr) AddToWorklist(userMerge);
         }
       });
   const uint32_t contId =
