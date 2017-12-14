@@ -17,8 +17,4 @@
 
 #include "spirv/1.2/GLSL.std.450.h"
 
-inline const char* GetGlslStd450HeaderVersionString() {
-  return "1.2";
-}
-
 #endif  // LIBSPIRV_LATEST_VERSION_GLSL_STD_450_HEADER_H_

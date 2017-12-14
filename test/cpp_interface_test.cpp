@@ -15,8 +15,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "latest_version_spirv_header.h"
 #include "spirv-tools/optimizer.hpp"
+#include "spirv/1.1/spirv.h"
 
 namespace {
 

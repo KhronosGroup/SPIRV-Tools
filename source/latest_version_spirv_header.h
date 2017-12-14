@@ -17,8 +17,4 @@
 
 #include "spirv/1.2/spirv.h"
 
-inline const char* GetSpirvHeaderVersionString() {
-  return "1.2";
-}
-
 #endif  // LIBSPIRV_LATEST_VERSION_SPIRV_HEADER_H_

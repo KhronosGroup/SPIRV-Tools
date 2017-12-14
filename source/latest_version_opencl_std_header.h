@@ -17,8 +17,4 @@
 
 #include "spirv/1.2/OpenCL.std.h"
 
-inline const char* GetOpenClStdHeaderVersionString() {
-  return "1.2";
-}
-
 #endif  // LIBSPIRV_LATEST_VERSION_OPENCL_STD_HEADER_H_
