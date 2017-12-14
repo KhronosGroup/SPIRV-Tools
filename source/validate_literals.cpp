@@ -28,13 +28,14 @@ namespace libspirv {
 namespace {
 
 // Returns true if the operand holds a literal number
-bool IsLiteralNumber(const spv_parsed_operand_t*  operand) {
+bool IsLiteralNumber(const spv_parsed_operand_t* operand) {
   switch (operand->number_kind) {
     case SPV_NUMBER_SIGNED_INT:
     case SPV_NUMBER_UNSIGNED_INT:
     case SPV_NUMBER_FLOATING:
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
 

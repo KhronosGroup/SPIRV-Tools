@@ -88,23 +88,24 @@ TEST_P(ValidateLiteralsShader, LiteralsShaderBad) {
   std::string inst_id = "11";
   CompileSuccessfully(str);
   EXPECT_EQ(SPV_ERROR_INVALID_VALUE, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-    HasSubstr("The high-order bits of a literal number in instruction <id> "
-              + inst_id + " must be 0 for a floating-point type, "
-              "or 0 for an integer type with Signedness of 0, "
-              "or sign extended when Signedness is 1"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The high-order bits of a literal number in instruction <id> " +
+                inst_id +
+                " must be 0 for a floating-point type, "
+                "or 0 for an integer type with Signedness of 0, "
+                "or sign extended when Signedness is 1"));
 }
 
-INSTANTIATE_TEST_CASE_P(LiteralsShaderCases, ValidateLiteralsShader,
-    ::testing::Values(
-      "%11 = OpConstant %int16  !0xFFFF0000", // Sign bit is 0
-      "%11 = OpConstant %int16  !0x00008000", // Sign bit is 1
-      "%11 = OpConstant %int16  !0xABCD8000", // Sign bit is 1
-      "%11 = OpConstant %int16  !0xABCD0000",
-      "%11 = OpConstant %uint16 !0xABCD0000",
-      "%11 = OpConstant %half   !0xABCD0000",
-      "%11 = OpConstant %half   !0x00010000"
-    ));
+INSTANTIATE_TEST_CASE_P(
+    LiteralsShaderCases, ValidateLiteralsShader,
+    ::testing::Values("%11 = OpConstant %int16  !0xFFFF0000",  // Sign bit is 0
+                      "%11 = OpConstant %int16  !0x00008000",  // Sign bit is 1
+                      "%11 = OpConstant %int16  !0xABCD8000",  // Sign bit is 1
+                      "%11 = OpConstant %int16  !0xABCD0000",
+                      "%11 = OpConstant %uint16 !0xABCD0000",
+                      "%11 = OpConstant %half   !0xABCD0000",
+                      "%11 = OpConstant %half   !0x00010000"));
 
 TEST_F(ValidateLiterals, LiteralsKernelGood) {
   std::string str = GenerateKernelCode() + R"(
@@ -120,17 +121,18 @@ TEST_P(ValidateLiteralsKernel, LiteralsKernelBad) {
   std::string inst_id = "2";
   CompileSuccessfully(str);
   EXPECT_EQ(SPV_ERROR_INVALID_VALUE, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-    HasSubstr("The high-order bits of a literal number in instruction <id> "
-              + inst_id + " must be 0 for a floating-point type, "
-              "or 0 for an integer type with Signedness of 0, "
-              "or sign extended when Signedness is 1"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The high-order bits of a literal number in instruction <id> " +
+                inst_id +
+                " must be 0 for a floating-point type, "
+                "or 0 for an integer type with Signedness of 0, "
+                "or sign extended when Signedness is 1"));
 }
 
-INSTANTIATE_TEST_CASE_P(LiteralsKernelCases, ValidateLiteralsKernel,
-  ::testing::Values(
-    "%2 = OpConstant %uint8  !0xABCDEF00",
-    "%2 = OpConstant %uint8  !0xABCDEFFF"
-  ));
+INSTANTIATE_TEST_CASE_P(
+    LiteralsKernelCases, ValidateLiteralsKernel,
+    ::testing::Values("%2 = OpConstant %uint8  !0xABCDEF00",
+                      "%2 = OpConstant %uint8  !0xABCDEFFF"));
 
-}
+}  // namespace
