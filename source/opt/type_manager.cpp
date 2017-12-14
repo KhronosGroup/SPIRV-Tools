@@ -54,6 +54,34 @@ void TypeManager::AnalyzeTypes(const spvtools::ir::Module& module) {
   for (const auto& inst : module.annotations()) AttachIfTypeDecoration(inst);
 }
 
+void TypeManager::RemoveId(uint32_t id) {
+  auto iter = id_to_type_.find(id);
+  if (iter == id_to_type_.end()) return;
+
+  auto& type = iter->second;
+  if (!type->IsUniqueType(true)) {
+    // Search for an equivalent type to re-map.
+    bool found = false;
+    for (auto& pair : id_to_type_) {
+      if (pair.first != id && *pair.second == *type) {
+        // Equivalent ambiguous type, re-map type.
+        type_to_id_.erase(type.get());
+        type_to_id_[pair.second.get()] = pair.first;
+        found = true;
+        break;
+      }
+      // No equivalent ambiguous type, remove mapping.
+      if (!found) type_to_id_.erase(type.get());
+    }
+  } else {
+    // Unique type, so just erase the entry.
+    type_to_id_.erase(type.get());
+  }
+
+  // Erase the entry for |id|.
+  id_to_type_.erase(iter);
+}
+
 uint32_t TypeManager::GetTypeInstruction(const Type* type) {
   uint32_t id = GetId(type);
   if (id != 0) return id;

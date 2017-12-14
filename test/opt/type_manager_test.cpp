@@ -492,6 +492,77 @@ OpMemoryModel Logical GLSL450
   Match(text, context.get());
 }
 
+TEST(TypeManager, RemoveId) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 32 1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  context->get_type_mgr()->RemoveId(1u);
+  ASSERT_EQ(context->get_type_mgr()->GetType(1u), nullptr);
+  ASSERT_NE(context->get_type_mgr()->GetType(2u), nullptr);
+
+  context->get_type_mgr()->RemoveId(2u);
+  ASSERT_EQ(context->get_type_mgr()->GetType(1u), nullptr);
+  ASSERT_EQ(context->get_type_mgr()->GetType(2u), nullptr);
+}
+
+TEST(TypeManager, RemoveIdNonDuplicateAmbiguousType) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  Integer u32(32, false);
+  Struct st({&u32});
+  ASSERT_EQ(context->get_type_mgr()->GetId(&st), 2u);
+  context->get_type_mgr()->RemoveId(2u);
+  ASSERT_EQ(context->get_type_mgr()->GetType(2u), nullptr);
+  ASSERT_EQ(context->get_type_mgr()->GetId(&st), 0u);
+}
+
+TEST(TypeManager, RemoveIdDuplicateAmbiguousType) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+%3 = OpTypeStruct %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  Integer u32(32, false);
+  Struct st({&u32});
+  uint32_t id = context->get_type_mgr()->GetId(&st);
+  ASSERT_NE(id, 0);
+  uint32_t toRemove = id == 2u ? 2u : 3u;
+  uint32_t toStay = id == 2u ? 3u : 2u;
+  context->get_type_mgr()->RemoveId(toRemove);
+  ASSERT_EQ(context->get_type_mgr()->GetType(toRemove), nullptr);
+  ASSERT_EQ(context->get_type_mgr()->GetId(&st), toStay);
+}
+
 TEST(TypeManager, GetTypeInstructionAllTypes) {
   const std::string text = R"(
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0

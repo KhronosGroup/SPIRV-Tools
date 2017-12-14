@@ -99,6 +99,11 @@ class TypeManager {
   // unchanged.
   void RegisterType(uint32_t id, const Type& type);
 
+  // Removes knowledge of |id| from the manager.
+  //
+  // If |id| is an ambiguous type, GetId for |id|'s type may return a new id.
+  void RemoveId(uint32_t id);
+
  private:
   using TypeToIdMap = std::unordered_map<const Type*, uint32_t, HashTypePointer,
                                          CompareTypePointers>;

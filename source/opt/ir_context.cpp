@@ -95,6 +95,10 @@ Instruction* IRContext::KillInst(ir::Instruction* inst) {
     }
   }
 
+  if (type_mgr_) {
+    type_mgr_->RemoveId(inst->result_id());
+  }
+
   Instruction* next_instruction = nullptr;
   if (inst->IsInAList()) {
     next_instruction = inst->NextNode();
