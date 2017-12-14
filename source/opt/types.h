@@ -264,8 +264,8 @@ class Matrix : public Type {
 
 class Image : public Type {
  public:
-  Image(Type* type, SpvDim dimen, uint32_t d, uint32_t array,
-        uint32_t multisample, uint32_t sampling, SpvImageFormat f,
+  Image(Type* type, SpvDim dimen, uint32_t d, bool array, bool multisample,
+        uint32_t sampling, SpvImageFormat f,
         SpvAccessQualifier qualifier = SpvAccessQualifierReadOnly);
   Image(const Image&) = default;
 
@@ -278,8 +278,8 @@ class Image : public Type {
   const Type* sampled_type() const { return sampled_type_; }
   SpvDim dim() const { return dim_; }
   uint32_t depth() const { return depth_; }
-  uint32_t arrayed() const { return arrayed_; }
-  uint32_t ms() const { return ms_; }
+  bool is_arrayed() const { return arrayed_; }
+  bool is_multisampled() const { return ms_; }
   uint32_t sampled() const { return sampled_; }
   SpvImageFormat format() const { return format_; }
   SpvAccessQualifier access_qualifier() const { return access_qualifier_; }
@@ -290,8 +290,8 @@ class Image : public Type {
   Type* sampled_type_;
   SpvDim dim_;
   uint32_t depth_;
-  uint32_t arrayed_;
-  uint32_t ms_;
+  bool arrayed_;
+  bool ms_;
   uint32_t sampled_;
   SpvImageFormat format_;
   SpvAccessQualifier access_qualifier_;

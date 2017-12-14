@@ -120,8 +120,10 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
               {SPV_OPERAND_TYPE_ID, {subtype}},
               {SPV_OPERAND_TYPE_DIMENSIONALITY, {image->dim()}},
               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->depth()}},
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->arrayed()}},
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->ms()}},
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+               {(image->is_arrayed() ? 1u : 0u)}},
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+               {(image->is_multisampled() ? 1u : 0u)}},
               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->sampled()}},
               {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT, {image->format()}},
               {SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
@@ -306,8 +308,8 @@ Type* TypeManager::RecordIfTypeDefinition(
       type = new Image(
           GetType(inst.GetSingleWordInOperand(0)),
           static_cast<SpvDim>(inst.GetSingleWordInOperand(1)),
-          inst.GetSingleWordInOperand(2), inst.GetSingleWordInOperand(3),
-          inst.GetSingleWordInOperand(4), inst.GetSingleWordInOperand(5),
+          inst.GetSingleWordInOperand(2), inst.GetSingleWordInOperand(3) == 1,
+          inst.GetSingleWordInOperand(4) == 1, inst.GetSingleWordInOperand(5),
           static_cast<SpvImageFormat>(inst.GetSingleWordInOperand(6)), access);
     } break;
     case SpvOpTypeSampler:

@@ -303,9 +303,8 @@ void Matrix::GetExtraHashWords(std::vector<uint32_t>* words) const {
   words->push_back(count_);
 }
 
-Image::Image(Type* type, SpvDim dimen, uint32_t d, uint32_t array,
-             uint32_t multisample, uint32_t sampling, SpvImageFormat f,
-             SpvAccessQualifier qualifier)
+Image::Image(Type* type, SpvDim dimen, uint32_t d, bool array, bool multisample,
+             uint32_t sampling, SpvImageFormat f, SpvAccessQualifier qualifier)
     : Type(kImage),
       sampled_type_(type),
       dim_(dimen),
