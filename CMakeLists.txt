@@ -24,9 +24,7 @@ if (POLICY CMP0054)
 endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-project(spirv-tools
-  VERSION
-    2017.2)
+project(spirv-tools)
 enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
 
@@ -230,6 +228,22 @@ endif(SPIRV_BUILD_COMPRESSION)
 
 
 # Build pkg-config file
+
+# First, retrieve the current version from CHANGES
+file(STRINGS CHANGES CHANGES_CONTENT)
+string(
+REGEX
+  MATCH "v[0-9]+(.[0-9]+)?(-dev)? [0-9]+-[0-9]+-[0-9]+"
+  FIRST_VERSION_LINE
+  ${CHANGES_CONTENT})
+string(
+REGEX
+  REPLACE "^v([^ ]+) .+$" "\\1"
+  CURRENT_VERSION
+  "${FIRST_VERSION_LINE}")
+# If this is a development version, replace "-dev" by ".0" as pkg-config nor
+# CMake support "-dev" in the version
+string(REGEX REPLACE "-dev" ".0" CURRENT_VERSION "${CURRENT_VERSION}")
 configure_file("./cmake/SPIRV-Tools.pc.in" "SPIRV-Tools.pc" @ONLY)
 
 # Install pkg-config file

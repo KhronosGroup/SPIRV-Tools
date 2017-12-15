@@ -5,7 +5,7 @@ includedir=${prefix}/include
 
 Name: SPIRV-Tools
 Description: Tools for SPIR-V
-Version: @PROJECT_VERSION@
+Version: @CURRENT_VERSION@
 URL: https://github.com/KhronosGroup/SPIRV-Tools
 
 Libs: -L${libdir} @SPIRV_LIBRARIES@
