@@ -249,6 +249,8 @@ if(CURRENT_VERSION MATCHES "-dev")
 else()
   string(APPEND CURRENT_VERSION ".1")
 endif()
+# The following configure file on CHANGES is there to trigger a re-run of CMake
+# whenever CHANGES is modified, as to pick up the latest version defined.
 configure_file(CHANGES CHANGES.junk)
 configure_file("./cmake/SPIRV-Tools.pc.in" "SPIRV-Tools.pc" @ONLY)
 
