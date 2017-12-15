@@ -249,6 +249,7 @@ if(CURRENT_VERSION MATCHES "-dev")
 else()
   string(APPEND CURRENT_VERSION ".1")
 endif()
+configure_file(CHANGES CHANGES.junk)
 configure_file("./cmake/SPIRV-Tools.pc.in" "SPIRV-Tools.pc" @ONLY)
 
 # Install pkg-config file
