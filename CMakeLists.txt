@@ -242,8 +242,13 @@ REGEX
   CURRENT_VERSION
   "${FIRST_VERSION_LINE}")
 # If this is a development version, replace "-dev" by ".0" as pkg-config nor
-# CMake support "-dev" in the version
-string(REGEX REPLACE "-dev" ".0" CURRENT_VERSION "${CURRENT_VERSION}")
+# CMake support "-dev" in the version. Otherwise, add ".1" to have a newer
+# version than the dev one.
+if(CURRENT_VERSION MATCHES "-dev")
+  string(REGEX REPLACE "-dev" ".0" CURRENT_VERSION "${CURRENT_VERSION}")
+else()
+  string(APPEND CURRENT_VERSION ".1")
+endif()
 configure_file("./cmake/SPIRV-Tools.pc.in" "SPIRV-Tools.pc" @ONLY)
 
 # Install pkg-config file
