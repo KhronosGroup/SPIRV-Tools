@@ -16,6 +16,8 @@
 
 #include "validate.h"
 
+#include <string>
+
 #include "diagnostic.h"
 #include "opcode.h"
 #include "val/instruction.h"
@@ -27,6 +29,20 @@ namespace libspirv {
 spv_result_t PrimitivesPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+
+  switch (opcode) {
+    case SpvOpEmitVertex:
+    case SpvOpEndPrimitive:
+    case SpvOpEmitStreamVertex:
+    case SpvOpEndStreamPrimitive:
+      _.current_function().RegisterExecutionModelLimitation(
+          SpvExecutionModelGeometry,
+          std::string(spvOpcodeString(opcode)) +
+              " instructions require Geometry execution model");
+      break;
+    default:
+      break;
+  }
 
   switch (opcode) {
     case SpvOpEmitStreamVertex:

@@ -28,15 +28,11 @@ using ValidatePrimitives = spvtest::ValidateBase<bool>;
 
 std::string GenerateShaderCode(
     const std::string& body,
-    const std::string& capabilities_and_extensions = "",
+    const std::string& capabilities_and_extensions =
+        "OpCapability GeometryStreams",
     const std::string& execution_model = "Geometry") {
   std::ostringstream ss;
-  ss << R"(
-OpCapability Geometry
-OpCapability GeometryStreams
-)";
-
-  ss << capabilities_and_extensions;
+  ss << capabilities_and_extensions << "\n";
   ss << "OpMemoryModel Logical GLSL450\n";
   ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
 
@@ -67,13 +63,137 @@ OpFunctionEnd)";
   return ss.str();
 }
 
+// Returns SPIR-V assembly fragment representing a function call,
+// the end of the callee body, and the preamble and body of the called
+// function with the given body, but missing the final return and
+// function-end.  The result is of the form where it can be used in the
+// |body| argument to GenerateShaderCode.
+std::string CallAndCallee(std::string body) {
+  std::ostringstream ss;
+  ss << R"(
+%dummy = OpFunctionCall %void %foo
+OpReturn
+OpFunctionEnd
+
+%foo = OpFunction %void None %func
+%foo_entry = OpLabel
+)";
+
+  ss << body;
+
+  return ss.str();
+}
+
+// OpEmitVertex doesn't have any parameters, so other validation
+// is handled by the binary parser, and generic dominance checks.
+TEST_F(ValidatePrimitives, EmitVertexSuccess) {
+  CompileSuccessfully(
+      GenerateShaderCode("OpEmitVertex", "OpCapability Geometry"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidatePrimitives, EmitVertexFailMissingCapability) {
+  CompileSuccessfully(
+      GenerateShaderCode("OpEmitVertex", "OpCapability Shader", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Opcode EmitVertex requires one of these capabilities: Geometry"));
+}
+
+TEST_F(ValidatePrimitives, EmitVertexFailWrongExecutionMode) {
+  CompileSuccessfully(
+      GenerateShaderCode("OpEmitVertex", "OpCapability Geometry", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("EmitVertex instructions require Geometry execution model"));
+}
+
+TEST_F(ValidatePrimitives, EmitVertexFailWrongExecutionModeNestedFunction) {
+  CompileSuccessfully(GenerateShaderCode(CallAndCallee("OpEmitVertex"),
+                                         "OpCapability Geometry", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("EmitVertex instructions require Geometry execution model"));
+}
+
+// OpEndPrimitive doesn't have any parameters, so other validation
+// is handled by the binary parser, and generic dominance checks.
+TEST_F(ValidatePrimitives, EndPrimitiveSuccess) {
+  CompileSuccessfully(
+      GenerateShaderCode("OpEndPrimitive", "OpCapability Geometry"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidatePrimitives, EndPrimitiveFailMissingCapability) {
+  CompileSuccessfully(
+      GenerateShaderCode("OpEndPrimitive", "OpCapability Shader", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Opcode EndPrimitive requires one of these capabilities: Geometry"));
+}
+
+TEST_F(ValidatePrimitives, EndPrimitiveFailWrongExecutionMode) {
+  CompileSuccessfully(
+      GenerateShaderCode("OpEndPrimitive", "OpCapability Geometry", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("EndPrimitive instructions require Geometry execution model"));
+}
+
+TEST_F(ValidatePrimitives, EndPrimitiveFailWrongExecutionModeNestedFunction) {
+  CompileSuccessfully(GenerateShaderCode(CallAndCallee("OpEndPrimitive"),
+                                         "OpCapability Geometry", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("EndPrimitive instructions require Geometry execution model"));
+}
+
 TEST_F(ValidatePrimitives, EmitStreamVertexSuccess) {
   const std::string body = R"(
 OpEmitStreamVertex %u32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidatePrimitives, EmitStreamVertexFailMissingCapability) {
+  CompileSuccessfully(GenerateShaderCode("OpEmitStreamVertex %u32_0",
+                                         "OpCapability Shader", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Opcode EmitStreamVertex requires one of these "
+                        "capabilities: GeometryStreams"));
+}
+
+TEST_F(ValidatePrimitives, EmitStreamVertexFailWrongExecutionMode) {
+  CompileSuccessfully(GenerateShaderCode(
+      "OpEmitStreamVertex %u32_0", "OpCapability GeometryStreams", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EmitStreamVertex instructions require Geometry execution model"));
+}
+
+TEST_F(ValidatePrimitives,
+       EmitStreamVertexFailWrongExecutionModeNestedFunction) {
+  CompileSuccessfully(
+      GenerateShaderCode(CallAndCallee("OpEmitStreamVertex %u32_0"),
+                         "OpCapability GeometryStreams", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EmitStreamVertex instructions require Geometry execution model"));
 }
 
 TEST_F(ValidatePrimitives, EmitStreamVertexNonInt) {
@@ -81,8 +201,8 @@ TEST_F(ValidatePrimitives, EmitStreamVertexNonInt) {
 OpEmitStreamVertex %f32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EmitStreamVertex: "
                         "expected Stream to be int scalar"));
@@ -93,8 +213,8 @@ TEST_F(ValidatePrimitives, EmitStreamVertexNonScalar) {
 OpEmitStreamVertex %u32vec4_0123
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EmitStreamVertex: "
                         "expected Stream to be int scalar"));
@@ -106,8 +226,8 @@ TEST_F(ValidatePrimitives, EmitStreamVertexNonConstant) {
 OpEmitStreamVertex %val1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EmitStreamVertex: "
                         "expected Stream to be constant instruction"));
@@ -118,8 +238,39 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveSuccess) {
 OpEndStreamPrimitive %u32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidatePrimitives, EndStreamPrimitiveFailMissingCapability) {
+  CompileSuccessfully(GenerateShaderCode("OpEndStreamPrimitive %u32_0",
+                                         "OpCapability Shader", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Opcode EndStreamPrimitive requires one of these "
+                        "capabilities: GeometryStreams"));
+}
+
+TEST_F(ValidatePrimitives, EndStreamPrimitiveFailWrongExecutionMode) {
+  CompileSuccessfully(GenerateShaderCode(
+      "OpEndStreamPrimitive %u32_0", "OpCapability GeometryStreams", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EndStreamPrimitive instructions require Geometry execution model"));
+}
+
+TEST_F(ValidatePrimitives,
+       EndStreamPrimitiveFailWrongExecutionModeNestedFunction) {
+  CompileSuccessfully(
+      GenerateShaderCode(CallAndCallee("OpEndStreamPrimitive %u32_0"),
+                         "OpCapability GeometryStreams", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EndStreamPrimitive instructions require Geometry execution model"));
 }
 
 TEST_F(ValidatePrimitives, EndStreamPrimitiveNonInt) {
@@ -127,8 +278,8 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveNonInt) {
 OpEndStreamPrimitive %f32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EndStreamPrimitive: "
                         "expected Stream to be int scalar"));
@@ -139,8 +290,8 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveNonScalar) {
 OpEndStreamPrimitive %u32vec4_0123
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EndStreamPrimitive: "
                         "expected Stream to be int scalar"));
@@ -152,8 +303,8 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveNonConstant) {
 OpEndStreamPrimitive %val1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EndStreamPrimitive: "
                         "expected Stream to be constant instruction"));
