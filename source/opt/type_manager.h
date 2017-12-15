@@ -101,7 +101,10 @@ class TypeManager {
 
   // Removes knowledge of |id| from the manager.
   //
-  // If |id| is an ambiguous type, GetId for |id|'s type may return a new id.
+  // If |id| is an ambiguous type the multiple ids may be registered to |id|'s
+  // type (e.g. %struct1 and %struct1 might hash to the same type). In that
+  // case, calling GetId() with |id|'s type will return another suitable id
+  // defining that type.
   void RemoveId(uint32_t id);
 
  private:
