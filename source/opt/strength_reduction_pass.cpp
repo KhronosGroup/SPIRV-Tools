@@ -125,9 +125,9 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
 }
 
 void StrengthReductionPass::FindIntTypesAndConstants() {
-  opt::analysis::Integer int32(32, true);
+  analysis::Integer int32(32, true);
   int32_type_id_ = context()->get_type_mgr()->GetId(&int32);
-  opt::analysis::Integer uint32(32, false);
+  analysis::Integer uint32(32, false);
   uint32_type_id_ = context()->get_type_mgr()->GetId(&uint32);
   for (auto iter = get_module()->types_values_begin();
        iter != get_module()->types_values_end(); ++iter) {
@@ -150,7 +150,7 @@ uint32_t StrengthReductionPass::GetConstantId(uint32_t val) {
 
   if (constant_ids_[val] == 0) {
     if (uint32_type_id_ == 0) {
-      opt::analysis::Integer uint(32, false);
+      analysis::Integer uint(32, false);
       uint32_type_id_ = context()->get_type_mgr()->GetTypeInstruction(&uint);
     }
 

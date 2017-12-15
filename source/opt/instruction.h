@@ -303,6 +303,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // and return to its caller
   bool IsReturn() const { return spvOpcodeIsReturn(opcode()); }
 
+  // Returns the id for the |element|'th subtype. If the |this| is not a
+  // composite type, this function returns 0.
+  uint32_t GetTypeComponent(uint32_t element) const;
+
   // Returns true if this instruction is a basic block terminator.
   bool IsBlockTerminator() const {
     return spvOpcodeIsBlockTerminator(opcode());

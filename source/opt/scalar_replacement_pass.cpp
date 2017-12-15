@@ -21,6 +21,7 @@
 #include "types.h"
 
 #include <queue>
+#include <tuple>
 
 namespace spvtools {
 namespace opt {
@@ -335,12 +336,15 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
   auto iter = pointee_to_pointer_.find(id);
   if (iter != pointee_to_pointer_.end()) return iter->second;
 
-  opt::analysis::Type* pointeeTy = context()->get_type_mgr()->GetType(id);
-  opt::analysis::Pointer pointerTy(pointeeTy, SpvStorageClassFunction);
+  analysis::Type* pointeeTy;
+  std::unique_ptr<analysis::Pointer> pointerTy;
+  std::tie(pointeeTy, pointerTy) =
+      context()->get_type_mgr()->GetTypeAndPointerType(id,
+                                                       SpvStorageClassFunction);
   uint32_t ptrId = 0;
   if (id == context()->get_type_mgr()->GetId(pointeeTy)) {
     // Non-ambiguous type, just ask the type manager for an id.
-    ptrId = context()->get_type_mgr()->GetTypeInstruction(&pointerTy);
+    ptrId = context()->get_type_mgr()->GetTypeInstruction(pointerTy.get());
     pointee_to_pointer_[id] = ptrId;
     return ptrId;
   }
@@ -377,7 +381,7 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
   get_def_use_mgr()->AnalyzeInstDefUse(ptr);
   pointee_to_pointer_[id] = ptrId;
   // Register with the type manager if necessary.
-  context()->get_type_mgr()->RegisterType(ptrId, pointerTy);
+  context()->get_type_mgr()->RegisterType(ptrId, *pointerTy);
 
   return ptrId;
 }

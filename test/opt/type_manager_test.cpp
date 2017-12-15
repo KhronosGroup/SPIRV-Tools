@@ -446,52 +446,6 @@ TEST(TypeManager, LookupType) {
   EXPECT_EQ(manager.GetId(&vecTy), 4u);
 }
 
-#ifdef SPIRV_EFFCEE
-TEST(TypeManager, GetTypeInstructionInt) {
-  const std::string text = R"(
-; CHECK: OpTypeInt 32 0
-; CHECK: OpTypeInt 16 1
-OpCapability Shader
-OpCapability Int16
-OpCapability Linkage
-OpMemoryModel Logical GLSL450
-  )";
-
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  EXPECT_NE(context, nullptr);
-
-  Integer uint_32(32, false);
-  context->get_type_mgr()->GetTypeInstruction(&uint_32);
-
-  Integer int_16(16, true);
-  context->get_type_mgr()->GetTypeInstruction(&int_16);
-
-  Match(text, context.get());
-}
-
-TEST(TypeManager, GetTypeInstructionDuplicateInts) {
-  const std::string text = R"(
-; CHECK: OpTypeInt 32 0
-; CHECK-NOT: OpType
-OpCapability Shader
-OpCapability Linkage
-OpMemoryModel Logical GLSL450
-  )";
-
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  EXPECT_NE(context, nullptr);
-
-  Integer uint_32(32, false);
-  uint32_t id = context->get_type_mgr()->GetTypeInstruction(&uint_32);
-
-  Integer other(32, false);
-  EXPECT_EQ(context->get_type_mgr()->GetTypeInstruction(&other), id);
-
-  Match(text, context.get());
-}
-
 TEST(TypeManager, RemoveId) {
   const std::string text = R"(
 OpCapability Shader
@@ -561,6 +515,87 @@ OpMemoryModel Logical GLSL450
   context->get_type_mgr()->RemoveId(toRemove);
   ASSERT_EQ(context->get_type_mgr()->GetType(toRemove), nullptr);
   ASSERT_EQ(context->get_type_mgr()->GetId(&st), toStay);
+}
+
+TEST(TypeManager, GetTypeAndPointerType) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  Integer u32(32, false);
+  Pointer u32Ptr(&u32, SpvStorageClassFunction);
+  Struct st({&u32});
+  Pointer stPtr(&st, SpvStorageClassInput);
+
+  auto pair = context->get_type_mgr()->GetTypeAndPointerType(
+      3u, SpvStorageClassFunction);
+  ASSERT_EQ(nullptr, pair.first);
+  ASSERT_EQ(nullptr, pair.second);
+
+  pair = context->get_type_mgr()->GetTypeAndPointerType(
+      1u, SpvStorageClassFunction);
+  ASSERT_TRUE(pair.first->IsSame(&u32));
+  ASSERT_TRUE(pair.second->IsSame(&u32Ptr));
+
+  pair =
+      context->get_type_mgr()->GetTypeAndPointerType(2u, SpvStorageClassInput);
+  ASSERT_TRUE(pair.first->IsSame(&st));
+  ASSERT_TRUE(pair.second->IsSame(&stPtr));
+}
+
+#ifdef SPIRV_EFFCEE
+TEST(TypeManager, GetTypeInstructionInt) {
+  const std::string text = R"(
+; CHECK: OpTypeInt 32 0
+; CHECK: OpTypeInt 16 1
+OpCapability Shader
+OpCapability Int16
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(context, nullptr);
+
+  Integer uint_32(32, false);
+  context->get_type_mgr()->GetTypeInstruction(&uint_32);
+
+  Integer int_16(16, true);
+  context->get_type_mgr()->GetTypeInstruction(&int_16);
+
+  Match(text, context.get());
+}
+
+TEST(TypeManager, GetTypeInstructionDuplicateInts) {
+  const std::string text = R"(
+; CHECK: OpTypeInt 32 0
+; CHECK-NOT: OpType
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(context, nullptr);
+
+  Integer uint_32(32, false);
+  uint32_t id = context->get_type_mgr()->GetTypeInstruction(&uint_32);
+
+  Integer other(32, false);
+  EXPECT_EQ(context->get_type_mgr()->GetTypeInstruction(&other), id);
+
+  Match(text, context.get());
 }
 
 TEST(TypeManager, GetTypeInstructionAllTypes) {

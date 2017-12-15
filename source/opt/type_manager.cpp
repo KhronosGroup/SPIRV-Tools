@@ -20,6 +20,7 @@
 
 #include "ir_context.h"
 #include "log.h"
+#include "make_unique.h"
 #include "reflect.h"
 
 namespace spvtools {
@@ -36,6 +37,16 @@ Type* TypeManager::GetType(uint32_t id) const {
   auto iter = id_to_type_.find(id);
   if (iter != id_to_type_.end()) return (*iter).second.get();
   return nullptr;
+}
+
+std::pair<Type*, std::unique_ptr<Pointer>> TypeManager::GetTypeAndPointerType(
+    uint32_t id, SpvStorageClass sc) const {
+  Type* type = GetType(id);
+  if (type) {
+    return std::make_pair(type, MakeUnique<analysis::Pointer>(type, sc));
+  } else {
+    return std::make_pair(type, std::unique_ptr<analysis::Pointer>());
+  }
 }
 
 uint32_t TypeManager::GetId(const Type* type) const {

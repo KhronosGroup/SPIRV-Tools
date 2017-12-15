@@ -355,6 +355,26 @@ bool Instruction::IsReadOnlyVariableKernel() const {
   return storage_class == SpvStorageClassUniformConstant;
 }
 
+uint32_t Instruction::GetTypeComponent(uint32_t element) const {
+  uint32_t subtype = 0;
+  switch (opcode()) {
+    case SpvOpTypeStruct:
+      subtype = GetSingleWordInOperand(element);
+      break;
+    case SpvOpTypeArray:
+    case SpvOpTypeRuntimeArray:
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+      // These types all have uniform subtypes.
+      subtype = GetSingleWordInOperand(0u);
+      break;
+    default:
+      break;
+  }
+
+  return subtype;
+}
+
 Instruction* Instruction::InsertBefore(
     std::vector<std::unique_ptr<Instruction>>&& list) {
   Instruction* first_node = list.front().get();

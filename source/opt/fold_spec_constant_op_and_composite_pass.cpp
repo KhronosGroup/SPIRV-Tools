@@ -163,22 +163,8 @@ bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
 uint32_t FoldSpecConstantOpAndCompositePass::GetTypeComponent(
     uint32_t typeId, uint32_t element) const {
   ir::Instruction* type = context()->get_def_use_mgr()->GetDef(typeId);
-  uint32_t subtype = 0;
-  switch (type->opcode()) {
-    case SpvOpTypeStruct:
-      subtype = type->GetSingleWordInOperand(element);
-      break;
-    case SpvOpTypeArray:
-    case SpvOpTypeRuntimeArray:
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-      // These types all have uniform subtypes.
-      subtype = type->GetSingleWordInOperand(0u);
-      break;
-    default:
-      assert(false && "Non-composite type");
-      break;
-  }
+  uint32_t subtype = type->GetTypeComponent(element);
+  assert(subtype != 0);
 
   return subtype;
 }

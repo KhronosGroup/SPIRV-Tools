@@ -86,6 +86,12 @@ class TypeManager {
   // Returns the number of forward pointer types hold in this manager.
   size_t NumForwardPointers() const { return forward_pointers_.size(); }
 
+  // Returns a pair of the type and pointer to the type in |sc|.
+  //
+  // |id| must be a registered type.
+  std::pair<Type*, std::unique_ptr<Pointer>> GetTypeAndPointerType(
+      uint32_t id, SpvStorageClass sc) const;
+
   // Returns an id for a declaration representing |type|.
   //
   // If |type| is registered, then the registered id is returned. Otherwise,
