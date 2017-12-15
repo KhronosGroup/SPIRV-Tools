@@ -226,25 +226,16 @@ if(SPIRV_BUILD_COMPRESSION)
   set(SPIRV_LIBRARIES "${SPIRV_LIBRARIES} -lSPIRV-Tools-comp")
 endif(SPIRV_BUILD_COMPRESSION)
 
-
 # Build pkg-config file
-
-# First, retrieve the current version from CHANGES
-file(STRINGS CHANGES CHANGES_CONTENT)
-string(
-REGEX
-  MATCH "v[0-9]+(.[0-9]+)?(-dev)? [0-9]+-[0-9]+-[0-9]+"
-  FIRST_VERSION_LINE
-  ${CHANGES_CONTENT})
-string(
-REGEX
-  REPLACE "^v([^ ]+) .+$" "\\1"
-  CURRENT_VERSION
-  "${FIRST_VERSION_LINE}")
-# If this is a development version, replace "-dev" by ".0" as pkg-config nor
-# CMake support "-dev" in the version
-string(REGEX REPLACE "-dev" ".0" CURRENT_VERSION "${CURRENT_VERSION}")
-configure_file("./cmake/SPIRV-Tools.pc.in" "SPIRV-Tools.pc" @ONLY)
+# Use a first-class target so it's regenerated when relevant files are updated.
+add_custom_target(spirv-tools-pkg-config ALL
+        COMMAND cmake -DCHANGES_FILE=${CMAKE_CURRENT_SOURCE_DIR}/CHANGES
+                      -DTEMPLATE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/cmake/SPIRV-Tools.pc.in
+                      -DOUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc
+                      -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+                      -DSPIRV_LIBRARIES=${SPIRV_LIBRARIES}
+                      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
+        DEPENDS "CHANGES" "cmake/SPIRV-Tools.pc.in" "cmake/write_pkg_config.cmake")
 
 # Install pkg-config file
 if (ENABLE_SPIRV_TOOLS_INSTALL)
