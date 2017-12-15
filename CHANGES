@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2017.3-dev 2017-12-15
+ - Start v2017.3-dev
+
 v2017.2 2017-12-15
  - General:
    - Support OpenCL 1.2, 2.0 target environments, including embedded profiles
