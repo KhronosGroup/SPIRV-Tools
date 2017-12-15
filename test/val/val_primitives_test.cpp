@@ -28,13 +28,14 @@ using ValidatePrimitives = spvtest::ValidateBase<bool>;
 
 std::string GenerateShaderCode(
     const std::string& body,
+    const bool declare_geometry_streams_capability = true,
     const std::string& capabilities_and_extensions = "",
     const std::string& execution_model = "Geometry") {
   std::ostringstream ss;
-  ss << R"(
-OpCapability Geometry
-OpCapability GeometryStreams
-)";
+  ss << "OpCapability Geometry\n";
+  if (declare_geometry_streams_capability) {
+    ss << "OpCapability GeometryStreams\n";
+  }
 
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical GLSL450\n";
@@ -67,12 +68,26 @@ OpFunctionEnd)";
   return ss.str();
 }
 
+// OpEmitVertex doesn't have any parameters, so other validation
+// is handled by the binary parser, and generic dominance checks.
+TEST_F(ValidatePrimitives, EmitVertexSuccess) {
+  CompileSuccessfully(GenerateShaderCode("OpEmitVertex", false));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// OpEndPrimitive doesn't have any parameters, so other validation
+// is handled by the binary parser, and generic dominance checks.
+TEST_F(ValidatePrimitives, EndPrimitiveSuccess) {
+  CompileSuccessfully(GenerateShaderCode("OpEndPrimitive", false));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidatePrimitives, EmitStreamVertexSuccess) {
   const std::string body = R"(
 OpEmitStreamVertex %u32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -81,7 +96,7 @@ TEST_F(ValidatePrimitives, EmitStreamVertexNonInt) {
 OpEmitStreamVertex %f32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EmitStreamVertex: "
@@ -93,7 +108,7 @@ TEST_F(ValidatePrimitives, EmitStreamVertexNonScalar) {
 OpEmitStreamVertex %u32vec4_0123
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EmitStreamVertex: "
@@ -106,7 +121,7 @@ TEST_F(ValidatePrimitives, EmitStreamVertexNonConstant) {
 OpEmitStreamVertex %val1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EmitStreamVertex: "
@@ -118,7 +133,7 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveSuccess) {
 OpEndStreamPrimitive %u32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -127,7 +142,7 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveNonInt) {
 OpEndStreamPrimitive %f32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EndStreamPrimitive: "
@@ -139,7 +154,7 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveNonScalar) {
 OpEndStreamPrimitive %u32vec4_0123
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EndStreamPrimitive: "
@@ -152,7 +167,7 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveNonConstant) {
 OpEndStreamPrimitive %val1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("EndStreamPrimitive: "
