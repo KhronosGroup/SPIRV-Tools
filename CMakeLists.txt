@@ -26,9 +26,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(spirv-tools
   VERSION
-    2017.2
-  DESCRIPTION
-    "Tools for SPIR-V")
+    2017.2)
 enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
 

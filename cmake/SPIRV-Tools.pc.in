@@ -4,7 +4,7 @@ libdir=${prefix}/lib64
 includedir=${prefix}/include
 
 Name: SPIRV-Tools
-Description: @CMAKE_PROJECT_DESCRIPTION@
+Description: Tools for SPIR-V
 Version: @PROJECT_VERSION@
 URL: https://github.com/KhronosGroup/SPIRV-Tools
 
