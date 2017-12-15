@@ -220,3 +220,45 @@ if (NOT "${SPIRV_SKIP_TESTS}")
            COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
+
+set(SPIRV_LIBRARIES "-lSPIRV-Tools -lSPIRV-Tools-link -lSPIRV-Tools-opt")
+if(SPIRV_BUILD_COMPRESSION)
+  set(SPIRV_LIBRARIES "${SPIRV_LIBRARIES} -lSPIRV-Tools-comp")
+endif(SPIRV_BUILD_COMPRESSION)
+
+
+# Build pkg-config file
+
+# First, retrieve the current version from CHANGES
+file(STRINGS CHANGES CHANGES_CONTENT)
+string(
+REGEX
+  MATCH "v[0-9]+(.[0-9]+)?(-dev)? [0-9]+-[0-9]+-[0-9]+"
+  FIRST_VERSION_LINE
+  ${CHANGES_CONTENT})
+string(
+REGEX
+  REPLACE "^v([^ ]+) .+$" "\\1"
+  CURRENT_VERSION
+  "${FIRST_VERSION_LINE}")
+# If this is a development version, replace "-dev" by ".0" as pkg-config nor
+# CMake support "-dev" in the version. Otherwise, add ".1" to have a newer
+# version than the dev one.
+if(CURRENT_VERSION MATCHES "-dev")
+  string(REGEX REPLACE "-dev" ".0" CURRENT_VERSION "${CURRENT_VERSION}")
+else()
+  string(APPEND CURRENT_VERSION ".1")
+endif()
+# The following configure file on CHANGES is there to trigger a re-run of CMake
+# whenever CHANGES is modified, as to pick up the latest version defined.
+configure_file(CHANGES CHANGES.junk)
+configure_file("./cmake/SPIRV-Tools.pc.in" "SPIRV-Tools.pc" @ONLY)
+
+# Install pkg-config file
+if (ENABLE_SPIRV_TOOLS_INSTALL)
+  install(
+    FILES
+      ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc
+    DESTINATION
+      ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endif()
