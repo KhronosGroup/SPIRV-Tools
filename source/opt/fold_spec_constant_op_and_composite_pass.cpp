@@ -160,6 +160,15 @@ bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
   return true;
 }
 
+uint32_t FoldSpecConstantOpAndCompositePass::GetTypeComponent(
+    uint32_t typeId, uint32_t element) const {
+  ir::Instruction* type = context()->get_def_use_mgr()->GetDef(typeId);
+  uint32_t subtype = type->GetTypeComponent(element);
+  assert(subtype != 0);
+
+  return subtype;
+}
+
 ir::Instruction* FoldSpecConstantOpAndCompositePass::DoCompositeExtract(
     ir::Module::inst_iterator* pos) {
   ir::Instruction* inst = &**pos;
@@ -167,19 +176,24 @@ ir::Instruction* FoldSpecConstantOpAndCompositePass::DoCompositeExtract(
          "OpSpecConstantOp CompositeExtract requires at least two non-type "
          "non-opcode operands.");
   assert(inst->GetInOperand(1).type == SPV_OPERAND_TYPE_ID &&
-         "The vector operand must have a SPV_OPERAND_TYPE_ID type");
+         "The composite operand must have a SPV_OPERAND_TYPE_ID type");
   assert(
       inst->GetInOperand(2).type == SPV_OPERAND_TYPE_LITERAL_INTEGER &&
       "The literal operand must have a SPV_OPERAND_TYPE_LITERAL_INTEGER type");
 
   // Note that for OpSpecConstantOp, the second in-operand is the first id
   // operand. The first in-operand is the spec opcode.
+  uint32_t source = inst->GetSingleWordInOperand(1);
+  uint32_t type = context()->get_def_use_mgr()->GetDef(source)->type_id();
   analysis::Constant* first_operand_const =
-      context()->get_constant_mgr()->FindRecordedConstant(
-          inst->GetSingleWordInOperand(1));
+      context()->get_constant_mgr()->FindRecordedConstant(source);
   if (!first_operand_const) return nullptr;
 
   const analysis::Constant* current_const = first_operand_const;
+  for (uint32_t i = 2; i < inst->NumInOperands(); i++) {
+    uint32_t literal = inst->GetSingleWordInOperand(i);
+    type = GetTypeComponent(type, literal);
+  }
   for (uint32_t i = 2; i < inst->NumInOperands(); i++) {
     uint32_t literal = inst->GetSingleWordInOperand(i);
     if (const analysis::CompositeConstant* composite_const =
@@ -195,14 +209,14 @@ ir::Instruction* FoldSpecConstantOpAndCompositePass::DoCompositeExtract(
       return context()->get_constant_mgr()->BuildInstructionAndAddToModule(
           context()->get_constant_mgr()->CreateConstant(
               context()->get_constant_mgr()->GetType(inst), {}),
-          pos);
+          pos, type);
     } else {
       // Dereferencing a non-composite constant. Invalid case.
       return nullptr;
     }
   }
   return context()->get_constant_mgr()->BuildInstructionAndAddToModule(
-      current_const->Copy(), pos);
+      current_const->Copy(), pos, type);
 }
 
 ir::Instruction* FoldSpecConstantOpAndCompositePass::DoVectorShuffle(

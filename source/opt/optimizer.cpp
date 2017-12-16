@@ -82,7 +82,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses() {
-  return RegisterPass(CreateMergeReturnPass())
+  return RegisterPass(CreateRemoveDuplicatesPass())
+      .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateEliminateDeadFunctionsPass())
       .RegisterPass(CreateScalarReplacementPass())
@@ -102,7 +103,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
-  return RegisterPass(CreateMergeReturnPass())
+  return RegisterPass(CreateRemoveDuplicatesPass())
+      .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateEliminateDeadFunctionsPass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
@@ -287,6 +289,11 @@ Optimizer::PassToken CreateLocalRedundancyEliminationPass() {
 Optimizer::PassToken CreateRedundancyEliminationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::RedundancyEliminationPass>());
+}
+
+Optimizer::PassToken CreateRemoveDuplicatesPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::RemoveDuplicatesPass>());
 }
 
 Optimizer::PassToken CreateScalarReplacementPass() {

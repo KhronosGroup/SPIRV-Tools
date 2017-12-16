@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <sstream>
 
 #include "types.h"
@@ -77,7 +78,154 @@ bool Type::HasSameDecorations(const Type* that) const {
   return CompareTwoVectors(decorations_, that->decorations_);
 }
 
-bool Integer::IsSame(Type* that) const {
+bool Type::IsUniqueType(bool allowVariablePointers) const {
+  switch (kind_) {
+    case kPointer:
+      return !allowVariablePointers;
+    case kStruct:
+    case kArray:
+    case kRuntimeArray:
+      return false;
+    default:
+      return true;
+  }
+}
+
+std::unique_ptr<Type> Type::Clone() const {
+  std::unique_ptr<Type> type;
+  switch (kind_) {
+#define DeclareKindCase(kind)                \
+  case k##kind:                              \
+    type.reset(new kind(*this->As##kind())); \
+    break;
+    DeclareKindCase(Void);
+    DeclareKindCase(Bool);
+    DeclareKindCase(Integer);
+    DeclareKindCase(Float);
+    DeclareKindCase(Vector);
+    DeclareKindCase(Matrix);
+    DeclareKindCase(Image);
+    DeclareKindCase(Sampler);
+    DeclareKindCase(SampledImage);
+    DeclareKindCase(Array);
+    DeclareKindCase(RuntimeArray);
+    DeclareKindCase(Struct);
+    DeclareKindCase(Opaque);
+    DeclareKindCase(Pointer);
+    DeclareKindCase(Function);
+    DeclareKindCase(Event);
+    DeclareKindCase(DeviceEvent);
+    DeclareKindCase(ReserveId);
+    DeclareKindCase(Queue);
+    DeclareKindCase(Pipe);
+    DeclareKindCase(ForwardPointer);
+    DeclareKindCase(PipeStorage);
+    DeclareKindCase(NamedBarrier);
+#undef DeclareKindCase
+    default:
+      assert(false && "Unhandled type");
+  }
+  return type;
+}
+
+std::unique_ptr<Type> Type::RemoveDecorations() const {
+  std::unique_ptr<Type> type(Clone());
+  type->ClearDecorations();
+  return type;
+}
+
+bool Type::operator==(const Type& other) const {
+  if (kind_ != other.kind_) return false;
+
+  switch (kind_) {
+#define DeclareKindCase(kind) \
+  case k##kind:               \
+    return As##kind()->IsSame(&other);
+    DeclareKindCase(Void);
+    DeclareKindCase(Bool);
+    DeclareKindCase(Integer);
+    DeclareKindCase(Float);
+    DeclareKindCase(Vector);
+    DeclareKindCase(Matrix);
+    DeclareKindCase(Image);
+    DeclareKindCase(Sampler);
+    DeclareKindCase(SampledImage);
+    DeclareKindCase(Array);
+    DeclareKindCase(RuntimeArray);
+    DeclareKindCase(Struct);
+    DeclareKindCase(Opaque);
+    DeclareKindCase(Pointer);
+    DeclareKindCase(Function);
+    DeclareKindCase(Event);
+    DeclareKindCase(DeviceEvent);
+    DeclareKindCase(ReserveId);
+    DeclareKindCase(Queue);
+    DeclareKindCase(Pipe);
+    DeclareKindCase(ForwardPointer);
+    DeclareKindCase(PipeStorage);
+    DeclareKindCase(NamedBarrier);
+#undef DeclareKindCase
+    default:
+      assert(false && "Unhandled type");
+      return false;
+  }
+}
+
+void Type::GetHashWords(std::vector<uint32_t>* words) const {
+  words->push_back(kind_);
+  for (auto d : decorations_) {
+    for (auto w : d) {
+      words->push_back(w);
+    }
+  }
+
+  switch (kind_) {
+#define DeclareKindCase(type)             \
+  case k##type:                           \
+    As##type()->GetExtraHashWords(words); \
+    break;
+    DeclareKindCase(Void);
+    DeclareKindCase(Bool);
+    DeclareKindCase(Integer);
+    DeclareKindCase(Float);
+    DeclareKindCase(Vector);
+    DeclareKindCase(Matrix);
+    DeclareKindCase(Image);
+    DeclareKindCase(Sampler);
+    DeclareKindCase(SampledImage);
+    DeclareKindCase(Array);
+    DeclareKindCase(RuntimeArray);
+    DeclareKindCase(Struct);
+    DeclareKindCase(Opaque);
+    DeclareKindCase(Pointer);
+    DeclareKindCase(Function);
+    DeclareKindCase(Event);
+    DeclareKindCase(DeviceEvent);
+    DeclareKindCase(ReserveId);
+    DeclareKindCase(Queue);
+    DeclareKindCase(Pipe);
+    DeclareKindCase(ForwardPointer);
+    DeclareKindCase(PipeStorage);
+    DeclareKindCase(NamedBarrier);
+#undef DeclareKindCase
+    default:
+      assert(false && "Unhandled type");
+      break;
+  }
+}
+
+size_t Type::HashValue() const {
+  std::u32string h;
+  std::vector<uint32_t> words;
+  GetHashWords(&words);
+  for (auto w : words) {
+    h.push_back(w);
+  }
+
+  return std::hash<std::u32string>()(h);
+}
+
+bool Integer::IsSame(const Type* that) const {
   const Integer* it = that->AsInteger();
   return it && width_ == it->width_ && signed_ == it->signed_ &&
          HasSameDecorations(that);
@@ -89,7 +237,12 @@ std::string Integer::str() const {
   return oss.str();
 }
 
-bool Float::IsSame(Type* that) const {
+void Integer::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  words->push_back(width_);
+  words->push_back(signed_);
+}
+
+bool Float::IsSame(const Type* that) const {
   const Float* ft = that->AsFloat();
   return ft && width_ == ft->width_ && HasSameDecorations(that);
 }
@@ -100,12 +253,16 @@ std::string Float::str() const {
   return oss.str();
 }
 
+void Float::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  words->push_back(width_);
+}
+
 Vector::Vector(Type* type, uint32_t count)
-    : element_type_(type), count_(count) {
+    : Type(kVector), element_type_(type), count_(count) {
   assert(type->AsBool() || type->AsInteger() || type->AsFloat());
 }
 
-bool Vector::IsSame(Type* that) const {
+bool Vector::IsSame(const Type* that) const {
   const Vector* vt = that->AsVector();
   if (!vt) return false;
   return count_ == vt->count_ && element_type_->IsSame(vt->element_type_) &&
@@ -118,12 +275,17 @@ std::string Vector::str() const {
   return oss.str();
 }
 
+void Vector::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  element_type_->GetHashWords(words);
+  words->push_back(count_);
+}
+
 Matrix::Matrix(Type* type, uint32_t count)
-    : element_type_(type), count_(count) {
+    : Type(kMatrix), element_type_(type), count_(count) {
   assert(type->AsVector());
 }
 
-bool Matrix::IsSame(Type* that) const {
+bool Matrix::IsSame(const Type* that) const {
   const Matrix* mt = that->AsMatrix();
   if (!mt) return false;
   return count_ == mt->count_ && element_type_->IsSame(mt->element_type_) &&
@@ -136,21 +298,26 @@ std::string Matrix::str() const {
   return oss.str();
 }
 
-Image::Image(Type* sampled_type, SpvDim dim, uint32_t depth, uint32_t arrayed,
-             uint32_t ms, uint32_t sampled, SpvImageFormat format,
-             SpvAccessQualifier access_qualifier)
-    : sampled_type_(sampled_type),
-      dim_(dim),
-      depth_(depth),
-      arrayed_(arrayed),
-      ms_(ms),
-      sampled_(sampled),
-      format_(format),
-      access_qualifier_(access_qualifier) {
+void Matrix::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  element_type_->GetHashWords(words);
+  words->push_back(count_);
+}
+
+Image::Image(Type* type, SpvDim dimen, uint32_t d, bool array, bool multisample,
+             uint32_t sampling, SpvImageFormat f, SpvAccessQualifier qualifier)
+    : Type(kImage),
+      sampled_type_(type),
+      dim_(dimen),
+      depth_(d),
+      arrayed_(array),
+      ms_(multisample),
+      sampled_(sampling),
+      format_(f),
+      access_qualifier_(qualifier) {
   // TODO(antiagainst): check sampled_type
 }
 
-bool Image::IsSame(Type* that) const {
+bool Image::IsSame(const Type* that) const {
   const Image* it = that->AsImage();
   if (!it) return false;
   return dim_ == it->dim_ && depth_ == it->depth_ && arrayed_ == it->arrayed_ &&
@@ -167,7 +334,18 @@ std::string Image::str() const {
   return oss.str();
 }
 
-bool SampledImage::IsSame(Type* that) const {
+void Image::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  sampled_type_->GetHashWords(words);
+  words->push_back(dim_);
+  words->push_back(depth_);
+  words->push_back(arrayed_);
+  words->push_back(ms_);
+  words->push_back(sampled_);
+  words->push_back(format_);
+  words->push_back(access_qualifier_);
+}
+
+bool SampledImage::IsSame(const Type* that) const {
   const SampledImage* sit = that->AsSampledImage();
   if (!sit) return false;
   return image_type_->IsSame(sit->image_type_) && HasSameDecorations(that);
@@ -179,12 +357,16 @@ std::string SampledImage::str() const {
   return oss.str();
 }
 
+void SampledImage::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  image_type_->GetHashWords(words);
+}
+
 Array::Array(Type* type, uint32_t length_id)
-    : element_type_(type), length_id_(length_id) {
+    : Type(kArray), element_type_(type), length_id_(length_id) {
   assert(!type->AsVoid());
 }
 
-bool Array::IsSame(Type* that) const {
+bool Array::IsSame(const Type* that) const {
   const Array* at = that->AsArray();
   if (!at) return false;
   return length_id_ == at->length_id_ &&
@@ -197,11 +379,17 @@ std::string Array::str() const {
   return oss.str();
 }
 
-RuntimeArray::RuntimeArray(Type* type) : element_type_(type) {
+void Array::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  element_type_->GetHashWords(words);
+  words->push_back(length_id_);
+}
+
+RuntimeArray::RuntimeArray(Type* type)
+    : Type(kRuntimeArray), element_type_(type) {
   assert(!type->AsVoid());
 }
 
-bool RuntimeArray::IsSame(Type* that) const {
+bool RuntimeArray::IsSame(const Type* that) const {
   const RuntimeArray* rat = that->AsRuntimeArray();
   if (!rat) return false;
   return element_type_->IsSame(rat->element_type_) && HasSameDecorations(that);
@@ -213,7 +401,12 @@ std::string RuntimeArray::str() const {
   return oss.str();
 }
 
-Struct::Struct(const std::vector<Type*>& types) : element_types_(types) {
+void RuntimeArray::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  element_type_->GetHashWords(words);
+}
+
+Struct::Struct(const std::vector<Type*>& types)
+    : Type(kStruct), element_types_(types) {
   for (auto* t : types) {
     (void)t;
     assert(!t->AsVoid());
@@ -230,7 +423,7 @@ void Struct::AddMemberDecoration(uint32_t index,
   element_decorations_[index].push_back(std::move(decoration));
 }
 
-bool Struct::IsSame(Type* that) const {
+bool Struct::IsSame(const Type* that) const {
   const Struct* st = that->AsStruct();
   if (!st) return false;
   if (element_types_.size() != st->element_types_.size()) return false;
@@ -261,7 +454,21 @@ std::string Struct::str() const {
   return oss.str();
 }
 
-bool Opaque::IsSame(Type* that) const {
+void Struct::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  for (auto t : element_types_) {
+    t->GetHashWords(words);
+  }
+  for (auto pair : element_decorations_) {
+    words->push_back(pair.first);
+    for (auto d : pair.second) {
+      for (auto w : d) {
+        words->push_back(w);
+      }
+    }
+  }
+}
+
+bool Opaque::IsSame(const Type* that) const {
   const Opaque* ot = that->AsOpaque();
   if (!ot) return false;
   return name_ == ot->name_ && HasSameDecorations(that);
@@ -273,12 +480,18 @@ std::string Opaque::str() const {
   return oss.str();
 }
 
-Pointer::Pointer(Type* type, SpvStorageClass storage_class)
-    : pointee_type_(type), storage_class_(storage_class) {
+void Opaque::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  for (auto c : name_) {
+    words->push_back(static_cast<char32_t>(c));
+  }
+}
+
+Pointer::Pointer(Type* type, SpvStorageClass sc)
+    : Type(kPointer), pointee_type_(type), storage_class_(sc) {
   assert(!type->AsVoid());
 }
 
-bool Pointer::IsSame(Type* that) const {
+bool Pointer::IsSame(const Type* that) const {
   const Pointer* pt = that->AsPointer();
   if (!pt) return false;
   if (storage_class_ != pt->storage_class_) return false;
@@ -288,15 +501,20 @@ bool Pointer::IsSame(Type* that) const {
 
 std::string Pointer::str() const { return pointee_type_->str() + "*"; }
 
-Function::Function(Type* return_type, const std::vector<Type*>& param_types)
-    : return_type_(return_type), param_types_(param_types) {
-  for (auto* t : param_types) {
+void Pointer::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  pointee_type_->GetHashWords(words);
+  words->push_back(storage_class_);
+}
+
+Function::Function(Type* ret_type, const std::vector<Type*>& params)
+    : Type(kFunction), return_type_(ret_type), param_types_(params) {
+  for (auto* t : params) {
     (void)t;
     assert(!t->AsVoid());
   }
 }
 
-bool Function::IsSame(Type* that) const {
+bool Function::IsSame(const Type* that) const {
   const Function* ft = that->AsFunction();
   if (!ft) return false;
   if (!return_type_->IsSame(ft->return_type_)) return false;
@@ -319,7 +537,14 @@ std::string Function::str() const {
   return oss.str();
 }
 
-bool Pipe::IsSame(Type* that) const {
+void Function::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  return_type_->GetHashWords(words);
+  for (auto t : param_types_) {
+    t->GetHashWords(words);
+  }
+}
+
+bool Pipe::IsSame(const Type* that) const {
   const Pipe* pt = that->AsPipe();
   if (!pt) return false;
   return access_qualifier_ == pt->access_qualifier_ && HasSameDecorations(that);
@@ -331,7 +556,11 @@ std::string Pipe::str() const {
   return oss.str();
 }
 
-bool ForwardPointer::IsSame(Type* that) const {
+void Pipe::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  words->push_back(access_qualifier_);
+}
+
+bool ForwardPointer::IsSame(const Type* that) const {
   const ForwardPointer* fpt = that->AsForwardPointer();
   if (!fpt) return false;
   return target_id_ == fpt->target_id_ &&
@@ -348,6 +577,12 @@ std::string ForwardPointer::str() const {
   }
   oss << ")";
   return oss.str();
+}
+
+void ForwardPointer::GetExtraHashWords(std::vector<uint32_t>* words) const {
+  words->push_back(target_id_);
+  words->push_back(storage_class_);
+  if (pointer_) pointer_->GetHashWords(words);
 }
 
 }  // namespace analysis

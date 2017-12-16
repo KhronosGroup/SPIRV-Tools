@@ -40,6 +40,7 @@
 #include "merge_return_pass.h"
 #include "null_pass.h"
 #include "redundancy_elimination.h"
+#include "remove_duplicates_pass.h"
 #include "scalar_replacement_pass.h"
 #include "set_spec_constant_default_value_pass.h"
 #include "strength_reduction_pass.h"

@@ -79,6 +79,11 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
   // if succeeded, otherwise return nullptr.
   ir::Instruction* DoComponentWiseOperation(
       ir::Module::inst_iterator* inst_iter_ptr);
+
+  // Returns the |element|'th subtype of |type|.
+  //
+  // |type| must be a composite type.
+  uint32_t GetTypeComponent(uint32_t type, uint32_t element) const;
 };
 
 }  // namespace opt

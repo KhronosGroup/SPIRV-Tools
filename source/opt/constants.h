@@ -325,22 +325,39 @@ class ConstantManager {
   // points to the same instruction before and after the insertion. This is the
   // only method that actually manages id creation/assignment and instruction
   // creation/insertion for a new Constant instance.
+  //
+  // |type_id| is an optional argument for disambiguating equivalent types. If
+  // |type_id| is specified, it is used as the type of the constant. Otherwise
+  // the type of the constant is derived by getting an id from the type manager
+  // for |c|.
   ir::Instruction* BuildInstructionAndAddToModule(
-      std::unique_ptr<analysis::Constant> c, ir::Module::inst_iterator* pos);
+      std::unique_ptr<analysis::Constant> c, ir::Module::inst_iterator* pos,
+      uint32_t type_id = 0);
 
   // Creates an instruction with the given result id to declare a constant
   // represented by the given Constant instance. Returns an unique pointer to
   // the created instruction if the instruction can be created successfully.
   // Otherwise, returns a null pointer.
+  //
+  // |type_id| is an optional argument for disambiguating equivalent types. If
+  // |type_id| is specified, it is used as the type of the constant. Otherwise
+  // the type of the constant is derived by getting an id from the type manager
+  // for |c|.
   std::unique_ptr<ir::Instruction> CreateInstruction(
-      uint32_t result_id, analysis::Constant* c) const;
+      uint32_t result_id, analysis::Constant* c, uint32_t type_id = 0) const;
 
   // Creates an OpConstantComposite instruction with the given result id and
   // the CompositeConst instance which represents a composite constant. Returns
   // an unique pointer to the created instruction if succeeded. Otherwise
   // returns a null pointer.
+  //
+  // |type_id| is an optional argument for disambiguating equivalent types. If
+  // |type_id| is specified, it is used as the type of the constant. Otherwise
+  // the type of the constant is derived by getting an id from the type manager
+  // for |c|.
   std::unique_ptr<ir::Instruction> CreateCompositeInstruction(
-      uint32_t result_id, analysis::CompositeConstant* cc) const;
+      uint32_t result_id, analysis::CompositeConstant* cc,
+      uint32_t type_id = 0) const;
 
   // A helper function to get the result type of the given instruction. Returns
   // nullptr if the instruction does not have a type id (type id is 0).

@@ -49,10 +49,6 @@ class StrengthReductionPass : public Pass {
   // ones. Returns true if something changed.
   bool ScanFunctions();
 
-  // Will create the type for an unsigned 32-bit integer and return the id.
-  // This functions assumes one does not already exist.
-  uint32_t CreateUint32Type();
-
   // Type ids for the types of interest, or 0 if they do not exist.
   uint32_t int32_type_id_;
   uint32_t uint32_type_id_;
