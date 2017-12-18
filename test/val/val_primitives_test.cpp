@@ -63,6 +63,27 @@ OpFunctionEnd)";
   return ss.str();
 }
 
+// Returns SPIR-V assembly fragment representing a function call,
+// the end of the callee body, and the preamble and body of the called
+// function with the given body, but missing the final return and
+// function-end.  The result is of the form where it can be used in the
+// |body| argument to GenerateShaderCode.
+std::string CallAndCallee(std::string body) {
+  std::ostringstream ss;
+  ss << R"(
+%dummy = OpFunctionCall %void %foo
+OpReturn
+OpFunctionEnd
+
+%foo = OpFunction %void None %func
+%foo_entry = OpLabel
+)";
+
+  ss << body;
+
+  return ss.str();
+}
+
 // OpEmitVertex doesn't have any parameters, so other validation
 // is handled by the binary parser, and generic dominance checks.
 TEST_F(ValidatePrimitives, EmitVertexSuccess) {
@@ -79,6 +100,24 @@ TEST_F(ValidatePrimitives, EmitVertexFailMissingCapability) {
       getDiagnosticString(),
       HasSubstr(
           "Opcode EmitVertex requires one of these capabilities: Geometry"));
+}
+
+TEST_F(ValidatePrimitives, EmitVertexFailWrongExecutionMode) {
+  CompileSuccessfully(
+      GenerateShaderCode("OpEmitVertex", "OpCapability Geometry", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("EmitVertex instructions require Geometry execution model"));
+}
+
+TEST_F(ValidatePrimitives, EmitVertexFailWrongExecutionModeNestedFunction) {
+  CompileSuccessfully(GenerateShaderCode(CallAndCallee("OpEmitVertex"),
+                                         "OpCapability Geometry", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("EmitVertex instructions require Geometry execution model"));
 }
 
 // OpEndPrimitive doesn't have any parameters, so other validation
@@ -99,6 +138,24 @@ TEST_F(ValidatePrimitives, EndPrimitiveFailMissingCapability) {
           "Opcode EndPrimitive requires one of these capabilities: Geometry"));
 }
 
+TEST_F(ValidatePrimitives, EndPrimitiveFailWrongExecutionMode) {
+  CompileSuccessfully(
+      GenerateShaderCode("OpEndPrimitive", "OpCapability Geometry", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("EndPrimitive instructions require Geometry execution model"));
+}
+
+TEST_F(ValidatePrimitives, EndPrimitiveFailWrongExecutionModeNestedFunction) {
+  CompileSuccessfully(GenerateShaderCode(CallAndCallee("OpEndPrimitive"),
+                                         "OpCapability Geometry", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("EndPrimitive instructions require Geometry execution model"));
+}
+
 TEST_F(ValidatePrimitives, EmitStreamVertexSuccess) {
   const std::string body = R"(
 OpEmitStreamVertex %u32_0
@@ -115,6 +172,28 @@ TEST_F(ValidatePrimitives, EmitStreamVertexFailMissingCapability) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Opcode EmitStreamVertex requires one of these "
                         "capabilities: GeometryStreams"));
+}
+
+TEST_F(ValidatePrimitives, EmitStreamVertexFailWrongExecutionMode) {
+  CompileSuccessfully(GenerateShaderCode(
+      "OpEmitStreamVertex %u32_0", "OpCapability GeometryStreams", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EmitStreamVertex instructions require Geometry execution model"));
+}
+
+TEST_F(ValidatePrimitives,
+       EmitStreamVertexFailWrongExecutionModeNestedFunction) {
+  CompileSuccessfully(
+      GenerateShaderCode(CallAndCallee("OpEmitStreamVertex %u32_0"),
+                         "OpCapability GeometryStreams", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EmitStreamVertex instructions require Geometry execution model"));
 }
 
 TEST_F(ValidatePrimitives, EmitStreamVertexNonInt) {
@@ -170,6 +249,28 @@ TEST_F(ValidatePrimitives, EndStreamPrimitiveFailMissingCapability) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Opcode EndStreamPrimitive requires one of these "
                         "capabilities: GeometryStreams"));
+}
+
+TEST_F(ValidatePrimitives, EndStreamPrimitiveFailWrongExecutionMode) {
+  CompileSuccessfully(GenerateShaderCode(
+      "OpEndStreamPrimitive %u32_0", "OpCapability GeometryStreams", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EndStreamPrimitive instructions require Geometry execution model"));
+}
+
+TEST_F(ValidatePrimitives,
+       EndStreamPrimitiveFailWrongExecutionModeNestedFunction) {
+  CompileSuccessfully(
+      GenerateShaderCode(CallAndCallee("OpEndStreamPrimitive %u32_0"),
+                         "OpCapability GeometryStreams", "Vertex"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EndStreamPrimitive instructions require Geometry execution model"));
 }
 
 TEST_F(ValidatePrimitives, EndStreamPrimitiveNonInt) {
