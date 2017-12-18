@@ -552,6 +552,69 @@ OpMemoryModel Logical GLSL450
   ASSERT_TRUE(pair.second->IsSame(&stPtr));
 }
 
+TEST(TypeManager, DuplicateType) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 32 0
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  const Type* type1 = context->get_type_mgr()->GetType(1u);
+  const Type* type2 = context->get_type_mgr()->GetType(2u);
+  EXPECT_NE(type1, nullptr);
+  EXPECT_NE(type2, nullptr);
+  EXPECT_EQ(*type1, *type2);
+}
+
+TEST(TypeManager, MultipleStructs) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpDecorate %3 Constant
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+%3 = OpTypeStruct %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  const Type* type1 = context->get_type_mgr()->GetType(2u);
+  const Type* type2 = context->get_type_mgr()->GetType(3u);
+  EXPECT_NE(type1, nullptr);
+  EXPECT_NE(type2, nullptr);
+  EXPECT_FALSE(type1->IsSame(type2));
+}
+
+TEST(TypeManager, MemoryManagement) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  Integer u32(32, false);
+  Struct st({&u32});
+  const Type* type = context->get_type_mgr()->GetType(2u);
+  EXPECT_NE(type, nullptr);
+  context->get_type_mgr()->RemoveId(1u);
+  EXPECT_TRUE(type->IsSame(&st));
+}
+
 #ifdef SPIRV_EFFCEE
 TEST(TypeManager, GetTypeInstructionInt) {
   const std::string text = R"(

@@ -20,9 +20,9 @@ add_spvtools_unittest(TARGET instruction
 )
 
 add_spvtools_unittest(TARGET instruction_list
-        SRCS instruction_list_test.cpp
-        LIBS SPIRV-Tools-opt
-        )
+  SRCS instruction_list_test.cpp
+  LIBS SPIRV-Tools-opt
+)
 
 add_spvtools_unittest(TARGET ir_loader
   SRCS ir_loader_test.cpp
@@ -106,9 +106,9 @@ add_spvtools_unittest(TARGET pass_dead_branch_elim
 )
 
 add_spvtools_unittest(TARGET pass_dead_variable_elim
-        SRCS dead_variable_elim_test.cpp pass_utils.cpp
-        LIBS SPIRV-Tools-opt
-        )
+  SRCS dead_variable_elim_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
 
 add_spvtools_unittest(TARGET pass_aggressive_dce
   SRCS aggressive_dead_code_elim_test.cpp pass_utils.cpp
@@ -256,3 +256,12 @@ add_spvtools_unittest(TARGET pass_remove_duplicates
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET decoration_manager
+  SRCS decoration_manager_test.cpp
+  LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET pass_remove_duplicates
+  SRCS pass_remove_duplicates_test.cpp
+  LIBS SPIRV-Tools-opt
+)

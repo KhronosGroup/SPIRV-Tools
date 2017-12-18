@@ -25,6 +25,7 @@
 #include "decoration_manager.h"
 #include "ir_context.h"
 #include "opcode.h"
+#include "reflect.h"
 
 namespace spvtools {
 namespace opt {
@@ -104,35 +105,37 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
     return modified;
   }
 
-  std::vector<Instruction> visitedTypes;
-  for (auto* i = &*irContext->types_values_begin(); i;) {
+  std::vector<Instruction*> visitedTypes;
+  std::vector<Instruction*> toDelete;
+  for (auto* i = &*irContext->types_values_begin(); i; i = i->NextNode()) {
     // We only care about types.
     if (!spvOpcodeGeneratesType((i->opcode())) &&
         i->opcode() != SpvOpTypeForwardPointer) {
-      i = i->NextNode();
       continue;
     }
 
     // Is the current type equal to one of the types we have aready visited?
     SpvId idToKeep = 0u;
     for (auto j : visitedTypes) {
-      if (AreTypesEqual(*i, j, *irContext->get_def_use_mgr(),
-                        *irContext->get_decoration_mgr())) {
-        idToKeep = j.result_id();
+      if (AreTypesEqual(*i, *j, irContext)) {
+        idToKeep = j->result_id();
         break;
       }
     }
 
     if (idToKeep == 0u) {
       // This is a never seen before type, keep it around.
-      visitedTypes.emplace_back(*i);
-      i = i->NextNode();
+      visitedTypes.emplace_back(i);
     } else {
       // The same type has already been seen before, remove this one.
       irContext->ReplaceAllUsesWith(i->result_id(), idToKeep);
       modified = true;
-      i = irContext->KillInst(i);
+      toDelete.emplace_back(i);
     }
+  }
+
+  for (auto i : toDelete) {
+    irContext->KillInst(i);
   }
 
   return modified;
@@ -181,102 +184,17 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
 
 bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
                                          const Instruction& inst2,
-                                         const DefUseManager& defUseManager,
-                                         const DecorationManager& decManager) {
+                                         ir::IRContext* context) {
   if (inst1.opcode() != inst2.opcode()) return false;
-  if (!decManager.HaveTheSameDecorations(inst1.result_id(), inst2.result_id()))
-    return false;
+  if (!ir::IsTypeInst(inst1.opcode())) return false;
 
-  switch (inst1.opcode()) {
-    case SpvOpTypeVoid:
-    case SpvOpTypeBool:
-    case SpvOpTypeSampler:
-    case SpvOpTypeEvent:
-    case SpvOpTypeDeviceEvent:
-    case SpvOpTypeReserveId:
-    case SpvOpTypeQueue:
-    case SpvOpTypePipeStorage:
-    case SpvOpTypeNamedBarrier:
-      return true;
-    case SpvOpTypeInt:
-      return inst1.GetSingleWordInOperand(0u) ==
-                 inst2.GetSingleWordInOperand(0u) &&
-             inst1.GetSingleWordInOperand(1u) ==
-                 inst2.GetSingleWordInOperand(1u);
-    case SpvOpTypeFloat:
-    case SpvOpTypePipe:
-    case SpvOpTypeForwardPointer:
-      return inst1.GetSingleWordInOperand(0u) ==
-             inst2.GetSingleWordInOperand(0u);
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-      return AreTypesEqual(
-                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
-                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
-                 defUseManager, decManager) &&
-             inst1.GetSingleWordInOperand(1u) ==
-                 inst2.GetSingleWordInOperand(1u);
-    case SpvOpTypeImage:
-      return AreTypesEqual(
-                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
-                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
-                 defUseManager, decManager) &&
-             inst1.GetSingleWordInOperand(1u) ==
-                 inst2.GetSingleWordInOperand(1u) &&
-             inst1.GetSingleWordInOperand(2u) ==
-                 inst2.GetSingleWordInOperand(2u) &&
-             inst1.GetSingleWordInOperand(3u) ==
-                 inst2.GetSingleWordInOperand(3u) &&
-             inst1.GetSingleWordInOperand(4u) ==
-                 inst2.GetSingleWordInOperand(4u) &&
-             inst1.GetSingleWordInOperand(5u) ==
-                 inst2.GetSingleWordInOperand(5u) &&
-             inst1.GetSingleWordInOperand(6u) ==
-                 inst2.GetSingleWordInOperand(6u) &&
-             inst1.NumOperands() == inst2.NumOperands() &&
-             (inst1.NumInOperands() == 7u ||
-              inst1.GetSingleWordInOperand(7u) ==
-                  inst2.GetSingleWordInOperand(7u));
-    case SpvOpTypeSampledImage:
-    case SpvOpTypeRuntimeArray:
-      return AreTypesEqual(
-          *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
-          *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
-          defUseManager, decManager);
-    case SpvOpTypeArray:
-      return AreTypesEqual(
-                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
-                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
-                 defUseManager, decManager) &&
-             AreTypesEqual(
-                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(1u)),
-                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(1u)),
-                 defUseManager, decManager);
-    case SpvOpTypeStruct:
-    case SpvOpTypeFunction: {
-      bool res = inst1.NumInOperands() == inst2.NumInOperands();
-      for (uint32_t i = 0u; i < inst1.NumInOperands() && res; ++i)
-        res &= AreTypesEqual(
-            *defUseManager.GetDef(inst1.GetSingleWordInOperand(i)),
-            *defUseManager.GetDef(inst2.GetSingleWordInOperand(i)),
-            defUseManager, decManager);
-      return res;
-    }
-    case SpvOpTypeOpaque:
-      return std::strcmp(reinterpret_cast<const char*>(
-                             inst1.GetInOperand(0u).words.data()),
-                         reinterpret_cast<const char*>(
-                             inst2.GetInOperand(0u).words.data())) == 0;
-    case SpvOpTypePointer:
-      return inst1.GetSingleWordInOperand(0u) ==
-                 inst2.GetSingleWordInOperand(0u) &&
-             AreTypesEqual(
-                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(1u)),
-                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(1u)),
-                 defUseManager, decManager);
-    default:
-      return false;
-  }
+  const analysis::Type* type1 =
+      context->get_type_mgr()->GetType(inst1.result_id());
+  const analysis::Type* type2 =
+      context->get_type_mgr()->GetType(inst2.result_id());
+  if (type1 && type2 && *type1 == *type2) return true;
+
+  return false;
 }
 
 }  // namespace opt

@@ -201,6 +201,9 @@ Options (in lexicographical order):
   --private-to-local
                Change the scope of private variables that are used in a single
                function to that function.
+  --remove-duplicates
+               Removes duplicate types, decorations, capabilities and extension
+               instructions.
   --redundancy-elimination
                Looks for instructions in the same function that compute the
                same value, and deletes the redundant ones.
@@ -413,6 +416,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateRedundancyEliminationPass());
       } else if (0 == strcmp(cur_arg, "--private-to-local")) {
         optimizer->RegisterPass(CreatePrivateToLocalPass());
+      } else if (0 == strcmp(cur_arg, "--remove-duplicates")) {
+        optimizer->RegisterPass(CreateRemoveDuplicatesPass());
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options->relax_struct_store = true;
       } else if (0 == strcmp(cur_arg, "--skip-validation")) {
