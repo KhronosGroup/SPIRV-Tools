@@ -158,13 +158,6 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
   }
 }
 
-void AggressiveDCEPass::ComputeInst2BlockMap(ir::Function* func) {
-  for (auto& blk : *func) {
-    blk.ForEachInst(
-        [&blk, this](ir::Instruction* ip) { inst2block_[ip] = &blk; });
-  }
-}
-
 void AggressiveDCEPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
   std::unique_ptr<ir::Instruction> newBranch(new ir::Instruction(
       context(), SpvOpBranch, 0, 0,
@@ -185,7 +178,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
         if (op != SpvOpBranchConditional && op != SpvOpBranch) return;
         ir::Instruction* branchInst = user;
         while (true) {
-          ir::BasicBlock* blk = inst2block_[branchInst];
+          ir::BasicBlock* blk = context()->get_instr_block(branchInst);
           ir::Instruction* hdrBranch = block2headerBranch_[blk];
           if (hdrBranch == nullptr) return;
           ir::Instruction* hdrMerge = branch2merge_[hdrBranch];
@@ -218,7 +211,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
     } else if (op == SpvOpBranch) {
       // An unconditional branch can only be a continue if it is not
       // branching to its own merge block.
-      ir::BasicBlock* blk = inst2block_[user];
+      ir::BasicBlock* blk = context()->get_instr_block(user);
       ir::Instruction* hdrBranch = block2headerBranch_[blk];
       if (hdrBranch == nullptr) return;
       ir::Instruction* hdrMerge = branch2merge_[hdrBranch];
@@ -234,8 +227,6 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
 }
 
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
-  // Compute map from instruction to block
-  ComputeInst2BlockMap(func);
   // Compute map from block to controlling conditional branch
   std::list<ir::BasicBlock*> structuredOrder;
   cfg()->ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
@@ -342,7 +333,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     // conditional branch and its merge. Any containing control construct
     // is marked live when the merge and branch are processed out of the
     // worklist.
-    ir::BasicBlock* blk = inst2block_[liveInst];
+    ir::BasicBlock* blk = context()->get_instr_block(liveInst);
     ir::Instruction* branchInst = block2headerBranch_[blk];
     if (branchInst != nullptr && !IsLive(branchInst)) {
       AddToWorklist(branchInst);

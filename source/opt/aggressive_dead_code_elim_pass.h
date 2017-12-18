@@ -98,9 +98,6 @@ class AggressiveDCEPass : public MemPass {
   // to order blocks.
   void ComputeBlock2HeaderMaps(std::list<ir::BasicBlock*>& structuredOrder);
 
-  // Initialize inst2block_ for |func|.
-  void ComputeInst2BlockMap(ir::Function* func);
-
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
@@ -146,9 +143,6 @@ class AggressiveDCEPass : public MemPass {
 
   // Map from branch to its associated merge instruction, if any
   std::unordered_map<ir::Instruction*, ir::Instruction*> branch2merge_;
-
-  // Map from instruction containing block
-  std::unordered_map<ir::Instruction*, ir::BasicBlock*> inst2block_;
 
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
