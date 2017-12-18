@@ -156,7 +156,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
     // visited?
     bool alreadyVisited = false;
     for (const Instruction* j : visitedDecorations) {
-      if (decorationManager.AreDecorationsTheSame(&*i, j)) {
+      if (decorationManager.AreDecorationsTheSame(&*i, j, false)) {
         alreadyVisited = true;
         break;
       }

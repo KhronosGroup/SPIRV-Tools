@@ -50,7 +50,7 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
   for (const ir::Instruction* inst1 : decorationsFor1) {
     bool didFindAMatch = false;
     for (const ir::Instruction* inst2 : decorationsFor2) {
-      if (AreDecorationsTheSame(inst1, inst2)) {
+      if (AreDecorationsTheSame(inst1, inst2, true)) {
         didFindAMatch = true;
         break;
       }
@@ -63,8 +63,9 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
 // TODO(pierremoreau): If OpDecorateId is referencing an OpConstant, one could
 //                     check that the constants are the same rather than just
 //                     looking at the constant ID.
-bool DecorationManager::AreDecorationsTheSame(
-    const ir::Instruction* inst1, const ir::Instruction* inst2) const {
+bool DecorationManager::AreDecorationsTheSame(const ir::Instruction* inst1,
+                                              const ir::Instruction* inst2,
+                                              bool ignore_target) const {
   switch (inst1->opcode()) {
     case SpvOpDecorate:
     case SpvOpMemberDecorate:
@@ -78,7 +79,7 @@ bool DecorationManager::AreDecorationsTheSame(
       inst1->NumInOperands() != inst2->NumInOperands())
     return false;
 
-  for (uint32_t i = 1u; i < inst1->NumInOperands(); ++i)
+  for (uint32_t i = ignore_target ? 1u : 0u; i < inst1->NumInOperands(); ++i)
     if (inst1->GetInOperand(i) != inst2->GetInOperand(i)) return false;
 
   return true;
