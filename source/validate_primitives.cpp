@@ -23,7 +23,7 @@
 
 namespace libspirv {
 
-// Validates correctness of composite instructions.
+// Validates correctness of primitive instructions.
 spv_result_t PrimitivesPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -31,14 +31,14 @@ spv_result_t PrimitivesPass(ValidationState_t& _,
   switch (opcode) {
     case SpvOpEmitStreamVertex:
     case SpvOpEndStreamPrimitive: {
-      const uint32_t stream_type = _.GetOperandTypeId(inst, 0);
+      const uint32_t stream_id = inst->words[1];
+      const uint32_t stream_type = _.GetTypeId(stream_id);
       if (!_.IsIntScalarType(stream_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << spvOpcodeString(opcode)
                << ": expected Stream to be int scalar";
       }
 
-      const uint32_t stream_id = inst->words[1];
       const SpvOp stream_opcode = _.GetIdOpcode(stream_id);
       if (!spvOpcodeIsConstant(stream_opcode)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
