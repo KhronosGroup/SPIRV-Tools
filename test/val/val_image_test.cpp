@@ -2858,8 +2858,9 @@ TEST_F(ValidateImage, SampleWrongOpcode) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Sample can only be used with "
-                        "OpImageFetch, OpImageRead "
-                        "and OpImageWrite: ImageSampleExplicitLod"));
+                        "OpImageFetch, OpImageRead, OpImageWrite, "
+                        "OpImageSparseFetch and OpImageSparseRead: "
+                        "ImageSampleExplicitLod"));
 }
 
 TEST_F(ValidateImage, SampleImageToImageSuccess) {

@@ -469,10 +469,12 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
   if (mask & SpvImageOperandsSampleMask) {
     if (opcode != SpvOpImageFetch && opcode != SpvOpImageRead &&
-        opcode != SpvOpImageWrite) {
+        opcode != SpvOpImageWrite && opcode != SpvOpImageSparseFetch &&
+        opcode != SpvOpImageSparseRead) {
       return _.diag(SPV_ERROR_INVALID_DATA)
              << "Image Operand Sample can only be used with OpImageFetch, "
-             << "OpImageRead and OpImageWrite: " << spvOpcodeString(opcode);
+             << "OpImageRead, OpImageWrite, OpImageSparseFetch and "
+             << "OpImageSparseRead: " << spvOpcodeString(opcode);
     }
 
     if (info.multisampled == 0) {
