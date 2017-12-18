@@ -23,7 +23,7 @@
 
 namespace libspirv {
 
-// Validates correctness of composite instructions.
+// Validates correctness of primitive instructions.
 spv_result_t PrimitivesPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
