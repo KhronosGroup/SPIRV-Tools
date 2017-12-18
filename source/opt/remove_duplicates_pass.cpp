@@ -138,6 +138,15 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
   return modified;
 }
 
+// TODO(pierremoreau): Duplicate decoration groups should be removed. For
+// example, in
+//     OpDecorate %1 Constant
+//     %1 = OpDecorationGroup
+//     OpDecorate %2 Constant
+//     %2 = OpDecorationGroup
+//     OpGroupDecorate %1 %3
+//     OpGroupDecorate %2 %4
+// group %2 could be removed.
 bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
     ir::IRContext* irContext) const {
   bool modified = false;
