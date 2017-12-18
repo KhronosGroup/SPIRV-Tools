@@ -55,18 +55,25 @@ class AggressiveDCEPass : public MemPass {
 
   // Return true if |varId| is variable of function storage class or is
   // private variable and privates can be optimized like locals (see
-  // privates_like_local_)
+  // privates_like_local_).
   bool IsLocalVar(uint32_t varId);
 
-  // Return true if |inst| is marked live
-  bool IsLive(ir::Instruction* inst) {
+  // Return true if |inst| is marked live.
+  bool IsLive(const ir::Instruction* inst) const {
     return live_insts_.find(inst) != live_insts_.end();
   }
 
+  // Returns true if |inst| is dead.
+  bool IsDead(ir::Instruction* inst);
+
+  // Adds entry points and execution modes to the worklist for processing with
+  // the first function.
+  void InitializeModuleScopeLiveInstructions();
+
   // Add |inst| to worklist_ and live_insts_.
   void AddToWorklist(ir::Instruction* inst) {
-    worklist_.push(inst);
     live_insts_.insert(inst);
+    worklist_.push(inst);
   }
 
   // Add all store instruction which use |ptrId|, directly or indirectly,
@@ -79,8 +86,9 @@ class AggressiveDCEPass : public MemPass {
   // Return true if all extensions in this module are supported by this pass.
   bool AllExtensionsSupported() const;
 
-  // Returns true if |inst| is dead.  An instruction is dead if its result id
-  // is used in decoration or debug instructions only.
+  // Returns true if the target of |inst| is dead.  An instruction is dead if
+  // its result id is used in decoration or debug instructions only. |inst| is
+  // assumed to be OpName, OpMemberName or an annotation instruction.
   bool IsTargetDead(ir::Instruction* inst);
 
   // If |varId| is local, mark all stores of varId as live.
@@ -89,6 +97,8 @@ class AggressiveDCEPass : public MemPass {
   // If |bp| is structured if or loop header block, return true and set
   // |mergeInst| to the merge instruction, |branchInst| to the conditional
   // branch and |mergeBlockId| to the merge block if they are not nullptr.
+  // Any of |mergeInst|, |branchInst| or |mergeBlockId| may be a null pointer.
+  // Returns false if |bp| is a null pointer.
   bool IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
                                   ir::Instruction** mergeInst,
                                   ir::Instruction** branchInst,
@@ -98,9 +108,6 @@ class AggressiveDCEPass : public MemPass {
   // to order blocks.
   void ComputeBlock2HeaderMaps(std::list<ir::BasicBlock*>& structuredOrder);
 
-  // Initialize inst2block_ for |func|.
-  void ComputeInst2BlockMap(ir::Function* func);
-
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
@@ -108,10 +115,20 @@ class AggressiveDCEPass : public MemPass {
   // |mergeInst| to worklist if not already live
   void AddBreaksAndContinuesToWorklist(ir::Instruction* mergeInst);
 
+  // Eliminates dead debug2 and annotation instructions. Marks dead globals for
+  // removal (e.g. types, constants and variables).
+  bool ProcessGlobalValues();
+
+  // Erases functions that are unreachable from the entry points of the module.
+  bool EliminateDeadFunctions();
+
+  // Removes |func| from the module and deletes all its instructions.
+  void EliminateFunction(ir::Function* func);
+
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
-  // they use. When complete, delete any non-live instructions. Return true
-  // if the function has been modified.
+  // they use. When complete, mark any non-live instructions to be deleted.
+  // Returns true if the function has been modified.
   //
   // Note: This function does not delete useless control structures. All
   // existing control structures will remain. This can leave not-insignificant
@@ -147,17 +164,6 @@ class AggressiveDCEPass : public MemPass {
   // Map from branch to its associated merge instruction, if any
   std::unordered_map<ir::Instruction*, ir::Instruction*> branch2merge_;
 
-  // Map from instruction containing block
-  std::unordered_map<ir::Instruction*, ir::BasicBlock*> inst2block_;
-
-  // Map from block's label id to block.
-  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
-
-  // Map from block to its structured successor blocks. See
-  // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-      block2structured_succs_;
-
   // Store instructions to variables of private storage
   std::vector<ir::Instruction*> private_stores_;
 
@@ -167,8 +173,9 @@ class AggressiveDCEPass : public MemPass {
   // Live Local Variables
   std::unordered_set<uint32_t> live_local_vars_;
 
-  // Dead instructions. Use for debug cleanup.
-  std::unordered_set<const ir::Instruction*> dead_insts_;
+  // List of instructions to delete. Deletion is delayed until debug and
+  // annotation instructions are processed.
+  std::vector<ir::Instruction*> to_kill_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;

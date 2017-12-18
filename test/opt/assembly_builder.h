@@ -154,9 +154,18 @@ class AssemblyBuilder {
     return *this;
   }
 
+  // Pre-pends string to the preamble of the module. Useful for EFFCEE checks.
+  AssemblyBuilder& PrependPreamble(const std::vector<std::string>& preamble) {
+    preamble_.insert(preamble_.end(), preamble.begin(), preamble.end());
+    return *this;
+  }
+
   // Get the SPIR-V assembly code as string.
   std::string GetCode() const {
     std::ostringstream ss;
+    for (const auto& line : preamble_) {
+      ss << line << std::endl;
+    }
     for (const auto& line : global_preamble_) {
       ss << line << std::endl;
     }
@@ -230,6 +239,8 @@ class AssemblyBuilder {
   }
 
   uint32_t spec_id_counter_;
+  // User-defined preamble.
+  std::vector<std::string> preamble_;
   // The vector that contains common preambles shared across all test SPIR-V
   // code.
   std::vector<std::string> global_preamble_;
