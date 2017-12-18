@@ -119,8 +119,7 @@ static spv_result_t GetImportExportPairs(
 // checked.
 static spv_result_t CheckImportExportCompatibility(
     const MessageConsumer& consumer, const LinkageTable& linkings_to_do,
-    const DefUseManager& def_use_manager,
-    const DecorationManager& decoration_manager);
+    ir::IRContext* context);
 
 // Remove linkage specific instructions, such as prototypes of imported
 // functions, declarations of imported variables, import (and export if
@@ -247,9 +246,8 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   if (res != SPV_SUCCESS) return res;
 
   // Phase 5: Ensure the import and export have the same types and decorations.
-  res = CheckImportExportCompatibility(consumer, linkings_to_do,
-                                       *linked_context.get_def_use_mgr(),
-                                       *linked_context.get_decoration_mgr());
+  res =
+      CheckImportExportCompatibility(consumer, linkings_to_do, &linked_context);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 6: Remove duplicates
@@ -599,16 +597,17 @@ static spv_result_t GetImportExportPairs(
 
 static spv_result_t CheckImportExportCompatibility(
     const MessageConsumer& consumer, const LinkageTable& linkings_to_do,
-    const DefUseManager& def_use_manager,
-    const DecorationManager& decoration_manager) {
+    ir::IRContext* context) {
   spv_position_t position = {};
 
   // Ensure th import and export types are the same.
+  const DefUseManager& def_use_manager = *context->get_def_use_mgr();
+  const DecorationManager& decoration_manager = *context->get_decoration_mgr();
   for (const auto& linking_entry : linkings_to_do) {
     if (!RemoveDuplicatesPass::AreTypesEqual(
             *def_use_manager.GetDef(linking_entry.imported_symbol.type_id),
             *def_use_manager.GetDef(linking_entry.exported_symbol.type_id),
-            def_use_manager, decoration_manager))
+            context))
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
              << "Type mismatch between imported variable/function %"

@@ -40,6 +40,12 @@ struct HashTypePointer {
     return type->HashValue();
   }
 };
+struct HashTypeUniquePointer {
+  size_t operator()(const std::unique_ptr<Type>& type) const {
+    assert(type);
+    return type->HashValue();
+  }
+};
 
 // Equality functor.
 //
@@ -52,11 +58,18 @@ struct CompareTypePointers {
     return lhs->IsSame(rhs);
   }
 };
+struct CompareTypeUniquePointers {
+  bool operator()(const std::unique_ptr<Type>& lhs,
+                  const std::unique_ptr<Type>& rhs) const {
+    assert(lhs && rhs);
+    return lhs->IsSame(rhs.get());
+  }
+};
 
 // A class for managing the SPIR-V type hierarchy.
 class TypeManager {
  public:
-  using IdToTypeMap = std::unordered_map<uint32_t, std::unique_ptr<Type>>;
+  using IdToTypeMap = std::unordered_map<uint32_t, Type*>;
 
   // Constructs a type manager from the given |module|. All internal messages
   // will be communicated to the outside via the given message |consumer|.
@@ -105,7 +118,7 @@ class TypeManager {
 
   // Registers |id| to |type|.
   //
-  // If GetId(|type|) already returns a non-zero id, the return value will be
+  // If GetId(|type|) already returns a non-zero id, that mapping will be
   // unchanged.
   void RegisterType(uint32_t id, const Type& type);
 
@@ -120,6 +133,9 @@ class TypeManager {
  private:
   using TypeToIdMap = std::unordered_map<const Type*, uint32_t, HashTypePointer,
                                          CompareTypePointers>;
+  using TypePool =
+      std::unordered_set<std::unique_ptr<Type>, HashTypeUniquePointer,
+                         CompareTypeUniquePointers>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
 
   // Analyzes the types and decorations on types in the given |module|.
@@ -141,14 +157,16 @@ class TypeManager {
   // Creates and returns a type from the given SPIR-V |inst|. Returns nullptr if
   // the given instruction is not for defining a type.
   Type* RecordIfTypeDefinition(const spvtools::ir::Instruction& inst);
-  // Attaches the decoration encoded in |inst| to a type. Does nothing if the
-  // given instruction is not a decoration instruction or not decorating a type.
-  void AttachIfTypeDecoration(const spvtools::ir::Instruction& inst);
+  // Attaches the decoration encoded in |inst| to |type|. Does nothing if the
+  // given instruction is not a decoration instruction. Assumes the target is
+  // |type| (e.g. should be called in loop of |type|'s decorations).
+  void AttachDecoration(const spvtools::ir::Instruction& inst, Type* type);
 
   const MessageConsumer& consumer_;  // Message consumer.
   spvtools::ir::IRContext* context_;
   IdToTypeMap id_to_type_;  // Mapping from ids to their type representations.
   TypeToIdMap type_to_id_;  // Mapping from types to their defining ids.
+  TypePool type_pool_;      // Memory owner of type pointers.
   ForwardPointerVector forward_pointers_;  // All forward pointer declarations.
   // All unresolved forward pointer declarations.
   // Refers the contents in the above vector.

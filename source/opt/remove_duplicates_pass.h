@@ -37,8 +37,7 @@ class RemoveDuplicatesPass : public Pass {
   // Returns whether two types are equal, and have the same decorations.
   static bool AreTypesEqual(const ir::Instruction& inst1,
                             const ir::Instruction& inst2,
-                            const analysis::DefUseManager& defUseManager,
-                            const analysis::DecorationManager& decoManager);
+                            ir::IRContext* context);
 
  private:
   bool RemoveDuplicateCapabilities(ir::IRContext* irContext) const;

@@ -40,7 +40,7 @@ TypeManager::TypeManager(const MessageConsumer& consumer,
 
 Type* TypeManager::GetType(uint32_t id) const {
   auto iter = id_to_type_.find(id);
-  if (iter != id_to_type_.end()) return (*iter).second.get();
+  if (iter != id_to_type_.end()) return (*iter).second;
   return nullptr;
 }
 
@@ -67,7 +67,6 @@ ForwardPointer* TypeManager::GetForwardPointer(uint32_t index) const {
 
 void TypeManager::AnalyzeTypes(const spvtools::ir::Module& module) {
   for (const auto* inst : module.GetTypes()) RecordIfTypeDefinition(*inst);
-  for (const auto& inst : module.annotations()) AttachIfTypeDecoration(inst);
 }
 
 void TypeManager::RemoveId(uint32_t id) {
@@ -76,22 +75,26 @@ void TypeManager::RemoveId(uint32_t id) {
 
   auto& type = iter->second;
   if (!type->IsUniqueType(true)) {
-    // Search for an equivalent type to re-map.
-    bool found = false;
-    for (auto& pair : id_to_type_) {
-      if (pair.first != id && *pair.second == *type) {
-        // Equivalent ambiguous type, re-map type.
-        type_to_id_.erase(type.get());
-        type_to_id_[pair.second.get()] = pair.first;
-        found = true;
-        break;
+    auto tIter = type_to_id_.find(type);
+    if (tIter != type_to_id_.end() && tIter->second == id) {
+      // |type| currently maps to |id|.
+      // Search for an equivalent type to re-map.
+      bool found = false;
+      for (auto& pair : id_to_type_) {
+        if (pair.first != id && *pair.second == *type) {
+          // Equivalent ambiguous type, re-map type.
+          type_to_id_.erase(type);
+          type_to_id_[pair.second] = pair.first;
+          found = true;
+          break;
+        }
       }
       // No equivalent ambiguous type, remove mapping.
-      if (!found) type_to_id_.erase(type.get());
+      if (!found) type_to_id_.erase(tIter);
     }
   } else {
     // Unique type, so just erase the entry.
-    type_to_id_.erase(type.get());
+    type_to_id_.erase(type);
   }
 
   // Erase the entry for |id|.
@@ -347,10 +350,15 @@ void TypeManager::CreateDecoration(uint32_t target,
 }
 
 void TypeManager::RegisterType(uint32_t id, const Type& type) {
-  auto& t = id_to_type_[id];
-  t.reset(type.Clone().release());
-  if (GetId(t.get()) == 0) {
-    type_to_id_[t.get()] = id;
+  // The comparison and hash on the type pool will avoid inserting the clone if
+  // an equivalent type already exists. The clone will be deleted when it goes
+  // out of scope at the end of the function in that case. Repeated insertions
+  // of the same Type will atmost keep one corresponding object in the type
+  // pool.
+  auto pair = type_pool_.insert(type.Clone());
+  id_to_type_[id] = pair.first->get();
+  if (GetId(pair.first->get()) == 0) {
+    type_to_id_[pair.first->get()] = id;
   }
 }
 
@@ -482,20 +490,23 @@ Type* TypeManager::RecordIfTypeDefinition(
   } else {
     SPIRV_ASSERT(consumer_, type != nullptr,
                  "type should not be nullptr at this point");
-    id_to_type_[id].reset(type);
-    type_to_id_[type] = id;
+    std::vector<ir::Instruction*> decorations =
+        context()->get_decoration_mgr()->GetDecorationsFor(id, true);
+    for (auto dec : decorations) {
+      AttachDecoration(*dec, type);
+    }
+    std::unique_ptr<Type> unique(type);
+    auto pair = type_pool_.insert(std::move(unique));
+    id_to_type_[id] = pair.first->get();
+    type_to_id_[pair.first->get()] = id;
   }
   return type;
 }
 
-void TypeManager::AttachIfTypeDecoration(const ir::Instruction& inst) {
+void TypeManager::AttachDecoration(const ir::Instruction& inst, Type* type) {
   const SpvOp opcode = inst.opcode();
   if (!ir::IsAnnotationInst(opcode)) return;
-  const uint32_t id = inst.GetSingleWordOperand(0);
-  // Do nothing if the id to be decorated is not for a known type.
-  if (!id_to_type_.count(id)) return;
 
-  Type* target_type = id_to_type_[id].get();
   switch (opcode) {
     case SpvOpDecorate: {
       const auto count = inst.NumOperands();
@@ -503,7 +514,7 @@ void TypeManager::AttachIfTypeDecoration(const ir::Instruction& inst) {
       for (uint32_t i = 1; i < count; ++i) {
         data.push_back(inst.GetSingleWordOperand(i));
       }
-      target_type->AddDecoration(std::move(data));
+      type->AddDecoration(std::move(data));
     } break;
     case SpvOpMemberDecorate: {
       const auto count = inst.NumOperands();
@@ -512,17 +523,12 @@ void TypeManager::AttachIfTypeDecoration(const ir::Instruction& inst) {
       for (uint32_t i = 2; i < count; ++i) {
         data.push_back(inst.GetSingleWordOperand(i));
       }
-      if (Struct* st = target_type->AsStruct()) {
+      if (Struct* st = type->AsStruct()) {
         st->AddMemberDecoration(index, std::move(data));
       } else {
         SPIRV_UNIMPLEMENTED(consumer_, "OpMemberDecorate non-struct type");
       }
     } break;
-    case SpvOpDecorationGroup:
-    case SpvOpGroupDecorate:
-    case SpvOpGroupMemberDecorate:
-      SPIRV_UNIMPLEMENTED(consumer_, "unhandled decoration");
-      break;
     default:
       SPIRV_UNREACHABLE(consumer_);
       break;
