@@ -87,7 +87,8 @@ bool DecorationManager::AreDecorationsTheSame(
   ir::Instruction tmpA = *inst1, tmpB = *inst2;
   if (tmpA.opcode() != tmpB.opcode() ||
       tmpA.NumInOperands() != tmpB.NumInOperands() ||
-      tmpA.opcode() == SpvOpNop || tmpB.opcode() == SpvOpNop)
+      tmpA.opcode() == SpvOpNop ||
+      tmpA.opcode() == SpvOpDecorationGroup)
     return false;
 
   for (uint32_t i = (tmpA.opcode() == SpvOpDecorate) ? 1u : 2u;
