@@ -112,7 +112,7 @@ class DecorationManagerTest : public ::testing::Test {
 };
 
 TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffOpcodes) {
-  spvtools::ir::IRContext ir_context(GetConsumer());
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -126,7 +126,7 @@ TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffOpcodes) {
 }
 
 TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDeco) {
-  spvtools::ir::IRContext ir_context(GetConsumer());
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -141,7 +141,7 @@ TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDeco) {
 }
 
 TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetAllowed) {
-  spvtools::ir::IRContext ir_context(GetConsumer());
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -156,7 +156,7 @@ TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetAllowed) {
 }
 
 TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetDisallowed) {
-  spvtools::ir::IRContext ir_context(GetConsumer());
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -171,7 +171,7 @@ TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetDisallowed) {
 }
 
 TEST_F(DecorationManagerTest, ComparingMemberDecorationsOnSameTypeDiffMember) {
-  spvtools::ir::IRContext ir_context(GetConsumer());
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpMemberDecorate %1 0 Constant
   Instruction inst1(&ir_context, SpvOpMemberDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -189,7 +189,7 @@ TEST_F(DecorationManagerTest, ComparingMemberDecorationsOnSameTypeDiffMember) {
 
 TEST_F(DecorationManagerTest,
        ComparingSameMemberDecorationsOnDiffTargetAllowed) {
-  spvtools::ir::IRContext ir_context(GetConsumer());
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpMemberDecorate %1 0 Constant
   Instruction inst1(&ir_context, SpvOpMemberDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -207,7 +207,7 @@ TEST_F(DecorationManagerTest,
 
 TEST_F(DecorationManagerTest,
        ComparingSameMemberDecorationsOnDiffTargetDisallowed) {
-  spvtools::ir::IRContext ir_context(GetConsumer());
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpMemberDecorate %1 0 Constant
   Instruction inst1(&ir_context, SpvOpMemberDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},

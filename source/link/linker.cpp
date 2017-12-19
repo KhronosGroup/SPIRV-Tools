@@ -225,7 +225,7 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   ir::ModuleHeader header;
   res = GenerateHeader(consumer, modules, max_id_bound, &header);
   if (res != SPV_SUCCESS) return res;
-  IRContext linked_context(consumer);
+  IRContext linked_context(impl_->context->target_env, consumer);
   linked_context.module()->SetHeader(header);
 
   // Phase 3: Merge all the binaries into a single one.

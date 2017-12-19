@@ -51,7 +51,7 @@ std::unique_ptr<ir::IRContext> BuildModule(spv_target_env env,
   auto context = spvContextCreate(env);
   libspirv::SetContextMessageConsumer(context, consumer);
 
-  auto irContext = MakeUnique<ir::IRContext>(consumer);
+  auto irContext = MakeUnique<ir::IRContext>(env, consumer);
   ir::IrLoader loader(consumer, irContext->module());
 
   spv_result_t status = spvBinaryParse(context, &loader, binary, size,

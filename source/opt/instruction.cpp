@@ -189,7 +189,7 @@ Instruction* Instruction::GetBaseAddress() const {
 }
 
 bool Instruction::IsReadOnlyVariable() const {
-  if (context()->module()->HasCapability(SpvCapabilityShader))
+  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
     return IsReadOnlyVariableShaders();
   else
     return IsReadOnlyVariableKernel();
@@ -407,7 +407,7 @@ bool Instruction::IsValidBasePointer() const {
     return false;
   }
 
-  if (context()->module()->HasCapability(SpvCapabilityAddresses)) {
+  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses)) {
     // TODO: The rules here could be more restrictive.
     return true;
   }

@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_OPT_FEATURE_MANAGER_H_
 #define LIBSPIRV_OPT_FEATURE_MANAGER_H_
 
+#include "assembly_grammar.h"
 #include "extensions.h"
 #include "module.h"
 
@@ -24,19 +25,41 @@ namespace opt {
 // Tracks features enabled by a module. The IRContext has a FeatureManager.
 class FeatureManager {
  public:
-  FeatureManager() = default;
+  explicit FeatureManager(const libspirv::AssemblyGrammar& grammar)
+      : grammar_(grammar) {}
 
   // Returns true if |ext| is an enabled extension in the module.
   bool HasExtension(libspirv::Extension ext) const {
     return extensions_.Contains(ext);
   }
 
-  // Analyzes |module| and records enabled extensions.
+  // Returns true if |cap| is an enabled capability in the module.
+  bool HasCapability(SpvCapability cap) const {
+    return capabilities_.Contains(cap);
+  }
+
+  // Analyzes |module| and records enabled extensions and capabilities.
   void Analyze(ir::Module* module);
 
  private:
+  // Analyzes |module| and records enabled extensions.
+  void AddExtensions(ir::Module* module);
+
+  // Adds the given |capability| and all implied capabilities into the current
+  // FeatureManager.
+  void AddCapability(SpvCapability capability);
+
+  // Analyzes |module| and records enabled capabilities.
+  void AddCapabilities(ir::Module* module);
+
+  // Auxiliary object for querying SPIR-V grammar facts.
+  const libspirv::AssemblyGrammar& grammar_;
+
   // The enabled extensions.
   libspirv::ExtensionSet extensions_;
+
+  // The enabled capabilities.
+  libspirv::CapabilitySet capabilities_;
 };
 
 }  // namespace opt

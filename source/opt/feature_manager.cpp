@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "feature_manager.h"
+#include <queue>
+#include <stack>
 
 #include "enum_string_mapping.h"
 
@@ -20,6 +22,11 @@ namespace spvtools {
 namespace opt {
 
 void FeatureManager::Analyze(ir::Module* module) {
+  AddExtensions(module);
+  AddCapabilities(module);
+}
+
+void FeatureManager::AddExtensions(ir::Module* module) {
   for (auto ext : module->extensions()) {
     const std::string name =
         reinterpret_cast<const char*>(ext.GetInOperand(0u).words.data());
@@ -27,6 +34,25 @@ void FeatureManager::Analyze(ir::Module* module) {
     if (libspirv::GetExtensionFromString(name, &extension)) {
       extensions_.Add(extension);
     }
+  }
+}
+
+void FeatureManager::AddCapability(SpvCapability cap) {
+  if (capabilities_.Contains(cap)) return;
+
+  capabilities_.Add(cap);
+
+  spv_operand_desc desc = {};
+  if (SPV_SUCCESS ==
+      grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc)) {
+    libspirv::CapabilitySet(desc->numCapabilities, desc->capabilities)
+        .ForEach([this](SpvCapability c) { AddCapability(c); });
+  }
+}
+
+void FeatureManager::AddCapabilities(ir::Module* module) {
+  for (ir::Instruction& inst : module->capabilities()) {
+    AddCapability(static_cast<SpvCapability>(inst.GetSingleWordInOperand(0)));
   }
 }
 

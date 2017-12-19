@@ -77,11 +77,11 @@ bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
 Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // Assumes all control flow structured.
   // TODO(greg-lunarg): Do SSA rewrite for non-structured control flow
-  if (!get_module()->HasCapability(SpvCapabilityShader))
+  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
   // Assumes relaxed logical addressing only (see instruction.h)
   // TODO(greg-lunarg): Add support for physical addressing
-  if (get_module()->HasCapability(SpvCapabilityAddresses))
+  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().

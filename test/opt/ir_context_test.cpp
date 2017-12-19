@@ -62,7 +62,8 @@ using IRContextTest = PassTest<::testing::Test>;
 
 TEST_F(IRContextTest, IndividualValidAfterBuild) {
   std::unique_ptr<ir::Module> module(new ir::Module());
-  IRContext localContext(std::move(module), spvtools::MessageConsumer());
+  IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                         spvtools::MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -73,7 +74,8 @@ TEST_F(IRContextTest, IndividualValidAfterBuild) {
 
 TEST_F(IRContextTest, AllValidAfterBuild) {
   std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
-  IRContext localContext(std::move(module), spvtools::MessageConsumer());
+  IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                         spvtools::MessageConsumer());
 
   Analysis built_analyses = IRContext::kAnalysisNone;
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
@@ -86,7 +88,8 @@ TEST_F(IRContextTest, AllValidAfterBuild) {
 
 TEST_F(IRContextTest, AllValidAfterPassNoChange) {
   std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
-  IRContext localContext(std::move(module), spvtools::MessageConsumer());
+  IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                         spvtools::MessageConsumer());
 
   Analysis built_analyses = IRContext::kAnalysisNone;
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
@@ -103,7 +106,8 @@ TEST_F(IRContextTest, AllValidAfterPassNoChange) {
 
 TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
   std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
-  IRContext localContext(std::move(module), spvtools::MessageConsumer());
+  IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                         spvtools::MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -121,7 +125,8 @@ TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
 
 TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
   std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
-  IRContext localContext(std::move(module), spvtools::MessageConsumer());
+  IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                         spvtools::MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -139,7 +144,8 @@ TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
 
 TEST_F(IRContextTest, PreserveFirstOnlyAfterPassWithChange) {
   std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
-  IRContext localContext(std::move(module), spvtools::MessageConsumer());
+  IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                         spvtools::MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -201,7 +207,7 @@ TEST_F(IRContextTest, KillMemberName) {
 
 TEST_F(IRContextTest, TakeNextUniqueIdIncrementing) {
   const uint32_t NUM_TESTS = 1000;
-  IRContext localContext(nullptr);
+  IRContext localContext(SPV_ENV_UNIVERSAL_1_2, nullptr);
   for (uint32_t i = 1; i < NUM_TESTS; ++i)
     EXPECT_EQ(i, localContext.TakeNextUniqueId());
 }
