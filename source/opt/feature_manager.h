@@ -31,12 +31,26 @@ class FeatureManager {
     return extensions_.Contains(ext);
   }
 
-  // Analyzes |module| and records enabled extensions.
+  // Returns true if |cap| is an enabled capability in the module.
+  bool HasCapability(SpvCapability cap) const {
+    return capabilities_.Contains(cap);
+  }
+
+  // Analyzes |module| and records enabled extensions and capabilities.
   void Analyze(ir::Module* module);
 
  private:
+  // Analyzes |module| and records enabled extensions.
+  void AddExtensions(ir::Module* module);
+  
+  // Analyzes |module| and records enabled capabilities.
+  void AddCapabilities(ir::Module* module);
+
   // The enabled extensions.
   libspirv::ExtensionSet extensions_;
+
+  // The enabled capabilities.
+  libspirv::CapabilitySet capabilities_;
 };
 
 }  // namespace opt

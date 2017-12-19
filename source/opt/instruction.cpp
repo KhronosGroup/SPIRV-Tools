@@ -189,7 +189,7 @@ Instruction* Instruction::GetBaseAddress() const {
 }
 
 bool Instruction::IsReadOnlyVariable() const {
-  if (context()->module()->HasCapability(SpvCapabilityShader))
+  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
     return IsReadOnlyVariableShaders();
   else
     return IsReadOnlyVariableKernel();

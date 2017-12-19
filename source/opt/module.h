@@ -239,7 +239,7 @@ class Module {
   uint32_t ComputeIdBound() const;
 
   // Returns true if module has capability |cap|
-  bool HasCapability(uint32_t cap);
+  bool HasExplicitCapability(uint32_t cap);
 
   // Returns id for OpExtInst instruction for extension |extstr|.
   // Returns 0 if not found.

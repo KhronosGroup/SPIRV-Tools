@@ -25,7 +25,7 @@ Pass::Status MergeReturnPass::Process(ir::IRContext* irContext) {
 
   // TODO (alanbaker): Support structured control flow. Bail out in the
   // meantime.
-  if (get_module()->HasCapability(SpvCapabilityShader))
+  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
 
   bool modified = false;

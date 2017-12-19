@@ -84,3 +84,51 @@ OpExtension "SPV_KHR_storage_buffer_storage_class"
   ASSERT_TRUE(context->get_feature_mgr()->HasExtension(
       libspirv::Extension::kSPV_KHR_storage_buffer_storage_class));
 }
+
+// Test capability checks.
+TEST_F(FeatureManagerTest, ExplicitlyPresent1) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  ASSERT_NE(context, nullptr);
+
+  ASSERT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
+  ASSERT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
+}
+
+TEST_F(FeatureManagerTest, ExplicitlyPresent2) {
+  const std::string text = R"(
+OpCapability Kernel
+OpMemoryModel Logical GLSL450
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  ASSERT_NE(context, nullptr);
+
+  ASSERT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
+  ASSERT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
+}
+
+TEST_F(FeatureManagerTest, ImplicitlyPresent) {
+  const std::string text = R"(
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  ASSERT_NE(context, nullptr);
+
+  // Check multiple levels of indirection.  Tessellation implies Shader, which
+  // implies Matrix.
+  ASSERT_TRUE(
+      context->get_feature_mgr()->HasCapability(SpvCapabilityTessellation));
+  ASSERT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
+  ASSERT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityMatrix));
+  ASSERT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
+}

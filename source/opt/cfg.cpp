@@ -14,6 +14,7 @@
 
 #include "cfg.h"
 #include "cfa.h"
+#include "ir_context.h"
 #include "module.h"
 
 namespace spvtools {
@@ -45,7 +46,8 @@ CFG::CFG(ir::Module* module)
 
 void CFG::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
                                  std::list<ir::BasicBlock*>* order) {
-  assert(module_->HasCapability(SpvCapabilityShader) &&
+  assert(module_->context()->get_feature_mgr()->HasCapability(
+             SpvCapabilityShader) &&
          "This only works on structured control flow");
 
   // Compute structured successors and do DFS.
