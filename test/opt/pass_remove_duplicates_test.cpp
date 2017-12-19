@@ -25,8 +25,8 @@
 
 namespace {
 
-using spvtools::ir::IRContext;
 using spvtools::ir::Instruction;
+using spvtools::ir::IRContext;
 using spvtools::opt::PassManager;
 using spvtools::opt::RemoveDuplicatesPass;
 
@@ -124,10 +124,12 @@ OpCapability Linkage
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 )";
-  EXPECT_THAT(RunPass(spirv), R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-)");
+)";
+
+  EXPECT_THAT(RunPass(spirv), after);
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
@@ -140,12 +142,14 @@ OpCapability Linkage
 %3 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 )";
-  EXPECT_THAT(RunPass(spirv), R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 OpCapability Linkage
 %1 = OpExtInstImport "OpenCL.std"
 %3 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
-)");
+)";
+
+  EXPECT_THAT(RunPass(spirv), after);
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
@@ -158,12 +162,14 @@ OpMemoryModel Logical GLSL450
 %2 = OpTypeInt 32 0
 %3 = OpTypeStruct %1 %2
 )";
-  EXPECT_THAT(RunPass(spirv), R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %1 = OpTypeInt 32 0
 %3 = OpTypeStruct %1 %1
-)");
+)";
+
+  EXPECT_THAT(RunPass(spirv), after);
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
@@ -177,14 +183,16 @@ OpDecorate %1 GLSLPacked
 %1 = OpTypeStruct %2 %2
 %3 = OpTypeStruct %2 %2
 )";
-  EXPECT_THAT(RunPass(spirv), R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %1 GLSLPacked
 %2 = OpTypeInt 32 0
 %1 = OpTypeStruct %2 %2
 %3 = OpTypeStruct %2 %2
-)");
+)";
+
+  EXPECT_THAT(RunPass(spirv), after);
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
@@ -199,13 +207,15 @@ OpDecorate %2 GLSLPacked
 %1 = OpTypeStruct %3 %3
 %2 = OpTypeStruct %3 %3
 )";
-  EXPECT_THAT(RunPass(spirv), R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %1 GLSLPacked
 %3 = OpTypeInt 32 0
 %1 = OpTypeStruct %3 %3
-)");
+)";
+
+  EXPECT_THAT(RunPass(spirv), after);
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
@@ -223,7 +233,7 @@ OpGroupDecorate %3 %1 %2
 %4 = OpTypeInt 32 0
 %3 = OpVariable %4 Uniform
 )";
-  EXPECT_THAT(RunPass(spirv), R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %1 Constant
@@ -233,7 +243,9 @@ OpDecorate %2 Restrict
 OpGroupDecorate %3 %1 %2
 %4 = OpTypeInt 32 0
 %3 = OpVariable %4 Uniform
-)");
+)";
+
+  EXPECT_THAT(RunPass(spirv), after);
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
@@ -253,7 +265,7 @@ OpGroupDecorate %2 %4
 %3 = OpVariable %5 Uniform
 %4 = OpVariable %5 Uniform
 )";
-  EXPECT_THAT(RunPass(spirv), R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %1 Constant
@@ -266,7 +278,9 @@ OpGroupDecorate %2 %4
 %5 = OpTypeInt 32 0
 %3 = OpVariable %5 Uniform
 %4 = OpVariable %5 Uniform
-)");
+)";
+
+  EXPECT_THAT(RunPass(spirv), after);
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
