@@ -50,7 +50,7 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
   for (const ir::Instruction* inst1 : decorationsFor1) {
     bool didFindAMatch = false;
     for (const ir::Instruction* inst2 : decorationsFor2) {
-      if (AreDecorationsTheSame(inst1, inst2)) {
+      if (AreDecorationsTheSame(inst1, inst2, true)) {
         didFindAMatch = true;
         break;
       }
@@ -60,39 +60,27 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
   return true;
 }
 
-// TODO(pierremoreau): Handle SpvOpDecorateId by converting them to a regular
-//                     SpvOpDecorate.
-bool DecorationManager::AreDecorationsTheSame(
-    const ir::Instruction* inst1, const ir::Instruction* inst2) const {
-  //  const auto decorateIdToDecorate = [&constants](const Instruction& inst) {
-  //    std::vector<Operand> operands;
-  //    operands.reserve(inst.NumInOperands());
-  //    for (uint32_t i = 2u; i < inst.NumInOperands(); ++i) {
-  //      const auto& j = constants.find(inst.GetSingleWordInOperand(i));
-  //      if (j == constants.end())
-  //        return Instruction(inst.context());
-  //      const auto operand = j->second->GetOperand(0u);
-  //      operands.emplace_back(operand.type, operand.words);
-  //    }
-  //    return Instruction(inst.context(), SpvOpDecorate, 0u, 0u, operands);
-  //  };
-  //  Instruction tmpA = (deco1.opcode() == SpvOpDecorateId) ?
-  //  decorateIdToDecorate(deco1) : deco1;
-  //  Instruction tmpB = (deco2.opcode() == SpvOpDecorateId) ?
-  //  decorateIdToDecorate(deco2) : deco2;
-  //
-  if (inst1->opcode() == SpvOpDecorateId || inst2->opcode() == SpvOpDecorateId)
+// TODO(pierremoreau): If OpDecorateId is referencing an OpConstant, one could
+//                     check that the constants are the same rather than just
+//                     looking at the constant ID.
+bool DecorationManager::AreDecorationsTheSame(const ir::Instruction* inst1,
+                                              const ir::Instruction* inst2,
+                                              bool ignore_target) const {
+  switch (inst1->opcode()) {
+    case SpvOpDecorate:
+    case SpvOpMemberDecorate:
+    case SpvOpDecorateId:
+      break;
+    default:
+      return false;
+  }
+
+  if (inst1->opcode() != inst2->opcode() ||
+      inst1->NumInOperands() != inst2->NumInOperands())
     return false;
 
-  ir::Instruction tmpA = *inst1, tmpB = *inst2;
-  if (tmpA.opcode() != tmpB.opcode() ||
-      tmpA.NumInOperands() != tmpB.NumInOperands() ||
-      tmpA.opcode() == SpvOpNop || tmpB.opcode() == SpvOpNop)
-    return false;
-
-  for (uint32_t i = (tmpA.opcode() == SpvOpDecorate) ? 1u : 2u;
-       i < tmpA.NumInOperands(); ++i)
-    if (tmpA.GetInOperand(i) != tmpB.GetInOperand(i)) return false;
+  for (uint32_t i = ignore_target ? 1u : 0u; i < inst1->NumInOperands(); ++i)
+    if (inst1->GetInOperand(i) != inst2->GetInOperand(i)) return false;
 
   return true;
 }
