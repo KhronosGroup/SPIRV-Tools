@@ -12,7 +12,7 @@ v2017.3-dev 2017-12-15
    - More validation of primitive instructions
  - Fixes:
    #1100: Validator: Image operand Sample can be used with OpImageSparseFetch,
-     OpImageSparseRead, OpImageSparseWrite
+     OpImageSparseRead
    #1108: Remove duplicates transform was incorrectly removing non-duplicate
      decorations.
 
