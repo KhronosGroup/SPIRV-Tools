@@ -68,7 +68,7 @@ OpFunctionEnd)";
 // function with the given body, but missing the final return and
 // function-end.  The result is of the form where it can be used in the
 // |body| argument to GenerateShaderCode.
-std::string CallAndCallee(std::string body) {
+std::string CallAndCallee(const std::string& body) {
   std::ostringstream ss;
   ss << R"(
 %dummy = OpFunctionCall %void %foo
