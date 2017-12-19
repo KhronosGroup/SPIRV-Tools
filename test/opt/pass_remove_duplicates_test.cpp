@@ -25,8 +25,8 @@
 
 namespace {
 
-using spvtools::ir::Instruction;
 using spvtools::ir::IRContext;
+using spvtools::ir::Instruction;
 using spvtools::opt::PassManager;
 using spvtools::opt::RemoveDuplicatesPass;
 
