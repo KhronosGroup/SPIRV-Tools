@@ -80,12 +80,12 @@ spv_result_t LiteralsPass(ValidationState_t& _,
     uint32_t bit_width = operand->number_bit_width;
 
     // Bit widths that are a multiple of the word size have no upper bits
-    const auto remaining_bits = bit_width % word_size;
-    if (remaining_bits == 0) continue;
+    const auto remaining_value_bits = bit_width % word_size;
+    if (remaining_value_bits == 0) continue;
 
     const bool signedness = operand->number_kind == SPV_NUMBER_SIGNED_INT;
 
-    if (!VerifyUpperBits(upper_word, remaining_bits, signedness)) {
+    if (!VerifyUpperBits(upper_word, remaining_value_bits, signedness)) {
       return _.diag(SPV_ERROR_INVALID_VALUE)
              << "The high-order bits of a literal number in instruction <id> "
              << inst->result_id << " must be 0 for a floating-point type, "
