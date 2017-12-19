@@ -241,3 +241,13 @@ add_spvtools_unittest(TARGET redundancy_elimination
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET decoration_manager
+  SRCS decoration_manager_test.cpp
+  LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET pass_remove_duplicates
+  SRCS pass_remove_duplicates_test.cpp
+  LIBS SPIRV-Tools-opt
+)
+
