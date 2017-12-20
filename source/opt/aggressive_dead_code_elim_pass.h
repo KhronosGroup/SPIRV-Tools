@@ -56,15 +56,20 @@ class AggressiveDCEPass : public MemPass {
 
   // Return true if |varId| is variable of function storage class or is
   // private variable and privates can be optimized like locals (see
-  // privates_like_local_)
+  // privates_like_local_).
   bool IsLocalVar(uint32_t varId);
 
-  // Return true if |inst| is marked live
+  // Return true if |inst| is marked live.
   bool IsLive(const ir::Instruction* inst) const {
     return live_insts_.find(inst) != live_insts_.end();
   }
 
+  // Returns true if |inst| is dead.
   bool IsDead(ir::Instruction* inst);
+
+  // Adds entry points and execution modes to the worklist for processing with
+  // the first function.
+  void InitializeModuleScopeLiveInstructions();
 
   // Add |inst| to worklist_ and live_insts_.
   void AddToWorklist(ir::Instruction* inst) {

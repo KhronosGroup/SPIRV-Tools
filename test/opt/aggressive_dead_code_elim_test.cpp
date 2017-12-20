@@ -150,11 +150,10 @@ OpName %v "v"
 OpName %BaseColor "BaseColor"
 OpName %Dead "Dead"
 OpName %iv2 "iv2"
-OpName %ResType "ResType"
 OpName %Color "Color"
 )";
 
-  const std::string predefs2 =
+  const std::string predefs2_before =
       R"(%void = OpTypeVoid
 %11 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -168,6 +167,23 @@ OpName %Color "Color"
 %_ptr_Output_v4int = OpTypePointer Output %v4int
 %iv2 = OpVariable %_ptr_Output_v4int Output
 %ResType = OpTypeStruct %v4float %v4int
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%Color = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs2_after =
+      R"(%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
+%int = OpTypeInt 32 1
+%v4int = OpTypeVector %int 4
+%_ptr_Output_v4int = OpTypePointer Output %v4int
+%iv2 = OpVariable %_ptr_Output_v4int Output
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %Color = OpVariable %_ptr_Output_v4float Output
 )";
@@ -203,8 +219,8 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-      predefs1 + names_before + predefs2 + func_before,
-      predefs1 + names_after + predefs2 + func_after, true, true);
+      predefs1 + names_before + predefs2_before + func_before,
+      predefs1 + names_after + predefs2_after + func_after, true, true);
 }
 
 TEST_F(AggressiveDCETest, EliminateDecorate) {
@@ -249,7 +265,7 @@ OpName %Dead "Dead"
 OpName %gl_FragColor "gl_FragColor"
 )";
 
-  const std::string predefs2 =
+  const std::string predefs2_before =
       R"(%void = OpTypeVoid
 %10 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -259,6 +275,19 @@ OpName %gl_FragColor "gl_FragColor"
 %BaseColor = OpVariable %_ptr_Input_v4float Input
 %Dead = OpVariable %_ptr_Input_v4float Input
 %float_0_5 = OpConstant %float 0.5
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs2_after =
+      R"(%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
 )";
@@ -292,8 +321,8 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-      predefs1 + names_before + predefs2 + func_before,
-      predefs1 + names_after + predefs2 + func_after, true, true);
+      predefs1 + names_before + predefs2_before + func_before,
+      predefs1 + names_after + predefs2_after + func_after, true, true);
 }
 
 TEST_F(AggressiveDCETest, Simple) {
@@ -828,10 +857,6 @@ OpEntryPoint Fragment %main "main" %outColor %texCoords
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
-OpName %S_t "S_t"
-OpMemberName %S_t 0 "v0"
-OpMemberName %S_t 1 "v1"
-OpMemberName %S_t 2 "smp"
 OpName %outColor "outColor"
 OpName %sampler15 "sampler15"
 OpName %texCoords "texCoords"
@@ -845,16 +870,8 @@ OpDecorate %sampler15 DescriptorSet 0
 %outColor = OpVariable %_ptr_Output_v4float Output
 %14 = OpTypeImage %float 2D 0 0 0 1 Unknown
 %15 = OpTypeSampledImage %14
-%S_t = OpTypeStruct %v2float %v2float %15
-%_ptr_Function_S_t = OpTypePointer Function %S_t
-%17 = OpTypeFunction %void %_ptr_Function_S_t
 %_ptr_UniformConstant_15 = OpTypePointer UniformConstant %15
-%_ptr_Function_15 = OpTypePointer Function %15
 %sampler15 = OpVariable %_ptr_UniformConstant_15 UniformConstant
-%int = OpTypeInt 32 1
-%int_0 = OpConstant %int 0
-%int_2 = OpConstant %int 2
-%_ptr_Function_v2float = OpTypePointer Function %v2float
 %_ptr_Input_v2float = OpTypePointer Input %v2float
 %texCoords = OpVariable %_ptr_Input_v2float Input
 )";
@@ -977,7 +994,7 @@ TEST_F(AggressiveDCETest, PrivateStoreElimInEntryNoCalls) {
   //     OutColor = v;
   // }
 
-  const std::string predefs =
+  const std::string predefs_before =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -1004,6 +1021,33 @@ OpDecorate %OutColor Location 0
 %Dead = OpVariable %_ptr_Input_v4float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %dv = OpVariable %_ptr_Private_v4float Private
+%OutColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %Dead %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %Dead "Dead"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %Dead Location 1
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 )";
 
@@ -1036,7 +1080,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-      predefs + main_before, predefs + main_after, true, true);
+      predefs_before + main_before, predefs_after + main_after, true, true);
 }
 
 TEST_F(AggressiveDCETest, NoPrivateStoreElimIfLoad) {
@@ -1290,14 +1334,6 @@ OpDecorate %OutColor Location 0
 %v4float = OpTypeVector %float 4
 %_ptr_Input_v4float = OpTypePointer Input %v4float
 %BaseColor = OpVariable %_ptr_Input_v4float Input
-%uint = OpTypeInt 32 0
-%uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%_ptr_Function_float = OpTypePointer Function %float
-%uint_1 = OpConstant %uint 1
-%uint_2 = OpConstant %uint 2
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %float_1 = OpConstant %float 1
@@ -1407,13 +1443,6 @@ OpDecorate %OutColor Location 0
 %v4float = OpTypeVector %float 4
 %_ptr_Input_v4float = OpTypePointer Input %v4float
 %BaseColor = OpVariable %_ptr_Input_v4float Input
-%uint = OpTypeInt 32 0
-%uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%_ptr_Function_float = OpTypePointer Function %float
-%uint_1 = OpConstant %uint 1
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %float_1 = OpConstant %float 1
@@ -1640,16 +1669,6 @@ OpDecorate %OutColor Location 0
 %v4float = OpTypeVector %float 4
 %_ptr_Input_v4float = OpTypePointer Input %v4float
 %BaseColor = OpVariable %_ptr_Input_v4float Input
-%uint = OpTypeInt 32 0
-%uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%uint_1 = OpConstant %uint 1
-%_ptr_Function_float = OpTypePointer Function %float
-%float_0_25 = OpConstant %float 0.25
-%float_0_5 = OpConstant %float 0.5
-%float_0_75 = OpConstant %float 0.75
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %float_1 = OpConstant %float 1
@@ -1928,25 +1947,24 @@ OpDecorate %OutColor Location 0
 %_ptr_Input_float = OpTypePointer Input %float
 %float_0 = OpConstant %float 0
 %bool = OpTypeBool
-%_ptr_Function_float = OpTypePointer Function %float
 %float_1 = OpConstant %float 1
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %main = OpFunction %void None %6
-%18 = OpLabel
-%19 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
-%20 = OpLoad %float %19
-%21 = OpFOrdEqual %bool %20 %float_0
-OpSelectionMerge %22 None
-OpBranchConditional %21 %23 %24
-%23 = OpLabel
-OpBranch %22
-%24 = OpLabel
-OpBranch %22
+%17 = OpLabel
+%18 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
+%19 = OpLoad %float %18
+%20 = OpFOrdEqual %bool %19 %float_0
+OpSelectionMerge %21 None
+OpBranchConditional %20 %22 %23
 %22 = OpLabel
-%25 = OpPhi %float %float_0 %23 %float_1 %24
-%26 = OpCompositeConstruct %v4float %25 %25 %25 %25
-OpStore %OutColor %26
+OpBranch %21
+%23 = OpLabel
+OpBranch %21
+%21 = OpLabel
+%24 = OpPhi %float %float_0 %22 %float_1 %23
+%25 = OpCompositeConstruct %v4float %24 %24 %24 %24
+OpStore %OutColor %25
 OpReturn
 OpFunctionEnd
 )";
@@ -2085,7 +2103,6 @@ OpDecorate %o Location 0
 %int_0 = OpConstant %int 0
 %int_10 = OpConstant %int 10
 %bool = OpTypeBool
-%int_2 = OpConstant %int 2
 %uint = OpTypeInt 32 0
 %uint_10 = OpConstant %uint 10
 %_arr_float_uint_10 = OpTypeArray %float %uint_10
@@ -2097,36 +2114,36 @@ OpDecorate %o Location 0
 %_ptr_Output_float = OpTypePointer Output %float
 %o = OpVariable %_ptr_Output_float Output
 %main = OpFunction %void None %10
-%26 = OpLabel
+%25 = OpLabel
 %s = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %s %float_0
 OpStore %i %int_0
-OpBranch %27
-%27 = OpLabel
-OpLoopMerge %28 %29 None
-OpBranch %30
-%30 = OpLabel
-%31 = OpLoad %int %i
-%32 = OpSLessThan %bool %31 %int_10
-OpSelectionMerge %33 None
-OpBranchConditional %32 %33 %28
-%33 = OpLabel
-%34 = OpLoad %int %i
-%35 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %34
-%36 = OpLoad %float %35
-%37 = OpLoad %float %s
-%38 = OpFAdd %float %37 %36
-OpStore %s %38
+OpBranch %26
+%26 = OpLabel
+OpLoopMerge %27 %28 None
 OpBranch %29
 %29 = OpLabel
-%39 = OpLoad %int %i
-%40 = OpIAdd %int %39 %int_1
-OpStore %i %40
-OpBranch %27
+%30 = OpLoad %int %i
+%31 = OpSLessThan %bool %30 %int_10
+OpSelectionMerge %32 None
+OpBranchConditional %31 %32 %27
+%32 = OpLabel
+%33 = OpLoad %int %i
+%34 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %33
+%35 = OpLoad %float %34
+%36 = OpLoad %float %s
+%37 = OpFAdd %float %36 %35
+OpStore %s %37
+OpBranch %28
 %28 = OpLabel
-%41 = OpLoad %float %s
-OpStore %o %41
+%38 = OpLoad %int %i
+%39 = OpIAdd %int %38 %int_1
+OpStore %i %39
+OpBranch %26
+%27 = OpLabel
+%40 = OpLoad %float %s
+OpStore %o %40
 OpReturn
 OpFunctionEnd
 )";
@@ -2180,13 +2197,10 @@ OpName %gl_FragColor "gl_FragColor"
       R"(OpName %main "main"
 OpName %v "v"
 OpName %BaseColor "BaseColor"
-OpName %U_t "U_t"
-OpMemberName %U_t 0 "g_I"
-OpName %_ ""
 OpName %gl_FragColor "gl_FragColor"
 )";
 
-  const std::string predefs2 =
+  const std::string predefs2_before =
       R"(OpMemberDecorate %U_t 0 Offset 0
 OpDecorate %U_t Block
 OpDecorate %_ DescriptorSet 0
@@ -2209,6 +2223,18 @@ OpDecorate %_ DescriptorSet 0
 %bool = OpTypeBool
 %float_0_5 = OpConstant %float 0.5
 %int_1 = OpConstant %int 1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs2_after =
+      R"(%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
 )";
@@ -2267,8 +2293,8 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-      predefs1 + names_before + predefs2 + func_before,
-      predefs1 + names_after + predefs2 + func_after, true, true);
+      predefs1 + names_before + predefs2_before + func_before,
+      predefs1 + names_after + predefs2_after + func_after, true, true);
 }
 
 TEST_F(AggressiveDCETest, NoEliminateBusyLoop) {
@@ -2389,10 +2415,8 @@ OpDecorate %o Location 0
 %void = OpTypeVoid
 %8 = OpTypeFunction %void
 %float = OpTypeFloat 32
-%_ptr_Function_float = OpTypePointer Function %float
 %float_0 = OpConstant %float 0
 %int = OpTypeInt 32 1
-%_ptr_Function_int = OpTypePointer Function %int
 %int_0 = OpConstant %int 0
 %int_10 = OpConstant %int 10
 %bool = OpTypeBool
@@ -2407,26 +2431,26 @@ OpDecorate %o Location 0
 %_ptr_Output_float = OpTypePointer Output %float
 %o = OpVariable %_ptr_Output_float Output
 %main = OpFunction %void None %8
-%23 = OpLabel
-OpBranch %24
-%24 = OpLabel
-%25 = OpPhi %float %float_0 %23 %26 %27
-%28 = OpPhi %int %int_0 %23 %29 %27
-OpLoopMerge %30 %27 None
-OpBranch %31
+%21 = OpLabel
+OpBranch %22
+%22 = OpLabel
+%23 = OpPhi %float %float_0 %21 %24 %25
+%26 = OpPhi %int %int_0 %21 %27 %25
+OpLoopMerge %28 %25 None
+OpBranch %29
+%29 = OpLabel
+%30 = OpSLessThan %bool %26 %int_10
+OpBranchConditional %30 %31 %28
 %31 = OpLabel
-%32 = OpSLessThan %bool %28 %int_10
-OpBranchConditional %32 %33 %30
-%33 = OpLabel
-%34 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %28
-%35 = OpLoad %float %34
-%26 = OpFAdd %float %25 %35
-OpBranch %27
-%27 = OpLabel
-%29 = OpIAdd %int %28 %int_1
-OpBranch %24
-%30 = OpLabel
-OpStore %o %25
+%32 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %26
+%33 = OpLoad %float %32
+%24 = OpFAdd %float %23 %33
+OpBranch %25
+%25 = OpLabel
+%27 = OpIAdd %int %26 %int_1
+OpBranch %22
+%28 = OpLabel
+OpStore %o %23
 OpReturn
 OpFunctionEnd
 )";
@@ -2498,14 +2522,6 @@ OpDecorate %OutColor Location 0
 %v4float = OpTypeVector %float 4
 %_ptr_Input_v4float = OpTypePointer Input %v4float
 %BaseColor = OpVariable %_ptr_Input_v4float Input
-%uint = OpTypeInt 32 0
-%uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%_ptr_Function_float = OpTypePointer Function %float
-%uint_1 = OpConstant %uint 1
-%uint_2 = OpConstant %uint 2
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 )";
@@ -2822,35 +2838,12 @@ OpEntryPoint Fragment %main "main" %o
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 430
 OpName %main "main"
-OpName %U_t "U_t"
-OpMemberName %U_t 0 "g_F"
-OpName %_ ""
 OpName %o "o"
-OpDecorate %_arr_float_uint_10 ArrayStride 4
-OpDecorate %_arr__arr_float_uint_10_uint_10 ArrayStride 40
-OpMemberDecorate %U_t 0 Offset 0
-OpDecorate %U_t BufferBlock
-OpDecorate %_ DescriptorSet 0
 OpDecorate %o Location 0
 %void = OpTypeVoid
 %12 = OpTypeFunction %void
 %float = OpTypeFloat 32
-%_ptr_Function_float = OpTypePointer Function %float
 %float_0 = OpConstant %float 0
-%int = OpTypeInt 32 1
-%_ptr_Function_int = OpTypePointer Function %int
-%int_0 = OpConstant %int 0
-%int_10 = OpConstant %int 10
-%bool = OpTypeBool
-%uint = OpTypeInt 32 0
-%uint_10 = OpConstant %uint 10
-%_arr_float_uint_10 = OpTypeArray %float %uint_10
-%_arr__arr_float_uint_10_uint_10 = OpTypeArray %_arr_float_uint_10 %uint_10
-%U_t = OpTypeStruct %_arr__arr_float_uint_10_uint_10
-%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
-%_ = OpVariable %_ptr_Uniform_U_t Uniform
-%_ptr_Uniform_float = OpTypePointer Uniform %float
-%int_1 = OpConstant %int 1
 %_ptr_Output_float = OpTypePointer Output %float
 %o = OpVariable %_ptr_Output_float Output
 )";
@@ -2987,7 +2980,6 @@ OpDecorate %3 Location 0
 %float = OpTypeFloat 32
 %float_0 = OpConstant %float 0
 %int = OpTypeInt 32 1
-%_ptr_Function_int = OpTypePointer Function %int
 %int_0 = OpConstant %int 0
 %int_10 = OpConstant %int 10
 %bool = OpTypeBool

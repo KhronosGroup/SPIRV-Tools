@@ -428,6 +428,15 @@ void AggressiveDCEPass::Initialize(ir::IRContext* c) {
   InitExtensions();
 }
 
+void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
+  for (auto& exec : get_module()->execution_modes()) {
+    AddToWorklist(&exec);
+  }
+  for (auto& entry : get_module()->entry_points()) {
+    AddToWorklist(&entry);
+  }
+}
+
 Pass::Status AggressiveDCEPass::ProcessImpl() {
   // Current functionality assumes shader capability
   // TODO(greg-lunarg): Handle additional capabilities
@@ -442,12 +451,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
 
-  for (auto& exec : get_module()->execution_modes()) {
-    AddToWorklist(&exec);
-  }
-  for (auto& entry : get_module()->entry_points()) {
-    AddToWorklist(&entry);
-  }
+  InitializeModuleScopeLiveInstructions();
 
   // Process all entry point functions
   ProcessFunction pfn = [this](ir::Function* fp) { return AggressiveDCE(fp); };
