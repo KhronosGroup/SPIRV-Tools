@@ -42,7 +42,7 @@ class FeatureManager {
  private:
   // Analyzes |module| and records enabled extensions.
   void AddExtensions(ir::Module* module);
-  
+
   // Analyzes |module| and records enabled capabilities.
   void AddCapabilities(ir::Module* module);
 
