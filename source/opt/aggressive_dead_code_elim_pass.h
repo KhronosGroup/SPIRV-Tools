@@ -29,6 +29,7 @@
 #include "mem_pass.h"
 #include "module.h"
 
+#include <iostream>
 namespace spvtools {
 namespace opt {
 
@@ -59,14 +60,17 @@ class AggressiveDCEPass : public MemPass {
   bool IsLocalVar(uint32_t varId);
 
   // Return true if |inst| is marked live
-  bool IsLive(ir::Instruction* inst) {
+  bool IsLive(const ir::Instruction* inst) const {
     return live_insts_.find(inst) != live_insts_.end();
   }
 
+  bool IsDead(ir::Instruction* inst);
+
   // Add |inst| to worklist_ and live_insts_.
   void AddToWorklist(ir::Instruction* inst) {
-    worklist_.push(inst);
+    // std::cerr << " Adding " << inst << std::endl;
     live_insts_.insert(inst);
+    worklist_.push(inst);
   }
 
   // Add all store instruction which use |ptrId|, directly or indirectly,
@@ -104,6 +108,10 @@ class AggressiveDCEPass : public MemPass {
   // Add all break and continue branches in the loop associated with
   // |mergeInst| to worklist if not already live
   void AddBreaksAndContinuesToWorklist(ir::Instruction* mergeInst);
+
+  // Eliminates dead debug2 and annotation instructions. Marks dead globals for
+  // removal (e.g. types, constants and variables).
+  bool ProcessGlobalValues();
 
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
@@ -161,8 +169,7 @@ class AggressiveDCEPass : public MemPass {
   // Live Local Variables
   std::unordered_set<uint32_t> live_local_vars_;
 
-  // Dead instructions. Use for debug cleanup.
-  std::unordered_set<const ir::Instruction*> dead_insts_;
+  std::vector<ir::Instruction*> to_kill_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;

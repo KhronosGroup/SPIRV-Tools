@@ -82,13 +82,19 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
   return true;
 }
 
+bool AggressiveDCEPass::IsDead(ir::Instruction* inst) {
+  if (IsLive(inst)) return false;
+  if (inst->IsBranch() &&
+      !IsStructuredIfOrLoopHeader(context()->get_instr_block(inst), nullptr,
+                                  nullptr, nullptr))
+    return false;
+  return true;
+}
+
 bool AggressiveDCEPass::IsTargetDead(ir::Instruction* inst) {
   const uint32_t tId = inst->GetSingleWordInOperand(0);
-  const ir::Instruction* tInst = get_def_use_mgr()->GetDef(tId);
-  if (dead_insts_.find(tInst) != dead_insts_.end()) {
-    return true;
-  }
-  return false;
+  ir::Instruction* tInst = get_def_use_mgr()->GetDef(tId);
+  return IsDead(tInst);
 }
 
 void AggressiveDCEPass::ProcessLoad(uint32_t varId) {
@@ -106,6 +112,7 @@ bool AggressiveDCEPass::IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
                                                    ir::Instruction** mergeInst,
                                                    ir::Instruction** branchInst,
                                                    uint32_t* mergeBlockId) {
+  if (!bp) return false;
   ir::Instruction* mi = bp->GetMergeInst();
   if (mi == nullptr) return false;
   ir::Instruction* bri = &*bp->tail();
@@ -227,6 +234,13 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
 }
 
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
+  AddToWorklist(&func->DefInst());
+  func->ForEachParam(
+      [this](const ir::Instruction* param) {
+        AddToWorklist(const_cast<ir::Instruction*>(param));
+      },
+      false);
+
   // Compute map from block to controlling conditional branch
   std::list<ir::BasicBlock*> structuredOrder;
   cfg()->ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
@@ -320,6 +334,8 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Perform closure on live instruction set.
   while (!worklist_.empty()) {
     ir::Instruction* liveInst = worklist_.front();
+    // std::cerr << "Processing " << liveInst << " (" << liveInst->opcode() <<
+    // ")" << std::endl;
     // Add all operand instructions if not already live
     liveInst->ForEachInId([&liveInst, this](const uint32_t* iid) {
       ir::Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
@@ -329,6 +345,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       if (inInst->opcode() == SpvOpLabel && liveInst->IsBranch()) return;
       if (!IsLive(inInst)) AddToWorklist(inInst);
     });
+    if (liveInst->type_id() != 0) {
+      AddToWorklist(get_def_use_mgr()->GetDef(liveInst->type_id()));
+    }
     // If in a structured if or loop construct, add the controlling
     // conditional branch and its merge. Any containing control construct
     // is marked live when the merge and branch are processed out of the
@@ -367,25 +386,93 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     }
     worklist_.pop();
   }
-  // Mark all non-live instructions dead except non-structured branches, which
-  // now should be considered live unless their block is deleted.
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
-    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
-      if (IsLive(&*ii)) continue;
-      // TODO(greg-lunarg
-      // https://github.com/KhronosGroup/SPIRV-Tools/issues/1021) This should be
-      // using ii->IsBranch(), but this code does not handle OpSwitch
-      // instructions yet.
-      if ((ii->opcode() == SpvOpBranch ||
-           ii->opcode() == SpvOpBranchConditional) &&
-          !IsStructuredIfOrLoopHeader(*bi, nullptr, nullptr, nullptr))
-        continue;
-      dead_insts_.insert(&*ii);
+
+  // Kill dead instructions and remember dead blocks
+  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();) {
+    uint32_t mergeBlockId = 0;
+    (*bi)->ForEachInst([this, &modified, &mergeBlockId](ir::Instruction* inst) {
+      if (!IsDead(inst)) return;
+      if (inst->opcode() == SpvOpLabel) return;
+      // If dead instruction is selection merge, remember merge block
+      // for new branch at end of block
+      if (inst->opcode() == SpvOpSelectionMerge ||
+          inst->opcode() == SpvOpLoopMerge)
+        mergeBlockId = inst->GetSingleWordInOperand(0);
+      to_kill_.push_back(inst);
+      modified = true;
+    });
+    // If a structured if or loop was deleted, add a branch to its merge
+    // block, and traverse to the merge block and continue processing there.
+    // We know the block still exists because the label is not deleted.
+    if (mergeBlockId != 0) {
+      AddBranch(mergeBlockId, *bi);
+      for (++bi; (*bi)->id() != mergeBlockId; ++bi) {
+      }
+    } else {
+      ++bi;
     }
   }
+
+  return modified;
+}
+
+void AggressiveDCEPass::Initialize(ir::IRContext* c) {
+  InitializeProcessing(c);
+
+  // Clear collections
+  worklist_ = std::queue<ir::Instruction*>{};
+  live_insts_.clear();
+  live_local_vars_.clear();
+
+  // Initialize extensions whitelist
+  InitExtensions();
+}
+
+Pass::Status AggressiveDCEPass::ProcessImpl() {
+  // Current functionality assumes shader capability
+  // TODO(greg-lunarg): Handle additional capabilities
+  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
+    return Status::SuccessWithoutChange;
+  // Current functionality assumes relaxed logical addressing (see
+  // instruction.h)
+  // TODO(greg-lunarg): Handle non-logical addressing
+  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses))
+    return Status::SuccessWithoutChange;
+  // If any extensions in the module are not explicitly supported,
+  // return unmodified.
+  if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
+
+  for (auto& exec : get_module()->execution_modes()) {
+    AddToWorklist(&exec);
+  }
+  for (auto& entry : get_module()->entry_points()) {
+    AddToWorklist(&entry);
+  }
+
+  // Process all entry point functions
+  ProcessFunction pfn = [this](ir::Function* fp) { return AggressiveDCE(fp); };
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
+
+  // Process module-level instructions
+  modified = ProcessGlobalValues();
+
+  // Now kill all dead instructions.
+  for (auto inst : to_kill_) {
+    context()->KillInst(inst);
+  }
+
+  // Cleanup all CFG including all unreachable blocks
+  ProcessFunction cleanup = [this](ir::Function* f) { return CFGCleanup(f); };
+  modified |= ProcessEntryPointCallTree(cleanup, get_module());
+
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+bool AggressiveDCEPass::ProcessGlobalValues() {
   // Remove debug and annotation statements referencing dead instructions.
   // This must be done before killing the instructions, otherwise there are
   // dead objects in the def/use database.
+  bool modified = false;
   ir::Instruction* instruction = &*get_module()->debug2_begin();
   while (instruction) {
     if (instruction->opcode() != SpvOpName) {
@@ -417,66 +504,13 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     }
   }
 
-  // Kill dead instructions and remember dead blocks
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();) {
-    uint32_t mergeBlockId = 0;
-    (*bi)->ForEachInst([this, &modified, &mergeBlockId](ir::Instruction* inst) {
-      if (dead_insts_.find(inst) == dead_insts_.end()) return;
-      // If dead instruction is selection merge, remember merge block
-      // for new branch at end of block
-      if (inst->opcode() == SpvOpSelectionMerge ||
-          inst->opcode() == SpvOpLoopMerge)
-        mergeBlockId = inst->GetSingleWordInOperand(0);
-      context()->KillInst(inst);
-      modified = true;
-    });
-    // If a structured if or loop was deleted, add a branch to its merge
-    // block, and traverse to the merge block and continue processing there.
-    // We know the block still exists because the label is not deleted.
-    if (mergeBlockId != 0) {
-      AddBranch(mergeBlockId, *bi);
-      for (++bi; (*bi)->id() != mergeBlockId; ++bi) {
-      }
-    } else {
-      ++bi;
+  for (auto& val : get_module()->types_values()) {
+    if (IsDead(&val)) {
+      to_kill_.push_back(&val);
     }
   }
-  // Cleanup all CFG including all unreachable blocks
-  CFGCleanup(func);
 
   return modified;
-}
-
-void AggressiveDCEPass::Initialize(ir::IRContext* c) {
-  InitializeProcessing(c);
-
-  // Clear collections
-  worklist_ = std::queue<ir::Instruction*>{};
-  live_insts_.clear();
-  live_local_vars_.clear();
-  dead_insts_.clear();
-
-  // Initialize extensions whitelist
-  InitExtensions();
-}
-
-Pass::Status AggressiveDCEPass::ProcessImpl() {
-  // Current functionality assumes shader capability
-  // TODO(greg-lunarg): Handle additional capabilities
-  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
-    return Status::SuccessWithoutChange;
-  // Current functionality assumes relaxed logical addressing (see
-  // instruction.h)
-  // TODO(greg-lunarg): Handle non-logical addressing
-  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses))
-    return Status::SuccessWithoutChange;
-  // If any extensions in the module are not explicitly supported,
-  // return unmodified.
-  if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
-  // Process all entry point functions
-  ProcessFunction pfn = [this](ir::Function* fp) { return AggressiveDCE(fp); };
-  bool modified = ProcessEntryPointCallTree(pfn, get_module());
-  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 AggressiveDCEPass::AggressiveDCEPass() {}
