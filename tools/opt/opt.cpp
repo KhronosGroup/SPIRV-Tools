@@ -152,7 +152,8 @@ Options (in lexicographical order):
                The optimizations are:
                %s
 
-               Note this does not guarentee legal code.
+               Note this does not guarantee legal code. This option implies
+               --skip-validation.
   --local-redundancy-elimination
                Looks for instructions in the same basic block that compute the
                same value, and deletes the redundant ones.
@@ -434,7 +435,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPerformancePasses();
       } else if (0 == strcmp(cur_arg, "-Os")) {
         optimizer->RegisterSizePasses();
-      } else if (0 == strcmp(cur_arg, "-legalize-hlsl")) {
+      } else if (0 == strcmp(cur_arg, "--legalize-hlsl")) {
+        *skip_validator = true;
         optimizer->RegisterLegalizationPasses();
       } else if (0 == strncmp(cur_arg, "-Oconfig=", sizeof("-Oconfig=") - 1)) {
         OptStatus status =
