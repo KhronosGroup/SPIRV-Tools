@@ -75,15 +75,18 @@ void TypeManager::RemoveId(uint32_t id) {
 
   auto& type = iter->second;
   if (!type->IsUniqueType(true)) {
-    // Search for an equivalent type to re-map.
-    bool found = false;
-    for (auto& pair : id_to_type_) {
-      if (pair.first != id && *pair.second == *type) {
-        // Equivalent ambiguous type, re-map type.
-        type_to_id_.erase(type);
-        type_to_id_[pair.second] = pair.first;
-        found = true;
-        break;
+    if (type_to_id_.count(type)) {
+      // |type| currently maps to |id|.
+      // Search for an equivalent type to re-map.
+      bool found = false;
+      for (auto& pair : id_to_type_) {
+        if (pair.first != id && *pair.second == *type) {
+          // Equivalent ambiguous type, re-map type.
+          type_to_id_.erase(type);
+          type_to_id_[pair.second] = pair.first;
+          found = true;
+          break;
+        }
       }
       // No equivalent ambiguous type, remove mapping.
       if (!found) type_to_id_.erase(type);
@@ -346,6 +349,11 @@ void TypeManager::CreateDecoration(uint32_t target,
 }
 
 void TypeManager::RegisterType(uint32_t id, const Type& type) {
+  // The comparison and hash on the type pool will avoid inserting the clone if
+  // an equivalent type already exists. The clone will be deleted when it goes
+  // out of scope at the end of the function in that case. Repeated insertions
+  // of the same Type will atmost keep one corresponding object in the type
+  // pool.
   auto pair = type_pool_.insert(type.Clone());
   id_to_type_[id] = pair.first->get();
   if (GetId(pair.first->get()) == 0) {

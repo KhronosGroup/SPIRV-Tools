@@ -118,7 +118,7 @@ class TypeManager {
 
   // Registers |id| to |type|.
   //
-  // If GetId(|type|) already returns a non-zero id, the return value will be
+  // If GetId(|type|) already returns a non-zero id, that mapping will be
   // unchanged.
   void RegisterType(uint32_t id, const Type& type);
 
