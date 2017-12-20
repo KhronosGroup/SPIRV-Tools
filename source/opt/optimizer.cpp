@@ -70,10 +70,10 @@ Optimizer& Optimizer::RegisterPass(PassToken&& p) {
 // and turn it into a valid vulkan spir-v shader.  There are two ways in which
 // the code will be invalid at the start:
 //
-// 1) There will of opaque objects, like images, which will be passed around
+// 1) There will be opaque objects, like images, which will be passed around
 //    in intermediate objects.  Valid spir-v will have to replace the use of
 //    the opaque object with an intermediate object that is the result of the
-//    load of the opaque object.
+//    load of the global opaque object.
 //
 // 2) There will be variables that contain pointers to structured or uniform
 //    buffers.  It be legal, the variables must be eliminated, and the
