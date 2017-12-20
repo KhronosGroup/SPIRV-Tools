@@ -3599,6 +3599,226 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
 }
 
+// %dead is unused.  Make sure we remove it along with its name.
+TEST_F(AggressiveDCETest, RemoveUnreferenced) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+OpName %dead "dead"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Private_float = OpTypePointer Private %float
+%dead = OpVariable %_ptr_Private_float Private
+%main = OpFunction %void None %5
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%main = OpFunction %void None %5
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
+}
+
+// Delete %dead because it is unreferenced.  Then %initializer becomes
+// unreferenced, so remove it as well.
+TEST_F(AggressiveDCETest, RemoveUnreferencedWithInit1) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+OpName %dead "dead"
+OpName %initializer "initializer"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Private_float = OpTypePointer Private %float
+%initializer = OpVariable %_ptr_Private_float Private
+%dead = OpVariable %_ptr_Private_float Private %initializer
+%main = OpFunction %void None %6
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main" %2
+OpExecutionMode %1 OriginUpperLeft
+OpMemberDecorate %_struct_3 0 Offset 0
+OpDecorate %_runtimearr__struct_3 ArrayStride 16
+OpMemberDecorate %_struct_5 0 Offset 0
+OpDecorate %_struct_5 BufferBlock
+OpMemberDecorate %_struct_6 0 Offset 0
+OpDecorate %_struct_6 BufferBlock
+OpDecorate %2 Location 0
+OpDecorate %7 DescriptorSet 0
+OpDecorate %7 Binding 0
+OpDecorate %8 DescriptorSet 0
+OpDecorate %8 Binding 1
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Uniform_v4float = OpTypePointer Uniform %v4float
+%_struct_3 = OpTypeStruct %v4float
+%_runtimearr__struct_3 = OpTypeRuntimeArray %_struct_3
+%_struct_5 = OpTypeStruct %_runtimearr__struct_3
+%_ptr_Uniform__struct_5 = OpTypePointer Uniform %_struct_5
+%_struct_6 = OpTypeStruct %int
+%_ptr_Uniform__struct_6 = OpTypePointer Uniform %_struct_6
+%_ptr_Function__ptr_Uniform__struct_5 = OpTypePointer Function %_ptr_Uniform__struct_5
+%_ptr_Function__ptr_Uniform__struct_6 = OpTypePointer Function %_ptr_Uniform__struct_6
+%int_0 = OpConstant %int 0
+%uint_0 = OpConstant %uint 0
+%2 = OpVariable %_ptr_Output_v4float Output
+%7 = OpVariable %_ptr_Uniform__struct_5 Uniform
+%8 = OpVariable %_ptr_Uniform__struct_6 Uniform
+%1 = OpFunction %void None %10
+%23 = OpLabel
+%24 = OpVariable %_ptr_Function__ptr_Uniform__struct_5 Function
+OpStore %24 %7
+%25 = OpLoad %_ptr_Uniform__struct_5 %24
+%26 = OpAccessChain %_ptr_Uniform_v4float %25 %int_0 %uint_0 %int_0
+%27 = OpLoad %v4float %26
+OpStore %2 %27
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%main = OpFunction %void None %6
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
+}
+
+// Keep %live because it is used, and its initializer.
+TEST_F(AggressiveDCETest, KeepReferenced) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+OpName %live "live"
+OpName %initializer "initializer"
+OpName %output "output"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Private_float = OpTypePointer Private %float
+%initializer = OpVariable %_ptr_Private_float Private
+%live = OpVariable %_ptr_Private_float Private %initializer
+%_ptr_Output_float = OpTypePointer Output %float
+%output = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %6
+%9 = OpLabel
+%10 = OpLoad %float %live
+OpStore %output %10
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, before, true, true);
+}
+
+// This test that the decoration associated with a variable are removed when the
+// variable is removed.
+TEST_F(AggressiveDCETest, RemoveVariableAndDecorations) {
+  const std::string before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpName %main "main"
+OpName %B "B"
+OpMemberName %B 0 "a"
+OpName %Bdat "Bdat"
+OpMemberDecorate %B 0 Offset 0
+OpDecorate %B BufferBlock
+OpDecorate %Bdat DescriptorSet 0
+OpDecorate %Bdat Binding 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%B = OpTypeStruct %uint
+%_ptr_Uniform_B = OpTypePointer Uniform %B
+%Bdat = OpVariable %_ptr_Uniform_B Uniform
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%main = OpFunction %void None %6
+%13 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpName %main "main"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%main = OpFunction %void None %6
+%13 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
