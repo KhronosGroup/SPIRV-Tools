@@ -30,7 +30,7 @@ Pass::Status PrivateToLocalPass::Process(ir::IRContext* c) {
 
   // Private variables require the shader capability.  If this is not a shader,
   // there is no work to do.
-  if (get_module()->HasCapability(SpvCapabilityAddresses))
+  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
 
   std::vector<std::pair<ir::Instruction*, ir::Function*>> variables_to_move;
