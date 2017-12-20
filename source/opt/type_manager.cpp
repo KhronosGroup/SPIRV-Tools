@@ -346,7 +346,7 @@ void TypeManager::CreateDecoration(uint32_t target,
 }
 
 void TypeManager::RegisterType(uint32_t id, const Type& type) {
-  auto pair = type_pool_.insert(std::move(type.Clone()));
+  auto pair = type_pool_.insert(type.Clone());
   id_to_type_[id] = pair.first->get();
   if (GetId(pair.first->get()) == 0) {
     type_to_id_[pair.first->get()] = id;
