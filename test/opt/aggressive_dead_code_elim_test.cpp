@@ -3820,6 +3820,141 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
 }
 
+TEST_F(AggressiveDCETest, BasicDeleteDeadFunction) {
+  // The function Dead should be removed because it is never called.
+  const std::vector<const char*> common_code = {
+      // clang-format off
+               "OpCapability Shader",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\"",
+               "OpName %main \"main\"",
+               "OpName %Live \"Live\"",
+       "%void = OpTypeVoid",
+          "%7 = OpTypeFunction %void",
+       "%main = OpFunction %void None %7",
+         "%15 = OpLabel",
+         "%16 = OpFunctionCall %void %Live",
+         "%17 = OpFunctionCall %void %Live",
+               "OpReturn",
+               "OpFunctionEnd",
+  "%Live = OpFunction %void None %7",
+         "%20 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd"
+      // clang-format on
+  };
+
+  const std::vector<const char*> dead_function = {
+      // clang-format off
+      "%Dead = OpFunction %void None %7",
+         "%19 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      JoinAllInsts(Concat(common_code, dead_function)),
+      JoinAllInsts(common_code), /* skip_nop = */ true);
+}
+
+TEST_F(AggressiveDCETest, BasicKeepLiveFunction) {
+  // Everything is reachable from an entry point, so no functions should be
+  // deleted.
+  const std::vector<const char*> text = {
+      // clang-format off
+               "OpCapability Shader",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\"",
+               "OpName %main \"main\"",
+               "OpName %Live1 \"Live1\"",
+               "OpName %Live2 \"Live2\"",
+       "%void = OpTypeVoid",
+          "%7 = OpTypeFunction %void",
+       "%main = OpFunction %void None %7",
+         "%15 = OpLabel",
+         "%16 = OpFunctionCall %void %Live2",
+         "%17 = OpFunctionCall %void %Live1",
+               "OpReturn",
+               "OpFunctionEnd",
+      "%Live1 = OpFunction %void None %7",
+         "%19 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd",
+      "%Live2 = OpFunction %void None %7",
+         "%20 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd"
+      // clang-format on
+  };
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  std::string assembly = JoinAllInsts(text);
+  auto result = SinglePassRunAndDisassemble<opt::AggressiveDCEPass>(
+      assembly, /* skip_nop = */ true, /* do_validation = */ false);
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(assembly, std::get<0>(result));
+}
+
+TEST_F(AggressiveDCETest, BasicRemoveDecorationsAndNames) {
+  // We want to remove the names and decorations associated with results that
+  // are removed.  This test will check for that.
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpName %main "main"
+               OpName %Dead "Dead"
+               OpName %x "x"
+               OpName %y "y"
+               OpName %z "z"
+               OpDecorate %x RelaxedPrecision
+               OpDecorate %y RelaxedPrecision
+               OpDecorate %z RelaxedPrecision
+               OpDecorate %6 RelaxedPrecision
+               OpDecorate %7 RelaxedPrecision
+               OpDecorate %8 RelaxedPrecision
+       %void = OpTypeVoid
+         %10 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_1 = OpConstant %float 1
+       %main = OpFunction %void None %10
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+       %Dead = OpFunction %void None %10
+         %15 = OpLabel
+          %x = OpVariable %_ptr_Function_float Function
+          %y = OpVariable %_ptr_Function_float Function
+          %z = OpVariable %_ptr_Function_float Function
+               OpStore %x %float_1
+               OpStore %y %float_1
+          %6 = OpLoad %float %x
+          %7 = OpLoad %float %y
+          %8 = OpFAdd %float %6 %7
+               OpStore %z %8
+               OpReturn
+               OpFunctionEnd)";
+
+  const std::string expected_output = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpName %main "main"
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%main = OpFunction %void None %10
+%14 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(text, expected_output,
+                                                /* skip_nop = */ true);
+}
+
 #ifdef SPIRV_EFFCEE
 TEST_F(AggressiveDCETest, BasicAllDeadConstants) {
   const std::string text = R"(

@@ -451,14 +451,17 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
 
+  // Eliminate Dead functions
+  bool modified = EliminateDeadFunctions();
+
   InitializeModuleScopeLiveInstructions();
 
   // Process all entry point functions
   ProcessFunction pfn = [this](ir::Function* fp) { return AggressiveDCE(fp); };
-  bool modified = ProcessEntryPointCallTree(pfn, get_module());
+  modified |= ProcessEntryPointCallTree(pfn, get_module());
 
   // Process module-level instructions
-  modified = ProcessGlobalValues();
+  modified |= ProcessGlobalValues();
 
   // Now kill all dead instructions.
   for (auto inst : to_kill_) {
@@ -470,6 +473,38 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   modified |= ProcessEntryPointCallTree(cleanup, get_module());
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+bool AggressiveDCEPass::EliminateDeadFunctions() {
+  // Identify live functions first.  Those that are not live
+  // are dead. ADCE is disabled for non-shaders so we do not check for exported
+  // functions here.
+  std::unordered_set<const ir::Function*> live_function_set;
+  ProcessFunction mark_live = [&live_function_set](ir::Function* fp) {
+    live_function_set.insert(fp);
+    return false;
+  };
+  ProcessEntryPointCallTree(mark_live, get_module());
+
+  bool modified = false;
+  for (auto funcIter = get_module()->begin();
+       funcIter != get_module()->end();) {
+    if (live_function_set.count(&*funcIter) == 0) {
+      modified = true;
+      EliminateFunction(&*funcIter);
+      funcIter = funcIter.Erase();
+    } else {
+      ++funcIter;
+    }
+  }
+
+  return modified;
+}
+
+void AggressiveDCEPass::EliminateFunction(ir::Function* func) {
+  // Remove all of the instruction in the function body
+  func->ForEachInst(
+      [this](ir::Instruction* inst) { context()->KillInst(inst); }, true);
 }
 
 bool AggressiveDCEPass::ProcessGlobalValues() {
@@ -508,6 +543,8 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
     }
   }
 
+  // Since ADCE is disabled for non-shaders, we don't check for export linkage
+  // attributes here.
   for (auto& val : get_module()->types_values()) {
     if (IsDead(&val)) {
       to_kill_.push_back(&val);

@@ -118,7 +118,6 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
   return RegisterPass(CreateRemoveDuplicatesPass())
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
-      .RegisterPass(CreateEliminateDeadFunctionsPass())
       .RegisterPass(CreateScalarReplacementPass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
@@ -133,17 +132,15 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
-      .RegisterPass(CreateCFGCleanupPass())
+      .RegisterPass(CreateCFGCleanupPass());
       // Currently exposing driver bugs resulting in crashes (#946)
       // .RegisterPass(CreateCommonUniformElimPass())
-      .RegisterPass(CreateDeadVariableEliminationPass());
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
   return RegisterPass(CreateRemoveDuplicatesPass())
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
-      .RegisterPass(CreateEliminateDeadFunctionsPass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
@@ -157,10 +154,9 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
-      .RegisterPass(CreateCFGCleanupPass())
+      .RegisterPass(CreateCFGCleanupPass());
       // Currently exposing driver bugs resulting in crashes (#946)
       // .RegisterPass(CreateCommonUniformElimPass())
-      .RegisterPass(CreateDeadVariableEliminationPass());
 }
 
 bool Optimizer::Run(const uint32_t* original_binary,

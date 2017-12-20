@@ -386,7 +386,7 @@ Optimizer::PassToken CreateInsertExtractElimPass();
 Optimizer::PassToken CreateCommonUniformElimPass();
 
 // Create aggressive dead code elimination pass
-// This pass eliminates unused code from functions. In addition,
+// This pass eliminates unused code from the module. In addition,
 // it detects and eliminates code which may have spurious uses but which do
 // not contribute to the output of the function. The most common cause of
 // such code sequences is summations in loops whose result is no longer used
@@ -394,8 +394,8 @@ Optimizer::PassToken CreateCommonUniformElimPass();
 // time cost over standard dead code elimination.
 //
 // This pass only processes entry point functions. It also only processes
-// shaders with relaxed logical addressing (see opt/instruction.h). It currently
-// will not process functions with function calls.
+// shaders with logical addressing. It currently will not process functions
+// with function calls. Unreachable functions are deleted.
 //
 // This pass will be made more effective by first running passes that remove
 // dead control flow and inlines function calls.

@@ -118,10 +118,16 @@ class AggressiveDCEPass : public MemPass {
   // removal (e.g. types, constants and variables).
   bool ProcessGlobalValues();
 
+  // Erases unreachable functions from the module.
+  bool EliminateDeadFunctions();
+
+  // Removes |func| from the module and deletes all its instructions.
+  void EliminateFunction(ir::Function* func);
+
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
-  // they use. When complete, delete any non-live instructions. Return true
-  // if the function has been modified.
+  // they use. When complete, mark any non-live instructions to be deleted.
+  // Returns true if the function has been modified.
   //
   // Note: This function does not delete useless control structures. All
   // existing control structures will remain. This can leave not-insignificant
