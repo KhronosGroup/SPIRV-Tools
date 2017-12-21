@@ -614,7 +614,7 @@ def main():
                         'instructions')
     parser.add_argument('--extinst-debuginfo-grammar', metavar='<path>',
                         type=str, required=False, default=None,
-                        help='input JSON grammar file for GLSL extended '
+                        help='input JSON grammar file for DebugInfo extended '
                         'instruction set')
     parser.add_argument('--extinst-glsl-grammar', metavar='<path>',
                         type=str, required=False, default=None,

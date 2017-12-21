@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2016 Google Inc.
+# Copyright (c) 2017 Google Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,6 +66,12 @@ class LangGenerator:
     def uses_guards(self):
         return False
 
+    def cpp_guard_preamble(self):
+        return ""
+
+    def cpp_guard_postamble(self):
+        return ""
+
     def enum_value(self, prefix, name, value):
         if self.upper_case_initial.match(name):
             use_name = name
@@ -82,11 +88,13 @@ class LangGenerator:
             parts.extend(["{}{}".format(self.comment_prefix(), f) for f in grammar.copyright])
         parts.append('')
 
-        guard = '{}_H_'.format(grammar.name)
+        guard = 'SPIRV_EXTINST_{}_H_'.format(grammar.name)
         if self.uses_guards:
             parts.append('#ifndef {}'.format(guard))
             parts.append('#define {}'.format(guard))
         parts.append('')
+
+        parts.append(self.cpp_guard_preamble())
 
         if grammar.version:
             parts.append(self.const_definition(grammar.name, 'Version', grammar.version))
@@ -111,6 +119,8 @@ class LangGenerator:
                 parts.append(self.enum_end(grammar.name, kind['kind']))
             parts.append('')
 
+        parts.append(self.cpp_guard_postamble())
+
         if self.uses_guards:
             parts.append('#endif // {}'.format(guard))
 
@@ -127,14 +137,20 @@ class CLikeGenerator(LangGenerator):
     def const_definition(self, prefix, var, value):
         # Use an anonymous enum.  Don't use a static const int variable because
         # that can bloat binary size.
-        return 'enum {0} {1}{2} = {3}, {1}{2}_Max = 0x7fffffff {4};'.format(
-                '{', prefix, var, value, '}')
+        return 'enum {0} {1}{2} = {3}, {1}{2}_BitWidthPadding = 0x7fffffff {4};'.format(
+               '{', prefix, var, value, '}')
 
     def enum_prefix(self, prefix, name):
         return 'enum {}{} {}'.format(prefix, name, '{')
 
     def enum_end(self, prefix, enum):
         return '    {}{}Max = 0x7ffffff\n{};\n'.format(prefix, enum, '}')
+
+    def cpp_guard_preamble(self):
+        return '#ifdef __cplusplus\nextern "C" {\n#endif\n'
+
+    def cpp_guard_postamble(self):
+        return '#ifdef __cplusplus\n}\n#endif\n'
 
 
 class CGenerator(CLikeGenerator):
