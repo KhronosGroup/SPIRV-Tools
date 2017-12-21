@@ -1368,7 +1368,7 @@ INSTANTIATE_TEST_CASE_P(
 using AnalyzeInstDefUse = ::testing::Test;
 
 TEST(AnalyzeInstDefUse, UseWithNoResultId) {
-  ir::IRContext context(nullptr);
+  ir::IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
 
   // Analyze the instructions.
   opt::analysis::DefUseManager manager(context.module());

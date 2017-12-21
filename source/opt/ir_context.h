@@ -15,6 +15,7 @@
 #ifndef SPIRV_TOOLS_IR_CONTEXT_H
 #define SPIRV_TOOLS_IR_CONTEXT_H
 
+#include "assembly_grammar.h"
 #include "cfg.h"
 #include "constants.h"
 #include "decoration_manager.h"
@@ -63,28 +64,38 @@ class IRContext {
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
   // Creates an |IRContext| that contains an owned |Module|
-  IRContext(spvtools::MessageConsumer c)
-      : unique_id_(0),
+  IRContext(spv_target_env env, spvtools::MessageConsumer c)
+      : syntax_context_(spvContextCreate(env)),
+        grammar_(syntax_context_),
+        unique_id_(0),
         module_(new Module()),
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
         constant_mgr_(nullptr),
         type_mgr_(nullptr) {
+    libspirv::SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
   }
 
-  IRContext(std::unique_ptr<Module>&& m, spvtools::MessageConsumer c)
-      : unique_id_(0),
+  IRContext(spv_target_env env, std::unique_ptr<Module>&& m,
+            spvtools::MessageConsumer c)
+      : syntax_context_(spvContextCreate(env)),
+        grammar_(syntax_context_),
+        unique_id_(0),
         module_(std::move(m)),
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
         constant_mgr_(nullptr),
         type_mgr_(nullptr) {
+    libspirv::SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
     InitializeCombinators();
   }
+
+  ~IRContext() { spvContextDestroy(syntax_context_); }
+
   Module* module() const { return module_.get(); }
 
   // Returns a vector of pointers to constant-creation instructions in this
@@ -414,7 +425,7 @@ class IRContext {
 
   // Analyzes the features in the owned module. Builds the manager if required.
   void AnalyzeFeatures() {
-    feature_mgr_.reset(new opt::FeatureManager());
+    feature_mgr_.reset(new opt::FeatureManager(grammar_));
     feature_mgr_->Analyze(module());
   }
 
@@ -427,6 +438,13 @@ class IRContext {
 
   // Add the combinator opcode for the given extension to combinator_ops_.
   void AddCombinatorsForExtension(ir::Instruction* extension);
+
+  // The SPIR-V syntax context containing grammar tables for opcodes and
+  // operands.
+  spv_context syntax_context_;
+
+  // Auxiliary object for querying SPIR-V grammar facts.
+  libspirv::AssemblyGrammar grammar_;
 
   // An unique identifier for instructions in |module_|. Can be used to order
   // instructions in a container.

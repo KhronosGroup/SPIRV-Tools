@@ -154,7 +154,8 @@ class AppendTypeVoidInstPass : public opt::Pass {
 TEST(PassManager, RecomputeIdBoundAutomatically) {
   opt::PassManager manager;
   std::unique_ptr<ir::Module> module(new ir::Module());
-  ir::IRContext context(std::move(module), manager.consumer());
+  ir::IRContext context(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                        manager.consumer());
   EXPECT_THAT(GetIdBound(*context.module()), Eq(0u));
 
   manager.Run(&context);

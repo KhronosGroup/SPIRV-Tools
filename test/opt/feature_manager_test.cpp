@@ -33,7 +33,7 @@ OpMemoryModel Logical GLSL450
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
-  ASSERT_FALSE(context->get_feature_mgr()->HasExtension(
+  EXPECT_FALSE(context->get_feature_mgr()->HasExtension(
       libspirv::Extension::kSPV_KHR_variable_pointers));
 }
 
@@ -48,7 +48,7 @@ OpExtension "SPV_KHR_variable_pointers"
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
-  ASSERT_TRUE(context->get_feature_mgr()->HasExtension(
+  EXPECT_TRUE(context->get_feature_mgr()->HasExtension(
       libspirv::Extension::kSPV_KHR_variable_pointers));
 }
 
@@ -63,7 +63,7 @@ OpExtension "SPV_KHR_variable_pointers"
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
-  ASSERT_FALSE(context->get_feature_mgr()->HasExtension(
+  EXPECT_FALSE(context->get_feature_mgr()->HasExtension(
       libspirv::Extension::kSPV_KHR_storage_buffer_storage_class));
 }
 
@@ -79,9 +79,9 @@ OpExtension "SPV_KHR_storage_buffer_storage_class"
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
-  ASSERT_TRUE(context->get_feature_mgr()->HasExtension(
+  EXPECT_TRUE(context->get_feature_mgr()->HasExtension(
       libspirv::Extension::kSPV_KHR_variable_pointers));
-  ASSERT_TRUE(context->get_feature_mgr()->HasExtension(
+  EXPECT_TRUE(context->get_feature_mgr()->HasExtension(
       libspirv::Extension::kSPV_KHR_storage_buffer_storage_class));
 }
 
@@ -96,8 +96,8 @@ OpMemoryModel Logical GLSL450
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
-  ASSERT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
-  ASSERT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
+  EXPECT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
+  EXPECT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
 }
 
 TEST_F(FeatureManagerTest, ExplicitlyPresent2) {
@@ -110,8 +110,8 @@ OpMemoryModel Logical GLSL450
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
-  ASSERT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
-  ASSERT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
+  EXPECT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
+  EXPECT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
 }
 
 TEST_F(FeatureManagerTest, ImplicitlyPresent) {
@@ -126,9 +126,9 @@ OpMemoryModel Logical GLSL450
 
   // Check multiple levels of indirection.  Tessellation implies Shader, which
   // implies Matrix.
-  ASSERT_TRUE(
+  EXPECT_TRUE(
       context->get_feature_mgr()->HasCapability(SpvCapabilityTessellation));
-  ASSERT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
-  ASSERT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityMatrix));
-  ASSERT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
+  EXPECT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityShader));
+  EXPECT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityMatrix));
+  EXPECT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
 }
