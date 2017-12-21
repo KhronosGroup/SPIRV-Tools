@@ -423,6 +423,15 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisCFG;
   }
 
+  // Removes all computed dominator and post-dominator trees. This will force
+  // the context to rebuild the trees on demand.
+  void ResetDominatorAnalysis() {
+    // Clear the cache.
+    dominator_trees_.clear();
+    post_dominator_trees_.clear();
+    valid_analyses_ = valid_analyses_ | kAnalysisDominatorAnalysis;
+  }
+
   // Analyzes the features in the owned module. Builds the manager if required.
   void AnalyzeFeatures() {
     feature_mgr_.reset(new opt::FeatureManager(grammar_));

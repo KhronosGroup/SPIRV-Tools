@@ -40,12 +40,39 @@ struct DominatorTreeNode {
   using iterator = std::vector<DominatorTreeNode*>::iterator;
   using const_iterator = std::vector<DominatorTreeNode*>::const_iterator;
 
+  // depth first preorder iterator.
+  using df_iterator = TreeDFIterator<DominatorTreeNode>;
+  using const_df_iterator = TreeDFIterator<const DominatorTreeNode>;
+  // depth first postorder iterator.
+  using post_iterator = PostOrderTreeDFIterator<DominatorTreeNode>;
+  using const_post_iterator = PostOrderTreeDFIterator<const DominatorTreeNode>;
+
   iterator begin() { return children_.begin(); }
   iterator end() { return children_.end(); }
   const_iterator begin() const { return cbegin(); }
   const_iterator end() const { return cend(); }
   const_iterator cbegin() const { return children_.begin(); }
   const_iterator cend() const { return children_.end(); }
+
+  // Depth first preorder iterator using this node as root.
+  df_iterator df_begin() { return df_iterator(this); }
+  df_iterator df_end() { return df_iterator(); }
+  const_df_iterator df_begin() const { return df_cbegin(); }
+  const_df_iterator df_end() const { return df_cend(); }
+  const_df_iterator df_cbegin() const { return const_df_iterator(this); }
+  const_df_iterator df_cend() const { return const_df_iterator(); }
+
+  // Depth first postorder iterator using this node as root.
+  post_iterator post_begin() { return post_iterator::begin(this); }
+  post_iterator post_end() { return post_iterator::end(nullptr); }
+  const_post_iterator post_begin() const { return post_cbegin(); }
+  const_post_iterator post_end() const { return post_cend(); }
+  const_post_iterator post_cbegin() const {
+    return const_post_iterator::begin(this);
+  }
+  const_post_iterator post_cend() const {
+    return const_post_iterator::end(nullptr);
+  }
 
   inline uint32_t id() const { return bb_->id(); }
 
@@ -69,6 +96,8 @@ class DominatorTree {
   using DominatorTreeNodeMap = std::map<uint32_t, DominatorTreeNode>;
   using iterator = TreeDFIterator<DominatorTreeNode>;
   using const_iterator = TreeDFIterator<const DominatorTreeNode>;
+  using post_iterator = PostOrderTreeDFIterator<DominatorTreeNode>;
+  using const_post_iterator = PostOrderTreeDFIterator<const DominatorTreeNode>;
 
   // List of DominatorTreeNode to define the list of roots
   using DominatorTreeNodeList = std::vector<DominatorTreeNode*>;
@@ -80,12 +109,26 @@ class DominatorTree {
 
   // Depth first iterators.
   // Traverse the dominator tree in a depth first pre-order.
-  iterator begin() { return iterator(GetRoot()); }
+  // The pseudo-block is ignored.
+  iterator begin() { return ++iterator(GetRoot()); }
   iterator end() { return iterator(); }
   const_iterator begin() const { return cbegin(); }
   const_iterator end() const { return cend(); }
-  const_iterator cbegin() const { return const_iterator(GetRoot()); }
+  const_iterator cbegin() const { return ++const_iterator(GetRoot()); }
   const_iterator cend() const { return const_iterator(); }
+
+  // Traverse the dominator tree in a depth first post-order.
+  // The pseudo-block is ignored.
+  post_iterator post_begin() { return post_iterator::begin(GetRoot()); }
+  post_iterator post_end() { return post_iterator::end(GetRoot()); }
+  const_post_iterator post_begin() const { return post_cbegin(); }
+  const_post_iterator post_end() const { return post_cend(); }
+  const_post_iterator post_cbegin() const {
+    return const_post_iterator::begin(GetRoot());
+  }
+  const_post_iterator post_cend() const {
+    return const_post_iterator::end(GetRoot());
+  }
 
   roots_iterator roots_begin() { return roots_.begin(); }
   roots_iterator roots_end() { return roots_.end(); }
@@ -122,12 +165,20 @@ class DominatorTree {
   // Check if the basic block id |a| dominates the basic block id |b|.
   bool Dominates(uint32_t a, uint32_t b) const;
 
+  // Check if the dominator tree node |a| dominates the dominator tree node |b|.
+  bool Dominates(const DominatorTreeNode* a, const DominatorTreeNode* b) const;
+
   // Check if the basic block |a| strictly dominates the basic block |b|.
   bool StrictlyDominates(const ir::BasicBlock* a,
                          const ir::BasicBlock* b) const;
 
   // Check if the basic block id |a| strictly dominates the basic block id |b|.
   bool StrictlyDominates(uint32_t a, uint32_t b) const;
+
+  // Check if the dominator tree node |a| strictly dominates the dominator tree
+  // node |b|.
+  bool StrictlyDominates(const DominatorTreeNode* a,
+                         const DominatorTreeNode* b) const;
 
   // Returns the immediate dominator of basic block |a|.
   ir::BasicBlock* ImmediateDominator(const ir::BasicBlock* A) const;
@@ -171,6 +222,36 @@ class DominatorTree {
       if (!func(&n)) return false;
     }
     return true;
+  }
+
+  // Returns the DominatorTreeNode associated with the basic block |bb|.
+  // If the |bb| is unknown to the dominator tree, it returns null.
+  inline DominatorTreeNode* GetTreeNode(ir::BasicBlock* bb) {
+    return GetTreeNode(bb->id());
+  }
+  // Returns the DominatorTreeNode associated with the basic block |bb|.
+  // If the |bb| is unknown to the dominator tree, it returns null.
+  inline const DominatorTreeNode* GetTreeNode(ir::BasicBlock* bb) const {
+    return GetTreeNode(bb->id());
+  }
+
+  // Returns the DominatorTreeNode associated with the basic block id |id|.
+  // If the id |id| is unknown to the dominator tree, it returns null.
+  inline DominatorTreeNode* GetTreeNode(uint32_t id) {
+    DominatorTreeNodeMap::iterator node_iter = nodes_.find(id);
+    if (node_iter == nodes_.end()) {
+      return nullptr;
+    }
+    return &node_iter->second;
+  }
+  // Returns the DominatorTreeNode associated with the basic block id |id|.
+  // If the id |id| is unknown to the dominator tree, it returns null.
+  inline const DominatorTreeNode* GetTreeNode(uint32_t id) const {
+    DominatorTreeNodeMap::const_iterator node_iter = nodes_.find(id);
+    if (node_iter == nodes_.end()) {
+      return nullptr;
+    }
+    return &node_iter->second;
   }
 
  private:
