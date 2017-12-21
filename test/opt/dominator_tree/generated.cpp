@@ -25,6 +25,7 @@
 #include "../pass_fixture.h"
 #include "../pass_utils.h"
 #include "opt/dominator_analysis.h"
+#include "opt/iterator.h"
 #include "opt/pass.h"
 
 namespace {
@@ -431,8 +432,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 12)),
               spvtest::GetBasicBlock(fn, 11));
 
-    uint32_t entry_id = cfg.pseudo_entry_block()->id();
-    std::array<uint32_t, 4> node_order = {{entry_id, 10, 11, 12}};
+    std::array<uint32_t, 3> node_order = {{10, 11, 12}};
     {
       // Test dominator tree iteration order.
       opt::DominatorTree::iterator node_it = dom_tree.GetDomTree().begin();
@@ -451,6 +451,34 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
       opt::DominatorTree::const_iterator node_end =
           dom_tree.GetDomTree().cend();
       for (uint32_t id : node_order) {
+        EXPECT_NE(node_it, node_end);
+        EXPECT_EQ(node_it->id(), id);
+        node_it++;
+      }
+      EXPECT_EQ(node_it, node_end);
+    }
+    {
+      // Test dominator tree iteration order.
+      opt::DominatorTree::post_iterator node_it =
+          dom_tree.GetDomTree().post_begin();
+      opt::DominatorTree::post_iterator node_end =
+          dom_tree.GetDomTree().post_end();
+      for (uint32_t id :
+           ir::make_range(node_order.rbegin(), node_order.rend())) {
+        EXPECT_NE(node_it, node_end);
+        EXPECT_EQ(node_it->id(), id);
+        node_it++;
+      }
+      EXPECT_EQ(node_it, node_end);
+    }
+    {
+      // Same as above, but with const iterators.
+      opt::DominatorTree::const_post_iterator node_it =
+          dom_tree.GetDomTree().post_cbegin();
+      opt::DominatorTree::const_post_iterator node_end =
+          dom_tree.GetDomTree().post_cend();
+      for (uint32_t id :
+           ir::make_range(node_order.rbegin(), node_order.rend())) {
         EXPECT_NE(node_it, node_end);
         EXPECT_EQ(node_it->id(), id);
         node_it++;
@@ -488,8 +516,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
     EXPECT_EQ(dom_tree.ImmediateDominator(spvtest::GetBasicBlock(fn, 12)),
               cfg.pseudo_exit_block());
 
-    uint32_t entry_id = cfg.pseudo_exit_block()->id();
-    std::array<uint32_t, 4> node_order = {{entry_id, 12, 11, 10}};
+    std::array<uint32_t, 3> node_order = {{12, 11, 10}};
     {
       // Test dominator tree iteration order.
       opt::DominatorTree::iterator node_it = tree.begin();
@@ -506,6 +533,34 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
       opt::DominatorTree::const_iterator node_it = tree.cbegin();
       opt::DominatorTree::const_iterator node_end = tree.cend();
       for (uint32_t id : node_order) {
+        EXPECT_NE(node_it, node_end);
+        EXPECT_EQ(node_it->id(), id);
+        node_it++;
+      }
+      EXPECT_EQ(node_it, node_end);
+    }
+    {
+      // Test dominator tree iteration order.
+      opt::DominatorTree::post_iterator node_it =
+          dom_tree.GetDomTree().post_begin();
+      opt::DominatorTree::post_iterator node_end =
+          dom_tree.GetDomTree().post_end();
+      for (uint32_t id :
+           ir::make_range(node_order.rbegin(), node_order.rend())) {
+        EXPECT_NE(node_it, node_end);
+        EXPECT_EQ(node_it->id(), id);
+        node_it++;
+      }
+      EXPECT_EQ(node_it, node_end);
+    }
+    {
+      // Same as above, but with const iterators.
+      opt::DominatorTree::const_post_iterator node_it =
+          dom_tree.GetDomTree().post_cbegin();
+      opt::DominatorTree::const_post_iterator node_end =
+          dom_tree.GetDomTree().post_cend();
+      for (uint32_t id :
+           ir::make_range(node_order.rbegin(), node_order.rend())) {
         EXPECT_NE(node_it, node_end);
         EXPECT_EQ(node_it->id(), id);
         node_it++;

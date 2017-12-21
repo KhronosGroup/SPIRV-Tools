@@ -227,23 +227,28 @@ bool DominatorTree::StrictlyDominates(const ir::BasicBlock* a,
   return DominatorTree::StrictlyDominates(a->id(), b->id());
 }
 
+bool DominatorTree::StrictlyDominates(const DominatorTreeNode* a,
+                                      const DominatorTreeNode* b) const {
+  if (a == b) return false;
+  return Dominates(a, b);
+}
+
 bool DominatorTree::Dominates(uint32_t a, uint32_t b) const {
   // Check that both of the inputs are actual nodes.
-  auto a_itr = nodes_.find(a);
-  auto b_itr = nodes_.find(b);
-  if (a_itr == nodes_.end() || b_itr == nodes_.end()) return false;
+  const DominatorTreeNode* a_node = (*this)[a];
+  const DominatorTreeNode* b_node = (*this)[b];
+  if (!a_node || !b_node) return false;
 
+  return Dominates(a_node, b_node);
+}
+
+bool DominatorTree::Dominates(const DominatorTreeNode* a,
+                              const DominatorTreeNode* b) const {
   // Node A dominates node B if they are the same.
   if (a == b) return true;
-  const DominatorTreeNode* nodeA = &a_itr->second;
-  const DominatorTreeNode* nodeB = &b_itr->second;
 
-  if (nodeA->dfs_num_pre_ < nodeB->dfs_num_pre_ &&
-      nodeA->dfs_num_post_ > nodeB->dfs_num_post_) {
-    return true;
-  }
-
-  return false;
+  return a->dfs_num_pre_ < b->dfs_num_pre_ &&
+         a->dfs_num_post_ > b->dfs_num_post_;
 }
 
 bool DominatorTree::Dominates(const ir::BasicBlock* A,
