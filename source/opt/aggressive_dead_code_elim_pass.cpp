@@ -72,6 +72,8 @@ struct DecorationSorter {
         return false;
       if (lhsOp == SpvOpDecorateId && rhsOp != SpvOpDecorateId) return true;
       if (rhsOp == SpvOpDecorateId && lhsOp != SpvOpDecorateId) return false;
+      // OpDecorationGroup is lowest priority to ensure use/def chains remain
+      // usable for instructions that target this group.
       if (lhsOp == SpvOpDecorationGroup && rhsOp != SpvOpDecorationGroup)
         return true;
       if (rhsOp == SpvOpDecorationGroup && lhsOp != SpvOpDecorationGroup)
@@ -297,6 +299,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
 }
 
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
+  // Mark function parameters as live.
   AddToWorklist(&func->DefInst());
   func->ForEachParam(
       [this](const ir::Instruction* param) {
@@ -506,24 +509,24 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
 
-  // Eliminate Dead functions
+  // Eliminate Dead functions.
   bool modified = EliminateDeadFunctions();
 
   InitializeModuleScopeLiveInstructions();
 
-  // Process all entry point functions
+  // Process all entry point functions.
   ProcessFunction pfn = [this](ir::Function* fp) { return AggressiveDCE(fp); };
   modified |= ProcessEntryPointCallTree(pfn, get_module());
 
-  // Process module-level instructions
+  // Process module-level instructions.
   modified |= ProcessGlobalValues();
 
-  // Now kill all dead instructions.
+  // Kill all dead instructions.
   for (auto inst : to_kill_) {
     context()->KillInst(inst);
   }
 
-  // Cleanup all CFG including all unreachable blocks
+  // Cleanup all CFG including all unreachable blocks.
   ProcessFunction cleanup = [this](ir::Function* f) { return CFGCleanup(f); };
   modified |= ProcessEntryPointCallTree(cleanup, get_module());
 
@@ -531,7 +534,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 }
 
 bool AggressiveDCEPass::EliminateDeadFunctions() {
-  // Identify live functions first.  Those that are not live
+  // Identify live functions first. Those that are not live
   // are dead. ADCE is disabled for non-shaders so we do not check for exported
   // functions here.
   std::unordered_set<const ir::Function*> live_function_set;
@@ -631,6 +634,8 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
         break;
       }
       case SpvOpDecorationGroup:
+        // By the time we hit decoration groups we've checked everything that
+        // can target them. So if they have no uses they must be dead.
         if (get_def_use_mgr()->NumUsers(annotation) == 0)
           context()->KillInst(annotation);
         break;

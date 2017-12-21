@@ -86,8 +86,8 @@ class AggressiveDCEPass : public MemPass {
   // Return true if all extensions in this module are supported by this pass.
   bool AllExtensionsSupported() const;
 
-  // Returns true if |inst| is dead.  An instruction is dead if its result id
-  // is used in decoration or debug instructions only.
+  // Returns true if the target of |inst| is dead.  An instruction is dead if
+  // its result id is used in decoration or debug instructions only.
   bool IsTargetDead(ir::Instruction* inst);
 
   // If |varId| is local, mark all stores of varId as live.
@@ -116,7 +116,7 @@ class AggressiveDCEPass : public MemPass {
   // removal (e.g. types, constants and variables).
   bool ProcessGlobalValues();
 
-  // Erases unreachable functions from the module.
+  // Erases functions that are unreachable from the entry points of the module.
   bool EliminateDeadFunctions();
 
   // Removes |func| from the module and deletes all its instructions.
@@ -178,6 +178,8 @@ class AggressiveDCEPass : public MemPass {
   // Live Local Variables
   std::unordered_set<uint32_t> live_local_vars_;
 
+  // List of instructions to delete. Deletion is delayed until debug and
+  // annotation instructions are processed.
   std::vector<ir::Instruction*> to_kill_;
 
   // Extensions supported by this pass.
