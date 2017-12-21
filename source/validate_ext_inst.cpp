@@ -18,8 +18,8 @@
 
 #include <sstream>
 
-#include "spirv/1.2/GLSL.std.450.h"
-#include "spirv/1.2/OpenCL.std.h"
+#include "latest_version_glsl_std_450_header.h"
+#include "latest_version_opencl_std_header.h"
 
 #include "diagnostic.h"
 #include "opcode.h"
