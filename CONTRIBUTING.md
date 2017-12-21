@@ -57,6 +57,10 @@ your changes:
 *   Create a pull request (PR) with your patch.
 *   Make sure the PR description clearly identified the problem, explains the
     solution, and references the issue if applicable.
+*   If your patch completely fixes bug 1234, the commit message should say
+    `Fixes https://github.com/KhronosGroup/SPIRV-Tools/issues/1234`
+    When you do this, the issue will be closed automatically when the commit
+    goes into master.  Also, this helps us update the [CHANGES](CHANGES) file.
 *   Watch the continuous builds to make sure they pass.
 *   Request a code review.
 
