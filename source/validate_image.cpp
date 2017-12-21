@@ -1193,6 +1193,12 @@ spv_result_t ImagePass(ValidationState_t& _,
       }
 
       if (info.dim == SpvDimSubpassData) {
+        if (opcode == SpvOpImageSparseRead) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << "Image Dim SubpassData cannot be used with "
+                 << spvOpcodeString(opcode);
+        }
+
         _.current_function().RegisterExecutionModelLimitation(
             SpvExecutionModelFragment,
             std::string("Dim SubpassData requires Fragment execution model: ") +

@@ -3808,6 +3808,20 @@ TEST_F(ValidateImage, SparseReadWrongComponentTypeTexel) {
                         "ImageSparseRead"));
 }
 
+TEST_F(ValidateImage, SparseReadSubpassDataNotAllowed) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_spd_0002 %uniform_image_f32_spd_0002
+%res1 = OpImageSparseRead %struct_u32_f32vec4 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment").c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Image Dim SubpassData cannot be used with ImageSparseRead"));
+}
+
 TEST_F(ValidateImage, SparseGatherSuccess) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
