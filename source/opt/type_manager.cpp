@@ -75,7 +75,8 @@ void TypeManager::RemoveId(uint32_t id) {
 
   auto& type = iter->second;
   if (!type->IsUniqueType(true)) {
-    if (type_to_id_.count(type)) {
+    auto tIter = type_to_id_.find(type);
+    if (tIter != type_to_id_.end() && tIter->second == id) {
       // |type| currently maps to |id|.
       // Search for an equivalent type to re-map.
       bool found = false;
@@ -89,7 +90,7 @@ void TypeManager::RemoveId(uint32_t id) {
         }
       }
       // No equivalent ambiguous type, remove mapping.
-      if (!found) type_to_id_.erase(type);
+      if (!found) type_to_id_.erase(tIter);
     }
   } else {
     // Unique type, so just erase the entry.
