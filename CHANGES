@@ -2,6 +2,19 @@ Revision history for SPIRV-Tools
 
 v2017.3-dev 2017-12-15
  - Start v2017.3-dev
+ - General:
+   - Generate a SPIRV-Tools.pc file for pkg-config
+ - Optimizer:
+   - Add Private-to-Function variable conversion for modules with logical
+     addressing
+ - Validator:
+   - Check upper bits of literal numbers that aren't a multiple of 32-bits wide.
+   - More validation of primitive instructions
+ - Fixes:
+   #1100: Validator: Image operand Sample can be used with OpImageSparseFetch,
+     OpImageSparseRead
+   #1108: Remove duplicates transform was incorrectly removing non-duplicate
+     decorations.
 
 v2017.2 2017-12-15
  - General:
