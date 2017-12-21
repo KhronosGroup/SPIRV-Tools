@@ -29,7 +29,6 @@
 #include "mem_pass.h"
 #include "module.h"
 
-#include <iostream>
 namespace spvtools {
 namespace opt {
 
@@ -73,7 +72,6 @@ class AggressiveDCEPass : public MemPass {
 
   // Add |inst| to worklist_ and live_insts_.
   void AddToWorklist(ir::Instruction* inst) {
-    // std::cerr << " Adding " << inst << std::endl;
     live_insts_.insert(inst);
     worklist_.push(inst);
   }

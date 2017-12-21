@@ -4942,6 +4942,208 @@ INSTANTIATE_TEST_CASE_P(
         // Long Def-Use chain with swizzle
         // clang-format on
     })));
+
+TEST_F(AggressiveDCETest, DeadDecorationGroup) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorat
+; CHECK-NOT: OpGroupDecorate
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Restrict
+OpDecorate %1 Aliased
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %var
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_ptr = OpTypePointer Function %uint
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %uint_ptr Function
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, ParitallyDeadDecorationGroup) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[grp:%\w+]] Restrict
+; CHECK: OpDecorate [[grp]] Aliased
+; CHECK: [[grp]] = OpDecorationGroup
+; CHECK: OpGroupDecorate [[grp]] [[output:%\w+]]
+; CHECK: [[output]] = OpVariable {{%\w+}} Output
+; CHECK-NOT: OpVariable {{%\w+}} Function
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Restrict
+OpDecorate %1 Aliased
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %var %output
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_ptr_Function = OpTypePointer Function %uint
+%uint_ptr_Output = OpTypePointer Output %uint
+%uint_0 = OpConstant %uint 0
+%output = OpVariable %uint_ptr_Output Output
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %uint_ptr_Function Function
+OpStore %output %uint_0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, ParitallyDeadDecorationGroupDifferentGroupDecorate) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[grp:%\w+]] Restrict
+; CHECK: OpDecorate [[grp]] Aliased
+; CHECK: [[grp]] = OpDecorationGroup
+; CHECK: OpGroupDecorate [[grp]] [[output:%\w+]]
+; CHECK-NOT: OpGroupDecorate
+; CHECK: [[output]] = OpVariable {{%\w+}} Output
+; CHECK-NOT: OpVariable {{%\w+}} Function
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Restrict
+OpDecorate %1 Aliased
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %output
+OpGroupDecorate %1 %var
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_ptr_Function = OpTypePointer Function %uint
+%uint_ptr_Output = OpTypePointer Output %uint
+%uint_0 = OpConstant %uint 0
+%output = OpVariable %uint_ptr_Output Output
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %uint_ptr_Function Function
+OpStore %output %uint_0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, DeadGroupMemberDecorate) {
+  const std::string text = R"(
+; CHECK-NOT: OpDec
+; CHECK-NOT: OpGroup
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Offset 0
+OpDecorate %1 Uniform
+%1 = OpDecorationGroup
+OpGroupMemberDecorate %1 %var 0
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%struct = OpTypeStruct %uint %uint
+%struct_ptr = OpTypePointer Function %struct
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct_ptr Function
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, PartiallyDeadGroupMemberDecorate) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[grp:%\w+]] Offset 0
+; CHECK: OpDecorate [[grp]] Uniform
+; CHECK: [[grp]] = OpDecorationGroup
+; CHECK: OpGroupMemberDecorate [[grp]] [[output:%\w+]] 1
+; CHECK: [[output]] = OpTypeStruct
+; CHECK-NOT: OpTypeStruct
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Offset 0
+OpDecorate %1 Uniform
+%1 = OpDecorationGroup
+OpGroupMemberDecorate %1 %var_struct 0 %output_struct 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%var_struct = OpTypeStruct %uint %uint
+%output_struct = OpTypeStruct %uint %uint
+%struct_ptr_Function = OpTypePointer Function %var_struct
+%struct_ptr_Output = OpTypePointer Output %output_struct
+%uint_ptr_Output = OpTypePointer Output %uint
+%output = OpVariable %struct_ptr_Output Output
+%uint_0 = OpConstant %uint 0
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct_ptr_Function Function
+%3 = OpAccessChain %uint_ptr_Output %output %uint_0
+OpStore %3 %uint_0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest,
+       PartiallyDeadGroupMemberDecorateDifferentGroupDecorate) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[grp:%\w+]] Offset 0
+; CHECK: OpDecorate [[grp]] Uniform
+; CHECK: [[grp]] = OpDecorationGroup
+; CHECK: OpGroupMemberDecorate [[grp]] [[output:%\w+]] 1
+; CHECK-NOT: OpGroupMemberDecorate
+; CHECK: [[output]] = OpTypeStruct
+; CHECK-NOT: OpTypeStruct
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Offset 0
+OpDecorate %1 Uniform
+%1 = OpDecorationGroup
+OpGroupMemberDecorate %1 %var_struct 0
+OpGroupMemberDecorate %1 %output_struct 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%var_struct = OpTypeStruct %uint %uint
+%output_struct = OpTypeStruct %uint %uint
+%struct_ptr_Function = OpTypePointer Function %var_struct
+%struct_ptr_Output = OpTypePointer Output %output_struct
+%uint_ptr_Output = OpTypePointer Output %uint
+%output = OpVariable %struct_ptr_Output Output
+%uint_0 = OpConstant %uint 0
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct_ptr_Function Function
+%3 = OpAccessChain %uint_ptr_Output %output %uint_0
+OpStore %3 %uint_0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

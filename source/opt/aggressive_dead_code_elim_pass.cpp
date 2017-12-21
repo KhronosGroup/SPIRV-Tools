@@ -19,6 +19,7 @@
 #include "cfa.h"
 #include "iterator.h"
 #include "latest_version_glsl_std_450_header.h"
+#include "reflect.h"
 
 #include <stack>
 
@@ -32,6 +33,55 @@ const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
+
+// Sorting functor to present annotation instructions in an easy-to-process
+// order. The functor orders by opcode first and falls back on unique id
+// orderingif both instructions have the same opcode.
+//
+// Desired priority:
+// SpvOpGroupDecorate
+// SpvOpGroupMemberDecorate
+// SpvOpDecorate
+// SpvOpMemberDecorate
+// SpvOpDecorateId
+// SpvOpDecorationGroup
+struct DecorationSorter {
+  bool operator()(const ir::Instruction* lhs,
+                  const ir::Instruction* rhs) const {
+    assert(lhs && rhs);
+    SpvOp lhsOp = lhs->opcode();
+    SpvOp rhsOp = rhs->opcode();
+    if (lhsOp != rhsOp) {
+      // OpGroupDecorate and OpGroupMember decorate are highest priority to
+      // eliminate dead targets early and simplify subsequent checks.
+      if (lhsOp == SpvOpGroupDecorate && rhsOp != SpvOpGroupDecorate)
+        return true;
+      if (rhsOp == SpvOpGroupDecorate && lhsOp != SpvOpGroupDecorate)
+        return false;
+      if (lhsOp == SpvOpGroupMemberDecorate &&
+          rhsOp != SpvOpGroupMemberDecorate)
+        return true;
+      if (rhsOp == SpvOpGroupMemberDecorate &&
+          lhsOp != SpvOpGroupMemberDecorate)
+        return false;
+      if (lhsOp == SpvOpDecorate && rhsOp != SpvOpDecorate) return true;
+      if (rhsOp == SpvOpDecorate && lhsOp != SpvOpDecorate) return false;
+      if (lhsOp == SpvOpMemberDecorate && rhsOp != SpvOpMemberDecorate)
+        return true;
+      if (rhsOp == SpvOpMemberDecorate && lhsOp != SpvOpMemberDecorate)
+        return false;
+      if (lhsOp == SpvOpDecorateId && rhsOp != SpvOpDecorateId) return true;
+      if (rhsOp == SpvOpDecorateId && lhsOp != SpvOpDecorateId) return false;
+      if (lhsOp == SpvOpDecorationGroup && rhsOp != SpvOpDecorationGroup)
+        return true;
+      if (rhsOp == SpvOpDecorationGroup && lhsOp != SpvOpDecorationGroup)
+        return false;
+    }
+
+    // Fall back to maintain total ordering (compare unique ids).
+    return *lhs < *rhs;
+  }
+};
 
 }  // namespace
 
@@ -94,6 +144,19 @@ bool AggressiveDCEPass::IsDead(ir::Instruction* inst) {
 bool AggressiveDCEPass::IsTargetDead(ir::Instruction* inst) {
   const uint32_t tId = inst->GetSingleWordInOperand(0);
   ir::Instruction* tInst = get_def_use_mgr()->GetDef(tId);
+  if (ir::IsAnnotationInst(tInst->opcode())) {
+    // This must be a decoration group. We go through annotations in a specific
+    // order. So if this is not used by any group or group member decorates, it
+    // is dead.
+    assert(tInst->opcode() == SpvOpDecorationGroup);
+    bool dead = true;
+    get_def_use_mgr()->ForEachUser(tInst, [&dead](ir::Instruction* user) {
+      if (user->opcode() == SpvOpGroupDecorate ||
+          user->opcode() == SpvOpGroupMemberDecorate)
+        dead = false;
+    });
+    return dead;
+  }
   return IsDead(tInst);
 }
 
@@ -325,17 +388,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // If privates are not like local, add their stores to worklist
   if (!private_like_local_)
     for (auto& ps : private_stores_) AddToWorklist(ps);
-  // Add OpGroupDecorates to worklist because they are a pain to remove
-  // ids from.
-  // TODO(greg-lunarg): Handle dead ids in OpGroupDecorate
-  for (auto& ai : get_module()->annotations()) {
-    if (ai.opcode() == SpvOpGroupDecorate) AddToWorklist(&ai);
-  }
   // Perform closure on live instruction set.
   while (!worklist_.empty()) {
     ir::Instruction* liveInst = worklist_.front();
-    // std::cerr << "Processing " << liveInst << " (" << liveInst->opcode() <<
-    // ")" << std::endl;
     // Add all operand instructions if not already live
     liveInst->ForEachInId([&liveInst, this](const uint32_t* iid) {
       ir::Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
@@ -527,19 +582,61 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
     }
   }
 
-  instruction = &*get_module()->annotation_begin();
-  while (instruction) {
-    if (instruction->opcode() != SpvOpDecorate &&
-        instruction->opcode() != SpvOpDecorateId) {
-      instruction = instruction->NextNode();
-      continue;
-    }
-
-    if (IsTargetDead(instruction)) {
-      instruction = context()->KillInst(instruction);
-      modified = true;
-    } else {
-      instruction = instruction->NextNode();
+  std::vector<ir::Instruction*> annotations;
+  for (auto& inst : get_module()->annotations()) annotations.push_back(&inst);
+  std::sort(annotations.begin(), annotations.end(), DecorationSorter());
+  for (auto annotation : annotations) {
+    switch (annotation->opcode()) {
+      case SpvOpDecorate:
+      case SpvOpMemberDecorate:
+      case SpvOpDecorateId:
+        if (IsTargetDead(annotation)) context()->KillInst(annotation);
+        break;
+      case SpvOpGroupDecorate: {
+        // Go through the targets of this group decorate. Remove each dead
+        // target. If all targets are dead, remove this decoration.
+        bool dead = true;
+        for (uint32_t i = 1; i < annotation->NumOperands();) {
+          ir::Instruction* opInst =
+              get_def_use_mgr()->GetDef(annotation->GetSingleWordOperand(i));
+          if (IsDead(opInst)) {
+            // Don't increment |i|.
+            annotation->RemoveOperand(i);
+          } else {
+            i++;
+            dead = false;
+          }
+        }
+        if (dead) context()->KillInst(annotation);
+        break;
+      }
+      case SpvOpGroupMemberDecorate: {
+        // Go through the targets of this group member decorate. Remove each
+        // dead target (and member index). If all targets are dead, remove this
+        // decoration.
+        bool dead = true;
+        for (uint32_t i = 1; i < annotation->NumOperands();) {
+          ir::Instruction* opInst =
+              get_def_use_mgr()->GetDef(annotation->GetSingleWordOperand(i));
+          if (IsDead(opInst)) {
+            // Don't increment |i|.
+            annotation->RemoveOperand(i + 1);
+            annotation->RemoveOperand(i);
+          } else {
+            i += 2;
+            dead = false;
+          }
+        }
+        if (dead) context()->KillInst(annotation);
+        break;
+      }
+      case SpvOpDecorationGroup:
+        if (get_def_use_mgr()->NumUsers(annotation) == 0)
+          context()->KillInst(annotation);
+        break;
+      default:
+        assert(false);
+        break;
     }
   }
 
@@ -565,27 +662,18 @@ void AggressiveDCEPass::InitExtensions() {
   extensions_whitelist_.clear();
   extensions_whitelist_.insert({
       "SPV_AMD_shader_explicit_vertex_parameter",
-      "SPV_AMD_shader_trinary_minmax",
-      "SPV_AMD_gcn_shader",
-      "SPV_KHR_shader_ballot",
-      "SPV_AMD_shader_ballot",
-      "SPV_AMD_gpu_shader_half_float",
-      "SPV_KHR_shader_draw_parameters",
-      "SPV_KHR_subgroup_vote",
-      "SPV_KHR_16bit_storage",
-      "SPV_KHR_device_group",
-      "SPV_KHR_multiview",
-      "SPV_NVX_multiview_per_view_attributes",
-      "SPV_NV_viewport_array2",
-      "SPV_NV_stereo_view_rendering",
+      "SPV_AMD_shader_trinary_minmax", "SPV_AMD_gcn_shader",
+      "SPV_KHR_shader_ballot", "SPV_AMD_shader_ballot",
+      "SPV_AMD_gpu_shader_half_float", "SPV_KHR_shader_draw_parameters",
+      "SPV_KHR_subgroup_vote", "SPV_KHR_16bit_storage", "SPV_KHR_device_group",
+      "SPV_KHR_multiview", "SPV_NVX_multiview_per_view_attributes",
+      "SPV_NV_viewport_array2", "SPV_NV_stereo_view_rendering",
       "SPV_NV_sample_mask_override_coverage",
-      "SPV_NV_geometry_shader_passthrough",
-      "SPV_AMD_texture_gather_bias_lod",
+      "SPV_NV_geometry_shader_passthrough", "SPV_AMD_texture_gather_bias_lod",
       "SPV_KHR_storage_buffer_storage_class",
       // SPV_KHR_variable_pointers
       //   Currently do not support extended pointer expressions
-      "SPV_AMD_gpu_shader_int16",
-      "SPV_KHR_post_depth_coverage",
+      "SPV_AMD_gpu_shader_int16", "SPV_KHR_post_depth_coverage",
       "SPV_KHR_shader_atomic_counter_ops",
   });
 }
