@@ -187,8 +187,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 16 or 32-bit scalar or "
-                    "vector "
-                 << "float type";
+                    "vector float type";
         }
 
         const uint32_t result_type_bit_width = _.GetBitWidth(result_type);
@@ -196,8 +195,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 16 or 32-bit scalar or "
-                    "vector "
-                 << "float type";
+                    "vector float type";
         }
 
         for (uint32_t operand_index = 4; operand_index < num_operands;
