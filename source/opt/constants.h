@@ -356,8 +356,8 @@ class ConstantManager {
       const Type* type, const std::vector<uint32_t>& literal_words_or_ids);
 
   // Gets or creates a Constant instance to hold the constant value of the given
-  // instruction. It returns a pointer to the Constant's defining instruction or
-  // nullptr if it could not create the constant.
+  // instruction. It returns a pointer to a Constant instance or nullptr if it
+  // could not create the constant.
   const Constant* GetConstantFromInst(ir::Instruction* inst);
 
   // Gets or creates a constant defining instruction for the given Constant |c|.

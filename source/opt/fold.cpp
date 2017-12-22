@@ -173,6 +173,8 @@ uint32_t OperateWords(SpvOp opcode,
 // not accepted in this function.
 uint32_t FoldScalars(SpvOp opcode,
                      const std::vector<const analysis::Constant*>& operands) {
+  assert(IsFoldableOpcode(opcode) &&
+         "Unhandled instruction opcode in FoldScalars");
   std::vector<uint32_t> operand_values_in_raw_words;
   for (const auto& operand : operands) {
     if (const analysis::ScalarConstant* scalar = operand->AsScalarConstant()) {
@@ -192,14 +194,11 @@ uint32_t FoldScalars(SpvOp opcode,
   return OperateWords(opcode, operand_values_in_raw_words);
 }
 
-// Returns the result of performing an operation over constant vectors. This
-// function iterates through the given vector type constant operands and
-// calculates the result for each element of the result vector to return.
-// Vectors with longer than 32-bit scalar components are not accepted in this
-// function.
 std::vector<uint32_t> FoldVectors(
     SpvOp opcode, uint32_t num_dims,
     const std::vector<const analysis::Constant*>& operands) {
+  assert(IsFoldableOpcode(opcode) &&
+         "Unhandled instruction opcode in FoldVectors");
   std::vector<uint32_t> result;
   for (uint32_t d = 0; d < num_dims; d++) {
     std::vector<uint32_t> operand_values_for_one_dimension;
@@ -280,6 +279,14 @@ bool IsFoldableOpcode(SpvOp opcode) {
     default:
       return false;
   }
+}
+
+bool IsFoldableConstant(const analysis::Constant* cst) {
+  // Currently supported constants are 32-bit values or null constants.
+  if (const analysis::ScalarConstant* scalar = cst->AsScalarConstant())
+    return scalar->words().size() == 1;
+  else
+    return cst->AsNullConstant() != nullptr;
 }
 
 }  // namespace opt

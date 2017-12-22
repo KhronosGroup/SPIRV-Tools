@@ -192,7 +192,8 @@ class SSAPropagator {
   bool Run(ir::Function* fn);
 
   // Returns true if the |i|th argument for |phi| comes through a CFG edge that
-  // has been marked executable.
+  // has been marked executable. |i| should be an index value accepted by
+  // Instruction::GetSingleWordOperand.
   bool IsPhiArgExecutable(ir::Instruction* phi, uint32_t i) const;
 
  private:
