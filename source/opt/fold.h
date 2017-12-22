@@ -24,14 +24,40 @@
 namespace spvtools {
 namespace opt {
 
+// Returns the result of folding a scalar instruction with the given |opcode|
+// and |operands|. Each entry in |operands| is a pointer to an
+// analysis::Constant instance, which should've been created with the constant
+// manager (See IRContext::get_constant_mgr).
+//
+// It is an error to call this function with an opcode that does not pass the
+// IsFoldableOpcode test. If any error occurs during folding, the folder will
+// faill with a call to assert.
 uint32_t FoldScalars(SpvOp opcode,
                      const std::vector<const analysis::Constant*>& operands);
 
+// Returns the result of performing an operation with the given |opcode| over
+// constant vectors with |num_dims| dimensions.  Each entry in |operands| is a
+// pointer to an analysis::Constant instance, which should've been created with
+// the constant manager (See IRContext::get_constant_mgr).
+//
+// This function iterates through the given vector type constant operands and
+// calculates the result for each element of the result vector to return.
+// Vectors with longer than 32-bit scalar components are not accepted in this
+// function.
+//
+// It is an error to call this function with an opcode that does not pass the
+// IsFoldableOpcode test. If any error occurs during folding, the folder will
+// faill with a call to assert.
 std::vector<uint32_t> FoldVectors(
     SpvOp opcode, uint32_t num_dims,
     const std::vector<const analysis::Constant*>& operands);
 
+// Returns true if |opcode| represents an operation handled by FoldScalars or
+// FoldVectors.
 bool IsFoldableOpcode(SpvOp opcode);
+
+// Returns true if |cst| is supported by FoldScalars and FoldVectors.
+bool IsFoldableConstant(const analysis::Constant* cst);
 
 }  // namespace opt
 }  // namespace spvtools

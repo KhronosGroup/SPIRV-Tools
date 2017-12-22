@@ -17,11 +17,12 @@
 //      Constant propagation with conditional branches,
 //      Wegman and Zadeck, ACM TOPLAS 13(2):181-210.
 #include "ccp_pass.h"
-
 #include "fold.h"
 #include "function.h"
 #include "module.h"
 #include "propagator.h"
+
+#include <algorithm>
 
 namespace spvtools {
 namespace opt {
@@ -97,22 +98,34 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(ir::Instruction* instr) {
 
   // Otherwise, see if the RHS of the assignment folds into a constant value.
   std::vector<uint32_t> cst_val_ids;
-  for (uint32_t i = 0; i < instr->NumInOperands(); i++) {
-    uint32_t op_id = instr->GetSingleWordInOperand(i);
-    auto it = values_.find(op_id);
-    if (it != values_.end()) {
-      cst_val_ids.push_back(it->second);
-    } else {
-      break;
+  bool missing_constants = false;
+  instr->ForEachInId([this, &cst_val_ids, &missing_constants](uint32_t* op_id) {
+    auto it = values_.find(*op_id);
+    if (it == values_.end()) {
+      missing_constants = true;
+      return;
     }
-  }
+    cst_val_ids.push_back(it->second);
+  });
 
   // If we did not find a constant value for every operand in the instruction,
   // do not bother folding it.  Indicate that this instruction does not produce
   // an interesting value for now.
-  auto constants = const_mgr_->GetConstantsFromIds(cst_val_ids);
-  if (constants.size() == 0) {
+  if (missing_constants) {
     return SSAPropagator::kNotInteresting;
+  }
+
+  auto constants = const_mgr_->GetConstantsFromIds(cst_val_ids);
+  assert(constants.size() != 0 && "Found undeclared constants");
+
+  // If any of the constants are not supported by the folder, we will not be
+  // able to produce a constant out of this instruction.  Consider it varying
+  // in that case.
+  if (!std::all_of(constants.begin(), constants.end(),
+                   [](const analysis::Constant* cst) {
+                     return IsFoldableConstant(cst);
+                   })) {
+    return SSAPropagator::kVarying;
   }
 
   // Otherwise, fold the instruction with all the operands to produce a new
@@ -129,8 +142,9 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(ir::Instruction* instr) {
 SSAPropagator::PropStatus CCPPass::VisitBranch(ir::Instruction* instr,
                                                ir::BasicBlock** dest_bb) const {
   assert(instr->IsBranch() && "Expected a branch instruction.");
-  uint32_t dest_label = 0;
 
+  *dest_bb = nullptr;
+  uint32_t dest_label = 0;
   if (instr->opcode() == SpvOpBranch) {
     // An unconditional jump always goes to its unique destination.
     dest_label = instr->GetSingleWordInOperand(0);
@@ -142,7 +156,6 @@ SSAPropagator::PropStatus CCPPass::VisitBranch(ir::Instruction* instr,
     auto it = values_.find(pred_id);
     if (it == values_.end()) {
       // The predicate has an unknown value, either branch could be taken.
-      *dest_bb = nullptr;
       return SSAPropagator::kVarying;
     }
 
@@ -159,11 +172,15 @@ SSAPropagator::PropStatus CCPPass::VisitBranch(ir::Instruction* instr,
     // which of the target literals it matches.  The branch associated with that
     // literal is the taken branch.
     assert(instr->opcode() == SpvOpSwitch);
+    if (instr->GetOperand(0).words.size() != 1) {
+      // If the selector is wider than 32-bits, return varying. TODO(dnovillo):
+      // Add support for wider constants.
+      return SSAPropagator::kVarying;
+    }
     uint32_t select_id = instr->GetSingleWordOperand(0);
     auto it = values_.find(select_id);
     if (it == values_.end()) {
       // The selector has an unknown value, any of the branches could be taken.
-      *dest_bb = nullptr;
       return SSAPropagator::kVarying;
     }
 
