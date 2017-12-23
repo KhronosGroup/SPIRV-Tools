@@ -18,6 +18,93 @@
 #include <iostream>
 #include <stack>
 
+namespace {
+
+using spvtools::ir::Instruction;
+using spvtools::ir::Operand;
+
+// Returns true if |inst1| is strictly less than |inst2|, for SpvOpDecorate and
+// SpvOpDecorateId.
+//
+// |inst1| is considered to be strictly less than |inst2| if:
+// * the decoration of |inst1| is strictly less than the one from |inst2|;
+// * and |inst1| has strictly fewer operands than |inst2|;
+// * and when comparing operands
+//   * |inst1|'s operand has strictly fewer words than |inst2|'s one;
+//   * and each word of |inst1|'s operand is strictly less than the ones from
+//     |inst2| (using their representation as uint32_t).
+bool compareBeforeDecorate(const Instruction* inst1, const Instruction* inst2) {
+  if (inst1->GetSingleWordInOperand(1u) > inst2->GetSingleWordInOperand(1u))
+    return false;
+  if (inst1->NumInOperands() > inst2->NumInOperands()) return false;
+  for (uint32_t i = 2u; i < inst1->NumInOperands(); ++i) {
+    const Operand& op1 = inst1->GetInOperand(i);
+    const Operand& op2 = inst2->GetInOperand(i);
+    if (op1.words.size() > op2.words.size()) return false;
+    for (uint32_t j = 0u; j < op1.words.size(); ++j)
+      if (op1.words[j] > op2.words[j]) return false;
+  }
+  return true;
+}
+
+// Returns true if |inst1| is strictly less than |inst2|, for
+// SpvOpMemberDecorate.
+//
+// |inst1| is considered to be strictly less than |inst2| if:
+// * the decoration of |inst1| is strictly less than the one from |inst2|;
+// * the member index of |inst1| is strictly less than the one from |inst2|;
+// * and |inst1| has strictly fewer operands than |inst2|;
+// * and when comparing operands
+//   * |inst1|'s operand has strictly fewer words than |inst2|'s one;
+//   * and each word of |inst1|'s operand is strictly less than the ones from
+//     |inst2| (using their representation as uint32_t).
+bool compareBeforeMemberDecorate(const Instruction* inst1,
+                                 const Instruction* inst2) {
+  if (inst1->GetSingleWordInOperand(2u) > inst2->GetSingleWordInOperand(2u))
+    return false;
+  if (inst1->GetSingleWordInOperand(1u) > inst2->GetSingleWordInOperand(1u))
+    return false;
+  if (inst1->NumInOperands() > inst2->NumInOperands()) return false;
+  for (uint32_t i = 3u; i < inst1->NumInOperands(); ++i) {
+    const Operand& op1 = inst1->GetInOperand(i);
+    const Operand& op2 = inst2->GetInOperand(i);
+    if (op1.words.size() > op2.words.size()) return false;
+    for (uint32_t j = 0u; j < op1.words.size(); ++j)
+      if (op1.words[j] > op2.words[j]) return false;
+  }
+  return true;
+}
+
+// Returns true if |inst1| is equal to |inst2|, for SpvOpDecorate and
+// SpvOpDecorateId.
+//
+// When checking for equality, the target is not considered. The actual check
+// is the same as done by compareBeforeDecorate, but replacing all instances of
+// "strictly less than" by "equal to".
+bool compareEqualDecorate(const Instruction* inst1, const Instruction* inst2) {
+  if (inst1->NumInOperands() != inst2->NumInOperands()) return false;
+  for (uint32_t i = 2u; i < inst1->NumInOperands(); ++i)
+    if (inst1->GetInOperand(i) != inst2->GetInOperand(i)) return false;
+  return inst1->GetSingleWordInOperand(1u) == inst2->GetSingleWordInOperand(1u);
+}
+
+// Returns true if |inst1| is equal to |inst2|, for SpvOpMemberDecorate.
+//
+// When checking for equality, the target is not considered. The actual check
+// is the same as done by compareBeforeMemberDecorate, but replacing all
+// instances of "strictly less than" by "equal to".
+bool compareEqualMemberDecorate(const Instruction* inst1,
+                                const Instruction* inst2) {
+  if (inst1->NumInOperands() != inst2->NumInOperands()) return false;
+  if (inst1->GetSingleWordInOperand(1u) != inst2->GetSingleWordInOperand(1u))
+    return false;
+  for (uint32_t i = 3u; i < inst1->NumInOperands(); ++i)
+    if (inst1->GetInOperand(i) != inst2->GetInOperand(i)) return false;
+  return inst1->GetSingleWordInOperand(2u) == inst2->GetSingleWordInOperand(2u);
+}
+
+}  // end of namespace
+
 namespace spvtools {
 namespace opt {
 namespace analysis {
@@ -39,24 +126,84 @@ std::vector<const ir::Instruction*> DecorationManager::GetDecorationsFor(
       ->InternalGetDecorationsFor<const ir::Instruction*>(id, include_linkage);
 }
 
-// TODO(pierremoreau): The code will return true for { deco1, deco1 }, { deco1,
-//                     deco2 } when it should return false.
 bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
                                                uint32_t id2) const {
-  const auto decorationsFor1 = GetDecorationsFor(id1, false);
-  const auto decorationsFor2 = GetDecorationsFor(id2, false);
-  if (decorationsFor1.size() != decorationsFor2.size()) return false;
+  using InstructionList = std::vector<const ir::Instruction*>;
 
-  for (const ir::Instruction* inst1 : decorationsFor1) {
-    bool didFindAMatch = false;
-    for (const ir::Instruction* inst2 : decorationsFor2) {
-      if (AreDecorationsTheSame(inst1, inst2, true)) {
-        didFindAMatch = true;
-        break;
+  const InstructionList decorationsFor1 = GetDecorationsFor(id1, false);
+  const InstructionList decorationsFor2 = GetDecorationsFor(id2, false);
+
+  // This function will sort and remove all duplicates for each of the three
+  // given lists.
+  const auto generateUniqueLists = [](const InstructionList& decorationList,
+                                      InstructionList* decorateList,
+                                      InstructionList* decorateIdList,
+                                      InstructionList* memberDecorateList) {
+    for (const ir::Instruction* inst : decorationList) {
+      switch (inst->opcode()) {
+        case SpvOpDecorate:
+          decorateList->push_back(inst);
+          break;
+        case SpvOpMemberDecorate:
+          memberDecorateList->push_back(inst);
+          break;
+        case SpvOpDecorateId:
+          decorateIdList->push_back(inst);
+          break;
+        default:
+          break;
       }
     }
-    if (!didFindAMatch) return false;
-  }
+    std::sort(decorateList->begin(), decorateList->end(),
+              compareBeforeDecorate);
+    decorateList->erase(std::unique(decorateList->begin(), decorateList->end(),
+                                    compareEqualDecorate),
+                        decorateList->end());
+    std::sort(decorateIdList->begin(), decorateIdList->end(),
+              compareBeforeDecorate);
+    decorateIdList->erase(
+        std::unique(decorateIdList->begin(), decorateIdList->end(),
+                    compareEqualDecorate),
+        decorateIdList->end());
+    std::sort(memberDecorateList->begin(), memberDecorateList->end(),
+              compareBeforeMemberDecorate);
+    memberDecorateList->erase(
+        std::unique(memberDecorateList->begin(), memberDecorateList->end(),
+                    compareEqualMemberDecorate),
+        memberDecorateList->end());
+  };
+
+  InstructionList decorateInstructionsFor1;
+  InstructionList decorateIdInstructionsFor1;
+  InstructionList decorateMemberInstructionsFor1;
+  generateUniqueLists(decorationsFor1, &decorateInstructionsFor1,
+                      &decorateIdInstructionsFor1,
+                      &decorateMemberInstructionsFor1);
+
+  InstructionList decorateInstructionsFor2;
+  InstructionList decorateIdInstructionsFor2;
+  InstructionList decorateMemberInstructionsFor2;
+  generateUniqueLists(decorationsFor2, &decorateInstructionsFor2,
+                      &decorateIdInstructionsFor2,
+                      &decorateMemberInstructionsFor2);
+
+  // This function checks that both lists contain the exact same decorations.
+  const auto compareLists = [this](const InstructionList& list1,
+                                   const InstructionList& list2) {
+    if (list1.size() != list2.size()) return false;
+    for (uint32_t i = 0u; i < list1.size(); ++i)
+      if (!AreDecorationsTheSame(list1[i], list2[i], true)) return false;
+    return true;
+  };
+
+  if (!compareLists(decorateInstructionsFor1, decorateInstructionsFor2))
+    return false;
+  if (!compareLists(decorateIdInstructionsFor1, decorateIdInstructionsFor2))
+    return false;
+  if (!compareLists(decorateMemberInstructionsFor1,
+                    decorateMemberInstructionsFor2))
+    return false;
+
   return true;
 }
 
