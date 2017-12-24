@@ -37,8 +37,8 @@
 
 namespace spvtools {
 
-using ir::Instruction;
 using ir::IRContext;
+using ir::Instruction;
 using ir::Module;
 using ir::Operand;
 using opt::PassManager;
@@ -143,29 +143,10 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 static spv_result_t VerifyIds(const MessageConsumer& consumer,
                               ir::IRContext* linked_context);
 
-// Structs for holding the data members for SpvLinker.
-struct Linker::Impl {
-  explicit Impl(spv_target_env env) : context(spvContextCreate(env)) {
-    // The default consumer in spv_context_t is a null consumer, which provides
-    // equivalent functionality (from the user's perspective) as a real consumer
-    // does nothing.
-  }
-  ~Impl() { spvContextDestroy(context); }
-
-  spv_context context;  // C interface context object.
-};
-
-Linker::Linker(spv_target_env env) : impl_(new Impl(env)) {}
-
-Linker::~Linker() {}
-
-void Linker::SetMessageConsumer(MessageConsumer consumer) {
-  libspirv::SetContextMessageConsumer(impl_->context, std::move(consumer));
-}
-
-spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
-                          std::vector<uint32_t>& linked_binary,
-                          const LinkerOptions& options) const {
+spv_result_t Link(const spv_context& context,
+                  const std::vector<std::vector<uint32_t>>& binaries,
+                  std::vector<uint32_t>* linked_binary,
+                  const LinkerOptions& options) {
   std::vector<const uint32_t*> binary_ptrs;
   binary_ptrs.reserve(binaries.size());
   std::vector<size_t> binary_sizes;
@@ -176,24 +157,27 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     binary_sizes.push_back(binary.size());
   }
 
-  return Link(binary_ptrs.data(), binary_sizes.data(), binaries.size(),
+  return Link(context, binary_ptrs.data(), binary_sizes.data(), binaries.size(),
               linked_binary, options);
 }
 
-spv_result_t Linker::Link(const uint32_t* const* binaries,
-                          const size_t* binary_sizes, size_t num_binaries,
-                          std::vector<uint32_t>& linked_binary,
-                          const LinkerOptions& options) const {
-  spv_position_t position = {};
-  const MessageConsumer& consumer = impl_->context->consumer;
+spv_result_t Link(const spv_context& context, const uint32_t* const* binaries,
+                  const size_t* binary_sizes, size_t num_binaries,
+                  std::vector<uint32_t>* linked_binary,
+                  const LinkerOptions& options) {
+  if (context == nullptr)
+    return SPV_ERROR_INVALID_POINTER;
 
-  linked_binary.clear();
+  spv_position_t position = {};
+  const MessageConsumer& consumer = context->consumer;
+
+  linked_binary->clear();
   if (num_binaries == 0u)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_BINARY)
            << "No modules were given.";
 
-  std::vector<std::unique_ptr<IRContext>> contexts;
+  std::vector<std::unique_ptr<IRContext>> irContexts;
   std::vector<Module*> modules;
   modules.reserve(num_binaries);
   for (size_t i = 0u; i < num_binaries; ++i) {
@@ -205,14 +189,14 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
              << "Schema is non-zero for module " << i << ".";
     }
 
-    std::unique_ptr<IRContext> context = BuildModule(
-        impl_->context->target_env, consumer, binaries[i], binary_sizes[i]);
-    if (context == nullptr)
+    std::unique_ptr<IRContext> irContext = BuildModule(
+        context->target_env, consumer, binaries[i], binary_sizes[i]);
+    if (irContext == nullptr)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Failed to build a module out of " << contexts.size() << ".";
-    modules.push_back(context->module());
-    contexts.push_back(std::move(context));
+             << "Failed to build a module out of " << irContexts.size() << ".";
+    modules.push_back(irContext->module());
+    irContexts.push_back(std::move(irContext));
   }
 
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
@@ -225,11 +209,11 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   ir::ModuleHeader header;
   res = GenerateHeader(consumer, modules, max_id_bound, &header);
   if (res != SPV_SUCCESS) return res;
-  IRContext linked_context(impl_->context->target_env, consumer);
+  IRContext linked_context(context->target_env, consumer);
   linked_context.module()->SetHeader(header);
 
   // Phase 3: Merge all the binaries into a single one.
-  libspirv::AssemblyGrammar grammar(impl_->context);
+  libspirv::AssemblyGrammar grammar(context);
   res = MergeModules(consumer, modules, grammar, &linked_context);
   if (res != SPV_SUCCESS) return res;
 
@@ -275,7 +259,7 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
   // Phase 10: Output the module
-  linked_context.module()->ToBinary(&linked_binary, true);
+  linked_context.module()->ToBinary(linked_binary, true);
 
   return SPV_SUCCESS;
 }
