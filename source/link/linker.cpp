@@ -633,9 +633,7 @@ static spv_result_t RemoveLinkageSpecificInstructions(
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
            << "|decoration_manager| of RemoveLinkageSpecificInstructions "
-              "should "
-              "not "
-              "be empty.";
+              "should not be empty.";
   if (linked_context == nullptr)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
