@@ -26,7 +26,7 @@ namespace spvtools {
 
 class LinkerOptions {
  public:
-  LinkerOptions() : createLibrary_(false), verifyIds_(false) {}
+  LinkerOptions() : create_library_(false), verify_ids_(false) {}
 
   // Returns whether a library or an executable should be produced by the
   // linking phase.
@@ -35,24 +35,24 @@ class LinkerOptions {
   // be removed when creating an executable.
   // The returned value will be true if creating a library, and false if
   // creating an executable.
-  bool GetCreateLibrary() const { return createLibrary_; }
+  bool GetCreateLibrary() const { return create_library_; }
 
   // Sets whether a library or an executable should be produced.
   void SetCreateLibrary(bool create_library) {
-    createLibrary_ = create_library;
+    create_library_ = create_library;
   }
 
   // Returns whether to verify the uniqueness of the unique ids in the merged
   // context.
-  bool GetVerifyIds() const { return verifyIds_; }
+  bool GetVerifyIds() const { return verify_ids_; }
 
   // Sets whether to verify the uniqueness of the unique ids in the merged
   // context.
-  void SetVerifyIds(bool verifyIds) { verifyIds_ = verifyIds; }
+  void SetVerifyIds(bool verify_ids) { verify_ids_ = verify_ids; }
 
  private:
-  bool createLibrary_;
-  bool verifyIds_;
+  bool create_library_;
+  bool verify_ids_;
 };
 
 // Links one or more SPIR-V modules into a new SPIR-V module. That is, combine

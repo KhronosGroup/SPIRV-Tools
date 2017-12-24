@@ -89,12 +89,12 @@ static spv_result_t GenerateHeader(const MessageConsumer& consumer,
                                    uint32_t max_id_bound,
                                    ir::ModuleHeader* header);
 
-// Merge all the modules from |inModules| into a single module owned by
+// Merge all the modules from |in_modules| into a single module owned by
 // |linked_context|.
 //
 // |linked_context| should not be null.
 static spv_result_t MergeModules(const MessageConsumer& consumer,
-                                 const std::vector<Module*>& inModules,
+                                 const std::vector<Module*>& in_modules,
                                  const libspirv::AssemblyGrammar& grammar,
                                  IRContext* linked_context);
 
@@ -177,7 +177,7 @@ spv_result_t Link(const spv_context& context, const uint32_t* const* binaries,
                                       SPV_ERROR_INVALID_BINARY)
            << "No modules were given.";
 
-  std::vector<std::unique_ptr<IRContext>> irContexts;
+  std::vector<std::unique_ptr<IRContext>> ir_contexts;
   std::vector<Module*> modules;
   modules.reserve(num_binaries);
   for (size_t i = 0u; i < num_binaries; ++i) {
@@ -189,14 +189,14 @@ spv_result_t Link(const spv_context& context, const uint32_t* const* binaries,
              << "Schema is non-zero for module " << i << ".";
     }
 
-    std::unique_ptr<IRContext> irContext = BuildModule(
+    std::unique_ptr<IRContext> ir_context = BuildModule(
         context->target_env, consumer, binaries[i], binary_sizes[i]);
-    if (irContext == nullptr)
+    if (ir_context == nullptr)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Failed to build a module out of " << irContexts.size() << ".";
-    modules.push_back(irContext->module());
-    irContexts.push_back(std::move(irContext));
+             << "Failed to build a module out of " << ir_contexts.size() << ".";
+    modules.push_back(ir_context->module());
+    ir_contexts.push_back(std::move(ir_context));
   }
 
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
