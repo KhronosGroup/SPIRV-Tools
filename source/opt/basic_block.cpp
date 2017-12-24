@@ -31,7 +31,7 @@ const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 
 BasicBlock* BasicBlock::Clone(IRContext* context) const {
   BasicBlock* clone = new BasicBlock(
-      std::unique_ptr<Instruction>(GetLabelInst().Clone(context)));
+      std::unique_ptr<Instruction>(GetLabelInst()->Clone(context)));
   for (const auto& inst : insts_)
     // Use the incoming context
     clone->AddInstruction(std::unique_ptr<Instruction>(inst.Clone(context)));
