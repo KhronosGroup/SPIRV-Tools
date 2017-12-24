@@ -37,7 +37,7 @@ TEST_F(IdsLimit, UnderLimit) {
 
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
-  ASSERT_EQ(0x3FFFFEu, linked_binary[3]);
+  EXPECT_EQ(0x3FFFFEu, linked_binary[3]);
 }
 
 TEST_F(IdsLimit, OverLimit) {
@@ -60,7 +60,7 @@ TEST_F(IdsLimit, OverLimit) {
 
   spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, Link(binaries, &linked_binary));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, Link(binaries, &linked_binary));
   EXPECT_THAT(GetErrorMessage(),
               HasSubstr("The limit of IDs, 4194303, was exceeded: 4194304 is "
                         "the current ID bound."));

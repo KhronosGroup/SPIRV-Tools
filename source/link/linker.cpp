@@ -566,11 +566,11 @@ static spv_result_t GetImportExportPairs(
     if (possible_exports.empty())
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "No export linkage was found for \"" << import.name << "\".";
+             << "Unresolved external reference to \"" << import.name << "\".";
     else if (possible_exports.size() > 1u)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Too many export linkages, " << possible_exports.size()
+             << "Too many external references, " << possible_exports.size()
              << ", were found for \"" << import.name << "\".";
 
     linkings_to_do->emplace_back(import, possible_exports.front());
@@ -594,7 +594,9 @@ static spv_result_t CheckImportExportCompatibility(
             context))
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Type mismatch between imported variable/function %"
+             << "Type mismatch on symbol \""
+             << linking_entry.imported_symbol.name
+             << "\" between imported variable/function %"
              << linking_entry.imported_symbol.id
              << " and exported variable/function %"
              << linking_entry.exported_symbol.id << ".";
@@ -606,7 +608,9 @@ static spv_result_t CheckImportExportCompatibility(
             linking_entry.imported_symbol.id, linking_entry.exported_symbol.id))
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Decorations mismatch between imported variable/function %"
+             << "Decorations mismatch on symbol \""
+             << linking_entry.imported_symbol.name
+             << "\" between imported variable/function %"
              << linking_entry.imported_symbol.id
              << " and exported variable/function %"
              << linking_entry.exported_symbol.id << ".";
