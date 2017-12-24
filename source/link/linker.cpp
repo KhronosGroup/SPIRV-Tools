@@ -165,8 +165,7 @@ spv_result_t Link(const spv_context& context, const uint32_t* const* binaries,
                   const size_t* binary_sizes, size_t num_binaries,
                   std::vector<uint32_t>* linked_binary,
                   const LinkerOptions& options) {
-  if (context == nullptr)
-    return SPV_ERROR_INVALID_POINTER;
+  if (context == nullptr) return SPV_ERROR_INVALID_POINTER;
 
   spv_position_t position = {};
   const MessageConsumer& consumer = context->consumer;
@@ -616,21 +615,9 @@ static spv_result_t CheckImportExportCompatibility(
              << linking_entry.exported_symbol.id << ".";
     // TODO(pierremoreau): Decorations on function parameters should probably
     //                     match, except for FuncParamAttr if I understand the
-    //                     spec correctly, which makes the code more
-    //                     complicated.
-    //    for (uint32_t i = 0u; i <
-    //    linking_entry.imported_symbol.parameter_ids.size(); ++i)
-    //      if
-    //      (!decoration_manager.HaveTheSameDecorations(linking_entry.imported_symbol.parameter_ids[i],
-    //      linking_entry.exported_symbol.parameter_ids[i]))
-    //          return libspirv::DiagnosticStream(position,
-    //          impl_->context->consumer,
-    //                                            SPV_ERROR_INVALID_BINARY)
-    //                 << "Decorations mismatch between imported function %" <<
-    //                 linking_entry.imported_symbol.id << "'s"
-    //                 << " and exported function %" <<
-    //                 linking_entry.exported_symbol.id << "'s " << (i + 1u) <<
-    //                 "th parameter.";
+    //                     spec correctly.
+    // TODO(pierremoreau): Decorations on the function return type should
+    //                     match, except for FuncParamAttr.
   }
 
   return SPV_SUCCESS;
@@ -654,6 +641,9 @@ static spv_result_t RemoveLinkageSpecificInstructions(
                                       SPV_ERROR_INVALID_DATA)
            << "|linked_module| of RemoveLinkageSpecificInstructions should not "
               "be empty.";
+
+  // TODO(pierremoreau): Remove FuncParamAttr decorations of imported
+  // functions' return type.
 
   // Remove FuncParamAttr decorations of imported functions' parameters.
   // From the SPIR-V specification, Sec. 2.13:
