@@ -116,6 +116,8 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
 
     // Is the current type equal to one of the types we have aready visited?
     SpvId idToKeep = 0u;
+    // TODO(dneto0): Use a trie to avoid quadratic behaviour? Extract the
+    // ResultIdTrie from unify_const_pass.cpp for this.
     for (auto j : visitedTypes) {
       if (AreTypesEqual(*i, *j, irContext)) {
         idToKeep = j->result_id();
@@ -161,6 +163,8 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
     // Is the current decoration equal to one of the decorations we have aready
     // visited?
     bool alreadyVisited = false;
+    // TODO(dneto0): Use a trie to avoid quadratic behaviour? Extract the
+    // ResultIdTrie from unify_const_pass.cpp for this.
     for (const Instruction* j : visitedDecorations) {
       if (decorationManager.AreDecorationsTheSame(&*i, j, false)) {
         alreadyVisited = true;
