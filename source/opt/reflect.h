@@ -38,7 +38,8 @@ inline bool IsDebugLineInst(SpvOp opcode) {
   return opcode == SpvOpLine || opcode == SpvOpNoLine;
 }
 inline bool IsAnnotationInst(SpvOp opcode) {
-  return opcode >= SpvOpDecorate && opcode <= SpvOpGroupMemberDecorate;
+  return (opcode >= SpvOpDecorate && opcode <= SpvOpGroupMemberDecorate) ||
+         opcode == SpvOpDecorateId;
 }
 inline bool IsTypeInst(SpvOp opcode) {
   return (opcode >= SpvOpTypeVoid && opcode <= SpvOpTypeForwardPointer) ||

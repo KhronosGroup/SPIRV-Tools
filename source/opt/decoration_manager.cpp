@@ -15,7 +15,7 @@
 #include "decoration_manager.h"
 
 #include <algorithm>
-#include <iostream>
+#include <set>
 #include <stack>
 
 namespace spvtools {
@@ -39,25 +39,59 @@ std::vector<const ir::Instruction*> DecorationManager::GetDecorationsFor(
       ->InternalGetDecorationsFor<const ir::Instruction*>(id, include_linkage);
 }
 
-// TODO(pierremoreau): The code will return true for { deco1, deco1 }, { deco1,
-//                     deco2 } when it should return false.
 bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
                                                uint32_t id2) const {
-  const auto decorationsFor1 = GetDecorationsFor(id1, false);
-  const auto decorationsFor2 = GetDecorationsFor(id2, false);
-  if (decorationsFor1.size() != decorationsFor2.size()) return false;
+  using InstructionList = std::vector<const ir::Instruction*>;
+  using DecorationSet = std::set<std::u32string>;
 
-  for (const ir::Instruction* inst1 : decorationsFor1) {
-    bool didFindAMatch = false;
-    for (const ir::Instruction* inst2 : decorationsFor2) {
-      if (AreDecorationsTheSame(inst1, inst2, true)) {
-        didFindAMatch = true;
-        break;
-      }
-    }
-    if (!didFindAMatch) return false;
-  }
-  return true;
+  const InstructionList decorationsFor1 = GetDecorationsFor(id1, false);
+  const InstructionList decorationsFor2 = GetDecorationsFor(id2, false);
+
+  // This function splits the decoration instructions into different sets,
+  // based on their opcode; only OpDecorate, OpDecorateId and OpMemberDecorate
+  // are considered, the other opcodes are ignored.
+  const auto fillDecorationSets =
+      [](const InstructionList& decorationList, DecorationSet* decorateSet,
+         DecorationSet* decorateIdSet, DecorationSet* memberDecorateSet) {
+        for (const ir::Instruction* inst : decorationList) {
+          std::u32string decorationPayload;
+          // Ignore the opcode and the target as we do not want them to be
+          // compared.
+          for (uint32_t i = 1u; i < inst->NumInOperands(); ++i)
+            for (uint32_t word : inst->GetInOperand(i).words)
+              decorationPayload.push_back(word);
+
+          switch (inst->opcode()) {
+            case SpvOpDecorate:
+              decorateSet->emplace(std::move(decorationPayload));
+              break;
+            case SpvOpMemberDecorate:
+              memberDecorateSet->emplace(std::move(decorationPayload));
+              break;
+            case SpvOpDecorateId:
+              decorateIdSet->emplace(std::move(decorationPayload));
+              break;
+            default:
+              break;
+          }
+        }
+      };
+
+  DecorationSet decorateSetFor1;
+  DecorationSet decorateIdSetFor1;
+  DecorationSet memberDecorateSetFor1;
+  fillDecorationSets(decorationsFor1, &decorateSetFor1, &decorateIdSetFor1,
+                     &memberDecorateSetFor1);
+
+  DecorationSet decorateSetFor2;
+  DecorationSet decorateIdSetFor2;
+  DecorationSet memberDecorateSetFor2;
+  fillDecorationSets(decorationsFor2, &decorateSetFor2, &decorateIdSetFor2,
+                     &memberDecorateSetFor2);
+
+  return decorateSetFor1 == decorateSetFor2 &&
+         decorateIdSetFor1 == decorateIdSetFor2 &&
+         memberDecorateSetFor1 == memberDecorateSetFor2;
 }
 
 // TODO(pierremoreau): If OpDecorateId is referencing an OpConstant, one could

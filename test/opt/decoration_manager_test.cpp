@@ -301,4 +301,160 @@ OpGroupDecorate %4 %1 %2
   EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
 }
 
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsDuplicateDecorations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %2 Constant
+OpDecorate %2 Constant
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsDifferentVariations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Location 0
+OpDecorate %2 Location 1
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest,
+       HaveTheSameDecorationsDuplicateMemberDecorations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %1 0 Location 0
+OpMemberDecorate %2 0 Location 0
+OpMemberDecorate %2 0 Location 0
+%u32    = OpTypeInt 32 0
+%1      = OpTypeStruct %u32 %u32
+%2      = OpTypeStruct %u32 %u32
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest,
+       HaveTheSameDecorationsDifferentMemberSameDecoration) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %1 0 Location 0
+OpMemberDecorate %2 1 Location 0
+%u32    = OpTypeInt 32 0
+%1      = OpTypeStruct %u32 %u32
+%2      = OpTypeStruct %u32 %u32
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsDifferentMemberVariations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %1 0 Location 0
+OpMemberDecorate %2 0 Location 1
+%u32    = OpTypeInt 32 0
+%1      = OpTypeStruct %u32 %u32
+%2      = OpTypeStruct %u32 %u32
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsDuplicateIdDecorations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorateId %1 AlignmentId %2
+OpDecorateId %3 AlignmentId %2
+OpDecorateId %3 AlignmentId %2
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%3      = OpVariable %u32 Uniform
+%2      = OpSpecConstant %u32 0
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decoManager->HaveTheSameDecorations(1u, 3u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsDifferentIdVariations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorateId %1 AlignmentId %2
+OpDecorateId %3 AlignmentId %4
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%3      = OpVariable %u32 Uniform
+%2      = OpSpecConstant %u32 0
+%4      = OpSpecConstant %u32 0
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsLeftSymmetry) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %1 Constant
+OpDecorate %2 Constant
+OpDecorate %2 Restrict
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsRightSymmetry) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %1 Restrict
+OpDecorate %2 Constant
+OpDecorate %2 Constant
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
 }  // namespace
