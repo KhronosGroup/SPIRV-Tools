@@ -29,6 +29,8 @@ namespace {
 using namespace spvtools;
 using namespace spvtools::opt::analysis;
 
+#ifdef SPIRV_EFFCEE
+
 bool Validate(const std::vector<uint32_t>& bin) {
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;
   spv_context spvContext = spvContextCreate(target_env);
@@ -41,7 +43,6 @@ bool Validate(const std::vector<uint32_t>& bin) {
   return error == 0;
 }
 
-#ifdef SPIRV_EFFCEE
 void Match(const std::string& original, ir::IRContext* context,
            bool do_validation = true) {
   std::vector<uint32_t> bin;
@@ -60,7 +61,6 @@ void Match(const std::string& original, ir::IRContext* context,
       << match_result.message() << "\nChecking result:\n"
       << assembly;
 }
-#endif
 
 std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   // Types in this test case are only equal to themselves, nothing else.
@@ -167,6 +167,8 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
 
   return types;
 }
+
+#endif
 
 TEST(TypeManager, TypeStrings) {
   const std::string text = R"(
