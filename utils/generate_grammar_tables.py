@@ -692,24 +692,24 @@ def main():
                 debuginfo_grammar = json.loads(debuginfo_json_file.read())
                 operand_kinds = grammar['operand_kinds']
                 operand_kinds.extend(debuginfo_grammar['operand_kinds'])
-		if args.core_insts_output is not None:
-		    make_path_to_file(args.core_insts_output)
-		    make_path_to_file(args.operand_kinds_output)
-		    version = '{}_{}'.format(grammar['major_version'],
-					     grammar['minor_version'])
-		    print(generate_instruction_table(
-			    grammar['instructions'], version),
-			  file=open(args.core_insts_output, 'w'))
-		    print(generate_operand_kind_table(operand_kinds, version),
-			  file=open(args.operand_kinds_output, 'w'))
-		if args.extension_enum_output is not None:
-		    make_path_to_file(args.extension_enum_output)
-		    print(generate_extension_enum(grammar['operand_kinds']),
-			  file=open(args.extension_enum_output, 'w'))
-		if args.enum_string_mapping_output is not None:
-		    make_path_to_file(args.enum_string_mapping_output)
-		    print(generate_all_string_enum_mappings(operand_kinds),
-			  file=open(args.enum_string_mapping_output, 'w'))
+        if args.core_insts_output is not None:
+            make_path_to_file(args.core_insts_output)
+            make_path_to_file(args.operand_kinds_output)
+            version = '{}_{}'.format(grammar['major_version'],
+                         grammar['minor_version'])
+            print(generate_instruction_table(
+                grammar['instructions'], version),
+              file=open(args.core_insts_output, 'w'))
+            print(generate_operand_kind_table(operand_kinds, version),
+              file=open(args.operand_kinds_output, 'w'))
+        if args.extension_enum_output is not None:
+            make_path_to_file(args.extension_enum_output)
+            print(generate_extension_enum(grammar['operand_kinds']),
+              file=open(args.extension_enum_output, 'w'))
+        if args.enum_string_mapping_output is not None:
+            make_path_to_file(args.enum_string_mapping_output)
+            print(generate_all_string_enum_mappings(operand_kinds),
+              file=open(args.enum_string_mapping_output, 'w'))
 
     if args.extinst_glsl_grammar is not None:
         with open(args.extinst_glsl_grammar) as json_file:
