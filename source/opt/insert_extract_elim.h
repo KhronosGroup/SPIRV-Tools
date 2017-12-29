@@ -40,23 +40,28 @@ class InsertExtractElimPass : public Pass {
   Status Process(ir::IRContext*) override;
 
  private:
-  // Return true if indices of extract |extInst| starting at |extOffset|
+  // Return true if the extract indices in |extIndices| starting at |extOffset|
   // match indices of insert |insInst|.
-  bool ExtInsMatch(const ir::Instruction* extInst,
+  bool ExtInsMatch(const std::vector<uint32_t>& extIndices,
                    const ir::Instruction* insInst,
                    const uint32_t extOffset) const;
 
-  // Return true if indices of extract |extInst| starting at |extOffset| and
+  // Return true if indices in |extIndices| starting at |extOffset| and
   // indices of insert |insInst| conflict, specifically, if the insert
   // changes bits specified by the extract, but changes either more bits
   // or less bits than the extract specifies, meaning the exact value being
   // inserted cannot be used to replace the extract.
-  bool ExtInsConflict(const ir::Instruction* extInst,
+  bool ExtInsConflict(const std::vector<uint32_t>& extIndices,
                       const ir::Instruction* insInst,
                       const uint32_t extOffset) const;
 
   // Return true if |typeId| is a vector type
   bool IsVectorType(uint32_t typeId);
+
+  // Return id of component of |cinst| specified by |extIndices| starting with
+  // index at |extOffset|. Return 0 if indices cannot be matched exactly.
+  uint32_t DoExtract(ir::Instruction* cinst, std::vector<uint32_t>* extIndices,
+                     uint32_t extOffset);
 
   // Look for OpExtract on sequence of OpInserts in |func|. If there is a
   // reaching insert which corresponds to the indices of the extract, replace
