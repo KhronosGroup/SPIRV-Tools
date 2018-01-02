@@ -63,6 +63,7 @@ OpCapability Float64
 %f32_1 = OpConstant %f32 1
 %f32_2 = OpConstant %f32 2
 %f32_3 = OpConstant %f32 3
+%f32vec2_01 = OpConstantComposite %f32vec2 %f32_0 %f32_1
 %f32vec2_12 = OpConstantComposite %f32vec2 %f32_1 %f32_2
 %f32vec4_0123 = OpConstantComposite %f32vec4 %f32_0 %f32_1 %f32_2 %f32_3
 
@@ -78,8 +79,13 @@ OpCapability Float64
 %f32mat23_121212 = OpConstantComposite %f32mat23 %f32vec2_12 %f32vec2_12 %f32vec2_12
 
 %f32vec2arr3 = OpTypeArray %f32vec2 %u32_3
+%f32vec2rarr = OpTypeRuntimeArray %f32vec2
 
 %f32u32struct = OpTypeStruct %f32 %u32
+%big_struct = OpTypeStruct %f32 %f32vec4 %f32mat23 %f32vec2arr3 %f32vec2rarr %f32u32struct
+
+%ptr_big_struct = OpTypePointer Uniform %big_struct
+%var_big_struct = OpVariable %ptr_big_struct Uniform
 
 %main = OpFunction %void None %func
 %main_entry = OpLabel
@@ -92,6 +98,74 @@ OpReturn
 OpFunctionEnd)";
 
   return ss.str();
+}
+
+// Returns header for legacy tests taken from val_id_test.cpp.
+std::string GetHeaderForTestsFromValId() {
+  return R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpCapability Pipes
+OpCapability LiteralSampler
+OpCapability DeviceEnqueue
+OpCapability Vector16
+OpCapability Int8
+OpCapability Int16
+OpCapability Int64
+OpCapability Float64
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_f  = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%v3float = OpTypeVector %float 3
+%mat4x3 = OpTypeMatrix %v3float 4
+%_ptr_Private_mat4x3 = OpTypePointer Private %mat4x3
+%_ptr_Private_float = OpTypePointer Private %float
+%my_matrix = OpVariable %_ptr_Private_mat4x3 Private
+%my_float_var = OpVariable %_ptr_Private_float Private
+%_ptr_Function_float = OpTypePointer Function %float
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int_5 = OpConstant %int 5
+
+; Making the following nested structures.
+;
+; struct S {
+;   bool b;
+;   vec4 v[5];
+;   int i;
+;   mat4x3 m[5];
+; }
+; uniform blockName {
+;   S s;
+;   bool cond;
+;   RunTimeArray arr;
+; }
+
+%f32arr = OpTypeRuntimeArray %float
+%bool = OpTypeBool
+%v4float = OpTypeVector %float 4
+%array5_mat4x3 = OpTypeArray %mat4x3 %int_5
+%array5_vec4 = OpTypeArray %v4float %int_5
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%_ptr_Function_vec4 = OpTypePointer Function %v4float
+%_ptr_Uniform_vec4 = OpTypePointer Uniform %v4float
+%struct_s = OpTypeStruct %bool %array5_vec4 %int %array5_mat4x3
+%struct_blockName = OpTypeStruct %struct_s %bool %f32arr
+%_ptr_Uniform_blockName = OpTypePointer Uniform %struct_blockName
+%_ptr_Uniform_struct_s = OpTypePointer Uniform %struct_s
+%_ptr_Uniform_array5_mat4x3 = OpTypePointer Uniform %array5_mat4x3
+%_ptr_Uniform_mat4x3 = OpTypePointer Uniform %mat4x3
+%_ptr_Uniform_v3float = OpTypePointer Uniform %v3float
+%blockName_var = OpVariable %_ptr_Uniform_blockName Uniform
+%spec_int = OpSpecConstant %int 2
+%func = OpFunction %void None %void_f
+%my_label = OpLabel
+)";
 }
 
 TEST_F(ValidateComposites, VectorExtractDynamicSuccess) {
@@ -577,4 +651,769 @@ TEST_F(ValidateComposites, TransposeIncompatibleDimensions3) {
                 "of Matrix to be the reverse of those of Result Type"));
 }
 
+TEST_F(ValidateComposites, CompositeExtractSuccess) {
+  const std::string body = R"(
+%val1 = OpCompositeExtract %f32 %f32vec4_0123 1
+%val2 = OpCompositeExtract %u32 %u32vec4_0123 0
+%val3 = OpCompositeExtract %f32 %f32mat22_1212 0 1
+%val4 = OpCompositeExtract %f32vec2 %f32mat22_1212 0
+%array = OpCompositeConstruct %f32vec2arr3 %f32vec2_12 %f32vec2_12 %f32vec2_12
+%val5 = OpCompositeExtract %f32vec2 %array 2
+%val6 = OpCompositeExtract %f32 %array 2 1
+%struct = OpLoad %big_struct %var_big_struct
+%val7 = OpCompositeExtract %f32 %struct 0
+%val8 = OpCompositeExtract %f32vec4 %struct 1
+%val9 = OpCompositeExtract %f32 %struct 1 2
+%val10 = OpCompositeExtract %f32mat23 %struct 2
+%val11 = OpCompositeExtract %f32vec2 %struct 2 2
+%val12 = OpCompositeExtract %f32 %struct 2 2 1
+%val13 = OpCompositeExtract %f32vec2 %struct 3 2
+%val14 = OpCompositeExtract %f32 %struct 3 2 1
+%val15 = OpCompositeExtract %f32vec2 %struct 4 100
+%val16 = OpCompositeExtract %f32 %struct 4 1000 1
+%val17 = OpCompositeExtract %f32 %struct 5 0
+%val18 = OpCompositeExtract %u32 %struct 5 1
+%val19 = OpCompositeExtract %big_struct %struct
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateComposites, CompositeExtractNotObject) {
+  const std::string body = R"(
+%val1 = OpCompositeExtract %f32 %f32vec4 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeExtract: expected Composite to be an object "
+                        "of composite type"));
+}
+
+TEST_F(ValidateComposites, CompositeExtractNotComposite) {
+  const std::string body = R"(
+%val1 = OpCompositeExtract %f32 %f32_1 0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract reached non-composite type while "
+                        "indexes still remain to be traversed."));
+}
+
+TEST_F(ValidateComposites, CompositeExtractVectorOutOfBounds) {
+  const std::string body = R"(
+%val1 = OpCompositeExtract %f32 %f32vec4_0123 4
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeExtract: vector access is out of bounds, "
+                        "vector size is 4, but access index is 4"));
+}
+
+TEST_F(ValidateComposites, CompositeExtractMatrixOutOfCols) {
+  const std::string body = R"(
+%val1 = OpCompositeExtract %f32 %f32mat23_121212 3 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeExtract: matrix access is out of bounds, "
+                        "matrix has 3 columns, but access index is 3"));
+}
+
+TEST_F(ValidateComposites, CompositeExtractMatrixOutOfRows) {
+  const std::string body = R"(
+%val1 = OpCompositeExtract %f32 %f32mat23_121212 2 5
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeExtract: vector access is out of bounds, "
+                        "vector size is 2, but access index is 5"));
+}
+
+TEST_F(ValidateComposites, CompositeExtractArrayOutOfBounds) {
+  const std::string body = R"(
+%array = OpCompositeConstruct %f32vec2arr3 %f32vec2_12 %f32vec2_12 %f32vec2_12
+%val1 = OpCompositeExtract %f32vec2 %array 3
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeExtract: array access is out of bounds, "
+                        "array size is 3, but access index is 3"));
+}
+
+TEST_F(ValidateComposites, CompositeExtractStructOutOfBounds) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeExtract %f32 %struct 6
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index is out of bounds: OpCompositeExtract can not "
+                        "find index 6 into the structure <id> '37'. This "
+                        "structure has 6 members. Largest valid index is 5."));
+}
+
+TEST_F(ValidateComposites, CompositeExtractNestedVectorOutOfBounds) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeExtract %f32 %struct 3 1 5
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeExtract: vector access is out of bounds, "
+                        "vector size is 2, but access index is 5"));
+}
+
+TEST_F(ValidateComposites, CompositeExtractTooManyIndices) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeExtract %f32 %struct 3 1 1 2
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract reached non-composite type while "
+                        "indexes still remain to be traversed."));
+}
+
+TEST_F(ValidateComposites, CompositeExtractWrongType1) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeExtract %f32vec2 %struct 3 1 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpCompositeExtract result type (OpTypeVector) does not match the "
+          "type that results from indexing into the composite (OpTypeFloat)."));
+}
+
+TEST_F(ValidateComposites, CompositeExtractWrongType2) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeExtract %f32 %struct 3 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract result type (OpTypeFloat) does not "
+                        "match the type that results from indexing into the "
+                        "composite (OpTypeVector)."));
+}
+
+TEST_F(ValidateComposites, CompositeExtractWrongType3) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeExtract %f32 %struct 2 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract result type (OpTypeFloat) does not "
+                        "match the type that results from indexing into the "
+                        "composite (OpTypeVector)."));
+}
+
+TEST_F(ValidateComposites, CompositeExtractWrongType4) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeExtract %f32 %struct 4 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract result type (OpTypeFloat) does not "
+                        "match the type that results from indexing into the "
+                        "composite (OpTypeVector)."));
+}
+
+TEST_F(ValidateComposites, CompositeExtractWrongType5) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeExtract %f32 %struct 5 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpCompositeExtract result type (OpTypeFloat) does not match the "
+          "type that results from indexing into the composite (OpTypeInt)."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertSuccess) {
+  const std::string body = R"(
+%val1 = OpCompositeInsert %f32vec4 %f32_1 %f32vec4_0123 0
+%val2 = OpCompositeInsert %u32vec4 %u32_1 %u32vec4_0123 0
+%val3 = OpCompositeInsert %f32mat22 %f32_2 %f32mat22_1212 0 1
+%val4 = OpCompositeInsert %f32mat22 %f32vec2_01 %f32mat22_1212 0
+%array = OpCompositeConstruct %f32vec2arr3 %f32vec2_12 %f32vec2_12 %f32vec2_12
+%val5 = OpCompositeInsert %f32vec2arr3 %f32vec2_01 %array 2
+%val6 = OpCompositeInsert %f32vec2arr3 %f32_3 %array 2 1
+%struct = OpLoad %big_struct %var_big_struct
+%val7 = OpCompositeInsert %big_struct %f32_3 %struct 0
+%val8 = OpCompositeInsert %big_struct %f32vec4_0123 %struct 1
+%val9 = OpCompositeInsert %big_struct %f32_3 %struct 1 2
+%val10 = OpCompositeInsert %big_struct %f32mat23_121212 %struct 2
+%val11 = OpCompositeInsert %big_struct %f32vec2_01 %struct 2 2
+%val12 = OpCompositeInsert %big_struct %f32_3 %struct 2 2 1
+%val13 = OpCompositeInsert %big_struct %f32vec2_01 %struct 3 2
+%val14 = OpCompositeInsert %big_struct %f32_3 %struct 3 2 1
+%val15 = OpCompositeInsert %big_struct %f32vec2_01 %struct 4 100
+%val16 = OpCompositeInsert %big_struct %f32_3 %struct 4 1000 1
+%val17 = OpCompositeInsert %big_struct %f32_3 %struct 5 0
+%val18 = OpCompositeInsert %big_struct %u32_3 %struct 5 1
+%val19 = OpCompositeInsert %big_struct %struct %struct
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateComposites, CompositeInsertResultTypeDifferentFromComposite) {
+  const std::string body = R"(
+%val1 = OpCompositeInsert %f32 %f32_1 %f32vec4_0123 0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Result Type must be the same as Composite type in "
+                        "OpCompositeInsert yielding Result Id 5."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertNotComposite) {
+  const std::string body = R"(
+%val1 = OpCompositeInsert %f32 %f32_1 %f32_0 0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeInsert reached non-composite type while "
+                        "indexes still remain to be traversed."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertVectorOutOfBounds) {
+  const std::string body = R"(
+%val1 = OpCompositeInsert %f32vec4 %f32_1 %f32vec4_0123 4
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeInsert: vector access is out of bounds, "
+                        "vector size is 4, but access index is 4"));
+}
+
+TEST_F(ValidateComposites, CompositeInsertMatrixOutOfCols) {
+  const std::string body = R"(
+%val1 = OpCompositeInsert %f32mat23 %f32_1 %f32mat23_121212 3 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeInsert: matrix access is out of bounds, "
+                        "matrix has 3 columns, but access index is 3"));
+}
+
+TEST_F(ValidateComposites, CompositeInsertMatrixOutOfRows) {
+  const std::string body = R"(
+%val1 = OpCompositeInsert %f32mat23 %f32_1 %f32mat23_121212 2 5
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeInsert: vector access is out of bounds, "
+                        "vector size is 2, but access index is 5"));
+}
+
+TEST_F(ValidateComposites, CompositeInsertArrayOutOfBounds) {
+  const std::string body = R"(
+%array = OpCompositeConstruct %f32vec2arr3 %f32vec2_12 %f32vec2_12 %f32vec2_12
+%val1 = OpCompositeInsert %f32vec2arr3 %f32vec2_01 %array 3
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeInsert: array access is out of bounds, array "
+                        "size is 3, but access index is 3"));
+}
+
+TEST_F(ValidateComposites, CompositeInsertStructOutOfBounds) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeInsert %big_struct %f32_1 %struct 6
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index is out of bounds: OpCompositeInsert can not "
+                        "find index 6 into the structure <id> '37'. This "
+                        "structure has 6 members. Largest valid index is 5."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertNestedVectorOutOfBounds) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeInsert %big_struct %f32_1 %struct 3 1 5
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CompositeInsert: vector access is out of bounds, "
+                        "vector size is 2, but access index is 5"));
+}
+
+TEST_F(ValidateComposites, CompositeInsertTooManyIndices) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeInsert %big_struct %f32_1 %struct 3 1 1 2
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeInsert reached non-composite type while "
+                        "indexes still remain to be traversed."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertWrongType1) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeInsert %big_struct %f32vec2_01 %struct 3 1 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Object type (OpTypeVector) in OpCompositeInsert "
+                        "does not match the type that results from indexing "
+                        "into the Composite (OpTypeFloat)."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertWrongType2) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeInsert %big_struct %f32_1 %struct 3 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Object type (OpTypeFloat) in OpCompositeInsert "
+                        "does not match the type that results from indexing "
+                        "into the Composite (OpTypeVector)."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertWrongType3) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeInsert %big_struct %f32_1 %struct 2 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Object type (OpTypeFloat) in OpCompositeInsert "
+                        "does not match the type that results from indexing "
+                        "into the Composite (OpTypeVector)."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertWrongType4) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeInsert %big_struct %f32_1 %struct 4 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Object type (OpTypeFloat) in OpCompositeInsert "
+                        "does not match the type that results from indexing "
+                        "into the Composite (OpTypeVector)."));
+}
+
+TEST_F(ValidateComposites, CompositeInsertWrongType5) {
+  const std::string body = R"(
+%struct = OpLoad %big_struct %var_big_struct
+%val1 = OpCompositeInsert %big_struct %f32_1 %struct 5 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Object type (OpTypeFloat) in OpCompositeInsert "
+                        "does not match the type that results from indexing "
+                        "into the Composite (OpTypeInt)."));
+}
+
+// Tests ported from val_id_test.cpp.
+
+// Valid. Tests both CompositeExtract and CompositeInsert with 255 indexes.
+TEST_F(ValidateComposites, CompositeExtractInsertLimitsGood) {
+  int depth = 255;
+  std::string header = GetHeaderForTestsFromValId();
+  header.erase(header.find("%func"));
+  std::ostringstream spirv;
+  spirv << header << std::endl;
+
+  // Build nested structures. Struct 'i' contains struct 'i-1'
+  spirv << "%s_depth_1 = OpTypeStruct %float\n";
+  for (int i = 2; i <= depth; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %s_depth_" << i - 1 << "\n";
+  }
+
+  // Define Pointer and Variable to use for CompositeExtract/Insert.
+  spirv << "%_ptr_Uniform_deep_struct = OpTypePointer Uniform %s_depth_"
+        << depth << "\n";
+  spirv << "%deep_var = OpVariable %_ptr_Uniform_deep_struct Uniform\n";
+
+  // Function Start
+  spirv << R"(
+  %func = OpFunction %void None %void_f
+  %my_label = OpLabel
+  )";
+
+  // OpCompositeExtract/Insert with 'n' indexes (n = depth)
+  spirv << "%deep = OpLoad %s_depth_" << depth << " %deep_var" << std::endl;
+  spirv << "%entry = OpCompositeExtract  %float %deep";
+  for (int i = 0; i < depth; ++i) {
+    spirv << " 0";
+  }
+  spirv << std::endl;
+  spirv << "%new_composite = OpCompositeInsert %s_depth_" << depth
+        << " %entry %deep";
+  for (int i = 0; i < depth; ++i) {
+    spirv << " 0";
+  }
+  spirv << std::endl;
+
+  // Function end
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: 256 indexes passed to OpCompositeExtract. Limit is 255.
+TEST_F(ValidateComposites, CompositeExtractArgCountExceededLimitBad) {
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << std::endl;
+  spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%entry = OpCompositeExtract %float %matrix";
+  for (int i = 0; i < 256; ++i) {
+    spirv << " 0";
+  }
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The number of indexes in OpCompositeExtract may not "
+                        "exceed 255. Found 256 indexes."));
+}
+
+// Invalid: 256 indexes passed to OpCompositeInsert. Limit is 255.
+TEST_F(ValidateComposites, CompositeInsertArgCountExceededLimitBad) {
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << std::endl;
+  spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%new_composite = OpCompositeInsert %mat4x3 %int_0 %matrix";
+  for (int i = 0; i < 256; ++i) {
+    spirv << " 0";
+  }
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The number of indexes in OpCompositeInsert may not "
+                        "exceed 255. Found 256 indexes."));
+}
+
+// Invalid: In OpCompositeInsert, result type must be the same as composite type
+TEST_F(ValidateComposites, CompositeInsertWrongResultTypeBad) {
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << std::endl;
+  spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%float_entry = OpCompositeExtract  %float %matrix 0 1" << std::endl;
+  spirv << "%new_composite = OpCompositeInsert %float %float_entry %matrix 0 1"
+        << std::endl;
+  spirv << R"(OpReturn
+              OpFunctionEnd)";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Result Type must be the same as Composite type"));
+}
+
+// Valid: No Indexes were passed to OpCompositeExtract, and the Result Type is
+// the same as the Base Composite type.
+TEST_F(ValidateComposites, CompositeExtractNoIndexesGood) {
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << std::endl;
+  spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%float_entry = OpCompositeExtract  %mat4x3 %matrix" << std::endl;
+  spirv << R"(OpReturn
+              OpFunctionEnd)";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: No Indexes were passed to OpCompositeExtract, but the Result Type is
+// different from the Base Composite type.
+TEST_F(ValidateComposites, CompositeExtractNoIndexesBad) {
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << std::endl;
+  spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%float_entry = OpCompositeExtract  %float %matrix" << std::endl;
+  spirv << R"(OpReturn
+              OpFunctionEnd)";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract result type (OpTypeFloat) does not "
+                        "match the type that results from indexing into the "
+                        "composite (OpTypeMatrix)."));
+}
+
+// Valid: No Indexes were passed to OpCompositeInsert, and the type of the
+// Object<id> argument matches the Composite type.
+TEST_F(ValidateComposites, CompositeInsertMissingIndexesGood) {
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << std::endl;
+  spirv << "%matrix   = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%matrix_2 = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%new_composite = OpCompositeInsert %mat4x3 %matrix_2 %matrix";
+  spirv << R"(
+              OpReturn
+              OpFunctionEnd)";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: No Indexes were passed to OpCompositeInsert, but the type of the
+// Object<id> argument does not match the Composite type.
+TEST_F(ValidateComposites, CompositeInsertMissingIndexesBad) {
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << std::endl;
+  spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%new_composite = OpCompositeInsert %mat4x3 %int_0 %matrix";
+  spirv << R"(
+              OpReturn
+              OpFunctionEnd)";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Object type (OpTypeInt) in OpCompositeInsert does "
+                        "not match the type that results from indexing into "
+                        "the Composite (OpTypeMatrix)."));
+}
+
+// Valid: Tests that we can index into Struct, Array, Matrix, and Vector!
+TEST_F(ValidateComposites, CompositeExtractInsertIndexIntoAllTypesGood) {
+  // indexes that we are passing are: 0, 3, 1, 2, 0
+  // 0 will select the struct_s within the base struct (blockName)
+  // 3 will select the Array that contains 5 matrices
+  // 1 will select the Matrix that is at index 1 of the array
+  // 2 will select the column (which is a vector) within the matrix at index 2
+  // 0 will select the element at the index 0 of the vector. (which is a float).
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << R"(
+    %myblock = OpLoad %struct_blockName %blockName_var
+    %ss = OpCompositeExtract %struct_s %myblock 0
+    %sa = OpCompositeExtract %array5_mat4x3 %myblock 0 3
+    %sm = OpCompositeExtract %mat4x3 %myblock 0 3 1
+    %sc = OpCompositeExtract %v3float %myblock 0 3 1 2
+    %fl = OpCompositeExtract %float %myblock 0 3 1 2 0
+    ;
+    ; Now let's insert back at different levels...
+    ;
+    %b1 = OpCompositeInsert %struct_blockName %ss %myblock 0
+    %b2 = OpCompositeInsert %struct_blockName %sa %myblock 0 3
+    %b3 = OpCompositeInsert %struct_blockName %sm %myblock 0 3 1
+    %b4 = OpCompositeInsert %struct_blockName %sc %myblock 0 3 1 2
+    %b5 = OpCompositeInsert %struct_blockName %fl %myblock 0 3 1 2 0
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid. More indexes are provided than needed for OpCompositeExtract.
+TEST_F(ValidateComposites, CompositeExtractReachedScalarBad) {
+  // indexes that we are passing are: 0, 3, 1, 2, 0
+  // 0 will select the struct_s within the base struct (blockName)
+  // 3 will select the Array that contains 5 matrices
+  // 1 will select the Matrix that is at index 1 of the array
+  // 2 will select the column (which is a vector) within the matrix at index 2
+  // 0 will select the element at the index 0 of the vector. (which is a float).
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << R"(
+    %myblock = OpLoad %struct_blockName %blockName_var
+    %fl = OpCompositeExtract %float %myblock 0 3 1 2 0 1
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract reached non-composite type while "
+                        "indexes still remain to be traversed."));
+}
+
+// Invalid. More indexes are provided than needed for OpCompositeInsert.
+TEST_F(ValidateComposites, CompositeInsertReachedScalarBad) {
+  // indexes that we are passing are: 0, 3, 1, 2, 0
+  // 0 will select the struct_s within the base struct (blockName)
+  // 3 will select the Array that contains 5 matrices
+  // 1 will select the Matrix that is at index 1 of the array
+  // 2 will select the column (which is a vector) within the matrix at index 2
+  // 0 will select the element at the index 0 of the vector. (which is a float).
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << R"(
+    %myblock = OpLoad %struct_blockName %blockName_var
+    %fl = OpCompositeExtract %float %myblock 0 3 1 2 0
+    %b5 = OpCompositeInsert %struct_blockName %fl %myblock 0 3 1 2 0 1
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeInsert reached non-composite type while "
+                        "indexes still remain to be traversed."));
+}
+
+// Invalid. Result type doesn't match the type we get from indexing into
+// the composite.
+TEST_F(ValidateComposites,
+       CompositeExtractResultTypeDoesntMatchIndexedTypeBad) {
+  // indexes that we are passing are: 0, 3, 1, 2, 0
+  // 0 will select the struct_s within the base struct (blockName)
+  // 3 will select the Array that contains 5 matrices
+  // 1 will select the Matrix that is at index 1 of the array
+  // 2 will select the column (which is a vector) within the matrix at index 2
+  // 0 will select the element at the index 0 of the vector. (which is a float).
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << R"(
+    %myblock = OpLoad %struct_blockName %blockName_var
+    %fl = OpCompositeExtract %int %myblock 0 3 1 2 0
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract result type (OpTypeInt) does not "
+                        "match the type that results from indexing into the "
+                        "composite (OpTypeFloat)."));
+}
+
+// Invalid. Given object type doesn't match the type we get from indexing into
+// the composite.
+TEST_F(ValidateComposites, CompositeInsertObjectTypeDoesntMatchIndexedTypeBad) {
+  // indexes that we are passing are: 0, 3, 1, 2, 0
+  // 0 will select the struct_s within the base struct (blockName)
+  // 3 will select the Array that contains 5 matrices
+  // 1 will select the Matrix that is at index 1 of the array
+  // 2 will select the column (which is a vector) within the matrix at index 2
+  // 0 will select the element at the index 0 of the vector. (which is a float).
+  // We are trying to insert an integer where we should be inserting a float.
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << R"(
+    %myblock = OpLoad %struct_blockName %blockName_var
+    %b5 = OpCompositeInsert %struct_blockName %int_0 %myblock 0 3 1 2 0
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("he Object type (OpTypeInt) in OpCompositeInsert does "
+                        "not match the type that results from indexing into "
+                        "the Composite (OpTypeFloat)."));
+}
+
+// Invalid. Index into a struct is larger than the number of struct members.
+TEST_F(ValidateComposites, CompositeExtractStructIndexOutOfBoundBad) {
+  // struct_blockName has 3 members (index 0,1,2). We'll try to access index 3.
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << R"(
+    %myblock = OpLoad %struct_blockName %blockName_var
+    %ss = OpCompositeExtract %struct_s %myblock 3
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index is out of bounds: OpCompositeExtract can not "
+                        "find index 3 into the structure <id> '26'. This "
+                        "structure has 3 members. Largest valid index is 2."));
+}
+
+// Invalid. Index into a struct is larger than the number of struct members.
+TEST_F(ValidateComposites, CompositeInsertStructIndexOutOfBoundBad) {
+  // struct_blockName has 3 members (index 0,1,2). We'll try to access index 3.
+  std::ostringstream spirv;
+  spirv << GetHeaderForTestsFromValId() << R"(
+    %myblock = OpLoad %struct_blockName %blockName_var
+    %ss = OpCompositeExtract %struct_s %myblock 0
+    %new_composite = OpCompositeInsert %struct_blockName %ss %myblock 3
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Index is out of bounds: OpCompositeInsert can not find "
+                "index 3 into the structure <id> '26'. This structure "
+                "has 3 members. Largest valid index is 2."));
+}
 }  // anonymous namespace

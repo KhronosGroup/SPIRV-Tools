@@ -23,6 +23,112 @@
 
 namespace libspirv {
 
+namespace {
+
+// Returns the type of the value accessed by OpCompositeExtract or
+// OpCompositeInsert instruction. The function traverses the hierarchy of
+// nested data structures (structs, arrays, vectors, matrices) as directed by
+// the sequence of indices in the instruction. May return error if traversal
+// fails (encountered non-composite, out of bounds, nesting too deep).
+// Returns the type of Composite operand if the instruction has no indices.
+spv_result_t GetExtractInsertValueType(ValidationState_t& _,
+                                       const spv_parsed_instruction_t& inst,
+                                       uint32_t* member_type) {
+  const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
+  assert(opcode == SpvOpCompositeExtract || opcode == SpvOpCompositeInsert);
+  uint32_t word_index = opcode == SpvOpCompositeExtract ? 4 : 5;
+  const uint32_t num_words = static_cast<uint32_t>(inst.num_words);
+  const uint32_t composite_id_index = word_index - 1;
+
+  const uint32_t num_indices = num_words - word_index;
+  const uint32_t kCompositeExtractInsertMaxNumIndices = 255;
+  if (num_indices > kCompositeExtractInsertMaxNumIndices) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << "The number of indexes in Op" << spvOpcodeString(opcode)
+           << " may not exceed " << kCompositeExtractInsertMaxNumIndices
+           << ". Found " << num_indices << " indexes.";
+  }
+
+  *member_type = _.GetTypeId(inst.words[composite_id_index]);
+  if (*member_type == 0) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": expected Composite to be an object of composite type";
+  }
+
+  for (; word_index < num_words; ++word_index) {
+    const uint32_t component_index = inst.words[word_index];
+    const Instruction* const type_inst = _.FindDef(*member_type);
+    assert(type_inst);
+    switch (type_inst->opcode()) {
+      case SpvOpTypeVector: {
+        *member_type = type_inst->word(2);
+        const uint32_t vector_size = type_inst->word(3);
+        if (component_index >= vector_size) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << spvOpcodeString(opcode)
+                 << ": vector access is out of bounds, vector size is "
+                 << vector_size << ", but access index is " << component_index;
+        }
+        break;
+      }
+      case SpvOpTypeMatrix: {
+        *member_type = type_inst->word(2);
+        const uint32_t num_cols = type_inst->word(3);
+        if (component_index >= num_cols) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << spvOpcodeString(opcode)
+                 << ": matrix access is out of bounds, matrix has " << num_cols
+                 << " columns, but access index is " << component_index;
+        }
+        break;
+      }
+      case SpvOpTypeArray: {
+        uint64_t array_size = 0;
+        if (!_.GetConstantValUint64(type_inst->word(3), &array_size)) {
+          assert(0 && "Array type definition is corrupt");
+        }
+        *member_type = type_inst->word(2);
+        if (component_index >= array_size) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << spvOpcodeString(opcode)
+                 << ": array access is out of bounds, array size is "
+                 << array_size << ", but access index is " << component_index;
+        }
+        break;
+      }
+      case SpvOpTypeRuntimeArray: {
+        *member_type = type_inst->word(2);
+        // Array size is unknown.
+        break;
+      }
+      case SpvOpTypeStruct: {
+        const size_t num_struct_members = type_inst->words().size() - 2;
+        if (component_index >= num_struct_members) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << "Index is out of bounds: Op" << spvOpcodeString(opcode)
+                 << " can not find index " << component_index
+                 << " into the structure <id> '" << type_inst->id()
+                 << "'. This structure has " << num_struct_members
+                 << " members. Largest valid index is "
+                 << num_struct_members - 1 << ".";
+        }
+        *member_type = type_inst->word(component_index + 2);
+        break;
+      }
+      default:
+        return _.diag(SPV_ERROR_INVALID_DATA)
+               << "Op" << spvOpcodeString(opcode)
+               << " reached non-composite type while indexes still remain to "
+                  "be traversed.";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
+}  // anonymous namespace
+
 // Validates correctness of composite instructions.
 spv_result_t CompositesPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
@@ -246,10 +352,51 @@ spv_result_t CompositesPass(ValidationState_t& _,
       break;
     }
 
-    case SpvOpCompositeExtract:
+    case SpvOpCompositeExtract: {
+      uint32_t member_type = 0;
+      if (spv_result_t error =
+              GetExtractInsertValueType(_, *inst, &member_type)) {
+        return error;
+      }
+
+      if (result_type != member_type) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+               << "Op" << spvOpcodeString(opcode) << " result type (Op"
+               << spvOpcodeString(_.GetIdOpcode(result_type))
+               << ") does not match the type that results from indexing into "
+                  "the "
+                  "composite (Op"
+               << spvOpcodeString(_.GetIdOpcode(member_type)) << ").";
+      }
+      break;
+    }
+
     case SpvOpCompositeInsert: {
-      // Handled in validate_id.cpp.
-      // TODO(atgoo@github.com) Consider moving it here.
+      const uint32_t object_type = _.GetOperandTypeId(inst, 2);
+      const uint32_t composite_type = _.GetOperandTypeId(inst, 3);
+
+      if (result_type != composite_type) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+               << "The Result Type must be the same as Composite type in Op"
+               << spvOpcodeString(opcode) << " yielding Result Id "
+               << result_type << ".";
+      }
+
+      uint32_t member_type = 0;
+      if (spv_result_t error =
+              GetExtractInsertValueType(_, *inst, &member_type)) {
+        return error;
+      }
+
+      if (object_type != member_type) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+               << "The Object type (Op"
+               << spvOpcodeString(_.GetIdOpcode(object_type)) << ") in Op"
+               << spvOpcodeString(opcode)
+               << " does not match the type that results from indexing into "
+                  "the Composite (Op"
+               << spvOpcodeString(_.GetIdOpcode(member_type)) << ").";
+      }
       break;
     }
 
