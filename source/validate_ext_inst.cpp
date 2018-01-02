@@ -149,8 +149,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
                    << "Result Type";
           }
 
-          if (ext_inst_key == GLSLstd450FindILsb ||
-              ext_inst_key == GLSLstd450FindUMsb ||
+          if (ext_inst_key == GLSLstd450FindUMsb ||
               ext_inst_key == GLSLstd450FindSMsb) {
             if (result_type_bit_width != 32) {
               return _.diag(SPV_ERROR_INVALID_DATA)
@@ -370,8 +369,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
                  << "expected operand X type to be equal to Result Type";
         }
 
-        if (!_.IsIntScalarOrVectorType(exp_type) ||
-            _.GetBitWidth(exp_type) != 32) {
+        if (!_.IsIntScalarOrVectorType(exp_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
                  << "expected operand Exp to be a 32-bit int scalar "
@@ -455,11 +453,11 @@ spv_result_t ExtInstPass(ValidationState_t& _,
       }
 
       case GLSLstd450PackDouble2x32: {
-        if (!_.IsIntScalarType(result_type) ||
+        if (!_.IsFloatScalarType(result_type) ||
             _.GetBitWidth(result_type) != 64) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to be 64-bit int scalar type";
+                 << "expected Result Type to be 64-bit float scalar type";
         }
 
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
@@ -524,10 +522,10 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         }
 
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
-        if (!_.IsIntScalarType(v_type) || _.GetBitWidth(v_type) != 64) {
+        if (!_.IsFloatScalarType(v_type) || _.GetBitWidth(v_type) != 64) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected operand P to be a 64-bit int scalar";
+                 << "expected operand V to be a 64-bit float scalar";
         }
         break;
       }
