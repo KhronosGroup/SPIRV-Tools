@@ -133,8 +133,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
       .RegisterPass(CreateCFGCleanupPass());
-      // Currently exposing driver bugs resulting in crashes (#946)
-      // .RegisterPass(CreateCommonUniformElimPass())
+  // Currently exposing driver bugs resulting in crashes (#946)
+  // .RegisterPass(CreateCommonUniformElimPass())
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
@@ -155,8 +155,8 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
       .RegisterPass(CreateCFGCleanupPass());
-      // Currently exposing driver bugs resulting in crashes (#946)
-      // .RegisterPass(CreateCommonUniformElimPass())
+  // Currently exposing driver bugs resulting in crashes (#946)
+  // .RegisterPass(CreateCommonUniformElimPass())
 }
 
 bool Optimizer::Run(const uint32_t* original_binary,
