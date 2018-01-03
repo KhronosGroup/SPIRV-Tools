@@ -226,18 +226,18 @@ class DominatorTree {
 
   // Returns the DominatorTreeNode associated with the basic block |bb|.
   // If the |bb| is unknown to the dominator tree, it returns null.
-  inline DominatorTreeNode* operator[](ir::BasicBlock* bb) {
-    return (*this)[bb->id()];
+  inline DominatorTreeNode* GetTreeNode(ir::BasicBlock* bb) {
+    return GetTreeNode(bb->id());
   }
   // Returns the DominatorTreeNode associated with the basic block |bb|.
   // If the |bb| is unknown to the dominator tree, it returns null.
-  inline const DominatorTreeNode* operator[](ir::BasicBlock* bb) const {
-    return (*this)[bb->id()];
+  inline const DominatorTreeNode* GetTreeNode(ir::BasicBlock* bb) const {
+    return GetTreeNode(bb->id());
   }
 
   // Returns the DominatorTreeNode associated with the basic block id |id|.
   // If the id |id| is unknown to the dominator tree, it returns null.
-  inline DominatorTreeNode* operator[](uint32_t id) {
+  inline DominatorTreeNode* GetTreeNode(uint32_t id) {
     DominatorTreeNodeMap::iterator node_iter = nodes_.find(id);
     if (node_iter == nodes_.end()) {
       return nullptr;
@@ -246,7 +246,7 @@ class DominatorTree {
   }
   // Returns the DominatorTreeNode associated with the basic block id |id|.
   // If the id |id| is unknown to the dominator tree, it returns null.
-  inline const DominatorTreeNode* operator[](uint32_t id) const {
+  inline const DominatorTreeNode* GetTreeNode(uint32_t id) const {
     DominatorTreeNodeMap::const_iterator node_iter = nodes_.find(id);
     if (node_iter == nodes_.end()) {
       return nullptr;

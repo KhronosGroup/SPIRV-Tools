@@ -235,8 +235,8 @@ bool DominatorTree::StrictlyDominates(const DominatorTreeNode* a,
 
 bool DominatorTree::Dominates(uint32_t a, uint32_t b) const {
   // Check that both of the inputs are actual nodes.
-  const DominatorTreeNode* a_node = (*this)[a];
-  const DominatorTreeNode* b_node = (*this)[b];
+  const DominatorTreeNode* a_node = GetTreeNode(a);
+  const DominatorTreeNode* b_node = GetTreeNode(b);
   if (!a_node || !b_node) return false;
 
   return Dominates(a_node, b_node);

@@ -45,14 +45,14 @@ BasicBlock* Loop::FindLoopPreheader(IRContext* ir_context,
                                     opt::DominatorAnalysis* dom_analysis) {
   CFG* cfg = ir_context->cfg();
   opt::DominatorTree& dom_tree = dom_analysis->GetDomTree();
-  opt::DominatorTreeNode* header_node = dom_tree[loop_header_];
+  opt::DominatorTreeNode* header_node = dom_tree.GetTreeNode(loop_header_);
 
   // The loop predecessor.
   BasicBlock* loop_pred = nullptr;
 
   auto header_pred = cfg->preds(loop_header_->id());
   for (uint32_t p_id : header_pred) {
-    opt::DominatorTreeNode* node = dom_tree[p_id];
+    opt::DominatorTreeNode* node = dom_tree.GetTreeNode(p_id);
     if (node && !dom_tree.Dominates(header_node, node)) {
       // The predecessor is not part of the loop, so potential loop preheader.
       if (loop_pred && node->bb_ != loop_pred) {
@@ -142,7 +142,7 @@ void LoopDescriptor::PopulateList(const Function* f) {
 
         current_loop->AddNestedLoop(previous_loop);
       }
-      opt::DominatorTreeNode* dom_merge_node = dom_tree[merge_bb];
+      opt::DominatorTreeNode* dom_merge_node = dom_tree.GetTreeNode(merge_bb);
       for (opt::DominatorTreeNode& loop_node :
            make_range(node.df_begin(), node.df_end())) {
         // Check if we are in the loop.
