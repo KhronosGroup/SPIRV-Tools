@@ -16,8 +16,8 @@
 
 #include <algorithm>
 #include <iostream>
+#include <set>
 #include <stack>
-#include <unordered_set>
 
 namespace spvtools {
 namespace opt {
@@ -43,7 +43,7 @@ std::vector<const ir::Instruction*> DecorationManager::GetDecorationsFor(
 bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
                                                uint32_t id2) const {
   using InstructionList = std::vector<const ir::Instruction*>;
-  using UniqueSortedList = std::vector<std::u32string>;
+  using UniqueSortedList = std::set<std::u32string>;
 
   const InstructionList decorationsFor1 = GetDecorationsFor(id1, false);
   const InstructionList decorationsFor2 = GetDecorationsFor(id2, false);
@@ -54,48 +54,31 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
       [](const InstructionList& decorationList, UniqueSortedList* decorateList,
          UniqueSortedList* decorateIdList,
          UniqueSortedList* memberDecorateList) {
-        std::unordered_set<std::u32string> decorateListTmp;
-        std::unordered_set<std::u32string> decorateIdListTmp;
-        std::unordered_set<std::u32string> memberDecorateListTmp;
-
         for (const ir::Instruction* inst : decorationList) {
-          std::vector<uint32_t> binaryInst;
-          inst->ToBinaryWithoutAttachedDebugInsts(&binaryInst);
-
-          // Remove the target as we do not want to have them being compared.
-          binaryInst.erase(binaryInst.begin() + 1);
+          std::u32string decorationPayload;
+          // Ignore the opcode and the target as we do not want them to be
+          // compared.
+          for (uint32_t i = 1u; i < inst->NumInOperands(); ++i) {
+            const auto& operand = inst->GetInOperand(i);
+            for (uint32_t word : operand.words) {
+              decorationPayload.push_back(word);
+            }
+          }
 
           switch (inst->opcode()) {
             case SpvOpDecorate:
-              decorateListTmp.emplace(
-                  reinterpret_cast<char32_t*>(binaryInst.data()),
-                  binaryInst.size());
+              decorateList->emplace(std::move(decorationPayload));
               break;
             case SpvOpMemberDecorate:
-              memberDecorateListTmp.emplace(
-                  reinterpret_cast<char32_t*>(binaryInst.data()),
-                  binaryInst.size());
+              memberDecorateList->emplace(std::move(decorationPayload));
               break;
             case SpvOpDecorateId:
-              decorateIdListTmp.emplace(
-                  reinterpret_cast<char32_t*>(binaryInst.data()),
-                  binaryInst.size());
+              decorateIdList->emplace(std::move(decorationPayload));
               break;
             default:
               break;
           }
         }
-        std::copy(decorateListTmp.begin(), decorateListTmp.end(),
-                  std::back_inserter(*decorateList));
-        std::sort(decorateList->begin(), decorateList->end());
-
-        std::copy(decorateIdListTmp.begin(), decorateIdListTmp.end(),
-                  std::back_inserter(*decorateIdList));
-        std::sort(decorateIdList->begin(), decorateIdList->end());
-
-        std::copy(memberDecorateListTmp.begin(), memberDecorateListTmp.end(),
-                  std::back_inserter(*memberDecorateList));
-        std::sort(memberDecorateList->begin(), memberDecorateList->end());
       };
 
   UniqueSortedList decorateInstructionsFor1;
