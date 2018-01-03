@@ -317,6 +317,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // and return to its caller
   bool IsReturn() const { return spvOpcodeIsReturn(opcode()); }
 
+  // Returns true if this instruction exits this function or aborts execution.
+  bool IsReturnOrAbort() const { return spvOpcodeIsReturnOrAbort(opcode()); }
+
   // Returns the id for the |element|'th subtype. If the |this| is not a
   // composite type, this function returns 0.
   uint32_t GetTypeComponent(uint32_t element) const;

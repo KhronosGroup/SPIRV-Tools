@@ -147,6 +147,9 @@ class BasicBlock {
   // caller.
   bool IsReturn() const { return ctail()->IsReturn(); }
 
+  // Returns true if this basic block exits this function or aborts execution.
+  bool IsReturnOrAbort() const { return ctail()->IsReturnOrAbort(); }
+
  private:
   // The enclosing function.
   Function* function_;
