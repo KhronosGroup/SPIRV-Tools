@@ -381,6 +381,40 @@ TEST_F(CCPTest, NoLoadStorePropagation) {
 
   SinglePassRunAndMatch<opt::CCPPass>(spv_asm, true);
 }
+
+TEST_F(CCPTest, HandleAbortInstructions) {
+  const std::string spv_asm = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource HLSL 500
+               OpName %main "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %bool = OpTypeBool
+; CHECK: %true = OpConstantTrue %bool
+      %int_3 = OpConstant %int 3
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %4 = OpLabel
+          %9 = OpIAdd %int %int_3 %int_1
+          %6 = OpSGreaterThan %bool %9 %int_3
+               OpSelectionMerge %23 None
+; CHECK: OpBranchConditional %true {{%\d+}} {{%\d+}}
+               OpBranchConditional %6 %22 %23
+         %22 = OpLabel
+               OpKill
+         %23 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::CCPPass>(spv_asm, true);
+}
+
 #endif
 
 }  // namespace

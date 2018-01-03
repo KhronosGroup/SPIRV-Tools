@@ -193,7 +193,7 @@ void SSAPropagator::Initialize(ir::Function* fn) {
       bb_succs_[&block].push_back(Edge(&block, succ_bb));
       bb_preds_[succ_bb].push_back(Edge(succ_bb, &block));
     });
-    if (block.IsReturn()) {
+    if (block.IsReturnOrAbort()) {
       bb_succs_[&block].push_back(
           Edge(&block, ctx_->cfg()->pseudo_exit_block()));
       bb_preds_[ctx_->cfg()->pseudo_exit_block()].push_back(
