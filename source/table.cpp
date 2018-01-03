@@ -59,7 +59,8 @@ void libspirv::SetContextMessageConsumer(spv_context context,
   context->consumer = std::move(consumer);
 }
 
-spv_context spvtools::CreateContext(spv_target_env env, spvtools::MessageConsumer consumer) {
+spv_context spvtools::CreateContext(spv_target_env env,
+                                    spvtools::MessageConsumer consumer) {
   spv_context context = spvContextCreate(env);
   libspirv::SetContextMessageConsumer(context, consumer);
   return context;
