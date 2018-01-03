@@ -42,37 +42,34 @@ std::vector<const ir::Instruction*> DecorationManager::GetDecorationsFor(
 bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
                                                uint32_t id2) const {
   using InstructionList = std::vector<const ir::Instruction*>;
-  using UniqueSortedList = std::set<std::u32string>;
+  using DecorationSet = std::set<std::u32string>;
 
   const InstructionList decorationsFor1 = GetDecorationsFor(id1, false);
   const InstructionList decorationsFor2 = GetDecorationsFor(id2, false);
 
-  // This function will sort and remove all duplicates for each of the three
-  // given lists.
-  const auto generateUniqueSortedLists =
-      [](const InstructionList& decorationList, UniqueSortedList* decorateList,
-         UniqueSortedList* decorateIdList,
-         UniqueSortedList* memberDecorateList) {
+  // This function splits the decoration instructions into different sets,
+  // based on their opcode; only OpDecorate, OpDecorateId and OpMemberDecorate
+  // are considered, the other opcodes are ignored.
+  const auto fillDecorationSets =
+      [](const InstructionList& decorationList, DecorationSet* decorateSet,
+         DecorationSet* decorateIdSet, DecorationSet* memberDecorateSet) {
         for (const ir::Instruction* inst : decorationList) {
           std::u32string decorationPayload;
           // Ignore the opcode and the target as we do not want them to be
           // compared.
-          for (uint32_t i = 1u; i < inst->NumInOperands(); ++i) {
-            const auto& operand = inst->GetInOperand(i);
-            for (uint32_t word : operand.words) {
+          for (uint32_t i = 1u; i < inst->NumInOperands(); ++i)
+            for (uint32_t word : inst->GetInOperand(i).words)
               decorationPayload.push_back(word);
-            }
-          }
 
           switch (inst->opcode()) {
             case SpvOpDecorate:
-              decorateList->emplace(std::move(decorationPayload));
+              decorateSet->emplace(std::move(decorationPayload));
               break;
             case SpvOpMemberDecorate:
-              memberDecorateList->emplace(std::move(decorationPayload));
+              memberDecorateSet->emplace(std::move(decorationPayload));
               break;
             case SpvOpDecorateId:
-              decorateIdList->emplace(std::move(decorationPayload));
+              decorateIdSet->emplace(std::move(decorationPayload));
               break;
             default:
               break;
@@ -80,23 +77,21 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
         }
       };
 
-  UniqueSortedList decorateInstructionsFor1;
-  UniqueSortedList decorateIdInstructionsFor1;
-  UniqueSortedList decorateMemberInstructionsFor1;
-  generateUniqueSortedLists(decorationsFor1, &decorateInstructionsFor1,
-                            &decorateIdInstructionsFor1,
-                            &decorateMemberInstructionsFor1);
+  DecorationSet decorateSetFor1;
+  DecorationSet decorateIdSetFor1;
+  DecorationSet memberDecorateSetFor1;
+  fillDecorationSets(decorationsFor1, &decorateSetFor1, &decorateIdSetFor1,
+                     &memberDecorateSetFor1);
 
-  UniqueSortedList decorateInstructionsFor2;
-  UniqueSortedList decorateIdInstructionsFor2;
-  UniqueSortedList decorateMemberInstructionsFor2;
-  generateUniqueSortedLists(decorationsFor2, &decorateInstructionsFor2,
-                            &decorateIdInstructionsFor2,
-                            &decorateMemberInstructionsFor2);
+  DecorationSet decorateSetFor2;
+  DecorationSet decorateIdSetFor2;
+  DecorationSet memberDecorateSetFor2;
+  fillDecorationSets(decorationsFor2, &decorateSetFor2, &decorateIdSetFor2,
+                     &memberDecorateSetFor2);
 
-  return decorateInstructionsFor1 == decorateInstructionsFor2 &&
-         decorateIdInstructionsFor1 == decorateIdInstructionsFor2 &&
-         decorateMemberInstructionsFor1 == decorateMemberInstructionsFor2;
+  return decorateSetFor1 == decorateSetFor2 &&
+         decorateIdSetFor1 == decorateIdSetFor2 &&
+         memberDecorateSetFor1 == memberDecorateSetFor2;
 }
 
 // TODO(pierremoreau): If OpDecorateId is referencing an OpConstant, one could
