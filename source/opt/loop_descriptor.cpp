@@ -70,9 +70,6 @@ BasicBlock* Loop::FindLoopPreheader(IRContext* ir_context,
   // So we have a unique basic block that can enter this loop.
   // If this loop is the unique successor of this block, then it is a loop
   // preheader.
-  //
-  // FIXME: if instead of having "ForEach*" functions, we had iterators, the
-  // standard library would be usable...
   bool is_preheader = true;
   uint32_t loop_header_id = loop_header_->id();
   loop_pred->ForEachSuccessorLabel(
@@ -117,10 +114,10 @@ void LoopDescriptor::PopulateList(const Function* f) {
       // The continue target of this loop.
       BasicBlock* continue_bb = context->cfg()->block(continue_bb_id);
 
-      // The basicblock containing the merge instruction.
+      // The basic block containing the merge instruction.
       BasicBlock* header_bb = context->get_instr_block(merge_inst);
 
-      // Add the loop the list of all the loops in the function.
+      // Add the loop to the list of all the loops in the function.
       loops_.emplace_back(MakeUnique<Loop>(context, dom_analysis, header_bb,
                                            continue_bb, merge_bb));
       Loop* current_loop = loops_.back().get();

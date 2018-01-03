@@ -177,6 +177,8 @@ class Loop {
   friend class LoopDescriptor;
 };
 
+// Loop descriptions class for a given function.
+// For a given function, the class builds loop nests information.
 class LoopDescriptor {
  public:
   // Iterator interface (depth first postorder traversal).

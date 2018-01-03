@@ -184,7 +184,7 @@ class PostOrderTreeDFIterator {
     if (current_) WalkToLeaf();
   }
 
-  // end() iterator.
+  // Constructor for the "end()" iterator.
   // |end_sentinel| is the value that acts as end value (can be null). The bool
   // parameters is to distinguish from the start() Ctor.
   inline PostOrderTreeDFIterator(NodePtr sentinel_node, bool)
