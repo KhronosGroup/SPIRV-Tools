@@ -129,6 +129,19 @@ class Loop {
 
   // Adds the Basic Block |bb| this loop and its parents.
   void AddBasicBlockToLoop(const BasicBlock* bb) {
+#ifndef NDEBUG
+    assert(bb->GetParent() && "The basic block does not belong to a function");
+    IRContext* context = bb->GetParent()->GetParent()->context();
+
+    opt::DominatorAnalysis* dom_analysis =
+        context->GetDominatorAnalysis(bb->GetParent(), *context->cfg());
+    assert(dom_analysis->Dominates(GetHeaderBlock(), bb));
+
+    opt::PostDominatorAnalysis* postdom_analysis =
+        context->GetPostDominatorAnalysis(bb->GetParent(), *context->cfg());
+    assert(postdom_analysis->Dominates(GetMergeBlock(), bb));
+#endif  // NDEBUG
+
     for (Loop* loop = this; loop != nullptr; loop = loop->parent_) {
       loop_basic_blocks_.insert(bb->id());
     }
