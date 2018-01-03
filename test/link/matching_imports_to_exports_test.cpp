@@ -233,7 +233,8 @@ OpDecorate %1 LinkageAttributes "foo" Export
                 "variable/function %1 and exported variable/function %4"));
 }
 
-TEST_F(MatchingImportsToExports, FuncParamAttrDifferButStillMatchExportToImport) {
+TEST_F(MatchingImportsToExports,
+       FuncParamAttrDifferButStillMatchExportToImport) {
   const std::string body1 = R"(
 OpCapability Kernel
 OpCapability Linkage

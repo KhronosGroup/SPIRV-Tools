@@ -117,9 +117,10 @@ int main(int argc, char** argv) {
     if (!ReadFile<uint32_t>(inFiles[i], "rb", &contents[i])) return 1;
   }
 
-  const spvtools::MessageConsumer consumer = [](spv_message_level_t level, const char*,
-                               const spv_position_t& position,
-                               const char* message) {
+  const spvtools::MessageConsumer consumer = [](spv_message_level_t level,
+                                                const char*,
+                                                const spv_position_t& position,
+                                                const char* message) {
     switch (level) {
       case SPV_MSG_FATAL:
       case SPV_MSG_INTERNAL_ERROR:
