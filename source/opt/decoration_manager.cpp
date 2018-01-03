@@ -112,12 +112,9 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
                             &decorateIdInstructionsFor2,
                             &decorateMemberInstructionsFor2);
 
-  if (decorateInstructionsFor1 != decorateInstructionsFor2) return false;
-  if (decorateIdInstructionsFor1 != decorateIdInstructionsFor2) return false;
-  if (decorateMemberInstructionsFor1 != decorateMemberInstructionsFor2)
-    return false;
-
-  return true;
+  return decorateInstructionsFor1 == decorateInstructionsFor2 &&
+         decorateIdInstructionsFor1 == decorateIdInstructionsFor2 &&
+         decorateMemberInstructionsFor1 == decorateMemberInstructionsFor2;
 }
 
 // TODO(pierremoreau): If OpDecorateId is referencing an OpConstant, one could
