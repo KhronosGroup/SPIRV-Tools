@@ -15,7 +15,6 @@
 #include "decoration_manager.h"
 
 #include <algorithm>
-#include <iostream>
 #include <set>
 #include <stack>
 
