@@ -36,13 +36,13 @@ Loop::Loop(IRContext* context, opt::DominatorAnalysis* dom_analysis,
       parent_(nullptr) {
   assert(context);
   assert(dom_analysis);
-  SetLoopPreheader(context, dom_analysis);
+  loop_preheader_ = FindLoopPreheader(context, dom_analysis);
   AddBasicBlockToLoop(header);
   AddBasicBlockToLoop(continue_target);
 }
 
-void Loop::SetLoopPreheader(IRContext* ir_context,
-                            opt::DominatorAnalysis* dom_analysis) {
+BasicBlock* Loop::FindLoopPreheader(IRContext* ir_context,
+                                    opt::DominatorAnalysis* dom_analysis) {
   CFG* cfg = ir_context->cfg();
   opt::DominatorTree& dom_tree = dom_analysis->GetDomTree();
   opt::DominatorTreeNode* header_node = dom_tree[loop_header_];
@@ -58,7 +58,7 @@ void Loop::SetLoopPreheader(IRContext* ir_context,
       if (loop_pred && node->bb_ != loop_pred) {
         // If we saw 2 distinct predecessors that are outside the loop, we don't
         // have a loop preheader.
-        return;
+        return nullptr;
       }
       loop_pred = node->bb_;
     }
@@ -79,7 +79,8 @@ void Loop::SetLoopPreheader(IRContext* ir_context,
       [&is_preheader, loop_header_id](const uint32_t id) {
         if (id != loop_header_id) is_preheader = false;
       });
-  if (is_preheader) loop_preheader_ = loop_pred;
+  if (is_preheader) return loop_pred;
+  return nullptr;
 }
 
 LoopDescriptor::LoopDescriptor(const Function* f) { PopulateList(f); }

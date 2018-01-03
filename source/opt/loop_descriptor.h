@@ -168,9 +168,9 @@ class Loop {
   // as a nested child loop.
   inline void SetParent(Loop* parent) { parent_ = parent; }
 
-  // Set the loop preheader if it exists.
-  void SetLoopPreheader(IRContext* context,
-                        opt::DominatorAnalysis* dom_analysis);
+  // Returns the loop preheader if it exists, returns nullptr otherwise.
+  BasicBlock* FindLoopPreheader(IRContext* context,
+                                opt::DominatorAnalysis* dom_analysis);
 
   // This is only to allow LoopDescriptor::dummy_top_loop_ to add top level
   // loops as child.
