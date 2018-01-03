@@ -32,7 +32,7 @@ namespace ir {
 class CFG;
 class LoopDescriptor;
 
-// A class to represent and manipulate a loop.
+// A class to represent and manipulate a loop in structured control flow.
 class Loop {
   // The type used to represent nested child loops.
   using ChildrenList = std::vector<Loop*>;
@@ -192,6 +192,7 @@ class Loop {
 
 // Loop descriptions class for a given function.
 // For a given function, the class builds loop nests information.
+// The analysis expects a structured control flow.
 class LoopDescriptor {
  public:
   // Iterator interface (depth first postorder traversal).
