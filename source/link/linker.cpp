@@ -682,7 +682,7 @@ static spv_result_t RemoveLinkageSpecificInstructions(
           case SpvOpMemberDecorate:
             if (decoration->GetSingleWordInOperand(1u) ==
                 SpvDecorationFuncParamAttr)
-              decoration->ToNop();
+              linked_context->KillInst(decoration);
             break;
           default:
             break;
@@ -715,24 +715,34 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   }
 
   // Remove import linkage attributes
-  for (auto& inst : linked_context->annotations())
-    if (inst.opcode() == SpvOpDecorate &&
-        inst.GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
-        inst.GetSingleWordOperand(3u) == SpvLinkageTypeImport)
-      inst.ToNop();
+  auto next = linked_context->annotation_begin();
+  for (auto inst = next; inst != linked_context->annotation_end();
+       inst = next) {
+    ++next;
+    if (inst->opcode() == SpvOpDecorate &&
+        inst->GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
+        inst->GetSingleWordOperand(3u) == SpvLinkageTypeImport) {
+      linked_context->KillInst(&*inst);
+    }
+  }
 
   // Remove export linkage attributes and Linkage capability if making an
   // executable
   if (create_executable) {
-    for (auto& inst : linked_context->annotations())
-      if (inst.opcode() == SpvOpDecorate &&
-          inst.GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
-          inst.GetSingleWordOperand(3u) == SpvLinkageTypeExport)
-        inst.ToNop();
+    next = linked_context->annotation_begin();
+    for (auto inst = next; inst != linked_context->annotation_end();
+         inst = next) {
+      ++next;
+      if (inst->opcode() == SpvOpDecorate &&
+          inst->GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
+          inst->GetSingleWordOperand(3u) == SpvLinkageTypeExport) {
+        linked_context->KillInst(&*inst);
+      }
+    }
 
     for (auto& inst : linked_context->capabilities())
       if (inst.GetSingleWordInOperand(0u) == SpvCapabilityLinkage) {
-        inst.ToNop();
+        linked_context->KillInst(&inst);
         // The RemoveDuplicatesPass did remove duplicated capabilities, so we
         // now there aren’t more SpvCapabilityLinkage further down.
         break;

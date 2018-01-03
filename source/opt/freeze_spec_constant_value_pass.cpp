@@ -20,31 +20,32 @@ namespace opt {
 
 Pass::Status FreezeSpecConstantValuePass::Process(ir::IRContext* irContext) {
   bool modified = false;
-  irContext->module()->ForEachInst([&modified](ir::Instruction* inst) {
-    switch (inst->opcode()) {
-      case SpvOp::SpvOpSpecConstant:
-        inst->SetOpcode(SpvOp::SpvOpConstant);
-        modified = true;
-        break;
-      case SpvOp::SpvOpSpecConstantTrue:
-        inst->SetOpcode(SpvOp::SpvOpConstantTrue);
-        modified = true;
-        break;
-      case SpvOp::SpvOpSpecConstantFalse:
-        inst->SetOpcode(SpvOp::SpvOpConstantFalse);
-        modified = true;
-        break;
-      case SpvOp::SpvOpDecorate:
-        if (inst->GetSingleWordInOperand(1) ==
-            SpvDecoration::SpvDecorationSpecId) {
-          inst->ToNop();
-          modified = true;
+  irContext->module()->ForEachInst(
+      [&modified, irContext](ir::Instruction* inst) {
+        switch (inst->opcode()) {
+          case SpvOp::SpvOpSpecConstant:
+            inst->SetOpcode(SpvOp::SpvOpConstant);
+            modified = true;
+            break;
+          case SpvOp::SpvOpSpecConstantTrue:
+            inst->SetOpcode(SpvOp::SpvOpConstantTrue);
+            modified = true;
+            break;
+          case SpvOp::SpvOpSpecConstantFalse:
+            inst->SetOpcode(SpvOp::SpvOpConstantFalse);
+            modified = true;
+            break;
+          case SpvOp::SpvOpDecorate:
+            if (inst->GetSingleWordInOperand(1) ==
+                SpvDecoration::SpvDecorationSpecId) {
+              irContext->KillInst(inst);
+              modified = true;
+            }
+            break;
+          default:
+            break;
         }
-        break;
-      default:
-        break;
-    }
-  });
+      });
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
