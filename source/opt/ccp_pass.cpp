@@ -238,7 +238,6 @@ bool CCPPass::PropagateConstants(ir::Function* fp) {
     return VisitInstruction(instr, dest_bb);
   };
 
-  InsertPhiInstructions(fp);
   propagator_ =
       std::unique_ptr<SSAPropagator>(new SSAPropagator(context(), visit_fn));
   if (propagator_->Run(fp)) {

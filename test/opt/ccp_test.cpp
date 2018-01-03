@@ -151,11 +151,10 @@ TEST_F(CCPTest, SimplifySwitches) {
                OpExecutionMode %main OriginUpperLeft
                OpSource GLSL 450
                OpName %main "main"
-               OpName %x "x"
                OpName %outparm "outparm"
                OpDecorate %outparm Location 0
        %void = OpTypeVoid
-          %3 = OpTypeFunction %void
+          %6 = OpTypeFunction %void
         %int = OpTypeInt 32 1
 %_ptr_Function_int = OpTypePointer Function %int
      %int_23 = OpConstant %int 23
@@ -165,33 +164,26 @@ TEST_F(CCPTest, SimplifySwitches) {
       %int_4 = OpConstant %int 4
 %_ptr_Output_int = OpTypePointer Output %int
     %outparm = OpVariable %_ptr_Output_int Output
-       %main = OpFunction %void None %3
-          %5 = OpLabel
-          %x = OpVariable %_ptr_Function_int Function
-               OpStore %x %int_23
-         %10 = OpLoad %int %x
-               OpSelectionMerge %14 None
-               OpSwitch %10 %14 10 %11 13 %12 23 %13
-         %11 = OpLabel
-               OpStore %x %int_42
-               OpBranch %14
-         %12 = OpLabel
-               OpStore %x %int_14
-               OpBranch %14
-         %13 = OpLabel
-               OpStore %x %int_15
-               OpBranch %14
-         %14 = OpLabel
-; CHECK: OpPhi %int %int_23 {{%\d+}} %int_42 {{%\d+}} %int_14 {{%\d+}} %int_15 {{%\d+}}
-; CHECK-NOT: OpLoad %int
-         %23 = OpLoad %int %x
+       %main = OpFunction %void None %6
+         %15 = OpLabel
+               OpSelectionMerge %17 None
+               OpSwitch %int_23 %17 10 %18 13 %19 23 %20
+         %18 = OpLabel
+               OpBranch %17
+         %19 = OpLabel
+               OpBranch %17
+         %20 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+         %24 = OpPhi %int %int_23 %15 %int_42 %18 %int_14 %19 %int_15 %20
+
+; The switch will always jump to label %20, which carries the value %int_15.
 ; CHECK: OpIAdd %int %int_15 %int_4
-         %24 = OpIAdd %int %23 %int_4
-; CHECK: OpStore %x %int_19
-               OpStore %x %24
-         %27 = OpLoad %int %x
+         %22 = OpIAdd %int %24 %int_4
+
+; Consequently, the return value will always be %int_19.
 ; CHECK: OpStore %outparm %int_19
-               OpStore %outparm %27
+               OpStore %outparm %22
                OpReturn
                OpFunctionEnd
                )";
@@ -208,11 +200,10 @@ TEST_F(CCPTest, SimplifySwitchesDefaultBranch) {
                OpExecutionMode %main OriginUpperLeft
                OpSource GLSL 450
                OpName %main "main"
-               OpName %x "x"
                OpName %outparm "outparm"
                OpDecorate %outparm Location 0
        %void = OpTypeVoid
-          %3 = OpTypeFunction %void
+          %6 = OpTypeFunction %void
         %int = OpTypeInt 32 1
 %_ptr_Function_int = OpTypePointer Function %int
      %int_42 = OpConstant %int 42
@@ -220,31 +211,28 @@ TEST_F(CCPTest, SimplifySwitchesDefaultBranch) {
       %int_1 = OpConstant %int 1
 %_ptr_Output_int = OpTypePointer Output %int
     %outparm = OpVariable %_ptr_Output_int Output
-       %main = OpFunction %void None %3
-          %5 = OpLabel
-          %x = OpVariable %_ptr_Function_int Function
-               OpStore %x %int_42
-         %10 = OpLoad %int %x
-         %15 = OpIAdd %int %10 %int_4
-               OpSelectionMerge %14 None
-               OpSwitch %15 %13 10 %11
-         %11 = OpLabel
-               OpStore %x %int_42
-               OpBranch %14
+       %main = OpFunction %void None %6
          %13 = OpLabel
-               OpStore %x %int_1
-               OpBranch %14
-         %14 = OpLabel
-; CHECK: OpPhi %int %int_42 {{%\d+}} %int_1 {{%\d+}}
-; CHECK-NOT: OpLoad %int
-         %23 = OpLoad %int %x
+         %15 = OpIAdd %int %int_42 %int_4
+               OpSelectionMerge %16 None
+
+; CHECK: OpSwitch %int_46 {{%\d+}} 10 {{%\d+}}
+               OpSwitch %15 %17 10 %18
+         %18 = OpLabel
+               OpBranch %16
+         %17 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+         %22 = OpPhi %int %int_42 %18 %int_1 %17
+
+; The switch will always jump to the default label %17.  This carries the value
+; %int_1.
 ; CHECK: OpIAdd %int %int_1 %int_4
-         %24 = OpIAdd %int %23 %int_4
-; CHECK: OpStore %x %int_5
-               OpStore %x %24
-         %27 = OpLoad %int %x
+         %20 = OpIAdd %int %22 %int_4
+
+; Resulting in a return value of %int_5.
 ; CHECK: OpStore %outparm %int_5
-               OpStore %outparm %27
+               OpStore %outparm %20
                OpReturn
                OpFunctionEnd
                )";
@@ -349,6 +337,44 @@ TEST_F(CCPTest, BadSimplifyFloatVector) {
                OpStore %21 %20
          %24 = OpLoad %v4float %v
                OpStore %OutColor %24
+               OpReturn
+               OpFunctionEnd
+               )";
+
+  SinglePassRunAndMatch<opt::CCPPass>(spv_asm, true);
+}
+
+TEST_F(CCPTest, NoLoadStorePropagation) {
+  const std::string spv_asm = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %outparm
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %x "x"
+               OpName %outparm "outparm"
+               OpDecorate %outparm Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+     %int_23 = OpConstant %int 23
+%_ptr_Output_int = OpTypePointer Output %int
+    %outparm = OpVariable %_ptr_Output_int Output
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %x = OpVariable %_ptr_Function_int Function
+               OpStore %x %int_23
+
+; int_23 should not propagate into this load.
+; CHECK: OpLoad %int %x
+         %12 = OpLoad %int %x
+
+; Likewise here.
+; CHECK: OpStore %outparm {{%\d+}}
+               OpStore %outparm %12
                OpReturn
                OpFunctionEnd
                )";
