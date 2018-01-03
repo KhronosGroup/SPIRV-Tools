@@ -31,6 +31,10 @@ using MessageConsumer = std::function<void(
     const spv_position_t& /* position */, const char* /* message */
     )>;
 
+// Create a context with the targeted environemnt |env| and set its message
+// consumer to |consumer|.
+spv_context CreateContext(spv_target_env env, MessageConsumer consumer);
+
 // A RAII wrapper around a validator options object.
 class ValidatorOptions {
  public:
