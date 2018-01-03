@@ -413,9 +413,13 @@ bool spvOpcodeIsReturn(SpvOp opcode) {
   }
 }
 
+bool spvOpcodeIsReturnOrAbort(SpvOp opcode) {
+  return spvOpcodeIsReturn(opcode) || opcode == SpvOpKill ||
+         opcode == SpvOpUnreachable;
+}
+
 bool spvOpcodeIsBlockTerminator(SpvOp opcode) {
-  return spvOpcodeIsBranch(opcode) || spvOpcodeIsReturn(opcode) ||
-         opcode == SpvOpKill || opcode == SpvOpUnreachable;
+  return spvOpcodeIsBranch(opcode) || spvOpcodeIsReturnOrAbort(opcode);
 }
 
 bool spvOpcodeIsBaseOpaqueType(SpvOp opcode) {

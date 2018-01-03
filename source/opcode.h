@@ -103,6 +103,10 @@ bool spvOpcodeIsBranch(SpvOp opcode);
 // Returns true if the given opcode is a return instruction.
 bool spvOpcodeIsReturn(SpvOp opcode);
 
+// Returns true if the given opcode is a return instruction or it aborts
+// execution.
+bool spvOpcodeIsReturnOrAbort(SpvOp opcode);
+
 // Returns true if the given opcode is a basic block terminator.
 bool spvOpcodeIsBlockTerminator(SpvOp opcode);
 
