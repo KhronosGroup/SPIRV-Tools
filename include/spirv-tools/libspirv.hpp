@@ -31,6 +31,39 @@ using MessageConsumer = std::function<void(
     const spv_position_t& /* position */, const char* /* message */
     )>;
 
+// C++ RAII wrapper around the C context object spv_context.
+class Context {
+ public:
+  // Constructs a context targeting the given environment |env|.
+  //
+  // The constructed instance will have an empty message consumer, which just
+  // ignores all messages from the library. Use SetMessageConsumer() to supply
+  // one if messages are of concern.
+  explicit Context(spv_target_env env);
+
+  // Enables move constructor/assignment operations.
+  Context(Context&& other);
+  Context& operator=(Context&& other);
+
+  // Disables copy constructor/assignment operations.
+  Context(const Context&) = delete;
+  Context& operator=(const Context&) = delete;
+
+  // Destructs this instance.
+  ~Context();
+
+  // Sets the message consumer to the given |consumer|. The |consumer| will be
+  // invoked once for each message communicated from the library.
+  void SetMessageConsumer(MessageConsumer consumer);
+
+  // Returns the underlying spv_context.
+  spv_context& CContext();
+  const spv_context& CContext() const;
+
+ private:
+  spv_context context_;
+};
+
 // A RAII wrapper around a validator options object.
 class ValidatorOptions {
  public:

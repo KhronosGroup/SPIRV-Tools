@@ -36,25 +36,25 @@ using ir::Operand;
 using opt::analysis::DecorationManager;
 using opt::analysis::DefUseManager;
 
-Pass::Status RemoveDuplicatesPass::Process(ir::IRContext* irContext) {
-  bool modified = RemoveDuplicateCapabilities(irContext);
-  modified |= RemoveDuplicatesExtInstImports(irContext);
-  modified |= RemoveDuplicateTypes(irContext);
-  modified |= RemoveDuplicateDecorations(irContext);
+Pass::Status RemoveDuplicatesPass::Process(ir::IRContext* ir_context) {
+  bool modified = RemoveDuplicateCapabilities(ir_context);
+  modified |= RemoveDuplicatesExtInstImports(ir_context);
+  modified |= RemoveDuplicateTypes(ir_context);
+  modified |= RemoveDuplicateDecorations(ir_context);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
-    ir::IRContext* irContext) const {
+    ir::IRContext* ir_context) const {
   bool modified = false;
 
-  if (irContext->capabilities().empty()) {
+  if (ir_context->capabilities().empty()) {
     return modified;
   }
 
   std::unordered_set<uint32_t> capabilities;
-  for (auto* i = &*irContext->capability_begin(); i;) {
+  for (auto* i = &*ir_context->capability_begin(); i;) {
     auto res = capabilities.insert(i->GetSingleWordOperand(0u));
 
     if (res.second) {
@@ -62,7 +62,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
       i = i->NextNode();
     } else {
       // It's a duplicate, remove it.
-      i = irContext->KillInst(i);
+      i = ir_context->KillInst(i);
       modified = true;
     }
   }
@@ -71,16 +71,16 @@ bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
-    ir::IRContext* irContext) const {
+    ir::IRContext* ir_context) const {
   bool modified = false;
 
-  if (irContext->ext_inst_imports().empty()) {
+  if (ir_context->ext_inst_imports().empty()) {
     return modified;
   }
 
-  std::unordered_map<std::string, SpvId> extInstImports;
-  for (auto* i = &*irContext->ext_inst_import_begin(); i;) {
-    auto res = extInstImports.emplace(
+  std::unordered_map<std::string, SpvId> ext_inst_imports;
+  for (auto* i = &*ir_context->ext_inst_import_begin(); i;) {
+    auto res = ext_inst_imports.emplace(
         reinterpret_cast<const char*>(i->GetInOperand(0u).words.data()),
         i->result_id());
     if (res.second) {
@@ -88,8 +88,8 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
       i = i->NextNode();
     } else {
       // It's a duplicate, remove it.
-      irContext->ReplaceAllUsesWith(i->result_id(), res.first->second);
-      i = irContext->KillInst(i);
+      ir_context->ReplaceAllUsesWith(i->result_id(), res.first->second);
+      i = ir_context->KillInst(i);
       modified = true;
     }
   }
@@ -98,16 +98,16 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateTypes(
-    ir::IRContext* irContext) const {
+    ir::IRContext* ir_context) const {
   bool modified = false;
 
-  if (irContext->types_values().empty()) {
+  if (ir_context->types_values().empty()) {
     return modified;
   }
 
-  std::vector<Instruction*> visitedTypes;
-  std::vector<Instruction*> toDelete;
-  for (auto* i = &*irContext->types_values_begin(); i; i = i->NextNode()) {
+  std::vector<Instruction*> visited_types;
+  std::vector<Instruction*> to_delete;
+  for (auto* i = &*ir_context->types_values_begin(); i; i = i->NextNode()) {
     // We only care about types.
     if (!spvOpcodeGeneratesType((i->opcode())) &&
         i->opcode() != SpvOpTypeForwardPointer) {
@@ -115,27 +115,29 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
     }
 
     // Is the current type equal to one of the types we have aready visited?
-    SpvId idToKeep = 0u;
-    for (auto j : visitedTypes) {
-      if (AreTypesEqual(*i, *j, irContext)) {
-        idToKeep = j->result_id();
+    SpvId id_to_keep = 0u;
+    // TODO(dneto0): Use a trie to avoid quadratic behaviour? Extract the
+    // ResultIdTrie from unify_const_pass.cpp for this.
+    for (auto j : visited_types) {
+      if (AreTypesEqual(*i, *j, ir_context)) {
+        id_to_keep = j->result_id();
         break;
       }
     }
 
-    if (idToKeep == 0u) {
+    if (id_to_keep == 0u) {
       // This is a never seen before type, keep it around.
-      visitedTypes.emplace_back(i);
+      visited_types.emplace_back(i);
     } else {
       // The same type has already been seen before, remove this one.
-      irContext->ReplaceAllUsesWith(i->result_id(), idToKeep);
+      ir_context->ReplaceAllUsesWith(i->result_id(), id_to_keep);
       modified = true;
-      toDelete.emplace_back(i);
+      to_delete.emplace_back(i);
     }
   }
 
-  for (auto i : toDelete) {
-    irContext->KillInst(i);
+  for (auto i : to_delete) {
+    ir_context->KillInst(i);
   }
 
   return modified;
@@ -151,31 +153,33 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
 //     OpGroupDecorate %2 %4
 // group %2 could be removed.
 bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
-    ir::IRContext* irContext) const {
+    ir::IRContext* ir_context) const {
   bool modified = false;
 
-  std::vector<const Instruction*> visitedDecorations;
+  std::vector<const Instruction*> visited_decorations;
 
-  opt::analysis::DecorationManager decorationManager(irContext->module());
-  for (auto* i = &*irContext->annotation_begin(); i;) {
+  opt::analysis::DecorationManager decoration_manager(ir_context->module());
+  for (auto* i = &*ir_context->annotation_begin(); i;) {
     // Is the current decoration equal to one of the decorations we have aready
     // visited?
-    bool alreadyVisited = false;
-    for (const Instruction* j : visitedDecorations) {
-      if (decorationManager.AreDecorationsTheSame(&*i, j, false)) {
-        alreadyVisited = true;
+    bool already_visited = false;
+    // TODO(dneto0): Use a trie to avoid quadratic behaviour? Extract the
+    // ResultIdTrie from unify_const_pass.cpp for this.
+    for (const Instruction* j : visited_decorations) {
+      if (decoration_manager.AreDecorationsTheSame(&*i, j, false)) {
+        already_visited = true;
         break;
       }
     }
 
-    if (!alreadyVisited) {
+    if (!already_visited) {
       // This is a never seen before decoration, keep it around.
-      visitedDecorations.emplace_back(&*i);
+      visited_decorations.emplace_back(&*i);
       i = i->NextNode();
     } else {
       // The same decoration has already been seen before, remove this one.
       modified = true;
-      i = irContext->KillInst(i);
+      i = ir_context->KillInst(i);
     }
   }
 

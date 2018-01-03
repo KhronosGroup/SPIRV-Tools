@@ -37,8 +37,8 @@
 
 namespace spvtools {
 
-using ir::Instruction;
 using ir::IRContext;
+using ir::Instruction;
 using ir::Module;
 using ir::Operand;
 using opt::PassManager;
@@ -89,12 +89,12 @@ static spv_result_t GenerateHeader(const MessageConsumer& consumer,
                                    uint32_t max_id_bound,
                                    ir::ModuleHeader* header);
 
-// Merge all the modules from |inModules| into a single module owned by
+// Merge all the modules from |in_modules| into a single module owned by
 // |linked_context|.
 //
 // |linked_context| should not be null.
 static spv_result_t MergeModules(const MessageConsumer& consumer,
-                                 const std::vector<Module*>& inModules,
+                                 const std::vector<Module*>& in_modules,
                                  const libspirv::AssemblyGrammar& grammar,
                                  IRContext* linked_context);
 
@@ -143,29 +143,10 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 static spv_result_t VerifyIds(const MessageConsumer& consumer,
                               ir::IRContext* linked_context);
 
-// Structs for holding the data members for SpvLinker.
-struct Linker::Impl {
-  explicit Impl(spv_target_env env) : context(spvContextCreate(env)) {
-    // The default consumer in spv_context_t is a null consumer, which provides
-    // equivalent functionality (from the user's perspective) as a real consumer
-    // does nothing.
-  }
-  ~Impl() { spvContextDestroy(context); }
-
-  spv_context context;  // C interface context object.
-};
-
-Linker::Linker(spv_target_env env) : impl_(new Impl(env)) {}
-
-Linker::~Linker() {}
-
-void Linker::SetMessageConsumer(MessageConsumer consumer) {
-  libspirv::SetContextMessageConsumer(impl_->context, std::move(consumer));
-}
-
-spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
-                          std::vector<uint32_t>& linked_binary,
-                          const LinkerOptions& options) const {
+spv_result_t Link(const Context& context,
+                  const std::vector<std::vector<uint32_t>>& binaries,
+                  std::vector<uint32_t>* linked_binary,
+                  const LinkerOptions& options) {
   std::vector<const uint32_t*> binary_ptrs;
   binary_ptrs.reserve(binaries.size());
   std::vector<size_t> binary_sizes;
@@ -176,24 +157,25 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     binary_sizes.push_back(binary.size());
   }
 
-  return Link(binary_ptrs.data(), binary_sizes.data(), binaries.size(),
+  return Link(context, binary_ptrs.data(), binary_sizes.data(), binaries.size(),
               linked_binary, options);
 }
 
-spv_result_t Linker::Link(const uint32_t* const* binaries,
-                          const size_t* binary_sizes, size_t num_binaries,
-                          std::vector<uint32_t>& linked_binary,
-                          const LinkerOptions& options) const {
+spv_result_t Link(const Context& context, const uint32_t* const* binaries,
+                  const size_t* binary_sizes, size_t num_binaries,
+                  std::vector<uint32_t>* linked_binary,
+                  const LinkerOptions& options) {
   spv_position_t position = {};
-  const MessageConsumer& consumer = impl_->context->consumer;
+  const spv_context& c_context = context.CContext();
+  const MessageConsumer& consumer = c_context->consumer;
 
-  linked_binary.clear();
+  linked_binary->clear();
   if (num_binaries == 0u)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_BINARY)
            << "No modules were given.";
 
-  std::vector<std::unique_ptr<IRContext>> contexts;
+  std::vector<std::unique_ptr<IRContext>> ir_contexts;
   std::vector<Module*> modules;
   modules.reserve(num_binaries);
   for (size_t i = 0u; i < num_binaries; ++i) {
@@ -205,14 +187,14 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
              << "Schema is non-zero for module " << i << ".";
     }
 
-    std::unique_ptr<IRContext> context = BuildModule(
-        impl_->context->target_env, consumer, binaries[i], binary_sizes[i]);
-    if (context == nullptr)
+    std::unique_ptr<IRContext> ir_context = BuildModule(
+        c_context->target_env, consumer, binaries[i], binary_sizes[i]);
+    if (ir_context == nullptr)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Failed to build a module out of " << contexts.size() << ".";
-    modules.push_back(context->module());
-    contexts.push_back(std::move(context));
+             << "Failed to build a module out of " << ir_contexts.size() << ".";
+    modules.push_back(ir_context->module());
+    ir_contexts.push_back(std::move(ir_context));
   }
 
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
@@ -225,11 +207,11 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   ir::ModuleHeader header;
   res = GenerateHeader(consumer, modules, max_id_bound, &header);
   if (res != SPV_SUCCESS) return res;
-  IRContext linked_context(impl_->context->target_env, consumer);
+  IRContext linked_context(c_context->target_env, consumer);
   linked_context.module()->SetHeader(header);
 
   // Phase 3: Merge all the binaries into a single one.
-  libspirv::AssemblyGrammar grammar(impl_->context);
+  libspirv::AssemblyGrammar grammar(c_context);
   res = MergeModules(consumer, modules, grammar, &linked_context);
   if (res != SPV_SUCCESS) return res;
 
@@ -275,7 +257,7 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
   // Phase 10: Output the module
-  linked_context.module()->ToBinary(&linked_binary, true);
+  linked_context.module()->ToBinary(linked_binary, true);
 
   return SPV_SUCCESS;
 }
@@ -582,11 +564,11 @@ static spv_result_t GetImportExportPairs(
     if (possible_exports.empty())
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "No export linkage was found for \"" << import.name << "\".";
+             << "Unresolved external reference to \"" << import.name << "\".";
     else if (possible_exports.size() > 1u)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Too many export linkages, " << possible_exports.size()
+             << "Too many external references, " << possible_exports.size()
              << ", were found for \"" << import.name << "\".";
 
     linkings_to_do->emplace_back(import, possible_exports.front());
@@ -610,7 +592,9 @@ static spv_result_t CheckImportExportCompatibility(
             context))
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Type mismatch between imported variable/function %"
+             << "Type mismatch on symbol \""
+             << linking_entry.imported_symbol.name
+             << "\" between imported variable/function %"
              << linking_entry.imported_symbol.id
              << " and exported variable/function %"
              << linking_entry.exported_symbol.id << ".";
@@ -622,27 +606,17 @@ static spv_result_t CheckImportExportCompatibility(
             linking_entry.imported_symbol.id, linking_entry.exported_symbol.id))
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Decorations mismatch between imported variable/function %"
+             << "Decorations mismatch on symbol \""
+             << linking_entry.imported_symbol.name
+             << "\" between imported variable/function %"
              << linking_entry.imported_symbol.id
              << " and exported variable/function %"
              << linking_entry.exported_symbol.id << ".";
     // TODO(pierremoreau): Decorations on function parameters should probably
     //                     match, except for FuncParamAttr if I understand the
-    //                     spec correctly, which makes the code more
-    //                     complicated.
-    //    for (uint32_t i = 0u; i <
-    //    linking_entry.imported_symbol.parameter_ids.size(); ++i)
-    //      if
-    //      (!decoration_manager.HaveTheSameDecorations(linking_entry.imported_symbol.parameter_ids[i],
-    //      linking_entry.exported_symbol.parameter_ids[i]))
-    //          return libspirv::DiagnosticStream(position,
-    //          impl_->context->consumer,
-    //                                            SPV_ERROR_INVALID_BINARY)
-    //                 << "Decorations mismatch between imported function %" <<
-    //                 linking_entry.imported_symbol.id << "'s"
-    //                 << " and exported function %" <<
-    //                 linking_entry.exported_symbol.id << "'s " << (i + 1u) <<
-    //                 "th parameter.";
+    //                     spec correctly.
+    // TODO(pierremoreau): Decorations on the function return type should
+    //                     match, except for FuncParamAttr.
   }
 
   return SPV_SUCCESS;
@@ -658,14 +632,15 @@ static spv_result_t RemoveLinkageSpecificInstructions(
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
            << "|decoration_manager| of RemoveLinkageSpecificInstructions "
-              "should "
-              "not "
-              "be empty.";
+              "should not be empty.";
   if (linked_context == nullptr)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
            << "|linked_module| of RemoveLinkageSpecificInstructions should not "
               "be empty.";
+
+  // TODO(pierremoreau): Remove FuncParamAttr decorations of imported
+  // functions' return type.
 
   // Remove FuncParamAttr decorations of imported functions' parameters.
   // From the SPIR-V specification, Sec. 2.13:

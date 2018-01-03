@@ -64,7 +64,7 @@ class BasicBlock {
 
   // The label starting this basic block.
   Instruction* GetLabelInst() { return label_.get(); }
-  const Instruction& GetLabelInst() const { return *label_; }
+  const Instruction* GetLabelInst() const { return label_.get(); }
 
   // Returns the merge instruction in this basic block, if it exists.
   // Otherwise return null.  May be used whenever tail() can be used.

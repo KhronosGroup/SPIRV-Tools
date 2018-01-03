@@ -37,7 +37,7 @@ Function* Function::Clone(IRContext* context) const {
   }
 
   clone->SetFunctionEnd(
-      std::unique_ptr<Instruction>(function_end().Clone(context)));
+      std::unique_ptr<Instruction>(EndInst()->Clone(context)));
   return clone;
 }
 

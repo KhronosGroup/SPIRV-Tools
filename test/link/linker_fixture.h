@@ -30,8 +30,8 @@ using Binaries = std::vector<Binary>;
 class LinkerTest : public ::testing::Test {
  public:
   LinkerTest()
-      : tools_(SPV_ENV_UNIVERSAL_1_2),
-        linker_(SPV_ENV_UNIVERSAL_1_2),
+      : context_(SPV_ENV_UNIVERSAL_1_2),
+        tools_(SPV_ENV_UNIVERSAL_1_2),
         assemble_options_(spvtools::SpirvTools::kDefaultAssembleOption),
         disassemble_options_(spvtools::SpirvTools::kDefaultDisassembleOption) {
     const auto consumer = [this](spv_message_level_t level, const char*,
@@ -56,8 +56,8 @@ class LinkerTest : public ::testing::Test {
       }
       error_message_ += ": " + std::to_string(position.index) + ": " + message;
     };
+    context_.SetMessageConsumer(consumer);
     tools_.SetMessageConsumer(consumer);
-    linker_.SetMessageConsumer(consumer);
   }
 
   virtual void TearDown() override { error_message_.clear(); }
@@ -76,7 +76,7 @@ class LinkerTest : public ::testing::Test {
       if (!tools_.Assemble(bodies[i], binaries.data() + i, assemble_options_))
         return SPV_ERROR_INVALID_TEXT;
 
-    return linker_.Link(binaries, *linked_binary, options);
+    return spvtools::Link(context_, binaries, linked_binary, options);
   }
 
   // Links the given SPIR-V binaries together; SPV_ERROR_INVALID_POINTER is
@@ -85,7 +85,7 @@ class LinkerTest : public ::testing::Test {
       const spvtest::Binaries& binaries, spvtest::Binary* linked_binary,
       spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
     if (!linked_binary) return SPV_ERROR_INVALID_POINTER;
-    return linker_.Link(binaries, *linked_binary, options);
+    return spvtools::Link(context_, binaries, linked_binary, options);
   }
 
   // Disassembles |binary| and outputs the result in |text|. If |text| is a
@@ -111,9 +111,9 @@ class LinkerTest : public ::testing::Test {
   std::string GetErrorMessage() const { return error_message_; }
 
  private:
+  spvtools::Context context_;
   spvtools::SpirvTools
       tools_;  // An instance for calling SPIRV-Tools functionalities.
-  spvtools::Linker linker_;
   uint32_t assemble_options_;
   uint32_t disassemble_options_;
   std::string error_message_;

@@ -64,8 +64,8 @@ class Function {
   inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
 
   // Returns the given function end instruction.
-  inline Instruction* function_end() { return end_inst_.get(); }
-  inline const Instruction& function_end() const { return *end_inst_; }
+  inline Instruction* EndInst() { return end_inst_.get(); }
+  inline const Instruction* EndInst() const { return end_inst_.get(); }
 
   // Returns function's id
   inline uint32_t result_id() const { return def_inst_->result_id(); }

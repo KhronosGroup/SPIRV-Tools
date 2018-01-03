@@ -38,7 +38,7 @@ OpFunctionEnd
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
+  EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
@@ -59,7 +59,7 @@ OpFunctionEnd
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
+  EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
@@ -80,7 +80,7 @@ OpFunctionEnd
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_ERROR_INTERNAL,
+  EXPECT_EQ(SPV_ERROR_INTERNAL,
             AssembleAndLink({body1, body2}, &linked_binary));
   EXPECT_THAT(GetErrorMessage(),
               HasSubstr("The entry point \"foo\", with execution model "
