@@ -70,8 +70,9 @@ class MemPass : public Pass {
   // Return true if all uses of |id| are only name or decorate ops.
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
 
-  // Kill all instructions in block |bp|.
-  void KillAllInsts(ir::BasicBlock* bp);
+  // Kill all instructions in block |bp|. Whether or not to kill the label is
+  // indicated by |killLabel|.
+  void KillAllInsts(ir::BasicBlock* bp, bool killLabel = true);
 
   // Return true if any instruction loads from |varId|
   bool HasLoads(uint32_t varId) const;

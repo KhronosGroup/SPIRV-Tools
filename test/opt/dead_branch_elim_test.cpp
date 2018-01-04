@@ -1334,7 +1334,7 @@ OpBranch %33
 OpStore %oc %19
 OpBranch %28
 %29 = OpLabel
-OpBranchConditional %false %27 %28
+OpBranch %27
 %28 = OpLabel
 %35 = OpLoad %v4float %oc
 OpStore %OutColor %35
@@ -1345,6 +1345,305 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
                                                  predefs + after, true, true);
 }
+
+#ifdef SPIRV_EFFCEE
+TEST_F(DeadBranchElimTest, LeaveContinueBackedge) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
+; CHECK: [[continue]] = OpLabel
+; CHECK-NEXT: OpBranchConditional {{%\w+}} {{%\w+}} [[merge]]
+; CHECK-NEXT: [[merge]] = OpLabel
+; CHECK-NEXT: OpReturn
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%void = OpTypeVoid
+%funcTy = OpTypeFunction %void
+%func = OpFunction %void None %funcTy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %3 %4 None
+OpBranch %4
+%4 = OpLabel
+; Be careful we don't remove the backedge to %2 despite never taking it.
+OpBranchConditional %false %2 %3
+%3 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+TEST_F(DeadBranchElimTest, LeaveContinueBackedgeExtraBlock) {
+  const std::string text = R"(
+; CHECK: OpBranch [[header:%\w+]]
+; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
+; CHECK-NEXT: OpBranch [[continue]]
+; CHECK-NEXT: [[continue]] = OpLabel
+; CHECK-NEXT: OpBranchConditional {{%\w+}} [[extra:%\w+]] [[merge]]
+; CHECK-NEXT: [[extra]] = OpLabel
+; CHECK-NEXT: OpBranch [[header]]
+; CHECK-NEXT: [[merge]] = OpLabel
+; CHECK-NEXT: OpReturn
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%void = OpTypeVoid
+%funcTy = OpTypeFunction %void
+%func = OpFunction %void None %funcTy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %3 %4 None
+OpBranch %4
+%4 = OpLabel
+; Be careful we don't remove the backedge to %2 despite never taking it.
+OpBranchConditional %false %5 %3
+; This block remains live despite being unreachable.
+%5 = OpLabel
+OpBranch %2
+%3 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, UnreachableLoopMergeAndContinueTargets) {
+  const std::string text = R"(
+; CHECK: [[undef:%\w+]] = OpUndef %bool
+; CHECK: [[entry:%\w+]] = OpLabel
+; CHECK-NEXT: OpBranch [[header:%\w+]]
+; CHECK: OpPhi %bool %false [[entry]] [[undef]] [[continue:%\w+]]
+; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]] None
+; CHECK-NEXT: OpBranch [[ret:%\w+]]
+; CHECK-NEXT: [[ret]] = OpLabel
+; CHECK-NEXT: OpReturn
+; CHECK: [[continue]] = OpLabel
+; CHECK-NEXT: OpBranch [[header]]
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: OpUnreachable
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%true = OpConstantTrue %bool
+%void = OpTypeVoid
+%funcTy = OpTypeFunction %void
+%func = OpFunction %void None %funcTy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+%phi = OpPhi %bool %false %1 %true %continue
+OpLoopMerge %merge %continue None
+OpBranch %3
+%3 = OpLabel
+OpReturn
+%continue = OpLabel
+OpBranch %2
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, EarlyReconvergence) {
+  const std::string text = R"(
+; CHECK-NOT: OpBranchConditional
+; CHECK: [[logical:%\w+]] = OpLogicalOr
+; CHECK-NOT: OpPhi
+; CHECK: OpLogicalAnd {{%\w+}} {{%\w+}} [[logical]]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%true = OpConstantTrue %bool
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+OpSelectionMerge %2 None
+OpBranchConditional %false %3 %4
+%3 = OpLabel
+%12 = OpLogicalNot %bool %true
+OpBranch %2
+%4 = OpLabel
+OpSelectionMerge %14 None
+OpBranchConditional %false %5 %6
+%5 = OpLabel
+%10 = OpLogicalAnd %bool %true %false
+OpBranch %7
+%6 = OpLabel
+%11 = OpLogicalOr %bool %true %false
+OpBranch %7
+%7 = OpLabel
+; This phi is in a block preceeding the merge %14!
+%8 = OpPhi %bool %10 %5 %11 %6
+OpBranch %14
+%14 = OpLabel
+OpBranch %2
+%2 = OpLabel
+%9 = OpPhi %bool %12 %3 %8 %7
+%13 = OpLogicalAnd %bool %true %9
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, RemoveUnreachableBlocksFloating) {
+  const std::string text = R"(
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: OpReturn
+; CHECK-NEXT: OpFunctionEnd
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%1 = OpTypeFunction %void
+%func = OpFunction %void None %1
+%2 = OpLabel
+OpReturn
+%3 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, RemoveUnreachableBlocksFloatingJoin) {
+  const std::string text = R"(
+; CHECK: OpFunction
+; CHECK-NEXT: OpFunctionParameter
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: OpReturn
+; CHECK-NEXT: OpFunctionEnd
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%true = OpConstantTrue %bool
+%1 = OpTypeFunction %void %bool
+%func = OpFunction %void None %1
+%bool_param = OpFunctionParameter %bool
+%2 = OpLabel
+OpReturn
+%3 = OpLabel
+OpSelectionMerge %6 None
+OpBranchConditional %bool_param %4 %5
+%4 = OpLabel
+OpBranch %6
+%5 = OpLabel
+OpBranch %6
+%6 = OpLabel
+%7 = OpPhi %bool %true %4 %false %6
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, RemoveUnreachableBlocksDeadPhi) {
+  const std::string text = R"(
+; CHECK: OpFunction
+; CHECK-NEXT: OpFunctionParameter
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: OpBranch [[label:%\w+]]
+; CHECK-NEXT: [[label]] = OpLabel
+; CHECK-NEXT: OpLogicalNot %bool %true
+; CHECK-NEXT: OpReturn
+; CHECK-NEXT: OpFunctionEnd
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%true = OpConstantTrue %bool
+%1 = OpTypeFunction %void %bool
+%func = OpFunction %void None %1
+%bool_param = OpFunctionParameter %bool
+%2 = OpLabel
+OpBranch %3
+%4 = OpLabel
+OpBranch %3
+%3 = OpLabel
+%5 = OpPhi %bool %true %2 %false %4
+%6 = OpLogicalNot %bool %5
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, RemoveUnreachableBlocksPartiallyDeadPhi) {
+  const std::string text = R"(
+; CHECK: OpFunction
+; CHECK-NEXT: [[param:%\w+]] = OpFunctionParameter
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: OpBranchConditional [[param]] [[merge:%\w+]] [[br:%\w+]]
+; CHECK-NEXT: [[br]] = OpLabel
+; CHECK-NEXT: OpBranch [[merge]]
+; CHECK-NEXT: [[merge]] = OpLabel
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi %bool %true %2 %false [[br]]
+; CHECK-NEXT: OpLogicalNot %bool [[phi]]
+; CHECK-NEXT: OpReturn
+; CHECK-NEXT: OpFunctionEnd
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%true = OpConstantTrue %bool
+%1 = OpTypeFunction %void %bool
+%func = OpFunction %void None %1
+%bool_param = OpFunctionParameter %bool
+%2 = OpLabel
+OpBranchConditional %bool_param %3 %7
+%7 = OpLabel
+OpBranch %3
+%4 = OpLabel
+OpBranch %3
+%3 = OpLabel
+%5 = OpPhi %bool %true %2 %false %7 %false %4
+%6 = OpLogicalNot %bool %5
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+#endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //

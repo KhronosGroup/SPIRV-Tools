@@ -138,8 +138,12 @@ bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
   return hasOnlyNamesAndDecorates;
 }
 
-void MemPass::KillAllInsts(ir::BasicBlock* bp) {
-  bp->ForEachInst([this](ir::Instruction* ip) { context()->KillInst(ip); });
+void MemPass::KillAllInsts(ir::BasicBlock* bp, bool killLabel) {
+  bp->ForEachInst([this, killLabel](ir::Instruction* ip) {
+    if (killLabel || ip->opcode() != SpvOpLabel) {
+      context()->KillInst(ip);
+    }
+  });
 }
 
 bool MemPass::HasLoads(uint32_t varId) const {

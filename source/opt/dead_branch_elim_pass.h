@@ -37,9 +37,6 @@ class DeadBranchElimPass : public MemPass {
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
-  using GetBlocksFunction =
-      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
-
   DeadBranchElimPass();
   const char* name() const override { return "eliminate-dead-branches"; }
   Status Process(ir::IRContext* context) override;
@@ -60,32 +57,12 @@ class DeadBranchElimPass : public MemPass {
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
-  // Add selction merge of |labelId| to end of block |bp|.
-  void AddSelectionMerge(uint32_t labelId, ir::BasicBlock* bp);
-
-  // Add conditional branch of |condId|, |trueLabId| and |falseLabId| to end
-  // of block |bp|.
-  void AddBranchConditional(uint32_t condId, uint32_t trueLabId,
-                            uint32_t falseLabId, ir::BasicBlock* bp);
-
-  // If block |bp| contains conditional branch or switch preceeded by an
-  // OpSelctionMerge, return true and return branch and merge instructions
-  // in |branchInst| and |mergeInst| and the conditional id in |condId|.
-  bool GetSelectionBranch(ir::BasicBlock* bp, ir::Instruction** branchInst,
-                          ir::Instruction** mergeInst, uint32_t* condId);
-
-  // Return true if |labelId| has any non-phi, non-backedge references
-  bool HasNonPhiNonBackedgeRef(uint32_t labelId);
-
-  // Compute backedges for blocks in |structuredOrder|.
-  void ComputeBackEdges(std::list<ir::BasicBlock*>& structuredOrder);
-
   // For function |func|, look for BranchConditionals with constant condition
   // and convert to a Branch to the indicated label. Delete resulting dead
-  // blocks. Assumes only structured control flow in shader. Note some such
-  // branches and blocks may be left to avoid creating invalid control flow.
-  // TODO(greg-lunarg): Remove remaining constant conditional branches and
-  // dead blocks.
+  // blocks. Note some such branches and blocks may be left to avoid creating
+  // invalid control flow.
+  // TODO(greg-lunarg): Remove remaining constant conditional branches and dead
+  // blocks.
   bool EliminateDeadBranches(ir::Function* func);
 
   // Initialize extensions whitelist
@@ -96,9 +73,6 @@ class DeadBranchElimPass : public MemPass {
 
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
-
-  // All backedge branches in current function
-  std::unordered_set<ir::Instruction*> backedges_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
