@@ -579,7 +579,7 @@ TEST_F(OpaqueTypeTest, OpaqueStructTypes) {
   }
 }
 
-TEST_F(GetBaseTest, SampledImageLoad) {
+TEST_F(GetBaseTest, SampleImage) {
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -621,7 +621,7 @@ TEST_F(GetBaseTest, SampledImageLoad) {
   EXPECT_TRUE(load->GetBaseAddress() == base);
 }
 
-TEST_F(GetBaseTest, ImageLoad) {
+TEST_F(GetBaseTest, ImageRead) {
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
