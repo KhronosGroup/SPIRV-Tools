@@ -16,6 +16,7 @@
 #define SPIRV_TOOLS_OPTIMIZER_HPP_
 
 #include <memory>
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -112,6 +113,11 @@ class Optimizer {
   // optimizer's pass manager. These strings are valid until the associated
   // pass manager is destroyed.
   std::vector<const char*> GetPassNames() const;
+
+  // Sets the option to print the disassembly before each pass and after the
+  // last pass.  If |out| is null, then no output is generated.  Otherwise,
+  // output is sent to the |out| output stream.
+  Optimizer& SetPrintAll(std::ostream* out);
 
  private:
   struct Impl;                  // Opaque struct for holding internal data.
