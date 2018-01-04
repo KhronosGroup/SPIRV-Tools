@@ -30,8 +30,10 @@ namespace opt {
 
 // Represents a CFG control edge.
 struct Edge {
-  explicit Edge(ir::BasicBlock* b1, ir::BasicBlock* b2)
-      : source(b1), dest(b2) {}
+  Edge(ir::BasicBlock* b1, ir::BasicBlock* b2) : source(b1), dest(b2) {
+    assert(source && "CFG edges cannot have a null source block.");
+    assert(dest && "CFG edges cannot have a null destination block.");
+  }
   ir::BasicBlock* source;
   ir::BasicBlock* dest;
   bool operator<(const Edge& o) const {

@@ -381,7 +381,12 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
       if (IsLive(&*ii)) continue;
-      if (ii->IsBranch() &&
+      // TODO(greg-lunarg
+      // https://github.com/KhronosGroup/SPIRV-Tools/issues/1021) This should be
+      // using ii->IsBranch(), but this code does not handle OpSwitch
+      // instructions yet.
+      if ((ii->opcode() == SpvOpBranch ||
+           ii->opcode() == SpvOpBranchConditional) &&
           !IsStructuredIfOrLoopHeader(*bi, nullptr, nullptr, nullptr))
         continue;
       dead_insts_.insert(&*ii);
