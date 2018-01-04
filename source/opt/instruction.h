@@ -363,6 +363,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // logical addressing rules when using logical addressing.  Normal validation
   // rules for physical addressing.
   bool IsValidBasePointer() const;
+  bool IsValidBaseImage() const;
 
   IRContext* context_;  // IR Context
   SpvOp opcode_;        // Opcode
