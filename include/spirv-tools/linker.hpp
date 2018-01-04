@@ -69,11 +69,11 @@ class LinkerOptions {
 // * Some entry points were defined multiple times;
 // * Some imported symbols did not have an exported counterpart;
 // * Possibly other reasons.
-spv_result_t Link(const spv_context& context,
+spv_result_t Link(const Context& context,
                   const std::vector<std::vector<uint32_t>>& binaries,
                   std::vector<uint32_t>* linked_binary,
                   const LinkerOptions& options = LinkerOptions());
-spv_result_t Link(const spv_context& context, const uint32_t* const* binaries,
+spv_result_t Link(const Context& context, const uint32_t* const* binaries,
                   const size_t* binary_sizes, size_t num_binaries,
                   std::vector<uint32_t>* linked_binary,
                   const LinkerOptions& options = LinkerOptions());

@@ -30,7 +30,7 @@ using Binaries = std::vector<Binary>;
 class LinkerTest : public ::testing::Test {
  public:
   LinkerTest()
-      : context_(spvContextCreate(SPV_ENV_UNIVERSAL_1_2)),
+      : context_(SPV_ENV_UNIVERSAL_1_2),
         tools_(SPV_ENV_UNIVERSAL_1_2),
         assemble_options_(spvtools::SpirvTools::kDefaultAssembleOption),
         disassemble_options_(spvtools::SpirvTools::kDefaultDisassembleOption) {
@@ -56,11 +56,9 @@ class LinkerTest : public ::testing::Test {
       }
       error_message_ += ": " + std::to_string(position.index) + ": " + message;
     };
-    libspirv::SetContextMessageConsumer(context_, std::move(consumer));
+    context_.SetMessageConsumer(consumer);
     tools_.SetMessageConsumer(consumer);
   }
-
-  ~LinkerTest() { spvContextDestroy(context_); }
 
   virtual void TearDown() override { error_message_.clear(); }
 
@@ -113,7 +111,7 @@ class LinkerTest : public ::testing::Test {
   std::string GetErrorMessage() const { return error_message_; }
 
  private:
-  spv_context context_;
+  spvtools::Context context_;
   spvtools::SpirvTools
       tools_;  // An instance for calling SPIRV-Tools functionalities.
   uint32_t assemble_options_;

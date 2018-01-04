@@ -139,17 +139,15 @@ int main(int argc, char** argv) {
         break;
     }
   };
-  spv_context context = spvtools::CreateContext(target_env, consumer);
+  spvtools::Context context(target_env);
+  context.SetMessageConsumer(consumer);
 
   std::vector<uint32_t> linkingResult;
   spv_result_t status = Link(context, contents, &linkingResult, options);
 
   if (!WriteFile<uint32_t>(outFile, "wb", linkingResult.data(),
-                           linkingResult.size())) {
-    spvContextDestroy(context);
+                           linkingResult.size()))
     return 1;
-  }
-  spvContextDestroy(context);
 
   return status == SPV_SUCCESS ? 0 : 1;
 }

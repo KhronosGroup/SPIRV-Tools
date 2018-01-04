@@ -143,7 +143,7 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 static spv_result_t VerifyIds(const MessageConsumer& consumer,
                               ir::IRContext* linked_context);
 
-spv_result_t Link(const spv_context& context,
+spv_result_t Link(const Context& context,
                   const std::vector<std::vector<uint32_t>>& binaries,
                   std::vector<uint32_t>* linked_binary,
                   const LinkerOptions& options) {
@@ -161,14 +161,13 @@ spv_result_t Link(const spv_context& context,
               linked_binary, options);
 }
 
-spv_result_t Link(const spv_context& context, const uint32_t* const* binaries,
+spv_result_t Link(const Context& context, const uint32_t* const* binaries,
                   const size_t* binary_sizes, size_t num_binaries,
                   std::vector<uint32_t>* linked_binary,
                   const LinkerOptions& options) {
-  if (context == nullptr) return SPV_ERROR_INVALID_POINTER;
-
   spv_position_t position = {};
-  const MessageConsumer& consumer = context->consumer;
+  const spv_context& c_context = context.CContext();
+  const MessageConsumer& consumer = c_context->consumer;
 
   linked_binary->clear();
   if (num_binaries == 0u)
@@ -189,7 +188,7 @@ spv_result_t Link(const spv_context& context, const uint32_t* const* binaries,
     }
 
     std::unique_ptr<IRContext> ir_context = BuildModule(
-        context->target_env, consumer, binaries[i], binary_sizes[i]);
+        c_context->target_env, consumer, binaries[i], binary_sizes[i]);
     if (ir_context == nullptr)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
@@ -208,11 +207,11 @@ spv_result_t Link(const spv_context& context, const uint32_t* const* binaries,
   ir::ModuleHeader header;
   res = GenerateHeader(consumer, modules, max_id_bound, &header);
   if (res != SPV_SUCCESS) return res;
-  IRContext linked_context(context->target_env, consumer);
+  IRContext linked_context(c_context->target_env, consumer);
   linked_context.module()->SetHeader(header);
 
   // Phase 3: Merge all the binaries into a single one.
-  libspirv::AssemblyGrammar grammar(context);
+  libspirv::AssemblyGrammar grammar(c_context);
   res = MergeModules(consumer, modules, grammar, &linked_context);
   if (res != SPV_SUCCESS) return res;
 
