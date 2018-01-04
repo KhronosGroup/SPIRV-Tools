@@ -13,18 +13,41 @@
 // limitations under the License.
 
 #include "pass_manager.h"
+
+#include <iostream>
+#include <vector>
+
 #include "ir_context.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
+
 namespace opt {
 
 Pass::Status PassManager::Run(ir::IRContext* context) {
   auto status = Pass::Status::SuccessWithoutChange;
+
+  // If print_all_stream_ is not null, prints the disassembly of the module
+  // to that stream, with the given preamble and optionally the pass name.
+  auto print_disassembly = [&context, this](const char* preamble, Pass* pass) {
+    if (print_all_stream_) {
+      std::vector<uint32_t> binary;
+      context->module()->ToBinary(&binary, false);
+      SpirvTools t(SPV_ENV_UNIVERSAL_1_2);
+      std::string disassembly;
+      t.Disassemble(binary, &disassembly, 0);
+      *print_all_stream_ << preamble << (pass ? pass->name() : "") << "\n"
+                         << disassembly << std::endl;
+    }
+  };
+
   for (const auto& pass : passes_) {
+    print_disassembly("; IR before pass ", pass.get());
     const auto one_status = pass->Run(context);
     if (one_status == Pass::Status::Failure) return one_status;
     if (one_status == Pass::Status::SuccessWithChange) status = one_status;
   }
+  print_disassembly("; IR after last pass", nullptr);
 
   // Set the Id bound in the header in case a pass forgot to do so.
   //

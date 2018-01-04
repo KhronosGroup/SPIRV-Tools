@@ -179,6 +179,11 @@ bool Optimizer::Run(const uint32_t* original_binary,
   return status != opt::Pass::Status::Failure;
 }
 
+Optimizer& Optimizer::SetPrintAll(std::ostream* out) {
+  impl_->pass_manager.SetPrintAll(out);
+  return *this;
+}
+
 Optimizer::PassToken CreateNullPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::NullPass>());
 }
