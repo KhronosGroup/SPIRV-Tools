@@ -37,9 +37,6 @@ class DeadBranchElimPass : public MemPass {
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
-  using GetBlocksFunction =
-      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
-
   DeadBranchElimPass();
   const char* name() const override { return "eliminate-dead-branches"; }
   Status Process(ir::IRContext* context) override;
@@ -60,33 +57,76 @@ class DeadBranchElimPass : public MemPass {
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
-  // Add selction merge of |labelId| to end of block |bp|.
-  void AddSelectionMerge(uint32_t labelId, ir::BasicBlock* bp);
-
-  // Add conditional branch of |condId|, |trueLabId| and |falseLabId| to end
-  // of block |bp|.
-  void AddBranchConditional(uint32_t condId, uint32_t trueLabId,
-                            uint32_t falseLabId, ir::BasicBlock* bp);
-
-  // If block |bp| contains conditional branch or switch preceeded by an
-  // OpSelctionMerge, return true and return branch and merge instructions
-  // in |branchInst| and |mergeInst| and the conditional id in |condId|.
-  bool GetSelectionBranch(ir::BasicBlock* bp, ir::Instruction** branchInst,
-                          ir::Instruction** mergeInst, uint32_t* condId);
-
-  // Return true if |labelId| has any non-phi, non-backedge references
-  bool HasNonPhiNonBackedgeRef(uint32_t labelId);
-
-  // Compute backedges for blocks in |structuredOrder|.
-  void ComputeBackEdges(std::list<ir::BasicBlock*>& structuredOrder);
-
   // For function |func|, look for BranchConditionals with constant condition
   // and convert to a Branch to the indicated label. Delete resulting dead
-  // blocks. Assumes only structured control flow in shader. Note some such
-  // branches and blocks may be left to avoid creating invalid control flow.
-  // TODO(greg-lunarg): Remove remaining constant conditional branches and
-  // dead blocks.
+  // blocks. Note some such branches and blocks may be left to avoid creating
+  // invalid control flow.
+  // TODO(greg-lunarg): Remove remaining constant conditional branches and dead
+  // blocks.
   bool EliminateDeadBranches(ir::Function* func);
+
+  // Returns the basic block containing |id|.
+  // Note: this pass only requires correct instruction block mappings for the
+  // input. This pass does not preserve the block mapping, so it is not kept
+  // up-to-date during processing.
+  ir::BasicBlock* GetParentBlock(uint32_t id);
+
+  // Marks live blocks reachable from the entry of |func|. Simplifies constant
+  // branches and switches as it proceeds, to limit the number of live blocks.
+  // It is careful not to eliminate backedges even if they are dead, but the
+  // header is live. Likewise, unreachable merge blocks named in live merge
+  // instruction must be retained (though they may be clobbered).
+  bool MarkLiveBlocks(ir::Function* func,
+                      std::unordered_set<ir::BasicBlock*>* live_blocks);
+
+  // Checks for unreachable merge and continue blocks with live headers; those
+  // blocks must be retained. Continues are tracked separately so that a live
+  // phi can be updated to take an undef value from any of its predecessors
+  // that are unreachable continues.
+  //
+  // |unreachable_continues| maps the id of an unreachable continue target to
+  // the header block that declares it.
+  void MarkUnreachableStructuredTargets(
+      const std::unordered_set<ir::BasicBlock*>& live_blocks,
+      std::unordered_set<ir::BasicBlock*>* unreachable_merges,
+      std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>*
+          unreachable_continues);
+
+  // Fix phis in reachable blocks so that only live (or unremovable) incoming
+  // edges are present. If the block now only has a single live incoming edge,
+  // remove the phi and replace its uses with its data input. If the single
+  // remaining incoming edge is from the phi itself, the the phi is in an
+  // unreachable single block loop. Either the block is dead and will be
+  // removed, or it's reachable from an unreachable continue target. In the
+  // latter case that continue target block will be collapsed into a block that
+  // only branches back to its header and we'll eliminate the block with the
+  // phi.
+  //
+  // |unreachable_continues| maps continue targets that cannot be reached to
+  // merge instruction that declares them.
+  bool FixPhiNodesInLiveBlocks(
+      ir::Function* func,
+      const std::unordered_set<ir::BasicBlock*>& live_blocks,
+      const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
+          unreachable_continues);
+
+  // Erases dead blocks. Any block captured in |unreachable_merges| or
+  // |unreachable_continues| is a dead block that is required to remain due to
+  // a live merge instruction in the corresponding header. These blocks will
+  // have their instructions clobbered and will become a label and terminator.
+  // Unreachable merge blocks are terminated by OpUnreachable, while
+  // unreachable continue blocks are terminated by an unconditional branch to
+  // the header. Otherwise, blocks are dead if not explicitly captured in
+  // |live_blocks| and are totally removed.
+  //
+  // |unreachable_continues| maps continue targets that cannot be reached to
+  // corresponding header block that declares them.
+  bool EraseDeadBlocks(
+      ir::Function* func,
+      const std::unordered_set<ir::BasicBlock*>& live_blocks,
+      const std::unordered_set<ir::BasicBlock*>& unreachable_merges,
+      const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
+          unreachable_continues);
 
   // Initialize extensions whitelist
   void InitExtensions();
@@ -96,9 +136,6 @@ class DeadBranchElimPass : public MemPass {
 
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
-
-  // All backedge branches in current function
-  std::unordered_set<ir::Instruction*> backedges_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;

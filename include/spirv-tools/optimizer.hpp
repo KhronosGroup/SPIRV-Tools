@@ -295,9 +295,8 @@ Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 // For all phi functions in merge block, replace all uses with the id
 // corresponding to the living predecessor.
 //
-// This pass only works on shaders (guaranteed to have structured control
-// flow). Note that some such branches and blocks may be left to avoid
-// creating invalid control flow. Improving this is left to future work.
+// Note that some branches and blocks may be left to avoid creating invalid
+// control flow. Improving this is left to future work.
 //
 // This pass is most effective when preceeded by passes which eliminate
 // local loads and stores, effectively propagating constant values where
