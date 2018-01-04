@@ -182,8 +182,21 @@ Instruction* Instruction::GetBaseAddress() const {
     }
   }
 
-  assert(base_inst->IsValidBasePointer() &&
-         "We cannot have a base pointer come from this load");
+  switch (opcode()) {
+    case SpvOpLoad:
+    case SpvOpStore:
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpCopyObject:
+      // A load or store through a pointer.
+      assert(base_inst->IsValidBasePointer() &&
+             "We cannot have a base pointer come from this load");
+      break;
+    default:
+      // A load or store of an image.
+      assert(base_inst->IsValidBaseImage() && "We are expecting an image.");
+      break;
+  }
   return base_inst;
 }
 
@@ -423,6 +436,17 @@ bool Instruction::IsValidBasePointer() const {
     return true;
   }
   return false;
+}
+
+bool Instruction::IsValidBaseImage() const {
+  uint32_t tid = type_id();
+  if (tid == 0) {
+    return false;
+  }
+
+  ir::Instruction* type = context()->get_def_use_mgr()->GetDef(tid);
+  return (type->opcode() == SpvOpTypeImage ||
+          type->opcode() == SpvOpTypeSampledImage);
 }
 
 bool Instruction::IsOpaqueType() const {

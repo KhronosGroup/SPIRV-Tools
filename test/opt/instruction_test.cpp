@@ -32,6 +32,7 @@ using spvtest::MakeInstruction;
 using ::testing::Eq;
 using DescriptorTypeTest = PassTest<::testing::Test>;
 using OpaqueTypeTest = PassTest<::testing::Test>;
+using GetBaseTest = PassTest<::testing::Test>;
 
 TEST(InstructionTest, CreateTrivial) {
   Instruction empty;
@@ -576,5 +577,82 @@ TEST_F(OpaqueTypeTest, OpaqueStructTypes) {
     Instruction* type = context->get_def_use_mgr()->GetDef(i);
     EXPECT_TRUE(type->IsOpaqueType());
   }
+}
+
+TEST_F(GetBaseTest, SampleImage) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "myStorageImage"
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypeVector %6 4
+          %9 = OpConstant %6 0
+         %10 = OpConstantComposite %7 %9 %9
+         %11 = OpTypeImage %6 2D 0 0 0 1 R32f
+         %12 = OpTypePointer UniformConstant %11
+          %3 = OpVariable %12 UniformConstant
+         %13 = OpTypeSampledImage %11
+         %14 = OpTypeSampler
+         %15 = OpTypePointer UniformConstant %14
+         %16 = OpVariable %15 UniformConstant
+          %2 = OpFunction %4 None %5
+         %17 = OpLabel
+         %18 = OpLoad %11 %3
+         %19 = OpLoad %14 %16
+         %20 = OpSampledImage %13 %18 %19
+         %21 = OpImageSampleImplicitLod %8 %20 %10
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* load = context->get_def_use_mgr()->GetDef(21);
+  Instruction* base = context->get_def_use_mgr()->GetDef(20);
+  EXPECT_TRUE(load->GetBaseAddress() == base);
+}
+
+TEST_F(GetBaseTest, ImageRead) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "myStorageImage"
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeInt 32 0
+          %7 = OpTypeVector %6 2
+          %8 = OpConstant %6 0
+          %9 = OpConstantComposite %7 %8 %8
+         %10 = OpTypeImage %6 2D 0 0 0 2 R32f
+         %11 = OpTypePointer UniformConstant %10
+          %3 = OpVariable %11 UniformConstant
+          %2 = OpFunction %4 None %5
+         %12 = OpLabel
+         %13 = OpLoad %10 %3
+         %14 = OpImageRead %6 %13 %9
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* load = context->get_def_use_mgr()->GetDef(14);
+  Instruction* base = context->get_def_use_mgr()->GetDef(13);
+  EXPECT_TRUE(load->GetBaseAddress() == base);
 }
 }  // anonymous namespace
