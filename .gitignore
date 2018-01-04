@@ -8,6 +8,7 @@ compile_commands.json
 /external/re2
 /TAGS
 /.clang_complete
+/utils/clang-format-diff.py
 
 # Vim
 [._]*.s[a-w][a-z]

@@ -59,24 +59,28 @@ limitations under the License."""
 LICENSED_LEN = 10 # Number of lines in LICENSED
 
 
-def find(top, filename_glob, skip_glob_list):
+def find(top, filename_glob, skip_glob_dir_list, skip_glob_files_list):
     """Returns files in the tree rooted at top matching filename_glob but not
-    in directories matching skip_glob_list."""
+    in directories matching skip_glob_dir_list nor files matching
+    skip_glob_dir_list."""
 
     file_list = []
     for path, dirs, files in os.walk(top):
-        for glob in skip_glob_list:
+        for glob in skip_glob_dir_list:
             for match in fnmatch.filter(dirs, glob):
                 dirs.remove(match)
         for filename in fnmatch.filter(files, filename_glob):
-            file_list.append(os.path.join(path, filename))
+            full_file = os.path.join(path, filename)
+            if full_file not in skip_glob_files_list:
+                file_list.append(full_file)
     return file_list
 
 
 def filtered_descendants(glob):
     """Returns glob-matching filenames under the current directory, but skips
     some irrelevant paths."""
-    return find('.', glob, ['third_party', 'external', 'CompilerIdCXX', 'build*', 'out*'])
+    return find('.', glob, ['third_party', 'external', 'CompilerIdCXX',
+        'build*', 'out*'], ['./utils/clang-format-diff.py'])
 
 
 def skip(line):
