@@ -220,6 +220,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     const uint32_t mergeLabId =
         mergeInst->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
     AddBranch(liveLabId, *bi);
+    backedges_.erase(br);
     context()->KillInst(br);
     context()->KillInst(mergeInst);
 
@@ -232,6 +233,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     while (dLabId != mergeLabId) {
       if (!HasNonPhiNonBackedgeRef(dLabId)) {
         // Kill use/def for all instructions and mark block for elimination
+        backedges_.erase((*dbi)->terminator());
         KillAllInsts(*dbi);
         elimBlocks.insert(*dbi);
       }
@@ -242,6 +244,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     // If merge block is unreachable, continue eliminating blocks until
     // a live block or last block is reached.
     while (!HasNonPhiNonBackedgeRef(dLabId)) {
+      backedges_.erase((*dbi)->terminator());
       KillAllInsts(*dbi);
       elimBlocks.insert(*dbi);
       ++dbi;

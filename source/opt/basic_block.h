@@ -143,6 +143,9 @@ class BasicBlock {
   // this block, if any.  If none, returns zero.
   uint32_t ContinueBlockIdIfAny() const;
 
+  // Returns the terminator instruction.  Assumes the terminator exists.
+  Instruction* terminator() { return &*tail(); }
+
   // Returns true if this basic block exits this function and returns to its
   // caller.
   bool IsReturn() const { return ctail()->IsReturn(); }
