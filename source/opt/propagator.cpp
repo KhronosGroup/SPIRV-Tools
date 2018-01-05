@@ -36,17 +36,27 @@ void SSAPropagator::AddControlEdge(const Edge& edge) {
   blocks_.push(dest_bb);
 }
 
-void SSAPropagator::AddSSAEdges(uint32_t id) {
-  get_def_use_mgr()->ForEachUser(id, [this](ir::Instruction* instr) {
-    // If the basic block for |instr| has not been simulated yet, do nothing.
-    if (!BlockHasBeenSimulated(ctx_->get_instr_block(instr))) {
-      return;
-    }
+void SSAPropagator::AddSSAEdges(ir::Instruction* instr) {
+  if (instr->result_id() == 0 || instr->opcode() == SpvOpPhi) {
+    // Ignore instructions that produce no result and Phi instructions. The SSA
+    // edges out of Phi instructions are never added.  Phi instructions can
+    // produce cycles in the def-use web and they are always simulated when a
+    // block is visited.
+    return;
+  }
 
-    if (ShouldSimulateAgain(instr)) {
-      ssa_edge_uses_.push(instr);
-    }
-  });
+  get_def_use_mgr()->ForEachUser(
+      instr->result_id(), [this](ir::Instruction* use_instr) {
+        // If the basic block for |use_instr| has not been simulated yet, do
+        // nothing.
+        if (!BlockHasBeenSimulated(ctx_->get_instr_block(use_instr))) {
+          return;
+        }
+
+        if (ShouldSimulateAgain(use_instr)) {
+          ssa_edge_uses_.push(use_instr);
+        }
+      });
 }
 
 bool SSAPropagator::IsPhiArgExecutable(ir::Instruction* phi, uint32_t i) const {
@@ -74,9 +84,7 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
     // The statement produces a varying result, add it to the list of statements
     // not to simulate anymore and add its SSA def-use edges for simulation.
     DontSimulateAgain(instr);
-    if (instr->result_id() > 0) {
-      AddSSAEdges(instr->result_id());
-    }
+    AddSSAEdges(instr);
 
     // If |instr| is a block terminator, add all the control edges out of its
     // block.
@@ -88,11 +96,8 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
     }
     return false;
   } else if (status == kInteresting) {
-    // If the instruction produced a new interesting value, add the SSA edge
-    // for its result ID.
-    if (instr->result_id() > 0) {
-      AddSSAEdges(instr->result_id());
-    }
+    // Add the SSA edges coming out of this instruction.
+    AddSSAEdges(instr);
 
     // If there are multiple outgoing control flow edges and we know which one
     // will be taken, add the destination block to the CFG work list.

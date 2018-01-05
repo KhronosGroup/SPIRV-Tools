@@ -415,6 +415,55 @@ TEST_F(CCPTest, HandleAbortInstructions) {
   SinglePassRunAndMatch<opt::CCPPass>(spv_asm, true);
 }
 
+TEST_F(CCPTest, SSAWebCycles) {
+  // Test reduced from https://github.com/KhronosGroup/SPIRV-Tools/issues/1159
+  // When there is a cycle in the SSA def-use web, the propagator was getting
+  // into an infinite loop.  SSA edges for Phi instructions should not be
+  // added to the edges to simulate.
+  const std::string spv_asm = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpName %main "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_0 = OpConstant %int 0
+      %int_4 = OpConstant %int 4
+       %bool = OpTypeBool
+      %int_1 = OpConstant %int 1
+%_ptr_Output_int = OpTypePointer Output %int
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+         %29 = OpPhi %int %int_0 %5 %22 %14
+         %30 = OpPhi %int %int_0 %5 %25 %14
+               OpLoopMerge %13 %14 None
+               OpBranch %15
+         %15 = OpLabel
+         %19 = OpSLessThan %bool %30 %int_4
+; CHECK: OpBranchConditional %true {{%\d+}} {{%\d+}}
+               OpBranchConditional %19 %12 %13
+         %12 = OpLabel
+; CHECK: OpIAdd %int %int_0 %int_0
+         %22 = OpIAdd %int %29 %30
+               OpBranch %14
+         %14 = OpLabel
+; CHECK: OpPhi %int %int_0 {{%\d+}} %int_0 {{%\d+}}
+         %25 = OpPhi %int %int_0 %5 %30 %14
+               OpBranch %11
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::CCPPass>(spv_asm, true);
+}
 #endif
 
 }  // namespace

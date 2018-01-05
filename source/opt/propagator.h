@@ -248,12 +248,18 @@ class SSAPropagator {
     return ctx_->get_def_use_mgr();
   }
 
-  // If the CFG edge |e| has not been executed, add its destination block to the
-  // work list.
+  // If the CFG edge |e| has not been executed, this function adds |e|'s
+  // destination block to the work list.
   void AddControlEdge(const Edge& e);
 
-  // Add all the instructions that use |id| to the SSA edges work list.
-  void AddSSAEdges(uint32_t id);
+  // Adds all the instructions that use the result of |instr| to the SSA edges
+  // work list. If |instr| produces no result id, this does nothing.  This also
+  // does nothing if |instr| is a Phi instruction.  Phi instructions are treated
+  // specially because (a) they can be in def-use cycles with other
+  // instructions, and (b) they are always executed when a basic block is
+  // simulated (see the description of the Sparse Conditional Constant algorithm
+  // in the original paper).
+  void AddSSAEdges(ir::Instruction* instr);
 
   // IR context to use.
   ir::IRContext* ctx_;
