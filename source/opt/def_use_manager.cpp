@@ -40,7 +40,8 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
   // Create entry for the given instruction. Note that the instruction may
   // not have any in-operands. In such cases, we still need a entry for those
   // instructions so this manager knows it has seen the instruction later.
-  inst_to_used_ids_[inst] = {};
+  auto& used_ids = inst_to_used_ids_[inst];
+  used_ids.clear();  // It might have existed before.
 
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
     switch (inst->GetOperand(i).type) {
@@ -53,7 +54,7 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
         ir::Instruction* def = GetDef(use_id);
         assert(def && "Definition is not registered.");
         id_to_users_.insert(UserEntry(def, inst));
-        inst_to_used_ids_[inst].push_back(use_id);
+        used_ids.push_back(use_id);
       } break;
       default:
         break;
