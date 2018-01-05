@@ -127,6 +127,13 @@ class Loop {
     return loop_basic_blocks_.count(bb_id);
   }
 
+  // Returns true if the instruction |inst| is inside this loop.
+  inline bool IsInsideLoop(Instruction* inst) const {
+    const BasicBlock* parent_block = inst->context()->get_instr_block(inst);
+    if (!parent_block) return true;
+    return IsInsideLoop(parent_block);
+  }
+
   // Adds the Basic Block |bb| this loop and its parents.
   void AddBasicBlockToLoop(const BasicBlock* bb) {
 #ifndef NDEBUG
@@ -145,13 +152,6 @@ class Loop {
     for (Loop* loop = this; loop != nullptr; loop = loop->parent_) {
       loop_basic_blocks_.insert(bb->id());
     }
-  }
-
-  // Returns true if the parent basic block of |inst| belong to this loop.
-  inline bool IsLoopInvariant(Instruction* inst) const {
-    const BasicBlock* parent_block = inst->context()->get_instr_block(inst);
-    if (!parent_block) return true;
-    return IsInsideLoop(parent_block);
   }
 
  private:
