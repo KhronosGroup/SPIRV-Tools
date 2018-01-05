@@ -90,25 +90,20 @@ void LoopDescriptor::PopulateList(const Function* f) {
 
   loops_.clear();
 
-  // Traverse the tree and apply the above functor to find all the OpLoopMerge
-  // instructions. Instructions will be in domination order of BasicBlocks.
-  // However, this does not mean that dominance is implied by the order of
-  // loop_merge_inst you still need to check dominance between each block
-  // manually.
+  // Post-order traversal of the dominator tree to find all the OpLoopMerge
+  // instructions.
   opt::DominatorTree& dom_tree = dom_analysis->GetDomTree();
-  // Post-order traversal of the dominator tree: inner loop will be inserted
-  // first.
   for (opt::DominatorTreeNode& node :
        ir::make_range(dom_tree.post_begin(), dom_tree.post_end())) {
     Instruction* merge_inst = node.bb_->GetLoopMergeInst();
     if (merge_inst) {
-      // The id of the continue basic block of this loop.
+      // The id of the merge basic block of this loop.
       uint32_t merge_bb_id = merge_inst->GetSingleWordOperand(0);
 
       // The id of the continue basic block of this loop.
       uint32_t continue_bb_id = merge_inst->GetSingleWordOperand(1);
 
-      // The continue target of this loop.
+      // The merge target of this loop.
       BasicBlock* merge_bb = context->cfg()->block(merge_bb_id);
 
       // The continue target of this loop.
