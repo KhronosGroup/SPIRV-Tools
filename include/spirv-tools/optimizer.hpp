@@ -394,8 +394,9 @@ Optimizer::PassToken CreateCommonUniformElimPass();
 // time cost over standard dead code elimination.
 //
 // This pass only processes entry point functions. It also only processes
-// shaders with logical addressing. It currently will not process functions
-// with function calls. Unreachable functions are deleted.
+// shaders with relaxed logical addressing (see opt/instruction.h). It
+// currently will not process functions with function calls. Unreachable
+// functions are deleted.
 //
 // This pass will be made more effective by first running passes that remove
 // dead control flow and inlines function calls.

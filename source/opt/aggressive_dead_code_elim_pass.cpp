@@ -45,7 +45,7 @@ const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 // SpvOpMemberDecorate
 // SpvOpDecorateId
 // SpvOpDecorationGroup
-struct DecorationSorter {
+struct DecorationLess {
   bool operator()(const ir::Instruction* lhs,
                   const ir::Instruction* rhs) const {
     assert(lhs && rhs);
@@ -585,9 +585,12 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
     }
   }
 
+  // This code removes all unnecessary decorations safely (see #1174). It also
+  // does so in a more efficient manner than deleting them only as the targets
+  // are deleted.
   std::vector<ir::Instruction*> annotations;
   for (auto& inst : get_module()->annotations()) annotations.push_back(&inst);
-  std::sort(annotations.begin(), annotations.end(), DecorationSorter());
+  std::sort(annotations.begin(), annotations.end(), DecorationLess());
   for (auto annotation : annotations) {
     switch (annotation->opcode()) {
       case SpvOpDecorate:
@@ -686,8 +689,7 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_KHR_storage_buffer_storage_class",
       // SPV_KHR_variable_pointers
       //   Currently do not support extended pointer expressions
-      "SPV_AMD_gpu_shader_int16",
-      "SPV_KHR_post_depth_coverage",
+      "SPV_AMD_gpu_shader_int16", "SPV_KHR_post_depth_coverage",
       "SPV_KHR_shader_atomic_counter_ops",
   });
 }

@@ -4056,9 +4056,8 @@ TEST_P(EliminateDeadConstantTest, Custom) {
   builder.PrependPreamble(tc.checks);
   const std::string assembly_with_dead_const = builder.GetCode();
 
-  // Do not enable validation.
-  // SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-  //    assembly_with_dead_const, expected, /*  skip_nop = */ true);
+  // Do not enable validation. As the input code is invalid from the base
+  // tests (ported from other passes).
   SinglePassRunAndMatch<opt::AggressiveDCEPass>(assembly_with_dead_const,
                                                 false);
 }
@@ -4893,6 +4892,8 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 TEST_F(AggressiveDCETest, DeadDecorationGroup) {
+  // The decoration group should be eliminated because the target of group
+  // decorate is dead.
   const std::string text = R"(
 ; CHECK-NOT: OpDecorat
 ; CHECK-NOT: OpGroupDecorate

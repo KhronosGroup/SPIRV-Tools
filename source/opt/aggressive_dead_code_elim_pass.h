@@ -87,7 +87,8 @@ class AggressiveDCEPass : public MemPass {
   bool AllExtensionsSupported() const;
 
   // Returns true if the target of |inst| is dead.  An instruction is dead if
-  // its result id is used in decoration or debug instructions only.
+  // its result id is used in decoration or debug instructions only. |inst| is
+  // assumed to be OpName, OpMemberName or an annotation instruction.
   bool IsTargetDead(ir::Instruction* inst);
 
   // If |varId| is local, mark all stores of varId as live.
@@ -96,6 +97,8 @@ class AggressiveDCEPass : public MemPass {
   // If |bp| is structured if or loop header block, return true and set
   // |mergeInst| to the merge instruction, |branchInst| to the conditional
   // branch and |mergeBlockId| to the merge block if they are not nullptr.
+  // Any of |mergeInst|, |branchInst| or |mergeBlockId| may be a null pointer.
+  // Returns false if |bp| is a null pointer.
   bool IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
                                   ir::Instruction** mergeInst,
                                   ir::Instruction** branchInst,
