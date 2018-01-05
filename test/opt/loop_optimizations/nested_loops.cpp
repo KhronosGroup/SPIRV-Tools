@@ -428,4 +428,168 @@ TEST_F(PassClassTest, TripleNestedLoop) {
   }
 }
 
+/*
+Generated from the following GLSL
+#version 330 core
+layout(location = 0) out vec4 c;
+void main() {
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 11; ++j) {
+      for (int k = 0; k < 11; ++k) {}
+    }
+    for (int k = 0; k < 12; ++k) {}
+  }
+}
+*/
+TEST_F(PassClassTest, LoopParentTest) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 330
+               OpName %2 "main"
+               OpName %4 "i"
+               OpName %5 "j"
+               OpName %6 "k"
+               OpName %7 "k"
+               OpName %3 "c"
+               OpDecorate %3 Location 0
+          %8 = OpTypeVoid
+          %9 = OpTypeFunction %8
+         %10 = OpTypeInt 32 1
+         %11 = OpTypePointer Function %10
+         %12 = OpConstant %10 0
+         %13 = OpConstant %10 10
+         %14 = OpTypeBool
+         %15 = OpConstant %10 11
+         %16 = OpConstant %10 1
+         %17 = OpConstant %10 12
+         %18 = OpTypeFloat 32
+         %19 = OpTypeVector %18 4
+         %20 = OpTypePointer Output %19
+          %3 = OpVariable %20 Output
+          %2 = OpFunction %8 None %9
+         %21 = OpLabel
+          %4 = OpVariable %11 Function
+          %5 = OpVariable %11 Function
+          %6 = OpVariable %11 Function
+          %7 = OpVariable %11 Function
+               OpStore %4 %12
+               OpBranch %22
+         %22 = OpLabel
+               OpLoopMerge %23 %24 None
+               OpBranch %25
+         %25 = OpLabel
+         %26 = OpLoad %10 %4
+         %27 = OpSLessThan %14 %26 %13
+               OpBranchConditional %27 %28 %23
+         %28 = OpLabel
+               OpStore %5 %12
+               OpBranch %29
+         %29 = OpLabel
+               OpLoopMerge %30 %31 None
+               OpBranch %32
+         %32 = OpLabel
+         %33 = OpLoad %10 %5
+         %34 = OpSLessThan %14 %33 %15
+               OpBranchConditional %34 %35 %30
+         %35 = OpLabel
+               OpStore %6 %12
+               OpBranch %36
+         %36 = OpLabel
+               OpLoopMerge %37 %38 None
+               OpBranch %39
+         %39 = OpLabel
+         %40 = OpLoad %10 %6
+         %41 = OpSLessThan %14 %40 %15
+               OpBranchConditional %41 %42 %37
+         %42 = OpLabel
+               OpBranch %38
+         %38 = OpLabel
+         %43 = OpLoad %10 %6
+         %44 = OpIAdd %10 %43 %16
+               OpStore %6 %44
+               OpBranch %36
+         %37 = OpLabel
+               OpBranch %31
+         %31 = OpLabel
+         %45 = OpLoad %10 %5
+         %46 = OpIAdd %10 %45 %16
+               OpStore %5 %46
+               OpBranch %29
+         %30 = OpLabel
+               OpStore %7 %12
+               OpBranch %47
+         %47 = OpLabel
+               OpLoopMerge %48 %49 None
+               OpBranch %50
+         %50 = OpLabel
+         %51 = OpLoad %10 %7
+         %52 = OpSLessThan %14 %51 %17
+               OpBranchConditional %52 %53 %48
+         %53 = OpLabel
+               OpBranch %49
+         %49 = OpLabel
+         %54 = OpLoad %10 %7
+         %55 = OpIAdd %10 %54 %16
+               OpStore %7 %55
+               OpBranch %47
+         %48 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+         %56 = OpLoad %10 %4
+         %57 = OpIAdd %10 %56 %16
+               OpStore %4 %57
+               OpBranch %22
+         %23 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  // clang-format on
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 2);
+  ir::LoopDescriptor ld{f};
+
+  EXPECT_EQ(ld.NumLoops(), 4u);
+
+  {
+    ir::Loop& loop = *ld[22];
+    EXPECT_TRUE(loop.HasNestedLoops());
+    EXPECT_FALSE(loop.IsNested());
+    EXPECT_EQ(loop.GetDepth(), 1u);
+    EXPECT_EQ(loop.GetParent(), nullptr);
+  }
+
+  {
+    ir::Loop& loop = *ld[29];
+    EXPECT_TRUE(loop.HasNestedLoops());
+    EXPECT_TRUE(loop.IsNested());
+    EXPECT_EQ(loop.GetDepth(), 2u);
+    EXPECT_EQ(loop.GetParent(), ld[22]);
+  }
+
+  {
+    ir::Loop& loop = *ld[36];
+    EXPECT_FALSE(loop.HasNestedLoops());
+    EXPECT_TRUE(loop.IsNested());
+    EXPECT_EQ(loop.GetDepth(), 3u);
+    EXPECT_EQ(loop.GetParent(), ld[29]);
+  }
+
+  {
+    ir::Loop& loop = *ld[47];
+    EXPECT_FALSE(loop.HasNestedLoops());
+    EXPECT_TRUE(loop.IsNested());
+    EXPECT_EQ(loop.GetDepth(), 2u);
+    EXPECT_EQ(loop.GetParent(), ld[22]);
+  }
+}
+
 }  // namespace

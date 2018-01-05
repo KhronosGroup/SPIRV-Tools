@@ -128,7 +128,7 @@ void LoopDescriptor::PopulateList(const Function* f) {
         Loop* previous_loop = itr->get();
 
         // If the loop already has a parent, then it has been processed.
-        if (previous_loop->HasParent()) break;
+        if (previous_loop->HasParent()) continue;
 
         // If the current loop does not dominates the previous loop then it is
         // not nested loop.
