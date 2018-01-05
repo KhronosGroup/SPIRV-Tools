@@ -120,8 +120,12 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         // corresponding label, use default if not found.
         uint32_t icnt = 0;
         uint32_t caseVal;
-        terminator->ForEachInOperand([&icnt, &caseVal, &selVal, &liveLabId,
-                                      get_parent_block](const uint32_t* idp) {
+        terminator->ForEachInOperand([
+          &icnt,
+          &caseVal,
+          &selVal,
+          &liveLabId,
+        ](const uint32_t* idp) {
           if (icnt == 1) {
             // Start with default label.
             liveLabId = *idp;
@@ -159,7 +163,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     } else {
       // All successors are live.
       block->ForEachSuccessorLabel(
-          [&stack, this, get_parent_block](const uint32_t label) {
+          [&stack, get_parent_block](const uint32_t label) {
             stack.push_back(get_parent_block(label));
           });
     }
