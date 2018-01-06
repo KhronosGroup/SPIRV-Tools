@@ -213,7 +213,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
                 std::initializer_list<uint32_t>{Type2Undef(inst->type_id())});
             operands.push_back(inst->GetInOperand(i));
             changed = true;
-          } else if (liveBlocks.count(inc)) {
+          } else if (liveBlocks.count(inc) && inc->IsSuccessor(&block)) {
             // Keep live incoming edge.
             operands.push_back(inst->GetInOperand(i - 1));
             operands.push_back(inst->GetInOperand(i));

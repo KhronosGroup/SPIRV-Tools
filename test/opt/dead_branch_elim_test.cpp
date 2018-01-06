@@ -1496,7 +1496,7 @@ OpBranch %14
 %14 = OpLabel
 OpBranch %2
 %2 = OpLabel
-%9 = OpPhi %bool %12 %3 %8 %7
+%9 = OpPhi %bool %12 %3 %8 %14
 %13 = OpLogicalAnd %bool %true %9
 OpReturn
 OpFunctionEnd
@@ -1641,6 +1641,38 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, LiveHeaderDeadPhi) {
+  const std::string text = R"(
+; CHECK: OpLabel
+; CHECK-NOT: OpBranchConditional
+; CHECK-NOT: OpPhi
+; CHECK: OpLogicalNot %bool %false
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse %bool
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+OpSelectionMerge %3 None
+OpBranchConditional %true %2 %3
+%2 = OpLabel
+OpBranch %3
+%3 = OpLabel
+%5 = OpPhi %bool %true %3 %false %2
+%6 = OpLogicalNot %bool %5
+OpReturn
+OpFunctionEnd
+)";
+
   SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
 }
 #endif
