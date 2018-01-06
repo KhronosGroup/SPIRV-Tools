@@ -120,24 +120,20 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         // corresponding label, use default if not found.
         uint32_t icnt = 0;
         uint32_t caseVal;
-        terminator->ForEachInOperand([
-          &icnt,
-          &caseVal,
-          &selVal,
-          &liveLabId,
-        ](const uint32_t* idp) {
-          if (icnt == 1) {
-            // Start with default label.
-            liveLabId = *idp;
-          } else if (icnt > 1) {
-            if (icnt % 2 == 0) {
-              caseVal = *idp;
-            } else {
-              if (caseVal == selVal) liveLabId = *idp;
-            }
-          }
-          ++icnt;
-        });
+        terminator->ForEachInOperand(
+            [&icnt, &caseVal, &selVal, &liveLabId](const uint32_t* idp) {
+              if (icnt == 1) {
+                // Start with default label.
+                liveLabId = *idp;
+              } else if (icnt > 1) {
+                if (icnt % 2 == 0) {
+                  caseVal = *idp;
+                } else {
+                  if (caseVal == selVal) liveLabId = *idp;
+                }
+              }
+              ++icnt;
+            });
       }
     }
 
