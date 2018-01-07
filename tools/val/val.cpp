@@ -44,6 +44,8 @@ Options:
   --max-function-args              <maximum number arguments allowed per function>
   --max-control-flow-nesting-depth <maximum Control Flow nesting depth allowed>
   --max-access-chain-indexes       <maximum number of indexes allowed to use for Access Chain instructions>
+  --relax-logcial-pointer          Allow allocating an object of a pointer type and returning
+                                   a pointer value from a function in logical addressing mode
   --relax-struct-store             Allow store from one struct type to a
                                    different type with compatible layout and
                                    members.
@@ -112,6 +114,8 @@ int main(int argc, char** argv) {
           continue_processing = false;
           return_code = 1;
         }
+      } else if (0 == strcmp(cur_arg, "--relax-logical-pointer")) {
+        options.SetRelaxLogicalPointer(true);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options.SetRelaxStructStore(true);
       } else if (0 == cur_arg[1]) {

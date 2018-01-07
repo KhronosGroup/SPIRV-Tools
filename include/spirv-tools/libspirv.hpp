@@ -81,6 +81,16 @@ class ValidatorOptions {
     spvValidatorOptionsSetRelaxStoreStruct(options_, val);
   }
 
+  // Records whether or not the validator should relax the rules on pointer
+  // usage in logical addressing mode.
+  //
+  // When relaxed, it will allow the following usage cases of pointers:
+  // 1) OpVariable allocating an object whose type is a pointer type
+  // 2) OpReturnValue returning a pointer value
+  void SetRelaxLogicalPointer(bool val) {
+    spvValidatorOptionsSetRelaxLogicalPointer(options_, val);
+  }
+
  private:
   spv_validator_options options_;
 };
