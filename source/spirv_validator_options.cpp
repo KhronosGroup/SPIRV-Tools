@@ -81,3 +81,8 @@ void spvValidatorOptionsSetRelaxStoreStruct(spv_validator_options options,
                                             bool val) {
   options->relax_struct_store = val;
 }
+
+void spvValidatorOptionsSetRelaxLogicalPointer(spv_validator_options options,
+                                               bool val) {
+  options->relax_logcial_pointer = val;
+}

@@ -1879,16 +1879,20 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
                      << "' is missing or void.";
     return false;
   }
+
   const bool uses_variable_pointer =
       module_.features().variable_pointers ||
       module_.features().variable_pointers_storage_buffer;
+
   if (addressingModel == SpvAddressingModelLogical &&
-      SpvOpTypePointer == valueType->opcode() && !uses_variable_pointer) {
+      SpvOpTypePointer == valueType->opcode() && !uses_variable_pointer &&
+      !module_.options()->relax_logcial_pointer) {
     DIAG(valueIndex)
         << "OpReturnValue value's type <id> '" << value->type_id()
         << "' is a pointer, which is invalid in the Logical addressing model.";
     return false;
   }
+
   // NOTE: Find OpFunction
   const spv_instruction_t* function = inst - 1;
   while (firstInst != function) {

@@ -37,10 +37,14 @@ struct validator_universal_limits_t {
 // Manages command line options passed to the SPIR-V Validator. New struct
 // members may be added for any new option.
 struct spv_validator_options_t {
-  spv_validator_options_t() : universal_limits_(), relax_struct_store(false) {}
+  spv_validator_options_t()
+      : universal_limits_(),
+        relax_struct_store(false),
+        relax_logcial_pointer(false) {}
 
   validator_universal_limits_t universal_limits_;
   bool relax_struct_store;
+  bool relax_logcial_pointer;
 };
 
 #endif  // LIBSPIRV_SPIRV_VALIDATOR_OPTIONS_H_

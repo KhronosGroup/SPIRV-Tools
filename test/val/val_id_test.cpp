@@ -2426,6 +2426,48 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct2) {
                 "<id> '16's layout."));
 }
 
+TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedLogicalPointerReturnPointer) {
+  const string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 1
+%2 = OpTypePointer Function %1
+%3 = OpTypeFunction %2 %2
+%4 = OpFunction %2 None %3
+%5 = OpFunctionParameter %2
+%6 = OpLabel
+     OpReturnValue %5
+     OpFunctionEnd)";
+
+  spvValidatorOptionsSetRelaxLogicalPointer(options_, true);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedLogicalPointerAllocPointer) {
+  const string spirv = R"(
+      OpCapability Shader
+      OpCapability Linkage
+      OpMemoryModel Logical GLSL450
+ %1 = OpTypeVoid
+ %2 = OpTypeInt 32 1
+ %3 = OpTypeFunction %1          ; void(void)
+ %4 = OpTypePointer Uniform %2   ; int*
+ %5 = OpTypePointer Private %4   ; int** (Private)
+ %6 = OpTypePointer Function %4  ; int** (Function)
+ %7 = OpVariable %5 Private
+ %8 = OpFunction %1 None %3
+ %9 = OpLabel
+%10 = OpVariable %6 Function
+      OpReturn
+      OpFunctionEnd)";
+
+  spvValidatorOptionsSetRelaxLogicalPointer(options_, true);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateIdWithMessage, OpStoreVoid) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid

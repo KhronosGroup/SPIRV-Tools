@@ -441,6 +441,15 @@ void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
 void spvValidatorOptionsSetRelaxStoreStruct(spv_validator_options options,
                                             bool val);
 
+// Records whether or not the validator should relax the rules on pointer usage
+// in logical addressing mode.
+//
+// When relaxed, it will allow the following usage cases of pointers:
+// 1) OpVariable allocating an object whose type is a pointer type
+// 2) OpReturnValue returning a pointer value
+void spvValidatorOptionsSetRelaxLogicalPointer(spv_validator_options options,
+                                               bool val);
+
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
 // be stored into *binary. Any error will be written into *diagnostic if
