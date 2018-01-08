@@ -1675,6 +1675,147 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
 }
+
+TEST_F(DeadBranchElimTest, ExtraBackedgeBlocksLive) {
+  const std::string text = R"(
+; CHECK: [[entry:%\w+]] = OpLabel
+; CHECK-NOT: OpSelectionMerge
+; CHECK: OpBranch [[header:%\w+]]
+; CHECK-NEXT: [[header]] = OpLabel
+; CHECK-NEXT: OpPhi %bool %true [[entry]] %false [[backedge:%\w+]]
+; CHECK-NEXT: OpLoopMerge
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse %bool
+%func_ty = OpTypeFunction %void %bool
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %bool
+%entry = OpLabel
+OpSelectionMerge %if_merge None
+; This dead branch is included to ensure the pass does work.
+OpBranchConditional %false %if_merge %loop_header
+%loop_header = OpLabel
+; Both incoming edges are live, so the phi should be untouched.
+%phi = OpPhi %bool %true %entry %false %backedge
+OpLoopMerge %loop_merge %continue None
+OpBranchConditional %param %loop_merge %continue
+%continue = OpLabel
+OpBranch %backedge
+%backedge = OpLabel
+OpBranch %loop_header
+%loop_merge = OpLabel
+OpBranch %if_merge
+%if_merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, ExtraBackedgeBlocksUnreachable) {
+  const std::string text = R"(
+; CHECK: [[undef:%\w+]] = OpUndef
+; CHECK: [[entry:%\w+]] = OpLabel
+; CHECK-NEXT: OpBranch [[header:%\w+]]
+; CHECK-NEXT: [[header]] = OpLabel
+; CHECK-NEXT: OpPhi %bool %true [[entry]] [[undef]] [[continue:%\w+]]
+; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]] None
+; CHECK-NEXT: OpBranch [[merge]]
+; CHECK-NEXT: [[continue]] = OpLabel
+; CHECK-NEXT: OpBranch [[header]]
+; CHECK-NEXT: [[merge]] = OpLabel
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse %bool
+%func_ty = OpTypeFunction %void %bool
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %bool
+%entry = OpLabel
+OpBranch %loop_header
+%loop_header = OpLabel
+; Since the continue is unreachable, %backedge will be removed. The phi will
+; instead require an edge from %continue.
+%phi = OpPhi %bool %true %entry %false %backedge
+OpLoopMerge %merge %continue None
+OpBranch %merge
+%continue = OpLabel
+OpBranch %backedge
+%backedge = OpLabel
+OpBranch %loop_header
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, ExtraBackedgePartiallyDead) {
+  const std::string text = R"(
+; CHECK: OpLabel
+; CHECK: [[header:%\w+]] = OpLabel
+; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
+; CHECK: [[continue]] = OpLabel
+; CHECK: OpBranch [[extra:%\w+]]
+; CHECK: [[extra]] = OpLabel
+; CHECK-NOT: OpSelectionMerge
+; CHECK-NEXT: OpBranch [[else:%\w+]]
+; CHECK-NEXT: [[else]] = OpLabel
+; CHECK-NEXT: OpLogicalOr
+; CHECK-NEXT: OpBranch [[backedge:%\w+]]
+; CHECK-NEXT: [[backedge:%\w+]] = OpLabel
+; CHECK-NEXT: OpBranch [[header]]
+; CHECK-NEXT: [[merge]] = OpLabel
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse %bool
+%func_ty = OpTypeFunction %void %bool
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %bool
+%entry = OpLabel
+OpBranch %loop_header
+%loop_header = OpLabel
+OpLoopMerge %loop_merge %continue None
+OpBranchConditional %param %loop_merge %continue
+%continue = OpLabel
+OpBranch %extra
+%extra = OpLabel
+OpSelectionMerge %backedge None
+OpBranchConditional %false %then %else
+%then = OpLabel
+%and = OpLogicalAnd %bool %true %false
+OpBranch %backedge
+%else = OpLabel
+%or = OpLogicalOr %bool %true %false
+OpBranch %backedge
+%backedge = OpLabel
+OpBranch %loop_header
+%loop_merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
 #endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

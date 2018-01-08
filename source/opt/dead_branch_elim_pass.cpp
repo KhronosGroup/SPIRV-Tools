@@ -199,6 +199,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         }
 
         bool changed = false;
+        bool backedge_added = false;
         ir::Instruction* inst = &*iter;
         std::vector<ir::Operand> operands;
         // Iterate through the incoming labels and determine which to keep
@@ -213,6 +214,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
                 std::initializer_list<uint32_t>{Type2Undef(inst->type_id())});
             operands.push_back(inst->GetInOperand(i));
             changed = true;
+            backedge_added = true;
           } else if (liveBlocks.count(inc) && inc->IsSuccessor(&block)) {
             // Keep live incoming edge.
             operands.push_back(inst->GetInOperand(i - 1));
@@ -224,6 +226,21 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         }
 
         if (changed) {
+          uint32_t continue_id = block.ContinueBlockIdIfAny();
+          if (!backedge_added && continue_id != 0) {
+            // Changed the backedge to branch from the continue block instead
+            // of a successor of the continue block. Add an entry to the phi to
+            // provide an undef for the continue block. Since the successor of
+            // the continue must also be unreachable (dominated by the continue
+            // block), any entry for the original backedge has been removed
+            // from the phi operands.
+            operands.emplace_back(
+                SPV_OPERAND_TYPE_ID,
+                std::initializer_list<uint32_t>{Type2Undef(inst->type_id())});
+            operands.emplace_back(SPV_OPERAND_TYPE_ID,
+                                  std::initializer_list<uint32_t>{continue_id});
+          }
+
           // Replace the phi with either a single value or a rebuilt phi.
           uint32_t replId;
           if (operands.size() == 2) {
