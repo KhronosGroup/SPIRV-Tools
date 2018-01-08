@@ -77,21 +77,27 @@ void DeadBranchElimPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
       context(), SpvOpBranch, 0, 0,
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}}}));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newBranch);
-  context()->set_instr_block(&*newBranch, bp);
   bp->AddInstruction(std::move(newBranch));
 }
 
 bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
+  // This pass only requires correct instruction block mappings for the input.
+  // This pass does not preserve the block mapping, so it is not kept
+  // up-to-date during processing.
   auto get_parent_block = [this](uint32_t id) {
     return context()->get_instr_block(get_def_use_mgr()->GetDef(id));
   };
 
   // Mark live blocks reachable from the entry. Simplify constant branches and
-  // switches as you proceed to limit the number of live blocks. Be careful not
+  // switches as you proceed, to limit the number of live blocks. Be careful not
   // to eliminate backedges even if they are dead, but the header is live.
+  // Likewise, unreachable merge blocks named in live merge instruction must be
+  // retained (though they may be clobbered).
+  //
+  // |continues| maps the continue target to its corresponding header.
   std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> continues;
   bool modified = false;
-  std::unordered_set<ir::BasicBlock*> liveBlocks;
+  std::unordered_set<ir::BasicBlock*> live_blocks;
   std::vector<ir::BasicBlock*> stack;
   stack.push_back(&*func->begin());
   while (!stack.empty()) {
@@ -99,37 +105,37 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     stack.pop_back();
 
     // Live blocks doubles as visited set.
-    if (!liveBlocks.insert(block).second) continue;
+    if (!live_blocks.insert(block).second) continue;
 
-    uint32_t contId = block->ContinueBlockIdIfAny();
-    if (contId != 0) continues[get_parent_block(contId)] = block;
+    uint32_t cont_id = block->ContinueBlockIdIfAny();
+    if (cont_id != 0) continues[get_parent_block(cont_id)] = block;
 
-    ir::Instruction* terminator = &*block->tail();
-    uint32_t liveLabId = 0;
+    ir::Instruction* terminator = block->terminator();
+    uint32_t live_lab_id = 0;
     // Check if the terminator has a single valid successor.
     if (terminator->opcode() == SpvOpBranchConditional) {
       bool condVal;
       if (GetConstCondition(terminator->GetSingleWordInOperand(0u), &condVal)) {
-        liveLabId = terminator->GetSingleWordInOperand(
+        live_lab_id = terminator->GetSingleWordInOperand(
             condVal ? kBranchCondTrueLabIdInIdx : kBranchCondFalseLabIdInIdx);
       }
     } else if (terminator->opcode() == SpvOpSwitch) {
-      uint32_t selVal;
-      if (GetConstInteger(terminator->GetSingleWordInOperand(0u), &selVal)) {
-        // Search switch operands for selector value, set liveLabId to
+      uint32_t sel_val;
+      if (GetConstInteger(terminator->GetSingleWordInOperand(0u), &sel_val)) {
+        // Search switch operands for selector value, set live_lab_id to
         // corresponding label, use default if not found.
         uint32_t icnt = 0;
-        uint32_t caseVal;
+        uint32_t case_val;
         terminator->ForEachInOperand(
-            [&icnt, &caseVal, &selVal, &liveLabId](const uint32_t* idp) {
+            [&icnt, &case_val, &sel_val, &live_lab_id](const uint32_t* idp) {
               if (icnt == 1) {
                 // Start with default label.
-                liveLabId = *idp;
+                live_lab_id = *idp;
               } else if (icnt > 1) {
                 if (icnt % 2 == 0) {
-                  caseVal = *idp;
+                  case_val = *idp;
                 } else {
-                  if (caseVal == selVal) liveLabId = *idp;
+                  if (case_val == sel_val) live_lab_id = *idp;
                 }
               }
               ++icnt;
@@ -138,24 +144,24 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     }
 
     // Don't simplify branches of continue blocks. A path from the continue to
-    // the merge is required.
+    // the header is required.
     // TODO(alan-baker): They can be simplified iff there remains a path to the
     // backedge. Structured control flow should guarantee one path hits the
     // backedge, but I've removed the requirement for structured control flow
     // from this pass.
-    bool simplify = liveLabId != 0 && !continues.count(block);
+    bool simplify = live_lab_id != 0 && !continues.count(block);
 
     if (simplify) {
       modified = true;
       // Replace with unconditional branch.
       // Remove the merge instruction if it is a selection merge.
-      AddBranch(liveLabId, block);
+      AddBranch(live_lab_id, block);
       context()->KillInst(terminator);
       ir::Instruction* mergeInst = block->GetMergeInst();
       if (mergeInst->opcode() == SpvOpSelectionMerge) {
         context()->KillInst(mergeInst);
       }
-      stack.push_back(get_parent_block(liveLabId));
+      stack.push_back(get_parent_block(live_lab_id));
     } else {
       // All successors are live.
       block->ForEachSuccessorLabel(
@@ -168,28 +174,31 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
   // Check for unreachable merge and continue blocks with live headers, those
   // blocks must remain. Continues are tracked separately so that when updating
   // live phi nodes with an edge from a continue I can replace it with an
-  // undef (because I still clobber the continue block).
-  std::unordered_set<ir::BasicBlock*> unreachableMerges;
-  std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> unreachableContinues;
-  for (auto block : liveBlocks) {
-    uint32_t mergeId = block->MergeBlockIdIfAny();
-    if (mergeId != 0) {
-      ir::BasicBlock* mergeBlock = get_parent_block(mergeId);
-      if (!liveBlocks.count(mergeBlock)) {
-        unreachableMerges.insert(mergeBlock);
+  // undef (because we clobber the instructions inside continue block).
+  //
+  // |unreachable_continues| maps continue targets that cannot be reached to
+  // merge instruction that declares them.
+  std::unordered_set<ir::BasicBlock*> unreachable_merges;
+  std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> unreachable_continues;
+  for (auto block : live_blocks) {
+    uint32_t merge_id = block->MergeBlockIdIfAny();
+    if (merge_id != 0) {
+      ir::BasicBlock* merge_block = get_parent_block(merge_id);
+      if (!live_blocks.count(merge_block)) {
+        unreachable_merges.insert(merge_block);
       }
-      uint32_t contId = block->ContinueBlockIdIfAny();
-      if (contId != 0) {
-        ir::BasicBlock* contBlock = get_parent_block(contId);
-        if (!liveBlocks.count(contBlock)) {
-          unreachableContinues[contBlock] = block;
+      uint32_t cont_id = block->ContinueBlockIdIfAny();
+      if (cont_id != 0) {
+        ir::BasicBlock* cont_block = get_parent_block(cont_id);
+        if (!live_blocks.count(cont_block)) {
+          unreachable_continues[cont_block] = block;
         }
       }
     }
   }
 
   for (auto& block : *func) {
-    if (liveBlocks.count(&block)) {
+    if (live_blocks.count(&block)) {
       // Fix phis so that only live (or unremovable) incoming edges are
       // present. If the block now only has a single live incoming edge, remove
       // the phi and replace its uses with its data input.
@@ -207,7 +216,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         for (uint32_t i = 1; i < inst->NumInOperands(); i += 2) {
           ir::BasicBlock* inc =
               get_parent_block(inst->GetSingleWordInOperand(i));
-          if (unreachableContinues.count(inc)) {
+          if (unreachable_continues.count(inc)) {
             // Replace incoming value with undef.
             operands.emplace_back(
                 SPV_OPERAND_TYPE_ID,
@@ -215,7 +224,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
             operands.push_back(inst->GetInOperand(i));
             changed = true;
             backedge_added = true;
-          } else if (liveBlocks.count(inc) && inc->IsSuccessor(&block)) {
+          } else if (live_blocks.count(inc) && inc->IsSuccessor(&block)) {
             // Keep live incoming edge.
             operands.push_back(inst->GetInOperand(i - 1));
             operands.push_back(inst->GetInOperand(i));
@@ -265,7 +274,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
 
   // Erase dead blocks.
   for (auto ebi = func->begin(); ebi != func->end();) {
-    if (unreachableMerges.count(&*ebi)) {
+    if (unreachable_merges.count(&*ebi)) {
       // Make unreachable, but leave the label.
       KillAllInsts(&*ebi, false);
       // Add unreachable terminator.
@@ -274,18 +283,19 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
                                       std::initializer_list<ir::Operand>{}));
       ++ebi;
       modified = true;
-    } else if (unreachableContinues.count(&*ebi)) {
+    } else if (unreachable_continues.count(&*ebi)) {
       // Make unreachable, but leave the label.
       KillAllInsts(&*ebi, false);
       // Add unconditional branch to header.
-      uint32_t contId = unreachableContinues[&*ebi]->id();
-      ebi->AddInstruction(MakeUnique<ir::Instruction>(
-          context(), SpvOpBranch, 0, 0,
-          std::initializer_list<ir::Operand>{{SPV_OPERAND_TYPE_ID, {contId}}}));
+      uint32_t cont_id = unreachable_continues[&*ebi]->id();
+      ebi->AddInstruction(
+          MakeUnique<ir::Instruction>(context(), SpvOpBranch, 0, 0,
+                                      std::initializer_list<ir::Operand>{
+                                          {SPV_OPERAND_TYPE_ID, {cont_id}}}));
       get_def_use_mgr()->AnalyzeInstUse(&*ebi->tail());
       ++ebi;
       modified = true;
-    } else if (!liveBlocks.count(&*ebi)) {
+    } else if (!live_blocks.count(&*ebi)) {
       // Kill this block.
       KillAllInsts(&*ebi);
       ebi = ebi.Erase();
@@ -327,7 +337,6 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return EliminateDeadBranches(fp);
   };
-  // bool modified = ProcessEntryPointCallTree(pfn, get_module());
   bool modified = ProcessReachableCallTree(pfn, context());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
