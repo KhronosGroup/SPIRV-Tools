@@ -125,9 +125,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
-      // TODO(dneto): Disable CCP until it optimizes loops correctly
-      // https://github.com/KhronosGroup/SPIRV-Tools/issues/1143
-      //.RegisterPass(CreateCCPPass())
+      .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateBlockMergePass())
@@ -149,9 +147,7 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
-      // TODO(dneto): Disable CCP until it optimizes loops correctly
-      // https://github.com/KhronosGroup/SPIRV-Tools/issues/1143
-      //.RegisterPass(CreateCCPPass())
+      .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateBlockMergePass())

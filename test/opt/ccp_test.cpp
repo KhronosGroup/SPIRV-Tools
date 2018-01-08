@@ -369,12 +369,16 @@ TEST_F(CCPTest, NoLoadStorePropagation) {
                OpStore %x %int_23
 
 ; int_23 should not propagate into this load.
-; CHECK: OpLoad %int %x
+; CHECK: [[load_id:%\d+]] = OpLoad %int %x
          %12 = OpLoad %int %x
 
+; Nor into this copy operation.
+; CHECK: [[copy_id:%\d+]] = OpCopyObject %int [[load_id]]
+         %13 = OpCopyObject %int %12
+
 ; Likewise here.
-; CHECK: OpStore %outparm {{%\d+}}
-               OpStore %outparm %12
+; CHECK: OpStore %outparm [[copy_id]]
+               OpStore %outparm %13
                OpReturn
                OpFunctionEnd
                )";
@@ -464,6 +468,61 @@ TEST_F(CCPTest, SSAWebCycles) {
 
   SinglePassRunAndMatch<opt::CCPPass>(spv_asm, true);
 }
+
+TEST_F(CCPTest, LoopInductionVariables) {
+  // Test reduced from https://github.com/KhronosGroup/SPIRV-Tools/issues/1143
+  // We are failing to properly consider the induction variable for this loop
+  // as Varying.
+  const std::string spv_asm = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 430
+               OpName %main "main"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_0 = OpConstant %int 0
+     %int_10 = OpConstant %int 10
+       %bool = OpTypeBool
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %5
+         %12 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+
+; This Phi should not have all constant arguments:
+; CHECK: [[phi_id:%\d+]] = OpPhi %int %int_0 {{%\d+}} {{%\d+}} {{%\d+}}
+         %22 = OpPhi %int %int_0 %12 %21 %15
+               OpLoopMerge %14 %15 None
+               OpBranch %16
+         %16 = OpLabel
+
+; The Phi should never be considered to have the value %int_0.
+; CHECK: [[branch_selector:%\d+]] = OpSLessThan %bool [[phi_id]] %int_10
+         %18 = OpSLessThan %bool %22 %int_10
+
+; This conditional was wrongly converted into an always-true jump due to the
+; bad meet evaluation of %22.
+; CHECK: OpBranchConditional [[branch_selector]] {{%\d+}} {{%\d+}}
+               OpBranchConditional %18 %19 %14
+         %19 = OpLabel
+               OpBranch %15
+         %15 = OpLabel
+; CHECK: OpIAdd %int [[phi_id]] %int_1
+         %21 = OpIAdd %int %22 %int_1
+               OpBranch %13
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::CCPPass>(spv_asm, true);
+}
+
 #endif
 
 }  // namespace

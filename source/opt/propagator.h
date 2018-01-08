@@ -254,11 +254,11 @@ class SSAPropagator {
 
   // Adds all the instructions that use the result of |instr| to the SSA edges
   // work list. If |instr| produces no result id, this does nothing.  This also
-  // does nothing if |instr| is a Phi instruction.  Phi instructions are treated
-  // specially because (a) they can be in def-use cycles with other
-  // instructions, and (b) they are always executed when a basic block is
-  // simulated (see the description of the Sparse Conditional Constant algorithm
-  // in the original paper).
+  // does nothing if the instruction at the end of the def-use is a Phi
+  // instruction.  Phi instructions are treated specially because (a) they can
+  // be in def-use cycles with other Phi instructions, and (b) they are always
+  // executed when a basic block is simulated (see the description of the Sparse
+  // Conditional Constant algorithm in the original paper).
   void AddSSAEdges(ir::Instruction* instr);
 
   // IR context to use.

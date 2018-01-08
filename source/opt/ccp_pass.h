@@ -67,6 +67,14 @@ class CCPPass : public MemPass {
   // otherwise.
   bool ReplaceValues();
 
+  // Marks |instr| as varying by registering a varying value for its result
+  // into the |values_| table. Returns SSAPropagator::kVarying.
+  SSAPropagator::PropStatus MarkInstructionVarying(ir::Instruction* instr);
+
+  // Returns true if |id| is the special SSA id that corresponds to a varying
+  // value.
+  bool IsVaryingValue(uint32_t id) const;
+
   // Constant manager for the parent IR context.  Used to record new constants
   // generated during propagation.
   analysis::ConstantManager* const_mgr_;
@@ -75,6 +83,11 @@ class CCPPass : public MemPass {
   // represents the compile-time constant value for |id| as declared by
   // |const_decl_id|. Each |const_decl_id| in this table is an OpConstant
   // declaration for the current module.
+  //
+  // Additionally, this table keeps track of SSA IDs with varying values. If an
+  // SSA ID is found to have a varying value, it will have an entry in this
+  // table that maps to the special SSA id kVaryingSSAId.  These values are
+  // never replaced in the IR, they are used by CCP during propagation.
   std::unordered_map<uint32_t, uint32_t> values_;
 
   // Propagator engine used.
