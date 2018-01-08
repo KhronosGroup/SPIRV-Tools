@@ -87,8 +87,7 @@ ir::BasicBlock* DeadBranchElimPass::GetParentBlock(uint32_t id) {
 
 bool DeadBranchElimPass::MarkLiveBlocks(
     ir::Function* func, std::unordered_set<ir::BasicBlock*>* live_blocks) {
-  // |continues| maps the continue target to its corresponding header.
-  std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> continues;
+  std::unordered_set<ir::BasicBlock*> continues;
   std::vector<ir::BasicBlock*> stack;
   stack.push_back(&*func->begin());
   bool modified = false;
@@ -100,7 +99,7 @@ bool DeadBranchElimPass::MarkLiveBlocks(
     if (!live_blocks->insert(block).second) continue;
 
     uint32_t cont_id = block->ContinueBlockIdIfAny();
-    if (cont_id != 0) continues[GetParentBlock(cont_id)] = block;
+    if (cont_id != 0) continues.insert(GetParentBlock(cont_id));
 
     ir::Instruction* terminator = block->terminator();
     uint32_t live_lab_id = 0;
@@ -250,11 +249,11 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
                                   std::initializer_list<uint32_t>{continue_id});
           }
 
-          // Replace the phi with either a single value or a rebuilt phi.
-          // uint32_t replId;
+          // Either replace the phi with a single value or rebuild the phi out
+          // of |operands|.
           //
           // We always have type and result id operands. So this phi has a
-          // single source if are two more operands beyond those.
+          // single source if there are two more operands beyond those.
           if (operands.size() == 4) {
             // First input data operands is at index 2.
             uint32_t replId = operands[2u].words[0];
@@ -262,9 +261,9 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
             iter = context()->KillInst(&*inst);
           } else {
             // We've rewritten the operands, so first instruct the def/use
-            // manager to forget uses that in the phi before we replace them.
-            // After replacing operands update the def/use manager by
-            // re-analyzing the used ids in this phi.
+            // manager to forget uses in the phi before we replace them. After
+            // replacing operands update the def/use manager by re-analyzing
+            // the used ids in this phi.
             get_def_use_mgr()->EraseUseRecordsOfOperandIds(inst);
             inst->ReplaceOperands(operands);
             get_def_use_mgr()->AnalyzeInstUse(inst);
