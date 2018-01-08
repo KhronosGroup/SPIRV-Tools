@@ -81,35 +81,26 @@ void DeadBranchElimPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
   bp->AddInstruction(std::move(newBranch));
 }
 
-bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
-  // This pass only requires correct instruction block mappings for the input.
-  // This pass does not preserve the block mapping, so it is not kept
-  // up-to-date during processing.
-  auto get_parent_block = [this](uint32_t id) {
-    return context()->get_instr_block(get_def_use_mgr()->GetDef(id));
-  };
+ir::BasicBlock* DeadBranchElimPass::GetParentBlock(uint32_t id) {
+  return context()->get_instr_block(get_def_use_mgr()->GetDef(id));
+}
 
-  // Mark live blocks reachable from the entry. Simplify constant branches and
-  // switches as you proceed, to limit the number of live blocks. Be careful not
-  // to eliminate backedges even if they are dead, but the header is live.
-  // Likewise, unreachable merge blocks named in live merge instruction must be
-  // retained (though they may be clobbered).
-  //
+bool DeadBranchElimPass::MarkLiveBlocks(
+    ir::Function* func, std::unordered_set<ir::BasicBlock*>* live_blocks) {
   // |continues| maps the continue target to its corresponding header.
   std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> continues;
-  bool modified = false;
-  std::unordered_set<ir::BasicBlock*> live_blocks;
   std::vector<ir::BasicBlock*> stack;
   stack.push_back(&*func->begin());
+  bool modified = false;
   while (!stack.empty()) {
     ir::BasicBlock* block = stack.back();
     stack.pop_back();
 
     // Live blocks doubles as visited set.
-    if (!live_blocks.insert(block).second) continue;
+    if (!live_blocks->insert(block).second) continue;
 
     uint32_t cont_id = block->ContinueBlockIdIfAny();
-    if (cont_id != 0) continues[get_parent_block(cont_id)] = block;
+    if (cont_id != 0) continues[GetParentBlock(cont_id)] = block;
 
     ir::Instruction* terminator = block->terminator();
     uint32_t live_lab_id = 0;
@@ -162,45 +153,44 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       if (mergeInst->opcode() == SpvOpSelectionMerge) {
         context()->KillInst(mergeInst);
       }
-      stack.push_back(get_parent_block(live_lab_id));
+      stack.push_back(GetParentBlock(live_lab_id));
     } else {
       // All successors are live.
-      block->ForEachSuccessorLabel(
-          [&stack, get_parent_block](const uint32_t label) {
-            stack.push_back(get_parent_block(label));
-          });
+      block->ForEachSuccessorLabel([&stack, this](const uint32_t label) {
+        stack.push_back(GetParentBlock(label));
+      });
     }
   }
 
-  // Check for unreachable merge and continue blocks with live headers, those
-  // blocks must remain. Continues are tracked separately so that when updating
-  // live phi nodes with an edge from a continue I can replace it with an
-  // undef (because we clobber the instructions inside continue block).
-  //
-  // |unreachable_continues| maps continue targets that cannot be reached to
-  // merge instruction that declares them.
-  std::unordered_set<ir::BasicBlock*> unreachable_merges;
-  std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> unreachable_continues;
+  return modified;
+}
+
+void DeadBranchElimPass::MarkUnreachableStructuredTargets(
+    const std::unordered_set<ir::BasicBlock*>& live_blocks,
+    std::unordered_set<ir::BasicBlock*>* unreachable_merges,
+    std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>*
+        unreachable_continues) {
   for (auto block : live_blocks) {
-    uint32_t merge_id = block->MergeBlockIdIfAny();
-    if (merge_id != 0) {
-      ir::BasicBlock* merge_block = get_parent_block(merge_id);
+    if (auto merge_id = block->MergeBlockIdIfAny()) {
+      ir::BasicBlock* merge_block = GetParentBlock(merge_id);
       if (!live_blocks.count(merge_block)) {
-        unreachable_merges.insert(merge_block);
+        unreachable_merges->insert(merge_block);
       }
-      uint32_t cont_id = block->ContinueBlockIdIfAny();
-      if (cont_id != 0) {
-        ir::BasicBlock* cont_block = get_parent_block(cont_id);
+      if (auto cont_id = block->ContinueBlockIdIfAny()) {
+        ir::BasicBlock* cont_block = GetParentBlock(cont_id);
         if (!live_blocks.count(cont_block)) {
-          unreachable_continues[cont_block] = block;
+          (*unreachable_continues)[cont_block] = block;
         }
       }
     }
   }
+}
 
-  // Fix phis in reachable blocks so that only live (or unremovable) incoming
-  // edges are present. If the block now only has a single live incoming edge,
-  // remove the phi and replace its uses with its data input.
+bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
+    ir::Function* func, const std::unordered_set<ir::BasicBlock*>& live_blocks,
+    const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
+        unreachable_continues) {
+  bool modified = false;
   for (auto& block : *func) {
     if (live_blocks.count(&block)) {
       for (auto iter = block.begin(); iter != block.end();) {
@@ -219,10 +209,10 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         // Iterate through the incoming labels and determine which to keep
         // and/or modify.
         for (uint32_t i = 1; i < inst->NumInOperands(); i += 2) {
-          ir::BasicBlock* inc =
-              get_parent_block(inst->GetSingleWordInOperand(i));
-          if (unreachable_continues.count(inc) &&
-              unreachable_continues[inc] == &block) {
+          ir::BasicBlock* inc = GetParentBlock(inst->GetSingleWordInOperand(i));
+          auto cont_iter = unreachable_continues.find(inc);
+          if (cont_iter != unreachable_continues.end() &&
+              cont_iter->second == &block) {
             // Replace incoming value with undef if this phi exists in the loop
             // header. Otherwise, this edge is not live since the unreachable
             // continue block will be replaced with an unconditional branch to
@@ -246,7 +236,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         if (changed) {
           uint32_t continue_id = block.ContinueBlockIdIfAny();
           if (!backedge_added && continue_id != 0 &&
-              unreachable_continues.count(get_parent_block(continue_id))) {
+              unreachable_continues.count(GetParentBlock(continue_id))) {
             // Changed the backedge to branch from the continue block instead
             // of a successor of the continue block. Add an entry to the phi to
             // provide an undef for the continue block. Since the successor of
@@ -287,14 +277,15 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     }
   }
 
-  // Erase dead blocks. Any block captured in |unreachable_merges| or
-  // |unreachable_continues| is a dead block that is required to remain due to
-  // a live merge instruction in the corresponding header. These blocks will
-  // have their instructions clobbered and will become a label and terminator.
-  // Unreachable merge blocks are terminated by OpReachable, while unreachable
-  // continue blocks are terminated by an unconditional branch to the header.
-  // Otherwise, blocks are dead if not explicitly captured in |live_blocks| and
-  // are totally removed.
+  return modified;
+}
+
+bool DeadBranchElimPass::EraseDeadBlocks(
+    ir::Function* func, const std::unordered_set<ir::BasicBlock*>& live_blocks,
+    const std::unordered_set<ir::BasicBlock*>& unreachable_merges,
+    const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
+        unreachable_continues) {
+  bool modified = false;
   for (auto ebi = func->begin(); ebi != func->end();) {
     if (unreachable_merges.count(&*ebi)) {
       // Make unreachable, but leave the label.
@@ -309,7 +300,8 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       // Make unreachable, but leave the label.
       KillAllInsts(&*ebi, false);
       // Add unconditional branch to header.
-      uint32_t cont_id = unreachable_continues[&*ebi]->id();
+      assert(unreachable_continues.count(&*ebi));
+      uint32_t cont_id = unreachable_continues.find(&*ebi)->second->id();
       ebi->AddInstruction(
           MakeUnique<ir::Instruction>(context(), SpvOpBranch, 0, 0,
                                       std::initializer_list<ir::Operand>{
@@ -326,6 +318,23 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       ++ebi;
     }
   }
+
+  return modified;
+}
+
+bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
+  bool modified = false;
+  std::unordered_set<ir::BasicBlock*> live_blocks;
+  modified |= MarkLiveBlocks(func, &live_blocks);
+
+  std::unordered_set<ir::BasicBlock*> unreachable_merges;
+  std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> unreachable_continues;
+  MarkUnreachableStructuredTargets(live_blocks, &unreachable_merges,
+                                   &unreachable_continues);
+  modified |= FixPhiNodesInLiveBlocks(func, live_blocks, unreachable_continues);
+  modified |= EraseDeadBlocks(func, live_blocks, unreachable_merges,
+                              unreachable_continues);
+
   return modified;
 }
 

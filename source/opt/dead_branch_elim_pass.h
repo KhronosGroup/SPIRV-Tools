@@ -65,6 +65,63 @@ class DeadBranchElimPass : public MemPass {
   // blocks.
   bool EliminateDeadBranches(ir::Function* func);
 
+  // Returns the basic block containing |id|.
+  // Note: this pass only requires correct instruction block mappings for the
+  // input. This pass does not preserve the block mapping, so it is not kept
+  // up-to-date during processing.
+  ir::BasicBlock* GetParentBlock(uint32_t id);
+
+  // Marks live blocks reachable from the entry of |func|. Simplifies constant
+  // branches and switches as it proceeds, to limit the number of live blocks.
+  // It is careful not to eliminate backedges even if they are dead, but the
+  // header is live. Likewise, unreachable merge blocks named in live merge
+  // instruction must be retained (though they may be clobbered).
+  bool MarkLiveBlocks(ir::Function* func,
+                      std::unordered_set<ir::BasicBlock*>* live_blocks);
+
+  // Checks for unreachable merge and continue blocks with live headers, those
+  // blocks must be retained. Continues are tracked separately so that when
+  // updating live phi nodes with an edge from a continue they can be replaced
+  // with an undef (because we clobber the instructions inside continue block).
+  //
+  // |unreachable_continues| maps continue targets that cannot be reached to
+  // merge instruction that declares them.
+  void MarkUnreachableStructuredTargets(
+      const std::unordered_set<ir::BasicBlock*>& live_blocks,
+      std::unordered_set<ir::BasicBlock*>* unreachable_merges,
+      std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>*
+          unreachable_continues);
+
+  // Fix phis in reachable blocks so that only live (or unremovable) incoming
+  // edges are present. If the block now only has a single live incoming edge,
+  // remove the phi and replace its uses with its data input.
+  //
+  // |unreachable_continues| maps continue targets that cannot be reached to
+  // merge instruction that declares them.
+  bool FixPhiNodesInLiveBlocks(
+      ir::Function* func,
+      const std::unordered_set<ir::BasicBlock*>& live_blocks,
+      const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
+          unreachable_continues);
+
+  // Erases dead blocks. Any block captured in |unreachable_merges| or
+  // |unreachable_continues| is a dead block that is required to remain due to
+  // a live merge instruction in the corresponding header. These blocks will
+  // have their instructions clobbered and will become a label and terminator.
+  // Unreachable merge blocks are terminated by OpReachable, while unreachable
+  // continue blocks are terminated by an unconditional branch to the header.
+  // Otherwise, blocks are dead if not explicitly captured in |live_blocks| and
+  // are totally removed.
+  //
+  // |unreachable_continues| maps continue targets that cannot be reached to
+  // merge instruction that declares them.
+  bool EraseDeadBlocks(
+      ir::Function* func,
+      const std::unordered_set<ir::BasicBlock*>& live_blocks,
+      const std::unordered_set<ir::BasicBlock*>& unreachable_merges,
+      const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
+          unreachable_continues);
+
   // Initialize extensions whitelist
   void InitExtensions();
 
