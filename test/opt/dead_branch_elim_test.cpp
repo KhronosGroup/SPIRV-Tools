@@ -1816,6 +1816,97 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
 }
+
+TEST_F(DeadBranchElimTest, UnreachableContinuePhiInMerge) {
+  const std::string text = R"(
+; CHECK: [[float_undef:%\w+]] = OpUndef %float
+; CHECK: [[int_undef:%\w+]] = OpUndef %int
+; CHECK: [[entry:%\w+]] = OpLabel
+; CHECK-NEXT: OpBranch [[header:%\w+]]
+; CHECK-NEXT: [[header]] = OpLabel
+; CHECK-NEXT: OpPhi %float {{%\w+}} [[entry]] [[float_undef]] [[continue:%\w+]]
+; CHECK-NEXT: OpPhi %int {{%\w+}} [[entry]] [[int_undef]] [[continue]]
+; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]] None
+; CHECK-NEXT: OpBranch [[label:%\w+]]
+; CHECK-NEXT: [[label]] = OpLabel
+; CHECK-NEXT: [[fadd:%\w+]] = OpFAdd
+; CHECK-NEXT: OpBranch [[label:%\w+]]
+; CHECK-NEXT: [[label]] = OpLabel
+; CHECK-NEXT: OpBranch [[merge]]
+; CHECK-NEXT: [[continue]] = OpLabel
+; CHECK-NEXT: OpBranch [[header]]
+; CHECK-NEXT: [[merge]] = OpLabel
+; CHECK-NEXT: OpStore {{%\w+}} [[fadd]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %o
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 430
+               OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+               OpSourceExtension "GL_GOOGLE_include_directive"
+               OpName %main "main"
+               OpName %o "o"
+               OpName %S "S"
+               OpMemberName %S 0 "a"
+               OpName %U_t "U_t"
+               OpMemberName %U_t 0 "g_F"
+               OpMemberName %U_t 1 "g_F2"
+               OpDecorate %o Location 0
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %U_t 0 Volatile
+               OpMemberDecorate %U_t 0 Offset 0
+               OpMemberDecorate %U_t 1 Offset 4
+               OpDecorate %U_t BufferBlock
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_0 = OpConstant %float 0
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_0 = OpConstant %int 0
+     %int_10 = OpConstant %int 10
+       %bool = OpTypeBool
+       %true = OpConstantTrue %bool
+    %float_1 = OpConstant %float 1
+    %float_5 = OpConstant %float 5
+      %int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+          %o = OpVariable %_ptr_Output_float Output
+          %S = OpTypeStruct %float
+        %U_t = OpTypeStruct %S %S
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+       %main = OpFunction %void None %7
+         %22 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+         %24 = OpPhi %float %float_0 %22 %25 %26
+         %27 = OpPhi %int %int_0 %22 %28 %26
+               OpLoopMerge %29 %26 None
+               OpBranch %40
+         %40 = OpLabel
+         %25 = OpFAdd %float %24 %float_1
+               OpSelectionMerge %30 None
+               OpBranchConditional %true %31 %30
+         %31 = OpLabel
+               OpBranch %29
+         %30 = OpLabel
+               OpBranch %26
+         %26 = OpLabel
+         %28 = OpIAdd %int %27 %int_1
+         %32 = OpSLessThan %bool %27 %int_10
+; continue block branches to the header or another none dead block.
+               OpBranchConditional %32 %23 %29
+         %29 = OpLabel
+         %33 = OpPhi %float %24 %26 %25 %31
+               OpStore %o %33
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
 #endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

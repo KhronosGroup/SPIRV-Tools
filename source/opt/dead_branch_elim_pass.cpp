@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Khronos Group Inc.
 // Copyright (c) 2017 Valve Corporation
 // Copyright (c) 2017 LunarG Inc.
+// Copyright (c) 2018 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -220,8 +221,12 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         for (uint32_t i = 1; i < inst->NumInOperands(); i += 2) {
           ir::BasicBlock* inc =
               get_parent_block(inst->GetSingleWordInOperand(i));
-          if (unreachable_continues.count(inc)) {
-            // Replace incoming value with undef.
+          if (unreachable_continues.count(inc) &&
+              unreachable_continues[inc] == &block) {
+            // Replace incoming value with undef if this phi exists in the loop
+            // header. Otherwise, this edge is not live since the unreachable
+            // continue block will be replaced with an unconditional branch to
+            // the header only.
             operands.emplace_back(
                 SPV_OPERAND_TYPE_ID,
                 std::initializer_list<uint32_t>{Type2Undef(inst->type_id())});
