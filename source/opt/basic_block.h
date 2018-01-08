@@ -135,8 +135,7 @@ class BasicBlock {
   bool IsLoopHeader() const { return GetLoopMergeInst() != nullptr; }
 
   // Returns the ID of the merge block declared by a merge instruction in this
-  // block, if any.  If none, returns zero.  If |cbid| is not nullptr, the ID of
-  // the continue block in the merge instruction is set in |*cbid|.
+  // block, if any.  If none, returns zero.
   uint32_t MergeBlockIdIfAny() const;
 
   // Returns the ID of the continue block declared by a merge instruction in
