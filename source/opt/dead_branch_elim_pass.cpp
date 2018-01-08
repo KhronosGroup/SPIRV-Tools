@@ -197,11 +197,11 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     }
   }
 
+  // Fix phis in reachable blocks so that only live (or unremovable) incoming
+  // edges are present. If the block now only has a single live incoming edge,
+  // remove the phi and replace its uses with its data input.
   for (auto& block : *func) {
     if (live_blocks.count(&block)) {
-      // Fix phis so that only live (or unremovable) incoming edges are
-      // present. If the block now only has a single live incoming edge, remove
-      // the phi and replace its uses with its data input.
       for (auto iter = block.begin(); iter != block.end();) {
         if (iter->opcode() != SpvOpPhi) {
           break;
@@ -211,6 +211,10 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         bool backedge_added = false;
         ir::Instruction* inst = &*iter;
         std::vector<ir::Operand> operands;
+        // Build a complete set of operands (not just input operands). Start
+        // with type and result id operands.
+        operands.push_back(inst->GetOperand(0u));
+        operands.push_back(inst->GetOperand(1u));
         // Iterate through the incoming labels and determine which to keep
         // and/or modify.
         for (uint32_t i = 1; i < inst->NumInOperands(); i += 2) {
@@ -236,7 +240,8 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
 
         if (changed) {
           uint32_t continue_id = block.ContinueBlockIdIfAny();
-          if (!backedge_added && continue_id != 0) {
+          if (!backedge_added && continue_id != 0 &&
+              unreachable_continues.count(get_parent_block(continue_id))) {
             // Changed the backedge to branch from the continue block instead
             // of a successor of the continue block. Add an entry to the phi to
             // provide an undef for the continue block. Since the successor of
@@ -251,20 +256,25 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
           }
 
           // Replace the phi with either a single value or a rebuilt phi.
-          uint32_t replId;
-          if (operands.size() == 2) {
-            replId = operands[0].words[0];
+          // uint32_t replId;
+          //
+          // We always have type and result id operands. So this phi has a
+          // single source if are two more operands beyond those.
+          if (operands.size() == 4) {
+            // First input data operands is at index 2.
+            uint32_t replId = operands[2u].words[0];
+            context()->ReplaceAllUsesWith(inst->result_id(), replId);
+            iter = context()->KillInst(&*inst);
           } else {
-            replId = TakeNextId();
-            std::unique_ptr<ir::Instruction> newPhi(
-                new ir::Instruction(context(), SpvOpPhi, inst->type_id(),
-                                    replId, std::move(operands)));
-            get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
-            context()->set_instr_block(&*newPhi, &block);
-            inst->InsertBefore(std::move(newPhi));
+            // We've rewritten the operands, so first instruct the def/use
+            // manager to forget uses that in the phi before we replace them.
+            // After replacing operands update the def/use manager by
+            // re-analyzing the used ids in this phi.
+            get_def_use_mgr()->EraseUseRecordsOfOperandIds(inst);
+            inst->ReplaceOperands(operands);
+            get_def_use_mgr()->AnalyzeInstUse(inst);
+            ++iter;
           }
-          context()->ReplaceAllUsesWith(inst->result_id(), replId);
-          iter = context()->KillInst(&*inst);
         } else {
           ++iter;
         }
@@ -272,7 +282,14 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     }
   }
 
-  // Erase dead blocks.
+  // Erase dead blocks. Any block captured in |unreachable_merges| or
+  // |unreachable_continues| is a dead block that is required to remain due to
+  // a live merge instruction in the corresponding header. These blocks will
+  // have their instructions clobbered and will become a label and terminator.
+  // Unreachable merge blocks are terminated by OpReachable, while unreachable
+  // continue blocks are terminated by an unconditional branch to the header.
+  // Otherwise, blocks are dead if not explicitly captured in |live_blocks| and
+  // are totally removed.
   for (auto ebi = func->begin(); ebi != func->end();) {
     if (unreachable_merges.count(&*ebi)) {
       // Make unreachable, but leave the label.
