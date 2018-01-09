@@ -461,11 +461,11 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         }
 
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
-        if (!_.IsFloatVectorType(v_type) || _.GetDimension(v_type) != 2 ||
+        if (!_.IsIntVectorType(v_type) || _.GetDimension(v_type) != 2 ||
             _.GetBitWidth(v_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected operand V to be a 32-bit float vector of size 2";
+                 << "expected operand V to be a 32-bit int vector of size 2";
         }
         break;
       }
@@ -512,12 +512,12 @@ spv_result_t ExtInstPass(ValidationState_t& _,
       }
 
       case GLSLstd450UnpackDouble2x32: {
-        if (!_.IsFloatVectorType(result_type) ||
+        if (!_.IsIntVectorType(result_type) ||
             _.GetDimension(result_type) != 2 ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to be a 32-bit float vector of size "
+                 << "expected Result Type to be a 32-bit int vector of size "
                     "2";
         }
 
