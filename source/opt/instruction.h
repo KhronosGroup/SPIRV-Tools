@@ -347,6 +347,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   Instruction* InsertBefore(std::unique_ptr<Instruction>&& i);
   using utils::IntrusiveNodeBase<Instruction>::InsertBefore;
 
+  // Returns true if |this| is an instruction defining a constant, but not a
+  // Spec constant.
+  inline bool IsConstant() const;
+
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
@@ -545,6 +549,11 @@ bool Instruction::IsDecoration() const {
 bool Instruction::IsLoad() const { return spvOpcodeIsLoad(opcode()); }
 
 bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode()); }
+
+bool Instruction::IsConstant() const {
+  return spvOpcodeIsConstant(opcode()) &&
+         !spvOpcodeIsScalarSpecConstant(opcode());
+}
 }  // namespace ir
 }  // namespace spvtools
 

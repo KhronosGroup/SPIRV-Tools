@@ -14,6 +14,7 @@
 
 #include "fold.h"
 #include "def_use_manager.h"
+#include "ir_context.h"
 
 #include <cassert>
 #include <vector>
@@ -287,6 +288,66 @@ bool IsFoldableConstant(const analysis::Constant* cst) {
     return scalar->words().size() == 1;
   else
     return cst->AsNullConstant() != nullptr;
+}
+
+ir::Instruction* FoldInstructionToConstant(
+    ir::Instruction* inst, std::function<uint32_t(uint32_t)> id_map) {
+  if (!inst->IsFoldable()) {
+    return nullptr;
+  }
+
+  ir::IRContext* context = inst->context();
+  analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+
+  // Collect the values of the constant parameters.
+  std::vector<const analysis::Constant*> constants;
+  bool missing_constants = false;
+  inst->ForEachInId([&constants, &missing_constants, const_mgr,
+                     &id_map](uint32_t* op_id) {
+    uint32_t id = id_map(*op_id);
+    const analysis::Constant* const_op = const_mgr->FindDeclaredConstant(id);
+    if (!const_op || !IsFoldableConstant(const_op)) {
+      constants.push_back(nullptr);
+      missing_constants = true;
+      return;
+    }
+    constants.push_back(const_op);
+  });
+
+  // If all parameters are constant, fold the instruction to a constant.
+  if (!missing_constants) {
+    uint32_t result_val = FoldScalars(inst->opcode(), constants);
+    const analysis::Constant* result_const =
+        const_mgr->GetConstant(const_mgr->GetType(inst), {result_val});
+    return const_mgr->GetDefiningInstruction(result_const);
+  }
+
+  // TODO: Add other folding opportunities that will generate a constant.
+  return nullptr;
+}
+
+bool IsFoldableType(ir::Instruction* type_inst) {
+  // Support 32-bit integers.
+  if (type_inst->opcode() == SpvOpTypeInt) {
+    return type_inst->GetSingleWordInOperand(0) == 32;
+  }
+  // Support booleans.
+  if (type_inst->opcode() == SpvOpTypeBool) {
+    return true;
+  }
+  // Nothing else yet.
+  return false;
+}
+ir::Instruction* FoldInstruction(ir::Instruction* inst,
+                                 std::function<uint32_t(uint32_t)> id_map) {
+  ir::Instruction* folded_inst = FoldInstructionToConstant(inst, id_map);
+  if (folded_inst != nullptr) {
+    return folded_inst;
+  }
+
+  // TODO: Add other folding opportunities that do not necessarily fold to a
+  // constant.
+  return nullptr;
 }
 
 }  // namespace opt

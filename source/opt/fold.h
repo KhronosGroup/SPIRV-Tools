@@ -59,6 +59,43 @@ bool IsFoldableOpcode(SpvOp opcode);
 // Returns true if |cst| is supported by FoldScalars and FoldVectors.
 bool IsFoldableConstant(const analysis::Constant* cst);
 
+// Returns true if |FoldInstructionToConstant| could fold an instruction whose
+// result type is |type_inst|.
+bool IsFoldableType(ir::Instruction* type_inst);
+
+// Tries to fold |inst| to a single constant, when the input ids to |inst| have
+// been substituted using |id_map|.  Returns a pointer to the OpConstant*
+// instruction if successful.  If necessary, a new constant instruction is
+// created and placed in the global values section.
+//
+// |id_map| is a function that takes one result id and returns another.  It can
+// be used for things like CCP where it is known that some ids contain a
+// constant, but the instruction itself has not been updated yet.  This can map
+// those ids to the appropriate constants.
+ir::Instruction* FoldInstructionToConstant(
+    ir::Instruction* inst, std::function<uint32_t(uint32_t)> id_map);
+
+// Tries to fold |inst| to a simpler instruction that computes the same value,
+// when the input ids to |inst| have been substituted using |id_map|.  Returns a
+// pointer to the simplified instruction if successful.  If necessary, a new
+// instruction is created and placed in the global values section, for
+// constants, or after |inst| for other instructions.
+//
+// |inst| must be an instruction that exists in the body of a function.
+//
+// |id_map| is a function that takes one result id and returns another.  It can
+// be used for things like CCP where it is known that some ids contain a
+// constant, but the instruction itself has not been updated yet.  This can map
+// those ids to the appropriate constants.
+ir::Instruction* FoldInstruction(ir::Instruction* inst,
+                                 std::function<uint32_t(uint32_t)> id_map);
+
+// The same as above when |id_map| is the identity function.
+inline ir::Instruction* FoldInstruction(ir::Instruction* inst) {
+  auto identity_map = [](uint32_t id) { return id; };
+  return FoldInstructionToConstant(inst, identity_map);
+}
+
 }  // namespace opt
 }  // namespace spvtools
 

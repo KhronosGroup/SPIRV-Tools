@@ -468,7 +468,13 @@ bool Instruction::IsOpaqueType() const {
   }
 }
 
-bool Instruction::IsFoldable() const { return opt::IsFoldableOpcode(opcode()); }
+bool Instruction::IsFoldable() const {
+  if (!opt::IsFoldableOpcode(opcode())) {
+    return false;
+  }
+  Instruction* type = context()->get_def_use_mgr()->GetDef(type_id());
+  return opt::IsFoldableType(type);
+}
 
 }  // namespace ir
 }  // namespace spvtools

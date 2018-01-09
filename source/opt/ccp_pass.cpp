@@ -120,58 +120,41 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(ir::Instruction* instr) {
     return MarkInstructionVarying(instr);
   }
 
-  // Otherwise, see if the RHS of the assignment folds into a constant value.
-  std::vector<uint32_t> cst_val_ids;
-  bool missing_constants = false;
-  bool varying_values = false;
-  instr->ForEachInId([this, &cst_val_ids, &missing_constants,
-                      &varying_values](uint32_t* op_id) {
+  // See if the RHS of the assignment folds into a constant value.
+  auto map_func = [this](uint32_t id) {
+    auto it = values_.find(id);
+    if (it == values_.end() || IsVaryingValue(it->second)) {
+      return id;
+    }
+    return it->second;
+  };
+  ir::Instruction* folded_inst =
+      opt::FoldInstructionToConstant(instr, map_func);
+  if (folded_inst != nullptr) {
+    // We do not want to change the body of the function by adding new
+    // instructions.  When folding we can only generate new constants.
+    assert(folded_inst->IsConstant() && "CCP is only interested in constant.");
+    values_[instr->result_id()] = folded_inst->result_id();
+    return SSAPropagator::kInteresting;
+  }
+
+  // If not, see if there is a least one unknown operand to the instruction.  If
+  // so, we might be able to fold it later.
+  bool could_be_improved = false;
+  instr->ForEachInId([this, &could_be_improved](uint32_t* op_id) {
     auto it = values_.find(*op_id);
     if (it == values_.end()) {
-      missing_constants = true;
-      return;
-    } else if (IsVaryingValue(it->second)) {
-      varying_values = true;
+      could_be_improved = true;
       return;
     }
-    cst_val_ids.push_back(it->second);
   });
-
-  // If we did not find a constant value for every operand in the instruction,
-  // do not bother folding it.  Indicate that this instruction does not produce
-  // an interesting value for now.
-  if (missing_constants) {
+  if (could_be_improved) {
     return SSAPropagator::kNotInteresting;
   }
 
-  // If we found at least one varying value, the instruction will never fold
-  // into anything interesting.  Mark it varying.
-  if (varying_values) {
-    return MarkInstructionVarying(instr);
-  }
-
-  auto constants = const_mgr_->GetConstantsFromIds(cst_val_ids);
-  assert(constants.size() != 0 && "Found undeclared constants");
-
-  // If any of the constants are not supported by the folder, we will not be
-  // able to produce a constant out of this instruction.  Consider it varying
-  // in that case.
-  if (!std::all_of(constants.begin(), constants.end(),
-                   [](const analysis::Constant* cst) {
-                     return IsFoldableConstant(cst);
-                   })) {
-    return MarkInstructionVarying(instr);
-  }
-
-  // Otherwise, fold the instruction with all the operands to produce a new
-  // constant.
-  uint32_t result_val = FoldScalars(instr->opcode(), constants);
-  const analysis::Constant* result_const =
-      const_mgr_->GetConstant(const_mgr_->GetType(instr), {result_val});
-  ir::Instruction* const_decl =
-      const_mgr_->GetDefiningInstruction(result_const);
-  values_[instr->result_id()] = const_decl->result_id();
-  return SSAPropagator::kInteresting;
+  // Otherwise, we will never be able to fold this instruction, so mark it
+  // varying.
+  return MarkInstructionVarying(instr);
 }
 
 SSAPropagator::PropStatus CCPPass::VisitBranch(ir::Instruction* instr,
