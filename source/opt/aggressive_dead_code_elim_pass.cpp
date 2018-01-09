@@ -518,7 +518,8 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) { return AggressiveDCE(fp); };
   modified |= ProcessEntryPointCallTree(pfn, get_module());
 
-  // Process module-level instructions.
+  // Process module-level instructions. Now that all live instructions have
+  // been marked, it is safe to remove dead global values.
   modified |= ProcessGlobalValues();
 
   // Kill all dead instructions.
