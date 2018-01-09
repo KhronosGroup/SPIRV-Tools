@@ -93,7 +93,7 @@ ir::Instruction* FoldInstruction(ir::Instruction* inst,
 // The same as above when |id_map| is the identity function.
 inline ir::Instruction* FoldInstruction(ir::Instruction* inst) {
   auto identity_map = [](uint32_t id) { return id; };
-  return FoldInstructionToConstant(inst, identity_map);
+  return FoldInstruction(inst, identity_map);
 }
 
 }  // namespace opt

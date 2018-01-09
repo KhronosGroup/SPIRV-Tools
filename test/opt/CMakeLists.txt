@@ -271,3 +271,8 @@ add_spvtools_unittest(TARGET ir_builder
   SRCS ir_builder.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET instruction_folding
+  SRCS fold_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)

@@ -120,6 +120,31 @@ class IntConstant : public ScalarConstant {
   IntConstant* AsIntConstant() override { return this; }
   const IntConstant* AsIntConstant() const override { return this; }
 
+  int32_t GetS32BitValue() const {
+    // Relies on signed values smaller than 32-bit being sign extended.  See
+    // section 2.2.1 of the SPIR-V spec.
+    assert(words().size() == 1);
+    return words()[0];
+  }
+
+  uint32_t GetU32BitValue() const {
+    // Relies on unsigned values smaller than 32-bit being zero extended.  See
+    // section 2.2.1 of the SPIR-V spec.
+    assert(words().size() == 1);
+    return words()[0];
+  }
+
+  bool IsZero() const {
+    bool is_zero = true;
+    for (uint32_t v : words()) {
+      if (v != 0) {
+        is_zero = false;
+        break;
+      }
+    }
+    return is_zero;
+  }
+
   // Make a copy of this IntConstant instance.
   std::unique_ptr<IntConstant> CopyIntConstant() const {
     return MakeUnique<IntConstant>(type_->AsInteger(), words_);
