@@ -79,13 +79,13 @@ class DeadBranchElimPass : public MemPass {
   bool MarkLiveBlocks(ir::Function* func,
                       std::unordered_set<ir::BasicBlock*>* live_blocks);
 
-  // Checks for unreachable merge and continue blocks with live headers, those
-  // blocks must be retained. Continues are tracked separately so that when
-  // updating live phi nodes with an edge from a continue they can be replaced
-  // with an undef (because we clobber the instructions inside continue block).
+  // Checks for unreachable merge and continue blocks with live headers; those
+  // blocks must be retained. Continues are tracked separately so that a live
+  // phi can be updated to take an undef value from any of its predecessors
+  // that are unreachable continues.
   //
-  // |unreachable_continues| maps continue targets that cannot be reached to
-  // merge instruction that declares them.
+  // |unreachable_continues| maps the id of an unreachable continue target to
+  // the header block that declares it.
   void MarkUnreachableStructuredTargets(
       const std::unordered_set<ir::BasicBlock*>& live_blocks,
       std::unordered_set<ir::BasicBlock*>* unreachable_merges,
@@ -94,7 +94,13 @@ class DeadBranchElimPass : public MemPass {
 
   // Fix phis in reachable blocks so that only live (or unremovable) incoming
   // edges are present. If the block now only has a single live incoming edge,
-  // remove the phi and replace its uses with its data input.
+  // remove the phi and replace its uses with its data input. If the single
+  // remaining incoming edge is from the phi itself, the the phi is in an
+  // unreachable single block loop. Either the block is dead and will be
+  // removed, or it's reachable from an unreachable continue target. In the
+  // latter case that continue target block will be collapsed into a block that
+  // only branches back to its header and we'll eliminate the block with the
+  // phi.
   //
   // |unreachable_continues| maps continue targets that cannot be reached to
   // merge instruction that declares them.
@@ -108,13 +114,13 @@ class DeadBranchElimPass : public MemPass {
   // |unreachable_continues| is a dead block that is required to remain due to
   // a live merge instruction in the corresponding header. These blocks will
   // have their instructions clobbered and will become a label and terminator.
-  // Unreachable merge blocks are terminated by OpReachable, while unreachable
-  // continue blocks are terminated by an unconditional branch to the header.
-  // Otherwise, blocks are dead if not explicitly captured in |live_blocks| and
-  // are totally removed.
+  // Unreachable merge blocks are terminated by OpUnreachable, while
+  // unreachable continue blocks are terminated by an unconditional branch to
+  // the header. Otherwise, blocks are dead if not explicitly captured in
+  // |live_blocks| and are totally removed.
   //
   // |unreachable_continues| maps continue targets that cannot be reached to
-  // merge instruction that declares them.
+  // corresponding header block that declares them.
   bool EraseDeadBlocks(
       ir::Function* func,
       const std::unordered_set<ir::BasicBlock*>& live_blocks,
