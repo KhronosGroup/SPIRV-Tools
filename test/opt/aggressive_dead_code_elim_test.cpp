@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "assembly_builder.h"
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
@@ -150,11 +151,10 @@ OpName %v "v"
 OpName %BaseColor "BaseColor"
 OpName %Dead "Dead"
 OpName %iv2 "iv2"
-OpName %ResType "ResType"
 OpName %Color "Color"
 )";
 
-  const std::string predefs2 =
+  const std::string predefs2_before =
       R"(%void = OpTypeVoid
 %11 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -168,6 +168,23 @@ OpName %Color "Color"
 %_ptr_Output_v4int = OpTypePointer Output %v4int
 %iv2 = OpVariable %_ptr_Output_v4int Output
 %ResType = OpTypeStruct %v4float %v4int
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%Color = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs2_after =
+      R"(%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
+%int = OpTypeInt 32 1
+%v4int = OpTypeVector %int 4
+%_ptr_Output_v4int = OpTypePointer Output %v4int
+%iv2 = OpVariable %_ptr_Output_v4int Output
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %Color = OpVariable %_ptr_Output_v4float Output
 )";
@@ -203,8 +220,8 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-      predefs1 + names_before + predefs2 + func_before,
-      predefs1 + names_after + predefs2 + func_after, true, true);
+      predefs1 + names_before + predefs2_before + func_before,
+      predefs1 + names_after + predefs2_after + func_after, true, true);
 }
 
 TEST_F(AggressiveDCETest, EliminateDecorate) {
@@ -249,7 +266,7 @@ OpName %Dead "Dead"
 OpName %gl_FragColor "gl_FragColor"
 )";
 
-  const std::string predefs2 =
+  const std::string predefs2_before =
       R"(%void = OpTypeVoid
 %10 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -259,6 +276,19 @@ OpName %gl_FragColor "gl_FragColor"
 %BaseColor = OpVariable %_ptr_Input_v4float Input
 %Dead = OpVariable %_ptr_Input_v4float Input
 %float_0_5 = OpConstant %float 0.5
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs2_after =
+      R"(%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
 )";
@@ -292,8 +322,8 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-      predefs1 + names_before + predefs2 + func_before,
-      predefs1 + names_after + predefs2 + func_after, true, true);
+      predefs1 + names_before + predefs2_before + func_before,
+      predefs1 + names_after + predefs2_after + func_after, true, true);
 }
 
 TEST_F(AggressiveDCETest, Simple) {
@@ -828,10 +858,6 @@ OpEntryPoint Fragment %main "main" %outColor %texCoords
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
-OpName %S_t "S_t"
-OpMemberName %S_t 0 "v0"
-OpMemberName %S_t 1 "v1"
-OpMemberName %S_t 2 "smp"
 OpName %outColor "outColor"
 OpName %sampler15 "sampler15"
 OpName %texCoords "texCoords"
@@ -845,16 +871,8 @@ OpDecorate %sampler15 DescriptorSet 0
 %outColor = OpVariable %_ptr_Output_v4float Output
 %14 = OpTypeImage %float 2D 0 0 0 1 Unknown
 %15 = OpTypeSampledImage %14
-%S_t = OpTypeStruct %v2float %v2float %15
-%_ptr_Function_S_t = OpTypePointer Function %S_t
-%17 = OpTypeFunction %void %_ptr_Function_S_t
 %_ptr_UniformConstant_15 = OpTypePointer UniformConstant %15
-%_ptr_Function_15 = OpTypePointer Function %15
 %sampler15 = OpVariable %_ptr_UniformConstant_15 UniformConstant
-%int = OpTypeInt 32 1
-%int_0 = OpConstant %int 0
-%int_2 = OpConstant %int 2
-%_ptr_Function_v2float = OpTypePointer Function %v2float
 %_ptr_Input_v2float = OpTypePointer Input %v2float
 %texCoords = OpVariable %_ptr_Input_v2float Input
 )";
@@ -977,7 +995,7 @@ TEST_F(AggressiveDCETest, PrivateStoreElimInEntryNoCalls) {
   //     OutColor = v;
   // }
 
-  const std::string predefs =
+  const std::string predefs_before =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -1004,6 +1022,33 @@ OpDecorate %OutColor Location 0
 %Dead = OpVariable %_ptr_Input_v4float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %dv = OpVariable %_ptr_Private_v4float Private
+%OutColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %Dead %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %Dead "Dead"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %Dead Location 1
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 )";
 
@@ -1036,7 +1081,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-      predefs + main_before, predefs + main_after, true, true);
+      predefs_before + main_before, predefs_after + main_after, true, true);
 }
 
 TEST_F(AggressiveDCETest, NoPrivateStoreElimIfLoad) {
@@ -1290,14 +1335,6 @@ OpDecorate %OutColor Location 0
 %v4float = OpTypeVector %float 4
 %_ptr_Input_v4float = OpTypePointer Input %v4float
 %BaseColor = OpVariable %_ptr_Input_v4float Input
-%uint = OpTypeInt 32 0
-%uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%_ptr_Function_float = OpTypePointer Function %float
-%uint_1 = OpConstant %uint 1
-%uint_2 = OpConstant %uint 2
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %float_1 = OpConstant %float 1
@@ -1407,13 +1444,6 @@ OpDecorate %OutColor Location 0
 %v4float = OpTypeVector %float 4
 %_ptr_Input_v4float = OpTypePointer Input %v4float
 %BaseColor = OpVariable %_ptr_Input_v4float Input
-%uint = OpTypeInt 32 0
-%uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%_ptr_Function_float = OpTypePointer Function %float
-%uint_1 = OpConstant %uint 1
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %float_1 = OpConstant %float 1
@@ -1640,16 +1670,6 @@ OpDecorate %OutColor Location 0
 %v4float = OpTypeVector %float 4
 %_ptr_Input_v4float = OpTypePointer Input %v4float
 %BaseColor = OpVariable %_ptr_Input_v4float Input
-%uint = OpTypeInt 32 0
-%uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%uint_1 = OpConstant %uint 1
-%_ptr_Function_float = OpTypePointer Function %float
-%float_0_25 = OpConstant %float 0.25
-%float_0_5 = OpConstant %float 0.5
-%float_0_75 = OpConstant %float 0.75
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %float_1 = OpConstant %float 1
@@ -1928,25 +1948,24 @@ OpDecorate %OutColor Location 0
 %_ptr_Input_float = OpTypePointer Input %float
 %float_0 = OpConstant %float 0
 %bool = OpTypeBool
-%_ptr_Function_float = OpTypePointer Function %float
 %float_1 = OpConstant %float 1
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %main = OpFunction %void None %6
-%18 = OpLabel
-%19 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
-%20 = OpLoad %float %19
-%21 = OpFOrdEqual %bool %20 %float_0
-OpSelectionMerge %22 None
-OpBranchConditional %21 %23 %24
-%23 = OpLabel
-OpBranch %22
-%24 = OpLabel
-OpBranch %22
+%17 = OpLabel
+%18 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
+%19 = OpLoad %float %18
+%20 = OpFOrdEqual %bool %19 %float_0
+OpSelectionMerge %21 None
+OpBranchConditional %20 %22 %23
 %22 = OpLabel
-%25 = OpPhi %float %float_0 %23 %float_1 %24
-%26 = OpCompositeConstruct %v4float %25 %25 %25 %25
-OpStore %OutColor %26
+OpBranch %21
+%23 = OpLabel
+OpBranch %21
+%21 = OpLabel
+%24 = OpPhi %float %float_0 %22 %float_1 %23
+%25 = OpCompositeConstruct %v4float %24 %24 %24 %24
+OpStore %OutColor %25
 OpReturn
 OpFunctionEnd
 )";
@@ -2085,7 +2104,6 @@ OpDecorate %o Location 0
 %int_0 = OpConstant %int 0
 %int_10 = OpConstant %int 10
 %bool = OpTypeBool
-%int_2 = OpConstant %int 2
 %uint = OpTypeInt 32 0
 %uint_10 = OpConstant %uint 10
 %_arr_float_uint_10 = OpTypeArray %float %uint_10
@@ -2097,36 +2115,36 @@ OpDecorate %o Location 0
 %_ptr_Output_float = OpTypePointer Output %float
 %o = OpVariable %_ptr_Output_float Output
 %main = OpFunction %void None %10
-%26 = OpLabel
+%25 = OpLabel
 %s = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %s %float_0
 OpStore %i %int_0
-OpBranch %27
-%27 = OpLabel
-OpLoopMerge %28 %29 None
-OpBranch %30
-%30 = OpLabel
-%31 = OpLoad %int %i
-%32 = OpSLessThan %bool %31 %int_10
-OpSelectionMerge %33 None
-OpBranchConditional %32 %33 %28
-%33 = OpLabel
-%34 = OpLoad %int %i
-%35 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %34
-%36 = OpLoad %float %35
-%37 = OpLoad %float %s
-%38 = OpFAdd %float %37 %36
-OpStore %s %38
+OpBranch %26
+%26 = OpLabel
+OpLoopMerge %27 %28 None
 OpBranch %29
 %29 = OpLabel
-%39 = OpLoad %int %i
-%40 = OpIAdd %int %39 %int_1
-OpStore %i %40
-OpBranch %27
+%30 = OpLoad %int %i
+%31 = OpSLessThan %bool %30 %int_10
+OpSelectionMerge %32 None
+OpBranchConditional %31 %32 %27
+%32 = OpLabel
+%33 = OpLoad %int %i
+%34 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %33
+%35 = OpLoad %float %34
+%36 = OpLoad %float %s
+%37 = OpFAdd %float %36 %35
+OpStore %s %37
+OpBranch %28
 %28 = OpLabel
-%41 = OpLoad %float %s
-OpStore %o %41
+%38 = OpLoad %int %i
+%39 = OpIAdd %int %38 %int_1
+OpStore %i %39
+OpBranch %26
+%27 = OpLabel
+%40 = OpLoad %float %s
+OpStore %o %40
 OpReturn
 OpFunctionEnd
 )";
@@ -2180,13 +2198,10 @@ OpName %gl_FragColor "gl_FragColor"
       R"(OpName %main "main"
 OpName %v "v"
 OpName %BaseColor "BaseColor"
-OpName %U_t "U_t"
-OpMemberName %U_t 0 "g_I"
-OpName %_ ""
 OpName %gl_FragColor "gl_FragColor"
 )";
 
-  const std::string predefs2 =
+  const std::string predefs2_before =
       R"(OpMemberDecorate %U_t 0 Offset 0
 OpDecorate %U_t Block
 OpDecorate %_ DescriptorSet 0
@@ -2209,6 +2224,18 @@ OpDecorate %_ DescriptorSet 0
 %bool = OpTypeBool
 %float_0_5 = OpConstant %float 0.5
 %int_1 = OpConstant %int 1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs2_after =
+      R"(%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
 )";
@@ -2267,8 +2294,8 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(
-      predefs1 + names_before + predefs2 + func_before,
-      predefs1 + names_after + predefs2 + func_after, true, true);
+      predefs1 + names_before + predefs2_before + func_before,
+      predefs1 + names_after + predefs2_after + func_after, true, true);
 }
 
 TEST_F(AggressiveDCETest, NoEliminateBusyLoop) {
@@ -2389,10 +2416,8 @@ OpDecorate %o Location 0
 %void = OpTypeVoid
 %8 = OpTypeFunction %void
 %float = OpTypeFloat 32
-%_ptr_Function_float = OpTypePointer Function %float
 %float_0 = OpConstant %float 0
 %int = OpTypeInt 32 1
-%_ptr_Function_int = OpTypePointer Function %int
 %int_0 = OpConstant %int 0
 %int_10 = OpConstant %int 10
 %bool = OpTypeBool
@@ -2407,26 +2432,26 @@ OpDecorate %o Location 0
 %_ptr_Output_float = OpTypePointer Output %float
 %o = OpVariable %_ptr_Output_float Output
 %main = OpFunction %void None %8
-%23 = OpLabel
-OpBranch %24
-%24 = OpLabel
-%25 = OpPhi %float %float_0 %23 %26 %27
-%28 = OpPhi %int %int_0 %23 %29 %27
-OpLoopMerge %30 %27 None
-OpBranch %31
+%21 = OpLabel
+OpBranch %22
+%22 = OpLabel
+%23 = OpPhi %float %float_0 %21 %24 %25
+%26 = OpPhi %int %int_0 %21 %27 %25
+OpLoopMerge %28 %25 None
+OpBranch %29
+%29 = OpLabel
+%30 = OpSLessThan %bool %26 %int_10
+OpBranchConditional %30 %31 %28
 %31 = OpLabel
-%32 = OpSLessThan %bool %28 %int_10
-OpBranchConditional %32 %33 %30
-%33 = OpLabel
-%34 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %28
-%35 = OpLoad %float %34
-%26 = OpFAdd %float %25 %35
-OpBranch %27
-%27 = OpLabel
-%29 = OpIAdd %int %28 %int_1
-OpBranch %24
-%30 = OpLabel
-OpStore %o %25
+%32 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %26
+%33 = OpLoad %float %32
+%24 = OpFAdd %float %23 %33
+OpBranch %25
+%25 = OpLabel
+%27 = OpIAdd %int %26 %int_1
+OpBranch %22
+%28 = OpLabel
+OpStore %o %23
 OpReturn
 OpFunctionEnd
 )";
@@ -2498,14 +2523,6 @@ OpDecorate %OutColor Location 0
 %v4float = OpTypeVector %float 4
 %_ptr_Input_v4float = OpTypePointer Input %v4float
 %BaseColor = OpVariable %_ptr_Input_v4float Input
-%uint = OpTypeInt 32 0
-%uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%_ptr_Function_float = OpTypePointer Function %float
-%uint_1 = OpConstant %uint 1
-%uint_2 = OpConstant %uint 2
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %OutColor = OpVariable %_ptr_Output_v4float Output
 )";
@@ -2822,35 +2839,12 @@ OpEntryPoint Fragment %main "main" %o
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 430
 OpName %main "main"
-OpName %U_t "U_t"
-OpMemberName %U_t 0 "g_F"
-OpName %_ ""
 OpName %o "o"
-OpDecorate %_arr_float_uint_10 ArrayStride 4
-OpDecorate %_arr__arr_float_uint_10_uint_10 ArrayStride 40
-OpMemberDecorate %U_t 0 Offset 0
-OpDecorate %U_t BufferBlock
-OpDecorate %_ DescriptorSet 0
 OpDecorate %o Location 0
 %void = OpTypeVoid
 %12 = OpTypeFunction %void
 %float = OpTypeFloat 32
-%_ptr_Function_float = OpTypePointer Function %float
 %float_0 = OpConstant %float 0
-%int = OpTypeInt 32 1
-%_ptr_Function_int = OpTypePointer Function %int
-%int_0 = OpConstant %int 0
-%int_10 = OpConstant %int 10
-%bool = OpTypeBool
-%uint = OpTypeInt 32 0
-%uint_10 = OpConstant %uint 10
-%_arr_float_uint_10 = OpTypeArray %float %uint_10
-%_arr__arr_float_uint_10_uint_10 = OpTypeArray %_arr_float_uint_10 %uint_10
-%U_t = OpTypeStruct %_arr__arr_float_uint_10_uint_10
-%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
-%_ = OpVariable %_ptr_Uniform_U_t Uniform
-%_ptr_Uniform_float = OpTypePointer Uniform %float
-%int_1 = OpConstant %int 1
 %_ptr_Output_float = OpTypePointer Output %float
 %o = OpVariable %_ptr_Output_float Output
 )";
@@ -2987,7 +2981,6 @@ OpDecorate %3 Location 0
 %float = OpTypeFloat 32
 %float_0 = OpConstant %float 0
 %int = OpTypeInt 32 1
-%_ptr_Function_int = OpTypePointer Function %int
 %int_0 = OpConstant %int 0
 %int_10 = OpConstant %int 10
 %bool = OpTypeBool
@@ -3564,13 +3557,9 @@ OpMemberDecorate %_struct_3 0 Offset 0
 OpDecorate %_runtimearr__struct_3 ArrayStride 16
 OpMemberDecorate %_struct_5 0 Offset 0
 OpDecorate %_struct_5 BufferBlock
-OpMemberDecorate %_struct_6 0 Offset 0
-OpDecorate %_struct_6 BufferBlock
 OpDecorate %2 Location 0
 OpDecorate %7 DescriptorSet 0
 OpDecorate %7 Binding 0
-OpDecorate %8 DescriptorSet 0
-OpDecorate %8 Binding 1
 %void = OpTypeVoid
 %10 = OpTypeFunction %void
 %int = OpTypeInt 32 1
@@ -3583,15 +3572,11 @@ OpDecorate %8 Binding 1
 %_runtimearr__struct_3 = OpTypeRuntimeArray %_struct_3
 %_struct_5 = OpTypeStruct %_runtimearr__struct_3
 %_ptr_Uniform__struct_5 = OpTypePointer Uniform %_struct_5
-%_struct_6 = OpTypeStruct %int
-%_ptr_Uniform__struct_6 = OpTypePointer Uniform %_struct_6
 %_ptr_Function__ptr_Uniform__struct_5 = OpTypePointer Function %_ptr_Uniform__struct_5
-%_ptr_Function__ptr_Uniform__struct_6 = OpTypePointer Function %_ptr_Uniform__struct_6
 %int_0 = OpConstant %int 0
 %uint_0 = OpConstant %uint 0
 %2 = OpVariable %_ptr_Output_v4float Output
 %7 = OpVariable %_ptr_Uniform__struct_5 Uniform
-%8 = OpVariable %_ptr_Uniform__struct_6 Uniform
 %1 = OpFunction %void None %10
 %23 = OpLabel
 %24 = OpVariable %_ptr_Function__ptr_Uniform__struct_5 Function
@@ -3606,6 +3591,1510 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
 }
+
+// %dead is unused.  Make sure we remove it along with its name.
+TEST_F(AggressiveDCETest, RemoveUnreferenced) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+OpName %dead "dead"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Private_float = OpTypePointer Private %float
+%dead = OpVariable %_ptr_Private_float Private
+%main = OpFunction %void None %5
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%main = OpFunction %void None %5
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
+}
+
+// Delete %dead because it is unreferenced.  Then %initializer becomes
+// unreferenced, so remove it as well.
+TEST_F(AggressiveDCETest, RemoveUnreferencedWithInit1) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+OpName %dead "dead"
+OpName %initializer "initializer"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Private_float = OpTypePointer Private %float
+%initializer = OpVariable %_ptr_Private_float Private
+%dead = OpVariable %_ptr_Private_float Private %initializer
+%main = OpFunction %void None %6
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%main = OpFunction %void None %6
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
+}
+
+// Keep %live because it is used, and its initializer.
+TEST_F(AggressiveDCETest, KeepReferenced) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 150
+OpName %main "main"
+OpName %live "live"
+OpName %initializer "initializer"
+OpName %output "output"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Private_float = OpTypePointer Private %float
+%initializer = OpVariable %_ptr_Private_float Private
+%live = OpVariable %_ptr_Private_float Private %initializer
+%_ptr_Output_float = OpTypePointer Output %float
+%output = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %6
+%9 = OpLabel
+%10 = OpLoad %float %live
+OpStore %output %10
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, before, true, true);
+}
+
+// This test that the decoration associated with a variable are removed when the
+// variable is removed.
+TEST_F(AggressiveDCETest, RemoveVariableAndDecorations) {
+  const std::string before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpName %main "main"
+OpName %B "B"
+OpMemberName %B 0 "a"
+OpName %Bdat "Bdat"
+OpMemberDecorate %B 0 Offset 0
+OpDecorate %B BufferBlock
+OpDecorate %Bdat DescriptorSet 0
+OpDecorate %Bdat Binding 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%B = OpTypeStruct %uint
+%_ptr_Uniform_B = OpTypePointer Uniform %B
+%Bdat = OpVariable %_ptr_Uniform_B Uniform
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%main = OpFunction %void None %6
+%13 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpName %main "main"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%main = OpFunction %void None %6
+%13 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(before, after, true, true);
+}
+
+TEST_F(AggressiveDCETest, BasicDeleteDeadFunction) {
+  // The function Dead should be removed because it is never called.
+  const std::vector<const char*> common_code = {
+      // clang-format off
+               "OpCapability Shader",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\"",
+               "OpName %main \"main\"",
+               "OpName %Live \"Live\"",
+       "%void = OpTypeVoid",
+          "%7 = OpTypeFunction %void",
+       "%main = OpFunction %void None %7",
+         "%15 = OpLabel",
+         "%16 = OpFunctionCall %void %Live",
+         "%17 = OpFunctionCall %void %Live",
+               "OpReturn",
+               "OpFunctionEnd",
+  "%Live = OpFunction %void None %7",
+         "%20 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd"
+      // clang-format on
+  };
+
+  const std::vector<const char*> dead_function = {
+      // clang-format off
+      "%Dead = OpFunction %void None %7",
+         "%19 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      JoinAllInsts(Concat(common_code, dead_function)),
+      JoinAllInsts(common_code), /* skip_nop = */ true);
+}
+
+TEST_F(AggressiveDCETest, BasicKeepLiveFunction) {
+  // Everything is reachable from an entry point, so no functions should be
+  // deleted.
+  const std::vector<const char*> text = {
+      // clang-format off
+               "OpCapability Shader",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\"",
+               "OpName %main \"main\"",
+               "OpName %Live1 \"Live1\"",
+               "OpName %Live2 \"Live2\"",
+       "%void = OpTypeVoid",
+          "%7 = OpTypeFunction %void",
+       "%main = OpFunction %void None %7",
+         "%15 = OpLabel",
+         "%16 = OpFunctionCall %void %Live2",
+         "%17 = OpFunctionCall %void %Live1",
+               "OpReturn",
+               "OpFunctionEnd",
+      "%Live1 = OpFunction %void None %7",
+         "%19 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd",
+      "%Live2 = OpFunction %void None %7",
+         "%20 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd"
+      // clang-format on
+  };
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  std::string assembly = JoinAllInsts(text);
+  auto result = SinglePassRunAndDisassemble<opt::AggressiveDCEPass>(
+      assembly, /* skip_nop = */ true, /* do_validation = */ false);
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(assembly, std::get<0>(result));
+}
+
+TEST_F(AggressiveDCETest, BasicRemoveDecorationsAndNames) {
+  // We want to remove the names and decorations associated with results that
+  // are removed.  This test will check for that.
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpName %main "main"
+               OpName %Dead "Dead"
+               OpName %x "x"
+               OpName %y "y"
+               OpName %z "z"
+               OpDecorate %x RelaxedPrecision
+               OpDecorate %y RelaxedPrecision
+               OpDecorate %z RelaxedPrecision
+               OpDecorate %6 RelaxedPrecision
+               OpDecorate %7 RelaxedPrecision
+               OpDecorate %8 RelaxedPrecision
+       %void = OpTypeVoid
+         %10 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_1 = OpConstant %float 1
+       %main = OpFunction %void None %10
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+       %Dead = OpFunction %void None %10
+         %15 = OpLabel
+          %x = OpVariable %_ptr_Function_float Function
+          %y = OpVariable %_ptr_Function_float Function
+          %z = OpVariable %_ptr_Function_float Function
+               OpStore %x %float_1
+               OpStore %y %float_1
+          %6 = OpLoad %float %x
+          %7 = OpLoad %float %y
+          %8 = OpFAdd %float %6 %7
+               OpStore %z %8
+               OpReturn
+               OpFunctionEnd)";
+
+  const std::string expected_output = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpName %main "main"
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%main = OpFunction %void None %10
+%14 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(text, expected_output,
+                                                /* skip_nop = */ true);
+}
+
+#ifdef SPIRV_EFFCEE
+TEST_F(AggressiveDCETest, BasicAllDeadConstants) {
+  const std::string text = R"(
+  ; CHECK-NOT: OpConstant
+               OpCapability Shader
+               OpCapability Float64
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpName %main "main"
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %bool = OpTypeBool
+       %true = OpConstantTrue %bool
+      %false = OpConstantFalse %bool
+        %int = OpTypeInt 32 1
+          %9 = OpConstant %int 1
+       %uint = OpTypeInt 32 0
+         %11 = OpConstant %uint 2
+      %float = OpTypeFloat 32
+         %13 = OpConstant %float 3.14
+     %double = OpTypeFloat 64
+         %15 = OpConstant %double 3.14159265358979
+       %main = OpFunction %void None %4
+         %16 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+#endif  // SPIRV_EFFCEE
+
+TEST_F(AggressiveDCETest, BasicNoneDeadConstants) {
+  const std::vector<const char*> text = {
+      // clang-format off
+                "OpCapability Shader",
+                "OpCapability Float64",
+           "%1 = OpExtInstImport \"GLSL.std.450\"",
+                "OpMemoryModel Logical GLSL450",
+                "OpEntryPoint Vertex %main \"main\" %btv %bfv %iv %uv %fv %dv",
+                "OpName %main \"main\"",
+                "OpName %btv \"btv\"",
+                "OpName %bfv \"bfv\"",
+                "OpName %iv \"iv\"",
+                "OpName %uv \"uv\"",
+                "OpName %fv \"fv\"",
+                "OpName %dv \"dv\"",
+        "%void = OpTypeVoid",
+          "%10 = OpTypeFunction %void",
+        "%bool = OpTypeBool",
+ "%_ptr_Output_bool = OpTypePointer Output %bool",
+        "%true = OpConstantTrue %bool",
+       "%false = OpConstantFalse %bool",
+         "%int = OpTypeInt 32 1",
+ "%_ptr_Output_int = OpTypePointer Output %int",
+       "%int_1 = OpConstant %int 1",
+        "%uint = OpTypeInt 32 0",
+ "%_ptr_Output_uint = OpTypePointer Output %uint",
+      "%uint_2 = OpConstant %uint 2",
+       "%float = OpTypeFloat 32",
+ "%_ptr_Output_float = OpTypePointer Output %float",
+  "%float_3_14 = OpConstant %float 3.14",
+      "%double = OpTypeFloat 64",
+ "%_ptr_Output_double = OpTypePointer Output %double",
+ "%double_3_14159265358979 = OpConstant %double 3.14159265358979",
+         "%btv = OpVariable %_ptr_Output_bool Output",
+         "%bfv = OpVariable %_ptr_Output_bool Output",
+          "%iv = OpVariable %_ptr_Output_int Output",
+          "%uv = OpVariable %_ptr_Output_uint Output",
+          "%fv = OpVariable %_ptr_Output_float Output",
+          "%dv = OpVariable %_ptr_Output_double Output",
+        "%main = OpFunction %void None %10",
+          "%27 = OpLabel",
+                "OpStore %btv %true",
+                "OpStore %bfv %false",
+                "OpStore %iv %int_1",
+                "OpStore %uv %uint_2",
+                "OpStore %fv %float_3_14",
+                "OpStore %dv %double_3_14159265358979",
+                "OpReturn",
+                "OpFunctionEnd",
+      // clang-format on
+  };
+  // All constants are used, so none of them should be eliminated.
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      JoinAllInsts(text), JoinAllInsts(text), /* skip_nop = */ true);
+}
+
+struct EliminateDeadConstantTestCase {
+  // Type declarations and constants that should be kept.
+  std::vector<std::string> used_consts;
+  // Instructions that refer to constants, this is added to create uses for
+  // some constants so they won't be treated as dead constants.
+  std::vector<std::string> main_insts;
+  // Dead constants that should be removed.
+  std::vector<std::string> dead_consts;
+  // Expectations
+  std::vector<std::string> checks;
+};
+
+// All types that are potentially required in EliminateDeadConstantTest.
+const std::vector<std::string> CommonTypes = {
+    // clang-format off
+    // scalar types
+    "%bool = OpTypeBool",
+    "%uint = OpTypeInt 32 0",
+    "%int = OpTypeInt 32 1",
+    "%float = OpTypeFloat 32",
+    "%double = OpTypeFloat 64",
+    // vector types
+    "%v2bool = OpTypeVector %bool 2",
+    "%v2uint = OpTypeVector %uint 2",
+    "%v2int = OpTypeVector %int 2",
+    "%v3int = OpTypeVector %int 3",
+    "%v4int = OpTypeVector %int 4",
+    "%v2float = OpTypeVector %float 2",
+    "%v3float = OpTypeVector %float 3",
+    "%v2double = OpTypeVector %double 2",
+    // variable pointer types
+    "%_pf_bool = OpTypePointer Output %bool",
+    "%_pf_uint = OpTypePointer Output %uint",
+    "%_pf_int = OpTypePointer Output %int",
+    "%_pf_float = OpTypePointer Output %float",
+    "%_pf_double = OpTypePointer Output %double",
+    "%_pf_v2int = OpTypePointer Output %v2int",
+    "%_pf_v3int = OpTypePointer Output %v3int",
+    "%_pf_v2float = OpTypePointer Output %v2float",
+    "%_pf_v3float = OpTypePointer Output %v3float",
+    "%_pf_v2double = OpTypePointer Output %v2double",
+    // struct types
+    "%inner_struct = OpTypeStruct %bool %int %float %double",
+    "%outer_struct = OpTypeStruct %inner_struct %int %double",
+    "%flat_struct = OpTypeStruct %bool %int %float %double",
+    // clang-format on
+};
+
+using EliminateDeadConstantTest =
+    PassTest<::testing::TestWithParam<EliminateDeadConstantTestCase>>;
+
+#ifdef SPIRV_EFFCEE
+TEST_P(EliminateDeadConstantTest, Custom) {
+  auto& tc = GetParam();
+  AssemblyBuilder builder;
+  builder.AppendTypesConstantsGlobals(CommonTypes)
+      .AppendTypesConstantsGlobals(tc.used_consts)
+      .AppendInMain(tc.main_insts);
+  const std::string expected = builder.GetCode();
+  builder.AppendTypesConstantsGlobals(tc.dead_consts);
+  builder.PrependPreamble(tc.checks);
+  const std::string assembly_with_dead_const = builder.GetCode();
+
+  // Do not enable validation. As the input code is invalid from the base
+  // tests (ported from other passes).
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(assembly_with_dead_const,
+                                                false);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ScalarTypeConstants, EliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+        // clang-format off
+        // Scalar type constants, one dead constant and one used constant.
+        {
+            /* .used_consts = */
+            {
+              "%used_const_int = OpConstant %int 1",
+            },
+            /* .main_insts = */
+            {
+              "%int_var = OpVariable %_pf_int Output",
+              "OpStore %int_var %used_const_int",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_const_int = OpConstant %int 1",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[const:%\\w+]] = OpConstant %int 1",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[const]]",
+            },
+        },
+        {
+            /* .used_consts = */
+            {
+              "%used_const_uint = OpConstant %uint 1",
+            },
+            /* .main_insts = */
+            {
+              "%uint_var = OpVariable %_pf_uint Output",
+              "OpStore %uint_var %used_const_uint",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_const_uint = OpConstant %uint 1",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[const:%\\w+]] = OpConstant %uint 1",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[const]]",
+            },
+        },
+        {
+            /* .used_consts = */
+            {
+              "%used_const_float = OpConstant %float 3.14",
+            },
+            /* .main_insts = */
+            {
+              "%float_var = OpVariable %_pf_float Output",
+              "OpStore %float_var %used_const_float",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_const_float = OpConstant %float 3.14",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[const:%\\w+]] = OpConstant %float 3.14",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[const]]",
+            },
+        },
+        {
+            /* .used_consts = */
+            {
+              "%used_const_double = OpConstant %double 3.14",
+            },
+            /* .main_insts = */
+            {
+              "%double_var = OpVariable %_pf_double Output",
+              "OpStore %double_var %used_const_double",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_const_double = OpConstant %double 3.14",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[const:%\\w+]] = OpConstant %double 3.14",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[const]]",
+            },
+        },
+        // clang-format on
+    })));
+
+INSTANTIATE_TEST_CASE_P(
+    VectorTypeConstants, EliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+        // clang-format off
+        // Tests eliminating dead constant type ivec2. One dead constant vector
+        // and one used constant vector, each built from its own group of
+        // scalar constants.
+        {
+            /* .used_consts = */
+            {
+              "%used_int_x = OpConstant %int 1",
+              "%used_int_y = OpConstant %int 2",
+              "%used_v2int = OpConstantComposite %v2int %used_int_x %used_int_y",
+            },
+            /* .main_insts = */
+            {
+              "%v2int_var = OpVariable %_pf_v2int Output",
+              "OpStore %v2int_var %used_v2int",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_int_x = OpConstant %int 1",
+              "%dead_int_y = OpConstant %int 2",
+              "%dead_v2int = OpConstantComposite %v2int %dead_int_x %dead_int_y",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[constx:%\\w+]] = OpConstant %int 1",
+              "; CHECK: [[consty:%\\w+]] = OpConstant %int 2",
+              "; CHECK: [[const:%\\w+]] = OpConstantComposite %v2int [[constx]] [[consty]]",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[const]]",
+            },
+        },
+        // Tests eliminating dead constant ivec3. One dead constant vector and
+        // one used constant vector. But both built from a same group of
+        // scalar constants.
+        {
+            /* .used_consts = */
+            {
+              "%used_int_x = OpConstant %int 1",
+              "%used_int_y = OpConstant %int 2",
+              "%used_int_z = OpConstant %int 3",
+              "%used_v3int = OpConstantComposite %v3int %used_int_x %used_int_y %used_int_z",
+            },
+            /* .main_insts = */
+            {
+              "%v3int_var = OpVariable %_pf_v3int Output",
+              "OpStore %v3int_var %used_v3int",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_v3int = OpConstantComposite %v3int %used_int_x %used_int_y %used_int_z",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[constx:%\\w+]] = OpConstant %int 1",
+              "; CHECK: [[consty:%\\w+]] = OpConstant %int 2",
+              "; CHECK: [[constz:%\\w+]] = OpConstant %int 3",
+              "; CHECK: [[const:%\\w+]] = OpConstantComposite %v3int [[constx]] [[consty]] [[constz]]",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[const]]",
+            },
+        },
+        // Tests eliminating dead constant vec2. One dead constant vector and
+        // one used constant vector. Each built from its own group of scalar
+        // constants.
+        {
+            /* .used_consts = */
+            {
+              "%used_float_x = OpConstant %float 3.14",
+              "%used_float_y = OpConstant %float 4.13",
+              "%used_v2float = OpConstantComposite %v2float %used_float_x %used_float_y",
+            },
+            /* .main_insts = */
+            {
+              "%v2float_var = OpVariable %_pf_v2float Output",
+              "OpStore %v2float_var %used_v2float",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_float_x = OpConstant %float 3.14",
+              "%dead_float_y = OpConstant %float 4.13",
+              "%dead_v2float = OpConstantComposite %v2float %dead_float_x %dead_float_y",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[constx:%\\w+]] = OpConstant %float 3.14",
+              "; CHECK: [[consty:%\\w+]] = OpConstant %float 4.13",
+              "; CHECK: [[const:%\\w+]] = OpConstantComposite %v2float [[constx]] [[consty]]",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[const]]",
+            },
+        },
+        // Tests eliminating dead constant vec3. One dead constant vector and
+        // one used constant vector. Both built from a same group of scalar
+        // constants.
+        {
+            /* .used_consts = */
+            {
+              "%used_float_x = OpConstant %float 3.14",
+              "%used_float_y = OpConstant %float 4.13",
+              "%used_float_z = OpConstant %float 4.31",
+              "%used_v3float = OpConstantComposite %v3float %used_float_x %used_float_y %used_float_z",
+            },
+            /* .main_insts = */
+            {
+              "%v3float_var = OpVariable %_pf_v3float Output",
+              "OpStore %v3float_var %used_v3float",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_v3float = OpConstantComposite %v3float %used_float_x %used_float_y %used_float_z",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[constx:%\\w+]] = OpConstant %float 3.14",
+              "; CHECK: [[consty:%\\w+]] = OpConstant %float 4.13",
+              "; CHECK: [[constz:%\\w+]] = OpConstant %float 4.31",
+              "; CHECK: [[const:%\\w+]] = OpConstantComposite %v3float [[constx]] [[consty]]",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[const]]",
+            },
+        },
+        // clang-format on
+    })));
+
+INSTANTIATE_TEST_CASE_P(
+    StructTypeConstants, EliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+        // clang-format off
+        // A plain struct type dead constants. All of its components are dead
+        // constants too.
+        {
+            /* .used_consts = */ {},
+            /* .main_insts = */ {},
+            /* .dead_consts = */
+            {
+              "%dead_bool = OpConstantTrue %bool",
+              "%dead_int = OpConstant %int 1",
+              "%dead_float = OpConstant %float 2.5",
+              "%dead_double = OpConstant %double 3.14159265358979",
+              "%dead_struct = OpConstantComposite %flat_struct %dead_bool %dead_int %dead_float %dead_double",
+            },
+            /* .checks = */
+            {
+              "; CHECK-NOT: OpConstant",
+            },
+        },
+        // A plain struct type dead constants. Some of its components are dead
+        // constants while others are not.
+        {
+            /* .used_consts = */
+            {
+                "%used_int = OpConstant %int 1",
+                "%used_double = OpConstant %double 3.14159265358979",
+            },
+            /* .main_insts = */
+            {
+                "%int_var = OpVariable %_pf_int Output",
+                "OpStore %int_var %used_int",
+                "%double_var = OpVariable %_pf_double Output",
+                "OpStore %double_var %used_double",
+            },
+            /* .dead_consts = */
+            {
+                "%dead_bool = OpConstantTrue %bool",
+                "%dead_float = OpConstant %float 2.5",
+                "%dead_struct = OpConstantComposite %flat_struct %dead_bool %used_int %dead_float %used_double",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[int:%\\w+]] = OpConstant %int 1",
+              "; CHECK: [[double:%\\w+]] = OpConstant %double 3.14159265358979",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[int]]",
+              "; CHECK: OpStore {{%\\w+}} [[double]]",
+            },
+        },
+        // A nesting struct type dead constants. All components of both outer
+        // and inner structs are dead and should be removed after dead constant
+        // elimination.
+        {
+            /* .used_consts = */ {},
+            /* .main_insts = */ {},
+            /* .dead_consts = */
+            {
+              "%dead_bool = OpConstantTrue %bool",
+              "%dead_int = OpConstant %int 1",
+              "%dead_float = OpConstant %float 2.5",
+              "%dead_double = OpConstant %double 3.1415926535",
+              "%dead_inner_struct = OpConstantComposite %inner_struct %dead_bool %dead_int %dead_float %dead_double",
+              "%dead_int2 = OpConstant %int 2",
+              "%dead_double2 = OpConstant %double 1.428571428514",
+              "%dead_outer_struct = OpConstantComposite %outer_struct %dead_inner_struct %dead_int2 %dead_double2",
+            },
+            /* .checks = */
+            {
+              "; CHECK-NOT: OpConstant",
+            },
+        },
+        // A nesting struct type dead constants. Some of its components are
+        // dead constants while others are not.
+        {
+            /* .used_consts = */
+            {
+              "%used_int = OpConstant %int 1",
+              "%used_double = OpConstant %double 3.14159265358979",
+            },
+            /* .main_insts = */
+            {
+              "%int_var = OpVariable %_pf_int Output",
+              "OpStore %int_var %used_int",
+              "%double_var = OpVariable %_pf_double Output",
+              "OpStore %double_var %used_double",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_bool = OpConstantTrue %bool",
+              "%dead_float = OpConstant %float 2.5",
+              "%dead_inner_struct = OpConstantComposite %inner_struct %dead_bool %used_int %dead_float %used_double",
+              "%dead_int = OpConstant %int 2",
+              "%dead_outer_struct = OpConstantComposite %outer_struct %dead_inner_struct %dead_int %used_double",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[int:%\\w+]] = OpConstant %int 1",
+              "; CHECK: [[double:%\\w+]] = OpConstant %double 3.14159265358979",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[int]]",
+              "; CHECK: OpStore {{%\\w+}} [[double]]",
+            },
+        },
+        // A nesting struct case. The inner struct is used while the outer struct is not
+        {
+          /* .used_const = */
+          {
+            "%used_bool = OpConstantTrue %bool",
+            "%used_int = OpConstant %int 1",
+            "%used_float = OpConstant %float 1.23",
+            "%used_double = OpConstant %double 1.2345678901234",
+            "%used_inner_struct = OpConstantComposite %inner_struct %used_bool %used_int %used_float %used_double",
+          },
+          /* .main_insts = */
+          {
+            "%bool_var = OpVariable %_pf_bool Output",
+            "%bool_from_inner_struct = OpCompositeExtract %bool %used_inner_struct 0",
+            "OpStore %bool_var %bool_from_inner_struct",
+          },
+          /* .dead_consts = */
+          {
+            "%dead_int = OpConstant %int 2",
+            "%dead_outer_struct = OpConstantComposite %outer_struct %used_inner_struct %dead_int %used_double"
+          },
+          /* .checks = */
+          {
+            "; CHECK: [[bool:%\\w+]] = OpConstantTrue",
+            "; CHECK: [[int:%\\w+]] = OpConstant %int 1",
+            "; CHECK: [[float:%\\w+]] = OpConstant %float 1.23",
+            "; CHECK: [[double:%\\w+]] = OpConstant %double 1.2345678901234",
+            "; CHECK: [[struct:%\\w+]] = OpConstantComposite %inner_struct [[bool]] [[int]] [[float]] [[double]]",
+            "; CHECK-NOT: OpConstant",
+            "; CHECK: OpCompositeExtract %bool [[struct]]",
+          }
+        },
+        // A nesting struct case. The outer struct is used, so the inner struct should not
+        // be removed even though it is not used anywhere.
+        {
+          /* .used_const = */
+          {
+            "%used_bool = OpConstantTrue %bool",
+            "%used_int = OpConstant %int 1",
+            "%used_float = OpConstant %float 1.23",
+            "%used_double = OpConstant %double 1.2345678901234",
+            "%used_inner_struct = OpConstantComposite %inner_struct %used_bool %used_int %used_float %used_double",
+            "%used_outer_struct = OpConstantComposite %outer_struct %used_inner_struct %used_int %used_double"
+          },
+          /* .main_insts = */
+          {
+            "%int_var = OpVariable %_pf_int Output",
+            "%int_from_outer_struct = OpCompositeExtract %int %used_outer_struct 1",
+            "OpStore %int_var %int_from_outer_struct",
+          },
+          /* .dead_consts = */ {},
+          /* .checks = */
+          {
+            "; CHECK: [[bool:%\\w+]] = OpConstantTrue %bool",
+            "; CHECK: [[int:%\\w+]] = OpConstant %int 1",
+            "; CHECK: [[float:%\\w+]] = OpConstant %float 1.23",
+            "; CHECK: [[double:%\\w+]] = OpConstant %double 1.2345678901234",
+            "; CHECK: [[inner_struct:%\\w+]] = OpConstantComposite %inner_struct %used_bool %used_int %used_float %used_double",
+            "; CHECK: [[outer_struct:%\\w+]] = OpConstantComposite %outer_struct %used_inner_struct %used_int %used_double",
+            "; CHECK: OpCompositeExtract %int [[outer_struct]]",
+          },
+        },
+        // clang-format on
+    })));
+
+INSTANTIATE_TEST_CASE_P(
+    ScalarTypeSpecConstants, EliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+        // clang-format off
+        // All scalar type spec constants.
+        {
+            /* .used_consts = */
+            {
+              "%used_bool = OpSpecConstantTrue %bool",
+              "%used_uint = OpSpecConstant %uint 2",
+              "%used_int = OpSpecConstant %int 2",
+              "%used_float = OpSpecConstant %float 2.5",
+              "%used_double = OpSpecConstant %double 1.428571428514",
+            },
+            /* .main_insts = */
+            {
+              "%bool_var = OpVariable %_pf_bool Output",
+              "%uint_var = OpVariable %_pf_uint Output",
+              "%int_var = OpVariable %_pf_int Output",
+              "%float_var = OpVariable %_pf_float Output",
+              "%double_var = OpVariable %_pf_double Output",
+              "OpStore %bool_var %used_bool",
+              "OpStore %uint_var %used_uint",
+              "OpStore %int_var %used_int",
+              "OpStore %float_var %used_float",
+              "OpStore %double_var %used_double",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_bool = OpSpecConstantTrue %bool",
+              "%dead_uint = OpSpecConstant %uint 2",
+              "%dead_int = OpSpecConstant %int 2",
+              "%dead_float = OpSpecConstant %float 2.5",
+              "%dead_double = OpSpecConstant %double 1.428571428514",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[bool:%\\w+]] = OpSpecConstantTrue %bool",
+              "; CHECK: [[uint:%\\w+]] = OpSpecConstant %uint 2",
+              "; CHECK: [[int:%\\w+]] = OpSpecConstant %int 2",
+              "; CHECK: [[float:%\\w+]] = OpSpecConstant %float 2.5",
+              "; CHECK: [[double:%\\w+]] = OpSpecConstant %double 1.428571428514",
+              "; CHECK-NOT: OpSpecConstant",
+              "; CHECK: OpStore {{%\\w+}} [[bool]]",
+              "; CHECK: OpStore {{%\\w+}} [[uint]]",
+              "; CHECK: OpStore {{%\\w+}} [[int]]",
+              "; CHECK: OpStore {{%\\w+}} [[float]]",
+              "; CHECK: OpStore {{%\\w+}} [[double]]",
+            },
+        },
+        // clang-format on
+    })));
+
+INSTANTIATE_TEST_CASE_P(
+    VectorTypeSpecConstants, EliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+        // clang-format off
+        // Bool vector type spec constants. One vector has all component dead,
+        // another vector has one dead boolean and one used boolean.
+        {
+            /* .used_consts = */
+            {
+              "%used_bool = OpSpecConstantTrue %bool",
+            },
+            /* .main_insts = */
+            {
+              "%bool_var = OpVariable %_pf_bool Output",
+              "OpStore %bool_var %used_bool",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_bool = OpSpecConstantFalse %bool",
+              "%dead_bool_vec1 = OpSpecConstantComposite %v2bool %dead_bool %dead_bool",
+              "%dead_bool_vec2 = OpSpecConstantComposite %v2bool %dead_bool %used_bool",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[bool:%\\w+]] = OpSpecConstantTrue %bool",
+              "; CHECK-NOT: OpSpecConstant",
+              "; CHECK: OpStore {{%\\w+}} [[bool]]",
+            },
+        },
+
+        // Uint vector type spec constants. One vector has all component dead,
+        // another vector has one dead unsigend integer and one used unsigned
+        // integer.
+        {
+            /* .used_consts = */
+            {
+              "%used_uint = OpSpecConstant %uint 3",
+            },
+            /* .main_insts = */
+            {
+              "%uint_var = OpVariable %_pf_uint Output",
+              "OpStore %uint_var %used_uint",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_uint = OpSpecConstant %uint 1",
+              "%dead_uint_vec1 = OpSpecConstantComposite %v2uint %dead_uint %dead_uint",
+              "%dead_uint_vec2 = OpSpecConstantComposite %v2uint %dead_uint %used_uint",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[uint:%\\w+]] = OpSpecConstant %uint 3",
+              "; CHECK-NOT: OpSpecConstant",
+              "; CHECK: OpStore {{%\\w+}} [[uint]]",
+            },
+        },
+
+        // Int vector type spec constants. One vector has all component dead,
+        // another vector has one dead integer and one used integer.
+        {
+            /* .used_consts = */
+            {
+              "%used_int = OpSpecConstant %int 3",
+            },
+            /* .main_insts = */
+            {
+              "%int_var = OpVariable %_pf_int Output",
+              "OpStore %int_var %used_int",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_int = OpSpecConstant %int 1",
+              "%dead_int_vec1 = OpSpecConstantComposite %v2int %dead_int %dead_int",
+              "%dead_int_vec2 = OpSpecConstantComposite %v2int %dead_int %used_int",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[int:%\\w+]] = OpSpecConstant %int 3",
+              "; CHECK-NOT: OpSpecConstant",
+              "; CHECK: OpStore {{%\\w+}} [[int]]",
+            },
+        },
+
+        // Int vector type spec constants built with both spec constants and
+        // front-end constants.
+        {
+            /* .used_consts = */
+            {
+              "%used_spec_int = OpSpecConstant %int 3",
+              "%used_front_end_int = OpConstant %int 3",
+            },
+            /* .main_insts = */
+            {
+              "%int_var1 = OpVariable %_pf_int Output",
+              "OpStore %int_var1 %used_spec_int",
+              "%int_var2 = OpVariable %_pf_int Output",
+              "OpStore %int_var2 %used_front_end_int",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_spec_int = OpSpecConstant %int 1",
+              "%dead_front_end_int = OpConstant %int 1",
+              // Dead front-end and dead spec constants
+              "%dead_int_vec1 = OpSpecConstantComposite %v2int %dead_spec_int %dead_front_end_int",
+              // Used front-end and dead spec constants
+              "%dead_int_vec2 = OpSpecConstantComposite %v2int %dead_spec_int %used_front_end_int",
+              // Dead front-end and used spec constants
+              "%dead_int_vec3 = OpSpecConstantComposite %v2int %dead_front_end_int %used_spec_int",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[int1:%\\w+]] = OpSpecConstant %int 3",
+              "; CHECK: [[int2:%\\w+]] = OpConstant %int 3",
+              "; CHECK-NOT: OpSpecConstant",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK: OpStore {{%\\w+}} [[int1]]",
+              "; CHECK: OpStore {{%\\w+}} [[int2]]",
+            },
+        },
+        // clang-format on
+    })));
+
+INSTANTIATE_TEST_CASE_P(
+    SpecConstantOp, EliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+        // clang-format off
+        // Cast operations: uint <-> int <-> bool
+        {
+            /* .used_consts = */ {},
+            /* .main_insts = */ {},
+            /* .dead_consts = */
+            {
+              // Assistant constants, only used in dead spec constant
+              // operations.
+              "%signed_zero = OpConstant %int 0",
+              "%signed_zero_vec = OpConstantComposite %v2int %signed_zero %signed_zero",
+              "%unsigned_zero = OpConstant %uint 0",
+              "%unsigned_zero_vec = OpConstantComposite %v2uint %unsigned_zero %unsigned_zero",
+              "%signed_one = OpConstant %int 1",
+              "%signed_one_vec = OpConstantComposite %v2int %signed_one %signed_one",
+              "%unsigned_one = OpConstant %uint 1",
+              "%unsigned_one_vec = OpConstantComposite %v2uint %unsigned_one %unsigned_one",
+
+              // Spec constants that support casting to each other.
+              "%dead_bool = OpSpecConstantTrue %bool",
+              "%dead_uint = OpSpecConstant %uint 1",
+              "%dead_int = OpSpecConstant %int 2",
+              "%dead_bool_vec = OpSpecConstantComposite %v2bool %dead_bool %dead_bool",
+              "%dead_uint_vec = OpSpecConstantComposite %v2uint %dead_uint %dead_uint",
+              "%dead_int_vec = OpSpecConstantComposite %v2int %dead_int %dead_int",
+
+              // Scalar cast to boolean spec constant.
+              "%int_to_bool = OpSpecConstantOp %bool INotEqual %dead_int %signed_zero",
+              "%uint_to_bool = OpSpecConstantOp %bool INotEqual %dead_uint %unsigned_zero",
+
+              // Vector cast to boolean spec constant.
+              "%int_to_bool_vec = OpSpecConstantOp %v2bool INotEqual %dead_int_vec %signed_zero_vec",
+              "%uint_to_bool_vec = OpSpecConstantOp %v2bool INotEqual %dead_uint_vec %unsigned_zero_vec",
+
+              // Scalar cast to int spec constant.
+              "%bool_to_int = OpSpecConstantOp %int Select %dead_bool %signed_one %signed_zero",
+              "%uint_to_int = OpSpecConstantOp %uint IAdd %dead_uint %unsigned_zero",
+
+              // Vector cast to int spec constant.
+              "%bool_to_int_vec = OpSpecConstantOp %v2int Select %dead_bool_vec %signed_one_vec %signed_zero_vec",
+              "%uint_to_int_vec = OpSpecConstantOp %v2uint IAdd %dead_uint_vec %unsigned_zero_vec",
+
+              // Scalar cast to uint spec constant.
+              "%bool_to_uint = OpSpecConstantOp %uint Select %dead_bool %unsigned_one %unsigned_zero",
+              "%int_to_uint_vec = OpSpecConstantOp %uint IAdd %dead_int %signed_zero",
+
+              // Vector cast to uint spec constant.
+              "%bool_to_uint_vec = OpSpecConstantOp %v2uint Select %dead_bool_vec %unsigned_one_vec %unsigned_zero_vec",
+              "%int_to_uint = OpSpecConstantOp %v2uint IAdd %dead_int_vec %signed_zero_vec",
+            },
+            /* .checks = */
+            {
+              "; CHECK-NOT: OpConstant",
+              "; CHECK-NOT: OpSpecConstant",
+            },
+        },
+
+        // Add, sub, mul, div, rem.
+        {
+            /* .used_consts = */ {},
+            /* .main_insts = */ {},
+            /* .dead_consts = */
+            {
+              "%dead_spec_int_a = OpSpecConstant %int 1",
+              "%dead_spec_int_a_vec = OpSpecConstantComposite %v2int %dead_spec_int_a %dead_spec_int_a",
+
+              "%dead_spec_int_b = OpSpecConstant %int 2",
+              "%dead_spec_int_b_vec = OpSpecConstantComposite %v2int %dead_spec_int_b %dead_spec_int_b",
+
+              "%dead_const_int_c = OpConstant %int 3",
+              "%dead_const_int_c_vec = OpConstantComposite %v2int %dead_const_int_c %dead_const_int_c",
+
+              // Add
+              "%add_a_b = OpSpecConstantOp %int IAdd %dead_spec_int_a %dead_spec_int_b",
+              "%add_a_b_vec = OpSpecConstantOp %v2int IAdd %dead_spec_int_a_vec %dead_spec_int_b_vec",
+
+              // Sub
+              "%sub_a_b = OpSpecConstantOp %int ISub %dead_spec_int_a %dead_spec_int_b",
+              "%sub_a_b_vec = OpSpecConstantOp %v2int ISub %dead_spec_int_a_vec %dead_spec_int_b_vec",
+
+              // Mul
+              "%mul_a_b = OpSpecConstantOp %int IMul %dead_spec_int_a %dead_spec_int_b",
+              "%mul_a_b_vec = OpSpecConstantOp %v2int IMul %dead_spec_int_a_vec %dead_spec_int_b_vec",
+
+              // Div
+              "%div_a_b = OpSpecConstantOp %int SDiv %dead_spec_int_a %dead_spec_int_b",
+              "%div_a_b_vec = OpSpecConstantOp %v2int SDiv %dead_spec_int_a_vec %dead_spec_int_b_vec",
+
+              // Bitwise Xor
+              "%xor_a_b = OpSpecConstantOp %int BitwiseXor %dead_spec_int_a %dead_spec_int_b",
+              "%xor_a_b_vec = OpSpecConstantOp %v2int BitwiseXor %dead_spec_int_a_vec %dead_spec_int_b_vec",
+
+              // Scalar Comparison
+              "%less_a_b = OpSpecConstantOp %bool SLessThan %dead_spec_int_a %dead_spec_int_b",
+            },
+            /* .checks = */
+            {
+              "; CHECK-NOT: OpConstant",
+              "; CHECK-NOT: OpSpecConstant",
+            },
+        },
+
+        // Vectors without used swizzles should be removed.
+        {
+            /* .used_consts = */
+            {
+              "%used_int = OpConstant %int 3",
+            },
+            /* .main_insts = */
+            {
+              "%int_var = OpVariable %_pf_int Output",
+              "OpStore %int_var %used_int",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_int = OpConstant %int 3",
+
+              "%dead_spec_int_a = OpSpecConstant %int 1",
+              "%vec_a = OpSpecConstantComposite %v4int %dead_spec_int_a %dead_spec_int_a %dead_int %dead_int",
+
+              "%dead_spec_int_b = OpSpecConstant %int 2",
+              "%vec_b = OpSpecConstantComposite %v4int %dead_spec_int_b %dead_spec_int_b %used_int %used_int",
+
+              // Extract scalar
+              "%a_x = OpSpecConstantOp %int CompositeExtract %vec_a 0",
+              "%b_x = OpSpecConstantOp %int CompositeExtract %vec_b 0",
+
+              // Extract vector
+              "%a_xy = OpSpecConstantOp %v2int VectorShuffle %vec_a %vec_a 0 1",
+              "%b_xy = OpSpecConstantOp %v2int VectorShuffle %vec_b %vec_b 0 1",
+            },
+            /* .checks = */
+            {
+              "; CHECK: [[int:%\\w+]] = OpConstant %int 3",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK-NOT: OpSpecConstant",
+              "; CHECK: OpStore {{%\\w+}} [[int]]",
+            },
+        },
+        // Vectors with used swizzles should not be removed.
+        {
+            /* .used_consts = */
+            {
+              "%used_int = OpConstant %int 3",
+              "%used_spec_int_a = OpSpecConstant %int 1",
+              "%used_spec_int_b = OpSpecConstant %int 2",
+              // Create vectors
+              "%vec_a = OpSpecConstantComposite %v4int %used_spec_int_a %used_spec_int_a %used_int %used_int",
+              "%vec_b = OpSpecConstantComposite %v4int %used_spec_int_b %used_spec_int_b %used_int %used_int",
+              // Extract vector
+              "%a_xy = OpSpecConstantOp %v2int VectorShuffle %vec_a %vec_a 0 1",
+              "%b_xy = OpSpecConstantOp %v2int VectorShuffle %vec_b %vec_b 0 1",
+            },
+            /* .main_insts = */
+            {
+              "%v2int_var_a = OpVariable %_pf_v2int Output",
+              "%v2int_var_b = OpVariable %_pf_v2int Output",
+              "OpStore %v2int_var_a %a_xy",
+              "OpStore %v2int_var_b %b_xy",
+            },
+            /* .dead_consts = */ {},
+            /* .checks = */
+            {
+              "; CHECK: [[int:%\\w+]] = OpConstant %int 3",
+              "; CHECK: [[a:%\\w+]] = OpSpecConstant %int 1",
+              "; CHECK: [[b:%\\w+]] = OpSpecConstant %int 2",
+              "; CHECK: [[veca:%\\w+]] = OpSpecConstantComposite %v4int [[a]] [[a]] [[int]] [[int]]",
+              "; CHECK: [[vecb:%\\w+]] = OpSpecConstantComposite %v4int [[b]] [[b]] [[int]] [[int]]",
+              "; CHECK: [[exa:%\\w+]] = OpSpecConstantOp %v2int VectorShuffle [[veca]] [[veca]] 0 1",
+              "; CHECK: [[exb:%\\w+]] = OpSpecConstantOp %v2int VectorShuffle [[vecb]] [[vecb]] 0 1",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK-NOT: OpSpecConstant",
+              "; CHECK: OpStore {{%\\w+}} [[exa]]",
+              "; CHECK: OpStore {{%\\w+}} [[exb]]",
+            },
+        },
+        // clang-format on
+    })));
+
+INSTANTIATE_TEST_CASE_P(
+    LongDefUseChain, EliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+        // clang-format off
+        // Long Def-Use chain with binary operations.
+        {
+            /* .used_consts = */
+            {
+              "%array_size = OpConstant %int 4",
+              "%type_arr_int_4 = OpTypeArray %int %array_size",
+              "%used_int_0 = OpConstant %int 100",
+              "%used_int_1 = OpConstant %int 1",
+              "%used_int_2 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_1",
+              "%used_int_3 = OpSpecConstantOp %int ISub %used_int_0 %used_int_2",
+              "%used_int_4 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_3",
+              "%used_int_5 = OpSpecConstantOp %int ISub %used_int_0 %used_int_4",
+              "%used_int_6 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_5",
+              "%used_int_7 = OpSpecConstantOp %int ISub %used_int_0 %used_int_6",
+              "%used_int_8 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_7",
+              "%used_int_9 = OpSpecConstantOp %int ISub %used_int_0 %used_int_8",
+              "%used_int_10 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_9",
+              "%used_int_11 = OpSpecConstantOp %int ISub %used_int_0 %used_int_10",
+              "%used_int_12 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_11",
+              "%used_int_13 = OpSpecConstantOp %int ISub %used_int_0 %used_int_12",
+              "%used_int_14 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_13",
+              "%used_int_15 = OpSpecConstantOp %int ISub %used_int_0 %used_int_14",
+              "%used_int_16 = OpSpecConstantOp %int ISub %used_int_0 %used_int_15",
+              "%used_int_17 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_16",
+              "%used_int_18 = OpSpecConstantOp %int ISub %used_int_0 %used_int_17",
+              "%used_int_19 = OpSpecConstantOp %int IAdd %used_int_0 %used_int_18",
+              "%used_int_20 = OpSpecConstantOp %int ISub %used_int_0 %used_int_19",
+              "%used_vec_a = OpSpecConstantComposite %v2int %used_int_18 %used_int_19",
+              "%used_vec_b = OpSpecConstantOp %v2int IMul %used_vec_a %used_vec_a",
+              "%used_int_21 = OpSpecConstantOp %int CompositeExtract %used_vec_b 0",
+              "%used_array = OpConstantComposite %type_arr_int_4 %used_int_20 %used_int_20 %used_int_21 %used_int_21",
+            },
+            /* .main_insts = */
+            {
+              "%int_var = OpVariable %_pf_int Output",
+              "%used_array_2 = OpCompositeExtract %int %used_array 2",
+              "OpStore %int_var %used_array_2",
+            },
+            /* .dead_consts = */
+            {
+              "%dead_int_1 = OpConstant %int 2",
+              "%dead_int_2 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_1",
+              "%dead_int_3 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_2",
+              "%dead_int_4 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_3",
+              "%dead_int_5 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_4",
+              "%dead_int_6 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_5",
+              "%dead_int_7 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_6",
+              "%dead_int_8 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_7",
+              "%dead_int_9 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_8",
+              "%dead_int_10 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_9",
+              "%dead_int_11 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_10",
+              "%dead_int_12 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_11",
+              "%dead_int_13 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_12",
+              "%dead_int_14 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_13",
+              "%dead_int_15 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_14",
+              "%dead_int_16 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_15",
+              "%dead_int_17 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_16",
+              "%dead_int_18 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_17",
+              "%dead_int_19 = OpSpecConstantOp %int IAdd %used_int_0 %dead_int_18",
+              "%dead_int_20 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_19",
+              "%dead_vec_a = OpSpecConstantComposite %v2int %dead_int_18 %dead_int_19",
+              "%dead_vec_b = OpSpecConstantOp %v2int IMul %dead_vec_a %dead_vec_a",
+              "%dead_int_21 = OpSpecConstantOp %int CompositeExtract %dead_vec_b 0",
+              "%dead_array = OpConstantComposite %type_arr_int_4 %dead_int_20 %used_int_20 %dead_int_19 %used_int_19",
+            },
+            /* .checks = */
+            {
+              "; CHECK: OpConstant %int 4",
+              "; CHECK: [[array:%\\w+]] = OpConstantComposite %type_arr_int_4 %used_int_20 %used_int_20 %used_int_21 %used_int_21",
+              "; CHECK-NOT: OpConstant",
+              "; CHECK-NOT: OpSpecConstant",
+              "; CHECK: OpStore {{%\\w+}} [[array]]",
+            },
+        },
+        // Long Def-Use chain with swizzle
+        // clang-format on
+    })));
+
+TEST_F(AggressiveDCETest, DeadDecorationGroup) {
+  // The decoration group should be eliminated because the target of group
+  // decorate is dead.
+  const std::string text = R"(
+; CHECK-NOT: OpDecorat
+; CHECK-NOT: OpGroupDecorate
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Restrict
+OpDecorate %1 Aliased
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %var
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_ptr = OpTypePointer Function %uint
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %uint_ptr Function
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, ParitallyDeadDecorationGroup) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[grp:%\w+]] Restrict
+; CHECK: OpDecorate [[grp]] Aliased
+; CHECK: [[grp]] = OpDecorationGroup
+; CHECK: OpGroupDecorate [[grp]] [[output:%\w+]]
+; CHECK: [[output]] = OpVariable {{%\w+}} Output
+; CHECK-NOT: OpVariable {{%\w+}} Function
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Restrict
+OpDecorate %1 Aliased
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %var %output
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_ptr_Function = OpTypePointer Function %uint
+%uint_ptr_Output = OpTypePointer Output %uint
+%uint_0 = OpConstant %uint 0
+%output = OpVariable %uint_ptr_Output Output
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %uint_ptr_Function Function
+OpStore %output %uint_0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, ParitallyDeadDecorationGroupDifferentGroupDecorate) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[grp:%\w+]] Restrict
+; CHECK: OpDecorate [[grp]] Aliased
+; CHECK: [[grp]] = OpDecorationGroup
+; CHECK: OpGroupDecorate [[grp]] [[output:%\w+]]
+; CHECK-NOT: OpGroupDecorate
+; CHECK: [[output]] = OpVariable {{%\w+}} Output
+; CHECK-NOT: OpVariable {{%\w+}} Function
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Restrict
+OpDecorate %1 Aliased
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %output
+OpGroupDecorate %1 %var
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_ptr_Function = OpTypePointer Function %uint
+%uint_ptr_Output = OpTypePointer Output %uint
+%uint_0 = OpConstant %uint 0
+%output = OpVariable %uint_ptr_Output Output
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %uint_ptr_Function Function
+OpStore %output %uint_0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, DeadGroupMemberDecorate) {
+  const std::string text = R"(
+; CHECK-NOT: OpDec
+; CHECK-NOT: OpGroup
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Offset 0
+OpDecorate %1 Uniform
+%1 = OpDecorationGroup
+OpGroupMemberDecorate %1 %var 0
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%struct = OpTypeStruct %uint %uint
+%struct_ptr = OpTypePointer Function %struct
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct_ptr Function
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, PartiallyDeadGroupMemberDecorate) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[grp:%\w+]] Offset 0
+; CHECK: OpDecorate [[grp]] Uniform
+; CHECK: [[grp]] = OpDecorationGroup
+; CHECK: OpGroupMemberDecorate [[grp]] [[output:%\w+]] 1
+; CHECK: [[output]] = OpTypeStruct
+; CHECK-NOT: OpTypeStruct
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Offset 0
+OpDecorate %1 Uniform
+%1 = OpDecorationGroup
+OpGroupMemberDecorate %1 %var_struct 0 %output_struct 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%var_struct = OpTypeStruct %uint %uint
+%output_struct = OpTypeStruct %uint %uint
+%struct_ptr_Function = OpTypePointer Function %var_struct
+%struct_ptr_Output = OpTypePointer Output %output_struct
+%uint_ptr_Output = OpTypePointer Output %uint
+%output = OpVariable %struct_ptr_Output Output
+%uint_0 = OpConstant %uint 0
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct_ptr_Function Function
+%3 = OpAccessChain %uint_ptr_Output %output %uint_0
+OpStore %3 %uint_0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest,
+       PartiallyDeadGroupMemberDecorateDifferentGroupDecorate) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[grp:%\w+]] Offset 0
+; CHECK: OpDecorate [[grp]] Uniform
+; CHECK: [[grp]] = OpDecorationGroup
+; CHECK: OpGroupMemberDecorate [[grp]] [[output:%\w+]] 1
+; CHECK-NOT: OpGroupMemberDecorate
+; CHECK: [[output]] = OpTypeStruct
+; CHECK-NOT: OpTypeStruct
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %output
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Offset 0
+OpDecorate %1 Uniform
+%1 = OpDecorationGroup
+OpGroupMemberDecorate %1 %var_struct 0
+OpGroupMemberDecorate %1 %output_struct 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%var_struct = OpTypeStruct %uint %uint
+%output_struct = OpTypeStruct %uint %uint
+%struct_ptr_Function = OpTypePointer Function %var_struct
+%struct_ptr_Output = OpTypePointer Output %output_struct
+%uint_ptr_Output = OpTypePointer Output %uint
+%output = OpVariable %struct_ptr_Output Output
+%uint_0 = OpConstant %uint 0
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %struct_ptr_Function Function
+%3 = OpAccessChain %uint_ptr_Output %output %uint_0
+OpStore %3 %uint_0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
+#endif  // SPIRV_EFFCEE
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //

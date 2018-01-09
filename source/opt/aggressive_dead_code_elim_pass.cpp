@@ -19,6 +19,7 @@
 #include "cfa.h"
 #include "iterator.h"
 #include "latest_version_glsl_std_450_header.h"
+#include "reflect.h"
 
 #include <stack>
 
@@ -32,6 +33,57 @@ const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
+
+// Sorting functor to present annotation instructions in an easy-to-process
+// order. The functor orders by opcode first and falls back on unique id
+// ordering if both instructions have the same opcode.
+//
+// Desired priority:
+// SpvOpGroupDecorate
+// SpvOpGroupMemberDecorate
+// SpvOpDecorate
+// SpvOpMemberDecorate
+// SpvOpDecorateId
+// SpvOpDecorationGroup
+struct DecorationLess {
+  bool operator()(const ir::Instruction* lhs,
+                  const ir::Instruction* rhs) const {
+    assert(lhs && rhs);
+    SpvOp lhsOp = lhs->opcode();
+    SpvOp rhsOp = rhs->opcode();
+    if (lhsOp != rhsOp) {
+      // OpGroupDecorate and OpGroupMember decorate are highest priority to
+      // eliminate dead targets early and simplify subsequent checks.
+      if (lhsOp == SpvOpGroupDecorate && rhsOp != SpvOpGroupDecorate)
+        return true;
+      if (rhsOp == SpvOpGroupDecorate && lhsOp != SpvOpGroupDecorate)
+        return false;
+      if (lhsOp == SpvOpGroupMemberDecorate &&
+          rhsOp != SpvOpGroupMemberDecorate)
+        return true;
+      if (rhsOp == SpvOpGroupMemberDecorate &&
+          lhsOp != SpvOpGroupMemberDecorate)
+        return false;
+      if (lhsOp == SpvOpDecorate && rhsOp != SpvOpDecorate) return true;
+      if (rhsOp == SpvOpDecorate && lhsOp != SpvOpDecorate) return false;
+      if (lhsOp == SpvOpMemberDecorate && rhsOp != SpvOpMemberDecorate)
+        return true;
+      if (rhsOp == SpvOpMemberDecorate && lhsOp != SpvOpMemberDecorate)
+        return false;
+      if (lhsOp == SpvOpDecorateId && rhsOp != SpvOpDecorateId) return true;
+      if (rhsOp == SpvOpDecorateId && lhsOp != SpvOpDecorateId) return false;
+      // OpDecorationGroup is lowest priority to ensure use/def chains remain
+      // usable for instructions that target this group.
+      if (lhsOp == SpvOpDecorationGroup && rhsOp != SpvOpDecorationGroup)
+        return true;
+      if (rhsOp == SpvOpDecorationGroup && lhsOp != SpvOpDecorationGroup)
+        return false;
+    }
+
+    // Fall back to maintain total ordering (compare unique ids).
+    return *lhs < *rhs;
+  }
+};
 
 }  // namespace
 
@@ -82,13 +134,32 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
   return true;
 }
 
+bool AggressiveDCEPass::IsDead(ir::Instruction* inst) {
+  if (IsLive(inst)) return false;
+  if (inst->IsBranch() &&
+      !IsStructuredIfOrLoopHeader(context()->get_instr_block(inst), nullptr,
+                                  nullptr, nullptr))
+    return false;
+  return true;
+}
+
 bool AggressiveDCEPass::IsTargetDead(ir::Instruction* inst) {
   const uint32_t tId = inst->GetSingleWordInOperand(0);
-  const ir::Instruction* tInst = get_def_use_mgr()->GetDef(tId);
-  if (dead_insts_.find(tInst) != dead_insts_.end()) {
-    return true;
+  ir::Instruction* tInst = get_def_use_mgr()->GetDef(tId);
+  if (ir::IsAnnotationInst(tInst->opcode())) {
+    // This must be a decoration group. We go through annotations in a specific
+    // order. So if this is not used by any group or group member decorates, it
+    // is dead.
+    assert(tInst->opcode() == SpvOpDecorationGroup);
+    bool dead = true;
+    get_def_use_mgr()->ForEachUser(tInst, [&dead](ir::Instruction* user) {
+      if (user->opcode() == SpvOpGroupDecorate ||
+          user->opcode() == SpvOpGroupMemberDecorate)
+        dead = false;
+    });
+    return dead;
   }
-  return false;
+  return IsDead(tInst);
 }
 
 void AggressiveDCEPass::ProcessLoad(uint32_t varId) {
@@ -106,6 +177,7 @@ bool AggressiveDCEPass::IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
                                                    ir::Instruction** mergeInst,
                                                    ir::Instruction** branchInst,
                                                    uint32_t* mergeBlockId) {
+  if (!bp) return false;
   ir::Instruction* mi = bp->GetMergeInst();
   if (mi == nullptr) return false;
   ir::Instruction* bri = &*bp->tail();
@@ -158,13 +230,6 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
   }
 }
 
-void AggressiveDCEPass::ComputeInst2BlockMap(ir::Function* func) {
-  for (auto& blk : *func) {
-    blk.ForEachInst(
-        [&blk, this](ir::Instruction* ip) { inst2block_[ip] = &blk; });
-  }
-}
-
 void AggressiveDCEPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
   std::unique_ptr<ir::Instruction> newBranch(new ir::Instruction(
       context(), SpvOpBranch, 0, 0,
@@ -185,7 +250,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
         if (op != SpvOpBranchConditional && op != SpvOpBranch) return;
         ir::Instruction* branchInst = user;
         while (true) {
-          ir::BasicBlock* blk = inst2block_[branchInst];
+          ir::BasicBlock* blk = context()->get_instr_block(branchInst);
           ir::Instruction* hdrBranch = block2headerBranch_[blk];
           if (hdrBranch == nullptr) return;
           ir::Instruction* hdrMerge = branch2merge_[hdrBranch];
@@ -218,7 +283,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
     } else if (op == SpvOpBranch) {
       // An unconditional branch can only be a continue if it is not
       // branching to its own merge block.
-      ir::BasicBlock* blk = inst2block_[user];
+      ir::BasicBlock* blk = context()->get_instr_block(user);
       ir::Instruction* hdrBranch = block2headerBranch_[blk];
       if (hdrBranch == nullptr) return;
       ir::Instruction* hdrMerge = branch2merge_[hdrBranch];
@@ -234,8 +299,14 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
 }
 
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
-  // Compute map from instruction to block
-  ComputeInst2BlockMap(func);
+  // Mark function parameters as live.
+  AddToWorklist(&func->DefInst());
+  func->ForEachParam(
+      [this](const ir::Instruction* param) {
+        AddToWorklist(const_cast<ir::Instruction*>(param));
+      },
+      false);
+
   // Compute map from block to controlling conditional branch
   std::list<ir::BasicBlock*> structuredOrder;
   cfg()->ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
@@ -320,12 +391,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // If privates are not like local, add their stores to worklist
   if (!private_like_local_)
     for (auto& ps : private_stores_) AddToWorklist(ps);
-  // Add OpGroupDecorates to worklist because they are a pain to remove
-  // ids from.
-  // TODO(greg-lunarg): Handle dead ids in OpGroupDecorate
-  for (auto& ai : get_module()->annotations()) {
-    if (ai.opcode() == SpvOpGroupDecorate) AddToWorklist(&ai);
-  }
   // Perform closure on live instruction set.
   while (!worklist_.empty()) {
     ir::Instruction* liveInst = worklist_.front();
@@ -338,11 +403,14 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       if (inInst->opcode() == SpvOpLabel && liveInst->IsBranch()) return;
       if (!IsLive(inInst)) AddToWorklist(inInst);
     });
+    if (liveInst->type_id() != 0) {
+      AddToWorklist(get_def_use_mgr()->GetDef(liveInst->type_id()));
+    }
     // If in a structured if or loop construct, add the controlling
     // conditional branch and its merge. Any containing control construct
     // is marked live when the merge and branch are processed out of the
     // worklist.
-    ir::BasicBlock* blk = inst2block_[liveInst];
+    ir::BasicBlock* blk = context()->get_instr_block(liveInst);
     ir::Instruction* branchInst = block2headerBranch_[blk];
     if (branchInst != nullptr && !IsLive(branchInst)) {
       AddToWorklist(branchInst);
@@ -376,67 +444,19 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     }
     worklist_.pop();
   }
-  // Mark all non-live instructions dead except non-structured branches, which
-  // now should be considered live unless their block is deleted.
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
-    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
-      if (IsLive(&*ii)) continue;
-      // TODO(greg-lunarg
-      // https://github.com/KhronosGroup/SPIRV-Tools/issues/1021) This should be
-      // using ii->IsBranch(), but this code does not handle OpSwitch
-      // instructions yet.
-      if ((ii->opcode() == SpvOpBranch ||
-           ii->opcode() == SpvOpBranchConditional) &&
-          !IsStructuredIfOrLoopHeader(*bi, nullptr, nullptr, nullptr))
-        continue;
-      dead_insts_.insert(&*ii);
-    }
-  }
-  // Remove debug and annotation statements referencing dead instructions.
-  // This must be done before killing the instructions, otherwise there are
-  // dead objects in the def/use database.
-  ir::Instruction* instruction = &*get_module()->debug2_begin();
-  while (instruction) {
-    if (instruction->opcode() != SpvOpName) {
-      instruction = instruction->NextNode();
-      continue;
-    }
-
-    if (IsTargetDead(instruction)) {
-      instruction = context()->KillInst(instruction);
-      modified = true;
-    } else {
-      instruction = instruction->NextNode();
-    }
-  }
-
-  instruction = &*get_module()->annotation_begin();
-  while (instruction) {
-    if (instruction->opcode() != SpvOpDecorate &&
-        instruction->opcode() != SpvOpDecorateId) {
-      instruction = instruction->NextNode();
-      continue;
-    }
-
-    if (IsTargetDead(instruction)) {
-      instruction = context()->KillInst(instruction);
-      modified = true;
-    } else {
-      instruction = instruction->NextNode();
-    }
-  }
 
   // Kill dead instructions and remember dead blocks
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();) {
     uint32_t mergeBlockId = 0;
     (*bi)->ForEachInst([this, &modified, &mergeBlockId](ir::Instruction* inst) {
-      if (dead_insts_.find(inst) == dead_insts_.end()) return;
+      if (!IsDead(inst)) return;
+      if (inst->opcode() == SpvOpLabel) return;
       // If dead instruction is selection merge, remember merge block
       // for new branch at end of block
       if (inst->opcode() == SpvOpSelectionMerge ||
           inst->opcode() == SpvOpLoopMerge)
         mergeBlockId = inst->GetSingleWordInOperand(0);
-      context()->KillInst(inst);
+      to_kill_.push_back(inst);
       modified = true;
     });
     // If a structured if or loop was deleted, add a branch to its merge
@@ -450,8 +470,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       ++bi;
     }
   }
-  // Cleanup all CFG including all unreachable blocks
-  CFGCleanup(func);
 
   return modified;
 }
@@ -463,10 +481,18 @@ void AggressiveDCEPass::Initialize(ir::IRContext* c) {
   worklist_ = std::queue<ir::Instruction*>{};
   live_insts_.clear();
   live_local_vars_.clear();
-  dead_insts_.clear();
 
   // Initialize extensions whitelist
   InitExtensions();
+}
+
+void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
+  for (auto& exec : get_module()->execution_modes()) {
+    AddToWorklist(&exec);
+  }
+  for (auto& entry : get_module()->entry_points()) {
+    AddToWorklist(&entry);
+  }
 }
 
 Pass::Status AggressiveDCEPass::ProcessImpl() {
@@ -482,10 +508,156 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // If any extensions in the module are not explicitly supported,
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
-  // Process all entry point functions
+
+  // Eliminate Dead functions.
+  bool modified = EliminateDeadFunctions();
+
+  InitializeModuleScopeLiveInstructions();
+
+  // Process all entry point functions.
   ProcessFunction pfn = [this](ir::Function* fp) { return AggressiveDCE(fp); };
-  bool modified = ProcessEntryPointCallTree(pfn, get_module());
+  modified |= ProcessEntryPointCallTree(pfn, get_module());
+
+  // Process module-level instructions. Now that all live instructions have
+  // been marked, it is safe to remove dead global values.
+  modified |= ProcessGlobalValues();
+
+  // Kill all dead instructions.
+  for (auto inst : to_kill_) {
+    context()->KillInst(inst);
+  }
+
+  // Cleanup all CFG including all unreachable blocks.
+  ProcessFunction cleanup = [this](ir::Function* f) { return CFGCleanup(f); };
+  modified |= ProcessEntryPointCallTree(cleanup, get_module());
+
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+bool AggressiveDCEPass::EliminateDeadFunctions() {
+  // Identify live functions first. Those that are not live
+  // are dead. ADCE is disabled for non-shaders so we do not check for exported
+  // functions here.
+  std::unordered_set<const ir::Function*> live_function_set;
+  ProcessFunction mark_live = [&live_function_set](ir::Function* fp) {
+    live_function_set.insert(fp);
+    return false;
+  };
+  ProcessEntryPointCallTree(mark_live, get_module());
+
+  bool modified = false;
+  for (auto funcIter = get_module()->begin();
+       funcIter != get_module()->end();) {
+    if (live_function_set.count(&*funcIter) == 0) {
+      modified = true;
+      EliminateFunction(&*funcIter);
+      funcIter = funcIter.Erase();
+    } else {
+      ++funcIter;
+    }
+  }
+
+  return modified;
+}
+
+void AggressiveDCEPass::EliminateFunction(ir::Function* func) {
+  // Remove all of the instruction in the function body
+  func->ForEachInst(
+      [this](ir::Instruction* inst) { context()->KillInst(inst); }, true);
+}
+
+bool AggressiveDCEPass::ProcessGlobalValues() {
+  // Remove debug and annotation statements referencing dead instructions.
+  // This must be done before killing the instructions, otherwise there are
+  // dead objects in the def/use database.
+  bool modified = false;
+  ir::Instruction* instruction = &*get_module()->debug2_begin();
+  while (instruction) {
+    if (instruction->opcode() != SpvOpName) {
+      instruction = instruction->NextNode();
+      continue;
+    }
+
+    if (IsTargetDead(instruction)) {
+      instruction = context()->KillInst(instruction);
+      modified = true;
+    } else {
+      instruction = instruction->NextNode();
+    }
+  }
+
+  // This code removes all unnecessary decorations safely (see #1174). It also
+  // does so in a more efficient manner than deleting them only as the targets
+  // are deleted.
+  std::vector<ir::Instruction*> annotations;
+  for (auto& inst : get_module()->annotations()) annotations.push_back(&inst);
+  std::sort(annotations.begin(), annotations.end(), DecorationLess());
+  for (auto annotation : annotations) {
+    switch (annotation->opcode()) {
+      case SpvOpDecorate:
+      case SpvOpMemberDecorate:
+      case SpvOpDecorateId:
+        if (IsTargetDead(annotation)) context()->KillInst(annotation);
+        break;
+      case SpvOpGroupDecorate: {
+        // Go through the targets of this group decorate. Remove each dead
+        // target. If all targets are dead, remove this decoration.
+        bool dead = true;
+        for (uint32_t i = 1; i < annotation->NumOperands();) {
+          ir::Instruction* opInst =
+              get_def_use_mgr()->GetDef(annotation->GetSingleWordOperand(i));
+          if (IsDead(opInst)) {
+            // Don't increment |i|.
+            annotation->RemoveOperand(i);
+          } else {
+            i++;
+            dead = false;
+          }
+        }
+        if (dead) context()->KillInst(annotation);
+        break;
+      }
+      case SpvOpGroupMemberDecorate: {
+        // Go through the targets of this group member decorate. Remove each
+        // dead target (and member index). If all targets are dead, remove this
+        // decoration.
+        bool dead = true;
+        for (uint32_t i = 1; i < annotation->NumOperands();) {
+          ir::Instruction* opInst =
+              get_def_use_mgr()->GetDef(annotation->GetSingleWordOperand(i));
+          if (IsDead(opInst)) {
+            // Don't increment |i|.
+            annotation->RemoveOperand(i + 1);
+            annotation->RemoveOperand(i);
+          } else {
+            i += 2;
+            dead = false;
+          }
+        }
+        if (dead) context()->KillInst(annotation);
+        break;
+      }
+      case SpvOpDecorationGroup:
+        // By the time we hit decoration groups we've checked everything that
+        // can target them. So if they have no uses they must be dead.
+        if (get_def_use_mgr()->NumUsers(annotation) == 0)
+          context()->KillInst(annotation);
+        break;
+      default:
+        assert(false);
+        break;
+    }
+  }
+
+  // Since ADCE is disabled for non-shaders, we don't check for export linkage
+  // attributes here.
+  for (auto& val : get_module()->types_values()) {
+    if (IsDead(&val)) {
+      to_kill_.push_back(&val);
+    }
+  }
+
+  return modified;
 }
 
 AggressiveDCEPass::AggressiveDCEPass() {}
