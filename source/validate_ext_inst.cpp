@@ -28,6 +28,18 @@
 
 namespace libspirv {
 
+namespace {
+
+uint32_t GetSizeTBitWidth(const ValidationState_t& _) {
+  if (_.addressing_model() == SpvAddressingModelPhysical32) return 32;
+
+  if (_.addressing_model() == SpvAddressingModelPhysical64) return 64;
+
+  return 0;
+}
+
+}  // anonymous namespace
+
 // Validates correctness of ExtInst instructions.
 spv_result_t ExtInstPass(ValidationState_t& _,
                          const spv_parsed_instruction_t* inst) {
@@ -743,8 +755,1219 @@ spv_result_t ExtInstPass(ValidationState_t& _,
       }
     }
   } else if (ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_STD) {
-    // TODO(atgoo@github.com) Add validation rules for OpenCL extended
-    // instructions.
+    const OpenCLLIB::Entrypoints ext_inst_key =
+        OpenCLLIB::Entrypoints(ext_inst_index);
+    switch (ext_inst_key) {
+      case OpenCLLIB::Acos:
+      case OpenCLLIB::Acosh:
+      case OpenCLLIB::Acospi:
+      case OpenCLLIB::Asin:
+      case OpenCLLIB::Asinh:
+      case OpenCLLIB::Asinpi:
+      case OpenCLLIB::Atan:
+      case OpenCLLIB::Atan2:
+      case OpenCLLIB::Atanh:
+      case OpenCLLIB::Atanpi:
+      case OpenCLLIB::Atan2pi:
+      case OpenCLLIB::Cbrt:
+      case OpenCLLIB::Ceil:
+      case OpenCLLIB::Copysign:
+      case OpenCLLIB::Cos:
+      case OpenCLLIB::Cosh:
+      case OpenCLLIB::Cospi:
+      case OpenCLLIB::Erfc:
+      case OpenCLLIB::Erf:
+      case OpenCLLIB::Exp:
+      case OpenCLLIB::Exp2:
+      case OpenCLLIB::Exp10:
+      case OpenCLLIB::Expm1:
+      case OpenCLLIB::Fabs:
+      case OpenCLLIB::Fdim:
+      case OpenCLLIB::Floor:
+      case OpenCLLIB::Fma:
+      case OpenCLLIB::Fmax:
+      case OpenCLLIB::Fmin:
+      case OpenCLLIB::Fmod:
+      case OpenCLLIB::Hypot:
+      case OpenCLLIB::Lgamma:
+      case OpenCLLIB::Log:
+      case OpenCLLIB::Log2:
+      case OpenCLLIB::Log10:
+      case OpenCLLIB::Log1p:
+      case OpenCLLIB::Logb:
+      case OpenCLLIB::Mad:
+      case OpenCLLIB::Maxmag:
+      case OpenCLLIB::Minmag:
+      case OpenCLLIB::Nextafter:
+      case OpenCLLIB::Pow:
+      case OpenCLLIB::Powr:
+      case OpenCLLIB::Remainder:
+      case OpenCLLIB::Rint:
+      case OpenCLLIB::Round:
+      case OpenCLLIB::Rsqrt:
+      case OpenCLLIB::Sin:
+      case OpenCLLIB::Sinh:
+      case OpenCLLIB::Sinpi:
+      case OpenCLLIB::Sqrt:
+      case OpenCLLIB::Tan:
+      case OpenCLLIB::Tanh:
+      case OpenCLLIB::Tanpi:
+      case OpenCLLIB::Tgamma:
+      case OpenCLLIB::Trunc:
+      case OpenCLLIB::Half_cos:
+      case OpenCLLIB::Half_divide:
+      case OpenCLLIB::Half_exp:
+      case OpenCLLIB::Half_exp2:
+      case OpenCLLIB::Half_exp10:
+      case OpenCLLIB::Half_log:
+      case OpenCLLIB::Half_log2:
+      case OpenCLLIB::Half_log10:
+      case OpenCLLIB::Half_powr:
+      case OpenCLLIB::Half_recip:
+      case OpenCLLIB::Half_rsqrt:
+      case OpenCLLIB::Half_sin:
+      case OpenCLLIB::Half_sqrt:
+      case OpenCLLIB::Half_tan:
+      case OpenCLLIB::Native_cos:
+      case OpenCLLIB::Native_divide:
+      case OpenCLLIB::Native_exp:
+      case OpenCLLIB::Native_exp2:
+      case OpenCLLIB::Native_exp10:
+      case OpenCLLIB::Native_log:
+      case OpenCLLIB::Native_log2:
+      case OpenCLLIB::Native_log10:
+      case OpenCLLIB::Native_powr:
+      case OpenCLLIB::Native_recip:
+      case OpenCLLIB::Native_rsqrt:
+      case OpenCLLIB::Native_sin:
+      case OpenCLLIB::Native_sqrt:
+      case OpenCLLIB::Native_tan:
+      case OpenCLLIB::FClamp:
+      case OpenCLLIB::Degrees:
+      case OpenCLLIB::FMax_common:
+      case OpenCLLIB::FMin_common:
+      case OpenCLLIB::Mix:
+      case OpenCLLIB::Radians:
+      case OpenCLLIB::Step:
+      case OpenCLLIB::Smoothstep:
+      case OpenCLLIB::Sign: {
+        if (!_.IsFloatScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar or vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        for (uint32_t operand_index = 4; operand_index < num_operands;
+             ++operand_index) {
+          const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
+          if (result_type != operand_type) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected types of all operands to be equal to Result "
+                      "Type";
+          }
+        }
+        break;
+      }
+
+      case OpenCLLIB::Fract:
+      case OpenCLLIB::Modf:
+      case OpenCLLIB::Sincos:
+      case OpenCLLIB::Remquo: {
+        if (!_.IsFloatScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar or vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        uint32_t operand_index = 4;
+        const uint32_t x_type = _.GetOperandTypeId(inst, operand_index++);
+        if (result_type != x_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected type of operand X to be equal to Result Type";
+        }
+
+        if (ext_inst_key == OpenCLLIB::Remquo) {
+          const uint32_t y_type = _.GetOperandTypeId(inst, operand_index++);
+          if (result_type != y_type) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected type of operand Y to be equal to Result Type";
+          }
+        }
+
+        const uint32_t p_type = _.GetOperandTypeId(inst, operand_index++);
+        uint32_t p_storage_class = 0;
+        uint32_t p_data_type = 0;
+        if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected the last operand to be a pointer";
+        }
+
+        if (p_storage_class != SpvStorageClassGeneric &&
+            p_storage_class != SpvStorageClassCrossWorkgroup &&
+            p_storage_class != SpvStorageClassWorkgroup &&
+            p_storage_class != SpvStorageClassFunction) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected storage class of the pointer to be Generic, "
+                    "CrossWorkgroup, Workgroup or Function";
+        }
+
+        if (result_type != p_data_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected data type of the pointer to be equal to Result "
+                    "Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Frexp:
+      case OpenCLLIB::Lgamma_r: {
+        if (!_.IsFloatScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar or vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        const uint32_t x_type = _.GetOperandTypeId(inst, 4);
+        if (result_type != x_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected type of operand X to be equal to Result Type";
+        }
+
+        const uint32_t p_type = _.GetOperandTypeId(inst, 5);
+        uint32_t p_storage_class = 0;
+        uint32_t p_data_type = 0;
+        if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected the last operand to be a pointer";
+        }
+
+        if (p_storage_class != SpvStorageClassGeneric &&
+            p_storage_class != SpvStorageClassCrossWorkgroup &&
+            p_storage_class != SpvStorageClassWorkgroup &&
+            p_storage_class != SpvStorageClassFunction) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected storage class of the pointer to be Generic, "
+                    "CrossWorkgroup, Workgroup or Function";
+        }
+
+        if (!_.IsIntScalarOrVectorType(p_data_type) ||
+            _.GetBitWidth(p_data_type) != 32) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected data type of the pointer to be a 32-bit int "
+                    "scalar or vector type";
+        }
+
+        if (_.GetDimension(p_data_type) != num_components) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected data type of the pointer to have the same number "
+                    "of components as Result Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Ilogb: {
+        if (!_.IsIntScalarOrVectorType(result_type) ||
+            _.GetBitWidth(result_type) != 32) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a 32-bit int scalar or vector "
+                    "type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        const uint32_t x_type = _.GetOperandTypeId(inst, 4);
+        if (!_.IsFloatScalarOrVectorType(x_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand X to be a float scalar or vector";
+        }
+
+        if (_.GetDimension(x_type) != num_components) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand X to have the same number of components "
+                    "as Result Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Ldexp:
+      case OpenCLLIB::Pown:
+      case OpenCLLIB::Rootn: {
+        if (!_.IsFloatScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar or vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        const uint32_t x_type = _.GetOperandTypeId(inst, 4);
+        if (result_type != x_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected type of operand X to be equal to Result Type";
+        }
+
+        const uint32_t exp_type = _.GetOperandTypeId(inst, 5);
+        if (!_.IsIntScalarOrVectorType(exp_type) ||
+            _.GetBitWidth(exp_type) != 32) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected the exponent to be a 32-bit int scalar or vector";
+        }
+
+        if (_.GetDimension(exp_type) != num_components) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected the exponent to have the same number of "
+                    "components as Result Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Nan: {
+        if (!_.IsFloatScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar or vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        const uint32_t nancode_type = _.GetOperandTypeId(inst, 4);
+        if (!_.IsIntScalarOrVectorType(nancode_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Nancode to be an int scalar or vector type";
+        }
+
+        if (_.GetDimension(nancode_type) != num_components) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Nancode to have the same number of components as "
+                    "Result Type";
+        }
+
+        if (_.GetBitWidth(result_type) != _.GetBitWidth(nancode_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Nancode to have the same bit width as Result "
+                    "Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::SAbs:
+      case OpenCLLIB::SAbs_diff:
+      case OpenCLLIB::SAdd_sat:
+      case OpenCLLIB::UAdd_sat:
+      case OpenCLLIB::SHadd:
+      case OpenCLLIB::UHadd:
+      case OpenCLLIB::SRhadd:
+      case OpenCLLIB::URhadd:
+      case OpenCLLIB::SClamp:
+      case OpenCLLIB::UClamp:
+      case OpenCLLIB::Clz:
+      case OpenCLLIB::Ctz:
+      case OpenCLLIB::SMad_hi:
+      case OpenCLLIB::UMad_sat:
+      case OpenCLLIB::SMad_sat:
+      case OpenCLLIB::SMax:
+      case OpenCLLIB::UMax:
+      case OpenCLLIB::SMin:
+      case OpenCLLIB::UMin:
+      case OpenCLLIB::SMul_hi:
+      case OpenCLLIB::Rotate:
+      case OpenCLLIB::SSub_sat:
+      case OpenCLLIB::USub_sat:
+      case OpenCLLIB::Popcount:
+      case OpenCLLIB::UAbs:
+      case OpenCLLIB::UAbs_diff:
+      case OpenCLLIB::UMul_hi:
+      case OpenCLLIB::UMad_hi: {
+        if (!_.IsIntScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be an int scalar or vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        for (uint32_t operand_index = 4; operand_index < num_operands;
+             ++operand_index) {
+          const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
+          if (result_type != operand_type) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected types of all operands to be equal to Result "
+                      "Type";
+          }
+        }
+        break;
+      }
+
+      case OpenCLLIB::U_Upsample:
+      case OpenCLLIB::S_Upsample: {
+        if (!_.IsIntScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be an int scalar or vector "
+                    "type";
+        }
+
+        const uint32_t result_num_components = _.GetDimension(result_type);
+        if (result_num_components > 4 && result_num_components != 8 &&
+            result_num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        const uint32_t result_bit_width = _.GetBitWidth(result_type);
+        if (result_bit_width != 16 && result_bit_width != 32 &&
+            result_bit_width != 64) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected bit width of Result Type components to be 16, 32 "
+                    "or 64";
+        }
+
+        const uint32_t hi_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t lo_type = _.GetOperandTypeId(inst, 5);
+
+        if (hi_type != lo_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Hi and Lo operands to have the same type";
+        }
+
+        if (result_num_components != _.GetDimension(hi_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Hi and Lo operands to have the same number of "
+                    "components as Result Type";
+        }
+
+        if (result_bit_width != 2 * _.GetBitWidth(hi_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected bit width of components of Hi and Lo operands to "
+                    "be half of the bit width of components of Result Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::SMad24:
+      case OpenCLLIB::UMad24:
+      case OpenCLLIB::SMul24:
+      case OpenCLLIB::UMul24: {
+        if (!_.IsIntScalarOrVectorType(result_type) ||
+            _.GetBitWidth(result_type) != 32) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a 32-bit int scalar or vector "
+                    "type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        for (uint32_t operand_index = 4; operand_index < num_operands;
+             ++operand_index) {
+          const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
+          if (result_type != operand_type) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected types of all operands to be equal to Result "
+                      "Type";
+          }
+        }
+        break;
+      }
+
+      case OpenCLLIB::Cross: {
+        if (!_.IsFloatVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components != 3 && num_components != 4) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to have 3 or 4 components";
+        }
+
+        const uint32_t x_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t y_type = _.GetOperandTypeId(inst, 5);
+
+        if (x_type != result_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand X type to be equal to Result Type";
+        }
+
+        if (y_type != result_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Y type to be equal to Result Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Distance:
+      case OpenCLLIB::Fast_distance: {
+        if (!_.IsFloatScalarType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar type";
+        }
+
+        const uint32_t p0_type = _.GetOperandTypeId(inst, 4);
+        if (!_.IsFloatScalarOrVectorType(p0_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P0 to be of float scalar or vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(p0_type);
+        if (num_components > 4) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P0 to have no more than 4 components";
+        }
+
+        if (result_type != _.GetComponentType(p0_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P0 component type to be equal to "
+                 << "Result Type";
+        }
+
+        const uint32_t p1_type = _.GetOperandTypeId(inst, 5);
+        if (p0_type != p1_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operands P0 and P1 to be of the same type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Length:
+      case OpenCLLIB::Fast_length: {
+        if (!_.IsFloatScalarType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar type";
+        }
+
+        const uint32_t p_type = _.GetOperandTypeId(inst, 4);
+        if (!_.IsFloatScalarOrVectorType(p_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P to be a float scalar or vector";
+        }
+
+        const uint32_t num_components = _.GetDimension(p_type);
+        if (num_components > 4) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P to have no more than 4 components";
+        }
+
+        if (result_type != _.GetComponentType(p_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P component type to be equal to Result "
+                    "Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Normalize:
+      case OpenCLLIB::Fast_normalize: {
+        if (!_.IsFloatScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar or vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to have no more than 4 components";
+        }
+
+        const uint32_t p_type = _.GetOperandTypeId(inst, 4);
+        if (p_type != result_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P type to be equal to Result Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Bitselect: {
+        if (!_.IsFloatScalarOrVectorType(result_type) &&
+            !_.IsIntScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be an int or float scalar or "
+                    "vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        for (uint32_t operand_index = 4; operand_index < num_operands;
+             ++operand_index) {
+          const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
+          if (result_type != operand_type) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected types of all operands to be equal to Result "
+                      "Type";
+          }
+        }
+        break;
+      }
+
+      case OpenCLLIB::Select: {
+        if (!_.IsFloatScalarOrVectorType(result_type) &&
+            !_.IsIntScalarOrVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be an int or float scalar or "
+                    "vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        const uint32_t a_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t b_type = _.GetOperandTypeId(inst, 5);
+        const uint32_t c_type = _.GetOperandTypeId(inst, 6);
+
+        if (result_type != a_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand A type to be equal to Result Type";
+        }
+
+        if (result_type != b_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand B type to be equal to Result Type";
+        }
+
+        if (!_.IsIntScalarOrVectorType(c_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand C to be an int scalar or vector";
+        }
+
+        if (num_components != _.GetDimension(c_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand C to have the same number of components "
+                    "as Result Type";
+        }
+
+        if (_.GetBitWidth(result_type) != _.GetBitWidth(c_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand C to have the same bit width as Result "
+                    "Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Vloadn: {
+        if (!_.IsFloatVectorType(result_type) &&
+            !_.IsIntVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be an int or float vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to have 2, 3, 4, 8 or 16 components";
+        }
+
+        const uint32_t offset_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t p_type = _.GetOperandTypeId(inst, 5);
+
+        const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
+        if (!size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name()
+                 << " can only be used with physical addressing models";
+        }
+
+        if (!_.IsIntScalarType(offset_type) ||
+            _.GetBitWidth(offset_type) != size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Offset to be of type size_t ("
+                 << size_t_bit_width
+                 << "-bit integer for the addressing model used in the module)";
+        }
+
+        uint32_t p_storage_class = 0;
+        uint32_t p_data_type = 0;
+        if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P to be a pointer";
+        }
+
+        if (p_storage_class != SpvStorageClassUniformConstant &&
+            p_storage_class != SpvStorageClassGeneric) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P storage class to be UniformConstant or "
+                    "Generic";
+        }
+
+        if (_.GetComponentType(result_type) != p_data_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P data type to be equal to component "
+                    "type of Result Type";
+        }
+
+        const uint32_t n_value = inst->words[7];
+        if (num_components != n_value) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected literal N to be equal to the number of "
+                    "components of Result Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Vstoren: {
+        if (_.GetIdOpcode(result_type) != SpvOpTypeVoid) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": expected Result Type to be void";
+        }
+
+        const uint32_t data_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t offset_type = _.GetOperandTypeId(inst, 5);
+        const uint32_t p_type = _.GetOperandTypeId(inst, 6);
+
+        if (!_.IsFloatVectorType(data_type) && !_.IsIntVectorType(data_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Data to be an int or float vector";
+        }
+
+        const uint32_t num_components = _.GetDimension(data_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Data to have 2, 3, 4, 8 or 16 components";
+        }
+
+        const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
+        if (!size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name()
+                 << " can only be used with physical addressing models";
+        }
+
+        if (!_.IsIntScalarType(offset_type) ||
+            _.GetBitWidth(offset_type) != size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Offset to be of type size_t ("
+                 << size_t_bit_width
+                 << "-bit integer for the addressing model used in the module)";
+        }
+
+        uint32_t p_storage_class = 0;
+        uint32_t p_data_type = 0;
+        if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P to be a pointer";
+        }
+
+        if (p_storage_class != SpvStorageClassGeneric) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P storage class to be Generic";
+        }
+
+        if (_.GetComponentType(data_type) != p_data_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P data type to be equal to the type of "
+                    "operand Data components";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Vload_half: {
+        if (!_.IsFloatScalarType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float scalar type";
+        }
+
+        const uint32_t offset_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t p_type = _.GetOperandTypeId(inst, 5);
+
+        const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
+        if (!size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name()
+                 << " can only be used with physical addressing models";
+        }
+
+        if (!_.IsIntScalarType(offset_type) ||
+            _.GetBitWidth(offset_type) != size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Offset to be of type size_t ("
+                 << size_t_bit_width
+                 << "-bit integer for the addressing model used in the module)";
+        }
+
+        uint32_t p_storage_class = 0;
+        uint32_t p_data_type = 0;
+        if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P to be a pointer";
+        }
+
+        if (p_storage_class != SpvStorageClassUniformConstant &&
+            p_storage_class != SpvStorageClassGeneric &&
+            p_storage_class != SpvStorageClassCrossWorkgroup &&
+            p_storage_class != SpvStorageClassWorkgroup &&
+            p_storage_class != SpvStorageClassFunction) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P storage class to be UniformConstant, "
+                    "Generic, CrossWorkgroup, Workgroup or Function";
+        }
+
+        if (!_.IsFloatScalarType(p_data_type) ||
+            _.GetBitWidth(p_data_type) != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P data type to be 16-bit float scalar";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Vload_halfn:
+      case OpenCLLIB::Vloada_halfn: {
+        if (!_.IsFloatVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a float vector type";
+        }
+
+        const uint32_t num_components = _.GetDimension(result_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to have 2, 3, 4, 8 or 16 components";
+        }
+
+        const uint32_t offset_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t p_type = _.GetOperandTypeId(inst, 5);
+
+        const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
+        if (!size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name()
+                 << " can only be used with physical addressing models";
+        }
+
+        if (!_.IsIntScalarType(offset_type) ||
+            _.GetBitWidth(offset_type) != size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Offset to be of type size_t ("
+                 << size_t_bit_width
+                 << "-bit integer for the addressing model used in the module)";
+        }
+
+        uint32_t p_storage_class = 0;
+        uint32_t p_data_type = 0;
+        if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P to be a pointer";
+        }
+
+        if (p_storage_class != SpvStorageClassUniformConstant &&
+            p_storage_class != SpvStorageClassGeneric &&
+            p_storage_class != SpvStorageClassCrossWorkgroup &&
+            p_storage_class != SpvStorageClassWorkgroup &&
+            p_storage_class != SpvStorageClassFunction) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P storage class to be UniformConstant, "
+                    "Generic, CrossWorkgroup, Workgroup or Function";
+        }
+
+        if (!_.IsFloatScalarType(p_data_type) ||
+            _.GetBitWidth(p_data_type) != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P data type to be 16-bit float scalar";
+        }
+
+        const uint32_t n_value = inst->words[7];
+        if (num_components != n_value) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected literal N to be equal to the number of "
+                    "components of Result Type";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Vstore_half:
+      case OpenCLLIB::Vstore_half_r:
+      case OpenCLLIB::Vstore_halfn:
+      case OpenCLLIB::Vstore_halfn_r:
+      case OpenCLLIB::Vstorea_halfn:
+      case OpenCLLIB::Vstorea_halfn_r: {
+        if (_.GetIdOpcode(result_type) != SpvOpTypeVoid) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": expected Result Type to be void";
+        }
+
+        const uint32_t data_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t offset_type = _.GetOperandTypeId(inst, 5);
+        const uint32_t p_type = _.GetOperandTypeId(inst, 6);
+        const uint32_t data_type_bit_width = _.GetBitWidth(data_type);
+
+        if (ext_inst_key == OpenCLLIB::Vstore_half ||
+            ext_inst_key == OpenCLLIB::Vstore_half_r) {
+          if (!_.IsFloatScalarType(data_type) ||
+              (data_type_bit_width != 32 && data_type_bit_width != 64)) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected Data to be a 32 or 64-bit float scalar";
+          }
+        } else {
+          if (!_.IsFloatVectorType(data_type) ||
+              (data_type_bit_width != 32 && data_type_bit_width != 64)) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected Data to be a 32 or 64-bit float vector";
+          }
+
+          const uint32_t num_components = _.GetDimension(data_type);
+          if (num_components > 4 && num_components != 8 &&
+              num_components != 16) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected Data to have 2, 3, 4, 8 or 16 components";
+          }
+        }
+
+        const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
+        if (!size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name()
+                 << " can only be used with physical addressing models";
+        }
+
+        if (!_.IsIntScalarType(offset_type) ||
+            _.GetBitWidth(offset_type) != size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Offset to be of type size_t ("
+                 << size_t_bit_width
+                 << "-bit integer for the addressing model used in the module)";
+        }
+
+        uint32_t p_storage_class = 0;
+        uint32_t p_data_type = 0;
+        if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P to be a pointer";
+        }
+
+        if (p_storage_class != SpvStorageClassGeneric &&
+            p_storage_class != SpvStorageClassCrossWorkgroup &&
+            p_storage_class != SpvStorageClassWorkgroup &&
+            p_storage_class != SpvStorageClassFunction) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P storage class to be Generic, "
+                    "CrossWorkgroup, Workgroup or Function";
+        }
+
+        if (!_.IsFloatScalarType(p_data_type) ||
+            _.GetBitWidth(p_data_type) != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand P data type to be 16-bit float scalar";
+        }
+
+        // Rounding mode enum is checked by assembler.
+        break;
+      }
+
+      case OpenCLLIB::Shuffle:
+      case OpenCLLIB::Shuffle2: {
+        if (!_.IsFloatVectorType(result_type) &&
+            !_.IsIntVectorType(result_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be an int or float vector type";
+        }
+
+        const uint32_t result_num_components = _.GetDimension(result_type);
+        if (result_num_components != 2 && result_num_components != 4 &&
+            result_num_components != 8 && result_num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to have 2, 4, 8 or 16 components";
+        }
+
+        uint32_t operand_index = 4;
+        const uint32_t x_type = _.GetOperandTypeId(inst, operand_index++);
+
+        if (ext_inst_key == OpenCLLIB::Shuffle2) {
+          const uint32_t y_type = _.GetOperandTypeId(inst, operand_index++);
+          if (x_type != y_type) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << ext_inst_name() << ": "
+                   << "expected operands X and Y to be of the same type";
+          }
+        }
+
+        const uint32_t shuffle_mask_type =
+            _.GetOperandTypeId(inst, operand_index++);
+
+        if (!_.IsFloatVectorType(x_type) && !_.IsIntVectorType(x_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand X to be an int or float vector";
+        }
+
+        const uint32_t x_num_components = _.GetDimension(x_type);
+        if (x_num_components != 2 && x_num_components != 4 &&
+            x_num_components != 8 && x_num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand X to have 2, 4, 8 or 16 components";
+        }
+
+        const uint32_t result_component_type = _.GetComponentType(result_type);
+
+        if (result_component_type != _.GetComponentType(x_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand X and Result Type to have equal "
+                    "component types";
+        }
+
+        if (!_.IsIntVectorType(shuffle_mask_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Shuffle Mask to be an int vector";
+        }
+
+        if (result_num_components != _.GetDimension(shuffle_mask_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Shuffle Mask to have the same number of "
+                    "components as Result Type";
+        }
+
+        if (_.GetBitWidth(result_component_type) !=
+            _.GetBitWidth(shuffle_mask_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Shuffle Mask components to have the same "
+                    "bit width as Result Type components";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Printf: {
+        if (!_.IsIntScalarType(result_type) ||
+            _.GetBitWidth(result_type) != 32) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a 32-bit int type";
+        }
+
+        const uint32_t format_type = _.GetOperandTypeId(inst, 4);
+        uint32_t format_storage_class = 0;
+        uint32_t format_data_type = 0;
+        if (!_.GetPointerTypeInfo(format_type, &format_data_type,
+                                  &format_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Format to be a pointer";
+        }
+
+        if (format_storage_class != SpvStorageClassUniformConstant) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Format storage class to be UniformConstant";
+        }
+
+        if (!_.IsIntScalarType(format_data_type) ||
+            _.GetBitWidth(format_data_type) != 8) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Format data type to be 8-bit int";
+        }
+        break;
+      }
+
+      case OpenCLLIB::Prefetch: {
+        if (_.GetIdOpcode(result_type) != SpvOpTypeVoid) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": expected Result Type to be void";
+        }
+
+        const uint32_t p_type = _.GetOperandTypeId(inst, 4);
+        const uint32_t num_elements_type = _.GetOperandTypeId(inst, 5);
+
+        uint32_t p_storage_class = 0;
+        uint32_t p_data_type = 0;
+        if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Ptr to be a pointer";
+        }
+
+        if (p_storage_class != SpvStorageClassCrossWorkgroup) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Ptr storage class to be CrossWorkgroup";
+        }
+
+        if (!_.IsFloatScalarOrVectorType(p_data_type) &&
+            !_.IsIntScalarOrVectorType(p_data_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Ptr data type to be int or float scalar or "
+                    "vector";
+        }
+
+        const uint32_t num_components = _.GetDimension(p_data_type);
+        if (num_components > 4 && num_components != 8 && num_components != 16) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
+        }
+
+        const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
+        if (!size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name()
+                 << " can only be used with physical addressing models";
+        }
+
+        if (!_.IsIntScalarType(num_elements_type) ||
+            _.GetBitWidth(num_elements_type) != size_t_bit_width) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << ext_inst_name() << ": "
+                 << "expected operand Num Elements to be of type size_t ("
+                 << size_t_bit_width
+                 << "-bit integer for the addressing model used in the module)";
+        }
+        break;
+      }
+    }
   }
 
   return SPV_SUCCESS;
