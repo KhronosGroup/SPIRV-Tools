@@ -17,6 +17,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "instruction.h"
@@ -35,10 +36,16 @@ class DecorationManager {
   }
   DecorationManager() = delete;
 
-  // Removes all decorations from |id|, which should not be a group ID.
-  void RemoveDecorationsFrom(uint32_t id);
+  // Removes all decorations from |id| for which |pred| returns true.
+  // |id| should not be a group ID.
+  void RemoveDecorationsFrom(uint32_t id,
+                             std::function<bool(const ir::Instruction&)> pred =
+                                 [](const ir::Instruction&) { return true; });
 
   // Removes all decorations from the result id of |inst|.
+  //
+  // NOTE: This is only meant to be called from ir_context, as only metadata
+  // will be removed, and no actual instruction.
   void RemoveDecoration(ir::Instruction* inst);
 
   // Returns a vector of all decorations affecting |id|. If a group is applied
@@ -90,12 +97,6 @@ class DecorationManager {
   void AddDecoration(ir::Instruction* inst);
 
  private:
-  // Removes the instruction from the set of decorations targeting |target_id|.
-  void RemoveInstructionFromTarget(ir::Instruction* inst,
-                                   const uint32_t target_id);
-
-  using IdToDecorationInstsMap =
-      std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.
   void AnalyzeDecorations();
@@ -103,14 +104,29 @@ class DecorationManager {
   template <typename T>
   std::vector<T> InternalGetDecorationsFor(uint32_t id, bool include_linkage);
 
-  // Mapping from ids to the instructions applying a decoration to them. In
-  // other words, for each id you get all decoration instructions referencing
-  // that id, be it directly (SpvOpDecorate, SpvOpMemberDecorate and
-  // SpvOpDecorateId), or indirectly (SpvOpGroupDecorate,
+  // Tracks decoration information of an ID.
+  struct TargetData {
+    std::vector<ir::Instruction*> direct_decorations;    // All decorate
+                                                         // instructions applied
+                                                         // to the tracked ID.
+    std::vector<ir::Instruction*> indirect_decorations;  // All instructions
+                                                         // applying a group to
+                                                         // the tracked ID.
+    std::vector<ir::Instruction*> decorate_insts;  // All decorate instructions
+                                                   // applying the decorations
+                                                   // of the tracked ID to
+                                                   // targets.
+                                                   // It is empty if the
+                                                   // tracked ID is not a
+                                                   // group.
+  };
+
+  // Mapping from ids to the instructions applying a decoration to those ids.
+  // In other words, for each id you get all decoration instructions
+  // referencing that id, be it directly (SpvOpDecorate, SpvOpMemberDecorate
+  // and SpvOpDecorateId), or indirectly (SpvOpGroupDecorate,
   // SpvOpMemberGroupDecorate).
-  IdToDecorationInstsMap id_to_decoration_insts_;
-  // Mapping from group ids to all the decoration instructions they apply.
-  IdToDecorationInstsMap group_to_decoration_insts_;
+  std::unordered_map<uint32_t, TargetData> id_to_decoration_insts_;
   // The enclosing module.
   ir::Module* module_;
 };
