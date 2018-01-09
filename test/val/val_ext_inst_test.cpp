@@ -1538,7 +1538,7 @@ INSTANTIATE_TEST_CASE_P(AllPack, ValidateGlslStd450Pack,
 
 TEST_F(ValidateExtInst, PackDouble2x32Success) {
   const std::string body = R"(
-%val1 = OpExtInst %f64 %extinst PackDouble2x32 %f32vec2_01
+%val1 = OpExtInst %f64 %extinst PackDouble2x32 %u32vec2_01
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
@@ -1547,7 +1547,7 @@ TEST_F(ValidateExtInst, PackDouble2x32Success) {
 
 TEST_F(ValidateExtInst, PackDouble2x32Float32ResultType) {
   const std::string body = R"(
-%val1 = OpExtInst %f32 %extinst PackDouble2x32 %f32vec2_01
+%val1 = OpExtInst %f32 %extinst PackDouble2x32 %u32vec2_01
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
@@ -1559,7 +1559,7 @@ TEST_F(ValidateExtInst, PackDouble2x32Float32ResultType) {
 
 TEST_F(ValidateExtInst, PackDouble2x32Int64ResultType) {
   const std::string body = R"(
-%val1 = OpExtInst %u64 %extinst PackDouble2x32 %f32vec2_01
+%val1 = OpExtInst %u64 %extinst PackDouble2x32 %u32vec2_01
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
@@ -1571,50 +1571,50 @@ TEST_F(ValidateExtInst, PackDouble2x32Int64ResultType) {
 
 TEST_F(ValidateExtInst, PackDouble2x32VNotVector) {
   const std::string body = R"(
-%val1 = OpExtInst %f64 %extinst PackDouble2x32 %f64_1
+%val1 = OpExtInst %f64 %extinst PackDouble2x32 %u64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 PackDouble2x32: expected operand V to be "
-                        "a 32-bit float vector of size 2"));
+                        "a 32-bit int vector of size 2"));
 }
 
-TEST_F(ValidateExtInst, PackDouble2x32VNotFloatVector) {
+TEST_F(ValidateExtInst, PackDouble2x32VNotIntVector) {
   const std::string body = R"(
-%val1 = OpExtInst %f64 %extinst PackDouble2x32 %u32vec2_01
+%val1 = OpExtInst %f64 %extinst PackDouble2x32 %f32vec2_01
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 PackDouble2x32: expected operand V to be "
-                        "a 32-bit float vector of size 2"));
+                        "a 32-bit int vector of size 2"));
 }
 
-TEST_F(ValidateExtInst, PackDouble2x32VNotFloat32Vector) {
+TEST_F(ValidateExtInst, PackDouble2x32VNotInt32Vector) {
   const std::string body = R"(
-%val1 = OpExtInst %f64 %extinst PackDouble2x32 %f64vec2_01
+%val1 = OpExtInst %f64 %extinst PackDouble2x32 %u64vec2_01
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 PackDouble2x32: expected operand V to be "
-                        "a 32-bit float vector of size 2"));
+                        "a 32-bit int vector of size 2"));
 }
 
 TEST_F(ValidateExtInst, PackDouble2x32VWrongSize) {
   const std::string body = R"(
-%val1 = OpExtInst %f64 %extinst PackDouble2x32 %f32vec4_0123
+%val1 = OpExtInst %f64 %extinst PackDouble2x32 %u32vec4_0123
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 PackDouble2x32: expected operand V to be "
-                        "a 32-bit float vector of size 2"));
+                        "a 32-bit int vector of size 2"));
 }
 
 TEST_P(ValidateGlslStd450Unpack, Success) {
@@ -1777,7 +1777,7 @@ INSTANTIATE_TEST_CASE_P(AllUnpack, ValidateGlslStd450Unpack,
 
 TEST_F(ValidateExtInst, UnpackDouble2x32Success) {
   const std::string body = R"(
-%val1 = OpExtInst %f32vec2 %extinst UnpackDouble2x32 %f64_1
+%val1 = OpExtInst %u32vec2 %extinst UnpackDouble2x32 %f64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
@@ -1786,55 +1786,55 @@ TEST_F(ValidateExtInst, UnpackDouble2x32Success) {
 
 TEST_F(ValidateExtInst, UnpackDouble2x32ResultTypeNotVector) {
   const std::string body = R"(
-%val1 = OpExtInst %f64 %extinst UnpackDouble2x32 %f64_1
+%val1 = OpExtInst %u64 %extinst UnpackDouble2x32 %f64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 UnpackDouble2x32: expected Result Type "
-                        "to be a 32-bit float vector of size 2"));
+                        "to be a 32-bit int vector of size 2"));
 }
 
-TEST_F(ValidateExtInst, UnpackDouble2x32ResultTypeNotFloatVector) {
+TEST_F(ValidateExtInst, UnpackDouble2x32ResultTypeNotIntVector) {
   const std::string body = R"(
-%val1 = OpExtInst %u32vec2 %extinst UnpackDouble2x32 %f64_1
+%val1 = OpExtInst %f32vec2 %extinst UnpackDouble2x32 %f64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 UnpackDouble2x32: expected Result Type "
-                        "to be a 32-bit float vector of size 2"));
+                        "to be a 32-bit int vector of size 2"));
 }
 
-TEST_F(ValidateExtInst, UnpackDouble2x32ResultTypeNotFloat32Vector) {
+TEST_F(ValidateExtInst, UnpackDouble2x32ResultTypeNotInt32Vector) {
   const std::string body = R"(
-%val1 = OpExtInst %f64vec2 %extinst UnpackDouble2x32 %f64_1
+%val1 = OpExtInst %u64vec2 %extinst UnpackDouble2x32 %f64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 UnpackDouble2x32: expected Result Type "
-                        "to be a 32-bit float vector of size 2"));
+                        "to be a 32-bit int vector of size 2"));
 }
 
 TEST_F(ValidateExtInst, UnpackDouble2x32ResultTypeWrongSize) {
   const std::string body = R"(
-%val1 = OpExtInst %f32vec4 %extinst UnpackDouble2x32 %f64_1
+%val1 = OpExtInst %u32vec4 %extinst UnpackDouble2x32 %f64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 UnpackDouble2x32: expected Result Type "
-                        "to be a 32-bit float vector of size 2"));
+                        "to be a 32-bit int vector of size 2"));
 }
 
 TEST_F(ValidateExtInst, UnpackDouble2x32VNotFloat) {
   const std::string body = R"(
-%val1 = OpExtInst %f32vec2 %extinst UnpackDouble2x32 %u64_1
+%val1 = OpExtInst %u32vec2 %extinst UnpackDouble2x32 %u64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
@@ -1846,7 +1846,7 @@ TEST_F(ValidateExtInst, UnpackDouble2x32VNotFloat) {
 
 TEST_F(ValidateExtInst, UnpackDouble2x32VNotFloat64) {
   const std::string body = R"(
-%val1 = OpExtInst %f32vec2 %extinst UnpackDouble2x32 %f32_1
+%val1 = OpExtInst %u32vec2 %extinst UnpackDouble2x32 %f32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
