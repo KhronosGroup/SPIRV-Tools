@@ -36,7 +36,7 @@ const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
 // Sorting functor to present annotation instructions in an easy-to-process
 // order. The functor orders by opcode first and falls back on unique id
-// orderingif both instructions have the same opcode.
+// ordering if both instructions have the same opcode.
 //
 // Desired priority:
 // SpvOpGroupDecorate
