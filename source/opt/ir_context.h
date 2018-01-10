@@ -393,6 +393,9 @@ class IRContext {
     return feature_mgr_.get();
   }
 
+  // Returns the grammar for this context.
+  const libspirv::AssemblyGrammar& grammar() const { return grammar_; }
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {

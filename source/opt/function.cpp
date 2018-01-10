@@ -75,5 +75,15 @@ void Function::ForEachParam(const std::function<void(const Instruction*)>& f,
         ->ForEachInst(f, run_on_debug_line_insts);
 }
 
+std::ostream& operator<<(std::ostream& str, const Function& func) {
+  func.ForEachInst([&str](const ir::Instruction* inst) {
+    str << *inst;
+    if (inst->opcode() != SpvOpFunctionEnd) {
+      str << std::endl;
+    }
+  });
+  return str;
+}
+
 }  // namespace ir
 }  // namespace spvtools

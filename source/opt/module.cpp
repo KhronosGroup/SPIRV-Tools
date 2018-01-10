@@ -158,5 +158,15 @@ uint32_t Module::GetExtInstImportId(const char* extstr) {
   return 0;
 }
 
+std::ostream& operator<<(std::ostream& str, const Module& module) {
+  module.ForEachInst([&str](const ir::Instruction* inst) {
+    str << *inst;
+    if (inst->opcode() != SpvOpFunctionEnd) {
+      str << std::endl;
+    }
+  });
+  return str;
+}
+
 }  // namespace ir
 }  // namespace spvtools

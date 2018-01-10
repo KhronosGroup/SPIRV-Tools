@@ -476,5 +476,36 @@ bool Instruction::IsFoldable() const {
   return opt::IsFoldableType(type);
 }
 
+std::ostream& operator<<(std::ostream& str, const ir::Instruction& inst) {
+  // Convert the module to binary.
+  std::vector<uint32_t> module_binary;
+  inst.context()->module()->ToBinary(&module_binary, /* skip_nop = */ false);
+
+  // Convert the instruction to binary. This is used to identify the correct
+  // stream of words to output from the module.
+  std::vector<uint32_t> inst_binary;
+  inst.ToBinaryWithoutAttachedDebugInsts(&inst_binary);
+
+  // Do not generate a header.
+  uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NO_HEADER;
+  spv_context context =
+      spvContextCreate(inst.context()->grammar().target_env());
+  spv_diagnostic diagnostic = nullptr;
+  spv_text text = nullptr;
+  spv_result_t status = spvInstructionBinaryToText(
+      context, inst_binary.data(), inst_binary.size(), module_binary.data(),
+      module_binary.size(), options, &text, &diagnostic);
+  if (status == SPV_SUCCESS) {
+    std::string output(text->str, text->length);
+    // Drop trailing newline characters.
+    while (!output.empty() && output.back() == '\n') output.pop_back();
+    str << output;
+  }
+  spvTextDestroy(text);
+  spvContextDestroy(context);
+
+  return str;
+}
+
 }  // namespace ir
 }  // namespace spvtools

@@ -388,6 +388,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   friend InstructionList;
 };
 
+// Pretty-prints |inst| to |str| and returns |str|.
+//
+// Provides the disassembly of a specific instruction. Utilizes |inst|'s context
+// to provide the correct interpretation of types, constants, etc.
+std::ostream& operator<<(std::ostream& str, const ir::Instruction& inst);
+
 inline bool Instruction::operator==(const Instruction& other) const {
   return unique_id() == other.unique_id();
 }

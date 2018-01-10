@@ -482,6 +482,19 @@ spv_result_t spvBinaryToText(const spv_const_context context,
                              const uint32_t options, spv_text* text,
                              spv_diagnostic* diagnostic);
 
+// Decodes the given SPIR-V instruction binary representation to its assembly
+// text. The context is inferred from the provided module binary. The options
+// parameter is a bit field of spv_binary_to_text_options_t. Decoded text will
+// be stored into *text. Any error will be written into *diagnostic if
+// diagnostic is non-null.
+spv_result_t spvInstructionBinaryToText(const spv_const_context context,
+                                        const uint32_t* inst_binary,
+                                        const size_t inst_word_count,
+                                        const uint32_t* binary,
+                                        const size_t word_count,
+                                        const uint32_t options, spv_text* text,
+                                        spv_diagnostic* diagnostic);
+
 // Frees a binary stream from memory. This is a no-op if binary is a null
 // pointer.
 void spvBinaryDestroy(spv_binary binary);

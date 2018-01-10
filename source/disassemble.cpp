@@ -352,6 +352,56 @@ spv_result_t DisassembleInstruction(
   return disassembler->HandleInstruction(*parsed_instruction);
 }
 
+// Simple wrapper class to provide extra data necessary for targetted
+// instruction disassembly.
+class WrappedDisassembler {
+ public:
+  WrappedDisassembler(Disassembler* dis, const uint32_t* binary, size_t wc)
+      : disassembler_(dis),
+        stop_(false),
+        inst_binary_(binary),
+        word_count_(wc) {}
+
+  Disassembler* disassembler() { return disassembler_; }
+  bool stop() const { return stop_; }
+  void set_stop(bool s) { stop_ = s; }
+  const uint32_t* inst_binary() const { return inst_binary_; }
+  size_t word_count() const { return word_count_; }
+
+ private:
+  Disassembler* disassembler_;
+  bool stop_;
+  const uint32_t* inst_binary_;
+  const size_t word_count_;
+};
+
+spv_result_t DisassembleTargetHeader(void* /*user_data*/,
+                                     spv_endianness_t /*endian*/,
+                                     uint32_t /* magic */, uint32_t /*version*/,
+                                     uint32_t /*generator*/,
+                                     uint32_t /*id_bound*/,
+                                     uint32_t /*schema*/) {
+  return SPV_SUCCESS;
+}
+
+spv_result_t DisassembleTargetInstruction(
+    void* user_data, const spv_parsed_instruction_t* parsed_instruction) {
+  assert(user_data);
+  auto wrapped = static_cast<WrappedDisassembler*>(user_data);
+  // Check if this is the instruction we want to disassemble.
+  if (!wrapped->stop() &&
+      wrapped->word_count() == parsed_instruction->num_words &&
+      std::equal(wrapped->inst_binary(),
+                 wrapped->inst_binary() + wrapped->word_count(),
+                 parsed_instruction->words)) {
+    // Found the target instruction. Disassemble it and signal that we should
+    // stop searching so we don't output the same instruction again.
+    wrapped->set_stop(true);
+    return wrapped->disassembler()->HandleInstruction(*parsed_instruction);
+  }
+  return SPV_SUCCESS;
+}
+
 }  // anonymous namespace
 
 spv_result_t spvBinaryToText(const spv_const_context context,
@@ -381,6 +431,40 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   if (auto error = spvBinaryParse(&hijack_context, &disassembler, code,
                                   wordCount, DisassembleHeader,
                                   DisassembleInstruction, pDiagnostic)) {
+    return error;
+  }
+
+  return disassembler.SaveTextResult(pText);
+}
+
+spv_result_t spvInstructionBinaryToText(
+    const spv_const_context context, const uint32_t* instCode,
+    const size_t instWordCount, const uint32_t* code, const size_t wordCount,
+    const uint32_t options, spv_text* pText, spv_diagnostic* pDiagnostic) {
+  spv_context_t hijack_context = *context;
+  if (pDiagnostic) {
+    *pDiagnostic = nullptr;
+    libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
+  }
+
+  const libspirv::AssemblyGrammar grammar(&hijack_context);
+  if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
+
+  // Generate friendly names for Ids if requested.
+  std::unique_ptr<libspirv::FriendlyNameMapper> friendly_mapper;
+  libspirv::NameMapper name_mapper = libspirv::GetTrivialNameMapper();
+  if (options & SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) {
+    friendly_mapper.reset(
+        new libspirv::FriendlyNameMapper(&hijack_context, code, wordCount));
+    name_mapper = friendly_mapper->GetNameMapper();
+  }
+
+  // Now disassemble!
+  Disassembler disassembler(grammar, options, name_mapper);
+  WrappedDisassembler wrapped(&disassembler, instCode, instWordCount);
+  if (auto error = spvBinaryParse(&hijack_context, &wrapped, code, wordCount,
+                                  DisassembleTargetHeader,
+                                  DisassembleTargetInstruction, pDiagnostic)) {
     return error;
   }
 

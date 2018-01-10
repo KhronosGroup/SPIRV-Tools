@@ -112,6 +112,9 @@ class Function {
   std::unique_ptr<Instruction> end_inst_;
 };
 
+// Pretty-prints |func| to |str|. Returns |str|.
+std::ostream& operator<<(std::ostream& str, const Function& func);
+
 inline Function::Function(std::unique_ptr<Instruction> def_inst)
     : module_(nullptr), def_inst_(std::move(def_inst)), end_inst_() {}
 
