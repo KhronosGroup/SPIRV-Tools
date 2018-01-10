@@ -724,6 +724,8 @@ OpFunctionEnd
 
 TEST_F(InsertExtractElimTest, VectorShuffle2) {
   // Extract component from second vector in VectorShuffle 
+  // Identical to test VectorShuffle1 except for the vector
+  // shuffle index of 7.
   //
   // Note: The SPIR-V assembly has had store/load elimination
   // performed to allow the inserts and extracts to directly
