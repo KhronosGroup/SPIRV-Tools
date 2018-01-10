@@ -40,7 +40,7 @@ class InsertExtractElimPass : public Pass {
   Status Process(ir::IRContext*) override;
 
  private:
-  // Return true if indices in |extIndices| starting at |extOffset|
+  // Return true if the extract indices in |extIndices| starting at |extOffset|
   // match indices of insert |insInst|.
   bool ExtInsMatch(const std::vector<uint32_t>& extIndices,
                    const ir::Instruction* insInst,
