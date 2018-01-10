@@ -36,6 +36,7 @@ const uint32_t kVectorShuffleVec2IdInIdx = 1;
 const uint32_t kVectorShuffleCompsInIdx = 2;
 const uint32_t kTypeVectorCompTypeIdInIdx = 0;
 const uint32_t kTypeVectorLengthInIdx = 1;
+const uint32_t kTypeFloatWidthInIdx = 0;
 const uint32_t kExtInstSetIdInIdx = 0;
 const uint32_t kExtInstInstructionInIdx = 1;
 const uint32_t kFMixXIdInIdx = 2;
@@ -145,6 +146,11 @@ uint32_t InsertExtractElimPass::DoExtract(ir::Instruction* compInst,
         break;
       ir::Instruction* a_comp_inst = get_def_use_mgr()->GetDef(a_comp_id);
       if (a_comp_inst->opcode() != SpvOpConstant)
+        break;
+      // If a value is not 32-bit, give up
+      uint32_t a_comp_type_id = a_comp_inst->type_id();
+      ir::Instruction* a_comp_type = get_def_use_mgr()->GetDef(a_comp_type_id);
+      if (a_comp_type->GetSingleWordInOperand(kTypeFloatWidthInIdx) != 32)
         break;
       uint32_t u = a_comp_inst->GetSingleWordInOperand(kConstantValueInIdx);
       float* fp = reinterpret_cast<float*>(&u);
