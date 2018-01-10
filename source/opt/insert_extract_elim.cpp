@@ -45,15 +45,13 @@ const uint32_t kFMixAIdInIdx = 4;
 
 }  // anonymous namespace
 
-bool InsertExtractElimPass::ExtInsMatch(
-    const std::vector<uint32_t>& extIndices, const ir::Instruction* insInst,
-    const uint32_t extOffset) const {
+bool InsertExtractElimPass::ExtInsMatch(const std::vector<uint32_t>& extIndices,
+                                        const ir::Instruction* insInst,
+                                        const uint32_t extOffset) const {
   uint32_t numIndices = static_cast<uint32_t>(extIndices.size()) - extOffset;
-  if (numIndices != insInst->NumInOperands() - 2)
-    return false;
+  if (numIndices != insInst->NumInOperands() - 2) return false;
   for (uint32_t i = 0; i < numIndices; ++i)
-    if (extIndices[i + extOffset] !=
-        insInst->GetSingleWordInOperand(i + 2))
+    if (extIndices[i + extOffset] != insInst->GetSingleWordInOperand(i + 2))
       return false;
   return true;
 }
@@ -67,8 +65,7 @@ bool InsertExtractElimPass::ExtInsConflict(
   uint32_t insNumIndices = insInst->NumInOperands() - 2;
   uint32_t numIndices = std::min(extNumIndices, insNumIndices);
   for (uint32_t i = 0; i < numIndices; ++i)
-    if (extIndices[i + extOffset] !=
-        insInst->GetSingleWordInOperand(i + 2))
+    if (extIndices[i + extOffset] != insInst->GetSingleWordInOperand(i + 2))
       return false;
   return true;
 }
@@ -79,7 +76,8 @@ bool InsertExtractElimPass::IsVectorType(uint32_t typeId) {
 }
 
 uint32_t InsertExtractElimPass::DoExtract(ir::Instruction* compInst,
-    std::vector<uint32_t>* pExtIndices, uint32_t extOffset) {
+                                          std::vector<uint32_t>* pExtIndices,
+                                          uint32_t extOffset) {
   ir::Instruction* cinst = compInst;
   uint32_t cid = 0;
   uint32_t replId = 0;
@@ -89,8 +87,7 @@ uint32_t InsertExtractElimPass::DoExtract(ir::Instruction* compInst,
         // Match! Use inserted value as replacement
         replId = cinst->GetSingleWordInOperand(kInsertObjectIdInIdx);
         break;
-      }
-      else if (ExtInsConflict(*pExtIndices, cinst, extOffset)) {
+      } else if (ExtInsConflict(*pExtIndices, cinst, extOffset)) {
         // If extract has fewer indices than the insert, stop searching.
         // Otherwise increment offset of extract indices considered and
         // continue searching through the inserted value
@@ -100,29 +97,25 @@ uint32_t InsertExtractElimPass::DoExtract(ir::Instruction* compInst,
           extOffset += cinst->NumInOperands() - 2;
           cid = cinst->GetSingleWordInOperand(kInsertObjectIdInIdx);
         }
-      }
-      else {
+      } else {
         // Consider next composite in insert chain
         cid = cinst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
       }
     } else if (cinst->opcode() == SpvOpVectorShuffle) {
       // Get length of vector1
-      uint32_t v1_id =
-        cinst->GetSingleWordInOperand(kVectorShuffleVec1IdInIdx);
+      uint32_t v1_id = cinst->GetSingleWordInOperand(kVectorShuffleVec1IdInIdx);
       ir::Instruction* v1_inst = get_def_use_mgr()->GetDef(v1_id);
       uint32_t v1_type_id = v1_inst->type_id();
-      ir::Instruction* v1_type_inst =
-        get_def_use_mgr()->GetDef(v1_type_id);
+      ir::Instruction* v1_type_inst = get_def_use_mgr()->GetDef(v1_type_id);
       uint32_t v1_len =
-        v1_type_inst->GetSingleWordInOperand(kTypeVectorLengthInIdx);
+          v1_type_inst->GetSingleWordInOperand(kTypeVectorLengthInIdx);
       // Get shuffle idx
       uint32_t comp_idx = (*pExtIndices)[extOffset];
-      uint32_t shuffle_idx = cinst->GetSingleWordInOperand(
-        kVectorShuffleCompsInIdx + comp_idx);
+      uint32_t shuffle_idx =
+          cinst->GetSingleWordInOperand(kVectorShuffleCompsInIdx + comp_idx);
       // If undefined, give up
       // TODO(greg-lunarg): Return OpUndef
-      if (shuffle_idx == 0xFFFFFFFF)
-        break;
+      if (shuffle_idx == 0xFFFFFFFF) break;
       if (shuffle_idx < v1_len) {
         cid = v1_id;
         (*pExtIndices)[extOffset] = shuffle_idx;
@@ -131,22 +124,20 @@ uint32_t InsertExtractElimPass::DoExtract(ir::Instruction* compInst,
         (*pExtIndices)[extOffset] = shuffle_idx - v1_len;
       }
     } else if (cinst->opcode() == SpvOpExtInst &&
-        cinst->GetSingleWordInOperand(kExtInstSetIdInIdx) ==
-          get_module()->GetExtInstImportId("GLSL.std.450") &&
-        cinst->GetSingleWordInOperand(kExtInstInstructionInIdx) ==
-          GLSLstd450FMix) {
+               cinst->GetSingleWordInOperand(kExtInstSetIdInIdx) ==
+                   get_module()->GetExtInstImportId("GLSL.std.450") &&
+               cinst->GetSingleWordInOperand(kExtInstInstructionInIdx) ==
+                   GLSLstd450FMix) {
       // If mixing value component is 0 or 1 we just match with x or y.
       // Otherwise give up.
       uint32_t comp_idx = (*pExtIndices)[extOffset];
-      std::vector<uint32_t> aIndices = { comp_idx };
+      std::vector<uint32_t> aIndices = {comp_idx};
       uint32_t a_id = cinst->GetSingleWordInOperand(kFMixAIdInIdx);
       ir::Instruction* a_inst = get_def_use_mgr()->GetDef(a_id);
       uint32_t a_comp_id = DoExtract(a_inst, &aIndices, 0);
-      if (a_comp_id == 0)
-        break;
+      if (a_comp_id == 0) break;
       ir::Instruction* a_comp_inst = get_def_use_mgr()->GetDef(a_comp_id);
-      if (a_comp_inst->opcode() != SpvOpConstant)
-        break;
+      if (a_comp_inst->opcode() != SpvOpConstant) break;
       // If a value is not 32-bit, give up
       uint32_t a_comp_type_id = a_comp_inst->type_id();
       ir::Instruction* a_comp_type = get_def_use_mgr()->GetDef(a_comp_type_id);
@@ -160,8 +151,7 @@ uint32_t InsertExtractElimPass::DoExtract(ir::Instruction* compInst,
         cid = cinst->GetSingleWordInOperand(kFMixYIdInIdx);
       else
         break;
-    }
-    else {
+    } else {
       break;
     }
     cinst = get_def_use_mgr()->GetDef(cid);
@@ -172,7 +162,7 @@ uint32_t InsertExtractElimPass::DoExtract(ir::Instruction* compInst,
   // vector composition, and additional CompositeInsert.
   if (replId == 0 &&
       (cinst->opcode() == SpvOpCompositeConstruct ||
-        cinst->opcode() == SpvOpConstantComposite) &&
+       cinst->opcode() == SpvOpConstantComposite) &&
       (*pExtIndices).size() - extOffset == 1) {
     uint32_t compIdx = (*pExtIndices)[extOffset];
     // If a vector CompositeConstruct we make sure all preceding
@@ -182,17 +172,15 @@ uint32_t InsertExtractElimPass::DoExtract(ir::Instruction* compInst,
     if (ctype_inst->opcode() == SpvOpTypeVector &&
         cinst->opcode() == SpvOpConstantComposite) {
       uint32_t vec_comp_type_id =
-        ctype_inst->GetSingleWordInOperand(kTypeVectorCompTypeIdInIdx);
+          ctype_inst->GetSingleWordInOperand(kTypeVectorCompTypeIdInIdx);
       if (compIdx < cinst->NumInOperands()) {
         uint32_t i = 0;
         for (; i <= compIdx; i++) {
           uint32_t compId = cinst->GetSingleWordInOperand(i);
           ir::Instruction* componentInst = get_def_use_mgr()->GetDef(compId);
-          if (componentInst->type_id() != vec_comp_type_id)
-            break;
+          if (componentInst->type_id() != vec_comp_type_id) break;
         }
-        if (i > compIdx)
-          replId = cinst->GetSingleWordInOperand(compIdx);
+        if (i > compIdx) replId = cinst->GetSingleWordInOperand(compIdx);
       }
     } else {
       replId = cinst->GetSingleWordInOperand(compIdx);
@@ -214,8 +202,7 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
           std::vector<uint32_t> extIndices;
           uint32_t icnt = 0;
           inst->ForEachInOperand([&icnt, &extIndices](const uint32_t* idp) {
-            if (icnt > 0)
-              extIndices.push_back(*idp);
+            if (icnt > 0) extIndices.push_back(*idp);
             ++icnt;
           });
           // Offset of extract indices being compared to insert indices.

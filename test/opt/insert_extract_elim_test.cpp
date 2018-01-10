@@ -547,13 +547,13 @@ TEST_F(InsertExtractElimTest, MixWithConstants) {
   // reference each other.
   //
   // #version 450
-  // 
+  //
   // layout (location=0) in float bc;
   // layout (location=1) in float bc2;
   // layout (location=2) in float m;
   // layout (location=3) in float m2;
   // layout (location=0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 bcv = vec4(bc, bc2, 0.0, 1.0);
@@ -642,18 +642,18 @@ OpFunctionEnd
 }
 
 TEST_F(InsertExtractElimTest, VectorShuffle1) {
-  // Extract component from first vector in VectorShuffle 
+  // Extract component from first vector in VectorShuffle
   //
   // Note: The SPIR-V assembly has had store/load elimination
   // performed to allow the inserts and extracts to directly
   // reference each other.
   //
   // #version 450
-  // 
+  //
   // layout (location=0) in float bc;
   // layout (location=1) in float bc2;
   // layout (location=0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 bcv = vec4(bc, bc2, 0.0, 1.0);
@@ -723,7 +723,7 @@ OpFunctionEnd
 }
 
 TEST_F(InsertExtractElimTest, VectorShuffle2) {
-  // Extract component from second vector in VectorShuffle 
+  // Extract component from second vector in VectorShuffle
   // Identical to test VectorShuffle1 except for the vector
   // shuffle index of 7.
   //
@@ -732,11 +732,11 @@ TEST_F(InsertExtractElimTest, VectorShuffle2) {
   // reference each other.
   //
   // #version 450
-  // 
+  //
   // layout (location=0) in float bc;
   // layout (location=1) in float bc2;
   // layout (location=0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 bcv = vec4(bc, bc2, 0.0, 1.0);

@@ -61,7 +61,7 @@ class InsertExtractElimPass : public Pass {
   // Return id of component of |cinst| specified by |extIndices| starting with
   // index at |extOffset|. Return 0 if indices cannot be matched exactly.
   uint32_t DoExtract(ir::Instruction* cinst, std::vector<uint32_t>* extIndices,
-      uint32_t extOffset);
+                     uint32_t extOffset);
 
   // Look for OpExtract on sequence of OpInserts in |func|. If there is a
   // reaching insert which corresponds to the indices of the extract, replace
