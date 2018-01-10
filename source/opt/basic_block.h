@@ -148,6 +148,7 @@ class BasicBlock {
 
   // Returns the terminator instruction.  Assumes the terminator exists.
   Instruction* terminator() { return &*tail(); }
+  const Instruction* terminator() const { return &*ctail(); }
 
   // Returns true if this basic block exits this function and returns to its
   // caller.
@@ -164,6 +165,9 @@ class BasicBlock {
   // Instructions inside this basic block, but not the OpLabel.
   InstructionList insts_;
 };
+
+// Pretty-prints |block| to |str|. Returns |str|.
+std::ostream& operator<<(std::ostream& str, const BasicBlock& block);
 
 inline BasicBlock::BasicBlock(std::unique_ptr<Instruction> label)
     : function_(nullptr), label_(std::move(label)) {}

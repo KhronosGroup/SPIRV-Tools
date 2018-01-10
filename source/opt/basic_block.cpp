@@ -15,8 +15,11 @@
 #include "basic_block.h"
 #include "function.h"
 #include "module.h"
+#include "reflect.h"
 
 #include "make_unique.h"
+
+#include <ostream>
 
 namespace spvtools {
 namespace ir {
@@ -153,6 +156,16 @@ uint32_t BasicBlock::ContinueBlockIdIfAny() const {
     }
   }
   return cbid;
+}
+
+std::ostream& operator<<(std::ostream& str, const BasicBlock& block) {
+  block.ForEachInst([&str](const ir::Instruction* inst) {
+    str << *inst;
+    if (!IsTerminatorInst(inst->opcode())) {
+      str << std::endl;
+    }
+  });
+  return str;
 }
 
 }  // namespace ir

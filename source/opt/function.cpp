@@ -16,6 +16,8 @@
 
 #include "make_unique.h"
 
+#include <ostream>
+
 namespace spvtools {
 namespace ir {
 
@@ -73,6 +75,16 @@ void Function::ForEachParam(const std::function<void(const Instruction*)>& f,
   for (const auto& param : params_)
     static_cast<const Instruction*>(param.get())
         ->ForEachInst(f, run_on_debug_line_insts);
+}
+
+std::ostream& operator<<(std::ostream& str, const Function& func) {
+  func.ForEachInst([&str](const ir::Instruction* inst) {
+    str << *inst;
+    if (inst->opcode() != SpvOpFunctionEnd) {
+      str << std::endl;
+    }
+  });
+  return str;
 }
 
 }  // namespace ir

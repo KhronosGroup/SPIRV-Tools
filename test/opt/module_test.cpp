@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <sstream>
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -26,10 +27,10 @@
 
 namespace {
 
+using ::testing::Eq;
 using spvtest::GetIdBound;
 using spvtools::ir::IRContext;
 using spvtools::ir::Module;
-using ::testing::Eq;
 
 TEST(ModuleTest, SetIdBound) {
   Module m;
@@ -46,7 +47,8 @@ TEST(ModuleTest, SetIdBound) {
 // Returns an IRContext owning the module formed by assembling the given text,
 // then loading the result.
 inline std::unique_ptr<IRContext> BuildModule(std::string text) {
-  return spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+  return spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                               SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
 }
 
 TEST(ModuleTest, ComputeIdBound) {
@@ -72,6 +74,70 @@ TEST(ModuleTest, ComputeIdBound) {
                         "OpMemoryBarrier %b !3999\n")
                 ->module()
                 ->ComputeIdBound());
+}
+
+TEST(ModuleTest, OstreamOperator) {
+  const std::string text = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %7 "restrict"
+OpDecorate %8 Restrict
+%9 = OpTypeVoid
+%10 = OpTypeInt 32 0
+%11 = OpTypeStruct %10 %10
+%12 = OpTypePointer Function %10
+%13 = OpTypePointer Function %11
+%14 = OpConstant %10 0
+%15 = OpConstant %10 1
+%7 = OpTypeFunction %9
+%1 = OpFunction %9 None %7
+%2 = OpLabel
+%8 = OpVariable %13 Function
+%3 = OpAccessChain %12 %8 %14
+%4 = OpLoad %10 %3
+%5 = OpAccessChain %12 %8 %15
+%6 = OpLoad %10 %5
+OpReturn
+OpFunctionEnd)";
+
+  std::string s;
+  std::ostringstream str(s);
+  str << *BuildModule(text)->module();
+  EXPECT_EQ(text, str.str());
+}
+
+TEST(ModuleTest, OstreamOperatorInt64) {
+  const std::string text = R"(OpCapability Shader
+OpCapability Linkage
+OpCapability Int64
+OpMemoryModel Logical GLSL450
+OpName %7 "restrict"
+OpDecorate %5 Restrict
+%9 = OpTypeVoid
+%10 = OpTypeInt 64 0
+%11 = OpTypeStruct %10 %10
+%12 = OpTypePointer Function %10
+%13 = OpTypePointer Function %11
+%14 = OpConstant %10 0
+%15 = OpConstant %10 1
+%16 = OpConstant %10 4294967297
+%7 = OpTypeFunction %9
+%1 = OpFunction %9 None %7
+%2 = OpLabel
+%5 = OpVariable %12 Function
+%6 = OpLoad %10 %5
+OpSelectionMerge %3 None
+OpSwitch %6 %3 4294967297 %4
+%4 = OpLabel
+OpBranch %3
+%3 = OpLabel
+OpReturn
+OpFunctionEnd)";
+
+  std::string s;
+  std::ostringstream str(s);
+  str << *BuildModule(text)->module();
+  EXPECT_EQ(text, str.str());
 }
 
 }  // anonymous namespace

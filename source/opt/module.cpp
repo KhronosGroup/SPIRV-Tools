@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <ostream>
 
 #include "operand.h"
 #include "reflect.h"
@@ -156,6 +157,16 @@ uint32_t Module::GetExtInstImportId(const char* extstr) {
                 reinterpret_cast<const char*>(&(ei.GetInOperand(0).words[0]))))
       return ei.result_id();
   return 0;
+}
+
+std::ostream& operator<<(std::ostream& str, const Module& module) {
+  module.ForEachInst([&str](const ir::Instruction* inst) {
+    str << *inst;
+    if (inst->opcode() != SpvOpFunctionEnd) {
+      str << std::endl;
+    }
+  });
+  return str;
 }
 
 }  // namespace ir

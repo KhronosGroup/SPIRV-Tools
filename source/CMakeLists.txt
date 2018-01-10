@@ -228,6 +228,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/cfa.h
   ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/disassemble.h
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_set.h
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.h
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.h

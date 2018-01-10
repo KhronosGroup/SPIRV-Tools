@@ -14,6 +14,7 @@
 
 #include <initializer_list>
 
+#include "disassemble.h"
 #include "fold.h"
 #include "instruction.h"
 #include "ir_context.h"
@@ -474,6 +475,28 @@ bool Instruction::IsFoldable() const {
   }
   Instruction* type = context()->get_def_use_mgr()->GetDef(type_id());
   return opt::IsFoldableType(type);
+}
+
+std::string Instruction::PrettyPrint(uint32_t options) const {
+  // Convert the module to binary.
+  std::vector<uint32_t> module_binary;
+  context()->module()->ToBinary(&module_binary, /* skip_nop = */ false);
+
+  // Convert the instruction to binary. This is used to identify the correct
+  // stream of words to output from the module.
+  std::vector<uint32_t> inst_binary;
+  ToBinaryWithoutAttachedDebugInsts(&inst_binary);
+
+  // Do not generate a header.
+  return spvInstructionBinaryToText(
+      context()->grammar().target_env(), inst_binary.data(), inst_binary.size(),
+      module_binary.data(), module_binary.size(),
+      options | SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+}
+
+std::ostream& operator<<(std::ostream& str, const ir::Instruction& inst) {
+  str << inst.PrettyPrint();
+  return str;
 }
 
 }  // namespace ir

@@ -273,6 +273,9 @@ class Module {
   std::vector<std::unique_ptr<Function>> functions_;
 };
 
+// Pretty-prints |module| to |str|. Returns |str|.
+std::ostream& operator<<(std::ostream& str, const Module& module);
+
 inline void Module::AddCapability(std::unique_ptr<Instruction> c) {
   capabilities_.push_back(std::move(c));
 }

@@ -25,6 +25,7 @@
 #include "assembly_grammar.h"
 #include "binary.h"
 #include "diagnostic.h"
+#include "disassemble.h"
 #include "ext_inst.h"
 #include "name_mapper.h"
 #include "opcode.h"
@@ -352,6 +353,52 @@ spv_result_t DisassembleInstruction(
   return disassembler->HandleInstruction(*parsed_instruction);
 }
 
+// Simple wrapper class to provide extra data necessary for targeted
+// instruction disassembly.
+class WrappedDisassembler {
+ public:
+  WrappedDisassembler(Disassembler* dis, const uint32_t* binary, size_t wc)
+      : disassembler_(dis), inst_binary_(binary), word_count_(wc) {}
+
+  Disassembler* disassembler() { return disassembler_; }
+  const uint32_t* inst_binary() const { return inst_binary_; }
+  size_t word_count() const { return word_count_; }
+
+ private:
+  Disassembler* disassembler_;
+  const uint32_t* inst_binary_;
+  const size_t word_count_;
+};
+
+spv_result_t DisassembleTargetHeader(void* user_data, spv_endianness_t endian,
+                                     uint32_t /* magic */, uint32_t version,
+                                     uint32_t generator, uint32_t id_bound,
+                                     uint32_t schema) {
+  assert(user_data);
+  auto wrapped = static_cast<WrappedDisassembler*>(user_data);
+  return wrapped->disassembler()->HandleHeader(endian, version, generator,
+                                               id_bound, schema);
+}
+
+spv_result_t DisassembleTargetInstruction(
+    void* user_data, const spv_parsed_instruction_t* parsed_instruction) {
+  assert(user_data);
+  auto wrapped = static_cast<WrappedDisassembler*>(user_data);
+  // Check if this is the instruction we want to disassemble.
+  if (wrapped->word_count() == parsed_instruction->num_words &&
+      std::equal(wrapped->inst_binary(),
+                 wrapped->inst_binary() + wrapped->word_count(),
+                 parsed_instruction->words)) {
+    // Found the target instruction. Disassemble it and signal that we should
+    // stop searching so we don't output the same instruction again.
+    if (auto error =
+            wrapped->disassembler()->HandleInstruction(*parsed_instruction))
+      return error;
+    return SPV_REQUESTED_TERMINATION;
+  }
+  return SPV_SUCCESS;
+}
+
 }  // anonymous namespace
 
 spv_result_t spvBinaryToText(const spv_const_context context,
@@ -385,4 +432,45 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   }
 
   return disassembler.SaveTextResult(pText);
+}
+
+std::string spvtools::spvInstructionBinaryToText(const spv_target_env env,
+                                                 const uint32_t* instCode,
+                                                 const size_t instWordCount,
+                                                 const uint32_t* code,
+                                                 const size_t wordCount,
+                                                 const uint32_t options) {
+  spv_context context = spvContextCreate(env);
+  const libspirv::AssemblyGrammar grammar(context);
+  if (!grammar.isValid()) {
+    spvContextDestroy(context);
+    return "";
+  }
+
+  // Generate friendly names for Ids if requested.
+  std::unique_ptr<libspirv::FriendlyNameMapper> friendly_mapper;
+  libspirv::NameMapper name_mapper = libspirv::GetTrivialNameMapper();
+  if (options & SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) {
+    friendly_mapper.reset(
+        new libspirv::FriendlyNameMapper(context, code, wordCount));
+    name_mapper = friendly_mapper->GetNameMapper();
+  }
+
+  // Now disassemble!
+  Disassembler disassembler(grammar, options, name_mapper);
+  WrappedDisassembler wrapped(&disassembler, instCode, instWordCount);
+  spvBinaryParse(context, &wrapped, code, wordCount, DisassembleTargetHeader,
+                 DisassembleTargetInstruction, nullptr);
+
+  spv_text text = nullptr;
+  std::string output;
+  if (disassembler.SaveTextResult(&text) == SPV_SUCCESS) {
+    output.assign(text->str, text->str + text->length);
+    // Drop trailing newline characters.
+    while (!output.empty() && output.back() == '\n') output.pop_back();
+  }
+  spvTextDestroy(text);
+  spvContextDestroy(context);
+
+  return output;
 }
