@@ -484,12 +484,12 @@ TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization2) {
   // void main()
   // {
   //     S_t s0;
-  //     s0.v1[1] = 1.0;
+  //     s0.v1[1] = 1.0; // dead
   //     s0.v1 = Baseline;
   //     gl_FragColor = vec4(s0.v1[1], 0.0, 0.0, 0.0);
   // }
 
-  const std::string assembly =
+  const std::string before_predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -521,7 +521,43 @@ OpName %gl_FragColor "gl_FragColor"
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
 %float_0 = OpConstant %float 0
-%main = OpFunction %void None %8
+)";
+
+  const std::string after_predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %S_t "S_t"
+OpMemberName %S_t 0 "v0"
+OpMemberName %S_t 1 "v1"
+OpName %s0 "s0"
+OpName %BaseColor "BaseColor"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%S_t = OpTypeStruct %v4float %v4float
+%_ptr_Function_S_t = OpTypePointer Function %S_t
+%int = OpTypeInt 32 1
+%int_1 = OpConstant %int 1
+%uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%float_0 = OpConstant %float 0
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %8
 %22 = OpLabel
 %s0 = OpVariable %_ptr_Function_S_t Function
 %23 = OpLoad %S_t %s0
@@ -535,8 +571,22 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InsertExtractElimPass>(assembly, assembly, true,
-                                                    true);
+  const std::string after =
+      R"(%main = OpFunction %void None %8
+%22 = OpLabel
+%s0 = OpVariable %_ptr_Function_S_t Function
+%23 = OpLoad %S_t %s0
+%25 = OpLoad %v4float %BaseColor
+%26 = OpCompositeInsert %S_t %25 %23 1
+%27 = OpCompositeExtract %float %26 1 1
+%28 = OpCompositeConstruct %v4float %27 %float_0 %float_0 %float_0
+OpStore %gl_FragColor %28
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(
+      before_predefs + before, after_predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, MixWithConstants) {
@@ -803,6 +853,331 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::InsertExtractElimPass>(
       predefs + before, predefs + after, true, true);
+}
+
+TEST_F(InsertExtractElimTest, InsertAfterInsertElim) {
+  // With two insertions to the same offset, the first is dead.
+  //
+  // Note: The SPIR-V assembly has had store/load elimination
+  // performed to allow the inserts and extracts to directly
+  // reference each other.
+  //
+  // #version 450
+  // 
+  // layout (location=0) in float In0;
+  // layout (location=1) in float In1;
+  // layout (location=2) in vec2 In2;
+  // layout (location=0) out vec4 OutColor;
+  // 
+  // void main()
+  // {
+  //     vec2 v = In2;
+  //     v.x = In0 + In1; // dead
+  //     v.x = 0.0;
+  //     OutColor = v.xyxy;
+  // }
+
+  const std::string before_predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %In2 %In0 %In1 %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %In2 "In2"
+OpName %In0 "In0"
+OpName %In1 "In1"
+OpName %OutColor "OutColor"
+OpName %_Globals_ "_Globals_"
+OpMemberName %_Globals_ 0 "g_b"
+OpMemberName %_Globals_ 1 "g_n"
+OpName %_ ""
+OpDecorate %In2 Location 2
+OpDecorate %In0 Location 0
+OpDecorate %In1 Location 1
+OpDecorate %OutColor Location 0
+OpMemberDecorate %_Globals_ 0 Offset 0
+OpMemberDecorate %_Globals_ 1 Offset 4
+OpDecorate %_Globals_ Block
+OpDecorate %_ DescriptorSet 0
+OpDecorate %_ Binding 0
+%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%_ptr_Function_v2float = OpTypePointer Function %v2float
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+%In2 = OpVariable %_ptr_Input_v2float Input
+%_ptr_Input_float = OpTypePointer Input %float
+%In0 = OpVariable %_ptr_Input_float Input
+%In1 = OpVariable %_ptr_Input_float Input
+%uint = OpTypeInt 32 0
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%int = OpTypeInt 32 1
+%_Globals_ = OpTypeStruct %uint %int
+%_ptr_Uniform__Globals_ = OpTypePointer Uniform %_Globals_
+%_ = OpVariable %_ptr_Uniform__Globals_ Uniform
+)";
+
+  const std::string after_predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %In2 %In0 %In1 %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %In2 "In2"
+OpName %In0 "In0"
+OpName %In1 "In1"
+OpName %OutColor "OutColor"
+OpName %_Globals_ "_Globals_"
+OpMemberName %_Globals_ 0 "g_b"
+OpMemberName %_Globals_ 1 "g_n"
+OpName %_ ""
+OpDecorate %In2 Location 2
+OpDecorate %In0 Location 0
+OpDecorate %In1 Location 1
+OpDecorate %OutColor Location 0
+OpMemberDecorate %_Globals_ 0 Offset 0
+OpMemberDecorate %_Globals_ 1 Offset 4
+OpDecorate %_Globals_ Block
+OpDecorate %_ DescriptorSet 0
+OpDecorate %_ Binding 0
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%_ptr_Function_v2float = OpTypePointer Function %v2float
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+%In2 = OpVariable %_ptr_Input_v2float Input
+%_ptr_Input_float = OpTypePointer Input %float
+%In0 = OpVariable %_ptr_Input_float Input
+%In1 = OpVariable %_ptr_Input_float Input
+%uint = OpTypeInt 32 0
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%int = OpTypeInt 32 1
+%_Globals_ = OpTypeStruct %uint %int
+%_ptr_Uniform__Globals_ = OpTypePointer Uniform %_Globals_
+%_ = OpVariable %_ptr_Uniform__Globals_ Uniform
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %11
+%25 = OpLabel
+%26 = OpLoad %v2float %In2
+%27 = OpLoad %float %In0
+%28 = OpLoad %float %In1
+%29 = OpFAdd %float %27 %28
+%35 = OpCompositeInsert %v2float %29 %26 0
+%37 = OpCompositeInsert %v2float %float_0 %35 0
+%33 = OpVectorShuffle %v4float %37 %37 0 1 0 1
+OpStore %OutColor %33
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %10
+%23 = OpLabel
+%24 = OpLoad %v2float %In2
+%29 = OpCompositeInsert %v2float %float_0 %24 0
+%30 = OpVectorShuffle %v4float %29 %29 0 1 0 1
+OpStore %OutColor %30
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(
+      before_predefs + before, after_predefs + after, true, true);
+}
+
+TEST_F(InsertExtractElimTest, DeadInsertInChainWithPhi) {
+  // Dead insert eliminated with phi in insertion chain.
+  //
+  // Note: The SPIR-V assembly has had store/load elimination
+  // performed to allow the inserts and extracts to directly
+  // reference each other.
+  //
+  // #version 450
+  // 
+  // layout (location=0) in vec4 In0;
+  // layout (location=1) in float In1;
+  // layout (location=2) in float In2;
+  // layout (location=0) out vec4 OutColor;
+  // 
+  // layout(std140, binding = 0 ) uniform _Globals_
+  // {
+  //     bool g_b;
+  // };
+  // 
+  // void main()
+  // {
+  //     vec4 v = In0;
+  //     v.z = In1 + In2;
+  //     if (g_b) v.w = 1.0;
+  //     OutColor = vec4(v.x,v.y,0.0,v.w);
+  // }
+
+  const std::string before_predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %In0 %In1 %In2 %OutColor 
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %In0 "In0"
+OpName %In1 "In1"
+OpName %In2 "In2"
+OpName %_Globals_ "_Globals_"
+OpMemberName %_Globals_ 0 "g_b"
+OpName %_ ""
+OpName %OutColor "OutColor"
+OpDecorate %In0 Location 0
+OpDecorate %In1 Location 1
+OpDecorate %In2 Location 2
+OpMemberDecorate %_Globals_ 0 Offset 0
+OpDecorate %_Globals_ Block
+OpDecorate %_ DescriptorSet 0
+OpDecorate %_ Binding 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%In0 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Input_float = OpTypePointer Input %float
+%In1 = OpVariable %_ptr_Input_float Input
+%In2 = OpVariable %_ptr_Input_float Input
+%uint = OpTypeInt 32 0
+%_ptr_Function_float = OpTypePointer Function %float
+%_Globals_ = OpTypeStruct %uint
+%_ptr_Uniform__Globals_ = OpTypePointer Uniform %_Globals_
+%_ = OpVariable %_ptr_Uniform__Globals_ Uniform
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%bool = OpTypeBool
+%uint_0 = OpConstant %uint 0
+%float_1 = OpConstant %float 1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%float_0 = OpConstant %float 0
+)";
+
+  const std::string after_predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %In0 %In1 %In2 %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %In0 "In0"
+OpName %In1 "In1"
+OpName %In2 "In2"
+OpName %_Globals_ "_Globals_"
+OpMemberName %_Globals_ 0 "g_b"
+OpName %_ ""
+OpName %OutColor "OutColor"
+OpDecorate %In0 Location 0
+OpDecorate %In1 Location 1
+OpDecorate %In2 Location 2
+OpMemberDecorate %_Globals_ 0 Offset 0
+OpDecorate %_Globals_ Block
+OpDecorate %_ DescriptorSet 0
+OpDecorate %_ Binding 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%In0 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Input_float = OpTypePointer Input %float
+%In1 = OpVariable %_ptr_Input_float Input
+%In2 = OpVariable %_ptr_Input_float Input
+%uint = OpTypeInt 32 0
+%_ptr_Function_float = OpTypePointer Function %float
+%_Globals_ = OpTypeStruct %uint
+%_ptr_Uniform__Globals_ = OpTypePointer Uniform %_Globals_
+%_ = OpVariable %_ptr_Uniform__Globals_ Uniform
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%bool = OpTypeBool
+%uint_0 = OpConstant %uint 0
+%float_1 = OpConstant %float 1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%float_0 = OpConstant %float 0
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %11
+%31 = OpLabel
+%32 = OpLoad %v4float %In0
+%33 = OpLoad %float %In1
+%34 = OpLoad %float %In2
+%35 = OpFAdd %float %33 %34
+%51 = OpCompositeInsert %v4float %35 %32 2
+%37 = OpAccessChain %_ptr_Uniform_uint %_ %int_0
+%38 = OpLoad %uint %37
+%39 = OpINotEqual %bool %38 %uint_0
+OpSelectionMerge %40 None
+OpBranchConditional %39 %41 %40
+%41 = OpLabel
+%53 = OpCompositeInsert %v4float %float_1 %51 3
+OpBranch %40
+%40 = OpLabel
+%60 = OpPhi %v4float %51 %31 %53 %41
+%55 = OpCompositeExtract %float %60 0
+%57 = OpCompositeExtract %float %60 1
+%59 = OpCompositeExtract %float %60 3
+%49 = OpCompositeConstruct %v4float %55 %57 %float_0 %59
+OpStore %OutColor %49
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %10
+%27 = OpLabel
+%28 = OpLoad %v4float %In0
+%33 = OpAccessChain %_ptr_Uniform_uint %_ %int_0
+%34 = OpLoad %uint %33
+%35 = OpINotEqual %bool %34 %uint_0
+OpSelectionMerge %36 None
+OpBranchConditional %35 %37 %36
+%37 = OpLabel
+%38 = OpCompositeInsert %v4float %float_1 %28 3
+OpBranch %36
+%36 = OpLabel
+%39 = OpPhi %v4float %28 %27 %38 %37
+%40 = OpCompositeExtract %float %39 0
+%41 = OpCompositeExtract %float %39 1
+%42 = OpCompositeExtract %float %39 3
+%43 = OpCompositeConstruct %v4float %40 %41 %float_0 %42
+OpStore %OutColor %43
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(
+      before_predefs + before, after_predefs + after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
