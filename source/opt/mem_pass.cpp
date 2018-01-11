@@ -425,6 +425,7 @@ void MemPass::SSABlockInitLoopHeader(
     // Only analyze the phi define now; analyze the phi uses after the
     // phi backedge predecessor value is patched.
     get_def_use_mgr()->AnalyzeInstDef(&*newPhi);
+    context()->set_instr_block(&*newPhi, *block_itr);
     insertItr = insertItr.InsertBefore(std::move(newPhi));
     ++insertItr;
     label2ssa_map_[label].insert({varId, phiId});
@@ -489,6 +490,7 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
     std::unique_ptr<ir::Instruction> newPhi(new ir::Instruction(
         context(), SpvOpPhi, typeId, phiId, phi_in_operands));
     get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
+    context()->set_instr_block(&*newPhi, block_ptr);
     insertItr = insertItr.InsertBefore(std::move(newPhi));
     ++insertItr;
     label2ssa_map_[label].insert({varId, phiId});
