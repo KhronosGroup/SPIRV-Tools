@@ -16,6 +16,8 @@
 
 #include "make_unique.h"
 
+#include <ostream>
+
 namespace spvtools {
 namespace ir {
 

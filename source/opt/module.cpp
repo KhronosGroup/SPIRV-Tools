@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <ostream>
 
 #include "operand.h"
 #include "reflect.h"
