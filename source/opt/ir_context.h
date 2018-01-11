@@ -224,8 +224,6 @@ class IRContext {
   void set_instr_block(ir::Instruction* inst, ir::BasicBlock* block) {
     if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
       instr_to_block_[inst] = block;
-    } else {
-      BuildInstrToBlockMapping();
     }
   }
 
