@@ -1691,8 +1691,8 @@ OpFunctionEnd
 )";
 
   std::unique_ptr<ir::IRContext> context =
-      std::move(BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                            SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
   // Force the instruction to block mapping to get built.
