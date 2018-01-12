@@ -25,6 +25,7 @@
 #include "util/ilist_node.h"
 
 #include "latest_version_spirv_header.h"
+#include "reflect.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
@@ -567,10 +568,7 @@ bool Instruction::IsLoad() const { return spvOpcodeIsLoad(opcode()); }
 
 bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode()); }
 
-bool Instruction::IsConstant() const {
-  return spvOpcodeIsConstant(opcode()) &&
-         !spvOpcodeIsScalarSpecConstant(opcode());
-}
+bool Instruction::IsConstant() const { return IsConstantInst(opcode()); }
 }  // namespace ir
 }  // namespace spvtools
 

@@ -22,6 +22,15 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
+ConstantManager::ConstantManager(ir::IRContext* ctx) : ctx_(ctx) {
+  // Populate the constant table with values from constant declarations in the
+  // module.  The values of each OpConstant declaration is the identity
+  // assignment (i.e., each constant is its own value).
+  for (const auto& inst : ctx_->module()->GetConstants()) {
+    MapInst(inst);
+  }
+}
+
 Type* ConstantManager::GetType(const ir::Instruction* inst) const {
   return context()->get_type_mgr()->GetType(inst->type_id());
 }

@@ -343,7 +343,7 @@ struct ConstantEqual {
 // This class represents a pool of constants.
 class ConstantManager {
  public:
-  ConstantManager(ir::IRContext* ctx) : ctx_(ctx) {}
+  ConstantManager(ir::IRContext* ctx);
 
   ir::IRContext* context() const { return ctx_; }
 

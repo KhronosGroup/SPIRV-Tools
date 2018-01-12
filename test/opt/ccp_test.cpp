@@ -523,6 +523,37 @@ TEST_F(CCPTest, LoopInductionVariables) {
   SinglePassRunAndMatch<opt::CCPPass>(spv_asm, true);
 }
 
+TEST_F(CCPTest, HandleCompositeWithUndef) {
+  // Check to make sure that CCP does not crash when given a "constant" struct
+  // with an undef.  If at a later time CCP is enhanced to optimize this case,
+  // it is not wrong.
+  const std::string spv_asm = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource HLSL 500
+               OpName %main "main"
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %bool = OpTypeBool
+  %_struct_7 = OpTypeStruct %int %int
+      %int_1 = OpConstant %int 1
+          %9 = OpUndef %int
+         %10 = OpConstantComposite %_struct_7 %int_1 %9
+       %main = OpFunction %void None %4
+         %11 = OpLabel
+         %12 = OpCompositeExtract %int %10 0
+         %13 = OpCopyObject %int %12
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  auto res = SinglePassRunToBinary<opt::CCPPass>(spv_asm, true);
+  EXPECT_EQ(std::get<1>(res), opt::Pass::Status::SuccessWithoutChange);
+}
 #endif
 
 }  // namespace
