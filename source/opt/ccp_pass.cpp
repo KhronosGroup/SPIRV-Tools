@@ -140,15 +140,11 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(ir::Instruction* instr) {
 
   // If not, see if there is a least one unknown operand to the instruction.  If
   // so, we might be able to fold it later.
-  bool could_be_improved = false;
-  instr->ForEachInId([this, &could_be_improved](uint32_t* op_id) {
-    auto it = values_.find(*op_id);
-    if (it == values_.end()) {
-      could_be_improved = true;
-      return;
-    }
-  });
-  if (could_be_improved) {
+  if (!instr->WhileEachInId([this](uint32_t* op_id) {
+        auto it = values_.find(*op_id);
+        if (it == values_.end()) return false;
+        return true;
+      })) {
     return SSAPropagator::kNotInteresting;
   }
 

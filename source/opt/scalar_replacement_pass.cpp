@@ -77,38 +77,36 @@ bool ScalarReplacementPass::ReplaceVariable(
   std::vector<ir::Instruction*> replacements;
   CreateReplacementVariables(inst, &replacements);
 
-  bool ok = true;
   std::vector<ir::Instruction*> dead;
   dead.push_back(inst);
-  get_def_use_mgr()->ForEachUser(
-      inst, [this, &ok, &replacements, &dead](ir::Instruction* user) {
-        if (!ir::IsAnnotationInst(user->opcode())) {
-          switch (user->opcode()) {
-            case SpvOpLoad:
-              ReplaceWholeLoad(user, replacements);
-              dead.push_back(user);
-              break;
-            case SpvOpStore:
-              ReplaceWholeStore(user, replacements);
-              dead.push_back(user);
-              break;
-            case SpvOpAccessChain:
-            case SpvOpInBoundsAccessChain:
-              ok &= ReplaceAccessChain(user, replacements);
-              dead.push_back(user);
-              break;
-            case SpvOpName:
-            case SpvOpMemberName:
-              break;
-            default:
-              assert(false && "Unexpected opcode");
-              break;
-          }
-        }
-      });
-
-  // There was an illegal access.
-  if (!ok) return false;
+  if (!get_def_use_mgr()->WhileEachUser(
+          inst, [this, &replacements, &dead](ir::Instruction* user) {
+            if (!ir::IsAnnotationInst(user->opcode())) {
+              switch (user->opcode()) {
+                case SpvOpLoad:
+                  ReplaceWholeLoad(user, replacements);
+                  dead.push_back(user);
+                  break;
+                case SpvOpStore:
+                  ReplaceWholeStore(user, replacements);
+                  dead.push_back(user);
+                  break;
+                case SpvOpAccessChain:
+                case SpvOpInBoundsAccessChain:
+                  if (!ReplaceAccessChain(user, replacements)) return false;
+                  dead.push_back(user);
+                  break;
+                case SpvOpName:
+                case SpvOpMemberName:
+                  break;
+                default:
+                  assert(false && "Unexpected opcode");
+                  break;
+              }
+            }
+            return true;
+          }))
+    return false;
 
   // Clean up some dead code.
   while (!dead.empty()) {
@@ -127,7 +125,7 @@ bool ScalarReplacementPass::ReplaceVariable(
     }
   }
 
-  return ok;
+  return true;
 }
 
 void ScalarReplacementPass::ReplaceWholeLoad(

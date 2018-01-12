@@ -41,11 +41,10 @@ bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
   // TODO(greg-lunarg): Handle arrays containing opaque type
   if (typeInst->opcode() != SpvOpTypeStruct) return false;
   // Return true if any member is opaque
-  int ocnt = 0;
-  typeInst->ForEachInId([&ocnt, this](const uint32_t* tid) {
-    if (ocnt == 0 && IsOpaqueType(*tid)) ++ocnt;
+  return !typeInst->WhileEachInId([this](const uint32_t* tid) {
+    if (IsOpaqueType(*tid)) return false;
+    return true;
   });
-  return ocnt > 0;
 }
 
 bool InlineOpaquePass::HasOpaqueArgsOrReturn(const ir::Instruction* callInst) {
@@ -53,15 +52,14 @@ bool InlineOpaquePass::HasOpaqueArgsOrReturn(const ir::Instruction* callInst) {
   if (IsOpaqueType(callInst->type_id())) return true;
   // Check args
   int icnt = 0;
-  int ocnt = 0;
-  callInst->ForEachInId([&icnt, &ocnt, this](const uint32_t* iid) {
+  return !callInst->WhileEachInId([&icnt, this](const uint32_t* iid) {
     if (icnt > 0) {
       const ir::Instruction* argInst = get_def_use_mgr()->GetDef(*iid);
-      if (IsOpaqueType(argInst->type_id())) ++ocnt;
+      if (IsOpaqueType(argInst->type_id())) return false;
     }
     ++icnt;
+    return true;
   });
-  return ocnt > 0;
 }
 
 bool InlineOpaquePass::InlineOpaque(ir::Function* func) {

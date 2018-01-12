@@ -52,12 +52,13 @@ bool CommonUniformElimPass::IsSamplerOrImageType(
   }
   if (typeInst->opcode() != SpvOpTypeStruct) return false;
   // Return true if any member is a sampler or image
-  int samplerOrImageCnt = 0;
-  typeInst->ForEachInId([&samplerOrImageCnt, this](const uint32_t* tid) {
+  return !typeInst->WhileEachInId([this](const uint32_t* tid) {
     const ir::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
-    if (IsSamplerOrImageType(compTypeInst)) ++samplerOrImageCnt;
+    if (IsSamplerOrImageType(compTypeInst)) {
+      return false;
+    }
+    return true;
   });
-  return samplerOrImageCnt > 0;
 }
 
 bool CommonUniformElimPass::IsSamplerOrImageVar(uint32_t varId) const {
@@ -98,13 +99,9 @@ ir::Instruction* CommonUniformElimPass::GetPtr(ir::Instruction* ip,
 
 bool CommonUniformElimPass::IsVolatileStruct(uint32_t type_id) {
   assert(get_def_use_mgr()->GetDef(type_id)->opcode() == SpvOpTypeStruct);
-  bool has_volatile_deco = false;
-  get_decoration_mgr()->ForEachDecoration(
+  return !get_decoration_mgr()->WhileEachDecoration(
       type_id, SpvDecorationVolatile,
-      [&has_volatile_deco](const ir::Instruction&) {
-        has_volatile_deco = true;
-      });
-  return has_volatile_deco;
+      [](const ir::Instruction&) { return false; });
 }
 
 bool CommonUniformElimPass::IsAccessChainToVolatileStructType(
@@ -177,26 +174,18 @@ bool CommonUniformElimPass::IsUniformVar(uint32_t varId) {
 }
 
 bool CommonUniformElimPass::HasUnsupportedDecorates(uint32_t id) const {
-  bool nonTypeDecorate = false;
-  get_def_use_mgr()->ForEachUser(
-      id, [this, &nonTypeDecorate](ir::Instruction* user) {
-        if (this->IsNonTypeDecorate(user->opcode())) {
-          nonTypeDecorate = true;
-        }
-      });
-  return nonTypeDecorate;
+  return !get_def_use_mgr()->WhileEachUser(id, [this](ir::Instruction* user) {
+    if (IsNonTypeDecorate(user->opcode())) return false;
+    return true;
+  });
 }
 
 bool CommonUniformElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
-  bool onlyNameAndDecorates = true;
-  get_def_use_mgr()->ForEachUser(
-      id, [this, &onlyNameAndDecorates](ir::Instruction* user) {
-        SpvOp op = user->opcode();
-        if (op != SpvOpName && !this->IsNonTypeDecorate(op)) {
-          onlyNameAndDecorates = false;
-        }
-      });
-  return onlyNameAndDecorates;
+  return get_def_use_mgr()->WhileEachUser(id, [this](ir::Instruction* user) {
+    SpvOp op = user->opcode();
+    if (op != SpvOpName && !IsNonTypeDecorate(op)) return false;
+    return true;
+  });
 }
 
 void CommonUniformElimPass::DeleteIfUseless(ir::Instruction* inst) {
@@ -267,15 +256,13 @@ void CommonUniformElimPass::GenACLoadRepl(
 
 bool CommonUniformElimPass::IsConstantIndexAccessChain(ir::Instruction* acp) {
   uint32_t inIdx = 0;
-  uint32_t nonConstCnt = 0;
-  acp->ForEachInId([&inIdx, &nonConstCnt, this](uint32_t* tid) {
+  return acp->WhileEachInId([&inIdx, this](uint32_t* tid) {
     if (inIdx > 0) {
       ir::Instruction* opInst = get_def_use_mgr()->GetDef(*tid);
-      if (opInst->opcode() != SpvOpConstant) ++nonConstCnt;
+      if (opInst->opcode() != SpvOpConstant) return false;
     }
-    ++inIdx;
+    return true;
   });
-  return nonConstCnt == 0;
 }
 
 bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
@@ -553,27 +540,18 @@ void CommonUniformElimPass::InitExtensions() {
   extensions_whitelist_.clear();
   extensions_whitelist_.insert({
       "SPV_AMD_shader_explicit_vertex_parameter",
-      "SPV_AMD_shader_trinary_minmax",
-      "SPV_AMD_gcn_shader",
-      "SPV_KHR_shader_ballot",
-      "SPV_AMD_shader_ballot",
-      "SPV_AMD_gpu_shader_half_float",
-      "SPV_KHR_shader_draw_parameters",
-      "SPV_KHR_subgroup_vote",
-      "SPV_KHR_16bit_storage",
-      "SPV_KHR_device_group",
-      "SPV_KHR_multiview",
-      "SPV_NVX_multiview_per_view_attributes",
-      "SPV_NV_viewport_array2",
-      "SPV_NV_stereo_view_rendering",
+      "SPV_AMD_shader_trinary_minmax", "SPV_AMD_gcn_shader",
+      "SPV_KHR_shader_ballot", "SPV_AMD_shader_ballot",
+      "SPV_AMD_gpu_shader_half_float", "SPV_KHR_shader_draw_parameters",
+      "SPV_KHR_subgroup_vote", "SPV_KHR_16bit_storage", "SPV_KHR_device_group",
+      "SPV_KHR_multiview", "SPV_NVX_multiview_per_view_attributes",
+      "SPV_NV_viewport_array2", "SPV_NV_stereo_view_rendering",
       "SPV_NV_sample_mask_override_coverage",
-      "SPV_NV_geometry_shader_passthrough",
-      "SPV_AMD_texture_gather_bias_lod",
+      "SPV_NV_geometry_shader_passthrough", "SPV_AMD_texture_gather_bias_lod",
       "SPV_KHR_storage_buffer_storage_class",
       // SPV_KHR_variable_pointers
       //   Currently do not support extended pointer expressions
-      "SPV_AMD_gpu_shader_int16",
-      "SPV_KHR_post_depth_coverage",
+      "SPV_AMD_gpu_shader_int16", "SPV_KHR_post_depth_coverage",
       "SPV_KHR_shader_atomic_counter_ops",
   });
 }

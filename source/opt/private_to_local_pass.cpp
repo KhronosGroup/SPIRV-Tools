@@ -126,14 +126,12 @@ bool PrivateToLocalPass::IsValidUse(const ir::Instruction* inst) const {
     case SpvOpLoad:
     case SpvOpStore:
       return true;
-    case SpvOpAccessChain: {
-      bool valid = true;
-      context()->get_def_use_mgr()->ForEachUser(
-          inst->result_id(), [this, &valid](const ir::Instruction* use) {
-            valid &= IsValidUse(use);
+    case SpvOpAccessChain:
+      return context()->get_def_use_mgr()->WhileEachUser(
+          inst, [this](const ir::Instruction* user) {
+            if (!IsValidUse(user)) return false;
+            return true;
           });
-      return valid;
-    }
     case SpvOpName:
       return true;
     default:

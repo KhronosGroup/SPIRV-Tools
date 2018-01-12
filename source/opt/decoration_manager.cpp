@@ -225,26 +225,36 @@ std::vector<T> DecorationManager::InternalGetDecorationsFor(
   return decorations;
 }
 
-void DecorationManager::ForEachDecoration(
+bool DecorationManager::WhileEachDecoration(
     uint32_t id, uint32_t decoration,
-    std::function<void(const ir::Instruction&)> f) {
+    std::function<bool(const ir::Instruction&)> f) {
   for (const ir::Instruction* inst : GetDecorationsFor(id, true)) {
     switch (inst->opcode()) {
       case SpvOpMemberDecorate:
         if (inst->GetSingleWordInOperand(2) == decoration) {
-          f(*inst);
+          if (!f(*inst)) return false;
         }
         break;
       case SpvOpDecorate:
       case SpvOpDecorateId:
         if (inst->GetSingleWordInOperand(1) == decoration) {
-          f(*inst);
+          if (!f(*inst)) return false;
         }
         break;
       default:
         assert(false && "Unexpected decoration instruction");
     }
   }
+  return true;
+}
+
+void DecorationManager::ForEachDecoration(
+    uint32_t id, uint32_t decoration,
+    std::function<void(const ir::Instruction&)> f) {
+  WhileEachDecoration(id, decoration, [&f](const ir::Instruction& inst) {
+    f(inst);
+    return true;
+  });
 }
 
 void DecorationManager::CloneDecorations(

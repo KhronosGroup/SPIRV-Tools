@@ -117,7 +117,7 @@ bool DeadBranchElimPass::MarkLiveBlocks(
         // corresponding label, use default if not found.
         uint32_t icnt = 0;
         uint32_t case_val;
-        terminator->ForEachInOperand(
+        terminator->WhileEachInOperand(
             [&icnt, &case_val, &sel_val, &live_lab_id](const uint32_t* idp) {
               if (icnt == 1) {
                 // Start with default label.
@@ -126,10 +126,14 @@ bool DeadBranchElimPass::MarkLiveBlocks(
                 if (icnt % 2 == 0) {
                   case_val = *idp;
                 } else {
-                  if (case_val == sel_val) live_lab_id = *idp;
+                  if (case_val == sel_val) {
+                    live_lab_id = *idp;
+                    return false;
+                  }
                 }
               }
               ++icnt;
+              return true;
             });
       }
     }

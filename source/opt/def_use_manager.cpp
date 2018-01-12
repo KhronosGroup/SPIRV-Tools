@@ -96,16 +96,31 @@ bool DefUseManager::UsersNotEnd(const IdToUsersMap::const_iterator& iter,
   return UsersNotEnd(iter, id_to_users_.end(), inst);
 }
 
-void DefUseManager::ForEachUser(
+bool DefUseManager::WhileEachUser(
     const ir::Instruction* def,
-    const std::function<void(ir::Instruction*)>& f) const {
+    const std::function<bool(ir::Instruction*)>& f) const {
   // Ensure that |def| has been registered.
   assert(def && def == GetDef(def->result_id()) &&
          "Definition is not registered.");
   auto end = id_to_users_.end();
   for (auto iter = UsersBegin(def); UsersNotEnd(iter, end, def); ++iter) {
-    f(iter->second);
+    if (!f(iter->second)) return false;
   }
+  return true;
+}
+
+bool DefUseManager::WhileEachUser(
+    uint32_t id, const std::function<bool(ir::Instruction*)>& f) const {
+  return WhileEachUser(GetDef(id), f);
+}
+
+void DefUseManager::ForEachUser(
+    const ir::Instruction* def,
+    const std::function<void(ir::Instruction*)>& f) const {
+  WhileEachUser(def, [&f](ir::Instruction* user) {
+    f(user);
+    return true;
+  });
 }
 
 void DefUseManager::ForEachUser(
@@ -113,9 +128,9 @@ void DefUseManager::ForEachUser(
   ForEachUser(GetDef(id), f);
 }
 
-void DefUseManager::ForEachUse(
+bool DefUseManager::WhileEachUse(
     const ir::Instruction* def,
-    const std::function<void(ir::Instruction*, uint32_t)>& f) const {
+    const std::function<bool(ir::Instruction*, uint32_t)>& f) const {
   // Ensure that |def| has been registered.
   assert(def && def == GetDef(def->result_id()) &&
          "Definition is not registered.");
@@ -125,10 +140,28 @@ void DefUseManager::ForEachUse(
     for (uint32_t idx = 0; idx != user->NumOperands(); ++idx) {
       const ir::Operand& op = user->GetOperand(idx);
       if (op.type != SPV_OPERAND_TYPE_RESULT_ID && spvIsIdType(op.type)) {
-        if (def->result_id() == op.words[0]) f(user, idx);
+        if (def->result_id() == op.words[0]) {
+          if (!f(user, idx)) return false;
+        }
       }
     }
   }
+  return true;
+}
+
+bool DefUseManager::WhileEachUse(
+    uint32_t id,
+    const std::function<bool(ir::Instruction*, uint32_t)>& f) const {
+  return WhileEachUse(GetDef(id), f);
+}
+
+void DefUseManager::ForEachUse(
+    const ir::Instruction* def,
+    const std::function<void(ir::Instruction*, uint32_t)>& f) const {
+  WhileEachUse(def, [&f](ir::Instruction* user, uint32_t index) {
+    f(user, index);
+    return true;
+  });
 }
 
 void DefUseManager::ForEachUse(
