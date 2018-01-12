@@ -107,11 +107,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // May need loop unrolling here see
           // https://github.com/Microsoft/DirectXShaderCompiler/pull/930
           .RegisterPass(CreateDeadBranchElimPass())
-          .RegisterPass(CreateCFGCleanupPass())
           // Get rid of unused code that leave traces of the illegal code.
-          .RegisterPass(CreateAggressiveDCEPass())
-          // TODO: Remove this once ADCE can do it.
-          .RegisterPass(CreateDeadVariableEliminationPass());
+          .RegisterPass(CreateAggressiveDCEPass());
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses() {
