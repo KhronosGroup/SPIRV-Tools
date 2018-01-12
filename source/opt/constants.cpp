@@ -112,6 +112,10 @@ const Constant* ConstantManager::CreateConstant(
                      }))
       return nullptr;
     return new VectorConstant(vt, components);
+  } else if (auto* mt = type->AsMatrix()) {
+    auto components = GetConstantsFromIds(literal_words_or_ids);
+    if (components.empty()) return nullptr;
+    return new MatrixConstant(mt, components);
   } else if (auto* st = type->AsStruct()) {
     auto components = GetConstantsFromIds(literal_words_or_ids);
     if (components.empty()) return nullptr;
