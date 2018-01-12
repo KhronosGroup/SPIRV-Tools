@@ -66,12 +66,11 @@ bool MemPass::IsTargetType(const ir::Instruction* typeInst) const {
   }
   if (typeInst->opcode() != SpvOpTypeStruct) return false;
   // All struct members must be math type
-  int nonMathComp = 0;
-  typeInst->ForEachInId([&nonMathComp, this](const uint32_t* tid) {
+  return typeInst->WhileEachInId([this](const uint32_t* tid) {
     ir::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
-    if (!IsTargetType(compTypeInst)) ++nonMathComp;
+    if (!IsTargetType(compTypeInst)) return false;
+    return true;
   });
-  return nonMathComp == 0;
 }
 
 bool MemPass::IsNonPtrAccessChain(const SpvOp opcode) const {
@@ -127,15 +126,13 @@ ir::Instruction* MemPass::GetPtr(ir::Instruction* ip, uint32_t* varId) {
 }
 
 bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
-  bool hasOnlyNamesAndDecorates = true;
-  get_def_use_mgr()->ForEachUser(
-      id, [this, &hasOnlyNamesAndDecorates](ir::Instruction* user) {
-        SpvOp op = user->opcode();
-        if (op != SpvOpName && !IsNonTypeDecorate(op)) {
-          hasOnlyNamesAndDecorates = false;
-        }
-      });
-  return hasOnlyNamesAndDecorates;
+  return get_def_use_mgr()->WhileEachUser(id, [this](ir::Instruction* user) {
+    SpvOp op = user->opcode();
+    if (op != SpvOpName && !IsNonTypeDecorate(op)) {
+      return false;
+    }
+    return true;
+  });
 }
 
 void MemPass::KillAllInsts(ir::BasicBlock* bp, bool killLabel) {
@@ -147,21 +144,20 @@ void MemPass::KillAllInsts(ir::BasicBlock* bp, bool killLabel) {
 }
 
 bool MemPass::HasLoads(uint32_t varId) const {
-  bool hasLoads = false;
-  get_def_use_mgr()->ForEachUser(varId, [this,
-                                         &hasLoads](ir::Instruction* user) {
+  return !get_def_use_mgr()->WhileEachUser(varId, [this](
+                                                      ir::Instruction* user) {
     SpvOp op = user->opcode();
     // TODO(): The following is slightly conservative. Could be
     // better handling of non-store/name.
     if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
       if (HasLoads(user->result_id())) {
-        hasLoads = true;
+        return false;
       }
     } else if (op != SpvOpStore && op != SpvOpName && !IsNonTypeDecorate(op)) {
-      hasLoads = true;
+      return false;
     }
+    return true;
   });
-  return hasLoads;
 }
 
 bool MemPass::IsLiveVar(uint32_t varId) const {
@@ -238,16 +234,14 @@ MemPass::MemPass() {}
 
 bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
   if (supported_ref_vars_.find(varId) != supported_ref_vars_.end()) return true;
-  bool hasOnlySupportedRefs = true;
-  get_def_use_mgr()->ForEachUser(
-      varId, [this, &hasOnlySupportedRefs](ir::Instruction* user) {
-        SpvOp op = user->opcode();
-        if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
-            !IsNonTypeDecorate(op)) {
-          hasOnlySupportedRefs = false;
-        }
-      });
-  return hasOnlySupportedRefs;
+  return get_def_use_mgr()->WhileEachUser(varId, [this](ir::Instruction* user) {
+    SpvOp op = user->opcode();
+    if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
+        !IsNonTypeDecorate(op)) {
+      return false;
+    }
+    return true;
+  });
 }
 
 void MemPass::InitSSARewrite(ir::Function* func) {

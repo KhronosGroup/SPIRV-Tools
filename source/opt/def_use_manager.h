@@ -137,6 +137,19 @@ class DefUseManager {
   void ForEachUser(uint32_t id,
                    const std::function<void(ir::Instruction*)>& f) const;
 
+  // Runs the given function |f| on each unique user instruction of |def| (or
+  // |id|). If |f| returns false, iteration is terminated and this function
+  // returns false.
+  //
+  // If one instruction uses |def| in multiple operands, that instruction will
+  // be only be visited once.
+  //
+  // |def| (or |id|) must be registered as a definition.
+  bool WhileEachUser(const ir::Instruction* def,
+                     const std::function<bool(ir::Instruction*)>& f) const;
+  bool WhileEachUser(uint32_t id,
+                     const std::function<bool(ir::Instruction*)>& f) const;
+
   // Runs the given function |f| on each unique use of |def| (or
   // |id|).
   //
@@ -150,6 +163,21 @@ class DefUseManager {
   void ForEachUse(uint32_t id,
                   const std::function<void(ir::Instruction*,
                                            uint32_t operand_index)>& f) const;
+
+  // Runs the given function |f| on each unique use of |def| (or
+  // |id|). If |f| returns false, iteration is terminated and this function
+  // returns false.
+  //
+  // If one instruction uses |def| in multiple operands, each operand will be
+  // visited separately.
+  //
+  // |def| (or |id|) must be registered as a definition.
+  bool WhileEachUse(const ir::Instruction* def,
+                    const std::function<bool(ir::Instruction*,
+                                             uint32_t operand_index)>& f) const;
+  bool WhileEachUse(uint32_t id,
+                    const std::function<bool(ir::Instruction*,
+                                             uint32_t operand_index)>& f) const;
 
   // Returns the number of users of |def| (or |id|).
   uint32_t NumUsers(const ir::Instruction* def) const;

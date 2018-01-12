@@ -23,13 +23,15 @@ namespace spvtools {
 namespace opt {
 
 bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
-  int rcnt = 0;
-  get_def_use_mgr()->ForEachUser(labId, [&rcnt](ir::Instruction* user) {
-    if (user->opcode() != SpvOpName) {
-      ++rcnt;
-    }
-  });
-  return rcnt > 1;
+  bool multiple_refs = false;
+  return !get_def_use_mgr()->WhileEachUser(
+      labId, [&multiple_refs](ir::Instruction* user) {
+        if (user->opcode() != SpvOpName) {
+          if (multiple_refs) return false;
+          multiple_refs = true;
+        }
+        return true;
+      });
 }
 
 void BlockMergePass::KillInstAndName(ir::Instruction* inst) {

@@ -110,6 +110,14 @@ class BasicBlock {
   inline void ForEachInst(const std::function<void(const Instruction*)>& f,
                           bool run_on_debug_line_insts = false) const;
 
+  // Runs the given function |f| on each instruction in this basic block, and
+  // optionally on the debug line instructions that might precede them. If |f|
+  // returns false, iteration is terminated and this function returns false.
+  inline bool WhileEachInst(const std::function<bool(Instruction*)>& f,
+                            bool run_on_debug_line_insts = false);
+  inline bool WhileEachInst(const std::function<bool(const Instruction*)>& f,
+                            bool run_on_debug_line_insts = false) const;
+
   // Runs the given function |f| on each Phi instruction in this basic block,
   // and optionally on the debug line instructions that might precede them.
   inline void ForEachPhiInst(const std::function<void(Instruction*)>& f,
@@ -181,30 +189,59 @@ inline void BasicBlock::AddInstructions(BasicBlock* bp) {
   (void)bEnd.MoveBefore(&bp->insts_);
 }
 
-inline void BasicBlock::ForEachInst(const std::function<void(Instruction*)>& f,
-                                    bool run_on_debug_line_insts) {
-  if (label_) label_->ForEachInst(f, run_on_debug_line_insts);
+inline bool BasicBlock::WhileEachInst(
+    const std::function<bool(Instruction*)>& f, bool run_on_debug_line_insts) {
+  if (label_) {
+    if (!label_->WhileEachInst(f, run_on_debug_line_insts)) return false;
+  }
   if (insts_.empty()) {
-    return;
+    return true;
   }
 
   Instruction* inst = &insts_.front();
   while (inst != nullptr) {
     Instruction* next_instruction = inst->NextNode();
-    inst->ForEachInst(f, run_on_debug_line_insts);
+    if (!inst->WhileEachInst(f, run_on_debug_line_insts)) return false;
     inst = next_instruction;
   }
+  return true;
+}
+
+inline bool BasicBlock::WhileEachInst(
+    const std::function<bool(const Instruction*)>& f,
+    bool run_on_debug_line_insts) const {
+  if (label_) {
+    if (!static_cast<const Instruction*>(label_.get())
+             ->WhileEachInst(f, run_on_debug_line_insts))
+      return false;
+  }
+  for (const auto& inst : insts_) {
+    if (!static_cast<const Instruction*>(&inst)->WhileEachInst(
+            f, run_on_debug_line_insts))
+      return false;
+  }
+  return true;
+}
+
+inline void BasicBlock::ForEachInst(const std::function<void(Instruction*)>& f,
+                                    bool run_on_debug_line_insts) {
+  WhileEachInst(
+      [&f](Instruction* inst) {
+        f(inst);
+        return true;
+      },
+      run_on_debug_line_insts);
 }
 
 inline void BasicBlock::ForEachInst(
     const std::function<void(const Instruction*)>& f,
     bool run_on_debug_line_insts) const {
-  if (label_)
-    static_cast<const Instruction*>(label_.get())
-        ->ForEachInst(f, run_on_debug_line_insts);
-  for (const auto& inst : insts_)
-    static_cast<const Instruction*>(&inst)->ForEachInst(
-        f, run_on_debug_line_insts);
+  WhileEachInst(
+      [&f](const Instruction* inst) {
+        f(inst);
+        return true;
+      },
+      run_on_debug_line_insts);
 }
 
 inline void BasicBlock::ForEachPhiInst(

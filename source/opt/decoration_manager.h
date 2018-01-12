@@ -69,6 +69,13 @@ class DecorationManager {
   void ForEachDecoration(uint32_t id, uint32_t decoration,
                          std::function<void(const ir::Instruction&)> f);
 
+  // |f| is run on each decoration instruction for |id| with decoration
+  // |decoration|. Processes all decoration which target |id| either directly or
+  // indirectly through decoration groups. If |f| returns false, iteration is
+  // terminated and this function returns false.
+  bool WhileEachDecoration(uint32_t id, uint32_t decoration,
+                           std::function<bool(const ir::Instruction&)> f);
+
   // Clone all decorations from one id |from|.
   // The cloned decorations are assigned to the given id |to| and are
   // added to the module. The purpose is to decorate cloned instructions.

@@ -32,23 +32,22 @@ const uint32_t kVariableInitIdInIdx = 1;
 
 bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end()) return true;
-  bool hasOnlySupportedRefs = true;
-  get_def_use_mgr()->ForEachUser(
-      ptrId, [this, &hasOnlySupportedRefs](ir::Instruction* user) {
+  if (get_def_use_mgr()->WhileEachUser(ptrId, [this](ir::Instruction* user) {
         SpvOp op = user->opcode();
         if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
           if (!HasOnlySupportedRefs(user->result_id())) {
-            hasOnlySupportedRefs = false;
+            return false;
           }
         } else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
                    !IsNonTypeDecorate(op)) {
-          hasOnlySupportedRefs = false;
+          return false;
         }
-      });
-  if (hasOnlySupportedRefs) {
+        return true;
+      })) {
     supported_ref_ptrs_.insert(ptrId);
+    return true;
   }
-  return hasOnlySupportedRefs;
+  return false;
 }
 
 void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {

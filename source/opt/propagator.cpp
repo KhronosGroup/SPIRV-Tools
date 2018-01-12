@@ -140,13 +140,14 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
     // For regular instructions, check if the defining instruction of each
     // operand needs to be simulated again.  If so, then this instruction should
     // also be simulated again.
-    instr->ForEachInId([&has_operands_to_simulate, this](const uint32_t* use) {
-      ir::Instruction* def_instr = get_def_use_mgr()->GetDef(*use);
-      if (ShouldSimulateAgain(def_instr)) {
-        has_operands_to_simulate = true;
-        return;
-      }
-    });
+    has_operands_to_simulate =
+        !instr->WhileEachInId([this](const uint32_t* use) {
+          ir::Instruction* def_instr = get_def_use_mgr()->GetDef(*use);
+          if (ShouldSimulateAgain(def_instr)) {
+            return false;
+          }
+          return true;
+        });
   }
 
   if (!has_operands_to_simulate) {
