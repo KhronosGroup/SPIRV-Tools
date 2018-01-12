@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2018.0-dev 2018-01-12
+ - Start v2018.0-dev
+
 v2017.3 2018-01-12
  - General:
    - Support DebugInfo extended instruction set, targeted at OpenCL environments.
