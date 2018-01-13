@@ -568,7 +568,9 @@ bool Instruction::IsLoad() const { return spvOpcodeIsLoad(opcode()); }
 
 bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode()); }
 
-bool Instruction::IsConstant() const { return IsConstantInst(opcode()); }
+bool Instruction::IsConstant() const {
+  return IsCompileTimeConstantInst(opcode());
+}
 }  // namespace ir
 }  // namespace spvtools
 
