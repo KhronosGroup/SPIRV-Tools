@@ -554,6 +554,33 @@ TEST_F(CCPTest, HandleCompositeWithUndef) {
   auto res = SinglePassRunToBinary<opt::CCPPass>(spv_asm, true);
   EXPECT_EQ(std::get<1>(res), opt::Pass::Status::SuccessWithoutChange);
 }
+
+TEST_F(CCPTest, SkipSpecConstantInstrucitons) {
+  const std::string spv_asm = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource HLSL 500
+               OpName %main "main"
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %bool = OpTypeBool
+         %10 = OpSpecConstantFalse %bool
+       %main = OpFunction %void None %4
+         %11 = OpLabel
+         %12 = OpBranchConditional %10 %l1 %l2
+         %l1 = OpLabel
+               OpReturn
+         %l2 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  auto res = SinglePassRunToBinary<opt::CCPPass>(spv_asm, true);
+  EXPECT_EQ(std::get<1>(res), opt::Pass::Status::SuccessWithoutChange);
+}
 #endif
 
 }  // namespace

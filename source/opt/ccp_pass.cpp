@@ -270,7 +270,10 @@ void CCPPass::Initialize(ir::IRContext* c) {
   // module.  The values of each OpConstant declaration is the identity
   // assignment (i.e., each constant is its own value).
   for (const auto& inst : context()->module()->GetConstants()) {
-    values_[inst->result_id()] = inst->result_id();
+    // Skip specialization constants.
+    if (inst->IsConstant()) {
+      values_[inst->result_id()] = inst->result_id();
+    }
   }
 }
 
