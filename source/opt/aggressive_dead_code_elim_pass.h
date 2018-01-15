@@ -94,15 +94,13 @@ class AggressiveDCEPass : public MemPass {
   // If |varId| is local, mark all stores of varId as live.
   void ProcessLoad(uint32_t varId);
 
-  // If |bp| is structured if or loop header block, return true and set
-  // |mergeInst| to the merge instruction, |branchInst| to the conditional
-  // branch and |mergeBlockId| to the merge block if they are not nullptr.
-  // Any of |mergeInst|, |branchInst| or |mergeBlockId| may be a null pointer.
-  // Returns false if |bp| is a null pointer.
-  bool IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
-                                  ir::Instruction** mergeInst,
-                                  ir::Instruction** branchInst,
-                                  uint32_t* mergeBlockId);
+  // If |bp| is structured header block, returns true and sets |mergeInst| to
+  // the merge instruction, |branchInst| to the branch and |mergeBlockId| to the
+  // merge block if they are not nullptr.  Any of |mergeInst|, |branchInst| or
+  // |mergeBlockId| may be a null pointer.  Returns false if |bp| is a null
+  // pointer.
+  bool IsStructuredHeader(ir::BasicBlock* bp, ir::Instruction** mergeInst,
+                          ir::Instruction** branchInst, uint32_t* mergeBlockId);
 
   // Initialize block2headerBranch_ and branch2merge_ using |structuredOrder|
   // to order blocks.
