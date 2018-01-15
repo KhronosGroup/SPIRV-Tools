@@ -136,9 +136,8 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
 
 bool AggressiveDCEPass::IsDead(ir::Instruction* inst) {
   if (IsLive(inst)) return false;
-  if (inst->IsBranch() &&
-      !IsStructuredIfOrLoopHeader(context()->get_instr_block(inst), nullptr,
-                                  nullptr, nullptr))
+  if (inst->IsBranch() && !IsStructuredHeader(context()->get_instr_block(inst),
+                                              nullptr, nullptr, nullptr))
     return false;
   return true;
 }
@@ -173,18 +172,14 @@ void AggressiveDCEPass::ProcessLoad(uint32_t varId) {
   live_local_vars_.insert(varId);
 }
 
-bool AggressiveDCEPass::IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
-                                                   ir::Instruction** mergeInst,
-                                                   ir::Instruction** branchInst,
-                                                   uint32_t* mergeBlockId) {
+bool AggressiveDCEPass::IsStructuredHeader(ir::BasicBlock* bp,
+                                           ir::Instruction** mergeInst,
+                                           ir::Instruction** branchInst,
+                                           uint32_t* mergeBlockId) {
   if (!bp) return false;
   ir::Instruction* mi = bp->GetMergeInst();
   if (mi == nullptr) return false;
   ir::Instruction* bri = &*bp->tail();
-  // Make sure it is not a Switch
-  if (mi->opcode() == SpvOpSelectionMerge &&
-      bri->opcode() != SpvOpBranchConditional)
-    return false;
   if (branchInst != nullptr) *branchInst = bri;
   if (mergeInst != nullptr) *mergeInst = mi;
   if (mergeBlockId != nullptr) *mergeBlockId = mi->GetSingleWordInOperand(0);
@@ -211,7 +206,7 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
     ir::Instruction* branchInst;
     uint32_t mergeBlockId;
     bool is_header =
-        IsStructuredIfOrLoopHeader(*bi, &mergeInst, &branchInst, &mergeBlockId);
+        IsStructuredHeader(*bi, &mergeInst, &branchInst, &mergeBlockId);
     // If this is a loop header, update state first so the block will map to
     // the loop.
     if (is_header && mergeInst->opcode() == SpvOpLoopMerge) {
@@ -246,8 +241,6 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
       mergeId, [&loopMerge, this](ir::Instruction* user) {
         // A branch to the merge block can only be a break if it is nested in
         // the current loop
-        SpvOp op = user->opcode();
-        if (op != SpvOpBranchConditional && op != SpvOpBranch) return;
         ir::Instruction* branchInst = user;
         while (true) {
           ir::BasicBlock* blk = context()->get_instr_block(branchInst);
@@ -269,9 +262,9 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
   get_def_use_mgr()->ForEachUser(contId, [&contId,
                                           this](ir::Instruction* user) {
     SpvOp op = user->opcode();
-    if (op == SpvOpBranchConditional) {
-      // A conditional branch can only be a continue if it does not have a merge
-      // instruction or its merge block is not the continue block.
+    if (op == SpvOpBranchConditional || op == SpvOpSwitch) {
+      // A conditional branch or switch can only be a continue if it does not
+      // have a merge instruction or its merge block is not the continue block.
       ir::Instruction* hdrMerge = branch2merge_[user];
       if (hdrMerge != nullptr && hdrMerge->opcode() == SpvOpSelectionMerge) {
         uint32_t hdrMergeId =
@@ -353,14 +346,11 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
               ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx));
         } break;
         case SpvOpSelectionMerge: {
-          auto brii = ii;
-          ++brii;
-          bool is_structured_if = brii->opcode() == SpvOpBranchConditional;
-          assume_branches_live.push(!is_structured_if);
+          assume_branches_live.push(false);
           currentMergeBlockId.push(
               ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx));
-          if (!is_structured_if) AddToWorklist(&*ii);
         } break;
+        case SpvOpSwitch:
         case SpvOpBranch:
         case SpvOpBranchConditional: {
           if (assume_branches_live.top()) AddToWorklist(&*ii);
