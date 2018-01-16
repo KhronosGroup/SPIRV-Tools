@@ -234,8 +234,8 @@ class ValidationState_t {
 
   const AssemblyGrammar& grammar() const { return grammar_; }
 
-  /// Registers the instruction
-  void RegisterInstruction(const spv_parsed_instruction_t& inst);
+  /// Registers the instruction.  Returns the internal representation.
+  Instruction* RegisterInstruction(const spv_parsed_instruction_t& inst);
 
   /// Registers the decoration for the given <id>
   void RegisterDecorationForId(uint32_t id, const Decoration& dec) {
@@ -288,6 +288,9 @@ class ValidationState_t {
   const std::unordered_map<uint32_t, Instruction*>& all_definitions() const {
     return all_definitions_;
   }
+
+  // Records the instruction defining |result_id|.
+  void RegisterDefinition(uint32_t result_id, Instruction* inst);
 
   /// Returns a vector containing the Ids of instructions that consume the given
   /// SampledImage id.

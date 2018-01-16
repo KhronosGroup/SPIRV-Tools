@@ -2622,8 +2622,8 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
 // Performs SSA validation on the IDs of an instruction. The
 // can_have_forward_declared_ids  functor should return true if the
 // instruction operand's ID can be forward referenced.
-spv_result_t IdPass(ValidationState_t& _,
-                    const spv_parsed_instruction_t* inst) {
+spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst,
+                    Instruction* internal_instruction) {
   auto can_have_forward_declared_ids =
       spvOperandCanBeForwardDeclaredFunction(static_cast<SpvOp>(inst->opcode));
 
@@ -2644,8 +2644,7 @@ spv_result_t IdPass(ValidationState_t& _,
         //
         // Defer undefined-forward-reference removal until after we've analyzed
         // the remaining operands to this instruction.  Deferral only matters
-        // for
-        // OpPhi since it's the only case where it defines its own forward
+        // for OpPhi since it's the only case where it defines its own forward
         // reference.  Other instructions that can have forward references
         // either don't define a value or the forward reference is to a function
         // Id (and hence defined outside of a function body).
@@ -2678,9 +2677,11 @@ spv_result_t IdPass(ValidationState_t& _,
     }
   }
   if (result_id) {
+    // Register the definition.  To correctly check an OpPhi that uses its
+    // own result id, this must be done after the checks
+    _.RegisterDefinition(result_id, internal_instruction);
     _.RemoveIfForwardDeclared(result_id);
   }
-  _.RegisterInstruction(*inst);
   return SPV_SUCCESS;
 }
 }  // namespace libspirv

@@ -392,7 +392,7 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   return SPV_SUCCESS;
 }
 
-void ValidationState_t::RegisterInstruction(
+Instruction* ValidationState_t::RegisterInstruction(
     const spv_parsed_instruction_t& inst) {
   if (in_function_body()) {
     ordered_instructions_.emplace_back(&inst, &current_function(),
@@ -400,13 +400,9 @@ void ValidationState_t::RegisterInstruction(
   } else {
     ordered_instructions_.emplace_back(&inst, nullptr, nullptr);
   }
-  uint32_t id = ordered_instructions_.back().id();
-  if (id) {
-    all_definitions_.insert(make_pair(id, &ordered_instructions_.back()));
-  }
 
-  // If the instruction is using an OpTypeSampledImage as an operand, it should
-  // be recorded. The validator will ensure that all usages of an
+  // If the instruction is using an OpSampledImage result as an operand, it
+  // should be recorded. The validator will ensure that all usages of an
   // OpTypeSampledImage and its definition are in the same basic block.
   for (uint16_t i = 0; i < inst.num_operands; ++i) {
     const spv_parsed_operand_t& operand = inst.operands[i];
@@ -418,6 +414,12 @@ void ValidationState_t::RegisterInstruction(
       }
     }
   }
+
+  return &(ordered_instructions_.back());
+}
+
+void ValidationState_t::RegisterDefinition(uint32_t id, Instruction* inst) {
+  all_definitions_.insert(make_pair(id, inst));
 }
 
 std::vector<uint32_t> ValidationState_t::getSampledImageConsumers(

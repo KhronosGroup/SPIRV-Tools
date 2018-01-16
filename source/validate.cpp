@@ -42,11 +42,11 @@
 
 using std::function;
 using std::ostream_iterator;
+using std::placeholders::_1;
 using std::string;
 using std::stringstream;
 using std::transform;
 using std::vector;
-using std::placeholders::_1;
 
 using libspirv::CfgPass;
 using libspirv::DataRulesPass;
@@ -158,7 +158,11 @@ spv_result_t ProcessExtensions(void* user_data,
 spv_result_t ProcessInstruction(void* user_data,
                                 const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
+
+  // Register the instruction early so it can be disassembled for diagnostics.
+  libspirv::Instruction* internal_instruction = _.RegisterInstruction(*inst);
   _.increment_instruction_count();
+
   if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint) {
     const auto entry_point = inst->words[2];
     _.RegisterEntryPointId(entry_point);
@@ -175,7 +179,7 @@ spv_result_t ProcessInstruction(void* user_data,
   DebugInstructionPass(_, inst);
   if (auto error = CapabilityPass(_, inst)) return error;
   if (auto error = DataRulesPass(_, inst)) return error;
-  if (auto error = IdPass(_, inst)) return error;
+  if (auto error = IdPass(_, inst, internal_instruction)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
   if (auto error = CfgPass(_, inst)) return error;
   if (auto error = InstructionPass(_, inst)) return error;
