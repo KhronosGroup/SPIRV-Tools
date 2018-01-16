@@ -226,6 +226,75 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
   }
 }
 
+TEST_F(IRBuilderTest, AddSelect) {
+  const std::string text = R"(
+; CHECK: [[bool:%\w+]] = OpTypeBool
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[true:%\w+]] = OpConstantTrue [[bool]]
+; CHECK: [[u0:%\w+]] = OpConstant [[uint]] 0
+; CHECK: [[u1:%\w+]] = OpConstant [[uint]] 1
+; CHECK: OpSelect [[uint]] [[true]] [[u0]] [[u1]]
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%1 = OpTypeVoid
+%2 = OpTypeBool
+%3 = OpTypeInt 32 0
+%4 = OpConstantTrue %2
+%5 = OpConstant %3 0
+%6 = OpConstant %3 1
+%7 = OpTypeFunction %1
+%8 = OpFunction %1 None %7
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(nullptr, context);
+
+  opt::InstructionBuilder<> builder(
+      context.get(), &*context->module()->begin()->begin()->begin());
+  EXPECT_NE(nullptr, builder.AddSelect(3u, 4u, 5u, 6u));
+
+  Match(text, context.get());
+}
+
+TEST_F(IRBuilderTest, AddCompositeConstruct) {
+  const std::string text = R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt
+; CHECK: [[u0:%\w+]] = OpConstant [[uint]] 0
+; CHECK: [[u1:%\w+]] = OpConstant [[uint]] 1
+; CHECK: [[struct:%\w+]] = OpTypeStruct [[uint]] [[uint]] [[uint]] [[uint]]
+; CHECK: OpCompositeConstruct [[struct]] [[u0]] [[u1]] [[u1]] [[u0]]
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpConstant %2 1
+%5 = OpTypeStruct %2 %2 %2 %2
+%6 = OpTypeFunction %1
+%7 = OpFunction %1 None %6
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(nullptr, context);
+
+  opt::InstructionBuilder<> builder(
+      context.get(), &*context->module()->begin()->begin()->begin());
+  std::vector<uint32_t> ids = {3u, 4u, 4u, 3u};
+  EXPECT_NE(nullptr, builder.AddCompositeConstruct(5u, ids));
+
+  Match(text, context.get());
+}
+
 #endif  // SPIRV_EFFCEE
 
 }  // anonymous namespace

@@ -123,6 +123,12 @@ class BasicBlock {
   inline void ForEachPhiInst(const std::function<void(Instruction*)>& f,
                              bool run_on_debug_line_insts = false);
 
+  // Runs the given function |f| on each Phi instruction in this basic block,
+  // and optionally on the debug line instructions that might precede them. If
+  // |f| returns false, iteration is terminated and this function return false.
+  inline bool WhileEachPhiInst(const std::function<bool(Instruction*)>& f,
+                               bool run_on_debug_line_insts = false);
+
   // Runs the given function |f| on each label id of each successor block
   void ForEachSuccessorLabel(
       const std::function<void(const uint32_t)>& f) const;
@@ -135,12 +141,7 @@ class BasicBlock {
 
   // Returns true if this basic block has any Phi instructions.
   bool HasPhiInstructions() {
-    int count = 0;
-    ForEachPhiInst([&count](ir::Instruction*) {
-      ++count;
-      return;
-    });
-    return count > 0;
+    return !WhileEachPhiInst([](ir::Instruction*) { return false; });
   }
 
   // Return true if this block is a loop header block.
@@ -244,12 +245,23 @@ inline void BasicBlock::ForEachInst(
       run_on_debug_line_insts);
 }
 
-inline void BasicBlock::ForEachPhiInst(
-    const std::function<void(Instruction*)>& f, bool run_on_debug_line_insts) {
+inline bool BasicBlock::WhileEachPhiInst(
+    const std::function<bool(Instruction*)>& f, bool run_on_debug_line_insts) {
   for (auto& inst : insts_) {
     if (inst.opcode() != SpvOpPhi) break;
-    inst.ForEachInst(f, run_on_debug_line_insts);
+    if (!inst.WhileEachInst(f, run_on_debug_line_insts)) return false;
   }
+  return true;
+}
+
+inline void BasicBlock::ForEachPhiInst(
+    const std::function<void(Instruction*)>& f, bool run_on_debug_line_insts) {
+  WhileEachPhiInst(
+      [&f](Instruction* inst) {
+        f(inst);
+        return true;
+      },
+      run_on_debug_line_insts);
 }
 
 }  // namespace ir

@@ -30,6 +30,7 @@ import sys
 AUTHORS = ['The Khronos Group Inc.',
            'LunarG Inc.',
            'Google Inc.',
+           'Google LLC',
            'Pierre Moreau']
 CURRENT_YEAR='2018'
 

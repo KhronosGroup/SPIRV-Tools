@@ -111,6 +111,10 @@ class DominatorAnalysisBase {
     tree_.Visit(func);
   }
 
+  // Returns the most immediate basic block that dominates both |b1| and |b2|.
+  // If there is no such basic block, nullptr is returned.
+  ir::BasicBlock* CommonDominator(ir::BasicBlock* b1, ir::BasicBlock* b2) const;
+
  protected:
   DominatorTree tree_;
 };

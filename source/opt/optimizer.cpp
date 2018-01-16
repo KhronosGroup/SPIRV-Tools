@@ -125,6 +125,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateIfConversionPass())
+      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
@@ -147,6 +149,8 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateIfConversionPass())
+      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
@@ -352,6 +356,11 @@ Optimizer::PassToken CreateCCPPass() {
 Optimizer::PassToken CreateWorkaround1209Pass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::Workaround1209>());
+}
+
+Optimizer::PassToken CreateIfConversionPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::IfConversion>());
 }
 
 }  // namespace spvtools

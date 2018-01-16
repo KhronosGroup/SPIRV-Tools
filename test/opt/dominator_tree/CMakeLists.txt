@@ -72,3 +72,8 @@ add_spvtools_unittest(TARGET dominator_generated
          generated.cpp
     LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET dominator_common_dominators
+    SRCS common_dominators.cpp
+    LIBS SPIRV-Tools-opt
+)

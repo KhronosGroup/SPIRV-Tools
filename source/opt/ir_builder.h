@@ -123,6 +123,37 @@ class InstructionBuilder {
     return AddInstruction(std::move(phi_inst));
   }
 
+  // Creates a select instruction.
+  // |type| must match the types of |true_value| and |false_value|. It is up to
+  // the caller to ensure that |cond| is a correct type (bool or vector of
+  // bool) for |type|.
+  ir::Instruction* AddSelect(uint32_t type, uint32_t cond, uint32_t true_value,
+                             uint32_t false_value) {
+    std::unique_ptr<ir::Instruction> select(new ir::Instruction(
+        GetContext(), SpvOpSelect, type, GetContext()->TakeNextId(),
+        std::initializer_list<ir::Operand>{
+            {SPV_OPERAND_TYPE_ID, {cond}},
+            {SPV_OPERAND_TYPE_ID, {true_value}},
+            {SPV_OPERAND_TYPE_ID, {false_value}}}));
+    return AddInstruction(std::move(select));
+  }
+
+  // Create a composite construct.
+  // |type| should be a composite type and the number of elements it has should
+  // match the size od |ids|.
+  ir::Instruction* AddCompositeConstruct(uint32_t type,
+                                         const std::vector<uint32_t>& ids) {
+    std::vector<ir::Operand> ops;
+    for (auto id : ids) {
+      ops.emplace_back(SPV_OPERAND_TYPE_ID,
+                       std::initializer_list<uint32_t>{id});
+    }
+    std::unique_ptr<ir::Instruction> construct(
+        new ir::Instruction(GetContext(), SpvOpCompositeConstruct, type,
+                            GetContext()->TakeNextId(), ops));
+    return AddInstruction(std::move(construct));
+  }
+
   // Inserts the new instruction before the insertion point.
   ir::Instruction* AddInstruction(std::unique_ptr<ir::Instruction>&& insn) {
     ir::Instruction* insn_ptr = &*insert_before_.InsertBefore(std::move(insn));

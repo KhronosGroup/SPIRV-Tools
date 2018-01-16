@@ -148,6 +148,8 @@ Options (in lexicographical order):
   --freeze-spec-const
                Freeze the values of specialization constants to their default
                values.
+  --if-conversion
+               Convert if-then-else like assignments into OpSelect.
   --inline-entry-points-exhaustive
                Exhaustively inline all function calls in entry point call tree
                functions. Currently does not inline calls to functions with
@@ -391,6 +393,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
               "error: Expected a string of <spec id>:<default value> pairs.");
           return {OPT_STOP, 1};
         }
+      } else if (0 == strcmp(cur_arg, "--if-conversion")) {
+        optimizer->RegisterPass(CreateIfConversionPass());
       } else if (0 == strcmp(cur_arg, "--freeze-spec-const")) {
         optimizer->RegisterPass(CreateFreezeSpecConstantValuePass());
       } else if (0 == strcmp(cur_arg, "--inline-entry-points-exhaustive")) {

@@ -482,6 +482,9 @@ Optimizer::PassToken CreateCCPPass();
 // Current workaround: Avoid OpUnreachable instructions in loops.
 Optimizer::PassToken CreateWorkaround1209Pass();
 
+// Creates a pass that converts if-then-else like assignments into OpSelect.
+Optimizer::PassToken CreateIfConversionPass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_
