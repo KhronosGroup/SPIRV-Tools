@@ -43,7 +43,7 @@ bool LocalRedundancyEliminationPass::EliminateRedundanciesInBB(
     std::map<uint32_t, uint32_t>* value_to_ids) {
   bool modified = false;
 
-  auto func = [this, vnTable, &modified, value_to_ids](ir::Instruction* inst) {
+  auto func = [this, &vnTable, &modified, value_to_ids](ir::Instruction* inst) {
     if (inst->result_id() == 0) {
       return;
     }
