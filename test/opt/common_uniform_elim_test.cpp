@@ -1041,6 +1041,118 @@ OpFunctionEnd
           text, true, false));
   EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
 }
+
+#ifdef SPIRV_EFFCEE
+TEST_F(CommonUniformElimTest, MixedConstantAndNonConstantIndexes) {
+  const std::string text = R"(
+; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Uniform
+; CHECK: %501 = OpLabel
+; CHECK: [[ld:%\w+]] = OpLoad
+; CHECK-NOT: OpCompositeExtract {{%\w+}} {{%\w+}} 0 2 484
+; CHECK: OpAccessChain {{%\w+}} [[var]] %int_0 %int_2 [[ld]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "ringeffectLayer_px" %gl_FragCoord %178 %182
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource HLSL 500
+               OpDecorate %_arr_v4float_uint_10 ArrayStride 16
+               OpMemberDecorate %_struct_20 0 Offset 0
+               OpMemberDecorate %_struct_20 1 Offset 16
+               OpMemberDecorate %_struct_20 2 Offset 32
+               OpMemberDecorate %_struct_21 0 Offset 0
+               OpDecorate %_struct_21 Block
+               OpDecorate %23 DescriptorSet 0
+               OpDecorate %gl_FragCoord BuiltIn FragCoord
+               OpDecorate %178 Location 0
+               OpDecorate %182 Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %v2float = OpTypeVector %float 2
+%_ptr_Function_v2float = OpTypePointer Function %v2float
+       %uint = OpTypeInt 32 0
+    %uint_10 = OpConstant %uint 10
+%_arr_v4float_uint_10 = OpTypeArray %v4float %uint_10
+ %_struct_20 = OpTypeStruct %v4float %v4float %_arr_v4float_uint_10
+ %_struct_21 = OpTypeStruct %_struct_20
+%_ptr_Uniform__struct_21 = OpTypePointer Uniform %_struct_21
+         %23 = OpVariable %_ptr_Uniform__struct_21 Uniform
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform_v4float = OpTypePointer Uniform %v4float
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+     %uint_3 = OpConstant %uint 3
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+    %float_0 = OpConstant %float 0
+         %43 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_5 = OpConstant %int 5
+       %bool = OpTypeBool
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+     %uint_5 = OpConstant %uint 5
+%_arr_v2float_uint_5 = OpTypeArray %v2float %uint_5
+%_ptr_Function__arr_v2float_uint_5 = OpTypePointer Function %_arr_v2float_uint_5
+         %82 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_82 = OpTypePointer UniformConstant %82
+         %86 = OpTypeSampler
+%_ptr_UniformConstant_86 = OpTypePointer UniformConstant %86
+         %90 = OpTypeSampledImage %82
+    %v3float = OpTypeVector %float 3
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
+        %178 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+        %182 = OpVariable %_ptr_Output_v4float Output
+          %4 = OpFunction %void None %3
+          %5 = OpLabel
+        %483 = OpVariable %_ptr_Function_v4float Function
+        %484 = OpVariable %_ptr_Function_int Function
+        %486 = OpVariable %_ptr_Function__arr_v2float_uint_5 Function
+        %179 = OpLoad %v4float %178
+        %493 = OpAccessChain %_ptr_Uniform_float %23 %int_0 %int_0 %uint_3
+        %494 = OpLoad %float %493
+               OpStore %483 %43
+               OpStore %484 %int_0
+               OpBranch %495
+        %495 = OpLabel
+               OpLoopMerge %496 %497 None
+               OpBranch %498
+        %498 = OpLabel
+        %499 = OpLoad %int %484
+        %500 = OpSLessThan %bool %499 %int_5
+               OpBranchConditional %500 %501 %496
+        %501 = OpLabel
+        %504 = OpVectorShuffle %v2float %179 %179 0 1
+        %505 = OpLoad %int %484
+        %506 = OpAccessChain %_ptr_Uniform_v4float %23 %int_0 %int_2 %505
+        %507 = OpLoad %v4float %506
+        %508 = OpVectorShuffle %v2float %507 %507 0 1
+        %509 = OpFAdd %v2float %504 %508
+        %512 = OpAccessChain %_ptr_Uniform_v4float %23 %int_0 %int_1
+        %513 = OpLoad %v4float %512
+        %514 = OpVectorShuffle %v2float %513 %513 0 1
+        %517 = OpVectorShuffle %v2float %513 %513 2 3
+        %518 = OpExtInst %v2float %1 FClamp %509 %514 %517
+        %519 = OpAccessChain %_ptr_Function_v2float %486 %505
+               OpStore %519 %518
+               OpBranch %497
+        %497 = OpLabel
+        %520 = OpLoad %int %484
+        %521 = OpIAdd %int %520 %int_1
+               OpStore %484 %521
+               OpBranch %495
+        %496 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<opt::CommonUniformElimPass>(text, true);
+}
+#endif  //  SPIRV_EFFCEE
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Disqualifying cases: extensions, decorations, non-logical addressing,

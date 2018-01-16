@@ -261,6 +261,7 @@ bool CommonUniformElimPass::IsConstantIndexAccessChain(ir::Instruction* acp) {
       ir::Instruction* opInst = get_def_use_mgr()->GetDef(*tid);
       if (opInst->opcode() != SpvOpConstant) return false;
     }
+    ++inIdx;
     return true;
   });
 }
