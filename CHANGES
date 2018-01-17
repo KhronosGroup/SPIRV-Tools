@@ -4,6 +4,8 @@ v2018.0-dev 2018-01-12
  - Start v2018.0-dev
  - Fixes:
    - PR 1198: Optimizer: Fix CCP in presence of matrix constants.
+   - #1199: Optimizer: Fix CCP: don't propagate spec constants.
+   - #1203: Optimizer: Fix common uniform elim bug introduced by refactoring.
 
 v2017.3 2018-01-12
  - General:
