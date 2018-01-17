@@ -475,6 +475,13 @@ Optimizer::PassToken CreatePrivateToLocalPass();
 // and computations with constant operands.
 Optimizer::PassToken CreateCCPPass();
 
+// Creates a workaround driver bugs pass.  This pass attempts to work around
+// a known driver bug (issue #1209) by identifying the bad code sequences and
+// rewriting them.
+//
+// Current workaround: Avoid OpUnreachable instructions in loops.
+Optimizer::PassToken CreateWorkaround1209Pass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

@@ -253,6 +253,10 @@ Options (in lexicographical order):
                Replaces instructions with equivalent and less expensive ones.
   --strip-debug
                Remove all debug instructions.
+  --workaround-1209
+               Rewrites instructions for which there are known driver bugs to
+               avoid triggering those bugs.
+               Current workarounds: Avoid OpUnreachable in loops.
   --unify-const
                Remove the duplicated constants.
   -h, --help
@@ -441,6 +445,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreatePrivateToLocalPass());
       } else if (0 == strcmp(cur_arg, "--remove-duplicates")) {
         optimizer->RegisterPass(CreateRemoveDuplicatesPass());
+      } else if (0 == strcmp(cur_arg, "--workaround-1209")) {
+        optimizer->RegisterPass(CreateWorkaround1209Pass());
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options->relax_struct_store = true;
       } else if (0 == strcmp(cur_arg, "--skip-validation")) {
