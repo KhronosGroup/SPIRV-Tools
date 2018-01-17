@@ -43,7 +43,9 @@ Options:
                   Output goes to standard output if this option is
                   not specified, or if the filename is "-".
 
-  --no-color      Don't print in color.
+  --color         Force color output.  The default when printing to a terminal.
+                  Overrides a previous --no-color option.
+  --no-color      Don't print in color.  Overrides a previous --color option.
                   The default when output goes to something other than a
                   terminal (e.g. a file, a pipe, or a shell redirection).
 
@@ -64,10 +66,15 @@ int main(int argc, char** argv) {
   const char* inFile = nullptr;
   const char* outFile = nullptr;
 
-  bool allow_color = false;
-#ifdef SPIRV_COLOR_TERMINAL
-  allow_color = true;
+  bool color_is_possible =
+#if SPIRV_COLOR_TERMINAL
+      true;
+#else
+      false;
 #endif
+  bool force_color = false;
+  bool force_no_color = false;
+
   bool allow_indent = true;
   bool show_byte_offsets = false;
   bool no_header = false;
@@ -90,7 +97,11 @@ int main(int argc, char** argv) {
         case '-': {
           // Long options
           if (0 == strcmp(argv[argi], "--no-color")) {
-            allow_color = false;
+            force_no_color = true;
+            force_color = false;
+          } else if (0 == strcmp(argv[argi], "--color")) {
+            force_no_color = false;
+            force_color = true;
           } else if (0 == strcmp(argv[argi], "--no-indent")) {
             allow_indent = false;
           } else if (0 == strcmp(argv[argi], "--offsets")) {
@@ -148,12 +159,15 @@ int main(int argc, char** argv) {
   if (!outFile || (0 == strcmp("-", outFile))) {
     // Print to standard output.
     options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
-    bool output_is_tty = true;
+
+    if (color_is_possible && !force_no_color) {
+      bool output_is_tty = true;
 #if defined(_POSIX_VERSION)
-    output_is_tty = isatty(fileno(stdout));
+      output_is_tty = isatty(fileno(stdout));
 #endif
-    if (allow_color && output_is_tty) {
-      options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
+      if (output_is_tty || force_color) {
+        options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
+      }
     }
   }
 
