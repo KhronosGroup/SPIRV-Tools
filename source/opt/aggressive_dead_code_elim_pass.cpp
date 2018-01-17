@@ -263,8 +263,8 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
                                           this](ir::Instruction* user) {
     SpvOp op = user->opcode();
     if (op == SpvOpBranchConditional || op == SpvOpSwitch) {
-      // A conditional branch can only be a continue if it does not have a merge
-      // instruction or its merge block is not the continue block.
+      // A conditional branch or switch can only be a continue if it does not
+      // have a merge instruction or its merge block is not the continue block.
       ir::Instruction* hdrMerge = branch2merge_[user];
       if (hdrMerge != nullptr && hdrMerge->opcode() == SpvOpSelectionMerge) {
         uint32_t hdrMergeId =

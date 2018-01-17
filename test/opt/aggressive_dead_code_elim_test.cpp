@@ -1484,8 +1484,6 @@ OpFunctionEnd
       predefs_before + func_before, predefs_after + func_after, true, true);
 }
 
-// This test fails. OpSwitch is not handled by ADCE.
-// (https://github.com/KhronosGroup/SPIRV-Tools/issues/1021).
 TEST_F(AggressiveDCETest, EliminateDeadSwitch) {
   // #version 450
   //
