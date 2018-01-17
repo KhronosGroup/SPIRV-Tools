@@ -139,6 +139,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
     : context_(ctx),
       options_(opt),
       instruction_counter_(0),
+      diag_suffix_generator_(nullptr),
       unresolved_forward_ids_{},
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
@@ -246,10 +247,13 @@ bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
   return IsInstructionInLayoutSection(current_layout_section_, op);
 }
 
-DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
-  return libspirv::DiagnosticStream(
-      {0, 0, static_cast<size_t>(instruction_counter_)}, context_->consumer,
-      error_code);
+SuffixableDiagnosticStream ValidationState_t::diag(
+    spv_result_t error_code) const {
+  return SuffixableDiagnosticStream(
+      libspirv::DiagnosticStream(
+          {0, 0, static_cast<size_t>(instruction_counter_)}, context_->consumer,
+          error_code),
+      diag_suffix_generator_);
 }
 
 deque<Function>& ValidationState_t::functions() { return module_functions_; }
