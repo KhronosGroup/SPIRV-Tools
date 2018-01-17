@@ -241,6 +241,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
       mergeId, [&loopMerge, this](ir::Instruction* user) {
         // A branch to the merge block can only be a break if it is nested in
         // the current loop
+        if (!user->IsBranch()) return;
         ir::Instruction* branchInst = user;
         while (true) {
           ir::BasicBlock* blk = context()->get_instr_block(branchInst);
