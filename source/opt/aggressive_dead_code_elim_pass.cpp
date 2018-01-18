@@ -117,7 +117,7 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
       // If default, assume it stores e.g. frexp, modf, function call
       case SpvOpStore:
       default:
-        if (!IsLive(user)) AddToWorklist(user);
+        AddToWorklist(user);
         break;
     }
   });
@@ -251,12 +251,10 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
           if (hdrMerge == loopMerge) break;
           branchInst = hdrBranch;
         }
-        if (!IsLive(user)) {
-          AddToWorklist(user);
-          // Add branch's merge if there is one
-          ir::Instruction* userMerge = branch2merge_[user];
-          if (userMerge != nullptr) AddToWorklist(userMerge);
-        }
+        AddToWorklist(user);
+        // Add branch's merge if there is one
+        ir::Instruction* userMerge = branch2merge_[user];
+        if (userMerge != nullptr) AddToWorklist(userMerge);
       });
   const uint32_t contId =
       loopMerge->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
@@ -272,7 +270,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
             hdrMerge->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
         if (hdrMergeId == contId) return;
         // Need to mark merge instruction too
-        if (!IsLive(hdrMerge)) AddToWorklist(hdrMerge);
+        AddToWorklist(hdrMerge);
       }
     } else if (op == SpvOpBranch) {
       // An unconditional branch can only be a continue if it is not
@@ -288,7 +286,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
     } else {
       return;
     }
-    if (!IsLive(user)) AddToWorklist(user);
+    AddToWorklist(user);
   });
 }
 
@@ -392,7 +390,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       // as part of live code discovery and can create false live code,
       // for example, the branch to a header of a loop.
       if (inInst->opcode() == SpvOpLabel && liveInst->IsBranch()) return;
-      if (!IsLive(inInst)) AddToWorklist(inInst);
+      AddToWorklist(inInst);
     });
     if (liveInst->type_id() != 0) {
       AddToWorklist(get_def_use_mgr()->GetDef(liveInst->type_id()));
@@ -403,7 +401,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     // worklist.
     ir::BasicBlock* blk = context()->get_instr_block(liveInst);
     ir::Instruction* branchInst = block2headerBranch_[blk];
-    if (branchInst != nullptr && !IsLive(branchInst)) {
+    if (branchInst != nullptr) {
       AddToWorklist(branchInst);
       ir::Instruction* mergeInst = branch2merge_[branchInst];
       AddToWorklist(mergeInst);
