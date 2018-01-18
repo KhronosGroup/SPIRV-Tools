@@ -270,9 +270,16 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
+  // First set up a hook to print the at-fault instruction right after
+  // the error message.
+  vstate->SetDiagnosticSuffixGenerator([vstate]() {
+    return std::string("\n") +
+           vstate->Disassemble(vstate->ordered_instructions().back());
+  });
   if (auto error = spvBinaryParse(&context, vstate, words, num_words, setHeader,
                                   ProcessInstruction, pDiagnostic))
     return error;
+  vstate->SetDiagnosticSuffixGenerator(nullptr);
 
   if (vstate->in_function_body())
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT)

@@ -119,7 +119,8 @@ TEST_F(ValidateSSA, DominateUsageWithinBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("ID .\\[bad\\] has not been defined"));
+              MatchesRegex("ID .\\[bad\\] has not been defined\n"
+                           "%8 = OpIAdd %uint %uint_1 %bad ; 0x0000008c"));
 }
 
 TEST_F(ValidateSSA, DominateUsageSameInstructionBad) {
@@ -141,7 +142,8 @@ TEST_F(ValidateSSA, DominateUsageSameInstructionBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("ID .\\[sum\\] has not been defined"));
+              MatchesRegex("ID .\\[sum\\] has not been defined\n"
+                           "%sum = OpIAdd %uint %uint_1 %sum ; 0x0000008c"));
 }
 
 TEST_F(ValidateSSA, ForwardNameGood) {
@@ -1185,7 +1187,8 @@ TEST_F(ValidateSSA,
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("ID .\\[inew\\] has not been defined"));
+              MatchesRegex("ID .\\[inew\\] has not been defined\n"
+                           "%19 = OpIAdd %uint %inew %uint_1 ; 0x0000013c"));
 }
 
 TEST_F(ValidateSSA, PhiUseMayComeFromNonDominatingBlockGood) {
