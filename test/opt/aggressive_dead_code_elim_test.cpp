@@ -5178,6 +5178,51 @@ OpFunctionEnd
 }
 #endif  // SPIRV_EFFCEE
 
+// Test for #1214
+TEST_F(AggressiveDCETest, LoopHeaderIsAlsoAnotherLoopMerge) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func" %2
+OpExecutionMode %1 OriginUpperLeft
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%uint = OpTypeInt 32 0
+%_ptr_Output_uint = OpTypePointer Output %uint
+%2 = OpVariable %_ptr_Output_uint Output
+%uint_0 = OpConstant %uint 0
+%9 = OpTypeFunction %void
+%1 = OpFunction %void None %9
+%10 = OpLabel
+OpBranch %11
+%11 = OpLabel
+OpLoopMerge %12 %13 None
+OpBranchConditional %true %14 %13
+%14 = OpLabel
+OpStore %2 %uint_0
+OpLoopMerge %15 %16 None
+OpBranchConditional %true %15 %16
+%16 = OpLabel
+OpBranch %14
+%15 = OpLabel
+OpBranchConditional %true %12 %13
+%13 = OpLabel
+OpBranch %11
+%12 = OpLabel
+%17 = OpPhi %uint %uint_0 %15 %uint_0 %18
+OpStore %2 %17
+OpLoopMerge %19 %18 None
+OpBranchConditional %true %19 %18
+%18 = OpLabel
+OpBranch %12
+%19 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(text, text, true, true);
+}
+
 TEST_F(AggressiveDCETest, BreaksDontVisitPhis) {
   const std::string text = R"(
 OpCapability Shader
