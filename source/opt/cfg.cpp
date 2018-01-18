@@ -37,6 +37,9 @@ CFG::CFG(ir::Module* module)
     for (auto& blk : fn) {
       uint32_t blkId = blk.id();
       id2block_[blkId] = &blk;
+      // Force the creation of an entry, not all basic block have predecessors
+      // (such as the entry block and some unreachables)
+      label2preds_[blkId];
       blk.ForEachSuccessorLabel([&blkId, this](uint32_t sbid) {
         label2preds_[sbid].push_back(blkId);
       });
