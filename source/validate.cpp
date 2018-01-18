@@ -366,7 +366,7 @@ spv_result_t spvValidateBinary(const spv_const_context context,
   spv_validator_options default_options = spvValidatorOptionsCreate();
 
   // Create the ValidationState using the context and default options.
-  ValidationState_t vstate(&hijack_context, default_options);
+  ValidationState_t vstate(&hijack_context, default_options, words, num_words);
 
   spv_result_t result = ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, &vstate);
@@ -386,7 +386,8 @@ spv_result_t spvValidateWithOptions(const spv_const_context context,
   }
 
   // Create the ValidationState using the context.
-  ValidationState_t vstate(&hijack_context, options);
+  ValidationState_t vstate(&hijack_context, options, binary->code,
+                           binary->wordCount);
 
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, binary->code, binary->wordCount, pDiagnostic, &vstate);
@@ -404,7 +405,8 @@ spv_result_t ValidateBinaryAndKeepValidationState(
     libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
   }
 
-  vstate->reset(new ValidationState_t(&hijack_context, options));
+  vstate->reset(
+      new ValidationState_t(&hijack_context, options, words, num_words));
 
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, vstate->get());
