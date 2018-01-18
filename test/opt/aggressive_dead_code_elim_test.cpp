@@ -5176,6 +5176,7 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
 }
+#endif  // SPIRV_EFFCEE
 
 TEST_F(AggressiveDCETest, BreaksDontVisitPhis) {
   const std::string text = R"(
@@ -5219,7 +5220,84 @@ OpFunctionEnd
             std::get<1>(SinglePassRunAndDisassemble<opt::AggressiveDCEPass>(
                 text, false, true)));
 }
-#endif  // SPIRV_EFFCEE
+
+// Test for #1212
+TEST_F(AggressiveDCETest, ConstStoreInnerLoop) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "main" %2
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%_ptr_Output_float = OpTypePointer Output %float
+%2 = OpVariable %_ptr_Output_float Output
+%float_3 = OpConstant %float 3
+%1 = OpFunction %void None %4
+%13 = OpLabel
+OpBranch %14
+%14 = OpLabel
+OpLoopMerge %15 %16 None
+OpBranchConditional %true %17 %15
+%17 = OpLabel
+OpStore %2 %float_3
+OpLoopMerge %18 %17 None
+OpBranchConditional %true %18 %17
+%18 = OpLabel
+OpBranch %15
+%16 = OpLabel
+OpBranch %14
+%15 = OpLabel
+OpBranch %20
+%20 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(text, text, true, true);
+}
+
+// Test for #1212
+TEST_F(AggressiveDCETest, InnerLoopCopy) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "main" %2 %3
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%_ptr_Output_float = OpTypePointer Output %float
+%_ptr_Input_float = OpTypePointer Input %float
+%2 = OpVariable %_ptr_Output_float Output
+%3 = OpVariable %_ptr_Input_float Input
+%1 = OpFunction %void None %5
+%14 = OpLabel
+OpBranch %15
+%15 = OpLabel
+OpLoopMerge %16 %17 None
+OpBranchConditional %true %18 %16
+%18 = OpLabel
+%19 = OpLoad %float %3
+OpStore %2 %19
+OpLoopMerge %20 %18 None
+OpBranchConditional %true %20 %18
+%20 = OpLabel
+OpBranch %16
+%17 = OpLabel
+OpBranch %15
+%16 = OpLabel
+OpBranch %22
+%22 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(text, text, true, true);
+}
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //

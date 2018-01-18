@@ -72,8 +72,7 @@ class AggressiveDCEPass : public MemPass {
 
   // Add |inst| to worklist_ and live_insts_.
   void AddToWorklist(ir::Instruction* inst) {
-    live_insts_.insert(inst);
-    worklist_.push(inst);
+    if (live_insts_.insert(inst).second) worklist_.push(inst);
   }
 
   // Add all store instruction which use |ptrId|, directly or indirectly,
