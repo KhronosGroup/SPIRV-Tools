@@ -261,3 +261,8 @@ add_spvtools_unittest(TARGET ccp
   SRCS ccp_test.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET ir_builder
+  SRCS ir_builder.cpp
+  LIBS SPIRV-Tools-opt
+)
