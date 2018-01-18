@@ -158,6 +158,9 @@ class AggressiveDCEPass : public MemPass {
   // of an enclosing construct's header, if one exists.
   std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerBranch_;
 
+  // Maps basic block to their index in the structured order traversal.
+  std::unordered_map<ir::BasicBlock*, uint32_t> structured_order_index_;
+
   // Map from branch to its associated merge instruction, if any
   std::unordered_map<ir::Instruction*, ir::Instruction*> branch2merge_;
 

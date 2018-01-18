@@ -190,10 +190,14 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
     std::list<ir::BasicBlock*>& structuredOrder) {
   block2headerBranch_.clear();
   branch2merge_.clear();
+  structured_order_index_.clear();
   std::stack<ir::Instruction*> currentHeaderBranch;
   currentHeaderBranch.push(nullptr);
   uint32_t currentMergeBlockId = 0;
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
+  uint32_t index = 0;
+  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();
+       ++bi, ++index) {
+    structured_order_index_[*bi] = index;
     // If this block is the merge block of the current control construct,
     // we are leaving the current construct so we must update state
     if ((*bi)->id() == currentMergeBlockId) {
@@ -235,26 +239,24 @@ void AggressiveDCEPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
 
 void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
     ir::Instruction* loopMerge) {
+  ir::BasicBlock* header = context()->get_instr_block(loopMerge);
+  uint32_t headerIndex = structured_order_index_[header];
   const uint32_t mergeId =
       loopMerge->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
+  ir::BasicBlock* merge = context()->get_instr_block(mergeId);
+  uint32_t mergeIndex = structured_order_index_[merge];
   get_def_use_mgr()->ForEachUser(
-      mergeId, [&loopMerge, this](ir::Instruction* user) {
-        // A branch to the merge block can only be a break if it is nested in
-        // the current loop
+      mergeId, [headerIndex, mergeIndex, this](ir::Instruction* user) {
         if (!user->IsBranch()) return;
-        ir::Instruction* branchInst = user;
-        while (true) {
-          ir::BasicBlock* blk = context()->get_instr_block(branchInst);
-          ir::Instruction* hdrBranch = block2headerBranch_[blk];
-          if (hdrBranch == nullptr) return;
-          ir::Instruction* hdrMerge = branch2merge_[hdrBranch];
-          if (hdrMerge == loopMerge) break;
-          branchInst = hdrBranch;
+        ir::BasicBlock* block = context()->get_instr_block(user);
+        uint32_t index = structured_order_index_[block];
+        if (headerIndex < index && index < mergeIndex) {
+          // This is a break from the loop.
+          AddToWorklist(user);
+          // Add branch's merge if there is one.
+          ir::Instruction* userMerge = branch2merge_[user];
+          if (userMerge != nullptr) AddToWorklist(userMerge);
         }
-        AddToWorklist(user);
-        // Add branch's merge if there is one
-        ir::Instruction* userMerge = branch2merge_[user];
-        if (userMerge != nullptr) AddToWorklist(userMerge);
       });
   const uint32_t contId =
       loopMerge->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
