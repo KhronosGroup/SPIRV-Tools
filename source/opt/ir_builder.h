@@ -108,9 +108,10 @@ class InstructionBuilder {
                           const std::vector<uint32_t>& incomings) {
     assert(incomings.size() % 2 == 0 && "A sequence of pairs is expected");
     std::vector<ir::Operand> phi_ops;
-    for (size_t i = 0; i < incomings.size(); i += 2) {
+    for (size_t i = 0; i < incomings.size(); i++) {
       phi_ops.push_back({SPV_OPERAND_TYPE_ID, {incomings[i]}});
-      phi_ops.push_back({SPV_OPERAND_TYPE_ID, {incomings[i + 1]}});
+      i++;
+      phi_ops.push_back({SPV_OPERAND_TYPE_ID, {incomings[i]}});
     }
     std::unique_ptr<ir::Instruction> phi_inst(new ir::Instruction(
         GetContext(), SpvOpPhi, type, GetContext()->TakeNextId(), phi_ops));
