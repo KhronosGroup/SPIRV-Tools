@@ -5176,6 +5176,49 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
 }
+
+TEST_F(AggressiveDCETest, BreaksDontVisitPhis) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func" %var
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%int = OpTypeInt 32 0
+%int_ptr_Output = OpTypePointer Output %int
+%var = OpVariable %int_ptr_Output Output
+%int0 = OpConstant %int 0
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpBranch %outer_header
+%outer_header = OpLabel
+OpLoopMerge %outer_merge %outer_continue None
+OpBranchConditional %true %inner_header %outer_continue
+%inner_header = OpLabel
+%phi = OpPhi %int %int0 %outer_header %int0 %inner_continue
+OpStore %var %phi
+OpLoopMerge %inner_merge %inner_continue None
+OpBranchConditional %true %inner_merge %inner_continue
+%inner_continue = OpLabel
+OpBranch %inner_header
+%inner_merge = OpLabel
+OpBranch %outer_continue
+%outer_continue = OpLabel
+%p = OpPhi %int %int0 %outer_header %int0 %inner_merge
+OpStore %var %p
+OpBranch %outer_header
+%outer_merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange,
+            std::get<1>(SinglePassRunAndDisassemble<opt::AggressiveDCEPass>(
+                text, false, true)));
+}
 #endif  // SPIRV_EFFCEE
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
