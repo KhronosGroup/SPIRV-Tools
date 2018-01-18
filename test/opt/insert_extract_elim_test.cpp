@@ -863,12 +863,12 @@ TEST_F(InsertExtractElimTest, InsertAfterInsertElim) {
   // reference each other.
   //
   // #version 450
-  // 
+  //
   // layout (location=0) in float In0;
   // layout (location=1) in float In1;
   // layout (location=2) in vec2 In2;
   // layout (location=0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     vec2 v = In2;
@@ -1009,17 +1009,17 @@ TEST_F(InsertExtractElimTest, DeadInsertInChainWithPhi) {
   // reference each other.
   //
   // #version 450
-  // 
+  //
   // layout (location=0) in vec4 In0;
   // layout (location=1) in float In1;
   // layout (location=2) in float In2;
   // layout (location=0) out vec4 OutColor;
-  // 
+  //
   // layout(std140, binding = 0 ) uniform _Globals_
   // {
   //     bool g_b;
   // };
-  // 
+  //
   // void main()
   // {
   //     vec4 v = In0;
@@ -1032,7 +1032,7 @@ TEST_F(InsertExtractElimTest, DeadInsertInChainWithPhi) {
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %In0 %In1 %In2 %OutColor 
+OpEntryPoint Fragment %main "main" %In0 %In1 %In2 %OutColor
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 450
 OpName %main "main"

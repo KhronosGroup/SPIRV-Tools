@@ -26,8 +26,8 @@
 #include "basic_block.h"
 #include "def_use_manager.h"
 #include "ir_context.h"
-#include "module.h"
 #include "mem_pass.h"
+#include "module.h"
 
 namespace spvtools {
 namespace opt {
@@ -71,14 +71,14 @@ class InsertExtractElimPass : public MemPass {
   // |extOffset|. Chains are composed solely of Inserts and Phis. Mark all
   // inserts in chain if |extIndices| is nullptr.
   void MarkInsertChain(ir::Instruction* ins, std::vector<uint32_t>* extIndices,
-    uint32_t extOffset);
+                       uint32_t extOffset);
 
   // Perform EliminateDeadInsertsOnePass(|func|) until no modification is
   // made. Return true if modified.
   bool EliminateDeadInserts(ir::Function* func);
 
   // DCE all dead inserts in |func|. An insert is dead if the value it inserts
-  // is never used. Replace any reference to the insert with its original 
+  // is never used. Replace any reference to the insert with its original
   // composite. Return true if modified.
   bool EliminateDeadInsertsOnePass(ir::Function* func);
 

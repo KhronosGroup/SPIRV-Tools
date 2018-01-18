@@ -103,10 +103,9 @@ uint32_t InsertExtractElimPass::ComponentNum(uint32_t typeId) {
     } break;
     case SpvOpTypeArray: {
       uint32_t lenId =
-        typeInst->GetSingleWordInOperand(kTypeArrayLengthIdInIdx);
+          typeInst->GetSingleWordInOperand(kTypeArrayLengthIdInIdx);
       ir::Instruction* lenInst = get_def_use_mgr()->GetDef(lenId);
-      if (lenInst->opcode() != SpvOpConstant)
-        return 0;
+      if (lenInst->opcode() != SpvOpConstant) return 0;
       uint32_t lenTypeId = lenInst->type_id();
       ir::Instruction* lenTypeInst = get_def_use_mgr()->GetDef(lenTypeId);
       // TODO(greg-lunarg): Support non-32-bit array length
@@ -117,14 +116,13 @@ uint32_t InsertExtractElimPass::ComponentNum(uint32_t typeId) {
     case SpvOpTypeStruct: {
       return typeInst->NumInOperands();
     } break;
-    default: {
-      return 0;
-    } break;
+    default: { return 0; } break;
   }
 }
 
 void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insert,
-  std::vector<uint32_t>* pExtIndices, uint32_t extOffset) {
+                                            std::vector<uint32_t>* pExtIndices,
+                                            uint32_t extOffset) {
   // If extract indices are empty, mark all subcomponents if type
   // is constant length.
   if (pExtIndices == nullptr) {
@@ -154,7 +152,7 @@ void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insert,
       MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0);
     }
     // If extract indices match insert, we are done. Mark insert and
-    // inserted object. 
+    // inserted object.
     else if (ExtInsMatch(*pExtIndices, insInst, extOffset)) {
       liveInserts_.insert(insInst->result_id());
       uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
@@ -170,7 +168,7 @@ void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insert,
       if (pExtIndices->size() - extOffset > numInsertIndices) {
         uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
         MarkInsertChain(get_def_use_mgr()->GetDef(objId), pExtIndices,
-          extOffset + numInsertIndices);
+                        extOffset + numInsertIndices);
         break;
       }
       // If fewer extract indices than insert, also mark inserted object and
@@ -182,16 +180,14 @@ void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insert,
     }
     // Get next insert in chain
     const uint32_t compId =
-      insInst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
+        insInst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
     insInst = get_def_use_mgr()->GetDef(compId);
   }
   // If insert chain ended with phi, do recursive call on each operand
-  if (insInst->opcode() != SpvOpPhi)
-    return;
+  if (insInst->opcode() != SpvOpPhi) return;
   // If phi is already live, we have processed already. Return to
   // avoid infinite loop
-  if (liveInserts_.find(insInst->result_id()) != liveInserts_.end())
-    return;
+  if (liveInserts_.find(insInst->result_id()) != liveInserts_.end()) return;
   // Insert phi into live set to allow infinite loop check
   liveInserts_.insert(insInst->result_id());
   uint32_t icnt = 0;
@@ -240,9 +236,8 @@ bool InsertExtractElimPass::EliminateDeadInsertsOnePass(ir::Function* func) {
             // Capture extract indices
             std::vector<uint32_t> extIndices;
             uint32_t icnt = 0;
-            user->ForEachInOperand([&icnt, &extIndices] (const uint32_t* idp) {
-              if (icnt > 0)
-                extIndices.push_back(*idp);
+            user->ForEachInOperand([&icnt, &extIndices](const uint32_t* idp) {
+              if (icnt > 0) extIndices.push_back(*idp);
               ++icnt;
             });
             // Mark all inserts in chain that intersect with extract
@@ -260,11 +255,9 @@ bool InsertExtractElimPass::EliminateDeadInsertsOnePass(ir::Function* func) {
   std::vector<ir::Instruction*> dead_instructions;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
-      if (ii->opcode() != SpvOpCompositeInsert)
-        continue;
+      if (ii->opcode() != SpvOpCompositeInsert) continue;
       const uint32_t id = ii->result_id();
-      if (liveInserts_.find(id) != liveInserts_.end())
-        continue;
+      if (liveInserts_.find(id) != liveInserts_.end()) continue;
       const uint32_t replId =
           ii->GetSingleWordInOperand(kInsertCompositeIdInIdx);
       (void)context()->ReplaceAllUsesWith(id, replId);
@@ -278,7 +271,7 @@ bool InsertExtractElimPass::EliminateDeadInsertsOnePass(ir::Function* func) {
     dead_instructions.pop_back();
     DCEInst(inst, [&dead_instructions](ir::Instruction* other_inst) {
       auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
-        other_inst);
+                         other_inst);
       if (i != dead_instructions.end()) {
         dead_instructions.erase(i);
       }
