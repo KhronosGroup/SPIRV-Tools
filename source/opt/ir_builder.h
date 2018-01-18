@@ -22,34 +22,41 @@
 namespace spvtools {
 namespace opt {
 
-// In SPIR-V, ids are encoded as uint16_t, this id is guarantied to be always
+// In SPIR-V, ids are encoded as uint16_t, this id is guaranteed to be always
 // invalid.
-constexpr uint32_t kInvalidId = (uint32_t)-1;
+constexpr uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
 
 // Helper class to abstract instruction construction and insertion.
 // |AnalysisToPreserve| asks the InstructionBuilder to preserve requested
 // analysis.
 // Supported analysis:
 //   - Def-use analysis
+//   - Instruction to block analysis
 template <ir::IRContext::Analysis AnalysisToPreserve =
               ir::IRContext::kAnalysisNone>
 class InstructionBuilder {
-  static_assert(!(AnalysisToPreserve & ~ir::IRContext::kAnalysisDefUse),
+  static_assert(!(AnalysisToPreserve &
+                  ~(ir::IRContext::kAnalysisDefUse |
+                    ir::IRContext::kAnalysisInstrToBlockMapping)),
                 "Only Def-use analysis update is supported");
 
  public:
   using InsertionPointTy = spvtools::ir::BasicBlock::iterator;
 
-  InstructionBuilder(ir::IRContext* context, InsertionPointTy insert_before)
-      : context_(context), insert_before_(insert_before) {}
+  InstructionBuilder(ir::IRContext* context, ir::BasicBlock* parent,
+                     InsertionPointTy insert_before)
+      : context_(context), parent_(parent), insert_before_(insert_before) {}
 
   // Creates a new selection merge instruction.
   // The id |merge_id| is the merge basic block id.
-  ir::Instruction* AddSelectionMerge(uint32_t merge_id) {
+  ir::Instruction* AddSelectionMerge(
+      uint32_t merge_id,
+      uint32_t selection_control = SpvSelectionControlMaskNone) {
     std::unique_ptr<ir::Instruction> new_branch_merge(new ir::Instruction(
         GetContext(), SpvOpSelectionMerge, 0, 0,
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {merge_id}},
-         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {0}}}));
+         {spv_operand_type_t::SPV_OPERAND_TYPE_SELECTION_CONTROL,
+          {selection_control}}}));
     return AddInstruction(std::move(new_branch_merge));
   }
 
@@ -65,22 +72,25 @@ class InstructionBuilder {
 
   // Creates a new conditional instruction and the associated selection merge
   // instruction if requested.
-  // The id |cond_id| is the id to the the condition instruction, must be of
+  // The id |cond_id| is the id of the condition instruction, must be of
   // type bool.
-  // The id |true_id| is the basic block id to branch to if the condition is
-  // true.
-  // The id |false_id| is the basic block id to branch to if the condition is
-  // false.
-  // The id |merge_id| is the merge basic block id for the selection merge
-  // instruction. If |merge_id| equals kInvalidId then no selection merge
+  // The id |true_id| is the id of the basic block to branch to if the condition
+  // is true.
+  // The id |false_id| is the id of the basic block to branch to if the
+  // condition is false.
+  // The id |merge_id| is the id of the merge basic block for the selection
+  // merge instruction. If |merge_id| equals kInvalidId then no selection merge
   // instruction will be created.
+  // The value |selection_control| is the selection control flag for the
+  // selection merge instruction.
   // Note that the user must makes sure the final basic block is
   // well formed.
-  ir::Instruction* AddBranchCond(uint32_t cond_id, uint32_t true_id,
-                                 uint32_t false_id,
-                                 uint32_t merge_id = kInvalidId) {
+  ir::Instruction* AddConditionalBranch(
+      uint32_t cond_id, uint32_t true_id, uint32_t false_id,
+      uint32_t merge_id = kInvalidId,
+      uint32_t selection_control = SpvSelectionControlMaskNone) {
     if (merge_id != kInvalidId) {
-      AddSelectionMerge(merge_id);
+      AddSelectionMerge(merge_id, selection_control);
     }
     std::unique_ptr<ir::Instruction> new_branch(new ir::Instruction(
         GetContext(), SpvOpBranchConditional, 0, 0,
@@ -110,6 +120,7 @@ class InstructionBuilder {
   // Inserts the new instruction before the insertion point.
   ir::Instruction* AddInstruction(std::unique_ptr<ir::Instruction>&& insn) {
     ir::Instruction* insn_ptr = &*insert_before_.InsertBefore(std::move(insn));
+    UpdateInstrToBlockMapping(insn_ptr);
     UpdateDefUseMgr(insn_ptr);
     return insn_ptr;
   }
@@ -119,6 +130,11 @@ class InstructionBuilder {
 
   // Returns the context which instructions are constructed for.
   ir::IRContext* GetContext() const { return context_; }
+
+  // Returns the set of preserved analysis.
+  inline static constexpr ir::IRContext::Analysis GetPreservedAnalysis() {
+    return AnalysisToPreserve;
+  }
 
  private:
   // Returns true if the users requested to update |analysis|.
@@ -134,11 +150,19 @@ class InstructionBuilder {
       GetContext()->get_def_use_mgr()->AnalyzeInstDefUse(insn);
   }
 
+  // Updates the instruction to block analysis if the user requested it. If he
+  // did not request an update, this function does nothing.
+  inline void UpdateInstrToBlockMapping(ir::Instruction* insn) {
+    if (IsAnalysisUpdateRequested(ir::IRContext::kAnalysisInstrToBlockMapping))
+      GetContext()->set_instr_block(insn, parent_);
+  }
+
   ir::IRContext* context_;
+  ir::BasicBlock* parent_;
   InsertionPointTy insert_before_;
 };
 
-}  // namespace spvtools
 }  // namespace opt
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_IR_BUILDER_H_

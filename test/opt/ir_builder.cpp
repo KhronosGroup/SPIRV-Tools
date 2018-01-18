@@ -117,16 +117,19 @@ TEST_F(IRBuilderTest, TestInsnAddition) {
 
     ir::BasicBlock* bb = context->cfg()->block(18);
 
-    // Build the def/use manager.
+    // Build managers.
     context->get_def_use_mgr();
+    context->get_instr_block(nullptr);
 
-    opt::InstructionBuilder<> builder(context.get(), bb->begin());
+    opt::InstructionBuilder<> builder(context.get(), bb, bb->begin());
     ir::Instruction* phi1 = builder.AddPhi(7, {9, 14});
     ir::Instruction* phi2 = builder.AddPhi(10, {16, 14});
 
     // Make sure the InstructionBuilder did not update the def/use manager.
     EXPECT_EQ(context->get_def_use_mgr()->GetDef(phi1->result_id()), nullptr);
     EXPECT_EQ(context->get_def_use_mgr()->GetDef(phi2->result_id()), nullptr);
+    EXPECT_EQ(context->get_instr_block(phi1), nullptr);
+    EXPECT_EQ(context->get_instr_block(phi2), nullptr);
 
     Match(text, context.get());
   }
@@ -135,15 +138,22 @@ TEST_F(IRBuilderTest, TestInsnAddition) {
     std::unique_ptr<ir::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
 
+    // Build managers.
+    context->get_def_use_mgr();
+    context->get_instr_block(nullptr);
+
     ir::BasicBlock* bb = context->cfg()->block(18);
-    opt::InstructionBuilder<ir::IRContext::kAnalysisDefUse> builder(
-        context.get(), bb->begin());
+    opt::InstructionBuilder<ir::IRContext::kAnalysisDefUse |
+                            ir::IRContext::kAnalysisInstrToBlockMapping>
+        builder(context.get(), bb, bb->begin());
     ir::Instruction* phi1 = builder.AddPhi(7, {9, 14});
     ir::Instruction* phi2 = builder.AddPhi(10, {16, 14});
 
     // Make sure InstructionBuilder updated the def/use manager
     EXPECT_NE(context->get_def_use_mgr()->GetDef(phi1->result_id()), nullptr);
     EXPECT_NE(context->get_def_use_mgr()->GetDef(phi2->result_id()), nullptr);
+    EXPECT_NE(context->get_instr_block(phi1), nullptr);
+    EXPECT_NE(context->get_instr_block(phi2), nullptr);
 
     Match(text, context.get());
   }
@@ -198,7 +208,8 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
             context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
     ir::BasicBlock& bb_true = *fn.begin();
     {
-      opt::InstructionBuilder<> builder(context.get(), bb_true.begin());
+      opt::InstructionBuilder<> builder(context.get(), &bb_true,
+                                        bb_true.begin());
       builder.AddBranch(bb_merge.id());
     }
 
@@ -207,10 +218,10 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
             context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
     ir::BasicBlock& bb_cond = *fn.begin();
 
-    opt::InstructionBuilder<> builder(context.get(), bb_cond.begin());
+    opt::InstructionBuilder<> builder(context.get(), &bb_cond, bb_cond.begin());
     // This also test consecutive instruction insertion: merge selection +
     // branch.
-    builder.AddBranchCond(9, bb_true.id(), bb_merge.id(), bb_merge.id());
+    builder.AddConditionalBranch(9, bb_true.id(), bb_merge.id(), bb_merge.id());
 
     Match(text, context.get());
   }
