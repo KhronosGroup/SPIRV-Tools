@@ -27,7 +27,7 @@ namespace opt {
 constexpr uint32_t kInvalidId = (uint32_t)-1;
 
 // Helper class to abstract instruction construction and insertion.
-// |AnalysisToPreserve| ask the InstructionBuilder to preserve requested
+// |AnalysisToPreserve| asks the InstructionBuilder to preserve requested
 // analysis.
 // Supported analysis:
 //   - Def-use analysis
@@ -54,7 +54,7 @@ class InstructionBuilder {
   }
 
   // Creates a new branch instruction to |label_id|.
-  // Note that the user is responsible of making sure the final basic block is
+  // Note that the user must makes sure the final basic block is
   // well formed.
   ir::Instruction* AddBranch(uint32_t label_id) {
     std::unique_ptr<ir::Instruction> new_branch(new ir::Instruction(
@@ -63,15 +63,18 @@ class InstructionBuilder {
     return AddInstruction(std::move(new_branch));
   }
 
-  // Creates a new conditional instruction.
-  // The id |cond_id| is the condition, must be of type bool.
-  // The id |true_id| is the basic block id to branch to is the condition is
+  // Creates a new conditional instruction and the associated selection merge
+  // instruction if requested.
+  // The id |cond_id| is the id to the the condition instruction, must be of
+  // type bool.
+  // The id |true_id| is the basic block id to branch to if the condition is
   // true.
-  // The id |false_id| is the basic block id to branch to is the condition is
+  // The id |false_id| is the basic block id to branch to if the condition is
   // false.
-  // The id |merge_id| is the merge basic block id (for structured CFG), if
-  // |merge_id| equals kInvalidId then no
-  // Note that the user is responsible of making sure the final basic block is
+  // The id |merge_id| is the merge basic block id for the selection merge
+  // instruction. If |merge_id| equals kInvalidId then no selection merge
+  // instruction will be created.
+  // Note that the user must makes sure the final basic block is
   // well formed.
   ir::Instruction* AddBranchCond(uint32_t cond_id, uint32_t true_id,
                                  uint32_t false_id,
@@ -89,8 +92,8 @@ class InstructionBuilder {
 
   // Creates a phi instruction.
   // The id |type| must be the id of the phi instruction's type.
-  // The vector |incomings| must be a sequence of pairs of <def id, parent
-  // id>.
+  // The vector |incomings| must be a sequence of pairs of <definition id,
+  // parent id>.
   ir::Instruction* AddPhi(uint32_t type,
                           const std::vector<uint32_t>& incomings) {
     assert(incomings.size() % 2 == 0 && "A sequence of pairs is expected");
@@ -118,7 +121,7 @@ class InstructionBuilder {
   ir::IRContext* GetContext() const { return context_; }
 
  private:
-  // Returns true if the users requested to update an analysis.
+  // Returns true if the users requested to update |analysis|.
   inline static constexpr bool IsAnalysisUpdateRequested(
       ir::IRContext::Analysis analysis) {
     return AnalysisToPreserve & analysis;
