@@ -452,6 +452,9 @@ class ValidationState_t {
   bool GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
                           uint32_t* storage_class) const;
 
+  // Returns the disassembly string for the given instruction.
+  std::string Disassemble(const Instruction&);
+
  private:
   ValidationState_t(const ValidationState_t&);
 

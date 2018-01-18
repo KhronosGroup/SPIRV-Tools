@@ -16,6 +16,7 @@
 
 #include <cassert>
 
+#include "disassemble.h"
 #include "opcode.h"
 #include "val/basic_block.h"
 #include "val/construct.h"
@@ -774,6 +775,17 @@ bool ValidationState_t::GetConstantValUint64(uint32_t id, uint64_t* val) const {
     *val |= uint64_t(inst->word(4)) << 32;
   }
   return true;
+}
+
+std::string ValidationState_t::Disassemble(const Instruction& inst) {
+  const spv_parsed_instruction_t& c_inst(inst.c_inst());
+  uint32_t disassembly_options = SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                                 SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES |
+                                 SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET;
+
+  return spvtools::spvInstructionBinaryToText(
+      context()->target_env, c_inst.words, c_inst.num_words, words_, num_words_,
+      disassembly_options);
 }
 
 }  // namespace libspirv
