@@ -15,5 +15,13 @@
 #include "if_conversion.h"
 
 namespace spvtools {
-namespace opt {}  // namespace opt
+namespace opt {
+
+Pass::Status IfConversion::Process(ir::IRContext* context) {
+  InitializeProcessing(context);
+
+  return Status::SuccessWithoutChange;
+}
+
+}  // namespace opt
 }  // namespace spvtools

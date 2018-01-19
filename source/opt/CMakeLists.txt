@@ -36,6 +36,7 @@ add_library(SPIRV-Tools-opt
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
   function.h
+  if_conversion.h
   inline_exhaustive_pass.h
   inline_opaque_pass.h
   inline_pass.h
@@ -96,6 +97,7 @@ add_library(SPIRV-Tools-opt
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
   function.cpp
+  if_conversion.cpp
   inline_exhaustive_pass.cpp
   inline_opaque_pass.cpp
   inline_pass.cpp
