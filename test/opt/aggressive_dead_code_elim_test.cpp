@@ -5178,6 +5178,127 @@ OpFunctionEnd
 }
 #endif  // SPIRV_EFFCEE
 
+TEST_F(AggressiveDCETest, BreaksDontVisitPhis) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func" %var
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%int = OpTypeInt 32 0
+%int_ptr_Output = OpTypePointer Output %int
+%var = OpVariable %int_ptr_Output Output
+%int0 = OpConstant %int 0
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpBranch %outer_header
+%outer_header = OpLabel
+OpLoopMerge %outer_merge %outer_continue None
+OpBranchConditional %true %inner_header %outer_continue
+%inner_header = OpLabel
+%phi = OpPhi %int %int0 %outer_header %int0 %inner_continue
+OpStore %var %phi
+OpLoopMerge %inner_merge %inner_continue None
+OpBranchConditional %true %inner_merge %inner_continue
+%inner_continue = OpLabel
+OpBranch %inner_header
+%inner_merge = OpLabel
+OpBranch %outer_continue
+%outer_continue = OpLabel
+%p = OpPhi %int %int0 %outer_header %int0 %inner_merge
+OpStore %var %p
+OpBranch %outer_header
+%outer_merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange,
+            std::get<1>(SinglePassRunAndDisassemble<opt::AggressiveDCEPass>(
+                text, false, true)));
+}
+
+// Test for #1212
+TEST_F(AggressiveDCETest, ConstStoreInnerLoop) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "main" %2
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%_ptr_Output_float = OpTypePointer Output %float
+%2 = OpVariable %_ptr_Output_float Output
+%float_3 = OpConstant %float 3
+%1 = OpFunction %void None %4
+%13 = OpLabel
+OpBranch %14
+%14 = OpLabel
+OpLoopMerge %15 %16 None
+OpBranchConditional %true %17 %15
+%17 = OpLabel
+OpStore %2 %float_3
+OpLoopMerge %18 %17 None
+OpBranchConditional %true %18 %17
+%18 = OpLabel
+OpBranch %15
+%16 = OpLabel
+OpBranch %14
+%15 = OpLabel
+OpBranch %20
+%20 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(text, text, true, true);
+}
+
+// Test for #1212
+TEST_F(AggressiveDCETest, InnerLoopCopy) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "main" %2 %3
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%_ptr_Output_float = OpTypePointer Output %float
+%_ptr_Input_float = OpTypePointer Input %float
+%2 = OpVariable %_ptr_Output_float Output
+%3 = OpVariable %_ptr_Input_float Input
+%1 = OpFunction %void None %5
+%14 = OpLabel
+OpBranch %15
+%15 = OpLabel
+OpLoopMerge %16 %17 None
+OpBranchConditional %true %18 %16
+%18 = OpLabel
+%19 = OpLoad %float %3
+OpStore %2 %19
+OpLoopMerge %20 %18 None
+OpBranchConditional %true %20 %18
+%20 = OpLabel
+OpBranch %16
+%17 = OpLabel
+OpBranch %15
+%16 = OpLabel
+OpBranch %22
+%22 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(text, text, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required

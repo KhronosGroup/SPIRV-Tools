@@ -71,6 +71,7 @@ add_library(SPIRV-Tools-opt
   types.h
   unify_const_pass.h
   value_number_table.h
+  workaround1209.h
 
   aggressive_dead_code_elim_pass.cpp
   basic_block.cpp
@@ -127,6 +128,7 @@ add_library(SPIRV-Tools-opt
   types.cpp
   unify_const_pass.cpp
   value_number_table.cpp
+  workaround1209.cpp
 )
 
 spvtools_default_compile_options(SPIRV-Tools-opt)

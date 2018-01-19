@@ -349,4 +349,9 @@ Optimizer::PassToken CreateCCPPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::CCPPass>());
 }
 
+Optimizer::PassToken CreateWorkaround1209Pass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::Workaround1209>());
+}
+
 }  // namespace spvtools

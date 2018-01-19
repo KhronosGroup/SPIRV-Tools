@@ -48,5 +48,6 @@
 #include "strength_reduction_pass.h"
 #include "strip_debug_info_pass.h"
 #include "unify_const_pass.h"
+#include "workaround1209.h"
 
 #endif  // LIBSPIRV_OPT_PASSES_H_

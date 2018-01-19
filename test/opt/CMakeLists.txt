@@ -262,6 +262,11 @@ add_spvtools_unittest(TARGET ccp
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_workaround1209
+  SRCS workaround1209_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET ir_builder
   SRCS ir_builder.cpp
   LIBS SPIRV-Tools-opt
