@@ -24,12 +24,12 @@ using namespace spvtools;
 using IfConversionTest = PassTest<::testing::Test>;
 
 #ifdef SPIRV_EFFCEE
-TEST_F(IfConversionTest, TestSimplePhi) {
+TEST_F(IfConversionTest, TestSimpleIfThenElse) {
   const std::string text = R"(
 ; CHECK: OpSelectionMerge [[merge:%\w+]]
 ; CHECK: [[merge]] = OpLabel
 ; CHECK-NOT: OpPhi
-; CHECK: [[sel:%\w+]] = OpSelect %int %true %uint_0 %uint_1
+; CHECK: [[sel:%\w+]] = OpSelect %uint %true %uint_0 %uint_1
 ; CHECK OpStore {{%\w+}} [[sel]]
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -54,6 +54,78 @@ OpBranch %14
 OpBranch %14
 %14 = OpLabel
 %18 = OpPhi %uint %uint_0 %15 %uint_1 %16
+OpStore %2 %18
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::IfConversion>(text, true);
+}
+
+TEST_F(IfConversionTest, TestSimpleHalfIfTrue) {
+  const std::string text = R"(
+; CHECK: OpSelectionMerge [[merge:%\w+]]
+; CHECK: [[merge]] = OpLabel
+; CHECK-NOT: OpPhi
+; CHECK: [[sel:%\w+]] = OpSelect %uint %true %uint_0 %uint_1
+; CHECK OpStore {{%\w+}} [[sel]]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+%2 = OpVariable %_ptr_Output_uint Output
+%11 = OpTypeFunction %void
+%1 = OpFunction %void None %11
+%12 = OpLabel
+OpSelectionMerge %14 None
+OpBranchConditional %true %15 %14
+%15 = OpLabel
+OpBranch %14
+%14 = OpLabel
+%18 = OpPhi %uint %uint_0 %15 %uint_1 %12
+OpStore %2 %18
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::IfConversion>(text, true);
+}
+
+TEST_F(IfConversionTest, TestSimpleHalfIfFalse) {
+  const std::string text = R"(
+; CHECK: OpSelectionMerge [[merge:%\w+]]
+; CHECK: [[merge]] = OpLabel
+; CHECK-NOT: OpPhi
+; CHECK: [[sel:%\w+]] = OpSelect %uint %true %uint_0 %uint_1
+; CHECK OpStore {{%\w+}} [[sel]]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+%2 = OpVariable %_ptr_Output_uint Output
+%11 = OpTypeFunction %void
+%1 = OpFunction %void None %11
+%12 = OpLabel
+OpSelectionMerge %14 None
+OpBranchConditional %true %14 %15
+%15 = OpLabel
+OpBranch %14
+%14 = OpLabel
+%18 = OpPhi %uint %uint_0 %12 %uint_1 %15
 OpStore %2 %18
 OpReturn
 OpFunctionEnd

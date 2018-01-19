@@ -32,6 +32,14 @@ class IfConversion : public Pass {
            ir::IRContext::kAnalysisInstrToBlockMapping |
            ir::IRContext::kAnalysisCFG;
   }
+
+ private:
+  bool CheckType(uint32_t id);
+  ir::BasicBlock* GetBlock(uint32_t id);
+  ir::BasicBlock* GetIncomingBlock(ir::Instruction* phi, uint32_t predecessor);
+  ir::Instruction* GetIncomingValue(ir::Instruction* phi, uint32_t predecessor);
+  ir::BasicBlock* CommonDominator(ir::BasicBlock* inc0, ir::BasicBlock* inc1,
+                                  const DominatorAnalysis& dominators);
 };
 
 }  //  namespace opt
