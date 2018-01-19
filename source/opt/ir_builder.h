@@ -27,25 +27,32 @@ namespace opt {
 constexpr uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
 
 // Helper class to abstract instruction construction and insertion.
-// |AnalysisToPreserve| asks the InstructionBuilder to preserve requested
-// analysis.
-// Supported analysis:
+// |AnalysesToPreserve| asks the InstructionBuilder to preserve requested
+// analyses.
+// Supported analyses:
 //   - Def-use analysis
 //   - Instruction to block analysis
-template <ir::IRContext::Analysis AnalysisToPreserve =
+template <ir::IRContext::Analysis AnalysesToPreserve =
               ir::IRContext::kAnalysisNone>
 class InstructionBuilder {
-  static_assert(!(AnalysisToPreserve &
+  static_assert(!(AnalysesToPreserve &
                   ~(ir::IRContext::kAnalysisDefUse |
                     ir::IRContext::kAnalysisInstrToBlockMapping)),
-                "Only Def-use analysis update is supported");
+                "There some unsupported analyses");
 
  public:
   using InsertionPointTy = spvtools::ir::BasicBlock::iterator;
 
-  InstructionBuilder(ir::IRContext* context, ir::BasicBlock* parent,
-                     InsertionPointTy insert_before)
-      : context_(context), parent_(parent), insert_before_(insert_before) {}
+  // Creates an InstructionBuilder, all new instructions will be inserted before
+  // the instruction |insert_before|.
+  InstructionBuilder(ir::IRContext* context, ir::Instruction* insert_before)
+      : InstructionBuilder(context, context->get_instr_block(insert_before),
+                           InsertionPointTy(insert_before)) {}
+
+  // Creates an InstructionBuilder, all new instructions will be inserted at the
+  // end of the basic block |parent_block|.
+  InstructionBuilder(ir::IRContext* context, ir::BasicBlock* parent_block)
+      : InstructionBuilder(context, parent_block, parent_block->end()) {}
 
   // Creates a new selection merge instruction.
   // The id |merge_id| is the merge basic block id.
@@ -61,7 +68,7 @@ class InstructionBuilder {
   }
 
   // Creates a new branch instruction to |label_id|.
-  // Note that the user must makes sure the final basic block is
+  // Note that the user must make sure the final basic block is
   // well formed.
   ir::Instruction* AddBranch(uint32_t label_id) {
     std::unique_ptr<ir::Instruction> new_branch(new ir::Instruction(
@@ -83,7 +90,7 @@ class InstructionBuilder {
   // instruction will be created.
   // The value |selection_control| is the selection control flag for the
   // selection merge instruction.
-  // Note that the user must makes sure the final basic block is
+  // Note that the user must make sure the final basic block is
   // well formed.
   ir::Instruction* AddConditionalBranch(
       uint32_t cond_id, uint32_t true_id, uint32_t false_id,
@@ -110,8 +117,6 @@ class InstructionBuilder {
     std::vector<ir::Operand> phi_ops;
     for (size_t i = 0; i < incomings.size(); i++) {
       phi_ops.push_back({SPV_OPERAND_TYPE_ID, {incomings[i]}});
-      i++;
-      phi_ops.push_back({SPV_OPERAND_TYPE_ID, {incomings[i]}});
     }
     std::unique_ptr<ir::Instruction> phi_inst(new ir::Instruction(
         GetContext(), SpvOpPhi, type, GetContext()->TakeNextId(), phi_ops));
@@ -132,16 +137,20 @@ class InstructionBuilder {
   // Returns the context which instructions are constructed for.
   ir::IRContext* GetContext() const { return context_; }
 
-  // Returns the set of preserved analysis.
+  // Returns the set of preserved analyses.
   inline static constexpr ir::IRContext::Analysis GetPreservedAnalysis() {
-    return AnalysisToPreserve;
+    return AnalysesToPreserve;
   }
 
  private:
+  InstructionBuilder(ir::IRContext* context, ir::BasicBlock* parent,
+                     InsertionPointTy insert_before)
+      : context_(context), parent_(parent), insert_before_(insert_before) {}
+
   // Returns true if the users requested to update |analysis|.
   inline static constexpr bool IsAnalysisUpdateRequested(
       ir::IRContext::Analysis analysis) {
-    return AnalysisToPreserve & analysis;
+    return AnalysesToPreserve & analysis;
   }
 
   // Updates the def/use manager if the user requested it. If he did not request
@@ -154,7 +163,9 @@ class InstructionBuilder {
   // Updates the instruction to block analysis if the user requested it. If he
   // did not request an update, this function does nothing.
   inline void UpdateInstrToBlockMapping(ir::Instruction* insn) {
-    if (IsAnalysisUpdateRequested(ir::IRContext::kAnalysisInstrToBlockMapping))
+    if (IsAnalysisUpdateRequested(
+            ir::IRContext::kAnalysisInstrToBlockMapping) &&
+        parent_)
       GetContext()->set_instr_block(insn, parent_);
   }
 
