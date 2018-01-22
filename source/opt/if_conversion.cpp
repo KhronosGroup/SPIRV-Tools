@@ -14,7 +14,6 @@
 
 #include "if_conversion.h"
 
-#include <iostream>
 namespace spvtools {
 namespace opt {
 
@@ -50,11 +49,9 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
 
         ir::BasicBlock* inc0 = GetIncomingBlock(phi, 0u);
         if (dominators->Dominates(&block, inc0)) return false;
-        // if (!dominators->IsReachable(inc0)) return;
 
         ir::BasicBlock* inc1 = GetIncomingBlock(phi, 1u);
         if (dominators->Dominates(&block, inc1)) return false;
-        // if (!dominators->IsReachable(inc1)) return;
 
         // All phis will have the same common dominator, so cache the result
         // for this block.
@@ -77,6 +74,10 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
           false_value = GetIncomingValue(phi, 0u);
         }
 
+        // If either incoming value is defined is a block that does not dominate
+        // this phi, then we cannot eliminate the phi with a select.
+        // TODO(alan-baker): Perform code motion where it makes sense to enable
+        // the transform in this case.
         ir::BasicBlock* true_def_block = context()->get_instr_block(true_value);
         if (true_def_block && !dominators->Dominates(true_def_block, &block))
           return true;
@@ -86,31 +87,18 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         if (false_def_block && !dominators->Dominates(false_def_block, &block))
           return true;
 
-        std::cerr << "Replacing " << *phi << std::endl;
         analysis::Type* data_ty =
             context()->get_type_mgr()->GetType(true_value->type_id());
         if (analysis::Vector* vec_data_ty = data_ty->AsVector()) {
-          // If the data inputs to OpSelect are vectors, the condition for
-          // OpSelect must be a boolean vector with the same number of
-          // components. So splat the condition for the branch into a vector
-          // type.
-          analysis::Bool bool_ty;
-          analysis::Vector bool_vec_ty(&bool_ty, vec_data_ty->element_count());
-          uint32_t bool_vec_id =
-              context()->get_type_mgr()->GetTypeInstruction(&bool_vec_ty);
-          std::vector<ir::Operand> ops;
-          for (size_t i = 0; i != vec_data_ty->element_count(); ++i) {
-            ops.emplace_back(SPV_OPERAND_TYPE_ID,
-                             std::initializer_list<uint32_t>{condition});
-          }
-          std::unique_ptr<ir::Instruction> splat(
-              new ir::Instruction(context(), SpvOpCompositeConstruct,
-                                  bool_vec_id, TakeNextId(), ops));
-          context()->set_instr_block(splat.get(), &block);
-          get_def_use_mgr()->AnalyzeInstDefUse(splat.get());
-          condition = splat->result_id();
-          iter.InsertBefore(std::move(splat));
+          condition = SplatCondition(vec_data_ty, &block, iter, condition);
         }
+
+        // We cannot transform cases where the phi is used by another phi in the
+        // same block due to instruction ordering restrictions.
+        // TODO(alan-baker): If all inappropriate uses could also be
+        // transformed, we could still remove this phi.
+        if (!CheckPhiUsers(phi, &block)) return true;
+
         // TODO(alan-baker): re-use |phi|'s result id.
         std::unique_ptr<ir::Instruction> select(new ir::Instruction(
             context(), SpvOpSelect, phi->type_id(), TakeNextId(),
@@ -134,6 +122,41 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+bool IfConversion::CheckPhiUsers(ir::Instruction* phi, ir::BasicBlock* block) {
+  return get_def_use_mgr()->WhileEachUser(phi, [block,
+                                                this](ir::Instruction* user) {
+    if (user->opcode() == SpvOpPhi && context()->get_instr_block(user) == block)
+      return false;
+    return true;
+  });
+}
+
+uint32_t IfConversion::SplatCondition(analysis::Vector* vec_data_ty,
+                                      ir::BasicBlock* block,
+                                      ir::BasicBlock::iterator where,
+                                      uint32_t cond) {
+  // If the data inputs to OpSelect are vectors, the condition for
+  // OpSelect must be a boolean vector with the same number of
+  // components. So splat the condition for the branch into a vector
+  // type.
+  analysis::Bool bool_ty;
+  analysis::Vector bool_vec_ty(&bool_ty, vec_data_ty->element_count());
+  uint32_t bool_vec_id =
+      context()->get_type_mgr()->GetTypeInstruction(&bool_vec_ty);
+  std::vector<ir::Operand> ops;
+  for (size_t i = 0; i != vec_data_ty->element_count(); ++i) {
+    ops.emplace_back(SPV_OPERAND_TYPE_ID,
+                     std::initializer_list<uint32_t>{cond});
+  }
+  uint32_t splat_id = TakeNextId();
+  std::unique_ptr<ir::Instruction> splat(new ir::Instruction(
+      context(), SpvOpCompositeConstruct, bool_vec_id, splat_id, ops));
+  context()->set_instr_block(splat.get(), block);
+  get_def_use_mgr()->AnalyzeInstDefUse(splat.get());
+  where.InsertBefore(std::move(splat));
+  return splat_id;
 }
 
 bool IfConversion::CheckType(uint32_t id) {

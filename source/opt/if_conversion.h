@@ -15,7 +15,9 @@
 #ifndef LIBSPIRV_OPT_IF_CONVERSION_H_
 #define LIBSPIRV_OPT_IF_CONVERSION_H_
 
+#include "basic_block.h"
 #include "pass.h"
+#include "types.h"
 
 namespace spvtools {
 namespace opt {
@@ -51,6 +53,17 @@ class IfConversion : public Pass {
   // Returns most immediate basic block that dominates both |inc0| and |inc1|.
   ir::BasicBlock* CommonDominator(ir::BasicBlock* inc0, ir::BasicBlock* inc1,
                                   const DominatorAnalysis& dominators);
+
+  // Returns the id of a OpCompositeConstruct boolean vector. The composite has
+  // the same number of elements as |vec_data_ty| and each member is |cond|.
+  // |where| indicates the location in |block| to insert the composite
+  // construct. If necessary, this function will also construct the necessary
+  // type instructions for the boolean vector.
+  uint32_t SplatCondition(analysis::Vector* vec_data_ty, ir::BasicBlock* block,
+                          ir::BasicBlock::iterator where, uint32_t cond);
+
+  // Returns true if none of |phi|'s users are in |block|.
+  bool CheckPhiUsers(ir::Instruction* phi, ir::BasicBlock* block);
 };
 
 }  //  namespace opt

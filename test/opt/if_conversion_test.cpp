@@ -174,4 +174,122 @@ OpFunctionEnd
 }
 #endif  // SPIRV_EFFCEE
 
+TEST_F(IfConversionTest, NoCommonDominator) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+%2 = OpVariable %_ptr_Output_uint Output
+%8 = OpTypeFunction %void
+%1 = OpFunction %void None %8
+%9 = OpLabel
+OpBranch %10
+%11 = OpLabel
+OpBranch %10
+%10 = OpLabel
+%12 = OpPhi %uint %uint_0 %9 %uint_1 %11
+OpStore %2 %12
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::IfConversion>(text, text, true, true);
+}
+
+TEST_F(IfConversionTest, LoopUntouched) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+%2 = OpVariable %_ptr_Output_uint Output
+%8 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%1 = OpFunction %void None %8
+%11 = OpLabel
+OpBranch %12
+%12 = OpLabel
+%13 = OpPhi %uint %uint_0 %11 %uint_1 %12
+OpLoopMerge %14 %12 None
+OpBranchConditional %true %14 %12
+%14 = OpLabel
+OpStore %2 %13
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::IfConversion>(text, text, true, true);
+}
+
+TEST_F(IfConversionTest, TooManyPredecessors) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+%2 = OpVariable %_ptr_Output_uint Output
+%8 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%1 = OpFunction %void None %8
+%11 = OpLabel
+OpSelectionMerge %12 None
+OpBranchConditional %true %13 %12
+%13 = OpLabel
+OpBranchConditional %true %14 %15
+%14 = OpLabel
+OpBranch %12
+%15 = OpLabel
+OpBranch %12
+%12 = OpLabel
+%16 = OpPhi %uint %uint_0 %11 %uint_0 %14 %uint_1 %15
+OpStore %2 %16
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::IfConversion>(text, text, true, true);
+}
+
+TEST_F(IfConversionTest, NoCodeMotion) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+%2 = OpVariable %_ptr_Output_uint Output
+%8 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%1 = OpFunction %void None %8
+%11 = OpLabel
+OpSelectionMerge %12 None
+OpBranchConditional %true %13 %12
+%13 = OpLabel
+%14 = OpIAdd %uint %uint_0 %uint_1
+OpBranch %12
+%12 = OpLabel
+%15 = OpPhi %uint %uint_0 %11 %14 %13
+OpStore %2 %15
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::IfConversion>(text, text, true, true);
+}
+
 }  // anonymous namespace
