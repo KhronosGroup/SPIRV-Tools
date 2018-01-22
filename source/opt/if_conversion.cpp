@@ -21,6 +21,7 @@ namespace opt {
 Pass::Status IfConversion::Process(ir::IRContext* c) {
   InitializeProcessing(c);
 
+  bool modified = false;
   std::vector<ir::Instruction*> to_kill;
   for (auto& func : *get_module()) {
     DominatorAnalysis* dominators =
@@ -33,8 +34,8 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
       }
 
       ir::BasicBlock* common = nullptr;
-      block.WhileEachPhiInst([this, &common, &to_kill, dominators, &block,
-                              &iter](ir::Instruction* phi) {
+      block.WhileEachPhiInst([this, &modified, &common, &to_kill, dominators,
+                              &block, &iter](ir::Instruction* phi) {
         // A false return from this function stops iteration through subsequent
         // phis. If any of the cfg aspects of the phi are incompatible (e.g.
         // bad domination of incoming block), there is no point checking other
@@ -132,7 +133,7 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
     context()->KillInst(inst);
   }
 
-  return Status::SuccessWithoutChange;
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 bool IfConversion::CheckType(uint32_t id) {
