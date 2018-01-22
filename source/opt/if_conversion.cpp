@@ -61,6 +61,12 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         ir::Instruction* branch = common->terminator();
         if (branch->opcode() != SpvOpBranchConditional) return false;
 
+        // We cannot transform cases where the phi is used by another phi in the
+        // same block due to instruction ordering restrictions.
+        // TODO(alan-baker): If all inappropriate uses could also be
+        // transformed, we could still remove this phi.
+        if (!CheckPhiUsers(phi, &block)) return true;
+
         // Identify the incoming values associated with the true and false
         // branches. If |then_block| dominates |inc0| or if the true edge
         // branches straight to this block and |common| is |inc0|, then |inc0|
@@ -97,12 +103,6 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         if (analysis::Vector* vec_data_ty = data_ty->AsVector()) {
           condition = SplatCondition(vec_data_ty, &block, iter, condition);
         }
-
-        // We cannot transform cases where the phi is used by another phi in the
-        // same block due to instruction ordering restrictions.
-        // TODO(alan-baker): If all inappropriate uses could also be
-        // transformed, we could still remove this phi.
-        if (!CheckPhiUsers(phi, &block)) return true;
 
         std::unique_ptr<ir::Instruction> select(new ir::Instruction(
             context(), SpvOpSelect, phi->type_id(), TakeNextId(),
