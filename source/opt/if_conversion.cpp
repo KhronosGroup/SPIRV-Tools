@@ -32,37 +32,39 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         ++iter;
       }
 
-      block.ForEachPhiInst([this, &to_kill, dominators, &block,
-                            &iter](ir::Instruction* phi) {
-        std::cerr << "Examining " << *phi << std::endl;
-        // TODO(alan-baker): Extend to more than two predecessors
-        if (phi->NumInOperands() != 4u) return;
+      ir::BasicBlock* common = nullptr;
+      block.WhileEachPhiInst([this, &common, &to_kill, dominators, &block,
+                              &iter](ir::Instruction* phi) {
+        // A false return from this function stops iteration through subsequent
+        // phis. If any of the cfg aspects of the phi are incompatible (e.g.
+        // bad domination of incoming block), there is no point checking other
+        // phi nodes. If the function returns true, then this particular phi is
+        // incompatible, but subsequent phis may be compatible.
 
-        if (!CheckType(phi->type_id())) return;
+        // TODO(alan-baker): Extend to more than two predecessors
+        if (phi->NumInOperands() != 4u) return false;
+
+        // This phi is not compatible, but subsequent phis might be.
+        if (!CheckType(phi->type_id())) return true;
 
         ir::BasicBlock* inc0 = GetIncomingBlock(phi, 0u);
-        if (dominators->Dominates(&block, inc0)) return;
+        if (dominators->Dominates(&block, inc0)) return false;
         // if (!dominators->IsReachable(inc0)) return;
 
         ir::BasicBlock* inc1 = GetIncomingBlock(phi, 1u);
-        if (dominators->Dominates(&block, inc1)) return;
+        if (dominators->Dominates(&block, inc1)) return false;
         // if (!dominators->IsReachable(inc1)) return;
 
-        ir::BasicBlock* common = CommonDominator(inc0, inc1, *dominators);
-        if (!common) return;
+        // All phis will have the same common dominator, so cache the result
+        // for this block.
+        if (!common) common = CommonDominator(inc0, inc1, *dominators);
+        if (!common) return false;
         ir::Instruction* branch = common->terminator();
-        if (branch->opcode() != SpvOpBranchConditional) return;
+        if (branch->opcode() != SpvOpBranchConditional) return false;
 
         uint32_t condition = branch->GetSingleWordInOperand(0u);
         ir::BasicBlock* then_block =
             GetBlock(branch->GetSingleWordInOperand(1u));
-        ir::BasicBlock* else_block =
-            GetBlock(branch->GetSingleWordInOperand(2u));
-        std::cerr << " inc0 = " << inc0->id() << std::endl;
-        std::cerr << " inc1 = " << inc1->id() << std::endl;
-        std::cerr << " common = " << common->id() << std::endl;
-        std::cerr << " then = " << then_block->id() << std::endl;
-        std::cerr << " else = " << else_block->id() << std::endl;
         ir::Instruction* true_value = nullptr;
         ir::Instruction* false_value = nullptr;
         if ((then_block == &block && inc0 == common) ||
@@ -76,12 +78,12 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
 
         ir::BasicBlock* true_def_block = context()->get_instr_block(true_value);
         if (true_def_block && !dominators->Dominates(true_def_block, &block))
-          return;
+          return true;
 
         ir::BasicBlock* false_def_block =
             context()->get_instr_block(false_value);
         if (false_def_block && !dominators->Dominates(false_def_block, &block))
-          return;
+          return true;
 
         std::cerr << "Replacing " << *phi << std::endl;
         analysis::Type* data_ty =
@@ -120,6 +122,8 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         context()->ReplaceAllUsesWith(phi->result_id(), select->result_id());
         iter.InsertBefore(std::move(select));
         to_kill.push_back(phi);
+
+        return true;
       });
     }
   }
