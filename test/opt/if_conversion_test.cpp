@@ -41,7 +41,6 @@ OpEntryPoint Vertex %1 "func" %2
 %uint_0 = OpConstant %uint 0
 %uint_1 = OpConstant %uint 1
 %_ptr_Output_uint = OpTypePointer Output %uint
-%_ptr_Function_uint = OpTypePointer Function %uint
 %2 = OpVariable %_ptr_Output_uint Output
 %11 = OpTypeFunction %void
 %1 = OpFunction %void None %11
@@ -79,7 +78,6 @@ OpEntryPoint Vertex %1 "func" %2
 %uint_0 = OpConstant %uint 0
 %uint_1 = OpConstant %uint 1
 %_ptr_Output_uint = OpTypePointer Output %uint
-%_ptr_Function_uint = OpTypePointer Function %uint
 %2 = OpVariable %_ptr_Output_uint Output
 %11 = OpTypeFunction %void
 %1 = OpFunction %void None %11
@@ -115,7 +113,6 @@ OpEntryPoint Vertex %1 "func" %2
 %uint_0 = OpConstant %uint 0
 %uint_1 = OpConstant %uint 1
 %_ptr_Output_uint = OpTypePointer Output %uint
-%_ptr_Function_uint = OpTypePointer Function %uint
 %2 = OpVariable %_ptr_Output_uint Output
 %11 = OpTypeFunction %void
 %1 = OpFunction %void None %11
@@ -126,6 +123,48 @@ OpBranchConditional %true %14 %15
 OpBranch %14
 %14 = OpLabel
 %18 = OpPhi %uint %uint_0 %12 %uint_1 %15
+OpStore %2 %18
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::IfConversion>(text, true);
+}
+
+TEST_F(IfConversionTest, TestVectorSplat) {
+  const std::string text = R"(
+; CHECK: [[bool_vec:%\w+]] = OpTypeVector %bool 2
+; CHECK: OpSelectionMerge [[merge:%\w+]]
+; CHECK: [[merge]] = OpLabel
+; CHECK-NOT: OpPhi
+; CHECK: [[comp:%\w+]] = OpCompositeConstruct [[bool_vec]] %true %true
+; CHECK: [[sel:%\w+]] = OpSelect {{%\w+}} [[comp]]
+; CHECK OpStore {{%\w+}} [[sel]]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "func" %2
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%uint_vec2 = OpTypeVector %uint 2
+%vec2_01 = OpConstantComposite %uint_vec2 %uint_0 %uint_1
+%vec2_10 = OpConstantComposite %uint_vec2 %uint_1 %uint_0
+%_ptr_Output_uint = OpTypePointer Output %uint_vec2
+%2 = OpVariable %_ptr_Output_uint Output
+%11 = OpTypeFunction %void
+%1 = OpFunction %void None %11
+%12 = OpLabel
+OpSelectionMerge %14 None
+OpBranchConditional %true %15 %16
+%15 = OpLabel
+OpBranch %14
+%16 = OpLabel
+OpBranch %14
+%14 = OpLabel
+%18 = OpPhi %uint_vec2 %vec2_01 %15 %vec2_10 %16
 OpStore %2 %18
 OpReturn
 OpFunctionEnd

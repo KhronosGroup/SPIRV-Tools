@@ -84,6 +84,30 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
           return;
 
         std::cerr << "Replacing " << *phi << std::endl;
+        analysis::Type* data_ty =
+            context()->get_type_mgr()->GetType(true_value->type_id());
+        if (analysis::Vector* vec_data_ty = data_ty->AsVector()) {
+          // If the data inputs to OpSelect are vectors, the condition for
+          // OpSelect must be a boolean vector with the same number of
+          // components. So splat the condition for the branch into a vector
+          // type.
+          analysis::Bool bool_ty;
+          analysis::Vector bool_vec_ty(&bool_ty, vec_data_ty->element_count());
+          uint32_t bool_vec_id =
+              context()->get_type_mgr()->GetTypeInstruction(&bool_vec_ty);
+          std::vector<ir::Operand> ops;
+          for (size_t i = 0; i != vec_data_ty->element_count(); ++i) {
+            ops.emplace_back(SPV_OPERAND_TYPE_ID,
+                             std::initializer_list<uint32_t>{condition});
+          }
+          std::unique_ptr<ir::Instruction> splat(
+              new ir::Instruction(context(), SpvOpCompositeConstruct,
+                                  bool_vec_id, TakeNextId(), ops));
+          context()->set_instr_block(splat.get(), &block);
+          get_def_use_mgr()->AnalyzeInstDefUse(splat.get());
+          condition = splat->result_id();
+          iter.InsertBefore(std::move(splat));
+        }
         // TODO(alan-baker): re-use |phi|'s result id.
         std::unique_ptr<ir::Instruction> select(new ir::Instruction(
             context(), SpvOpSelect, phi->type_id(), TakeNextId(),

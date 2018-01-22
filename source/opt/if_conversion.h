@@ -34,10 +34,21 @@ class IfConversion : public Pass {
   }
 
  private:
+  // Returns true if |id| is a valid type for use with OpSelect. OpSelect only
+  // allows scalars, vectors and pointers as valid inputs.
   bool CheckType(uint32_t id);
+
+  // Returns the basic block containing |id|.
   ir::BasicBlock* GetBlock(uint32_t id);
+
+  // Returns the basic block for the |predecessor|'th index predecessor of
+  // |phi|.
   ir::BasicBlock* GetIncomingBlock(ir::Instruction* phi, uint32_t predecessor);
+
+  // Returns the instruction defining the |predecessor|'th index of |phi|.
   ir::Instruction* GetIncomingValue(ir::Instruction* phi, uint32_t predecessor);
+
+  // Returns most immediate basic block that dominates both |inc0| and |inc1|.
   ir::BasicBlock* CommonDominator(ir::BasicBlock* inc0, ir::BasicBlock* inc1,
                                   const DominatorAnalysis& dominators);
 };
