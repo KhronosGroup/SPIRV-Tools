@@ -211,10 +211,13 @@ uint32_t FoldScalars(SpvOp opcode,
 
 // Returns true if |inst| is a binary operation that takes two integers as
 // parameters and folds to a constant that can be represented as an unsigned
-// 32-bit value.  If |inst| can be folded, the resulting value is returned
-// in |*result|.  Valid result types for the instruction are any integer (signed
-// or unsigned) with 32-bits or less, or a boolean value.
-bool FoldBinaryIntegerOpToConstant(ir::Instruction* inst, uint32_t* result) {
+// 32-bit value when the ids have been replaced by |id_map|.  If |inst| can be
+// folded, the resulting value is returned in |*result|.  Valid result types for
+// the instruction are any integer (signed or unsigned) with 32-bits or less, or
+// a boolean value.
+bool FoldBinaryIntegerOpToConstant(ir::Instruction* inst,
+                                   std::function<uint32_t(uint32_t)> id_map,
+                                   uint32_t* result) {
   SpvOp opcode = inst->opcode();
   ir::IRContext* context = inst->context();
   analysis::ConstantManager* const_manger = context->get_constant_mgr();
@@ -226,7 +229,7 @@ bool FoldBinaryIntegerOpToConstant(ir::Instruction* inst, uint32_t* result) {
     if (operand->type != SPV_OPERAND_TYPE_ID) {
       return false;
     }
-    ids[i] = operand->words[0];
+    ids[i] = id_map(operand->words[0]);
     const analysis::Constant* constant =
         const_manger->FindDeclaredConstant(ids[i]);
     constants[i] = (constant != nullptr ? constant->AsIntConstant() : nullptr);
@@ -397,9 +400,11 @@ bool FoldBinaryIntegerOpToConstant(ir::Instruction* inst, uint32_t* result) {
 }
 
 // Returns true if |inst| is a binary operation on two boolean values, and folds
-// to a constant boolean value.  If |inst| can be folded, the result value is
-// returned in |*result|.
-bool FoldBinaryBooleanOpToConstant(ir::Instruction* inst, uint32_t* result) {
+// to a constant boolean value when the ids have been replaced using |id_map|.
+// If |inst| can be folded, the result value is returned in |*result|.
+bool FoldBinaryBooleanOpToConstant(ir::Instruction* inst,
+                                   std::function<uint32_t(uint32_t)> id_map,
+                                   uint32_t* result) {
   SpvOp opcode = inst->opcode();
   ir::IRContext* context = inst->context();
   analysis::ConstantManager* const_manger = context->get_constant_mgr();
@@ -411,7 +416,7 @@ bool FoldBinaryBooleanOpToConstant(ir::Instruction* inst, uint32_t* result) {
     if (operand->type != SPV_OPERAND_TYPE_ID) {
       return false;
     }
-    ids[i] = operand->words[0];
+    ids[i] = id_map(operand->words[0]);
     const analysis::Constant* constant =
         const_manger->FindDeclaredConstant(ids[i]);
     constants[i] = (constant != nullptr ? constant->AsBoolConstant() : nullptr);
@@ -446,16 +451,19 @@ bool FoldBinaryBooleanOpToConstant(ir::Instruction* inst, uint32_t* result) {
   return false;
 }
 
-// Returns true if |inst| can be folded to an constant.  If it can, the value
-// is returned in |result|.  If not, |result| is unchanged.  It is assumed that
-// not all operands are constant.  Those cases are handled by |FoldScalar|.
-bool FoldIntegerOpToConstant(ir::Instruction* inst, uint32_t* result) {
+// Returns true if |inst| can be folded to an constant when the ids have been
+// substituted using id_map.  If it can, the value is returned in |result|.  If
+// not, |result| is unchanged.  It is assumed that not all operands are
+// constant.  Those cases are handled by |FoldScalar|.
+bool FoldIntegerOpToConstant(ir::Instruction* inst,
+                             std::function<uint32_t(uint32_t)> id_map,
+                             uint32_t* result) {
   assert(IsFoldableOpcode(inst->opcode()) &&
          "Unhandled instruction opcode in FoldScalars");
   switch (inst->NumInOperands()) {
     case 2:
-      return FoldBinaryIntegerOpToConstant(inst, result) ||
-             FoldBinaryBooleanOpToConstant(inst, result);
+      return FoldBinaryIntegerOpToConstant(inst, id_map, result) ||
+             FoldBinaryBooleanOpToConstant(inst, id_map, result);
     default:
       return false;
   }
@@ -589,7 +597,7 @@ ir::Instruction* FoldInstructionToConstant(
   }
 
   if (!successful) {
-    successful = FoldIntegerOpToConstant(inst, &result_val);
+    successful = FoldIntegerOpToConstant(inst, id_map, &result_val);
   }
 
   if (successful) {

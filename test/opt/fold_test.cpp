@@ -75,6 +75,8 @@ TEST_P(IntegerInstructionFoldingTest, Case) {
 }
 
 // Returns a common SPIR-V header for all of the test that follow.
+#define INT_0_ID 100
+#define TRUE_ID 101
 const std::string& Header() {
   static const std::string header = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -87,6 +89,7 @@ OpName %main "main"
 %void_func = OpTypeFunction %void
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
+%101 = OpConstantTrue %bool ; Need a def with an numerical id to define id maps.
 %false = OpConstantFalse %bool
 %short = OpTypeInt 16 1
 %int = OpTypeInt 32 1
@@ -98,6 +101,7 @@ OpName %main "main"
 %short_0 = OpConstant %short 0
 %short_3 = OpConstant %short 3
 %int_0 = OpConstant %int 0
+%100 = OpConstant %int 0 ; Need a def with an numerical id to define id maps.
 %int_3 = OpConstant %int 3
 %int_min = OpConstant %int -2147483648
 %int_max = OpConstant %int 2147483647
@@ -986,6 +990,115 @@ INSTANTIATE_TEST_CASE_P(TestCase, InstructionNotFoldedTest,
           "OpReturn\n" +
           "OpFunctionEnd",
       2, nullptr)
+  ));
+// clang-format on
+
+template <class ResultType>
+struct InstructionFoldingCaseWithMap {
+  InstructionFoldingCaseWithMap(const std::string& tb, uint32_t id,
+                                ResultType result,
+                                std::function<uint32_t(uint32_t)> map)
+      : test_body(tb), id_to_fold(id), expected_result(result), id_map(map) {}
+
+  std::string test_body;
+  uint32_t id_to_fold;
+  ResultType expected_result;
+  std::function<uint32_t(uint32_t)> id_map;
+};
+
+using IntegerInstructionFoldingTestWithMap =
+    ::testing::TestWithParam<InstructionFoldingCaseWithMap<uint32_t>>;
+
+TEST_P(IntegerInstructionFoldingTestWithMap, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  inst = opt::FoldInstruction(inst, tc.id_map);
+
+  // Make sure the instruction folded as expected.
+  EXPECT_NE(inst, nullptr);
+  if (inst != nullptr) {
+    EXPECT_EQ(inst->opcode(), SpvOpConstant);
+    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const opt::analysis::IntConstant* result =
+        const_mrg->GetConstantFromInst(inst)->AsIntConstant();
+    EXPECT_NE(result, nullptr);
+    if (result != nullptr) {
+      EXPECT_EQ(result->GetU32BitValue(), tc.expected_result);
+    }
+  }
+}
+// clang-format off
+INSTANTIATE_TEST_CASE_P(TestCase, IntegerInstructionFoldingTestWithMap,
+  ::testing::Values(
+      // Test case 0: fold %3 = 0; %3 * n
+      InstructionFoldingCaseWithMap<uint32_t>(
+          Header() + "%main = OpFunction %void None %void_func\n" +
+              "%main_lab = OpLabel\n" +
+              "%n = OpVariable %_ptr_int Function\n" +
+              "%load = OpLoad %int %n\n" +
+              "%3 = OpCopyObject %int %int_0\n"
+              "%2 = OpIMul %int %3 %load\n" +
+              "OpReturn\n" +
+              "OpFunctionEnd",
+          2, 0, [](uint32_t id) {return (id == 3 ? INT_0_ID : id);})
+  ));
+// clang-format on
+
+using BooleanInstructionFoldingTestWithMap =
+    ::testing::TestWithParam<InstructionFoldingCaseWithMap<bool>>;
+
+TEST_P(BooleanInstructionFoldingTestWithMap, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  inst = opt::FoldInstruction(inst, tc.id_map);
+
+  // Make sure the instruction folded as expected.
+  EXPECT_NE(inst, nullptr);
+  if (inst != nullptr) {
+    std::vector<SpvOp> bool_opcodes = {SpvOpConstantTrue, SpvOpConstantFalse};
+    EXPECT_THAT(bool_opcodes, Contains(inst->opcode()));
+    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const opt::analysis::BoolConstant* result =
+        const_mrg->GetConstantFromInst(inst)->AsBoolConstant();
+    EXPECT_NE(result, nullptr);
+    if (result != nullptr) {
+      EXPECT_EQ(result->value(), tc.expected_result);
+    }
+  }
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(TestCase, BooleanInstructionFoldingTestWithMap,
+  ::testing::Values(
+      // Test case 0: fold %3 = true; %3 || n
+      InstructionFoldingCaseWithMap<bool>(
+          Header() + "%main = OpFunction %void None %void_func\n" +
+              "%main_lab = OpLabel\n" +
+              "%n = OpVariable %_ptr_bool Function\n" +
+              "%load = OpLoad %bool %n\n" +
+              "%3 = OpCopyObject %bool %true\n" +
+              "%2 = OpLogicalOr %bool %3 %load\n" +
+              "OpReturn\n" +
+              "OpFunctionEnd",
+          2, true, [](uint32_t id) {return (id == 3 ? TRUE_ID : id);})
   ));
 // clang-format on
 }  // anonymous namespace
