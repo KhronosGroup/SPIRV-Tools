@@ -54,12 +54,17 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         if (dominators->Dominates(&block, inc1)) return false;
 
         // All phis will have the same common dominator, so cache the result
-        // for this block.
+        // for this block. If there is no common dominator, we can stop
+        // traversing.
         if (!common) common = CommonDominator(inc0, inc1, *dominators);
         if (!common) return false;
         ir::Instruction* branch = common->terminator();
         if (branch->opcode() != SpvOpBranchConditional) return false;
 
+        // Identify the incoming values associated with the true and false
+        // branches. If |then_block| dominates |inc0| or if the true edge
+        // branches straight to this block and |common| is |inc0|, then |inc0|
+        // is on the true branch. Otherwise the |inc1| is on the true branch.
         uint32_t condition = branch->GetSingleWordInOperand(0u);
         ir::BasicBlock* then_block =
             GetBlock(branch->GetSingleWordInOperand(1u));
@@ -99,7 +104,6 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         // transformed, we could still remove this phi.
         if (!CheckPhiUsers(phi, &block)) return true;
 
-        // TODO(alan-baker): re-use |phi|'s result id.
         std::unique_ptr<ir::Instruction> select(new ir::Instruction(
             context(), SpvOpSelect, phi->type_id(), TakeNextId(),
             std::initializer_list<ir::Operand>{
