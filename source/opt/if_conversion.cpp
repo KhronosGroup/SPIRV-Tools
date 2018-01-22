@@ -115,6 +115,7 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         context()->ReplaceAllUsesWith(phi->result_id(), select->result_id());
         iter.InsertBefore(std::move(select));
         to_kill.push_back(phi);
+        modified = true;
 
         return true;
       });
