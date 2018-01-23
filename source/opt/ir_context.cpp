@@ -17,7 +17,6 @@
 #include "log.h"
 #include "mem_pass.h"
 #include "reflect.h"
-#include "spirv/1.0/GLSL.std.450.h"
 
 #include <cstring>
 

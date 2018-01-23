@@ -19,7 +19,7 @@
 #include "composite.h"
 #include "ir_context.h"
 #include "iterator.h"
-#include "spirv/1.2/GLSL.std.450.h"
+#include "latest_version_glsl_std_450_header.h"
 
 #include <vector>
 
