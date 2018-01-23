@@ -105,6 +105,9 @@ class InsertExtractElimPass : public MemPass {
   // Live inserts
   std::unordered_set<uint32_t> liveInserts_;
 
+  // Visited phis as insert chain is traversed; used to avoid infinite loop
+  std::unordered_set<uint32_t> visitedPhis_;
+
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
 };

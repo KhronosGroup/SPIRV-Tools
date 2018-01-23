@@ -188,11 +188,10 @@ void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insertChain,
   }
   // If insert chain ended with phi, do recursive call on each operand
   if (insInst->opcode() != SpvOpPhi) return;
-  // If phi is already live, we have processed already. Return to
-  // avoid infinite loop
-  if (liveInserts_.find(insInst->result_id()) != liveInserts_.end()) return;
-  // Insert phi into live set to allow infinite loop check
-  liveInserts_.insert(insInst->result_id());
+  // If phi is already visited, return to avoid infinite loop
+  if (visitedPhis_.find(insInst->result_id()) != visitedPhis_.end()) return;
+  // Mark phi visited to prevent infinite loop 
+  visitedPhis_.insert(insInst->result_id());
   uint32_t icnt = 0;
   insInst->ForEachInId([&icnt, &pExtIndices, &extOffset, this](uint32_t* idp) {
     if (icnt % 2 == 0) {
@@ -201,8 +200,8 @@ void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insertChain,
     }
     ++icnt;
   });
-  // Remove phi from live set when finished
-  liveInserts_.erase(insInst->result_id());
+  // Unmark phi when done visiting
+  visitedPhis_.erase(insInst->result_id());
 }
 
 bool InsertExtractElimPass::EliminateDeadInserts(ir::Function* func) {
@@ -219,8 +218,9 @@ bool InsertExtractElimPass::EliminateDeadInserts(ir::Function* func) {
 
 bool InsertExtractElimPass::EliminateDeadInsertsOnePass(ir::Function* func) {
   bool modified = false;
-  // Mark all live inserts
   liveInserts_.clear();
+  visitedPhis_.clear();
+  // Mark all live inserts
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       // Only process Inserts and composite Phis
