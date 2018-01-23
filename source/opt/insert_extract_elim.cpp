@@ -120,24 +120,27 @@ uint32_t InsertExtractElimPass::NumComponents(uint32_t typeId) {
   }
 }
 
-void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insert,
+void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insertChain,
                                             std::vector<uint32_t>* pExtIndices,
                                             uint32_t extOffset) {
+  // Insert chains are only composed of inserts and phis
+  if (insertChain->opcode() != SpvOpCompositeInsert &&
+      insertChain->opcode() != SpvOpPhi) return;
   // If extract indices are empty, mark all subcomponents if type
   // is constant length.
   if (pExtIndices == nullptr) {
-    uint32_t cnum = NumComponents(insert->type_id());
+    uint32_t cnum = NumComponents(insertChain->type_id());
     if (cnum > 0) {
       std::vector<uint32_t> extIndices;
       for (uint32_t i = 0; i < cnum; i++) {
         extIndices.clear();
         extIndices.push_back(i);
-        MarkInsertChain(insert, &extIndices, 0);
+        MarkInsertChain(insertChain, &extIndices, 0);
       }
       return;
     }
   }
-  ir::Instruction* insInst = insert;
+  ir::Instruction* insInst = insertChain;
   while (insInst->opcode() == SpvOpCompositeInsert) {
     // If no extract indices, mark insert and inserted object (which might
     // also be an insert chain) and continue up the chain though the input

@@ -66,12 +66,12 @@ class InsertExtractElimPass : public MemPass {
   // 32-bit constant.
   uint32_t NumComponents(uint32_t typeId);
 
-  // Mark all inserts in instruction chain ending at |ins| with indices that
-  // intersect with extract indices |extIndices| starting with index at
-  // |extOffset|. Chains are composed solely of Inserts and Phis. Mark all
-  // inserts in chain if |extIndices| is nullptr.
-  void MarkInsertChain(ir::Instruction* ins, std::vector<uint32_t>* extIndices,
-                       uint32_t extOffset);
+  // Mark all inserts in instruction chain ending at |insertChain| with
+  // indices that intersect with extract indices |extIndices| starting with
+  // index at |extOffset|. Chains are composed solely of Inserts and Phis.
+  // Mark all inserts in chain if |extIndices| is nullptr.
+  void MarkInsertChain(ir::Instruction* insertChain,
+                       std::vector<uint32_t>* extIndices, uint32_t extOffset);
 
   // Perform EliminateDeadInsertsOnePass(|func|) until no modification is
   // made. Return true if modified.
