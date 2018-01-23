@@ -180,10 +180,9 @@ void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insertChain,
   }
   // If insert chain ended with phi, do recursive call on each operand
   if (insInst->opcode() != SpvOpPhi) return;
-  // If phi is already visited, return to avoid infinite loop
-  if (visitedPhis_.find(insInst->result_id()) != visitedPhis_.end()) return;
-  // Mark phi visited to prevent infinite loop 
-  visitedPhis_.insert(insInst->result_id());
+  // Mark phi visited to prevent potential infinite loop. If phi is already
+  // visited, return to avoid infinite loop
+  if (!visitedPhis_.insert(insInst->result_id()).second) return;
   uint32_t icnt = 0;
   insInst->ForEachInId([&icnt, &pExtIndices, &extOffset, this](uint32_t* idp) {
     if (icnt % 2 == 0) {
