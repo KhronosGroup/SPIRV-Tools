@@ -92,7 +92,7 @@ bool InsertExtractElimPass::IsComposite(uint32_t typeId) {
   }
 }
 
-uint32_t InsertExtractElimPass::ComponentNum(uint32_t typeId) {
+uint32_t InsertExtractElimPass::NumComponents(uint32_t typeId) {
   ir::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
   switch (typeInst->opcode()) {
     case SpvOpTypeVector: {
@@ -126,7 +126,7 @@ void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insert,
   // If extract indices are empty, mark all subcomponents if type
   // is constant length.
   if (pExtIndices == nullptr) {
-    uint32_t cnum = ComponentNum(insert->type_id());
+    uint32_t cnum = NumComponents(insert->type_id());
     if (cnum > 0) {
       std::vector<uint32_t> extIndices;
       for (uint32_t i = 0; i < cnum; i++) {

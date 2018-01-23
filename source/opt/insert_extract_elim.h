@@ -64,7 +64,7 @@ class InsertExtractElimPass : public MemPass {
   // Return the number of subcomponents in the composite type |typeId|.
   // Return 0 if not a composite type or number of components is not a
   // 32-bit constant.
-  uint32_t ComponentNum(uint32_t typeId);
+  uint32_t NumComponents(uint32_t typeId);
 
   // Mark all inserts in instruction chain ending at |ins| with indices that
   // intersect with extract indices |extIndices| starting with index at
