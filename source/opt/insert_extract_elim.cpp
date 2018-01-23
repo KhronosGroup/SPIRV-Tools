@@ -81,15 +81,7 @@ bool InsertExtractElimPass::IsVectorType(uint32_t typeId) {
 
 bool InsertExtractElimPass::IsComposite(uint32_t typeId) {
   ir::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
-  switch (typeInst->opcode()) {
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-    case SpvOpTypeArray:
-    case SpvOpTypeStruct:
-      return true;
-    default:
-      return false;
-  }
+  return spvOpcodeIsComposite(typeInst->opcode());
 }
 
 uint32_t InsertExtractElimPass::NumComponents(uint32_t typeId) {
