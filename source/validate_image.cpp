@@ -18,6 +18,7 @@
 
 #include "diagnostic.h"
 #include "opcode.h"
+#include "spirv_target_env.h"
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
@@ -687,14 +688,25 @@ spv_result_t ImagePass(ValidationState_t& _,
                << "OpTypeImage: corrupt definition";
       }
 
-      const SpvOp sampled_type_opcode = _.GetIdOpcode(info.sampled_type);
-      if (sampled_type_opcode != SpvOpTypeVoid &&
-          sampled_type_opcode != SpvOpTypeInt &&
-          sampled_type_opcode != SpvOpTypeFloat) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-               << spvOpcodeString(opcode)
-               << ": expected Sampled Type to be either void or numerical "
-               << "scalar type";
+      if (spvIsVulkanEnv(_.context()->target_env)) {
+        if ((!_.IsFloatScalarType(info.sampled_type) &&
+             !_.IsIntScalarType(info.sampled_type)) ||
+            32 != _.GetBitWidth(info.sampled_type)) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << spvOpcodeString(opcode)
+                 << ": expected Sampled Type to be a 32-bit int or float "
+                    "scalar type for Vulkan environment";
+        }
+      } else {
+        const SpvOp sampled_type_opcode = _.GetIdOpcode(info.sampled_type);
+        if (sampled_type_opcode != SpvOpTypeVoid &&
+            sampled_type_opcode != SpvOpTypeInt &&
+            sampled_type_opcode != SpvOpTypeFloat) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << spvOpcodeString(opcode)
+                 << ": expected Sampled Type to be either void or numerical "
+                 << "scalar type";
+        }
       }
 
       // Dim is checked elsewhere.
@@ -776,10 +788,19 @@ spv_result_t ImagePass(ValidationState_t& _,
       // TODO(atgoo@github.com) Check compatibility of result type and received
       // image.
 
-      if (info.sampled != 0 && info.sampled != 1) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-               << "Expected Image 'Sampled' parameter to be 0 or 1: "
-               << spvOpcodeString(opcode);
+      if (spvIsVulkanEnv(_.context()->target_env)) {
+        if (info.sampled != 1) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << "Expected Image 'Sampled' parameter to be 1 for Vulkan "
+                    "environment: "
+                 << spvOpcodeString(opcode);
+        }
+      } else {
+        if (info.sampled != 0 && info.sampled != 1) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << "Expected Image 'Sampled' parameter to be 0 or 1: "
+                 << spvOpcodeString(opcode);
+        }
       }
 
       if (info.dim == SpvDimSubpassData) {

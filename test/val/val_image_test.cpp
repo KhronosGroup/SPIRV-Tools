@@ -31,20 +31,24 @@ using ValidateImage = spvtest::ValidateBase<bool>;
 std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
-    const std::string& execution_model = "Fragment") {
+    const std::string& execution_model = "Fragment",
+    const spv_target_env env = SPV_ENV_UNIVERSAL_1_0) {
   std::ostringstream ss;
   ss << R"(
-OpCapability Float16
 OpCapability Shader
 OpCapability InputAttachment
 OpCapability ImageGatherExtended
 OpCapability MinLod
 OpCapability Sampled1D
-OpCapability SampledRect
 OpCapability ImageQuery
 OpCapability Int64
+OpCapability Float64
 OpCapability SparseResidency
 )";
+
+  if (env == SPV_ENV_UNIVERSAL_1_0) {
+    ss << "OpCapability SampledRect\n";
+  }
 
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical GLSL450\n";
@@ -54,8 +58,8 @@ OpCapability SparseResidency
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
-%f16 = OpTypeFloat 16
 %f32 = OpTypeFloat 32
+%f64 = OpTypeFloat 64
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
 %u64 = OpTypeInt 64 0
@@ -69,14 +73,14 @@ OpCapability SparseResidency
 %s32vec4 = OpTypeVector %s32 4
 %f32vec4 = OpTypeVector %f32 4
 
-%f16_0 = OpConstant %f16 0
-%f16_1 = OpConstant %f16 1
-
 %f32_0 = OpConstant %f32 0
 %f32_1 = OpConstant %f32 1
 %f32_0_5 = OpConstant %f32 0.5
 %f32_0_25 = OpConstant %f32 0.25
 %f32_0_75 = OpConstant %f32 0.75
+
+%f64_0 = OpConstant %f64 0
+%f64_1 = OpConstant %f64 1
 
 %s32_0 = OpConstant %s32 0
 %s32_1 = OpConstant %s32 1
@@ -175,16 +179,6 @@ OpCapability SparseResidency
 %uniform_image_s32_3d_0001 = OpVariable %ptr_image_s32_3d_0001 UniformConstant
 %type_sampled_image_s32_3d_0001 = OpTypeSampledImage %type_image_s32_3d_0001
 
-%type_image_void_2d_0001 = OpTypeImage %void 2D 0 0 0 1 Unknown
-%ptr_image_void_2d_0001 = OpTypePointer UniformConstant %type_image_void_2d_0001
-%uniform_image_void_2d_0001 = OpVariable %ptr_image_void_2d_0001 UniformConstant
-%type_sampled_image_void_2d_0001 = OpTypeSampledImage %type_image_void_2d_0001
-
-%type_image_void_2d_0002 = OpTypeImage %void 2D 0 0 0 2 Unknown
-%ptr_image_void_2d_0002 = OpTypePointer UniformConstant %type_image_void_2d_0002
-%uniform_image_void_2d_0002 = OpVariable %ptr_image_void_2d_0002 UniformConstant
-%type_sampled_image_void_2d_0002 = OpTypeSampledImage %type_image_void_2d_0002
-
 %type_image_f32_2d_0002 = OpTypeImage %f32 2D 0 0 0 2 Unknown
 %ptr_image_f32_2d_0002 = OpTypePointer UniformConstant %type_image_f32_2d_0002
 %uniform_image_f32_2d_0002 = OpVariable %ptr_image_f32_2d_0002 UniformConstant
@@ -210,15 +204,31 @@ OpCapability SparseResidency
 %uniform_image_f32_cube_0102_rgba32f = OpVariable %ptr_image_f32_cube_0102_rgba32f UniformConstant
 %type_sampled_image_f32_cube_0102_rgba32f = OpTypeSampledImage %type_image_f32_cube_0102_rgba32f
 
+%type_sampler = OpTypeSampler
+%ptr_sampler = OpTypePointer UniformConstant %type_sampler
+%uniform_sampler = OpVariable %ptr_sampler UniformConstant
+)";
+
+  if (env == SPV_ENV_UNIVERSAL_1_0) {
+    ss << R"(
+%type_image_void_2d_0001 = OpTypeImage %void 2D 0 0 0 1 Unknown
+%ptr_image_void_2d_0001 = OpTypePointer UniformConstant %type_image_void_2d_0001
+%uniform_image_void_2d_0001 = OpVariable %ptr_image_void_2d_0001 UniformConstant
+%type_sampled_image_void_2d_0001 = OpTypeSampledImage %type_image_void_2d_0001
+
+%type_image_void_2d_0002 = OpTypeImage %void 2D 0 0 0 2 Unknown
+%ptr_image_void_2d_0002 = OpTypePointer UniformConstant %type_image_void_2d_0002
+%uniform_image_void_2d_0002 = OpVariable %ptr_image_void_2d_0002 UniformConstant
+%type_sampled_image_void_2d_0002 = OpTypeSampledImage %type_image_void_2d_0002
+
 %type_image_f32_rect_0001 = OpTypeImage %f32 Rect 0 0 0 1 Unknown
 %ptr_image_f32_rect_0001 = OpTypePointer UniformConstant %type_image_f32_rect_0001
 %uniform_image_f32_rect_0001 = OpVariable %ptr_image_f32_rect_0001 UniformConstant
 %type_sampled_image_f32_rect_0001 = OpTypeSampledImage %type_image_f32_rect_0001
+)";
+  }
 
-%type_sampler = OpTypeSampler
-%ptr_sampler = OpTypePointer UniformConstant %type_sampler
-%uniform_sampler = OpVariable %ptr_sampler UniformConstant
-
+  ss << R"(
 %main = OpFunction %void None %func
 %main_entry = OpLabel
 )";
@@ -332,6 +342,7 @@ std::string GetShaderHeader(
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
+OpCapability Int64
 )";
 
   ss << capabilities_and_extensions;
@@ -344,6 +355,7 @@ OpEntryPoint Fragment %main "main"
 %bool = OpTypeBool
 %f32 = OpTypeFloat 32
 %u32 = OpTypeInt 32 0
+%u64 = OpTypeInt 64 0
 %s32 = OpTypeInt 32 1
 )";
 
@@ -361,6 +373,32 @@ TEST_F(ValidateImage, TypeImageWrongSampledType) {
               HasSubstr("TypeImage: expected Sampled Type to be either void or "
                         "numerical scalar "
                         "type"));
+}
+
+TEST_F(ValidateImage, TypeImageVoidSampledTypeVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %void 2D 0 0 0 1 Unknown
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: expected Sampled Type to be a 32-bit int "
+                        "or float scalar type for Vulkan environment"));
+}
+
+TEST_F(ValidateImage, TypeImageU64SampledTypeVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %u64 2D 0 0 0 1 Unknown
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("TypeImage: expected Sampled Type to be a 32-bit int "
+                        "or float scalar type for Vulkan environment"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongDepth) {
@@ -454,6 +492,18 @@ TEST_F(ValidateImage, SampledImageSuccess) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateImage, SampledImageVulkanSuccess) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment", env), env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
 TEST_F(ValidateImage, SampledImageWrongResultType) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
@@ -496,6 +546,21 @@ TEST_F(ValidateImage, SampledImageImageNotForSampling) {
       getDiagnosticString(),
       HasSubstr(
           "Expected Image 'Sampled' parameter to be 0 or 1: SampledImage"));
+}
+
+TEST_F(ValidateImage, SampledImageVulkanUnknownSampled) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0000 %uniform_image_u32_2d_0000
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_u32_2d_0000 %img %sampler
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment", env), env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled' parameter to be 1 for Vulkan "
+                        "environment: SampledImage"));
 }
 
 TEST_F(ValidateImage, SampledImageNotSampler) {
@@ -1603,7 +1668,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongDrefType) {
 %img = OpLoad %type_image_u32_2d_0001 %uniform_image_u32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_u32_2d_0001 %img %sampler
-%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_00 %f16_1
+%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_00 %f64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
