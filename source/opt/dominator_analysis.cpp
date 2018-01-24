@@ -30,7 +30,7 @@ ir::BasicBlock* DominatorAnalysisBase::CommonDominator(
   }
 
   block = b2;
-  while (block && seen.insert(block).second) {
+  while (block && !seen.count(block)) {
     block = ImmediateDominator(block);
   }
 
