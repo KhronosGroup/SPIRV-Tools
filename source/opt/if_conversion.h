@@ -69,7 +69,7 @@ class IfConversion : public Pass {
   // dominated by |block|. Both predecessors must share a common dominator that
   // is terminated by a conditional branch.
   bool CheckBlock(ir::BasicBlock* block, DominatorAnalysis* dominators,
-                  ir::CFG* cfg, ir::BasicBlock** common);
+                  ir::BasicBlock** common);
 };
 
 }  //  namespace opt

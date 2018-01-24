@@ -20,17 +20,16 @@ namespace opt {
 Pass::Status IfConversion::Process(ir::IRContext* c) {
   InitializeProcessing(c);
 
-  ir::CFG* cfg = context()->cfg();
   bool modified = false;
   std::vector<ir::Instruction*> to_kill;
   for (auto& func : *get_module()) {
     DominatorAnalysis* dominators =
-        context()->GetDominatorAnalysis(&func, *cfg);
+        context()->GetDominatorAnalysis(&func, *cfg());
     for (auto& block : func) {
       // Check if it is possible for |block| to have phis that can be
       // transformed.
       ir::BasicBlock* common = nullptr;
-      if (!CheckBlock(&block, dominators, cfg, &common)) continue;
+      if (!CheckBlock(&block, dominators, &common)) continue;
 
       // Get an insertion point.
       auto iter = block.begin();
@@ -42,7 +41,7 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
                          ir::IRContext::kAnalysisInstrToBlockMapping>
           builder(context(), &*iter);
       block.ForEachPhiInst([this, &builder, &modified, &common, &to_kill,
-                            dominators, &block, &iter](ir::Instruction* phi) {
+                            dominators, &block](ir::Instruction* phi) {
         // This phi is not compatible, but subsequent phis might be.
         if (!CheckType(phi->type_id())) return;
 
@@ -111,9 +110,9 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
 }
 
 bool IfConversion::CheckBlock(ir::BasicBlock* block,
-                              DominatorAnalysis* dominators, ir::CFG* cfg,
+                              DominatorAnalysis* dominators,
                               ir::BasicBlock** common) {
-  const std::vector<uint32_t>& preds = cfg->preds(block->id());
+  const std::vector<uint32_t>& preds = cfg()->preds(block->id());
 
   // TODO(alan-baker): Extend to more than two predecessors
   if (preds.size() != 2) return false;
