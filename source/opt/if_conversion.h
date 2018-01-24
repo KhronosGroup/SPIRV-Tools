@@ -16,6 +16,7 @@
 #define LIBSPIRV_OPT_IF_CONVERSION_H_
 
 #include "basic_block.h"
+#include "ir_builder.h"
 #include "pass.h"
 #include "types.h"
 
@@ -50,20 +51,25 @@ class IfConversion : public Pass {
   // Returns the instruction defining the |predecessor|'th index of |phi|.
   ir::Instruction* GetIncomingValue(ir::Instruction* phi, uint32_t predecessor);
 
-  // Returns most immediate basic block that dominates both |inc0| and |inc1|.
-  ir::BasicBlock* CommonDominator(ir::BasicBlock* inc0, ir::BasicBlock* inc1,
-                                  const DominatorAnalysis& dominators);
-
   // Returns the id of a OpCompositeConstruct boolean vector. The composite has
   // the same number of elements as |vec_data_ty| and each member is |cond|.
   // |where| indicates the location in |block| to insert the composite
   // construct. If necessary, this function will also construct the necessary
   // type instructions for the boolean vector.
-  uint32_t SplatCondition(analysis::Vector* vec_data_ty, ir::BasicBlock* block,
-                          ir::BasicBlock::iterator where, uint32_t cond);
+  uint32_t SplatCondition(
+      analysis::Vector* vec_data_ty, uint32_t cond,
+      InstructionBuilder<ir::IRContext::kAnalysisDefUse |
+                         ir::IRContext::kAnalysisInstrToBlockMapping>* builder);
 
   // Returns true if none of |phi|'s users are in |block|.
   bool CheckPhiUsers(ir::Instruction* phi, ir::BasicBlock* block);
+
+  // Returns |false| if |block| is not appropriate to transform. Only
+  // transforms blocks with two predecessors. Neither incoming block can be
+  // dominated by |block|. Both predecessors must share a common dominator that
+  // is terminated by a conditional branch.
+  bool CheckBlock(ir::BasicBlock* block, DominatorAnalysis* dominators,
+                  ir::CFG* cfg, ir::BasicBlock** common);
 };
 
 }  //  namespace opt
