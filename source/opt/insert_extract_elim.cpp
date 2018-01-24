@@ -219,6 +219,17 @@ bool InsertExtractElimPass::EliminateDeadInsertsOnePass(ir::Function* func) {
       if (op != SpvOpCompositeInsert &&
           (op != SpvOpPhi || !IsComposite(ii->type_id())))
         continue;
+      // The marking algorithm can be expensive for large arrays and the
+      // efficacy of eliminating dead inserts into arrays is questionable.
+      // Skip optimizing array inserts for now. Just mark them live.
+      // TODO(greg-lunarg): Eliminate dead array inserts
+      if (op == SpvOpCompositeInsert) {
+        ir::Instruction* typeInst = get_def_use_mgr()->GetDef(ii->type_id());
+        if (typeInst->opcode() == SpvOpTypeArray) {
+          liveInserts_.insert(ii->result_id());
+          continue;
+        }
+      }
       const uint32_t id = ii->result_id();
       get_def_use_mgr()->ForEachUser(id, [&ii, this](ir::Instruction* user) {
         switch (user->opcode()) {

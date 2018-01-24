@@ -77,9 +77,11 @@ class InsertExtractElimPass : public MemPass {
   // made. Return true if modified.
   bool EliminateDeadInserts(ir::Function* func);
 
-  // DCE all dead inserts in |func|. An insert is dead if the value it inserts
-  // is never used. Replace any reference to the insert with its original
-  // composite. Return true if modified.
+  // DCE all dead struct, matrix and vector inserts in |func|. An insert is
+  // dead if the value it inserts is never used. Replace any reference to the
+  // insert with its original composite. Return true if modified. Dead inserts
+  // in dependence cycles are not currently eliminated. Dead inserts into
+  // arrays are not currently eliminated.
   bool EliminateDeadInsertsOnePass(ir::Function* func);
 
   // Return id of component of |cinst| specified by |extIndices| starting with
