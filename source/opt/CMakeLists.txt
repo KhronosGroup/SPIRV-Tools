@@ -35,6 +35,7 @@ add_library(SPIRV-Tools-opt
   feature_manager.h
   flatten_decoration_pass.h
   fold.h
+  folding_rules.h
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
   function.h
@@ -101,6 +102,7 @@ add_library(SPIRV-Tools-opt
   feature_manager.cpp
   flatten_decoration_pass.cpp
   fold.cpp
+  folding_rules.cpp
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
   function.cpp
