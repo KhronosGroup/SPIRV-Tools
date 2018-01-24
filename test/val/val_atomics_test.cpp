@@ -26,6 +26,65 @@ using ::testing::Not;
 
 using ValidateAtomics = spvtest::ValidateBase<bool>;
 
+std::string GenerateShaderCode(
+    const std::string& body,
+    const std::string& capabilities_and_extensions = "") {
+  std::ostringstream ss;
+  ss << R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Int64
+)";
+
+  ss << capabilities_and_extensions;
+  ss << R"(
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%u64 = OpTypeInt 64 0
+%f32vec4 = OpTypeVector %f32 4
+
+%f32_0 = OpConstant %f32 0
+%f32_1 = OpConstant %f32 1
+%u32_0 = OpConstant %u32 0
+%u32_1 = OpConstant %u32 1
+%u64_1 = OpConstant %u64 1
+%f32vec4_0000 = OpConstantComposite %f32vec4 %f32_0 %f32_0 %f32_0 %f32_0
+
+%scope = OpConstant %u32 1
+%memory_semantics = OpConstant %u32 1
+
+%f32_ptr = OpTypePointer Workgroup %f32
+%f32_var = OpVariable %f32_ptr Workgroup
+
+%u32_ptr = OpTypePointer Workgroup %u32
+%u32_var = OpVariable %u32_ptr Workgroup
+
+%u64_ptr = OpTypePointer Workgroup %u64
+%u64_var = OpVariable %u64_ptr Workgroup
+
+%f32vec4_ptr = OpTypePointer Workgroup %f32vec4
+%f32vec4_var = OpVariable %f32vec4_ptr Workgroup
+
+%f32_ptr_function = OpTypePointer Function %f32
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+)";
+
+  ss << body;
+
+  ss << R"(
+OpReturn
+OpFunctionEnd)";
+
+  return ss.str();
+}
+
 std::string GenerateKernelCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "") {
@@ -85,7 +144,16 @@ OpFunctionEnd)";
   return ss.str();
 }
 
-TEST_F(ValidateAtomics, AtomicLoadSuccess) {
+TEST_F(ValidateAtomics, AtomicLoadShaderSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %u32 %u32_var %scope %memory_semantics
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicLoadKernelSuccess) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %f32 %f32_var %scope %memory_semantics
 %val2 = OpAtomicLoad %u32 %u32_var %scope %memory_semantics
@@ -93,6 +161,18 @@ TEST_F(ValidateAtomics, AtomicLoadSuccess) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicLoadShaderFloat) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %f32 %f32_var %scope %memory_semantics
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicLoad: "
+                        "expected Result Type to be int scalar type"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadWrongResultType) {
@@ -243,7 +323,17 @@ OpAtomicStore %f32_var %scope %memory_semantics %u32_1
                 "be the same"));
 }
 
-TEST_F(ValidateAtomics, AtomicExchangeSuccess) {
+TEST_F(ValidateAtomics, AtomicExchangeShaderSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicStore %u32_var %scope %memory_semantics %u32_1
+%val2 = OpAtomicExchange %u32 %u32_var %scope %memory_semantics %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicExchangeKernelSuccess) {
   const std::string body = R"(
 OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 %val2 = OpAtomicExchange %f32 %f32_var %scope %memory_semantics %f32_0
@@ -253,6 +343,19 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicExchangeShaderFloat) {
+  const std::string body = R"(
+OpAtomicStore %f32_var %scope %memory_semantics %f32_1
+%val2 = OpAtomicExchange %f32 %f32_var %scope %memory_semantics %f32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicExchange: "
+                        "expected Result Type to be int scalar type"));
 }
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongResultType) {
@@ -333,7 +436,17 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
                         "expected Value to be of type Result Type"));
 }
 
-TEST_F(ValidateAtomics, AtomicCompareExchangeSuccess) {
+TEST_F(ValidateAtomics, AtomicCompareExchangeShaderSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicStore %u32_var %scope %memory_semantics %u32_1
+%val2 = OpAtomicCompareExchange %u32 %u32_var %scope %memory_semantics %memory_semantics %u32_0 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicCompareExchangeKernelSuccess) {
   const std::string body = R"(
 OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 %val2 = OpAtomicCompareExchange %f32 %f32_var %scope %memory_semantics %memory_semantics %f32_0 %f32_1
@@ -343,6 +456,19 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicCompareExchangeShaderFloat) {
+  const std::string body = R"(
+OpAtomicStore %f32_var %scope %memory_semantics %f32_1
+%val1 = OpAtomicCompareExchange %f32 %f32_var %scope %memory_semantics %memory_semantics %f32_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicCompareExchange: "
+                        "expected Result Type to be int scalar type"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongResultType) {

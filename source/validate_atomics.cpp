@@ -48,8 +48,9 @@ spv_result_t AtomicsPass(ValidationState_t& _,
     case SpvOpAtomicXor:
     case SpvOpAtomicFlagTestAndSet:
     case SpvOpAtomicFlagClear: {
-      if (opcode == SpvOpAtomicLoad || opcode == SpvOpAtomicExchange ||
-          opcode == SpvOpAtomicCompareExchange) {
+      if (_.HasCapability(SpvCapabilityKernel) &&
+          (opcode == SpvOpAtomicLoad || opcode == SpvOpAtomicExchange ||
+           opcode == SpvOpAtomicCompareExchange)) {
         if (!_.IsFloatScalarType(result_type) &&
             !_.IsIntScalarType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
