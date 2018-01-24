@@ -1416,7 +1416,7 @@ TEST_F(InsertExtractElimTest, DeadInsertInCycleToDo) {
   // {
   //     int g_n  ;
   // };
-  // 
+  //
   // void main()
   // {
   //     vec2 v = vec2(0.0, 1.0);
@@ -1508,8 +1508,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InsertExtractElimPass>(
-      assembly, assembly, true, true);
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(assembly, assembly, true,
+                                                    true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

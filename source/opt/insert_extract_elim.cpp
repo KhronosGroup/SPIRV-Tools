@@ -120,7 +120,8 @@ void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insertChain,
   if (typeInst->opcode() == SpvOpTypeArray) return;
   // Insert chains are only composed of inserts and phis
   if (insertChain->opcode() != SpvOpCompositeInsert &&
-      insertChain->opcode() != SpvOpPhi) return;
+      insertChain->opcode() != SpvOpPhi)
+    return;
   // If extract indices are empty, mark all subcomponents if type
   // is constant length.
   if (pExtIndices == nullptr) {
