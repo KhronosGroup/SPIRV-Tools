@@ -115,6 +115,9 @@ uint32_t InsertExtractElimPass::NumComponents(uint32_t typeId) {
 void InsertExtractElimPass::MarkInsertChain(ir::Instruction* insertChain,
                                             std::vector<uint32_t>* pExtIndices,
                                             uint32_t extOffset) {
+  // Not currently optimizing array inserts.
+  ir::Instruction* typeInst = get_def_use_mgr()->GetDef(insertChain->type_id());
+  if (typeInst->opcode() == SpvOpTypeArray) return;
   // Insert chains are only composed of inserts and phis
   if (insertChain->opcode() != SpvOpCompositeInsert &&
       insertChain->opcode() != SpvOpPhi) return;
