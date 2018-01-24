@@ -15,6 +15,8 @@
 #include "fold.h"
 
 #include "def_use_manager.h"
+#include "folding_rules.h"
+#include "ir_builder.h"
 #include "ir_context.h"
 
 #include <cassert>
@@ -178,6 +180,42 @@ uint32_t OperateWords(SpvOp opcode,
       assert(false && "Invalid number of operands");
       return 0;
   }
+}
+
+bool FoldInstructionInternal(ir::Instruction* inst,
+                             std::function<uint32_t(uint32_t)> id_map) {
+  ir::IRContext* context = inst->context();
+  ir::Instruction* folded_inst = FoldInstructionToConstant(inst, id_map);
+  if (folded_inst != nullptr) {
+    inst->SetOpcode(SpvOpCopyObject);
+    inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {folded_inst->result_id()}}});
+    return true;
+  }
+
+  SpvOp opcode = inst->opcode();
+  analysis::ConstantManager* const_manger = context->get_constant_mgr();
+
+  std::vector<const analysis::Constant*> constants;
+  for (uint32_t i = 0; i < inst->NumInOperands(); i++) {
+    const ir::Operand* operand = &inst->GetInOperand(i);
+    if (operand->type != SPV_OPERAND_TYPE_ID) {
+      constants.push_back(nullptr);
+    } else {
+      uint32_t id = id_map(operand->words[0]);
+      inst->SetInOperand(i, {id});
+      const analysis::Constant* constant =
+          const_manger->FindDeclaredConstant(id);
+      constants.push_back(constant);
+    }
+  }
+
+  static FoldingRules* rules = new FoldingRules();
+  for (FoldingRule rule : rules->GetRulesForOpcode(opcode)) {
+    if (rule(inst, constants)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace
@@ -624,13 +662,26 @@ bool IsFoldableType(ir::Instruction* type_inst) {
 
 ir::Instruction* FoldInstruction(ir::Instruction* inst,
                                  std::function<uint32_t(uint32_t)> id_map) {
-  ir::Instruction* folded_inst = FoldInstructionToConstant(inst, id_map);
-  if (folded_inst != nullptr) {
-    return folded_inst;
+  ir::IRContext* context = inst->context();
+  bool modified = false;
+  std::unique_ptr<ir::Instruction> folded_inst(inst->Clone(context));
+  while (FoldInstructionInternal(&*folded_inst, id_map)) {
+    modified = true;
   }
 
-  // TODO: Add other folding opportunities that do not necessarily fold to a
-  // constant.
+  if (modified) {
+    if (folded_inst->opcode() == SpvOpCopyObject) {
+      analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+      return def_use_mgr->GetDef(folded_inst->GetSingleWordInOperand(0));
+    } else {
+      InstructionBuilder ir_builder(
+          context, inst,
+          ir::IRContext::kAnalysisDefUse |
+              ir::IRContext::kAnalysisInstrToBlockMapping);
+      folded_inst->SetResultId(context->TakeNextId());
+      return ir_builder.AddInstruction(std::move(folded_inst));
+    }
+  }
   return nullptr;
 }
 

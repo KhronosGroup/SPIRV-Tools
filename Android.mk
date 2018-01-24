@@ -78,6 +78,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/feature_manager.cpp \
 		source/opt/flatten_decoration_pass.cpp \
 		source/opt/fold.cpp \
+		source/opt/folding_rules.cpp \
 		source/opt/fold_spec_constant_op_and_composite_pass.cpp \
 		source/opt/freeze_spec_constant_value_pass.cpp \
 		source/opt/function.cpp \
