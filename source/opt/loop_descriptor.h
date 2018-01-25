@@ -30,7 +30,7 @@ namespace spvtools {
 namespace opt {
 class DominatorAnalysis;
 struct DominatorTreeNode;
-}
+}  // namespace opt
 namespace ir {
 class IRContext;
 class CFG;
