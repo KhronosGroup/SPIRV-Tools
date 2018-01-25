@@ -145,7 +145,7 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const ir::Function* f = spvtest::GetFunction(module, 2);
-  ir::LoopDescriptor ld{f};
+  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
   EXPECT_EQ(ld.NumLoops(), 3u);
 
@@ -331,7 +331,7 @@ TEST_F(PassClassTest, TripleNestedLoop) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const ir::Function* f = spvtest::GetFunction(module, 2);
-  ir::LoopDescriptor ld{f};
+  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
   EXPECT_EQ(ld.NumLoops(), 4u);
 
@@ -555,7 +555,7 @@ TEST_F(PassClassTest, LoopParentTest) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const ir::Function* f = spvtest::GetFunction(module, 2);
-  ir::LoopDescriptor ld{f};
+  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
   EXPECT_EQ(ld.NumLoops(), 4u);
 

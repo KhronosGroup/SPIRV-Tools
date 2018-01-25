@@ -40,6 +40,9 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisDominatorAnalysis) {
     ResetDominatorAnalysis();
   }
+  if (set & kAnalysisLoopAnalysis) {
+    ResetLoopAnalysis();
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
@@ -481,6 +484,21 @@ void IRContext::InitializeCombinators() {
   }
 
   valid_analyses_ |= kAnalysisCombinators;
+}
+
+ir::LoopDescriptor* IRContext::GetLoopDescriptor(const ir::Function* f) {
+  if (!AreAnalysesValid(kAnalysisLoopAnalysis)) {
+    ResetLoopAnalysis();
+  }
+
+  std::unordered_map<const ir::Function*, ir::LoopDescriptor>::iterator it =
+      loop_descriptors_.find(f);
+  if (it == loop_descriptors_.end()) {
+    return &loop_descriptors_.emplace(std::make_pair(f, ir::LoopDescriptor(f)))
+                .first->second;
+  }
+
+  return &it->second;
 }
 
 // Gets the dominator analysis for function |f|.
