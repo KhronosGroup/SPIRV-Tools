@@ -97,7 +97,7 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const ir::Function* f = spvtest::GetFunction(module, 2);
-  ir::LoopDescriptor ld{f};
+  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
   EXPECT_EQ(ld.NumLoops(), 1u);
 
@@ -194,7 +194,7 @@ TEST_F(PassClassTest, LoopWithNoPreHeader) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const ir::Function* f = spvtest::GetFunction(module, 2);
-  ir::LoopDescriptor ld{f};
+  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
   EXPECT_EQ(ld.NumLoops(), 2u);
 
