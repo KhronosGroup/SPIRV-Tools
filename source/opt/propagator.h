@@ -259,7 +259,7 @@ class SSAPropagator {
   // be in def-use cycles with other Phi instructions, and (b) they are always
   // executed when a basic block is simulated (see the description of the Sparse
   // Conditional Constant algorithm in the original paper).
-  void AddSSAEdges(ir::Instruction* instr);
+  void AddSSAEdges(ir::Instruction* instr, bool traverse_phis = false);
 
   // IR context to use.
   ir::IRContext* ctx_;
