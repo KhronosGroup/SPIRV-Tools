@@ -328,6 +328,154 @@ OpFunctionEnd
                                              true, true);
 }
 
+#ifdef SPIRV_EFFCEE
+TEST_F(BlockMergeTest, PhiInSuccessorOfMergedBlock) {
+  const std::string text = R"(
+; CHECK: OpSelectionMerge [[merge:%\w+]] None
+; CHECK-NEXT: OpBranchConditional {{%\w+}} [[then:%\w+]] [[else:%\w+]]
+; CHECK: [[then]] = OpLabel
+; CHECK-NEXT: OpBranch [[merge]]
+; CHECK: [[else]] = OpLabel
+; CHECK-NEXT: OpBranch [[merge]]
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: OpPhi {{%\w+}} %true [[then]] %false [[else]]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse  %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpBranchConditional %true %then %else
+%then = OpLabel
+OpBranch %then_next
+%then_next = OpLabel
+OpBranch %merge
+%else = OpLabel
+OpBranch %merge
+%merge = OpLabel
+%phi = OpPhi %bool %true %then_next %false %else
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, UpdateMergeInstruction) {
+  const std::string text = R"(
+; CHECK: OpSelectionMerge [[merge:%\w+]] None
+; CHECK-NEXT: OpBranchConditional {{%\w+}} [[then:%\w+]] [[else:%\w+]]
+; CHECK: [[then]] = OpLabel
+; CHECK-NEXT: OpBranch [[merge]]
+; CHECK: [[else]] = OpLabel
+; CHECK-NEXT: OpBranch [[merge]]
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: OpReturn
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse  %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpSelectionMerge %real_merge None
+OpBranchConditional %true %then %else
+%then = OpLabel
+OpBranch %merge
+%else = OpLabel
+OpBranch %merge
+%merge = OpLabel
+OpBranch %real_merge
+%real_merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, TwoMergeBlocksCannotBeMerged) {
+  const std::string text = R"(
+; CHECK: OpSelectionMerge [[outer_merge:%\w+]] None
+; CHECK: OpSelectionMerge [[inner_merge:%\w+]] None
+; CHECK: [[inner_merge]] = OpLabel
+; CHECK-NEXT: OpBranch [[outer_merge]]
+; CHECK: [[outer_merge]] = OpLabel
+; CHECK-NEXT: OpReturn
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse  %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpSelectionMerge %outer_merge None
+OpBranchConditional %true %then %else
+%then = OpLabel
+OpBranch %inner_header
+%else = OpLabel
+OpBranch %inner_header
+%inner_header = OpLabel
+OpSelectionMerge %inner_merge None
+OpBranchConditional %true %inner_then %inner_else
+%inner_then = OpLabel
+OpBranch %inner_merge
+%inner_else = OpLabel
+OpBranch %inner_merge
+%inner_merge = OpLabel
+OpBranch %outer_merge
+%outer_merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, MergeContinue) {
+  const std::string text = R"(
+; CHECK: OpBranch [[header:%\w+]]
+; CHECK: [[header]] = OpLabel
+; CHECK-NEXT: OpLogicalAnd
+; CHECK-NEXT: OpLoopMerge {{%\w+}} [[header]] None
+; CHECK-NEXT: OpBranch [[header]]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse  %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpBranch %header
+%header = OpLabel
+OpLoopMerge %merge %continue None
+OpBranch %continue
+%continue = OpLabel
+%op = OpLogicalAnd %bool %true %false
+OpBranch %header
+%merge = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+#endif  // SPIRV_EFFCEE
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow
