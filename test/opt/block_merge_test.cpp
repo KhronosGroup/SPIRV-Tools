@@ -474,6 +474,43 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
 }
+
+TEST_F(BlockMergeTest, TwoHeadersCannotBeMerged) {
+  const std::string text = R"(
+; CHECK: OpBranch [[loop_header:%\w+]]
+; CHECK: [[loop_header]] = OpLabel
+; CHECK-NEXT: OpLoopMerge
+; CHECK-NEXT: OpBranch [[if_header:%\w+]]
+; CHECK: [[if_header]] = OpLabel
+; CHECK-NEXT: OpSelectionMerge
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%false = OpConstantFalse  %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpBranch %header
+%header = OpLabel
+OpLoopMerge %merge %continue None
+OpBranch %inner_header
+%inner_header = OpLabel
+OpSelectionMerge %continue None
+OpBranchConditional %true %then %continue
+%then = OpLabel
+OpBranch %continue
+%continue = OpLabel
+OpBranchConditional %false %merge %header
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
