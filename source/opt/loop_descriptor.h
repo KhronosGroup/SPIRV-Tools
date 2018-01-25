@@ -23,12 +23,16 @@
 #include <unordered_set>
 #include <vector>
 
-#include "opt/module.h"
-#include "opt/pass.h"
+#include "opt/basic_block.h"
 #include "opt/tree_iterator.h"
 
 namespace spvtools {
+namespace opt {
+class DominatorAnalysis;
+struct DominatorTreeNode;
+}  // namespace opt
 namespace ir {
+class IRContext;
 class CFG;
 class LoopDescriptor;
 
@@ -128,26 +132,12 @@ class Loop {
   }
 
   // Returns true if the instruction |inst| is inside this loop.
-  inline bool IsInsideLoop(Instruction* inst) const {
-    const BasicBlock* parent_block = inst->context()->get_instr_block(inst);
-    if (!parent_block) return true;
-    return IsInsideLoop(parent_block);
-  }
+  bool IsInsideLoop(Instruction* inst) const;
 
   // Adds the Basic Block |bb| this loop and its parents.
   void AddBasicBlockToLoop(const BasicBlock* bb) {
-#ifndef NDEBUG
-    assert(bb->GetParent() && "The basic block does not belong to a function");
-    IRContext* context = bb->GetParent()->GetParent()->context();
-
-    opt::DominatorAnalysis* dom_analysis =
-        context->GetDominatorAnalysis(bb->GetParent(), *context->cfg());
-    assert(dom_analysis->Dominates(GetHeaderBlock(), bb));
-
-    opt::PostDominatorAnalysis* postdom_analysis =
-        context->GetPostDominatorAnalysis(bb->GetParent(), *context->cfg());
-    assert(postdom_analysis->Dominates(GetMergeBlock(), bb));
-#endif  // NDEBUG
+    assert(IsBasicBlockInLoopSlow(bb) &&
+           "Basic block does not belong to the loop");
 
     for (Loop* loop = this; loop != nullptr; loop = loop->parent_) {
       loop_basic_blocks_.insert(bb->id());
@@ -176,6 +166,11 @@ class Loop {
   // A set of all the basic blocks which comprise the loop structure. Will be
   // computed only when needed on demand.
   BasicBlockListTy loop_basic_blocks_;
+
+  // Check that |bb| is inside the loop using domination properties.
+  // Note: this is for assertion purposes only, IsInsideLoop should be used
+  // instead.
+  bool IsBasicBlockInLoopSlow(const BasicBlock* bb);
 
   // Sets the parent loop of this loop, that is, a loop which contains this loop
   // as a nested child loop.

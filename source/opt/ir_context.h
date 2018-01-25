@@ -22,6 +22,7 @@
 #include "def_use_manager.h"
 #include "dominator_analysis.h"
 #include "feature_manager.h"
+#include "loop_descriptor.h"
 #include "module.h"
 #include "type_manager.h"
 
@@ -55,7 +56,8 @@ class IRContext {
     kAnalysisCombinators = 1 << 3,
     kAnalysisCFG = 1 << 4,
     kAnalysisDominatorAnalysis = 1 << 5,
-    kAnalysisEnd = 1 << 6
+    kAnalysisLoopAnalysis = 1 << 6,
+    kAnalysisEnd = 1 << 7
   };
 
   friend inline constexpr Analysis operator|(Analysis lhs, Analysis rhs);
@@ -363,6 +365,9 @@ class IRContext {
     return cfg_.get();
   }
 
+  // Gets the loop descriptor for function |f|.
+  ir::LoopDescriptor* GetLoopDescriptor(const ir::Function* f);
+
   // Gets the dominator analysis for function |f|.
   opt::DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f,
                                                const ir::CFG&);
@@ -433,6 +438,13 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisDominatorAnalysis;
   }
 
+  // Removes all computed loop descriptors.
+  void ResetLoopAnalysis() {
+    // Clear the cache.
+    loop_descriptors_.clear();
+    valid_analyses_ = valid_analyses_ | kAnalysisLoopAnalysis;
+  }
+
   // Analyzes the features in the owned module. Builds the manager if required.
   void AnalyzeFeatures() {
     feature_mgr_.reset(new opt::FeatureManager(grammar_));
@@ -498,6 +510,9 @@ class IRContext {
   std::map<const ir::Function*, opt::DominatorAnalysis> dominator_trees_;
   std::map<const ir::Function*, opt::PostDominatorAnalysis>
       post_dominator_trees_;
+
+  // Cache of loop descriptors for each function.
+  std::unordered_map<const ir::Function*, ir::LoopDescriptor> loop_descriptors_;
 
   // Constant manager for |module_|.
   std::unique_ptr<opt::analysis::ConstantManager> constant_mgr_;
