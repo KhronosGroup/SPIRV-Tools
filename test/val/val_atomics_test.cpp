@@ -56,7 +56,14 @@ OpEntryPoint Fragment %main "main"
 %f32vec4_0000 = OpConstantComposite %f32vec4 %f32_0 %f32_0 %f32_0 %f32_0
 
 %scope = OpConstant %u32 1
-%memory_semantics = OpConstant %u32 1
+
+%relaxed = OpConstant %u32 0
+%acquire = OpConstant %u32 2
+%release = OpConstant %u32 4
+%acquire_release = OpConstant %u32 8
+%acquire_and_release = OpConstant %u32 6
+%sequentially_consistent = OpConstant %u32 16
+%acquire_release_uniform_workgroup = OpConstant %u32 328
 
 %f32_ptr = OpTypePointer Workgroup %f32
 %f32_var = OpVariable %f32_ptr Workgroup
@@ -115,7 +122,15 @@ OpMemoryModel Physical32 OpenCL
 %f32vec4_0000 = OpConstantComposite %f32vec4 %f32_0 %f32_0 %f32_0 %f32_0
 
 %scope = OpConstant %u32 1
-%memory_semantics = OpConstant %u32 1
+
+%relaxed = OpConstant %u32 0
+%acquire = OpConstant %u32 2
+%release = OpConstant %u32 4
+%acquire_release = OpConstant %u32 8
+%acquire_and_release = OpConstant %u32 6
+%sequentially_consistent = OpConstant %u32 16
+%acquire_release_uniform_workgroup = OpConstant %u32 328
+%acquire_release_atomic_counter_workgroup = OpConstant %u32 1288
 
 %f32_ptr = OpTypePointer Workgroup %f32
 %f32_var = OpVariable %f32_ptr Workgroup
@@ -146,7 +161,7 @@ OpFunctionEnd)";
 
 TEST_F(ValidateAtomics, AtomicLoadShaderSuccess) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %u32 %u32_var %scope %memory_semantics
+%val1 = OpAtomicLoad %u32 %u32_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -155,8 +170,9 @@ TEST_F(ValidateAtomics, AtomicLoadShaderSuccess) {
 
 TEST_F(ValidateAtomics, AtomicLoadKernelSuccess) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %f32 %f32_var %scope %memory_semantics
-%val2 = OpAtomicLoad %u32 %u32_var %scope %memory_semantics
+%val1 = OpAtomicLoad %f32 %f32_var %scope %relaxed
+%val2 = OpAtomicLoad %u32 %u32_var %scope %relaxed
+%val3 = OpAtomicLoad %u64 %u64_var %scope %acquire
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -165,7 +181,7 @@ TEST_F(ValidateAtomics, AtomicLoadKernelSuccess) {
 
 TEST_F(ValidateAtomics, AtomicLoadShaderFloat) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %f32 %f32_var %scope %memory_semantics
+%val1 = OpAtomicLoad %f32 %f32_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -177,7 +193,7 @@ TEST_F(ValidateAtomics, AtomicLoadShaderFloat) {
 
 TEST_F(ValidateAtomics, AtomicLoadWrongResultType) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %f32vec4 %f32vec4_var %scope %memory_semantics
+%val1 = OpAtomicLoad %f32vec4 %f32vec4_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -189,7 +205,7 @@ TEST_F(ValidateAtomics, AtomicLoadWrongResultType) {
 
 TEST_F(ValidateAtomics, AtomicLoadWrongPointerType) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %f32 %f32_ptr %scope %memory_semantics
+%val1 = OpAtomicLoad %f32 %f32_ptr %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -201,7 +217,7 @@ TEST_F(ValidateAtomics, AtomicLoadWrongPointerType) {
 
 TEST_F(ValidateAtomics, AtomicLoadWrongPointerDataType) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %u32 %f32_var %scope %memory_semantics
+%val1 = OpAtomicLoad %u32 %f32_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -214,7 +230,7 @@ TEST_F(ValidateAtomics, AtomicLoadWrongPointerDataType) {
 
 TEST_F(ValidateAtomics, AtomicLoadWrongScopeType) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %f32 %f32_var %f32_1 %memory_semantics
+%val1 = OpAtomicLoad %f32 %f32_var %f32_1 %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -237,8 +253,8 @@ TEST_F(ValidateAtomics, AtomicLoadWrongMemorySemanticsType) {
 
 TEST_F(ValidateAtomics, AtomicStoreSuccess) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicStore %u32_var %scope %memory_semantics %u32_1
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicStore %u32_var %scope %relaxed %u32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -247,7 +263,7 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicStoreWrongPointerType) {
   const std::string body = R"(
-OpAtomicStore %f32_1 %scope %memory_semantics %f32_1
+OpAtomicStore %f32_1 %scope %relaxed %f32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -259,7 +275,7 @@ OpAtomicStore %f32_1 %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicStoreWrongPointerDataType) {
   const std::string body = R"(
-OpAtomicStore %f32vec4_var %scope %memory_semantics %f32_1
+OpAtomicStore %f32vec4_var %scope %relaxed %f32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -274,7 +290,7 @@ OpAtomicStore %f32vec4_var %scope %memory_semantics %f32_1
 TEST_F(ValidateAtomics, AtomicStoreWrongPointerStorageType) {
   const std::string body = R"(
 %f32_var_function = OpVariable %f32_ptr_function Function
-OpAtomicStore %f32_var_function %scope %memory_semantics %f32_1
+OpAtomicStore %f32_var_function %scope %relaxed %f32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -288,7 +304,7 @@ OpAtomicStore %f32_var_function %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicStoreWrongScopeType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %f32_1 %memory_semantics %f32_1
+OpAtomicStore %f32_var %f32_1 %relaxed %f32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -311,7 +327,7 @@ OpAtomicStore %f32_var %scope %f32_1 %f32_1
 
 TEST_F(ValidateAtomics, AtomicStoreWrongValueType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %u32_1
+OpAtomicStore %f32_var %scope %relaxed %u32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -325,8 +341,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %u32_1
 
 TEST_F(ValidateAtomics, AtomicExchangeShaderSuccess) {
   const std::string body = R"(
-%val1 = OpAtomicStore %u32_var %scope %memory_semantics %u32_1
-%val2 = OpAtomicExchange %u32 %u32_var %scope %memory_semantics %u32_0
+%val1 = OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val2 = OpAtomicExchange %u32 %u32_var %scope %relaxed %u32_0
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -335,10 +351,10 @@ TEST_F(ValidateAtomics, AtomicExchangeShaderSuccess) {
 
 TEST_F(ValidateAtomics, AtomicExchangeKernelSuccess) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicExchange %f32 %f32_var %scope %memory_semantics %f32_0
-%val3 = OpAtomicStore %u32_var %scope %memory_semantics %u32_1
-%val4 = OpAtomicExchange %u32 %u32_var %scope %memory_semantics %u32_0
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicExchange %f32 %f32_var %scope %relaxed %f32_0
+%val3 = OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val4 = OpAtomicExchange %u32 %u32_var %scope %relaxed %u32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -347,8 +363,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicExchangeShaderFloat) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicExchange %f32 %f32_var %scope %memory_semantics %f32_0
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicExchange %f32 %f32_var %scope %relaxed %f32_0
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -361,7 +377,7 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 TEST_F(ValidateAtomics, AtomicExchangeWrongResultType) {
   const std::string body = R"(
 %val1 = OpStore %f32vec4_var %f32vec4_0000
-%val2 = OpAtomicExchange %f32vec4 %f32vec4_var %scope %memory_semantics %f32vec4_0000
+%val2 = OpAtomicExchange %f32vec4 %f32vec4_var %scope %relaxed %f32vec4_0000
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -373,7 +389,7 @@ TEST_F(ValidateAtomics, AtomicExchangeWrongResultType) {
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongPointerType) {
   const std::string body = R"(
-%val2 = OpAtomicExchange %f32 %f32vec4_ptr %scope %memory_semantics %f32vec4_0000
+%val2 = OpAtomicExchange %f32 %f32vec4_ptr %scope %relaxed %f32vec4_0000
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -387,7 +403,7 @@ TEST_F(ValidateAtomics, AtomicExchangeWrongPointerType) {
 TEST_F(ValidateAtomics, AtomicExchangeWrongPointerDataType) {
   const std::string body = R"(
 %val1 = OpStore %f32vec4_var %f32vec4_0000
-%val2 = OpAtomicExchange %f32 %f32vec4_var %scope %memory_semantics %f32vec4_0000
+%val2 = OpAtomicExchange %f32 %f32vec4_var %scope %relaxed %f32vec4_0000
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -400,8 +416,8 @@ TEST_F(ValidateAtomics, AtomicExchangeWrongPointerDataType) {
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongScopeType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicExchange %f32 %f32_var %f32_1 %memory_semantics %f32_0
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicExchange %f32 %f32_var %f32_1 %relaxed %f32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -412,7 +428,7 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongMemorySemanticsType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
+OpAtomicStore %f32_var %scope %relaxed %f32_1
 %val2 = OpAtomicExchange %f32 %f32_var %scope %f32_1 %f32_0
 )";
 
@@ -425,8 +441,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongValueType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicExchange %f32 %f32_var %scope %memory_semantics %u32_0
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicExchange %f32 %f32_var %scope %relaxed %u32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -438,8 +454,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeShaderSuccess) {
   const std::string body = R"(
-%val1 = OpAtomicStore %u32_var %scope %memory_semantics %u32_1
-%val2 = OpAtomicCompareExchange %u32 %u32_var %scope %memory_semantics %memory_semantics %u32_0 %u32_0
+%val1 = OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val2 = OpAtomicCompareExchange %u32 %u32_var %scope %relaxed %relaxed %u32_0 %u32_0
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -448,10 +464,10 @@ TEST_F(ValidateAtomics, AtomicCompareExchangeShaderSuccess) {
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeKernelSuccess) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %memory_semantics %memory_semantics %f32_0 %f32_1
-%val3 = OpAtomicStore %u32_var %scope %memory_semantics %u32_1
-%val4 = OpAtomicCompareExchange %u32 %u32_var %scope %memory_semantics %memory_semantics %u32_0 %u32_0
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %relaxed %relaxed %f32_0 %f32_1
+%val3 = OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val4 = OpAtomicCompareExchange %u32 %u32_var %scope %relaxed %relaxed %u32_0 %u32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -460,8 +476,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeShaderFloat) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val1 = OpAtomicCompareExchange %f32 %f32_var %scope %memory_semantics %memory_semantics %f32_0 %f32_1
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val1 = OpAtomicCompareExchange %f32 %f32_var %scope %relaxed %relaxed %f32_0 %f32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -474,7 +490,7 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongResultType) {
   const std::string body = R"(
 %val1 = OpStore %f32vec4_var %f32vec4_0000
-%val2 = OpAtomicCompareExchange %f32vec4 %f32vec4_var %scope %memory_semantics %memory_semantics %f32vec4_0000 %f32vec4_0000
+%val2 = OpAtomicCompareExchange %f32vec4 %f32vec4_var %scope %relaxed %relaxed %f32vec4_0000 %f32vec4_0000
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -486,7 +502,7 @@ TEST_F(ValidateAtomics, AtomicCompareExchangeWrongResultType) {
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerType) {
   const std::string body = R"(
-%val2 = OpAtomicCompareExchange %f32 %f32vec4_ptr %scope %memory_semantics %memory_semantics %f32vec4_0000 %f32vec4_0000
+%val2 = OpAtomicCompareExchange %f32 %f32vec4_ptr %scope %relaxed %relaxed %f32vec4_0000 %f32vec4_0000
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -499,7 +515,7 @@ TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerType) {
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerDataType) {
   const std::string body = R"(
 %val1 = OpStore %f32vec4_var %f32vec4_0000
-%val2 = OpAtomicCompareExchange %f32 %f32vec4_var %scope %memory_semantics %memory_semantics %f32_0 %f32_1
+%val2 = OpAtomicCompareExchange %f32 %f32vec4_var %scope %relaxed %relaxed %f32_0 %f32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -512,8 +528,8 @@ TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerDataType) {
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongScopeType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicCompareExchange %f32 %f32_var %f32_1 %memory_semantics %memory_semantics %f32_0 %f32_0
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicCompareExchange %f32 %f32_var %f32_1 %relaxed %relaxed %f32_0 %f32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -525,8 +541,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongMemorySemanticsType1) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %f32_1 %memory_semantics %f32_0 %f32_0
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %f32_1 %relaxed %f32_0 %f32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -539,8 +555,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongMemorySemanticsType2) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %memory_semantics %f32_1 %f32_0 %f32_0
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %relaxed %f32_1 %f32_0 %f32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -551,10 +567,23 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
           "AtomicCompareExchange: expected Memory Semantics to be 32-bit int"));
 }
 
+TEST_F(ValidateAtomics, AtomicCompareExchangeUnequalRelease) {
+  const std::string body = R"(
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %relaxed %release %f32_0 %f32_0
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicCompareExchange: Memory Semantics Release and "
+                        "AcquireRelease cannot be used for operand Unequal"));
+}
+
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongValueType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %memory_semantics %memory_semantics %u32_0 %f32_1
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %relaxed %relaxed %u32_0 %f32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -566,8 +595,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongComparatorType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %memory_semantics %memory_semantics %f32_0 %u32_1
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicCompareExchange %f32 %f32_var %scope %relaxed %relaxed %f32_0 %u32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -579,8 +608,8 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWeakSuccess) {
   const std::string body = R"(
-%val3 = OpAtomicStore %u32_var %scope %memory_semantics %u32_1
-%val4 = OpAtomicCompareExchangeWeak %u32 %u32_var %scope %memory_semantics %memory_semantics %u32_0 %u32_0
+%val3 = OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val4 = OpAtomicCompareExchangeWeak %u32 %u32_var %scope %relaxed %relaxed %u32_0 %u32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -589,8 +618,8 @@ TEST_F(ValidateAtomics, AtomicCompareExchangeWeakSuccess) {
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWeakWrongResultType) {
   const std::string body = R"(
-OpAtomicStore %f32_var %scope %memory_semantics %f32_1
-%val2 = OpAtomicCompareExchangeWeak %f32 %f32_var %scope %memory_semantics %memory_semantics %f32_0 %f32_1
+OpAtomicStore %f32_var %scope %relaxed %f32_1
+%val2 = OpAtomicCompareExchangeWeak %f32 %f32_var %scope %relaxed %relaxed %f32_0 %f32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -602,18 +631,18 @@ OpAtomicStore %f32_var %scope %memory_semantics %f32_1
 
 TEST_F(ValidateAtomics, AtomicArithmeticsSuccess) {
   const std::string body = R"(
-OpAtomicStore %u32_var %scope %memory_semantics %u32_1
-%val1 = OpAtomicIIncrement %u32 %u32_var %scope %memory_semantics
-%val2 = OpAtomicIDecrement %u32 %u32_var %scope %memory_semantics
-%val3 = OpAtomicIAdd %u32 %u32_var %scope %memory_semantics %u32_1
-%val4 = OpAtomicISub %u32 %u32_var %scope %memory_semantics %u32_1
-%val5 = OpAtomicUMin %u32 %u32_var %scope %memory_semantics %u32_1
-%val6 = OpAtomicUMax %u32 %u32_var %scope %memory_semantics %u32_1
-%val7 = OpAtomicSMin %u32 %u32_var %scope %memory_semantics %u32_1
-%val8 = OpAtomicSMax %u32 %u32_var %scope %memory_semantics %u32_1
-%val9 = OpAtomicAnd %u32 %u32_var %scope %memory_semantics %u32_1
-%val10 = OpAtomicOr %u32 %u32_var %scope %memory_semantics %u32_1
-%val11 = OpAtomicXor %u32 %u32_var %scope %memory_semantics %u32_1
+OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val1 = OpAtomicIIncrement %u32 %u32_var %scope %acquire_release
+%val2 = OpAtomicIDecrement %u32 %u32_var %scope %acquire_release
+%val3 = OpAtomicIAdd %u32 %u32_var %scope %acquire_release %u32_1
+%val4 = OpAtomicISub %u32 %u32_var %scope %acquire_release %u32_1
+%val5 = OpAtomicUMin %u32 %u32_var %scope %acquire_release %u32_1
+%val6 = OpAtomicUMax %u32 %u32_var %scope %acquire_release %u32_1
+%val7 = OpAtomicSMin %u32 %u32_var %scope %sequentially_consistent %u32_1
+%val8 = OpAtomicSMax %u32 %u32_var %scope %sequentially_consistent %u32_1
+%val9 = OpAtomicAnd %u32 %u32_var %scope %sequentially_consistent %u32_1
+%val10 = OpAtomicOr %u32 %u32_var %scope %sequentially_consistent %u32_1
+%val11 = OpAtomicXor %u32 %u32_var %scope %sequentially_consistent %u32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -622,8 +651,8 @@ OpAtomicStore %u32_var %scope %memory_semantics %u32_1
 
 TEST_F(ValidateAtomics, AtomicFlagsSuccess) {
   const std::string body = R"(
-OpAtomicFlagClear %u32_var %scope %memory_semantics
-%val1 = OpAtomicFlagTestAndSet %bool %u32_var %scope %memory_semantics
+OpAtomicFlagClear %u32_var %scope %release
+%val1 = OpAtomicFlagTestAndSet %bool %u32_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -632,7 +661,7 @@ OpAtomicFlagClear %u32_var %scope %memory_semantics
 
 TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongResultType) {
   const std::string body = R"(
-%val1 = OpAtomicFlagTestAndSet %u32 %u32_var %scope %memory_semantics
+%val1 = OpAtomicFlagTestAndSet %u32 %u32_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -644,7 +673,7 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongResultType) {
 
 TEST_F(ValidateAtomics, AtomicFlagTestAndSetNotPointer) {
   const std::string body = R"(
-%val1 = OpAtomicFlagTestAndSet %bool %u32_1 %scope %memory_semantics
+%val1 = OpAtomicFlagTestAndSet %bool %u32_1 %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -656,7 +685,7 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetNotPointer) {
 
 TEST_F(ValidateAtomics, AtomicFlagTestAndSetNotIntPointer) {
   const std::string body = R"(
-%val1 = OpAtomicFlagTestAndSet %bool %f32_var %scope %memory_semantics
+%val1 = OpAtomicFlagTestAndSet %bool %f32_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -669,7 +698,7 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetNotIntPointer) {
 
 TEST_F(ValidateAtomics, AtomicFlagTestAndSetNotInt32Pointer) {
   const std::string body = R"(
-%val1 = OpAtomicFlagTestAndSet %bool %u64_var %scope %memory_semantics
+%val1 = OpAtomicFlagTestAndSet %bool %u64_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -682,7 +711,7 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetNotInt32Pointer) {
 
 TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongScopeType) {
   const std::string body = R"(
-%val1 = OpAtomicFlagTestAndSet %bool %u32_var %u64_1 %memory_semantics
+%val1 = OpAtomicFlagTestAndSet %bool %u32_var %u64_1 %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -704,9 +733,21 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongMemorySemanticsType) {
                         "expected Memory Semantics to be 32-bit int"));
 }
 
+TEST_F(ValidateAtomics, AtomicFlagClearAcquire) {
+  const std::string body = R"(
+OpAtomicFlagClear %u32_var %scope %acquire
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory Semantics Acquire and AcquireRelease cannot be "
+                        "used with AtomicFlagClear"));
+}
+
 TEST_F(ValidateAtomics, AtomicFlagClearNotPointer) {
   const std::string body = R"(
-OpAtomicFlagClear %u32_1 %scope %memory_semantics
+OpAtomicFlagClear %u32_1 %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -718,7 +759,7 @@ OpAtomicFlagClear %u32_1 %scope %memory_semantics
 
 TEST_F(ValidateAtomics, AtomicFlagClearNotIntPointer) {
   const std::string body = R"(
-OpAtomicFlagClear %f32_var %scope %memory_semantics
+OpAtomicFlagClear %f32_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -731,7 +772,7 @@ OpAtomicFlagClear %f32_var %scope %memory_semantics
 
 TEST_F(ValidateAtomics, AtomicFlagClearNotInt32Pointer) {
   const std::string body = R"(
-OpAtomicFlagClear %u64_var %scope %memory_semantics
+OpAtomicFlagClear %u64_var %scope %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -744,7 +785,7 @@ OpAtomicFlagClear %u64_var %scope %memory_semantics
 
 TEST_F(ValidateAtomics, AtomicFlagClearWrongScopeType) {
   const std::string body = R"(
-OpAtomicFlagClear %u32_var %u64_1 %memory_semantics
+OpAtomicFlagClear %u32_var %u64_1 %relaxed
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
@@ -763,6 +804,67 @@ OpAtomicFlagClear %u32_var %scope %u64_1
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("AtomicFlagClear: expected Memory Semantics to be 32-bit int"));
+}
+
+TEST_F(ValidateAtomics, AtomicIIncrementAcquireAndRelease) {
+  const std::string body = R"(
+OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val1 = OpAtomicIIncrement %u32 %u32_var %scope %acquire_and_release
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicIIncrement: no more than one of the following Memory "
+                "Semantics bits can be set at the same time: Acquire, Release, "
+                "AcquireRelease or SequentiallyConsistent"));
+}
+
+TEST_F(ValidateAtomics, AtomicUniformMemorySemanticsShader) {
+  const std::string body = R"(
+OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val1 = OpAtomicIIncrement %u32 %u32_var %scope %acquire_release_uniform_workgroup
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicUniformMemorySemanticsKernel) {
+  const std::string body = R"(
+OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val1 = OpAtomicIIncrement %u32 %u32_var %scope %acquire_release_uniform_workgroup
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicIIncrement: Memory Semantics UniformMemory "
+                        "requires capability Shader"));
+}
+
+TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsNoCapability) {
+  const std::string body = R"(
+OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val1 = OpAtomicIIncrement %u32 %u32_var %scope %acquire_release_atomic_counter_workgroup
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicIIncrement: Memory Semantics UniformMemory "
+                        "requires capability AtomicStorage"));
+}
+
+TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsWithCapability) {
+  const std::string body = R"(
+OpAtomicStore %u32_var %scope %relaxed %u32_1
+%val1 = OpAtomicIIncrement %u32 %u32_var %scope %acquire_release_atomic_counter_workgroup
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body, "OpCapability AtomicStorage\n"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 }  // anonymous namespace
