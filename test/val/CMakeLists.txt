@@ -169,3 +169,9 @@ add_spvtools_unittest(TARGET val_extensions
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET val_adjacency
+        SRCS val_adjacency_test.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)

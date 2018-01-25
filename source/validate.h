@@ -63,6 +63,18 @@ spv_result_t UpdateIdUse(ValidationState_t& _);
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_ID otherwise
 spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
 
+/// @brief This function checks for preconditions involving the adjacent
+/// instructions.
+///
+/// This function will iterate over all instructions and check for any required
+/// predecessor and/or successor instructions. e.g. SpvOpPhi must only be
+/// preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
+///
+/// @param[in] _ the validation state of the module
+///
+/// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_DATA otherwise
+spv_result_t ValidateAdjacency(ValidationState_t& _);
+
 /// @brief Updates the immediate dominator for each of the block edges
 ///
 /// Updates the immediate dominator of the blocks for each of the edges
