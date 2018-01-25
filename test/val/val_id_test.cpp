@@ -122,8 +122,6 @@ string BranchConditionalSetup = R"(
    %voidfunc = OpTypeFunction %void
        %main = OpFunction %void None %voidfunc
       %lmain = OpLabel
-
-               OpSelectionMerge %end None
 )";
 
 string BranchConditionalTail = R"(
@@ -3517,21 +3515,6 @@ OpFunctionEnd)";
                         "'23' as an operand of <id> '24'."));
 }
 
-// Invalid: OpSampledImage result <id> is used by OpPhi
-TEST_F(ValidateIdWithMessage, OpSampledImageUsedInOpPhiBad) {
-  string spirv = kGLSL450MemoryModel + sampledImageSetup + R"(
-%smpld_img  = OpSampledImage %sampled_image_type %image_inst %sampler_inst
-%phi_result = OpPhi %sampled_image_type %smpld_img %label_1
-OpReturn
-OpFunctionEnd)";
-  CompileSuccessfully(spirv.c_str());
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Result <id> from OpSampledImage instruction must not "
-                        "appear as operands of OpPhi. Found result <id> '23' "
-                        "as an operand of <id> '24'."));
-}
-
 // Valid: Get a float in a matrix using CompositeExtract.
 // Valid: Insert float into a matrix using CompositeInsert.
 TEST_F(ValidateIdWithMessage, CompositeExtractInsertGood) {
@@ -3939,6 +3922,7 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
 TEST_F(ValidateIdWithMessage, OpBranchConditionalGood) {
   string spirv = BranchConditionalSetup + R"(
     %branch_cond = OpINotEqual %bool %i0 %i1
+                   OpSelectionMerge %end None
                    OpBranchConditional %branch_cond %target_t %target_f
   )" + BranchConditionalTail;
 
@@ -3949,6 +3933,7 @@ TEST_F(ValidateIdWithMessage, OpBranchConditionalGood) {
 TEST_F(ValidateIdWithMessage, OpBranchConditionalWithWeightsGood) {
   string spirv = BranchConditionalSetup + R"(
     %branch_cond = OpINotEqual %bool %i0 %i1
+                   OpSelectionMerge %end None
                    OpBranchConditional %branch_cond %target_t %target_f 1 1
   )" + BranchConditionalTail;
 
@@ -3958,7 +3943,8 @@ TEST_F(ValidateIdWithMessage, OpBranchConditionalWithWeightsGood) {
 
 TEST_F(ValidateIdWithMessage, OpBranchConditional_CondIsScalarInt) {
   string spirv = BranchConditionalSetup + R"(
-    OpBranchConditional %i0 %target_t %target_f
+                   OpSelectionMerge %end None
+                   OpBranchConditional %i0 %target_t %target_f
   )" + BranchConditionalTail;
 
   CompileSuccessfully(spirv.c_str());
@@ -3971,6 +3957,7 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_CondIsScalarInt) {
 
 TEST_F(ValidateIdWithMessage, OpBranchConditional_TrueTargetIsNotLabel) {
   string spirv = BranchConditionalSetup + R"(
+                   OpSelectionMerge %end None
                    OpBranchConditional %i0 %i0 %target_f
   )" + BranchConditionalTail;
 
@@ -3989,7 +3976,8 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_TrueTargetIsNotLabel) {
 
 TEST_F(ValidateIdWithMessage, OpBranchConditional_FalseTargetIsNotLabel) {
   string spirv = BranchConditionalSetup + R"(
-    OpBranchConditional %i0 %target_t %i0
+                   OpSelectionMerge %end None
+                   OpBranchConditional %i0 %target_t %i0
   )" + BranchConditionalTail;
 
   CompileSuccessfully(spirv.c_str());
@@ -4008,6 +3996,7 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_FalseTargetIsNotLabel) {
 TEST_F(ValidateIdWithMessage, OpBranchConditional_NotEnoughWeights) {
   string spirv = BranchConditionalSetup + R"(
     %branch_cond = OpINotEqual %bool %i0 %i1
+                   OpSelectionMerge %end None
                    OpBranchConditional %branch_cond %target_t %target_f 1
   )" + BranchConditionalTail;
 
@@ -4021,6 +4010,7 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_NotEnoughWeights) {
 TEST_F(ValidateIdWithMessage, OpBranchConditional_TooManyWeights) {
   string spirv = BranchConditionalSetup + R"(
     %branch_cond = OpINotEqual %bool %i0 %i1
+                   OpSelectionMerge %end None
                    OpBranchConditional %branch_cond %target_t %target_f 1 2 3
   )" + BranchConditionalTail;
 

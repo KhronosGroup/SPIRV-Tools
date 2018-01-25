@@ -290,6 +290,10 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
            << id_str.substr(0, id_str.size() - 1);
   }
 
+  // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
+  // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
+  if (auto error = ValidateAdjacency(*vstate)) return error;
+
   // CFG checks are performed after the binary has been parsed
   // and the CFGPass has collected information about the control flow
   if (auto error = PerformCfgChecks(*vstate)) return error;
