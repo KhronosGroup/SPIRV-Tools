@@ -106,8 +106,8 @@ bool BlockMergePass::IsHeader(uint32_t id) {
 }
 
 bool BlockMergePass::IsMerge(uint32_t id) {
-  return !get_def_use_mgr()->WhileEachUse(id, [this](ir::Instruction* user,
-                                                     uint32_t index) {
+  return !get_def_use_mgr()->WhileEachUse(id, [](ir::Instruction* user,
+                                                 uint32_t index) {
     SpvOp op = user->opcode();
     if ((op == SpvOpLoopMerge || op == SpvOpSelectionMerge) && index == 0u) {
       return false;
