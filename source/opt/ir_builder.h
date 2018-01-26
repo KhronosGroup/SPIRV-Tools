@@ -163,6 +163,20 @@ class InstructionBuilder {
   // Returns the insertion point iterator.
   InsertionPointTy GetInsertPoint() { return insert_before_; }
 
+  // Change the insertion point to insert before the instruction
+  // |insert_before|.
+  void SetInsertPoint(ir::Instruction* insert_before) {
+    parent_ = context_->get_instr_block(insert_before);
+    insert_before_ = InsertionPointTy(insert_before);
+  }
+
+  // Change the insertion point to insert at the end of the basic block
+  // |parent_block|.
+  void SetInsertPoint(ir::BasicBlock* parent_block) {
+    parent_ = parent_block;
+    insert_before_ = parent_block->end();
+  }
+
   // Returns the context which instructions are constructed for.
   ir::IRContext* GetContext() const { return context_; }
 

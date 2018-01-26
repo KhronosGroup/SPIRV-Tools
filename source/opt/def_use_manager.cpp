@@ -40,8 +40,12 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
   // Create entry for the given instruction. Note that the instruction may
   // not have any in-operands. In such cases, we still need a entry for those
   // instructions so this manager knows it has seen the instruction later.
-  auto& used_ids = inst_to_used_ids_[inst];
-  used_ids.clear();  // It might have existed before.
+  auto* used_ids = &inst_to_used_ids_[inst];
+  if (used_ids->size()) {
+    EraseUseRecordsOfOperandIds(inst);
+    used_ids = &inst_to_used_ids_[inst];
+  }
+  used_ids->clear();  // It might have existed before.
 
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
     switch (inst->GetOperand(i).type) {
@@ -54,7 +58,7 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
         ir::Instruction* def = GetDef(use_id);
         assert(def && "Definition is not registered.");
         id_to_users_.insert(UserEntry(def, inst));
-        used_ids.push_back(use_id);
+        used_ids->push_back(use_id);
       } break;
       default:
         break;
@@ -100,8 +104,10 @@ bool DefUseManager::WhileEachUser(
     const ir::Instruction* def,
     const std::function<bool(ir::Instruction*)>& f) const {
   // Ensure that |def| has been registered.
-  assert(def && def == GetDef(def->result_id()) &&
+  assert(def && (!def->HasResultId() || def == GetDef(def->result_id())) &&
          "Definition is not registered.");
+  if (!def->HasResultId()) return true;
+
   auto end = id_to_users_.end();
   for (auto iter = UsersBegin(def); UsersNotEnd(iter, end, def); ++iter) {
     if (!f(iter->second)) return false;
@@ -132,8 +138,10 @@ bool DefUseManager::WhileEachUse(
     const ir::Instruction* def,
     const std::function<bool(ir::Instruction*, uint32_t)>& f) const {
   // Ensure that |def| has been registered.
-  assert(def && def == GetDef(def->result_id()) &&
+  assert(def && (!def->HasResultId() || def == GetDef(def->result_id())) &&
          "Definition is not registered.");
+  if (!def->HasResultId()) return true;
+
   auto end = id_to_users_.end();
   for (auto iter = UsersBegin(def); UsersNotEnd(iter, end, def); ++iter) {
     ir::Instruction* user = iter->second;

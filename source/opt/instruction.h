@@ -197,10 +197,15 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   uint32_t GetSingleWordOperand(uint32_t index) const;
   // Sets the |index|-th in-operand's data to the given |data|.
   inline void SetInOperand(uint32_t index, std::vector<uint32_t>&& data);
+  // Sets the |index|-th operand's data to the given |data|.
+  // This is for in-operands modification only, but with |index| expressed in
+  // terms of operand index rather than in-operand index.
+  inline void SetOperand(uint32_t index, std::vector<uint32_t>&& data);
   // Sets the result type id.
   inline void SetResultType(uint32_t ty_id);
   // Sets the result id
   inline void SetResultId(uint32_t res_id);
+  inline bool HasResultId() const { return result_id_ != 0; }
   // Remove the |index|-th operand
   void RemoveOperand(uint32_t index) {
     operands_.erase(operands_.begin() + index);
@@ -450,9 +455,14 @@ inline void Instruction::AddOperand(Operand&& operand) {
 
 inline void Instruction::SetInOperand(uint32_t index,
                                       std::vector<uint32_t>&& data) {
-  assert(index + TypeResultIdCount() < operands_.size() &&
-         "operand index out of bound");
-  operands_[index + TypeResultIdCount()].words = std::move(data);
+  SetOperand(index + TypeResultIdCount(), std::move(data));
+}
+
+inline void Instruction::SetOperand(uint32_t index,
+                                    std::vector<uint32_t>&& data) {
+  assert(index < operands_.size() && "operand index out of bound");
+  assert(index >= TypeResultIdCount() && "operand is not a in-operand");
+  operands_[index].words = std::move(data);
 }
 
 inline void Instruction::SetResultId(uint32_t res_id) {

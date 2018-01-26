@@ -109,6 +109,28 @@ void BasicBlock::ForEachSuccessorLabel(
   }
 }
 
+void BasicBlock::ForEachSuccessorLabel(
+    const std::function<void(uint32_t*)>& f) {
+  auto br = &insts_.back();
+  switch (br->opcode()) {
+    case SpvOpBranch: {
+      uint32_t tmp_id = br->GetOperand(0).words[0];
+      f(&tmp_id);
+      if (tmp_id != br->GetOperand(0).words[0]) br->SetOperand(0, {tmp_id});
+    } break;
+    case SpvOpBranchConditional:
+    case SpvOpSwitch: {
+      bool is_first = true;
+      br->ForEachInId([&is_first, &f](uint32_t* idp) {
+        if (!is_first) f(idp);
+        is_first = false;
+      });
+    } break;
+    default:
+      break;
+  }
+}
+
 bool BasicBlock::IsSuccessor(const ir::BasicBlock* block) const {
   uint32_t succId = block->id();
   bool isSuccessor = false;

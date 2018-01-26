@@ -25,3 +25,8 @@ add_spvtools_unittest(TARGET loop_descriptor_nested
     LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET lcssa_test
+    SRCS ../function_utils.h
+        lcssa.cpp
+    LIBS SPIRV-Tools-opt
+)

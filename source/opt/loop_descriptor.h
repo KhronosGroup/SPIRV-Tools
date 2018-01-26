@@ -68,14 +68,40 @@ class Loop {
   // OpLoopMerge instruction.
   inline BasicBlock* GetHeaderBlock() { return loop_header_; }
   inline const BasicBlock* GetHeaderBlock() const { return loop_header_; }
+  inline void SetHeaderBlock(BasicBlock* header) { loop_header_ = header; }
+
+  // Updates the OpLoopMerge instruction to reflect the current state of the
+  // loop.
+  inline void UpdateLoopMergeInst() {
+    assert(GetHeaderBlock()->GetLoopMergeInst() &&
+           "The loop is not structured");
+    ir::Instruction* merge_inst = GetHeaderBlock()->GetLoopMergeInst();
+    merge_inst->SetInOperand(0, {GetMergeBlock()->id()});
+  }
 
   // Returns the latch basic block (basic block that holds the back-edge).
+  // These functions return nullptr if the loop is not structured (i.e. if it
+  // has more than one backedge).
   inline BasicBlock* GetLatchBlock() { return loop_continue_; }
   inline const BasicBlock* GetLatchBlock() const { return loop_continue_; }
+  // Sets |latch| as the loop unique block branching back to the header.
+  // A latch block must have the following properties:
+  //  - |latch| must be in the loop;
+  //  - must be the only block branching back to the header block.
+  void SetLatchBlock(BasicBlock* latch);
 
-  // Returns the BasicBlock which marks the end of the loop.
+  // Returns the basic block which marks the end of the loop.
+  // These functions return nullptr if the loop is not structured.
   inline BasicBlock* GetMergeBlock() { return loop_merge_; }
   inline const BasicBlock* GetMergeBlock() const { return loop_merge_; }
+  // Sets |merge| as the loop merge block. A merge block must have the following
+  // properties:
+  //  - |merge| must not be in the loop;
+  //  - all its predecessors must be in the loop.
+  //  - it must not be already used as merge block.
+  // If the loop has an OpLoopMerge in its header, this instruction is also
+  // updated.
+  void SetMergeBlock(BasicBlock* merge);
 
   // Returns the loop pre-header, nullptr means that the loop predecessor does
   // not qualify as a preheader.
@@ -87,8 +113,29 @@ class Loop {
   // Returns the loop pre-header.
   inline const BasicBlock* GetPreHeaderBlock() const { return loop_preheader_; }
 
+  // Returns the loop pre-header, if there is no suitable preheader it will be
+  // created.
+  BasicBlock* GetOrCreatePreHeaderBlock(ir::IRContext* context);
+
   // Returns true if this loop contains any nested loops.
   inline bool HasNestedLoops() const { return nested_loops_.size() != 0; }
+
+  // Fills |exit_blocks| with all basic blocks that are not in the loop and has
+  // at least one predecessor in the loop.
+  void GetExitBlocks(IRContext* context,
+                     std::unordered_set<uint32_t>* exit_blocks) const;
+
+  // Fills |merging_blocks| with all basic blocks that are post-dominated by the
+  // merge block. The merge block must exist.
+  // The set |merging_blocks| will only contain the merge block if it is
+  // unreachable.
+  void GetMergingBlocks(IRContext* context,
+                        std::unordered_set<uint32_t>* merging_blocks) const;
+
+  // Returns true if the loop is in a Loop Closed SSA form.
+  // In LCSSA form, all in-loop definitions are used in the loop or in phi
+  // instructions in the loop exit blocks.
+  bool IsLCSSA() const;
 
   // Returns the depth of this loop in the loop nest.
   // The outer-most loop has a depth of 1.
@@ -139,10 +186,19 @@ class Loop {
     assert(IsBasicBlockInLoopSlow(bb) &&
            "Basic block does not belong to the loop");
 
+    AddBasicBlock(bb);
+  }
+
+  // Adds the Basic Block |bb| this loop and its parents.
+  void AddBasicBlock(const BasicBlock* bb) {
     for (Loop* loop = this; loop != nullptr; loop = loop->parent_) {
       loop_basic_blocks_.insert(bb->id());
     }
   }
+
+  // Sets the parent loop of this loop, that is, a loop which contains this loop
+  // as a nested child loop.
+  inline void SetParent(Loop* parent) { parent_ = parent; }
 
  private:
   // The block which marks the start of the loop.
@@ -167,22 +223,25 @@ class Loop {
   // computed only when needed on demand.
   BasicBlockListTy loop_basic_blocks_;
 
-  // Check that |bb| is inside the loop using domination properties.
+  // Check that |bb| is inside the loop using domination property.
   // Note: this is for assertion purposes only, IsInsideLoop should be used
   // instead.
   bool IsBasicBlockInLoopSlow(const BasicBlock* bb);
-
-  // Sets the parent loop of this loop, that is, a loop which contains this loop
-  // as a nested child loop.
-  inline void SetParent(Loop* parent) { parent_ = parent; }
 
   // Returns the loop preheader if it exists, returns nullptr otherwise.
   BasicBlock* FindLoopPreheader(IRContext* context,
                                 opt::DominatorAnalysis* dom_analysis);
 
+  // Sets |latch| as the loop unique continue block. No checks are performed
+  // here.
+  inline void SetLatchBlockImpl(BasicBlock* latch) { loop_continue_ = latch; }
+  // Sets |merge| as the loop merge block. No checks are performed here.
+  inline void SetMergeBlockImpl(BasicBlock* merge) { loop_merge_ = merge; }
+
   // This is only to allow LoopDescriptor::dummy_top_loop_ to add top level
   // loops as child.
   friend class LoopDescriptor;
+  friend class LoopUtils;
 };
 
 // Loop descriptions class for a given function.
@@ -229,6 +288,11 @@ class LoopDescriptor {
   }
   inline const_iterator cend() const {
     return const_iterator::end(&dummy_top_loop_);
+  }
+
+  // Returns the inner most loop that contains the basic block |bb|.
+  inline void SetBasicBlockToLoop(uint32_t bb_id, Loop* loop) {
+    basic_block_to_loop_[bb_id] = loop;
   }
 
  private:
