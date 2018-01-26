@@ -158,63 +158,6 @@ OpFunctionEnd
                                              true, true);
 }
 
-TEST_F(BlockMergeTest, NoOptOfMergeOrContinueBlock) {
-  // Note: SPIR-V hand edited remove dead branch and add block
-  // before continue block
-  //
-  // #version 140
-  // in vec4 BaseColor;
-  //
-  // void main()
-  // {
-  //     while (true) {
-  //         break;
-  //     }
-  //     gl_FragColor = BaseColor;
-  // }
-
-  const std::string assembly =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %gl_FragColor %BaseColor
-OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 140
-OpName %main "main"
-OpName %gl_FragColor "gl_FragColor"
-OpName %BaseColor "BaseColor"
-%void = OpTypeVoid
-%6 = OpTypeFunction %void
-%bool = OpTypeBool
-%true = OpConstantTrue %bool
-%float = OpTypeFloat 32
-%v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-%_ptr_Input_v4float = OpTypePointer Input %v4float
-%BaseColor = OpVariable %_ptr_Input_v4float Input
-%main = OpFunction %void None %6
-%13 = OpLabel
-OpBranch %14
-%14 = OpLabel
-OpLoopMerge %15 %16 None
-OpBranch %17
-%17 = OpLabel
-OpBranch %15
-%18 = OpLabel
-OpBranch %16
-%16 = OpLabel
-OpBranch %14
-%15 = OpLabel
-%19 = OpLoad %v4float %BaseColor
-OpStore %gl_FragColor %19
-OpReturn
-OpFunctionEnd
-)";
-
-  SinglePassRunAndCheck<opt::BlockMergePass>(assembly, assembly, true, true);
-}
-
 TEST_F(BlockMergeTest, NestedInControlFlow) {
   // Note: SPIR-V hand edited to insert block boundary
   // between OpFMul and OpStore in then-part.
@@ -510,6 +453,70 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, DoNotMergeHeaderIntoAssociatedMerge) {
+  // Note: SPIR-V hand edited remove dead branch and add block
+  // before continue block
+  //
+  // #version 140
+  // in vec4 BaseColor;
+  //
+  // void main()
+  // {
+  //     while (true) {
+  //         break;
+  //     }
+  //     gl_FragColor = BaseColor;
+  // }
+
+  const std::string assembly =
+      R"(
+; CHECK: OpLabel
+; CHECK: [[header:%\w+]] = OpLabel
+; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]]
+; CHECK-NEXT: OpBranch [[merge]]
+; CHECK: [[continue:%\w+]]
+; CHECK-NEXT: OpBranch [[header]]
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor %BaseColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %gl_FragColor "gl_FragColor"
+OpName %BaseColor "BaseColor"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%main = OpFunction %void None %6
+%13 = OpLabel
+OpBranch %14
+%14 = OpLabel
+OpLoopMerge %15 %16 None
+OpBranch %17
+%17 = OpLabel
+OpBranch %15
+%18 = OpLabel
+OpBranch %16
+%16 = OpLabel
+OpBranch %14
+%15 = OpLabel
+%19 = OpLoad %v4float %BaseColor
+OpStore %gl_FragColor %19
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(assembly, true);
 }
 #endif  // SPIRV_EFFCEE
 

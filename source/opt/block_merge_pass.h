@@ -41,9 +41,6 @@ class BlockMergePass : public Pass {
   Status Process(ir::IRContext*) override;
 
  private:
-  // Return true if |labId| has multiple refs. Do not count OpName.
-  bool HasMultipleRefs(uint32_t labId);
-
   // Kill any OpName instruction referencing |inst|, then kill |inst|.
   void KillInstAndName(ir::Instruction* inst);
 
@@ -56,6 +53,15 @@ class BlockMergePass : public Pass {
 
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
+
+  // Returns true if |block| (or |id|) contains a merge instruction.
+  bool IsHeader(ir::BasicBlock* block);
+  bool IsHeader(uint32_t id);
+
+  // Returns true if |block| (or |id|) is the merge target of a merge
+  // instruction.
+  bool IsMerge(ir::BasicBlock* block);
+  bool IsMerge(uint32_t id);
 
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
