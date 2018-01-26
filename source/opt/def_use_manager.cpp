@@ -100,8 +100,10 @@ bool DefUseManager::WhileEachUser(
     const ir::Instruction* def,
     const std::function<bool(ir::Instruction*)>& f) const {
   // Ensure that |def| has been registered.
-  assert(def && def == GetDef(def->result_id()) &&
+  assert(def && (!def->HasResultId() || def == GetDef(def->result_id())) &&
          "Definition is not registered.");
+  if (!def->HasResultId()) return true;
+
   auto end = id_to_users_.end();
   for (auto iter = UsersBegin(def); UsersNotEnd(iter, end, def); ++iter) {
     if (!f(iter->second)) return false;
@@ -132,8 +134,10 @@ bool DefUseManager::WhileEachUse(
     const ir::Instruction* def,
     const std::function<bool(ir::Instruction*, uint32_t)>& f) const {
   // Ensure that |def| has been registered.
-  assert(def && def == GetDef(def->result_id()) &&
+  assert(def && (!def->HasResultId() || def == GetDef(def->result_id())) &&
          "Definition is not registered.");
+  if (!def->HasResultId()) return true;
+
   auto end = id_to_users_.end();
   for (auto iter = UsersBegin(def); UsersNotEnd(iter, end, def); ++iter) {
     ir::Instruction* user = iter->second;

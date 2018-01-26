@@ -34,6 +34,18 @@ namespace {
 using namespace spvtools;
 using ::testing::UnorderedElementsAre;
 
+bool Validate(const std::vector<uint32_t>& bin) {
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;
+  spv_context spvContext = spvContextCreate(target_env);
+  spv_diagnostic diagnostic = nullptr;
+  spv_const_binary_t binary = {bin.data(), bin.size()};
+  spv_result_t error = spvValidate(spvContext, &binary, &diagnostic);
+  if (error != 0) spvDiagnosticPrint(diagnostic);
+  spvDiagnosticDestroy(diagnostic);
+  spvContextDestroy(spvContext);
+  return error == 0;
+}
+
 using PassClassTest = PassTest<::testing::Test>;
 
 /*
@@ -590,6 +602,170 @@ TEST_F(PassClassTest, LoopParentTest) {
     EXPECT_EQ(loop.GetDepth(), 2u);
     EXPECT_EQ(loop.GetParent(), ld[22]);
   }
+}
+
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+The preheader of loop %33 and %41 were removed as well.
+
+#version 330 core
+void main() {
+  int a = 0;
+  for (int i = 0; i < 10; ++i) {
+    if (i == 0) {
+      a = 1;
+    } else {
+      a = 2;
+    }
+    for (int j = 0; j < 11; ++j) {
+      a++;
+    }
+  }
+  for (int k = 0; k < 12; ++k) {}
+}
+*/
+TEST_F(PassClassTest, CreatePreheaderTest) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 330
+               OpName %2 "main"
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeInt 32 1
+          %6 = OpTypePointer Function %5
+          %7 = OpConstant %5 0
+          %8 = OpConstant %5 10
+          %9 = OpTypeBool
+         %10 = OpConstant %5 1
+         %11 = OpConstant %5 2
+         %12 = OpConstant %5 11
+         %13 = OpConstant %5 12
+         %14 = OpUndef %5
+          %2 = OpFunction %3 None %4
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpPhi %5 %7 %15 %18 %19
+         %20 = OpPhi %5 %7 %15 %21 %19
+         %22 = OpPhi %5 %14 %15 %23 %19
+               OpLoopMerge %41 %19 None
+               OpBranch %25
+         %25 = OpLabel
+         %26 = OpSLessThan %9 %20 %8
+               OpBranchConditional %26 %27 %41
+         %27 = OpLabel
+         %28 = OpIEqual %9 %20 %7
+               OpSelectionMerge %33 None
+               OpBranchConditional %28 %30 %31
+         %30 = OpLabel
+               OpBranch %33
+         %31 = OpLabel
+               OpBranch %33
+         %33 = OpLabel
+         %18 = OpPhi %5 %10 %30 %11 %31 %34 %35
+         %23 = OpPhi %5 %7 %30 %7 %31 %36 %35
+               OpLoopMerge %37 %35 None
+               OpBranch %38
+         %38 = OpLabel
+         %39 = OpSLessThan %9 %23 %12
+               OpBranchConditional %39 %40 %37
+         %40 = OpLabel
+         %34 = OpIAdd %5 %18 %10
+               OpBranch %35
+         %35 = OpLabel
+         %36 = OpIAdd %5 %23 %10
+               OpBranch %33
+         %37 = OpLabel
+               OpBranch %19
+         %19 = OpLabel
+         %21 = OpIAdd %5 %20 %10
+               OpBranch %16
+         %41 = OpLabel
+         %42 = OpPhi %5 %7 %25 %43 %44
+               OpLoopMerge %45 %44 None
+               OpBranch %46
+         %46 = OpLabel
+         %47 = OpSLessThan %9 %42 %13
+               OpBranchConditional %47 %48 %45
+         %48 = OpLabel
+               OpBranch %44
+         %44 = OpLabel
+         %43 = OpIAdd %5 %42 %10
+               OpBranch %41
+         %45 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  // clang-format on
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 2);
+  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  // No invalidation of the cfg should occur during this test.
+  ir::CFG* cfg = context->cfg();
+
+  EXPECT_EQ(ld.NumLoops(), 3u);
+
+  {
+    ir::Loop& loop = *ld[16];
+    EXPECT_TRUE(loop.HasNestedLoops());
+    EXPECT_FALSE(loop.IsNested());
+    EXPECT_EQ(loop.GetDepth(), 1u);
+    EXPECT_EQ(loop.GetParent(), nullptr);
+  }
+
+  {
+    ir::Loop& loop = *ld[33];
+    EXPECT_EQ(loop.GetPreHeaderBlock(), nullptr);
+    EXPECT_NE(loop.GetOrCreatePreHeaderBlock(context.get()), nullptr);
+    // Make sure the loop descriptor was properly updated.
+    EXPECT_EQ(ld[loop.GetPreHeaderBlock()], ld[16]);
+    {
+      const std::vector<uint32_t>& preds =
+          cfg->preds(loop.GetPreHeaderBlock()->id());
+      std::unordered_set<uint32_t> pred_set(preds.begin(), preds.end());
+      EXPECT_EQ(pred_set.size(), 2u);
+      EXPECT_TRUE(!!pred_set.count(30));
+      EXPECT_TRUE(!!pred_set.count(31));
+    }
+    {
+      const std::vector<uint32_t>& preds =
+          cfg->preds(loop.GetHeaderBlock()->id());
+      std::unordered_set<uint32_t> pred_set(preds.begin(), preds.end());
+      EXPECT_EQ(pred_set.size(), 2u);
+      EXPECT_TRUE(!!pred_set.count(loop.GetPreHeaderBlock()->id()));
+      EXPECT_TRUE(!!pred_set.count(35));
+    }
+  }
+
+  {
+    ir::Loop& loop = *ld[41];
+    EXPECT_EQ(loop.GetPreHeaderBlock(), nullptr);
+    EXPECT_NE(loop.GetOrCreatePreHeaderBlock(context.get()), nullptr);
+    EXPECT_EQ(ld[loop.GetPreHeaderBlock()], nullptr);
+    EXPECT_EQ(cfg->preds(loop.GetPreHeaderBlock()->id()).size(), 1u);
+    EXPECT_EQ(cfg->preds(loop.GetPreHeaderBlock()->id())[0], 25u);
+    const std::vector<uint32_t>& header_pred =
+        cfg->preds(loop.GetHeaderBlock()->id());
+    std::unordered_set<uint32_t> pred_set(header_pred.begin(),
+                                          header_pred.end());
+    EXPECT_EQ(pred_set.size(), 2u);
+    EXPECT_TRUE(!!pred_set.count(loop.GetPreHeaderBlock()->id()));
+    EXPECT_TRUE(!!pred_set.count(44));
+  }
+
+  // Make sure pre-header insertion leaves the module valid.
+  std::vector<uint32_t> bin;
+  context->module()->ToBinary(&bin, true);
+  EXPECT_TRUE(Validate(bin));
 }
 
 }  // namespace

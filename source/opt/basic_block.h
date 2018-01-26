@@ -133,6 +133,8 @@ class BasicBlock {
   void ForEachSuccessorLabel(
       const std::function<void(const uint32_t)>& f) const;
 
+  void ForEachSuccessorLabel(const std::function<void(uint32_t*)>& f);
+
   // Returns true if |block| is a direct successor of |this|.
   bool IsSuccessor(const ir::BasicBlock* block) const;
 

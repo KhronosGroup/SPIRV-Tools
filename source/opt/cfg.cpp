@@ -35,16 +35,23 @@ CFG::CFG(ir::Module* module)
           module->context(), SpvOpLabel, 0, kInvalidId, {}))) {
   for (auto& fn : *module) {
     for (auto& blk : fn) {
-      uint32_t blkId = blk.id();
-      id2block_[blkId] = &blk;
-      // Force the creation of an entry, not all basic block have predecessors
-      // (such as the entry block and some unreachables)
-      label2preds_[blkId];
-      blk.ForEachSuccessorLabel([&blkId, this](uint32_t sbid) {
-        label2preds_[sbid].push_back(blkId);
-      });
+      RegisterBlock(&blk);
     }
   }
+}
+
+void CFG::RemoveNonExistingEdges(uint32_t blk_id) {
+  std::vector<uint32_t> updated_pred_list;
+  for (uint32_t id : preds(blk_id)) {
+    ir::BasicBlock* pred_blk = block(id);
+    bool has_branch = false;
+    pred_blk->ForEachSuccessorLabel([&has_branch, blk_id](uint32_t succ) {
+      if (succ == blk_id) has_branch = true;
+    });
+    if (has_branch) updated_pred_list.push_back(id);
+  }
+
+  label2preds_.at(blk_id) = std::move(updated_pred_list);
 }
 
 void CFG::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,

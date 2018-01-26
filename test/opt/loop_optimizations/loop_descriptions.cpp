@@ -200,6 +200,7 @@ TEST_F(PassClassTest, LoopWithNoPreHeader) {
 
   ir::Loop* loop = ld[27];
   EXPECT_EQ(loop->GetPreHeaderBlock(), nullptr);
+  EXPECT_NE(loop->GetOrCreatePreHeaderBlock(context.get()), nullptr);
 }
 
 }  // namespace
