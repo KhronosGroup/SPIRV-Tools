@@ -195,6 +195,15 @@ spv_result_t CapabilityPass(ValidationState_t& _,
   assert(operand.offset < inst->num_words);
 
   const uint32_t capability = inst->words[operand.offset];
+  const auto capability_str = [&_, capability]() {
+    spv_operand_desc desc = nullptr;
+    if (_.grammar().lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, capability,
+                                  &desc) != SPV_SUCCESS ||
+        !desc) {
+      return std::string("Unknown");
+    }
+    return std::string(desc->name);
+  };
 
   const auto env = _.context()->target_env;
   const bool opencl_embedded = env == SPV_ENV_OPENCL_EMBEDDED_1_2 ||
@@ -207,7 +216,7 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsSupportOptionalVulkan_1_0(capability) &&
         !IsEnabledByExtension(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-             << "Capability value " << capability
+             << "Capability " << capability_str()
              << " is not allowed by Vulkan 1.0 specification"
              << " (or requires extension)";
     }
@@ -217,7 +226,7 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_1_2(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-             << "Capability value " << capability
+             << "Capability " << capability_str()
              << " is not allowed by OpenCL 1.2 " << opencl_profile
              << " Profile specification"
              << " (or requires extension or capability)";
@@ -229,7 +238,7 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-             << "Capability value " << capability
+             << "Capability " << capability_str()
              << " is not allowed by OpenCL 2.0/2.1 " << opencl_profile
              << " Profile specification"
              << " (or requires extension or capability)";
@@ -240,7 +249,7 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-             << "Capability value " << capability
+             << "Capability " << capability_str()
              << " is not allowed by OpenCL 2.2 " << opencl_profile
              << " Profile specification"
              << " (or requires extension or capability)";
