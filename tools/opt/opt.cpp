@@ -118,6 +118,10 @@ Options (in lexicographical order):
   --eliminate-dead-functions
                Deletes functions that cannot be reached from entry points or
                exported functions.
+  --eliminate-dead-insert
+               Deletes unreferenced inserts into composites, most notably
+               unused stores to vector components, that are not removed by
+               aggressive dead code elimination.
   --eliminate-dead-variables
                Deletes module scope variables that are not referenced.
   --eliminate-insert-extract
@@ -425,6 +429,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCommonUniformElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
         optimizer->RegisterPass(CreateEliminateDeadConstantPass());
+      } else if (0 == strcmp(cur_arg, "--eliminate-dead-inserts")) {
+        optimizer->RegisterPass(CreateDeadInsertElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-variables")) {
         optimizer->RegisterPass(CreateDeadVariableEliminationPass());
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {

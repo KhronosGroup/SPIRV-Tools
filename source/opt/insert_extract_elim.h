@@ -40,50 +40,6 @@ class InsertExtractElimPass : public MemPass {
   Status Process(ir::IRContext*) override;
 
  private:
-  // Return true if the extract indices in |extIndices| starting at |extOffset|
-  // match indices of insert |insInst|.
-  bool ExtInsMatch(const std::vector<uint32_t>& extIndices,
-                   const ir::Instruction* insInst,
-                   const uint32_t extOffset) const;
-
-  // Return true if indices in |extIndices| starting at |extOffset| and
-  // indices of insert |insInst| conflict, specifically, if the insert
-  // changes bits specified by the extract, but changes either more bits
-  // or less bits than the extract specifies, meaning the exact value being
-  // inserted cannot be used to replace the extract.
-  bool ExtInsConflict(const std::vector<uint32_t>& extIndices,
-                      const ir::Instruction* insInst,
-                      const uint32_t extOffset) const;
-
-  // Return true if |typeId| is a vector type
-  bool IsVectorType(uint32_t typeId);
-
-  // Return true if |typeId| is composite.
-  bool IsComposite(uint32_t typeId);
-
-  // Return the number of subcomponents in the composite type |typeId|.
-  // Return 0 if not a composite type or number of components is not a
-  // 32-bit constant.
-  uint32_t NumComponents(uint32_t typeId);
-
-  // Mark all inserts in instruction chain ending at |insertChain| with
-  // indices that intersect with extract indices |extIndices| starting with
-  // index at |extOffset|. Chains are composed solely of Inserts and Phis.
-  // Mark all inserts in chain if |extIndices| is nullptr.
-  void MarkInsertChain(ir::Instruction* insertChain,
-                       std::vector<uint32_t>* extIndices, uint32_t extOffset);
-
-  // Perform EliminateDeadInsertsOnePass(|func|) until no modification is
-  // made. Return true if modified.
-  bool EliminateDeadInserts(ir::Function* func);
-
-  // DCE all dead struct, matrix and vector inserts in |func|. An insert is
-  // dead if the value it inserts is never used. Replace any reference to the
-  // insert with its original composite. Return true if modified. Dead inserts
-  // in dependence cycles are not currently eliminated. Dead inserts into
-  // arrays are not currently eliminated.
-  bool EliminateDeadInsertsOnePass(ir::Function* func);
-
   // Return id of component of |cinst| specified by |extIndices| starting with
   // index at |extOffset|. Return 0 if indices cannot be matched exactly.
   uint32_t DoExtract(ir::Instruction* cinst, std::vector<uint32_t>* extIndices,
@@ -103,12 +59,6 @@ class InsertExtractElimPass : public MemPass {
 
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
-
-  // Live inserts
-  std::unordered_set<uint32_t> liveInserts_;
-
-  // Visited phis as insert chain is traversed; used to avoid infinite loop
-  std::unordered_set<uint32_t> visitedPhis_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
