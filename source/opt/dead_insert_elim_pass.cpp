@@ -66,8 +66,8 @@ uint32_t DeadInsertElimPass::NumComponents(ir::Instruction* typeInst) {
 }
 
 void DeadInsertElimPass::MarkInsertChain(ir::Instruction* insertChain,
-                                            std::vector<uint32_t>* pExtIndices,
-                                            uint32_t extOffset) {
+                                         std::vector<uint32_t>* pExtIndices,
+                                         uint32_t extOffset) {
   // Not currently optimizing array inserts.
   ir::Instruction* typeInst = get_def_use_mgr()->GetDef(insertChain->type_id());
   if (typeInst->opcode() == SpvOpTypeArray) return;
