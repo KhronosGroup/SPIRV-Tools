@@ -47,7 +47,8 @@ class Loop {
   using BasicBlockListTy = std::unordered_set<uint32_t>;
 
   Loop()
-      : loop_header_(nullptr),
+      : context_(nullptr),
+        loop_header_(nullptr),
         loop_continue_(nullptr),
         loop_merge_(nullptr),
         loop_preheader_(nullptr),
@@ -115,22 +116,20 @@ class Loop {
 
   // Returns the loop pre-header, if there is no suitable preheader it will be
   // created.
-  BasicBlock* GetOrCreatePreHeaderBlock(ir::IRContext* context);
+  BasicBlock* GetOrCreatePreHeaderBlock();
 
   // Returns true if this loop contains any nested loops.
   inline bool HasNestedLoops() const { return nested_loops_.size() != 0; }
 
-  // Fills |exit_blocks| with all basic blocks that are not in the loop and has
-  // at least one predecessor in the loop.
-  void GetExitBlocks(IRContext* context,
-                     std::unordered_set<uint32_t>* exit_blocks) const;
+  // Clears and fills |exit_blocks| with all basic blocks that are not in the
+  // loop and has at least one predecessor in the loop.
+  void GetExitBlocks(std::unordered_set<uint32_t>* exit_blocks) const;
 
-  // Fills |merging_blocks| with all basic blocks that are post-dominated by the
-  // merge block. The merge block must exist.
+  // Clears and fills |merging_blocks| with all basic blocks that are
+  // post-dominated by the merge block. The merge block must exist.
   // The set |merging_blocks| will only contain the merge block if it is
   // unreachable.
-  void GetMergingBlocks(IRContext* context,
-                        std::unordered_set<uint32_t>* merging_blocks) const;
+  void GetMergingBlocks(std::unordered_set<uint32_t>* merging_blocks) const;
 
   // Returns true if the loop is in a Loop Closed SSA form.
   // In LCSSA form, all in-loop definitions are used in the loop or in phi
@@ -200,7 +199,15 @@ class Loop {
   // as a nested child loop.
   inline void SetParent(Loop* parent) { parent_ = parent; }
 
+  // Returns true is the instruction is invariant and safe to move wrt loop
+  bool ShouldHoistInstruction(IRContext* context, Instruction* inst);
+
+  // Returns true if all operands of inst are in basic blocks not contained in
+  // loop
+  bool AreAllOperandsOutsideLoop(IRContext* context, Instruction* inst);
+
  private:
+  IRContext* context_;
   // The block which marks the start of the loop.
   BasicBlock* loop_header_;
 
@@ -229,8 +236,7 @@ class Loop {
   bool IsBasicBlockInLoopSlow(const BasicBlock* bb);
 
   // Returns the loop preheader if it exists, returns nullptr otherwise.
-  BasicBlock* FindLoopPreheader(IRContext* context,
-                                opt::DominatorAnalysis* dom_analysis);
+  BasicBlock* FindLoopPreheader(opt::DominatorAnalysis* dom_analysis);
 
   // Sets |latch| as the loop unique continue block. No checks are performed
   // here.
@@ -266,6 +272,7 @@ class LoopDescriptor {
     other.loops_.clear();
     basic_block_to_loop_ = std::move(other.basic_block_to_loop_);
     other.basic_block_to_loop_.clear();
+    dummy_top_loop_ = std::move(other.dummy_top_loop_);
   }
 
   // Destructor

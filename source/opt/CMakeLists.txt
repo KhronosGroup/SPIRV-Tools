@@ -47,6 +47,7 @@ add_library(SPIRV-Tools-opt
   instruction.h
   ir_context.h
   ir_loader.h
+  licm_pass.h
   local_access_chain_convert_pass.h
   local_redundancy_elimination.h
   local_single_block_elim_pass.h
@@ -115,6 +116,7 @@ add_library(SPIRV-Tools-opt
   instruction_list.cpp
   ir_context.cpp
   ir_loader.cpp
+  licm_pass.cpp
   local_access_chain_convert_pass.cpp
   local_redundancy_elimination.cpp
   local_single_block_elim_pass.cpp

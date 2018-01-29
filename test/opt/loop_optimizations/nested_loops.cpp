@@ -725,7 +725,7 @@ TEST_F(PassClassTest, CreatePreheaderTest) {
   {
     ir::Loop& loop = *ld[33];
     EXPECT_EQ(loop.GetPreHeaderBlock(), nullptr);
-    EXPECT_NE(loop.GetOrCreatePreHeaderBlock(context.get()), nullptr);
+    EXPECT_NE(loop.GetOrCreatePreHeaderBlock(), nullptr);
     // Make sure the loop descriptor was properly updated.
     EXPECT_EQ(ld[loop.GetPreHeaderBlock()], ld[16]);
     {
@@ -762,7 +762,7 @@ TEST_F(PassClassTest, CreatePreheaderTest) {
   {
     ir::Loop& loop = *ld[41];
     EXPECT_EQ(loop.GetPreHeaderBlock(), nullptr);
-    EXPECT_NE(loop.GetOrCreatePreHeaderBlock(context.get()), nullptr);
+    EXPECT_NE(loop.GetOrCreatePreHeaderBlock(), nullptr);
     EXPECT_EQ(ld[loop.GetPreHeaderBlock()], nullptr);
     EXPECT_EQ(cfg->preds(loop.GetPreHeaderBlock()->id()).size(), 1u);
     EXPECT_EQ(cfg->preds(loop.GetPreHeaderBlock()->id())[0], 25u);

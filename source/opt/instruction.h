@@ -380,6 +380,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Spec constant.
   inline bool IsConstant() const;
 
+  // Returns true if |this| is an instruction with an opcode safe to move
+  bool IsOpcodeCodeMotionSafe() const;
+
   // Pretty-prints |inst|.
   //
   // Provides the disassembly of a specific instruction. Utilizes |inst|'s
