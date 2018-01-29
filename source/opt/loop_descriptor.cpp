@@ -32,21 +32,21 @@ namespace ir {
 Loop::Loop(IRContext* context, opt::DominatorAnalysis* dom_analysis,
            BasicBlock* header, BasicBlock* continue_target,
            BasicBlock* merge_target)
-    : loop_header_(header),
+    : context_(context),
+      loop_header_(header),
       loop_continue_(continue_target),
       loop_merge_(merge_target),
       loop_preheader_(nullptr),
       parent_(nullptr) {
   assert(context);
   assert(dom_analysis);
-  loop_preheader_ = FindLoopPreheader(context, dom_analysis);
+  loop_preheader_ = FindLoopPreheader(dom_analysis);
   AddBasicBlockToLoop(header);
   AddBasicBlockToLoop(continue_target);
 }
 
-BasicBlock* Loop::FindLoopPreheader(IRContext* ir_context,
-                                    opt::DominatorAnalysis* dom_analysis) {
-  CFG* cfg = ir_context->cfg();
+BasicBlock* Loop::FindLoopPreheader(opt::DominatorAnalysis* dom_analysis) {
+  CFG* cfg = context_->cfg();
   opt::DominatorTree& dom_tree = dom_analysis->GetDomTree();
   opt::DominatorTreeNode* header_node = dom_tree.GetTreeNode(loop_header_);
 
@@ -85,26 +85,25 @@ BasicBlock* Loop::FindLoopPreheader(IRContext* ir_context,
 }
 
 bool Loop::IsInsideLoop(Instruction* inst) const {
-  const BasicBlock* parent_block = inst->context()->get_instr_block(inst);
+  const BasicBlock* parent_block = context_->get_instr_block(inst);
   if (!parent_block) return false;
   return IsInsideLoop(parent_block);
 }
 
 bool Loop::IsBasicBlockInLoopSlow(const BasicBlock* bb) {
   assert(bb->GetParent() && "The basic block does not belong to a function");
-  IRContext* context = bb->GetParent()->GetParent()->context();
 
   opt::DominatorAnalysis* dom_analysis =
-      context->GetDominatorAnalysis(bb->GetParent(), *context->cfg());
+      context_->GetDominatorAnalysis(bb->GetParent(), *context_->cfg());
   if (!dom_analysis->Dominates(GetHeaderBlock(), bb)) return false;
 
   opt::PostDominatorAnalysis* postdom_analysis =
-      context->GetPostDominatorAnalysis(bb->GetParent(), *context->cfg());
+      context_->GetPostDominatorAnalysis(bb->GetParent(), *context_->cfg());
   if (!postdom_analysis->Dominates(GetMergeBlock(), bb)) return false;
   return true;
 }
 
-BasicBlock* Loop::GetOrCreatePreHeaderBlock(ir::IRContext* context) {
+BasicBlock* Loop::GetOrCreatePreHeaderBlock() {
   if (loop_preheader_) return loop_preheader_;
 
   Function* fn = loop_header_->GetParent();
@@ -117,7 +116,7 @@ BasicBlock* Loop::GetOrCreatePreHeaderBlock(ir::IRContext* context) {
   // Create the preheader basic block.
   loop_preheader_ = &*header_it.InsertBefore(std::unique_ptr<ir::BasicBlock>(
       new ir::BasicBlock(std::unique_ptr<ir::Instruction>(new ir::Instruction(
-          context, SpvOpLabel, 0, context->TakeNextId(), {})))));
+          context_, SpvOpLabel, 0, context_->TakeNextId(), {})))));
   loop_preheader_->SetParent(fn);
   uint32_t loop_preheader_id = loop_preheader_->id();
 
@@ -132,11 +131,11 @@ BasicBlock* Loop::GetOrCreatePreHeaderBlock(ir::IRContext* context) {
   //      instruction;
   //  - Redirect all edges coming from outside the loop to the preheader.
   opt::InstructionBuilder builder(
-      context, loop_preheader_,
+      context_, loop_preheader_,
       ir::IRContext::kAnalysisDefUse |
           ir::IRContext::kAnalysisInstrToBlockMapping);
   // Patch all the phi instructions.
-  loop_header_->ForEachPhiInst([&builder, context, this](Instruction* phi) {
+  loop_header_->ForEachPhiInst([&builder, this](Instruction* phi) {
     std::vector<uint32_t> preheader_phi_ops;
     std::vector<uint32_t> header_phi_ops;
     for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
@@ -158,7 +157,7 @@ BasicBlock* Loop::GetOrCreatePreHeaderBlock(ir::IRContext* context) {
       preheader_insn_def = builder.AddPhi(phi->type_id(), preheader_phi_ops);
     else
       preheader_insn_def =
-          context->get_def_use_mgr()->GetDef(preheader_phi_ops[0]);
+          context_->get_def_use_mgr()->GetDef(preheader_phi_ops[0]);
     // Build the new incoming edge.
     header_phi_ops.push_back(preheader_insn_def->result_id());
     header_phi_ops.push_back(loop_preheader_->id());
@@ -174,7 +173,7 @@ BasicBlock* Loop::GetOrCreatePreHeaderBlock(ir::IRContext* context) {
   builder.AddBranch(loop_header_->id());
 
   // Redirect all out of loop branches to the header to the preheader.
-  CFG* cfg = context->cfg();
+  CFG* cfg = context_->cfg();
   cfg->RegisterBlock(loop_preheader_);
   for (uint32_t pred_id : cfg->preds(loop_header_->id())) {
     if (pred_id == loop_preheader_->id()) continue;
@@ -190,11 +189,11 @@ BasicBlock* Loop::GetOrCreatePreHeaderBlock(ir::IRContext* context) {
   // Update the loop descriptors.
   if (HasParent()) {
     GetParent()->AddBasicBlock(loop_preheader_);
-    context->GetLoopDescriptor(fn)->SetBasicBlockToLoop(loop_preheader_->id(),
-                                                        GetParent());
+    context_->GetLoopDescriptor(fn)->SetBasicBlockToLoop(loop_preheader_->id(),
+                                                         GetParent());
   }
 
-  context->InvalidateAnalysesExceptFor(
+  context_->InvalidateAnalysesExceptFor(
       builder.GetPreservedAnalysis() |
       ir::IRContext::Analysis::kAnalysisLoopAnalysis |
       ir::IRContext::kAnalysisCFG);
@@ -226,8 +225,8 @@ void Loop::SetMergeBlock(BasicBlock* merge) {
     assert(IsInsideLoop(pred) &&
            "A predecessor of the merge block does not belong to the loop");
   }
-#endif  // NDEBUG
   assert(!IsInsideLoop(merge) && "The merge block is in the loop");
+#endif  // NDEBUG
 
   SetMergeBlockImpl(merge);
   if (GetHeaderBlock()->GetLoopMergeInst()) {
@@ -235,9 +234,9 @@ void Loop::SetMergeBlock(BasicBlock* merge) {
   }
 }
 
-void Loop::GetExitBlocks(IRContext* context,
-                         std::unordered_set<uint32_t>* exit_blocks) const {
-  ir::CFG* cfg = context->cfg();
+void Loop::GetExitBlocks(std::unordered_set<uint32_t>* exit_blocks) const {
+  ir::CFG* cfg = context_->cfg();
+  exit_blocks->clear();
 
   for (uint32_t bb_id : GetBlocks()) {
     const spvtools::ir::BasicBlock* bb = cfg->block(bb_id);
@@ -250,9 +249,10 @@ void Loop::GetExitBlocks(IRContext* context,
 }
 
 void Loop::GetMergingBlocks(
-    IRContext* context, std::unordered_set<uint32_t>* merging_blocks) const {
+    std::unordered_set<uint32_t>* merging_blocks) const {
   assert(GetMergeBlock() && "This loop is not structured");
-  ir::CFG* cfg = context->cfg();
+  ir::CFG* cfg = context_->cfg();
+  merging_blocks->clear();
 
   std::stack<const ir::BasicBlock*> to_visit;
   to_visit.push(GetMergeBlock());
@@ -269,12 +269,14 @@ void Loop::GetMergingBlocks(
 }
 
 bool Loop::IsLCSSA() const {
-  IRContext* context = GetHeaderBlock()->GetParent()->GetParent()->context();
-  ir::CFG* cfg = context->cfg();
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  ir::CFG* cfg = context_->cfg();
+  opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
   std::unordered_set<uint32_t> exit_blocks;
-  GetExitBlocks(context, &exit_blocks);
+  GetExitBlocks(&exit_blocks);
+
+  // Declare ir_context so we can capture context_ in the below lambda
+  ir::IRContext* ir_context = context_;
 
   for (uint32_t bb_id : GetBlocks()) {
     for (Instruction& insn : *cfg->block(bb_id)) {
@@ -283,8 +285,8 @@ bool Loop::IsLCSSA() const {
       //  - In an exit block and in a phi instruction.
       if (!def_use_mgr->WhileEachUser(
               &insn,
-              [&exit_blocks, context, this](ir::Instruction* use) -> bool {
-                BasicBlock* parent = context->get_instr_block(use);
+              [&exit_blocks, ir_context, this](ir::Instruction* use) -> bool {
+                BasicBlock* parent = ir_context->get_instr_block(use);
                 assert(parent && "Invalid analysis");
                 if (IsInsideLoop(parent)) return true;
                 if (use->opcode() != SpvOpPhi) return false;
@@ -296,6 +298,27 @@ bool Loop::IsLCSSA() const {
   return true;
 }
 
+bool Loop::ShouldHoistInstruction(IRContext* context, Instruction* inst) {
+  return AreAllOperandsOutsideLoop(context, inst) &&
+         inst->IsOpcodeCodeMotionSafe();
+}
+
+bool Loop::AreAllOperandsOutsideLoop(IRContext* context, Instruction* inst) {
+  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  bool all_outside_loop = true;
+
+  const std::function<void(uint32_t*)> operand_outside_loop =
+      [this, &def_use_mgr, &all_outside_loop](uint32_t* id) {
+        if (this->IsInsideLoop(def_use_mgr->GetDef(*id))) {
+          all_outside_loop = false;
+          return;
+        }
+      };
+
+  inst->ForEachInId(operand_outside_loop);
+  return all_outside_loop;
+}
+
 LoopDescriptor::LoopDescriptor(const Function* f) : loops_() {
   PopulateList(f);
 }
@@ -304,7 +327,6 @@ LoopDescriptor::~LoopDescriptor() { ClearLoops(); }
 
 void LoopDescriptor::PopulateList(const Function* f) {
   IRContext* context = f->GetParent()->context();
-
   opt::DominatorAnalysis* dom_analysis =
       context->GetDominatorAnalysis(f, *context->cfg());
 

@@ -30,8 +30,8 @@ class LoopUtils {
   LoopUtils(ir::IRContext* context, ir::Loop* loop)
       : context_(context), loop_(loop) {}
 
-  // The make the current loop in the loop closed SSA form.
-  // In the loop closed SSA, all loop exiting values goes through a dedicate SSA
+  // The converts the current loop to loop closed SSA form.
+  // In the loop closed SSA, all loop exiting values go through a dedicated Phi
   // instruction. For instance:
   //
   // for (...) {

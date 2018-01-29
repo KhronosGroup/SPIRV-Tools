@@ -331,7 +331,7 @@ void LoopUtils::CreateLoopDedicatedExits() {
   // Gathers the set of basic block that are not in this loop and have at least
   // one predecessor in the loop and one not in the loop.
   std::unordered_set<uint32_t> exit_bb_set;
-  loop_->GetExitBlocks(context_, &exit_bb_set);
+  loop_->GetExitBlocks(&exit_bb_set);
 
   std::unordered_set<ir::BasicBlock*> new_loop_exits;
   bool made_change = false;
@@ -448,7 +448,7 @@ void LoopUtils::MakeLoopClosedSSA() {
   std::unordered_set<ir::BasicBlock*> exit_bb;
   {
     std::unordered_set<uint32_t> exit_bb_id;
-    loop_->GetExitBlocks(context_, &exit_bb_id);
+    loop_->GetExitBlocks(&exit_bb_id);
     for (uint32_t bb_id : exit_bb_id) {
       exit_bb.insert(cfg.block(bb_id));
     }
@@ -463,7 +463,7 @@ void LoopUtils::MakeLoopClosedSSA() {
   // further than the merge block.
   if (loop_->GetMergeBlock()) {
     std::unordered_set<uint32_t> merging_bb_id;
-    loop_->GetMergingBlocks(context_, &merging_bb_id);
+    loop_->GetMergingBlocks(&merging_bb_id);
     merging_bb_id.erase(loop_->GetMergeBlock()->id());
     // Reset the exit set, now only the merge block is the exit.
     exit_bb.clear();

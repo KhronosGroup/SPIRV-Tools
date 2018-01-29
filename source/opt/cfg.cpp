@@ -56,7 +56,9 @@ void CFG::RemoveNonExistingEdges(uint32_t blk_id) {
     const ir::BasicBlock* pred_blk = block(id);
     bool has_branch = false;
     pred_blk->ForEachSuccessorLabel([&has_branch, blk_id](uint32_t succ) {
-      if (succ == blk_id) has_branch = true;
+      if (succ == blk_id) {
+        has_branch = true;
+      }
     });
     if (has_branch) updated_pred_list.push_back(id);
   }
