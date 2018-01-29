@@ -33,20 +33,8 @@ const uint32_t kTypeMatrixCountInIdx = 1;
 const uint32_t kTypeArrayLengthIdInIdx = 1;
 const uint32_t kTypeIntWidthInIdx = 0;
 const uint32_t kConstantValueInIdx = 0;
-const uint32_t kExtractCompositeIdInIdx = 0;
 const uint32_t kInsertObjectIdInIdx = 0;
 const uint32_t kInsertCompositeIdInIdx = 1;
-const uint32_t kVectorShuffleVec1IdInIdx = 0;
-const uint32_t kVectorShuffleVec2IdInIdx = 1;
-const uint32_t kVectorShuffleCompsInIdx = 2;
-const uint32_t kTypeVectorCompTypeIdInIdx = 0;
-const uint32_t kTypeVectorLengthInIdx = 1;
-const uint32_t kTypeFloatWidthInIdx = 0;
-const uint32_t kExtInstSetIdInIdx = 0;
-const uint32_t kExtInstInstructionInIdx = 1;
-const uint32_t kFMixXIdInIdx = 2;
-const uint32_t kFMixYIdInIdx = 3;
-const uint32_t kFMixAIdInIdx = 4;
 
 }  // anonymous namespace
 
