@@ -26,8 +26,7 @@ namespace spvtools {
 namespace opt {
 
 bool ExtInsMatch(const std::vector<uint32_t>& extIndices,
-                                        const ir::Instruction* insInst,
-                                        const uint32_t extOffset) {
+                 const ir::Instruction* insInst, const uint32_t extOffset) {
   uint32_t numIndices = static_cast<uint32_t>(extIndices.size()) - extOffset;
   if (numIndices != insInst->NumInOperands() - 2) return false;
   for (uint32_t i = 0; i < numIndices; ++i)
@@ -36,9 +35,8 @@ bool ExtInsMatch(const std::vector<uint32_t>& extIndices,
   return true;
 }
 
-bool ExtInsConflict(
-    const std::vector<uint32_t>& extIndices, const ir::Instruction* insInst,
-    const uint32_t extOffset) {
+bool ExtInsConflict(const std::vector<uint32_t>& extIndices,
+                    const ir::Instruction* insInst, const uint32_t extOffset) {
   if (extIndices.size() - extOffset == insInst->NumInOperands() - 2)
     return false;
   uint32_t extNumIndices = static_cast<uint32_t>(extIndices.size()) - extOffset;

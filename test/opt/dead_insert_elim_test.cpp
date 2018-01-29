@@ -676,7 +676,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::DeadInsertElimPass>(assembly, assembly, true,
-                                                    true);
+                                                 true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
