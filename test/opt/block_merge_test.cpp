@@ -455,7 +455,7 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
 }
 
-TEST_F(BlockMergeTest, DoNotMergeHeaderIntoAssociatedMerge) {
+TEST_F(BlockMergeTest, RemoveStructuredDeclaration) {
   // Note: SPIR-V hand edited remove dead branch and add block
   // before continue block
   //
@@ -474,9 +474,9 @@ TEST_F(BlockMergeTest, DoNotMergeHeaderIntoAssociatedMerge) {
       R"(
 ; CHECK: OpLabel
 ; CHECK: [[header:%\w+]] = OpLabel
-; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]]
-; CHECK-NEXT: OpBranch [[merge]]
-; CHECK: [[continue:%\w+]]
+; CHECK-NOT: OpLoopMerge
+; CHECK: OpReturn
+; CHECK: [[continue:%\w+]] = OpLabel
 ; CHECK-NEXT: OpBranch [[header]]
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"

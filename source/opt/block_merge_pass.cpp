@@ -60,11 +60,6 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       ++bi;
       continue;
     }
-    if (pred_is_header && lab_id == bi->MergeBlockIdIfAny()) {
-      // Cannot merge the header into its own merge.
-      ++bi;
-      continue;
-    }
 
     bool pred_is_merge = IsMerge(&*bi);
     bool succ_is_merge = IsMerge(lab_id);
@@ -85,8 +80,14 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
     assert(sbi != func->end());
     bi->AddInstructions(&*sbi);
     if (merge_inst) {
-      // Move the merge instruction to just before the terminator.
-      merge_inst->InsertBefore(bi->terminator());
+      if (pred_is_header && lab_id == merge_inst->GetSingleWordInOperand(0u)) {
+        // Merging the header and merge blocks, so remove the structured control
+        // flow declaration.
+        context()->KillInst(merge_inst);
+      } else {
+        // Move the merge instruction to just before the terminator.
+        merge_inst->InsertBefore(bi->terminator());
+      }
     }
     context()->ReplaceAllUsesWith(lab_id, bi->id());
     KillInstAndName(sbi->GetLabelInst());
