@@ -60,9 +60,9 @@ class IRContext {
     kAnalysisEnd = 1 << 7
   };
 
-  friend inline constexpr Analysis operator|(Analysis lhs, Analysis rhs);
+  friend inline Analysis operator|(Analysis lhs, Analysis rhs);
   friend inline Analysis& operator|=(Analysis& lhs, Analysis rhs);
-  friend inline constexpr Analysis operator<<(Analysis a, int shift);
+  friend inline Analysis operator<<(Analysis a, int shift);
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
   // Creates an |IRContext| that contains an owned |Module|
@@ -521,8 +521,8 @@ class IRContext {
   std::unique_ptr<opt::analysis::TypeManager> type_mgr_;
 };
 
-inline constexpr ir::IRContext::Analysis operator|(
-    ir::IRContext::Analysis lhs, ir::IRContext::Analysis rhs) {
+inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,
+                                         ir::IRContext::Analysis rhs) {
   return static_cast<ir::IRContext::Analysis>(static_cast<int>(lhs) |
                                               static_cast<int>(rhs));
 }
@@ -534,8 +534,8 @@ inline ir::IRContext::Analysis& operator|=(ir::IRContext::Analysis& lhs,
   return lhs;
 }
 
-inline constexpr ir::IRContext::Analysis operator<<(ir::IRContext::Analysis a,
-                                                    int shift) {
+inline ir::IRContext::Analysis operator<<(ir::IRContext::Analysis a,
+                                          int shift) {
   return static_cast<ir::IRContext::Analysis>(static_cast<int>(a) << shift);
 }
 
