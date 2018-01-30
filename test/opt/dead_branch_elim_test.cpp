@@ -1907,6 +1907,32 @@ TEST_F(DeadBranchElimTest, UnreachableContinuePhiInMerge) {
 
   SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
 }
+
+TEST_F(DeadBranchElimTest, NonStructuredIf) {
+  const std::string text = R"(
+; CHECK-NOT: OpBranchConditional
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpBranchConditional %true %then %else
+%then = OpLabel
+OpBranch %final
+%else = OpLabel
+OpBranch %final
+%final = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
 #endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

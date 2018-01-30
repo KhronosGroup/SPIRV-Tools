@@ -153,7 +153,7 @@ bool DeadBranchElimPass::MarkLiveBlocks(
       AddBranch(live_lab_id, block);
       context()->KillInst(terminator);
       ir::Instruction* mergeInst = block->GetMergeInst();
-      if (mergeInst->opcode() == SpvOpSelectionMerge) {
+      if (mergeInst && mergeInst->opcode() == SpvOpSelectionMerge) {
         context()->KillInst(mergeInst);
       }
       stack.push_back(GetParentBlock(live_lab_id));
