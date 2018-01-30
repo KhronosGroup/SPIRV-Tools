@@ -57,12 +57,12 @@ class LoopUtils {
   // (removes the needs to take care of exiting variables).
   void MakeLoopClosedSSA();
 
-  // Create dedicate exit basic block. This ensure all exit basic blocks as the
+  // Create dedicate exit basic block. This ensure all exit basic blocks has the
   // loop as sole predecessors.
   // By construction, structured control flow already has a dedicated exit
   // block.
   // Preserves: CFG, def/use and instruction to block mapping.
-  void CreateLoopDedicateExits();
+  void CreateLoopDedicatedExits();
 
  private:
   ir::IRContext* context_;

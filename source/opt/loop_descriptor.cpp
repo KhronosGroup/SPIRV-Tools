@@ -23,7 +23,6 @@
 #include "opt/ir_builder.h"
 #include "opt/ir_context.h"
 #include "opt/iterator.h"
-#include "opt/loop_descriptor.h"
 #include "opt/make_unique.h"
 #include "opt/tree_iterator.h"
 
@@ -148,31 +147,31 @@ BasicBlock* Loop::GetOrCreatePreHeaderBlock(ir::IRContext* context) {
         preheader_phi_ops.push_back(def_id);
         preheader_phi_ops.push_back(branch_id);
       }
-
-      Instruction* preheader_insn_def = nullptr;
-      // Create a phi instruction if and only if the preheader_phi_ops has more
-      // than one pair.
-      if (preheader_phi_ops.size() > 2)
-        preheader_insn_def = builder.AddPhi(phi->type_id(), preheader_phi_ops);
-      else
-        preheader_insn_def =
-            context->get_def_use_mgr()->GetDef(preheader_phi_ops[0]);
-      // Build the new incoming branch.
-      header_phi_ops.push_back(preheader_insn_def->result_id());
-      header_phi_ops.push_back(loop_header_->id());
-      // Rewrite operands of the header's phi instruction.
-      uint32_t idx = 0;
-      for (; idx < header_phi_ops.size(); idx++)
-        phi->SetInOperand(idx, {header_phi_ops[idx]});
-      // Remove extra operands, from last to first (more efficient).
-      for (uint32_t j = phi->NumInOperands() - 1; j >= idx; j--)
-        phi->RemoveInOperand(j);
     }
+
+    Instruction* preheader_insn_def = nullptr;
+    // Create a phi instruction if and only if the preheader_phi_ops has more
+    // than one pair.
+    if (preheader_phi_ops.size() > 2)
+      preheader_insn_def = builder.AddPhi(phi->type_id(), preheader_phi_ops);
+    else
+      preheader_insn_def =
+          context->get_def_use_mgr()->GetDef(preheader_phi_ops[0]);
+    // Build the new incoming edge.
+    header_phi_ops.push_back(preheader_insn_def->result_id());
+    header_phi_ops.push_back(loop_preheader_->id());
+    // Rewrite operands of the header's phi instruction.
+    uint32_t idx = 0;
+    for (; idx < header_phi_ops.size(); idx++)
+      phi->SetInOperand(idx, {header_phi_ops[idx]});
+    // Remove extra operands, from last to first (more efficient).
+    for (uint32_t j = phi->NumInOperands() - 1; j >= idx; j--)
+      phi->RemoveInOperand(j);
   });
   // Branch from the preheader to the header.
   builder.AddBranch(loop_header_->id());
 
-  // Fix the CFG: redirect all out-of-loop branches to the preheader.
+  // Redirect all out of loop branches to the header to the preheader.
   CFG* cfg = context->cfg();
   cfg->RegisterBlock(loop_preheader_);
   for (uint32_t pred_id : cfg->preds(loop_header_->id())) {
@@ -213,9 +212,6 @@ void Loop::SetLatchBlock(BasicBlock* latch) {
   assert(IsInsideLoop(latch) && "The continue block is not in the loop");
 
   SetLatchBlockImpl(latch);
-  if (IsStructured()) {
-    UpdateLoopMergeInst();
-  }
 }
 
 void Loop::SetMergeBlock(BasicBlock* merge) {
@@ -231,7 +227,7 @@ void Loop::SetMergeBlock(BasicBlock* merge) {
   assert(!IsInsideLoop(merge) && "The merge block is in the loop");
 
   SetMergeBlockImpl(merge);
-  if (IsStructured()) {
+  if (GetHeaderBlock()->GetLoopMergeInst()) {
     UpdateLoopMergeInst();
   }
 }
@@ -264,12 +260,13 @@ bool Loop::IsLCSSA() const {
       //  - In the loop;
       //  - In an exit block and in a phi instruction.
       if (!def_use_mgr->WhileEachUser(
-              &insn, [&exit_blocks, context, this](ir::Instruction* use) {
+              &insn,
+              [&exit_blocks, context, this](ir::Instruction* use) -> bool {
                 BasicBlock* parent = context->get_instr_block(use);
                 assert(parent && "Invalid analysis");
                 if (IsInsideLoop(parent)) return true;
                 if (use->opcode() != SpvOpPhi) return false;
-                return !!exit_blocks.count(parent->id());
+                return exit_blocks.count(parent->id());
               }))
         return false;
     }

@@ -77,24 +77,24 @@ class LCSSARewriter {
     const ir::Instruction& new_def = GetOrBuildIncoming(bb->id());
 
     user->SetOperand(operand_index, {new_def.result_id()});
-    rewritten.insert(user);
+    rewritten_.insert(user);
   }
 
   // Notifies the addition of a phi node built to close the loop.
   inline void RegisterExitPhi(ir::BasicBlock* bb, ir::Instruction* phi) {
-    bb_to_phi[bb->id()] = phi;
-    rewritten.insert(phi);
+    bb_to_phi_[bb->id()] = phi;
+    rewritten_.insert(phi);
   }
 
   // In-place update of some managers (avoid full invalidation).
   inline void UpdateManagers() {
     opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
     // Register all new definitions.
-    for (ir::Instruction* insn : rewritten) {
+    for (ir::Instruction* insn : rewritten_) {
       def_use_mgr->AnalyzeInstDef(insn);
     }
     // Register all new uses.
-    for (ir::Instruction* insn : rewritten) {
+    for (ir::Instruction* insn : rewritten_) {
       def_use_mgr->AnalyzeInstUse(insn);
     }
   }
@@ -113,7 +113,7 @@ class LCSSARewriter {
   const ir::Instruction& GetOrBuildIncoming(uint32_t bb_id) {
     assert(cfg_->block(bb_id) != nullptr && "Unknown basic block");
 
-    ir::Instruction*& incoming_phi = bb_to_phi[bb_id];
+    ir::Instruction*& incoming_phi = bb_to_phi_[bb_id];
     if (incoming_phi) {
       return *incoming_phi;
     }
@@ -121,7 +121,7 @@ class LCSSARewriter {
     // Check if one of the loop exit basic block dominates |bb_id|.
     for (const ir::BasicBlock* e_bb : exit_bb_) {
       if (dom_tree_.Dominates(e_bb->id(), bb_id)) {
-        incoming_phi = bb_to_phi[e_bb->id()];
+        incoming_phi = bb_to_phi_[e_bb->id()];
         assert(incoming_phi && "No closing phi node ?");
         return *incoming_phi;
       }
@@ -141,7 +141,7 @@ class LCSSARewriter {
       if (first_id != incomings[idx]) break;
 
     if (idx >= incomings.size()) {
-      incoming_phi = bb_to_phi[incomings[1]];
+      incoming_phi = bb_to_phi_[incomings[1]];
       return *incoming_phi;
     }
 
@@ -151,7 +151,7 @@ class LCSSARewriter {
     opt::InstructionBuilder<> builder(context_, &*block->begin());
     incoming_phi = builder.AddPhi(insn_type_, incomings);
 
-    rewritten.insert(incoming_phi);
+    rewritten_.insert(incoming_phi);
 
     return *incoming_phi;
   }
@@ -160,13 +160,13 @@ class LCSSARewriter {
   ir::CFG* cfg_;
   const opt::DominatorTree& dom_tree_;
   uint32_t insn_type_;
-  std::unordered_map<uint32_t, ir::Instruction*> bb_to_phi;
-  std::unordered_set<ir::Instruction*> rewritten;
+  std::unordered_map<uint32_t, ir::Instruction*> bb_to_phi_;
+  std::unordered_set<ir::Instruction*> rewritten_;
   const std::unordered_set<ir::BasicBlock*>& exit_bb_;
 };
 }  // namespace
 
-void LoopUtils::CreateLoopDedicateExits() {
+void LoopUtils::CreateLoopDedicatedExits() {
   ir::Function* function = loop_->GetHeaderBlock()->GetParent();
   ir::LoopDescriptor& loop_desc = *context_->GetLoopDescriptor(function);
   ir::CFG& cfg = *context_->cfg();
@@ -188,20 +188,11 @@ void LoopUtils::CreateLoopDedicateExits() {
   for (uint32_t non_dedicate_id : exit_bb_set) {
     ir::BasicBlock* non_dedicate = cfg.block(non_dedicate_id);
     const std::vector<uint32_t>& bb_pred = cfg.preds(non_dedicate_id);
-    // Ignore the block if:
-    //   - all the predecessors are in the loop;
-    //   - and has an unconditional branch;
-    //   - and any other instructions are phi.
-    if (non_dedicate->tail()->opcode() == SpvOpBranch) {
-      if (std::all_of(bb_pred.begin(), bb_pred.end(), [this](uint32_t id) {
-            return loop_->IsInsideLoop(id);
-          })) {
-        ir::BasicBlock::iterator it = non_dedicate->tail();
-        if (it == non_dedicate->begin() || (--it)->opcode() == SpvOpPhi) {
-          new_loop_exits.insert(non_dedicate);
-          continue;
-        }
-      }
+    // Ignore the block if all the predecessors are in the loop.
+    if (std::all_of(bb_pred.begin(), bb_pred.end(),
+                    [this](uint32_t id) { return loop_->IsInsideLoop(id); })) {
+      new_loop_exits.insert(non_dedicate);
+      continue;
     }
 
     made_change = true;
@@ -295,7 +286,7 @@ void LoopUtils::CreateLoopDedicateExits() {
 }
 
 void LoopUtils::MakeLoopClosedSSA() {
-  CreateLoopDedicateExits();
+  CreateLoopDedicatedExits();
 
   ir::Function* function = loop_->GetHeaderBlock()->GetParent();
   ir::CFG& cfg = *context_->cfg();
@@ -304,11 +295,12 @@ void LoopUtils::MakeLoopClosedSSA() {
 
   opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
   std::unordered_set<ir::BasicBlock*> exit_bb;
-  for (uint32_t bb_id : loop_->GetBlocks()) {
-    ir::BasicBlock* bb = cfg.block(bb_id);
-    bb->ForEachSuccessorLabel([&exit_bb, &cfg, this](uint32_t succ) {
-      if (!loop_->IsInsideLoop(succ)) exit_bb.insert(cfg.block(succ));
-    });
+  {
+    std::unordered_set<uint32_t> exit_bb_id;
+    loop_->GetExitBlocks(context_, &exit_bb_id);
+    for (uint32_t bb_id : exit_bb_id) {
+      exit_bb.insert(cfg.block(bb_id));
+    }
   }
 
   for (uint32_t bb_id : loop_->GetBlocks()) {
@@ -319,8 +311,8 @@ void LoopUtils::MakeLoopClosedSSA() {
       std::unordered_set<ir::BasicBlock*> processed_exit;
       LCSSARewriter rewriter(context_, dom_tree, exit_bb, inst);
       def_use_manager->ForEachUse(
-          &inst, [&rewriter, &exit_bb, &processed_exit, &inst, &dom_tree, &cfg,
-                  this](ir::Instruction* use, uint32_t operand_index) {
+          &inst, [&rewriter, &exit_bb, &processed_exit, &inst, &cfg, this](
+                     ir::Instruction* use, uint32_t operand_index) {
             if (loop_->IsInsideLoop(use)) return;
 
             ir::BasicBlock* use_parent = context_->get_instr_block(use);
@@ -343,10 +335,6 @@ void LoopUtils::MakeLoopClosedSSA() {
             for (ir::BasicBlock* e_bb : exit_bb) {
               if (processed_exit.count(e_bb)) continue;
               processed_exit.insert(e_bb);
-
-              // If the current exit basic block does not dominate |use| then
-              // |inst| does not escape through |e_bb|.
-              if (!dom_tree.Dominates(e_bb, use_parent)) continue;
 
               opt::InstructionBuilder<> builder(context_, &*e_bb->begin());
               const std::vector<uint32_t>& preds = cfg.preds(e_bb->id());

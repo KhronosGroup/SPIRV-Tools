@@ -133,6 +133,9 @@ class BasicBlock {
   void ForEachSuccessorLabel(
       const std::function<void(const uint32_t)>& f) const;
 
+  // Runs the given function |f| on each label id of each successor block.
+  // Modifying the pointed value will change the branch taken by the basic
+  // block. It is the caller responsibility to update or invalidate the CFG.
   void ForEachSuccessorLabel(const std::function<void(uint32_t*)>& f);
 
   // Returns true if |block| is a direct successor of |this|.

@@ -85,12 +85,10 @@ void main() {
 */
 TEST_F(LCSSATest, SimpleLCSSA) {
   const std::string text = R"(
-; CHECK: OpLoopMerge %32 %19 None
-; CHECK: %32 = OpLabel
-; CHECK-NEXT: %33 = OpPhi %7 %30 %20
-; CHECK-NEXT: OpBranch %18
-; CHECK-NEXT: %18 = OpLabel
-; CHECK-NEXT: %27 = OpINotEqual %11 %33 %9
+; CHECK: OpLoopMerge [[merge:%\w+]] %19 None
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi {{%\w+}} %30 %20
+; CHECK-NEXT: %27 = OpINotEqual {{%\w+}} [[phi]] %9
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -173,9 +171,9 @@ void main() {
 TEST_F(LCSSATest, DualLoopLCSSA) {
   const std::string text = R"(
 ; CHECK: %20 = OpLabel
-; CHECK-NEXT: %36 = OpPhi %6 %17 %21
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi %6 %17 %21
 ; CHECK: %33 = OpLabel
-; CHECK-NEXT: %35 = OpPhi %6 %36 %28 %11 %34
+; CHECK-NEXT: {{%\w+}} = OpPhi {{%\w+}} [[phi]] %28 %11 %34
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -272,9 +270,9 @@ void main() {
 TEST_F(LCSSATest, PhiUserLCSSA) {
   const std::string text = R"(
 ; CHECK: %23 = OpLabel
-; CHECK-NEXT: %32 = OpPhi %6 %20 %24
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi %6 %20 %24
 ; CHECK: %17 = OpLabel
-; CHECK-NEXT: %27 = OpPhi %6 %8 %15 %32 %23
+; CHECK-NEXT: {{%\w+}} = OpPhi {{%\w+}} %8 %15 [[phi]] %23
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450

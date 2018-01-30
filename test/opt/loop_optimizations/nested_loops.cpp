@@ -733,16 +733,29 @@ TEST_F(PassClassTest, CreatePreheaderTest) {
           cfg->preds(loop.GetPreHeaderBlock()->id());
       std::unordered_set<uint32_t> pred_set(preds.begin(), preds.end());
       EXPECT_EQ(pred_set.size(), 2u);
-      EXPECT_TRUE(!!pred_set.count(30));
-      EXPECT_TRUE(!!pred_set.count(31));
+      EXPECT_TRUE(pred_set.count(30));
+      EXPECT_TRUE(pred_set.count(31));
+      // Check the phi instructions.
+      loop.GetPreHeaderBlock()->ForEachPhiInst(
+          [&pred_set](ir::Instruction* phi) {
+            for (uint32_t i = 1; i < phi->NumInOperands(); i += 2) {
+              EXPECT_TRUE(pred_set.count(phi->GetSingleWordInOperand(i)));
+            }
+          });
     }
     {
       const std::vector<uint32_t>& preds =
           cfg->preds(loop.GetHeaderBlock()->id());
       std::unordered_set<uint32_t> pred_set(preds.begin(), preds.end());
       EXPECT_EQ(pred_set.size(), 2u);
-      EXPECT_TRUE(!!pred_set.count(loop.GetPreHeaderBlock()->id()));
-      EXPECT_TRUE(!!pred_set.count(35));
+      EXPECT_TRUE(pred_set.count(loop.GetPreHeaderBlock()->id()));
+      EXPECT_TRUE(pred_set.count(35));
+      // Check the phi instructions.
+      loop.GetHeaderBlock()->ForEachPhiInst([&pred_set](ir::Instruction* phi) {
+        for (uint32_t i = 1; i < phi->NumInOperands(); i += 2) {
+          EXPECT_TRUE(pred_set.count(phi->GetSingleWordInOperand(i)));
+        }
+      });
     }
   }
 
@@ -753,13 +766,25 @@ TEST_F(PassClassTest, CreatePreheaderTest) {
     EXPECT_EQ(ld[loop.GetPreHeaderBlock()], nullptr);
     EXPECT_EQ(cfg->preds(loop.GetPreHeaderBlock()->id()).size(), 1u);
     EXPECT_EQ(cfg->preds(loop.GetPreHeaderBlock()->id())[0], 25u);
-    const std::vector<uint32_t>& header_pred =
-        cfg->preds(loop.GetHeaderBlock()->id());
-    std::unordered_set<uint32_t> pred_set(header_pred.begin(),
-                                          header_pred.end());
-    EXPECT_EQ(pred_set.size(), 2u);
-    EXPECT_TRUE(!!pred_set.count(loop.GetPreHeaderBlock()->id()));
-    EXPECT_TRUE(!!pred_set.count(44));
+    // Check the phi instructions.
+    loop.GetPreHeaderBlock()->ForEachPhiInst([](ir::Instruction* phi) {
+      EXPECT_EQ(phi->NumInOperands(), 2u);
+      EXPECT_EQ(phi->GetSingleWordInOperand(1), 25u);
+    });
+    {
+      const std::vector<uint32_t>& preds =
+          cfg->preds(loop.GetHeaderBlock()->id());
+      std::unordered_set<uint32_t> pred_set(preds.begin(), preds.end());
+      EXPECT_EQ(pred_set.size(), 2u);
+      EXPECT_TRUE(pred_set.count(loop.GetPreHeaderBlock()->id()));
+      EXPECT_TRUE(pred_set.count(44));
+      // Check the phi instructions.
+      loop.GetHeaderBlock()->ForEachPhiInst([&pred_set](ir::Instruction* phi) {
+        for (uint32_t i = 1; i < phi->NumInOperands(); i += 2) {
+          EXPECT_TRUE(pred_set.count(phi->GetSingleWordInOperand(i)));
+        }
+      });
+    }
   }
 
   // Make sure pre-header insertion leaves the module valid.
