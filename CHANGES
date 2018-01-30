@@ -1,13 +1,26 @@
 Revision history for SPIRV-Tools
 
 v2018.0-dev 2018-01-12
- - Start v2018.0-dev
+ - Disassembler: spirv-dis adds --color option to force color disassembly.
  - Optimizer:
-   - Aggressive dead code elimination now removes OpSwitch constructs
+   - Add pass to eliminate dead insertions.
+   - Aggressive dead code elimination now removes OpSwitch constructs.
+   - Block merging occurs in more cases.
+   - Add driver workaround transform: replace OpUnreachable with harmless branch to merge.
+   - Improve instruction folding framework.
+   - Add loop analysis
+ - Validator:
+   - Shaders can't perform atomics on floats.
  - Fixes:
    - PR 1198: Optimizer: Fix CCP in presence of matrix constants.
    - #1199: Optimizer: Fix CCP: don't propagate spec constants.
    - #1203: Optimizer: Fix common uniform elim bug introduced by refactoring.
+   - #1210: Optimizer: Aggressive dead code elimination: Fix 'break' identification.
+   - #1212: Optimizer: Aggressive dead code elimination: Was skipping too many instructions.
+   - #1214: Optimizer: Aggressive dead code elimination: Fix infinite loop.
+   - #1228: Optimizer: Fix CCP: Handling of varying Phi nodes; was resulting in infinite loop.
+   - #1245: Optimizer: Dead branch elimination: Avoid a null pointer dereference.
+   - #1250: Optimizer: Dead branch elimination: Avoid spuriously reporting a change.
 
 v2017.3 2018-01-12
  - General:
