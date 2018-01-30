@@ -240,6 +240,10 @@ Options (in lexicographical order):
                Allow store from one struct type to a different type with
                compatible layout and members. This option is forwarded to the
                validator.
+  --replace-invalid-opcode
+               Replaces instructions whose opcode is valid for shader modules,
+               but not for the current shader stage.  To have an effect, all
+               entry points must have the same execution model.
   --scalar-replacement
                Replace aggregate function scope variables that are only accessed
                via their elements with new function variables representing each
@@ -459,6 +463,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateWorkaround1209Pass());
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options->relax_struct_store = true;
+      } else if (0 == strcmp(cur_arg, "--replace-invalid-opcode")) {
+        optimizer->RegisterPass(CreateReplaceInvalidOpcodePass());
       } else if (0 == strcmp(cur_arg, "--skip-validation")) {
         *skip_validator = true;
       } else if (0 == strcmp(cur_arg, "-O")) {

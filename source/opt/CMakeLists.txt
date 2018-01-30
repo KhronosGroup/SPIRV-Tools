@@ -65,6 +65,7 @@ add_library(SPIRV-Tools-opt
   redundancy_elimination.h
   reflect.h
   remove_duplicates_pass.h
+  replace_invalid_opc.h
   scalar_replacement_pass.h
   set_spec_constant_default_value_pass.h
   strength_reduction_pass.h
@@ -127,6 +128,7 @@ add_library(SPIRV-Tools-opt
   propagator.cpp
   redundancy_elimination.cpp
   remove_duplicates_pass.cpp
+  replace_invalid_opc.cpp
   scalar_replacement_pass.cpp
   set_spec_constant_default_value_pass.cpp
   strength_reduction_pass.cpp

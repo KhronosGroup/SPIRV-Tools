@@ -500,6 +500,10 @@ Optimizer::PassToken CreateWorkaround1209Pass();
 // Creates a pass that converts if-then-else like assignments into OpSelect.
 Optimizer::PassToken CreateIfConversionPass();
 
+// Creates a pass that will replace instructions that are not valid for the
+// current shader stage by constants.  Has no effect on non-shader modules.
+Optimizer::PassToken CreateReplaceInvalidOpcodePass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

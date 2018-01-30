@@ -226,6 +226,10 @@ class PassTest : public TestT {
   MessageConsumer consumer() { return consumer_; }
   ir::IRContext* context() { return context_.get(); }
 
+  void SetMessageConsumer(MessageConsumer msg_consumer) {
+    consumer_ = msg_consumer;
+  }
+
  private:
   MessageConsumer consumer_;                // Message consumer.
   std::unique_ptr<ir::IRContext> context_;  // IR context

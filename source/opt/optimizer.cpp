@@ -375,4 +375,8 @@ Optimizer::PassToken CreateIfConversionPass() {
       MakeUnique<opt::IfConversion>());
 }
 
+Optimizer::PassToken CreateReplaceInvalidOpcodePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ReplaceInvalidOpcodePass>());
+}
 }  // namespace spvtools

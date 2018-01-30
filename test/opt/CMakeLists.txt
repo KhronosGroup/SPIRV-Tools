@@ -286,3 +286,8 @@ add_spvtools_unittest(TARGET instruction_folding
   SRCS fold_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET replace_invalid_opc
+  SRCS replace_invalid_opc_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)

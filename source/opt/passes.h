@@ -45,6 +45,7 @@
 #include "private_to_local_pass.h"
 #include "redundancy_elimination.h"
 #include "remove_duplicates_pass.h"
+#include "replace_invalid_opc.h"
 #include "scalar_replacement_pass.h"
 #include "set_spec_constant_default_value_pass.h"
 #include "strength_reduction_pass.h"
