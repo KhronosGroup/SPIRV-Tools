@@ -24,7 +24,7 @@ namespace opt {
 
 // In SPIR-V, ids are encoded as uint16_t, this id is guaranteed to be always
 // invalid.
-constexpr uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
+const uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
 
 // Helper class to abstract instruction construction and insertion.
 // The instruction builder can preserve the following analyses (specified via
@@ -167,7 +167,7 @@ class InstructionBuilder {
   ir::IRContext* GetContext() const { return context_; }
 
   // Returns the set of preserved analyses.
-  inline ir::IRContext::Analysis GetPreservedAnalysis() {
+  inline ir::IRContext::Analysis GetPreservedAnalysis() const {
     return preserved_analyses_;
   }
 
@@ -185,7 +185,8 @@ class InstructionBuilder {
   }
 
   // Returns true if the users requested to update |analysis|.
-  inline bool IsAnalysisUpdateRequested(ir::IRContext::Analysis analysis) {
+  inline bool IsAnalysisUpdateRequested(
+      ir::IRContext::Analysis analysis) const {
     return preserved_analyses_ & analysis;
   }
 
@@ -208,7 +209,7 @@ class InstructionBuilder {
   ir::IRContext* context_;
   ir::BasicBlock* parent_;
   InsertionPointTy insert_before_;
-  ir::IRContext::Analysis preserved_analyses_;
+  const ir::IRContext::Analysis preserved_analyses_;
 };
 
 }  // namespace opt
