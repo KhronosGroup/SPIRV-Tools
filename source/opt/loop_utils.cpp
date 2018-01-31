@@ -47,122 +47,164 @@ static inline bool DominatesAnExit(
 class LCSSARewriter {
  public:
   LCSSARewriter(ir::IRContext* context, const opt::DominatorTree& dom_tree,
-                const std::unordered_set<ir::BasicBlock*>& exit_bb,
-                const ir::Instruction& def_insn)
+                const std::unordered_set<ir::BasicBlock*>& exit_bb)
       : context_(context),
         cfg_(context_->cfg()),
         dom_tree_(dom_tree),
-        insn_type_(def_insn.type_id()),
         exit_bb_(exit_bb) {}
 
-  // Rewrites the use of |def_insn_| by the instruction |user| at the index
-  // |operand_index| in terms of phi instruction. This recursively builds new
-  // phi instructions from |user| to the loop exit blocks' phis. The use of
-  // |def_insn_| in |user| is replaced by the relevant phi instruction at the
-  // end of the operation.
-  // It is assumed that |user| does not dominates any of the loop exit basic
-  // block. This operation does not update the def/use manager, instead it
-  // records what needs to be updated. The actual update is performed by
-  // UpdateManagers.
-  void RewriteUse(ir::BasicBlock* bb, ir::Instruction* user,
-                  uint32_t operand_index) {
-    assert((user->opcode() != SpvOpPhi || bb != GetParent(user)) &&
-           "The root basic block must be the incoming edge if |user| is a phi "
-           "instruction");
-    assert(
-        (user->opcode() == SpvOpPhi || bb == GetParent(user)) &&
-        "The root basic block must be the instruction parent if |user| is not "
-        "phi instruction");
+  struct UseRewriter {
+    explicit UseRewriter(LCSSARewriter* base, const ir::Instruction& def_insn)
+        : base_(base), insn_type_(def_insn.type_id()) {}
+    // Rewrites the use of |def_insn_| by the instruction |user| at the index
+    // |operand_index| in terms of phi instruction. This recursively builds new
+    // phi instructions from |user| to the loop exit blocks' phis. The use of
+    // |def_insn_| in |user| is replaced by the relevant phi instruction at the
+    // end of the operation.
+    // It is assumed that |user| does not dominates any of the loop exit basic
+    // block. This operation does not update the def/use manager, instead it
+    // records what needs to be updated. The actual update is performed by
+    // UpdateManagers.
+    void RewriteUse(ir::BasicBlock* bb, ir::Instruction* user,
+                    uint32_t operand_index) {
+      assert(
+          (user->opcode() != SpvOpPhi || bb != GetParent(user)) &&
+          "The root basic block must be the incoming edge if |user| is a phi "
+          "instruction");
+      assert((user->opcode() == SpvOpPhi || bb == GetParent(user)) &&
+             "The root basic block must be the instruction parent if |user| is "
+             "not "
+             "phi instruction");
 
-    const ir::Instruction& new_def = GetOrBuildIncoming(bb->id());
+      ir::Instruction* new_def = GetOrBuildIncoming(bb->id());
 
-    user->SetOperand(operand_index, {new_def.result_id()});
-    rewritten_.insert(user);
-  }
-
-  // Notifies the addition of a phi node built to close the loop.
-  inline void RegisterExitPhi(ir::BasicBlock* bb, ir::Instruction* phi) {
-    bb_to_phi_[bb->id()] = phi;
-    rewritten_.insert(phi);
-  }
-
-  // In-place update of some managers (avoid full invalidation).
-  inline void UpdateManagers() {
-    opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
-    // Register all new definitions.
-    for (ir::Instruction* insn : rewritten_) {
-      def_use_mgr->AnalyzeInstDef(insn);
+      user->SetOperand(operand_index, {new_def->result_id()});
+      rewritten_.insert(user);
     }
-    // Register all new uses.
-    for (ir::Instruction* insn : rewritten_) {
-      def_use_mgr->AnalyzeInstUse(insn);
+
+    // Notifies the addition of a phi node built to close the loop.
+    inline void RegisterExitPhi(ir::BasicBlock* bb, ir::Instruction* phi) {
+      bb_to_phi_[bb->id()] = phi;
+      rewritten_.insert(phi);
     }
-  }
+
+    // In-place update of some managers (avoid full invalidation).
+    inline void UpdateManagers() {
+      opt::analysis::DefUseManager* def_use_mgr =
+          base_->context_->get_def_use_mgr();
+      // Register all new definitions.
+      for (ir::Instruction* insn : rewritten_) {
+        def_use_mgr->AnalyzeInstDef(insn);
+      }
+      // Register all new uses.
+      for (ir::Instruction* insn : rewritten_) {
+        def_use_mgr->AnalyzeInstUse(insn);
+      }
+    }
+
+   private:
+    // Return the basic block that |instr| belongs to.
+    ir::BasicBlock* GetParent(ir::Instruction* instr) {
+      return base_->context_->get_instr_block(instr);
+    }
+
+    // Return the new def to use for the basic block |bb_id|.
+    // If |bb_id| does not have a suitable def to use then we:
+    //   - return the common def used by all predecessors;
+    //   - if there is no common def, then we build a new phi instr at the
+    //     beginning of |bb_id| and return this new instruction.
+    ir::Instruction* GetOrBuildIncoming(uint32_t bb_id) {
+      assert(base_->cfg_->block(bb_id) != nullptr && "Unknown basic block");
+
+      ir::Instruction*& incoming_phi = bb_to_phi_[bb_id];
+      if (incoming_phi) {
+        return incoming_phi;
+      }
+
+      const std::vector<uint32_t>& defining_blocks =
+          base_->GetDefiningBlocks(bb_id);
+      if (defining_blocks.size() > 1) {
+        // Process parents, they will returns their suitable phi.
+        // If they are all the same, this means this basic block is dominated by
+        // a common block, so we won't need to build a phi instruction.
+        std::vector<uint32_t> incomings;
+        for (uint32_t pred_id : defining_blocks) {
+          incomings.push_back(GetOrBuildIncoming(pred_id)->result_id());
+          incomings.push_back(pred_id);
+        }
+        opt::InstructionBuilder<> builder(base_->context_,
+                                          &*base_->cfg_->block(bb_id)->begin());
+        incoming_phi = builder.AddPhi(insn_type_, incomings);
+
+        rewritten_.insert(incoming_phi);
+      } else {
+        incoming_phi = GetOrBuildIncoming(defining_blocks[0]);
+      }
+
+      return incoming_phi;
+    }
+
+    LCSSARewriter* base_;
+    uint32_t insn_type_;
+    std::unordered_map<uint32_t, ir::Instruction*> bb_to_phi_;
+    std::unordered_set<ir::Instruction*> rewritten_;
+  };
 
  private:
-  // Return the basic block that |instr| belongs to.
-  ir::BasicBlock* GetParent(ir::Instruction* instr) {
-    return context_->get_instr_block(instr);
-  }
-
   // Return the new def to use for the basic block |bb_id|.
   // If |bb_id| does not have a suitable def to use then we:
   //   - return the common def used by all predecessors;
   //   - if there is no common def, then we build a new phi instr at the
   //     beginning of |bb_id| and return this new instruction.
-  const ir::Instruction& GetOrBuildIncoming(uint32_t bb_id) {
+  const std::vector<uint32_t>& GetDefiningBlocks(uint32_t bb_id) {
     assert(cfg_->block(bb_id) != nullptr && "Unknown basic block");
+    std::vector<uint32_t>& defining_blocks = bb_to_defining_blocks_[bb_id];
 
-    ir::Instruction*& incoming_phi = bb_to_phi_[bb_id];
-    if (incoming_phi) {
-      return *incoming_phi;
-    }
+    if (defining_blocks.size()) return defining_blocks;
 
     // Check if one of the loop exit basic block dominates |bb_id|.
     for (const ir::BasicBlock* e_bb : exit_bb_) {
       if (dom_tree_.Dominates(e_bb->id(), bb_id)) {
-        incoming_phi = bb_to_phi_[e_bb->id()];
-        assert(incoming_phi && "No closing phi node ?");
-        return *incoming_phi;
+        defining_blocks.push_back(e_bb->id());
+        return defining_blocks;
       }
     }
 
-    // Process parents, they will returns their suitable phi.
+    // Process parents, they will returns their suitable blocks.
     // If they are all the same, this means this basic block is dominated by a
     // common block, so we won't need to build a phi instruction.
-    std::vector<uint32_t> incomings;
     for (uint32_t pred_id : cfg_->preds(bb_id)) {
-      incomings.push_back(GetOrBuildIncoming(pred_id).result_id());
-      incomings.push_back(pred_id);
+      const std::vector<uint32_t>& pred_blocks = GetDefiningBlocks(pred_id);
+      if (pred_blocks.size() == 1)
+        defining_blocks.push_back(pred_blocks[0]);
+      else
+        defining_blocks.push_back(pred_id);
     }
-    uint32_t first_id = incomings.front();
-    size_t idx = 0;
-    for (; idx < incomings.size(); idx += 2)
-      if (first_id != incomings[idx]) break;
-
-    if (idx >= incomings.size()) {
-      incoming_phi = bb_to_phi_[incomings[1]];
-      return *incoming_phi;
+    assert(defining_blocks.size());
+    if (std::all_of(defining_blocks.begin(), defining_blocks.end(),
+                    [&defining_blocks](uint32_t id) {
+                      return id == defining_blocks[0];
+                    })) {
+      // No need for a phi.
+      defining_blocks.resize(1);
     }
 
-    // We have at least 2 definitions to merge, so we need a phi instruction.
-    ir::BasicBlock* block = cfg_->block(bb_id);
-
-    opt::InstructionBuilder<> builder(context_, &*block->begin());
-    incoming_phi = builder.AddPhi(insn_type_, incomings);
-
-    rewritten_.insert(incoming_phi);
-
-    return *incoming_phi;
+    return defining_blocks;
   }
 
   ir::IRContext* context_;
   ir::CFG* cfg_;
   const opt::DominatorTree& dom_tree_;
-  uint32_t insn_type_;
-  std::unordered_map<uint32_t, ir::Instruction*> bb_to_phi_;
-  std::unordered_set<ir::Instruction*> rewritten_;
   const std::unordered_set<ir::BasicBlock*>& exit_bb_;
+  // This map represent the set of known paths. For each key, the vector
+  // represent the set of blocks holding the definition to be used to build the
+  // phi instruction.
+  // If the vector has 0 value, then the path is unknown yet, and must be built.
+  // If the vector has 1 value, then the value defined by that basic block
+  //   should be used.
+  // If the vector has more than 1 value, then a phi node must be created, the
+  //   basic block ordering is the same as the predecessor ordering.
+  std::unordered_map<uint32_t, std::vector<uint32_t>> bb_to_defining_blocks_;
 };
 }  // namespace
 
@@ -303,13 +345,14 @@ void LoopUtils::MakeLoopClosedSSA() {
     }
   }
 
+  LCSSARewriter lcssa_rewriter(context_, dom_tree, exit_bb);
   for (uint32_t bb_id : loop_->GetBlocks()) {
     ir::BasicBlock* bb = cfg.block(bb_id);
     // If bb does not dominate an exit block, then it cannot have escaping defs.
     if (!DominatesAnExit(bb, exit_bb, dom_tree)) continue;
     for (ir::Instruction& inst : *bb) {
       std::unordered_set<ir::BasicBlock*> processed_exit;
-      LCSSARewriter rewriter(context_, dom_tree, exit_bb, inst);
+      LCSSARewriter::UseRewriter rewriter(&lcssa_rewriter, inst);
       def_use_manager->ForEachUse(
           &inst, [&rewriter, &exit_bb, &processed_exit, &inst, &cfg, this](
                      ir::Instruction* use, uint32_t operand_index) {
