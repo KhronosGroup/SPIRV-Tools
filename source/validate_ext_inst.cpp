@@ -861,8 +861,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         for (uint32_t operand_index = 4; operand_index < num_operands;
@@ -892,8 +892,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         uint32_t operand_index = 4;
@@ -953,8 +953,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
@@ -1013,8 +1013,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
@@ -1046,8 +1046,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
@@ -1085,8 +1085,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         const uint32_t nancode_type = _.GetOperandTypeId(inst, 4);
@@ -1150,8 +1150,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         for (uint32_t operand_index = 4; operand_index < num_operands;
@@ -1181,8 +1181,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
             result_num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         const uint32_t result_bit_width = _.GetBitWidth(result_type);
@@ -1235,8 +1235,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         for (uint32_t operand_index = 4; operand_index < num_operands;
@@ -1389,8 +1389,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         for (uint32_t operand_index = 4; operand_index < num_operands;
@@ -1419,8 +1419,8 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         const uint32_t a_type = _.GetOperandTypeId(inst, 4);
@@ -1483,7 +1483,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name()
-                 << " cannot be used with addressing model Logical";
+                 << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
@@ -1555,7 +1555,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name()
-                 << " cannot be used with addressing model Logical";
+                 << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
@@ -1604,7 +1604,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name()
-                 << " cannot be used with addressing model Logical";
+                 << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
@@ -1666,7 +1666,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name()
-                 << " cannot be used with addressing model Logical";
+                 << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
@@ -1759,7 +1759,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name()
-                 << " cannot be used with addressing model Logical";
+                 << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
@@ -1946,15 +1946,15 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected Result Type to have 1, 2, 3, 4, 8 or 16 "
-                    "components";
+                 << "expected Result Type to be a scalar or a vector with 2, "
+                    "3, 4, 8 or 16 components";
         }
 
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name()
-                 << " cannot be used with addressing model Logical";
+                 << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(num_elements_type) ||

@@ -4031,7 +4031,7 @@ TEST_P(ValidateOpenCLStdVStoreHalfLike, AddressingModelLogical) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpenCL.std " + ext_inst_name +
-                        " cannot be used with addressing model Logical"));
+                        " can only be used with physical addressing models"));
 }
 
 TEST_P(ValidateOpenCLStdVStoreHalfLike, OffsetNotSizeT) {
@@ -4219,7 +4219,7 @@ TEST_P(ValidateOpenCLStdVLoadHalfLike, AddressingModelLogical) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpenCL.std " + ext_inst_name +
-                        " cannot be used with addressing model Logical"));
+                        " can only be used with physical addressing models"));
 }
 
 TEST_P(ValidateOpenCLStdVLoadHalfLike, OffsetNotSizeT) {
@@ -4394,10 +4394,9 @@ TEST_F(ValidateExtInst, VLoadNAddressingModelLogical) {
 
   CompileSuccessfully(GenerateKernelCode(ss.str(), "", "Logical"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "OpenCL.std vloadn cannot be used with addressing model Logical"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpenCL.std vloadn can only be used with physical "
+                        "addressing models"));
 }
 
 TEST_F(ValidateExtInst, VLoadNOffsetNotSizeT) {
@@ -4509,8 +4508,8 @@ TEST_F(ValidateExtInst, VLoadHalfAddressingModelLogical) {
   CompileSuccessfully(GenerateKernelCode(ss.str(), "", "Logical"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpenCL.std vload_half cannot be used with addressing "
-                        "model Logical"));
+              HasSubstr("OpenCL.std vload_half can only be used with physical "
+                        "addressing models"));
 }
 
 TEST_F(ValidateExtInst, VLoadHalfOffsetNotSizeT) {
@@ -4662,10 +4661,9 @@ TEST_F(ValidateExtInst, VStoreNAddressingModelLogical) {
 
   CompileSuccessfully(GenerateKernelCode(ss.str(), "", "Logical"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "OpenCL.std vstoren cannot be used with addressing model Logical"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpenCL.std vstoren can only be used with physical "
+                        "addressing models"));
 }
 
 TEST_F(ValidateExtInst, VStoreNOffsetNotSizeT) {
@@ -5137,10 +5135,9 @@ TEST_F(ValidateExtInst, OpenCLStdPrefetchAddressingModelLogical) {
 
   CompileSuccessfully(GenerateKernelCode(body, "", "Logical"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "OpenCL.std prefetch cannot be used with addressing model Logical"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpenCL.std prefetch can only be used with physical "
+                        "addressing models"));
 }
 
 TEST_F(ValidateExtInst, OpenCLStdPrefetchNumElementsNotSizeT) {
