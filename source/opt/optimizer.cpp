@@ -122,22 +122,22 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
-      .RegisterPass(CreateInsertExtractElimPass())
-      .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateRedundancyEliminationPass())
+      .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateIfConversionPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateBlockMergePass())
-      .RegisterPass(CreateInsertExtractElimPass())
-      .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
-      .RegisterPass(CreateCFGCleanupPass())
-      // Currently exposing driver bugs resulting in crashes (#946)
-      // .RegisterPass(CreateCommonUniformElimPass())
-      .RegisterPass(CreateAggressiveDCEPass());
+      .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateBlockMergePass())
+      .RegisterPass(CreateInsertExtractElimPass());
+  // Currently exposing driver bugs resulting in crashes (#946)
+  // .RegisterPass(CreateCommonUniformElimPass())
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
