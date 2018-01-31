@@ -203,11 +203,14 @@ class Function {
   void PrintBlocks() const;
 
   /// Registers execution model limitation such as "Feature X is only available
-  /// with Execution Model Y". Only the first message per model type is
-  /// registered.
+  /// with Execution Model Y".
   void RegisterExecutionModelLimitation(SpvExecutionModel model,
-                                        const std::string& message) {
-    execution_model_limitations_.emplace(model, message);
+                                        const std::string& message);
+
+  /// Registers execution model limitation with an |is_compatible| functor.
+  void RegisterExecutionModelLimitation(
+      std::function<bool(SpvExecutionModel, std::string*)> is_compatible) {
+    execution_model_limitations_.push_back(is_compatible);
   }
 
   /// Returns true if the given execution model passes the limitations stored in
@@ -338,9 +341,11 @@ class Function {
   std::unordered_map<BasicBlock*, int> block_depth_;
 
   /// Stores execution model limitations imposed by instructions used within the
-  /// function. The string contains message explaining why the limitation was
-  /// imposed.
-  std::map<SpvExecutionModel, std::string> execution_model_limitations_;
+  /// function. The functor stored in the list return true if execution model
+  /// is compatible, false otherwise. If the functor returns false, it can also
+  /// optionally fill the string parameter with the reason for incompatibility.
+  std::list<std::function<bool(SpvExecutionModel, std::string*)>>
+      execution_model_limitations_;
 
   /// Stores ids of all functions called from this function.
   std::set<uint32_t> function_call_targets_;
