@@ -145,6 +145,7 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateScalarReplacementPass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
