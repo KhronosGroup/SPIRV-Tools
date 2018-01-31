@@ -246,6 +246,25 @@ void Loop::GetExitBlocks(IRContext* context,
   }
 }
 
+void Loop::GetMergingBlocks(
+    IRContext* context, std::unordered_set<uint32_t>* merging_blocks) const {
+  assert(GetMergeBlock() && "This loop is not structured");
+  ir::CFG* cfg = context->cfg();
+
+  std::stack<const ir::BasicBlock*> to_visit;
+  to_visit.push(GetMergeBlock());
+  while (!to_visit.empty()) {
+    const ir::BasicBlock* bb = to_visit.top();
+    to_visit.pop();
+    merging_blocks->insert(bb->id());
+    for (uint32_t pred_id : cfg->preds(bb->id())) {
+      if (!IsInsideLoop(pred_id) && !merging_blocks->count(pred_id)) {
+        to_visit.push(cfg->block(pred_id));
+      }
+    }
+  }
+}
+
 bool Loop::IsLCSSA() const {
   IRContext* context = GetHeaderBlock()->GetParent()->GetParent()->context();
   ir::CFG* cfg = context->cfg();

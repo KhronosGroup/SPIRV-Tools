@@ -47,11 +47,13 @@ static inline bool DominatesAnExit(
 class LCSSARewriter {
  public:
   LCSSARewriter(ir::IRContext* context, const opt::DominatorTree& dom_tree,
-                const std::unordered_set<ir::BasicBlock*>& exit_bb)
+                const std::unordered_set<ir::BasicBlock*>& exit_bb,
+                ir::BasicBlock* merge_block)
       : context_(context),
         cfg_(context_->cfg()),
         dom_tree_(dom_tree),
-        exit_bb_(exit_bb) {}
+        exit_bb_(exit_bb),
+        merge_block_id_(merge_block ? merge_block->id() : 0) {}
 
   struct UseRewriter {
     explicit UseRewriter(LCSSARewriter* base, const ir::Instruction& def_insn)
@@ -121,16 +123,28 @@ class LCSSARewriter {
         return incoming_phi;
       }
 
+      // Get the block that defines the value to use for each predecessor.
+      // If the vector has 1 value, then it means that this block does not need
+      // to build a phi instruction unless |bb_id| is the loop merge block.
       const std::vector<uint32_t>& defining_blocks =
           base_->GetDefiningBlocks(bb_id);
-      if (defining_blocks.size() > 1) {
-        // Process parents, they will returns their suitable phi.
-        // If they are all the same, this means this basic block is dominated by
-        // a common block, so we won't need to build a phi instruction.
+
+      // Special case for structured loops: merge block might be different from
+      // the exit block set. To maintain structured properties it will ease
+      // transformations if the merge block also holds a phi instruction like
+      // the exit ones.
+      if (defining_blocks.size() > 1 || bb_id == base_->merge_block_id_) {
+        assert(bb_id != base_->merge_block_id_ &&
+               defining_blocks.size() == base_->cfg_->preds(bb_id).size());
+        assert(bb_id == base_->merge_block_id_ &&
+               (defining_blocks.size() == base_->cfg_->preds(bb_id).size() ||
+                defining_blocks.size() == 1));
         std::vector<uint32_t> incomings;
-        for (uint32_t pred_id : defining_blocks) {
-          incomings.push_back(GetOrBuildIncoming(pred_id)->result_id());
-          incomings.push_back(pred_id);
+        const std::vector<uint32_t>& bb_preds = base_->cfg_->preds(bb_id);
+        for (size_t i = 0; i < bb_preds.size(); i++) {
+          uint32_t def_bb = i < incomings.size() ? incomings[i] : incomings[0];
+          incomings.push_back(GetOrBuildIncoming(def_bb)->result_id());
+          incomings.push_back(bb_preds[i]);
         }
         opt::InstructionBuilder<> builder(base_->context_,
                                           &*base_->cfg_->block(bb_id)->begin());
@@ -196,6 +210,7 @@ class LCSSARewriter {
   ir::CFG* cfg_;
   const opt::DominatorTree& dom_tree_;
   const std::unordered_set<ir::BasicBlock*>& exit_bb_;
+  uint32_t merge_block_id_;
   // This map represent the set of known paths. For each key, the vector
   // represent the set of blocks holding the definition to be used to build the
   // phi instruction.
@@ -206,6 +221,73 @@ class LCSSARewriter {
   //   basic block ordering is the same as the predecessor ordering.
   std::unordered_map<uint32_t, std::vector<uint32_t>> bb_to_defining_blocks_;
 };
+
+// Make the set |blocks| closed SSA. The set is closed SSA if all the uses
+// outside the set are phi instructions in exiting basic block set (hold by
+// |lcssa_rewriter|).
+inline void MakeSetClosedSSA(ir::IRContext* context, ir::Function* function,
+                             const std::unordered_set<uint32_t>& blocks,
+                             const std::unordered_set<ir::BasicBlock*>& exit_bb,
+                             LCSSARewriter* lcssa_rewriter) {
+  ir::CFG& cfg = *context->cfg();
+  opt::DominatorTree& dom_tree =
+      context->GetDominatorAnalysis(function, cfg)->GetDomTree();
+  opt::analysis::DefUseManager* def_use_manager = context->get_def_use_mgr();
+
+  for (uint32_t bb_id : blocks) {
+    ir::BasicBlock* bb = cfg.block(bb_id);
+    // If bb does not dominate an exit block, then it cannot have escaping defs.
+    if (!DominatesAnExit(bb, exit_bb, dom_tree)) continue;
+    for (ir::Instruction& inst : *bb) {
+      std::unordered_set<ir::BasicBlock*> processed_exit;
+      LCSSARewriter::UseRewriter rewriter(lcssa_rewriter, inst);
+      def_use_manager->ForEachUse(
+          &inst, [&blocks, &rewriter, &exit_bb, &processed_exit, &inst, &cfg,
+                  context](ir::Instruction* use, uint32_t operand_index) {
+            ir::BasicBlock* use_parent = context->get_instr_block(use);
+            assert(use_parent);
+            if (blocks.count(use_parent->id())) return;
+
+            if (use->opcode() == SpvOpPhi) {
+              // If the use is a Phi instruction and the incoming block is
+              // coming from the loop, then that's consistent with LCSSA form.
+              if (exit_bb.count(use_parent)) {
+                rewriter.RegisterExitPhi(use_parent, use);
+                return;
+              } else {
+                // That's not an exit block, but the user is a phi instruction.
+                // Consider the incoming branch only: |use_parent| must be
+                // dominated by one of the exit block.
+                use_parent = context->get_instr_block(
+                    use->GetSingleWordOperand(operand_index + 1));
+              }
+            }
+
+            for (ir::BasicBlock* e_bb : exit_bb) {
+              if (processed_exit.count(e_bb)) continue;
+              processed_exit.insert(e_bb);
+
+              opt::InstructionBuilder<> builder(context, &*e_bb->begin());
+              const std::vector<uint32_t>& preds = cfg.preds(e_bb->id());
+              std::vector<uint32_t> incoming;
+              incoming.reserve(preds.size() * 2);
+              for (uint32_t pred_id : preds) {
+                incoming.push_back(inst.result_id());
+                incoming.push_back(pred_id);
+              }
+              rewriter.RegisterExitPhi(
+                  e_bb, builder.AddPhi(inst.type_id(), incoming));
+            }
+
+            // Rewrite the use. Note that this call does not invalidate the
+            // def/use manager. So this operation is safe.
+            rewriter.RewriteUse(use_parent, use, operand_index);
+          });
+      rewriter.UpdateManagers();
+    }
+  }
+}
+
 }  // namespace
 
 void LoopUtils::CreateLoopDedicatedExits() {
@@ -335,7 +417,6 @@ void LoopUtils::MakeLoopClosedSSA() {
   opt::DominatorTree& dom_tree =
       context_->GetDominatorAnalysis(function, cfg)->GetDomTree();
 
-  opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
   std::unordered_set<ir::BasicBlock*> exit_bb;
   {
     std::unordered_set<uint32_t> exit_bb_id;
@@ -345,58 +426,24 @@ void LoopUtils::MakeLoopClosedSSA() {
     }
   }
 
-  LCSSARewriter lcssa_rewriter(context_, dom_tree, exit_bb);
-  for (uint32_t bb_id : loop_->GetBlocks()) {
-    ir::BasicBlock* bb = cfg.block(bb_id);
-    // If bb does not dominate an exit block, then it cannot have escaping defs.
-    if (!DominatesAnExit(bb, exit_bb, dom_tree)) continue;
-    for (ir::Instruction& inst : *bb) {
-      std::unordered_set<ir::BasicBlock*> processed_exit;
-      LCSSARewriter::UseRewriter rewriter(&lcssa_rewriter, inst);
-      def_use_manager->ForEachUse(
-          &inst, [&rewriter, &exit_bb, &processed_exit, &inst, &cfg, this](
-                     ir::Instruction* use, uint32_t operand_index) {
-            if (loop_->IsInsideLoop(use)) return;
+  LCSSARewriter lcssa_rewriter(context_, dom_tree, exit_bb,
+                               loop_->GetMergeBlock());
+  MakeSetClosedSSA(context_, function, loop_->GetBlocks(), exit_bb,
+                   &lcssa_rewriter);
 
-            ir::BasicBlock* use_parent = context_->get_instr_block(use);
-            assert(use_parent);
-            if (use->opcode() == SpvOpPhi) {
-              // If the use is a Phi instruction and the incoming block is
-              // coming from the loop, then that's consistent with LCSSA form.
-              if (exit_bb.count(use_parent)) {
-                rewriter.RegisterExitPhi(use_parent, use);
-                return;
-              } else {
-                // That's not an exit block, but the user is a phi instruction.
-                // Consider the incoming branch only: |use_parent| must be
-                // dominated by one of the exit block.
-                use_parent = context_->get_instr_block(
-                    use->GetSingleWordOperand(operand_index + 1));
-              }
-            }
-
-            for (ir::BasicBlock* e_bb : exit_bb) {
-              if (processed_exit.count(e_bb)) continue;
-              processed_exit.insert(e_bb);
-
-              opt::InstructionBuilder<> builder(context_, &*e_bb->begin());
-              const std::vector<uint32_t>& preds = cfg.preds(e_bb->id());
-              std::vector<uint32_t> incoming;
-              incoming.reserve(preds.size() * 2);
-              for (uint32_t pred_id : preds) {
-                incoming.push_back(inst.result_id());
-                incoming.push_back(pred_id);
-              }
-              rewriter.RegisterExitPhi(
-                  e_bb, builder.AddPhi(inst.type_id(), incoming));
-            }
-
-            // Rewrite the use. Note that this call does not invalidate the
-            // def/use manager. So this operation is safe.
-            rewriter.RewriteUse(use_parent, use, operand_index);
-          });
-      rewriter.UpdateManagers();
-    }
+  // Make sure all defs post-dominated by the merge block have their last use no
+  // further than the merge block.
+  if (loop_->GetMergeBlock()) {
+    std::unordered_set<uint32_t> merging_bb_id;
+    loop_->GetMergingBlocks(context_, &merging_bb_id);
+    merging_bb_id.erase(loop_->GetMergeBlock()->id());
+    // Reset the exit set, now only the merge block is the exit.
+    exit_bb.clear();
+    exit_bb.insert(loop_->GetMergeBlock());
+    // LCSSARewriter is reusable here only because it forces the creation of a
+    // phi instruction in the merge block.
+    MakeSetClosedSSA(context_, function, merging_bb_id, exit_bb,
+                     &lcssa_rewriter);
   }
 
   context_->InvalidateAnalysesExceptFor(

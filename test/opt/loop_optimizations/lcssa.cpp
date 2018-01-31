@@ -269,8 +269,9 @@ void main() {
 */
 TEST_F(LCSSATest, PhiUserLCSSA) {
   const std::string text = R"(
-; CHECK: %23 = OpLabel
-; CHECK-NEXT: [[phi:%\w+]] = OpPhi %6 %20 %24
+; CHECK: OpLoopMerge [[merge:%\w+]] %22 None
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi {{%\w+}} %20 %24
 ; CHECK: %17 = OpLabel
 ; CHECK-NEXT: {{%\w+}} = OpPhi {{%\w+}} %8 %15 [[phi]] %23
                OpCapability Shader
@@ -324,6 +325,101 @@ TEST_F(LCSSATest, PhiUserLCSSA) {
                OpBranch %29
          %29 = OpLabel
          %31 = OpPhi %6 %27 %17 %11 %30
+               OpReturn
+               OpFunctionEnd
+  )";
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 2);
+  ir::LoopDescriptor ld{f};
+
+  ir::Loop* loop = ld[19];
+  EXPECT_FALSE(loop->IsLCSSA());
+  opt::LoopUtils Util(context.get(), loop);
+  Util.MakeLoopClosedSSA();
+  EXPECT_TRUE(loop->IsLCSSA());
+  Match(text, context.get());
+}
+
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 330 core
+void main() {
+  int i = 0;
+  if (i != 0) {
+    for (; i < 10; i++) {
+      if (i > 5) break;
+    }
+  }
+  if (i != 0) {
+    i = 1;
+  }
+}
+*/
+TEST_F(LCSSATest, LCSSAWithBreak) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] %19 None
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi {{%\w+}} %17 %21 %17 %26
+; CHECK: %14 = OpLabel
+; CHECK-NEXT: {{%\w+}} = OpPhi {{%\w+}} %7 %12 [[phi]] [[merge]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 330
+               OpName %2 "main"
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeInt 32 1
+          %6 = OpTypePointer Function %5
+          %7 = OpConstant %5 0
+          %8 = OpTypeBool
+          %9 = OpConstant %5 10
+         %10 = OpConstant %5 5
+         %11 = OpConstant %5 1
+          %2 = OpFunction %3 None %4
+         %12 = OpLabel
+         %13 = OpINotEqual %8 %7 %7
+               OpSelectionMerge %14 None
+               OpBranchConditional %13 %15 %14
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpPhi %5 %7 %15 %18 %19
+               OpLoopMerge %20 %19 None
+               OpBranch %21
+         %21 = OpLabel
+         %22 = OpSLessThan %8 %17 %9
+               OpBranchConditional %22 %23 %20
+         %23 = OpLabel
+         %24 = OpSGreaterThan %8 %17 %10
+               OpSelectionMerge %25 None
+               OpBranchConditional %24 %26 %25
+         %26 = OpLabel
+               OpBranch %20
+         %25 = OpLabel
+               OpBranch %19
+         %19 = OpLabel
+         %18 = OpIAdd %5 %17 %11
+               OpBranch %16
+         %20 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+         %27 = OpPhi %5 %7 %12 %17 %20
+         %28 = OpINotEqual %8 %27 %7
+               OpSelectionMerge %29 None
+               OpBranchConditional %28 %30 %29
+         %30 = OpLabel
+               OpBranch %29
+         %29 = OpLabel
+         %31 = OpPhi %5 %27 %14 %11 %30
                OpReturn
                OpFunctionEnd
   )";

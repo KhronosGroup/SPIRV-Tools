@@ -125,6 +125,13 @@ class Loop {
   void GetExitBlocks(IRContext* context,
                      std::unordered_set<uint32_t>* exit_blocks) const;
 
+  // Fills |merging_blocks| with all basic blocks that are post-dominated by the
+  // merge block. The merge block must exist.
+  // The set |merging_blocks| will only contain the merge block if it is
+  // unreachable.
+  void GetMergingBlocks(IRContext* context,
+                        std::unordered_set<uint32_t>* merging_blocks) const;
+
   // Returns true if the loop is in a Loop Closed SSA form.
   // In LCSSA form, all in-loop definitions are used in the loop or in phi
   // instructions in the loop exit blocks.
