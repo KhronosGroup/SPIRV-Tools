@@ -609,7 +609,7 @@ void MoveToFront<Val>::InsertNode(uint32_t node) {
 
   // Will determine if |node| will become the right or left child after
   // insertion (but before balancing).
-  bool right_child;
+  bool right_child = true;
 
   // Find the node which will become |node|'s parent after insertion
   // (but before balancing).
