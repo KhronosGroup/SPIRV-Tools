@@ -189,6 +189,7 @@ spv_result_t ProcessInstruction(void* user_data,
   if (auto error = ExtInstPass(_, inst)) return error;
   if (auto error = ImagePass(_, inst)) return error;
   if (auto error = AtomicsPass(_, inst)) return error;
+  if (auto error = BarriersPass(_, inst)) return error;
   if (auto error = PrimitivesPass(_, inst)) return error;
   if (auto error = LiteralsPass(_, inst)) return error;
 

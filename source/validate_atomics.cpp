@@ -18,20 +18,11 @@
 
 #include "diagnostic.h"
 #include "opcode.h"
+#include "util/bitutils.h"
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
 namespace libspirv {
-
-// Returns number of '1' bits in a word.
-uint32_t CountSetBits(uint32_t word) {
-  uint32_t count = 0;
-  while (word) {
-    word &= word - 1;
-    ++count;
-  }
-  return count;
-}
 
 // Validates a Memory Semantics operand.
 spv_result_t ValidateMemorySemantics(ValidationState_t& _,
@@ -59,11 +50,11 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   assert(memory_semantics_inst->words().size() == 4);
   const uint32_t flags = memory_semantics_inst->word(3);
 
-  if (CountSetBits(flags & (SpvMemorySemanticsAcquireMask |
-                            SpvMemorySemanticsReleaseMask |
-                            SpvMemorySemanticsAcquireReleaseMask |
-                            SpvMemorySemanticsSequentiallyConsistentMask)) >
-      1) {
+  if (spvutils::CountSetBits(
+          flags &
+          (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
+           SpvMemorySemanticsAcquireReleaseMask |
+           SpvMemorySemanticsSequentiallyConsistentMask)) > 1) {
     return _.diag(SPV_ERROR_INVALID_DATA)
            << spvOpcodeString(opcode)
            << ": no more than one of the following Memory Semantics bits can "

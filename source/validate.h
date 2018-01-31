@@ -155,6 +155,10 @@ spv_result_t ImagePass(ValidationState_t& _,
 spv_result_t AtomicsPass(ValidationState_t& _,
                          const spv_parsed_instruction_t* inst);
 
+/// Validates correctness of barrier instructions.
+spv_result_t BarriersPass(ValidationState_t& _,
+                          const spv_parsed_instruction_t* inst);
+
 /// Validates correctness of literal numbers.
 spv_result_t LiteralsPass(ValidationState_t& _,
                           const spv_parsed_instruction_t* inst);

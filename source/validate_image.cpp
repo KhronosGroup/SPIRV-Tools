@@ -19,6 +19,7 @@
 #include "diagnostic.h"
 #include "opcode.h"
 #include "spirv_target_env.h"
+#include "util/bitutils.h"
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
@@ -55,16 +56,6 @@ bool CheckAllImageOperandsHandled() {
       return true;
   }
   return false;
-}
-
-// Returns number of '1' bits in a word.
-uint32_t CountSetBits(uint32_t word) {
-  uint32_t count = 0;
-  while (word) {
-    word &= word - 1;
-    ++count;
-  }
-  return count;
 }
 
 // Used by GetImageTypeInfo. See OpTypeImage spec for more information.
@@ -217,7 +208,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
   const uint32_t num_words = inst.num_words;
 
-  uint32_t expected_num_image_operand_words = CountSetBits(mask);
+  size_t expected_num_image_operand_words = spvutils::CountSetBits(mask);
   if (mask & SpvImageOperandsGradMask) {
     // Grad uses two words.
     ++expected_num_image_operand_words;
@@ -229,9 +220,9 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
            << spvOpcodeString(opcode);
   }
 
-  if (CountSetBits(mask & (SpvImageOperandsOffsetMask |
-                           SpvImageOperandsConstOffsetMask |
-                           SpvImageOperandsConstOffsetsMask)) > 1) {
+  if (spvutils::CountSetBits(mask & (SpvImageOperandsOffsetMask |
+                                     SpvImageOperandsConstOffsetMask |
+                                     SpvImageOperandsConstOffsetsMask)) > 1) {
     return _.diag(SPV_ERROR_INVALID_DATA)
            << "Image Operands Offset, ConstOffset, ConstOffsets cannot be used "
            << "together: " << spvOpcodeString(opcode);
