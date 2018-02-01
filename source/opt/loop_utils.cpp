@@ -117,8 +117,9 @@ class LCSSARewriter {
             GetOrBuildIncoming(defining_blocks[i])->result_id());
         incomings.push_back(bb_preds[i]);
       }
-      opt::InstructionBuilder<ir::IRContext::kAnalysisInstrToBlockMapping>
-          builder(base_->context_, &*bb->begin());
+      opt::InstructionBuilder builder(
+          base_->context_, &*bb->begin(),
+          ir::IRContext::kAnalysisInstrToBlockMapping);
       ir::Instruction* incoming_phi =
           builder.AddPhi(def_insn_.type_id(), incomings);
 
@@ -136,8 +137,9 @@ class LCSSARewriter {
         incomings.push_back(value.result_id());
         incomings.push_back(bb_preds[i]);
       }
-      opt::InstructionBuilder<ir::IRContext::kAnalysisInstrToBlockMapping>
-          builder(base_->context_, &*bb->begin());
+      opt::InstructionBuilder builder(
+          base_->context_, &*bb->begin(),
+          ir::IRContext::kAnalysisInstrToBlockMapping);
       ir::Instruction* incoming_phi =
           builder.AddPhi(def_insn_.type_id(), incomings);
 
@@ -322,7 +324,7 @@ void LoopUtils::CreateLoopDedicatedExits() {
   ir::CFG& cfg = *context_->cfg();
   opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
-  constexpr ir::IRContext::Analysis PreservedAnalyses =
+  const ir::IRContext::Analysis PreservedAnalyses =
       ir::IRContext::kAnalysisDefUse |
       ir::IRContext::kAnalysisInstrToBlockMapping;
 
@@ -377,7 +379,7 @@ void LoopUtils::CreateLoopDedicatedExits() {
     def_use_mgr->AnalyzeInstDefUse(exit.GetLabelInst());
     context_->set_instr_block(exit.GetLabelInst(), &exit);
 
-    opt::InstructionBuilder<PreservedAnalyses> builder(context_, &exit);
+    opt::InstructionBuilder builder(context_, &exit, PreservedAnalyses);
     // Now jump from our dedicate basic block to the old exit.
     // We also reset the insert point so all instructions are inserted before
     // the branch.

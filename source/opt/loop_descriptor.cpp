@@ -130,9 +130,10 @@ BasicBlock* Loop::GetOrCreatePreHeaderBlock(ir::IRContext* context) {
   //      - Patch the header phi instruction to use the preheader phi
   //      instruction;
   //  - Redirect all edges coming from outside the loop to the preheader.
-  opt::InstructionBuilder<ir::IRContext::kAnalysisDefUse |
-                          ir::IRContext::kAnalysisInstrToBlockMapping>
-      builder(context, loop_preheader_);
+  opt::InstructionBuilder builder(
+      context, loop_preheader_,
+      ir::IRContext::kAnalysisDefUse |
+          ir::IRContext::kAnalysisInstrToBlockMapping);
   // Patch all the phi instructions.
   loop_header_->ForEachPhiInst([&builder, context, this](Instruction* phi) {
     std::vector<uint32_t> preheader_phi_ops;
