@@ -15,6 +15,6 @@
 #ifndef LIBSPIRV_LATEST_VERSION_OPENCL_STD_HEADER_H_
 #define LIBSPIRV_LATEST_VERSION_OPENCL_STD_HEADER_H_
 
-#include "spirv/1.2/OpenCL.std.h"
+#include "spirv/unified1/OpenCL.std.h"
 
 #endif  // LIBSPIRV_LATEST_VERSION_OPENCL_STD_HEADER_H_

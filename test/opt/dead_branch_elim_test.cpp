@@ -1763,6 +1763,36 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
 }
 
+TEST_F(DeadBranchElimTest, NoUnnecessaryChanges) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%undef = OpUndef %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+%3 = OpPhi %bool %true %1 %undef %5
+OpLoopMerge %4 %5 None
+OpBranch %6
+%6 = OpLabel
+OpReturn
+%5 = OpLabel
+OpBranch %2
+%4 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  auto result = SinglePassRunToBinary<opt::DeadBranchElimPass>(text, true);
+  EXPECT_EQ(std::get<1>(result), opt::Pass::Status::SuccessWithoutChange);
+}
+
 TEST_F(DeadBranchElimTest, ExtraBackedgePartiallyDead) {
   const std::string text = R"(
 ; CHECK: OpLabel
@@ -1903,6 +1933,32 @@ TEST_F(DeadBranchElimTest, UnreachableContinuePhiInMerge) {
                OpStore %o %33
                OpReturn
                OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, NonStructuredIf) {
+  const std::string text = R"(
+; CHECK-NOT: OpBranchConditional
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpDecorate %func LinkageAttributes "func" Export
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpBranchConditional %true %then %else
+%then = OpLabel
+OpBranch %final
+%else = OpLabel
+OpBranch %final
+%final = OpLabel
+OpReturn
+OpFunctionEnd
 )";
 
   SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);

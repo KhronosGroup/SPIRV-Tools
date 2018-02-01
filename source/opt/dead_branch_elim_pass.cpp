@@ -153,7 +153,7 @@ bool DeadBranchElimPass::MarkLiveBlocks(
       AddBranch(live_lab_id, block);
       context()->KillInst(terminator);
       ir::Instruction* mergeInst = block->GetMergeInst();
-      if (mergeInst->opcode() == SpvOpSelectionMerge) {
+      if (mergeInst && mergeInst->opcode() == SpvOpSelectionMerge) {
         context()->KillInst(mergeInst);
       }
       stack.push_back(GetParentBlock(live_lab_id));
@@ -216,16 +216,25 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
           auto cont_iter = unreachable_continues.find(inc);
           if (cont_iter != unreachable_continues.end() &&
               cont_iter->second == &block) {
-            // Replace incoming value with undef if this phi exists in the loop
-            // header. Otherwise, this edge is not live since the unreachable
-            // continue block will be replaced with an unconditional branch to
-            // the header only.
-            operands.emplace_back(
-                SPV_OPERAND_TYPE_ID,
-                std::initializer_list<uint32_t>{Type2Undef(inst->type_id())});
-            operands.push_back(inst->GetInOperand(i));
-            changed = true;
-            backedge_added = true;
+            if (get_def_use_mgr()
+                    ->GetDef(inst->GetSingleWordInOperand(i - 1))
+                    ->opcode() == SpvOpUndef) {
+              // Already undef incoming value, no change necessary.
+              operands.push_back(inst->GetInOperand(i - 1));
+              operands.push_back(inst->GetInOperand(i));
+              backedge_added = true;
+            } else {
+              // Replace incoming value with undef if this phi exists in the
+              // loop header. Otherwise, this edge is not live since the
+              // unreachable continue block will be replaced with an
+              // unconditional branch to the header only.
+              operands.emplace_back(
+                  SPV_OPERAND_TYPE_ID,
+                  std::initializer_list<uint32_t>{Type2Undef(inst->type_id())});
+              operands.push_back(inst->GetInOperand(i));
+              changed = true;
+              backedge_added = true;
+            }
           } else if (live_blocks.count(inc) && inc->IsSuccessor(&block)) {
             // Keep live incoming edge.
             operands.push_back(inst->GetInOperand(i - 1));
@@ -237,6 +246,7 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
         }
 
         if (changed) {
+          modified = true;
           uint32_t continue_id = block.ContinueBlockIdIfAny();
           if (!backedge_added && continue_id != 0 &&
               unreachable_continues.count(GetParentBlock(continue_id))) {
@@ -291,27 +301,34 @@ bool DeadBranchElimPass::EraseDeadBlocks(
   bool modified = false;
   for (auto ebi = func->begin(); ebi != func->end();) {
     if (unreachable_merges.count(&*ebi)) {
-      // Make unreachable, but leave the label.
-      KillAllInsts(&*ebi, false);
-      // Add unreachable terminator.
-      ebi->AddInstruction(
-          MakeUnique<ir::Instruction>(context(), SpvOpUnreachable, 0, 0,
-                                      std::initializer_list<ir::Operand>{}));
+      if (ebi->begin() != ebi->tail() ||
+          ebi->terminator()->opcode() != SpvOpUnreachable) {
+        // Make unreachable, but leave the label.
+        KillAllInsts(&*ebi, false);
+        // Add unreachable terminator.
+        ebi->AddInstruction(
+            MakeUnique<ir::Instruction>(context(), SpvOpUnreachable, 0, 0,
+                                        std::initializer_list<ir::Operand>{}));
+        modified = true;
+      }
       ++ebi;
-      modified = true;
     } else if (unreachable_continues.count(&*ebi)) {
-      // Make unreachable, but leave the label.
-      KillAllInsts(&*ebi, false);
-      // Add unconditional branch to header.
-      assert(unreachable_continues.count(&*ebi));
       uint32_t cont_id = unreachable_continues.find(&*ebi)->second->id();
-      ebi->AddInstruction(
-          MakeUnique<ir::Instruction>(context(), SpvOpBranch, 0, 0,
-                                      std::initializer_list<ir::Operand>{
-                                          {SPV_OPERAND_TYPE_ID, {cont_id}}}));
-      get_def_use_mgr()->AnalyzeInstUse(&*ebi->tail());
+      if (ebi->begin() != ebi->tail() ||
+          ebi->terminator()->opcode() != SpvOpBranch ||
+          ebi->terminator()->GetSingleWordInOperand(0u) != cont_id) {
+        // Make unreachable, but leave the label.
+        KillAllInsts(&*ebi, false);
+        // Add unconditional branch to header.
+        assert(unreachable_continues.count(&*ebi));
+        ebi->AddInstruction(
+            MakeUnique<ir::Instruction>(context(), SpvOpBranch, 0, 0,
+                                        std::initializer_list<ir::Operand>{
+                                            {SPV_OPERAND_TYPE_ID, {cont_id}}}));
+        get_def_use_mgr()->AnalyzeInstUse(&*ebi->tail());
+        modified = true;
+      }
       ++ebi;
-      modified = true;
     } else if (!live_blocks.count(&*ebi)) {
       // Kill this block.
       KillAllInsts(&*ebi);

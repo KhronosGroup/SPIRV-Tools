@@ -37,9 +37,10 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
         ++iter;
       }
 
-      InstructionBuilder<ir::IRContext::kAnalysisDefUse |
-                         ir::IRContext::kAnalysisInstrToBlockMapping>
-          builder(context(), &*iter);
+      InstructionBuilder builder(
+          context(), &*iter,
+          ir::IRContext::kAnalysisDefUse |
+              ir::IRContext::kAnalysisInstrToBlockMapping);
       block.ForEachPhiInst([this, &builder, &modified, &common, &to_kill,
                             dominators, &block](ir::Instruction* phi) {
         // This phi is not compatible, but subsequent phis might be.
@@ -143,10 +144,9 @@ bool IfConversion::CheckPhiUsers(ir::Instruction* phi, ir::BasicBlock* block) {
   });
 }
 
-uint32_t IfConversion::SplatCondition(
-    analysis::Vector* vec_data_ty, uint32_t cond,
-    InstructionBuilder<ir::IRContext::kAnalysisDefUse |
-                       ir::IRContext::kAnalysisInstrToBlockMapping>* builder) {
+uint32_t IfConversion::SplatCondition(analysis::Vector* vec_data_ty,
+                                      uint32_t cond,
+                                      InstructionBuilder* builder) {
   // If the data inputs to OpSelect are vectors, the condition for
   // OpSelect must be a boolean vector with the same number of
   // components. So splat the condition for the branch into a vector

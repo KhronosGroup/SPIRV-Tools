@@ -121,7 +121,7 @@ TEST_F(IRBuilderTest, TestInsnAddition) {
     context->get_def_use_mgr();
     context->get_instr_block(nullptr);
 
-    opt::InstructionBuilder<> builder(context.get(), &*bb->begin());
+    opt::InstructionBuilder builder(context.get(), &*bb->begin());
     ir::Instruction* phi1 = builder.AddPhi(7, {9, 14});
     ir::Instruction* phi2 = builder.AddPhi(10, {16, 14});
 
@@ -143,9 +143,10 @@ TEST_F(IRBuilderTest, TestInsnAddition) {
     context->get_instr_block(nullptr);
 
     ir::BasicBlock* bb = context->cfg()->block(18);
-    opt::InstructionBuilder<ir::IRContext::kAnalysisDefUse |
-                            ir::IRContext::kAnalysisInstrToBlockMapping>
-        builder(context.get(), &*bb->begin());
+    opt::InstructionBuilder builder(
+        context.get(), &*bb->begin(),
+        ir::IRContext::kAnalysisDefUse |
+            ir::IRContext::kAnalysisInstrToBlockMapping);
     ir::Instruction* phi1 = builder.AddPhi(7, {9, 14});
     ir::Instruction* phi2 = builder.AddPhi(10, {16, 14});
 
@@ -208,7 +209,7 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
             context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
     ir::BasicBlock& bb_true = *fn.begin();
     {
-      opt::InstructionBuilder<> builder(context.get(), &*bb_true.begin());
+      opt::InstructionBuilder builder(context.get(), &*bb_true.begin());
       builder.AddBranch(bb_merge.id());
     }
 
@@ -217,7 +218,7 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
             context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
     ir::BasicBlock& bb_cond = *fn.begin();
 
-    opt::InstructionBuilder<> builder(context.get(), &bb_cond);
+    opt::InstructionBuilder builder(context.get(), &bb_cond);
     // This also test consecutive instruction insertion: merge selection +
     // branch.
     builder.AddConditionalBranch(9, bb_true.id(), bb_merge.id(), bb_merge.id());
@@ -254,7 +255,7 @@ OpFunctionEnd
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(nullptr, context);
 
-  opt::InstructionBuilder<> builder(
+  opt::InstructionBuilder builder(
       context.get(), &*context->module()->begin()->begin()->begin());
   EXPECT_NE(nullptr, builder.AddSelect(3u, 4u, 5u, 6u));
 
@@ -287,7 +288,7 @@ OpFunctionEnd
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(nullptr, context);
 
-  opt::InstructionBuilder<> builder(
+  opt::InstructionBuilder builder(
       context.get(), &*context->module()->begin()->begin()->begin());
   std::vector<uint32_t> ids = {3u, 4u, 4u, 3u};
   EXPECT_NE(nullptr, builder.AddCompositeConstruct(5u, ids));

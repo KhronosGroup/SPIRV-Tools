@@ -21,8 +21,10 @@ add_library(SPIRV-Tools-opt
   cfg.h
   common_uniform_elim_pass.h
   compact_ids_pass.h
+  composite.h
   constants.h
   dead_branch_elim_pass.h
+  dead_insert_elim_pass.h
   dead_variable_elimination.h
   decoration_manager.h
   def_use_manager.h
@@ -84,8 +86,10 @@ add_library(SPIRV-Tools-opt
   cfg.cpp
   common_uniform_elim_pass.cpp
   compact_ids_pass.cpp
+  composite.cpp
   constants.cpp
   dead_branch_elim_pass.cpp
+  dead_insert_elim_pass.cpp
   dead_variable_elimination.cpp
   decoration_manager.cpp
   def_use_manager.cpp

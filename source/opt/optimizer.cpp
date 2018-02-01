@@ -107,7 +107,9 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // May need loop unrolling here see
           // https://github.com/Microsoft/DirectXShaderCompiler/pull/930
           .RegisterPass(CreateDeadBranchElimPass())
-          // Get rid of unused code that leave traces of the illegal code.
+          // Get rid of unused code that contain traces of illegal code
+          // or unused references to unbound external objects
+          .RegisterPass(CreateDeadInsertElimPass())
           .RegisterPass(CreateAggressiveDCEPass());
 }
 
@@ -121,6 +123,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
@@ -129,6 +132,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
       .RegisterPass(CreateCFGCleanupPass())
       // Currently exposing driver bugs resulting in crashes (#946)
@@ -141,10 +145,12 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateScalarReplacementPass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
@@ -153,6 +159,7 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateRedundancyEliminationPass())
       .RegisterPass(CreateCFGCleanupPass())
       // Currently exposing driver bugs resulting in crashes (#946)
@@ -279,6 +286,11 @@ Optimizer::PassToken CreateLocalSingleStoreElimPass() {
 Optimizer::PassToken CreateInsertExtractElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::InsertExtractElimPass>());
+}
+
+Optimizer::PassToken CreateDeadInsertElimPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DeadInsertElimPass>());
 }
 
 Optimizer::PassToken CreateDeadBranchElimPass() {

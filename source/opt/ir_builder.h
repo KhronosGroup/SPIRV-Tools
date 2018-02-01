@@ -24,35 +24,33 @@ namespace opt {
 
 // In SPIR-V, ids are encoded as uint16_t, this id is guaranteed to be always
 // invalid.
-constexpr uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
+const uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
 
 // Helper class to abstract instruction construction and insertion.
-// |AnalysesToPreserve| asks the InstructionBuilder to preserve requested
-// analyses.
-// Supported analyses:
+// The instruction builder can preserve the following analyses (specified via
+// the constructors):
 //   - Def-use analysis
 //   - Instruction to block analysis
-template <ir::IRContext::Analysis AnalysesToPreserve =
-              ir::IRContext::kAnalysisNone>
 class InstructionBuilder {
-  static_assert(!(AnalysesToPreserve &
-                  ~(ir::IRContext::kAnalysisDefUse |
-                    ir::IRContext::kAnalysisInstrToBlockMapping)),
-                "There some unsupported analyses");
-
  public:
   using InsertionPointTy = spvtools::ir::BasicBlock::iterator;
 
   // Creates an InstructionBuilder, all new instructions will be inserted before
   // the instruction |insert_before|.
-  InstructionBuilder(ir::IRContext* context, ir::Instruction* insert_before)
+  InstructionBuilder(
+      ir::IRContext* context, ir::Instruction* insert_before,
+      ir::IRContext::Analysis preserved_analyses = ir::IRContext::kAnalysisNone)
       : InstructionBuilder(context, context->get_instr_block(insert_before),
-                           InsertionPointTy(insert_before)) {}
+                           InsertionPointTy(insert_before),
+                           preserved_analyses) {}
 
   // Creates an InstructionBuilder, all new instructions will be inserted at the
   // end of the basic block |parent_block|.
-  InstructionBuilder(ir::IRContext* context, ir::BasicBlock* parent_block)
-      : InstructionBuilder(context, parent_block, parent_block->end()) {}
+  InstructionBuilder(
+      ir::IRContext* context, ir::BasicBlock* parent_block,
+      ir::IRContext::Analysis preserved_analyses = ir::IRContext::kAnalysisNone)
+      : InstructionBuilder(context, parent_block, parent_block->end(),
+                           preserved_analyses) {}
 
   // Creates a new selection merge instruction.
   // The id |merge_id| is the merge basic block id.
@@ -183,19 +181,27 @@ class InstructionBuilder {
   ir::IRContext* GetContext() const { return context_; }
 
   // Returns the set of preserved analyses.
-  inline static constexpr ir::IRContext::Analysis GetPreservedAnalysis() {
-    return AnalysesToPreserve;
+  inline ir::IRContext::Analysis GetPreservedAnalysis() const {
+    return preserved_analyses_;
   }
 
  private:
   InstructionBuilder(ir::IRContext* context, ir::BasicBlock* parent,
-                     InsertionPointTy insert_before)
-      : context_(context), parent_(parent), insert_before_(insert_before) {}
+                     InsertionPointTy insert_before,
+                     ir::IRContext::Analysis preserved_analyses)
+      : context_(context),
+        parent_(parent),
+        insert_before_(insert_before),
+        preserved_analyses_(preserved_analyses) {
+    assert(!(preserved_analyses_ &
+             ~(ir::IRContext::kAnalysisDefUse |
+               ir::IRContext::kAnalysisInstrToBlockMapping)));
+  }
 
   // Returns true if the users requested to update |analysis|.
-  inline static constexpr bool IsAnalysisUpdateRequested(
-      ir::IRContext::Analysis analysis) {
-    return AnalysesToPreserve & analysis;
+  inline bool IsAnalysisUpdateRequested(
+      ir::IRContext::Analysis analysis) const {
+    return preserved_analyses_ & analysis;
   }
 
   // Updates the def/use manager if the user requested it. If he did not request
@@ -217,6 +223,7 @@ class InstructionBuilder {
   ir::IRContext* context_;
   ir::BasicBlock* parent_;
   InsertionPointTy insert_before_;
+  const ir::IRContext::Analysis preserved_analyses_;
 };
 
 }  // namespace opt

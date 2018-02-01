@@ -23,6 +23,89 @@
 
 namespace libspirv {
 
+// Returns number of '1' bits in a word.
+uint32_t CountSetBits(uint32_t word) {
+  uint32_t count = 0;
+  while (word) {
+    word &= word - 1;
+    ++count;
+  }
+  return count;
+}
+
+// Validates a Memory Semantics operand.
+spv_result_t ValidateMemorySemantics(ValidationState_t& _,
+                                     const spv_parsed_instruction_t* inst,
+                                     uint32_t operand_index) {
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  const uint32_t memory_semantics =
+      inst->words[inst->operands[operand_index].offset];
+  const Instruction* const memory_semantics_inst = _.FindDef(memory_semantics);
+  assert(memory_semantics_inst);
+  const uint32_t memory_semantics_type = memory_semantics_inst->type_id();
+
+  if (!_.IsIntScalarType(memory_semantics_type) ||
+      _.GetBitWidth(memory_semantics_type) != 32) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": expected Memory Semantics to be 32-bit int";
+  }
+
+  if (memory_semantics_inst->opcode() != SpvOpConstant &&
+      memory_semantics_inst->opcode() != SpvOpSpecConstant) {
+    return SPV_SUCCESS;
+  }
+
+  assert(memory_semantics_inst->words().size() == 4);
+  const uint32_t flags = memory_semantics_inst->word(3);
+
+  if (CountSetBits(flags & (SpvMemorySemanticsAcquireMask |
+                            SpvMemorySemanticsReleaseMask |
+                            SpvMemorySemanticsAcquireReleaseMask |
+                            SpvMemorySemanticsSequentiallyConsistentMask)) >
+      1) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": no more than one of the following Memory Semantics bits can "
+              "be set at the same time: Acquire, Release, AcquireRelease or "
+              "SequentiallyConsistent";
+  }
+
+  if (flags & SpvMemorySemanticsUniformMemoryMask &&
+      !_.HasCapability(SpvCapabilityShader)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics UniformMemory requires capability Shader";
+  }
+
+  if (flags & SpvMemorySemanticsAtomicCounterMemoryMask &&
+      !_.HasCapability(SpvCapabilityAtomicStorage)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics UniformMemory requires capability "
+              "AtomicStorage";
+  }
+
+  if (opcode == SpvOpAtomicFlagClear &&
+      (flags & SpvMemorySemanticsAcquireMask ||
+       flags & SpvMemorySemanticsAcquireReleaseMask)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << "Memory Semantics Acquire and AcquireRelease cannot be used with "
+           << spvOpcodeString(opcode);
+  }
+
+  if (opcode == SpvOpAtomicCompareExchange && operand_index == 5 &&
+      (flags & SpvMemorySemanticsReleaseMask ||
+       flags & SpvMemorySemanticsAcquireReleaseMask)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics Release and AcquireRelease cannot be used "
+              "for operand Unequal";
+  }
+
+  return SPV_SUCCESS;
+}
+
 // Validates correctness of atomic instructions.
 spv_result_t AtomicsPass(ValidationState_t& _,
                          const spv_parsed_instruction_t* inst) {
@@ -96,10 +179,10 @@ spv_result_t AtomicsPass(ValidationState_t& _,
           break;
         default:
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << spvOpcodeString(opcode)
-              << ": expected Pointer Storage Class to be Uniform, "
-              << "Workgroup, CrossWorkgroup, Generic, AtomicCounter, Image or "
-              << "StorageBuffer";
+                 << spvOpcodeString(opcode)
+                 << ": expected Pointer Storage Class to be Uniform, "
+                    "Workgroup, CrossWorkgroup, Generic, AtomicCounter, Image "
+                    "or StorageBuffer";
       }
 
       if (opcode == SpvOpAtomicFlagTestAndSet ||
@@ -132,25 +215,13 @@ spv_result_t AtomicsPass(ValidationState_t& _,
                << ": expected Scope to be 32-bit int";
       }
 
-      const uint32_t memory_semantics_type1 =
-          _.GetOperandTypeId(inst, operand_index++);
-      if (!_.IsIntScalarType(memory_semantics_type1) ||
-          _.GetBitWidth(memory_semantics_type1) != 32) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-               << spvOpcodeString(opcode)
-               << ": expected Memory Semantics to be 32-bit int";
-      }
+      if (auto error = ValidateMemorySemantics(_, inst, operand_index++))
+        return error;
 
       if (opcode == SpvOpAtomicCompareExchange ||
           opcode == SpvOpAtomicCompareExchangeWeak) {
-        const uint32_t memory_semantics_type2 =
-            _.GetOperandTypeId(inst, operand_index++);
-        if (!_.IsIntScalarType(memory_semantics_type2) ||
-            _.GetBitWidth(memory_semantics_type2) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
-                 << spvOpcodeString(opcode)
-                 << ": expected Memory Semantics to be 32-bit int";
-        }
+        if (auto error = ValidateMemorySemantics(_, inst, operand_index++))
+          return error;
       }
 
       if (opcode == SpvOpAtomicStore) {

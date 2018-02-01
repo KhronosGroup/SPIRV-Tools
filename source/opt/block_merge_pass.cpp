@@ -22,18 +22,6 @@
 namespace spvtools {
 namespace opt {
 
-bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
-  bool multiple_refs = false;
-  return !get_def_use_mgr()->WhileEachUser(
-      labId, [&multiple_refs](ir::Instruction* user) {
-        if (user->opcode() != SpvOpName) {
-          if (multiple_refs) return false;
-          multiple_refs = true;
-        }
-        return true;
-      });
-}
-
 void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
   std::vector<ir::Instruction*> to_kill;
   get_def_use_mgr()->ForEachUser(inst, [&to_kill](ir::Instruction* user) {
@@ -50,18 +38,7 @@ void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
 bool BlockMergePass::MergeBlocks(ir::Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end();) {
-    // Do not merge loop header blocks, at least for now.
-    if (bi->IsLoopHeader()) {
-      ++bi;
-      continue;
-    }
     // Find block with single successor which has no other predecessors.
-    // Continue and Merge blocks are currently ruled out as second blocks.
-    // Happily any such candidate blocks will have >1 uses due to their
-    // LoopMerge instruction.
-    // TODO(): Deal with phi instructions that reference the
-    // second block. Happily, these references currently inhibit
-    // the merge.
     auto ii = bi->end();
     --ii;
     ir::Instruction* br = &*ii;
@@ -69,26 +46,79 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       ++bi;
       continue;
     }
-    const uint32_t labId = br->GetSingleWordInOperand(0);
-    if (HasMultipleRefs(labId)) {
+
+    const uint32_t lab_id = br->GetSingleWordInOperand(0);
+    if (cfg()->preds(lab_id).size() != 1) {
       ++bi;
       continue;
     }
-    // Merge blocks
+
+    bool pred_is_header = IsHeader(&*bi);
+    bool succ_is_header = IsHeader(lab_id);
+    if (pred_is_header && succ_is_header) {
+      // Cannot merge two headers together.
+      ++bi;
+      continue;
+    }
+
+    bool pred_is_merge = IsMerge(&*bi);
+    bool succ_is_merge = IsMerge(lab_id);
+    if (pred_is_merge && succ_is_merge) {
+      // Cannot merge two merges together.
+      ++bi;
+      continue;
+    }
+
+    // Merge blocks.
+    ir::Instruction* merge_inst = bi->GetMergeInst();
     context()->KillInst(br);
     auto sbi = bi;
     for (; sbi != func->end(); ++sbi)
-      if (sbi->id() == labId) break;
+      if (sbi->id() == lab_id) break;
     // If bi is sbi's only predecessor, it dominates sbi and thus
     // sbi must follow bi in func's ordering.
     assert(sbi != func->end());
     bi->AddInstructions(&*sbi);
+    if (merge_inst) {
+      if (pred_is_header && lab_id == merge_inst->GetSingleWordInOperand(0u)) {
+        // Merging the header and merge blocks, so remove the structured control
+        // flow declaration.
+        context()->KillInst(merge_inst);
+      } else {
+        // Move the merge instruction to just before the terminator.
+        merge_inst->InsertBefore(bi->terminator());
+      }
+    }
+    context()->ReplaceAllUsesWith(lab_id, bi->id());
     KillInstAndName(sbi->GetLabelInst());
     (void)sbi.Erase();
-    // reprocess block
+    // Reprocess block.
     modified = true;
   }
   return modified;
+}
+
+bool BlockMergePass::IsHeader(ir::BasicBlock* block) {
+  return block->GetMergeInst() != nullptr;
+}
+
+bool BlockMergePass::IsHeader(uint32_t id) {
+  return IsHeader(context()->get_instr_block(get_def_use_mgr()->GetDef(id)));
+}
+
+bool BlockMergePass::IsMerge(uint32_t id) {
+  return !get_def_use_mgr()->WhileEachUse(id, [](ir::Instruction* user,
+                                                 uint32_t index) {
+    SpvOp op = user->opcode();
+    if ((op == SpvOpLoopMerge || op == SpvOpSelectionMerge) && index == 0u) {
+      return false;
+    }
+    return true;
+  });
+}
+
+bool BlockMergePass::IsMerge(ir::BasicBlock* block) {
+  return IsMerge(block->id());
 }
 
 void BlockMergePass::Initialize(ir::IRContext* c) {

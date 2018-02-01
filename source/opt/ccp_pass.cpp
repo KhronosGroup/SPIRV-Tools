@@ -62,7 +62,11 @@ SSAPropagator::PropStatus CCPPass::VisitPhi(ir::Instruction* phi) {
     if (it != values_.end()) {
       // We found an argument with a constant value.  Apply the meet operation
       // with the previous arguments.
-      if (meet_val_id == 0) {
+      if (it->second == kVaryingSSAId) {
+        // The "constant" value is actually a placeholder for varying. Return
+        // varying for this phi.
+        return MarkInstructionVarying(phi);
+      } else if (meet_val_id == 0) {
         // This is the first argument we find.  Initialize the result to its
         // constant value id.
         meet_val_id = it->second;

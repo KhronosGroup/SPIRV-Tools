@@ -15,6 +15,6 @@
 #ifndef LIBSPIRV_LATEST_VERSION_SPIRV_HEADER_H_
 #define LIBSPIRV_LATEST_VERSION_SPIRV_HEADER_H_
 
-#include "spirv/1.2/spirv.h"
+#include "spirv/unified1/spirv.h"
 
 #endif  // LIBSPIRV_LATEST_VERSION_SPIRV_HEADER_H_
