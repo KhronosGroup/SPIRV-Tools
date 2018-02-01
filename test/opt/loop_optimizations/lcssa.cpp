@@ -160,6 +160,92 @@ Generated from the following GLSL + --eliminate-local-multi-store
 layout(location = 0) out vec4 c;
 void main() {
   int i = 0;
+  for (; i < 10; i++) {
+  }
+  if (i != 0) {
+    i = 1;
+  }
+}
+*/
+// Same test as above, but should reuse an existing phi.
+TEST_F(LCSSATest, PhiReuseLCSSA) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] %19 None
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi {{%\w+}} %30 %20
+; CHECK-NEXT: %27 = OpINotEqual {{%\w+}} [[phi]] %9
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 330
+               OpName %2 "main"
+               OpName %3 "c"
+               OpDecorate %3 Location 0
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %7 = OpTypeInt 32 1
+          %8 = OpTypePointer Function %7
+          %9 = OpConstant %7 0
+         %10 = OpConstant %7 10
+         %11 = OpTypeBool
+         %12 = OpConstant %7 1
+         %13 = OpTypeFloat 32
+         %14 = OpTypeVector %13 4
+         %15 = OpTypePointer Output %14
+          %3 = OpVariable %15 Output
+          %2 = OpFunction %5 None %6
+         %16 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+         %30 = OpPhi %7 %9 %16 %25 %19
+               OpLoopMerge %18 %19 None
+               OpBranch %20
+         %20 = OpLabel
+         %22 = OpSLessThan %11 %30 %10
+               OpBranchConditional %22 %23 %18
+         %23 = OpLabel
+               OpBranch %19
+         %19 = OpLabel
+         %25 = OpIAdd %7 %30 %12
+               OpBranch %17
+         %18 = OpLabel
+         %32 = OpPhi %7 %30 %20
+         %27 = OpINotEqual %11 %30 %9
+               OpSelectionMerge %28 None
+               OpBranchConditional %27 %29 %28
+         %29 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+         %31 = OpPhi %7 %30 %18 %12 %29
+               OpReturn
+               OpFunctionEnd
+  )";
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 2);
+  ir::LoopDescriptor ld{f};
+
+  ir::Loop* loop = ld[17];
+  EXPECT_FALSE(loop->IsLCSSA());
+  opt::LoopUtils Util(context.get(), loop);
+  Util.MakeLoopClosedSSA();
+  EXPECT_TRUE(loop->IsLCSSA());
+  Match(text, context.get());
+}
+
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 330 core
+layout(location = 0) out vec4 c;
+void main() {
+  int i = 0;
   int j = 0;
   for (; i < 10; i++) {}
   for (; j < 10; j++) {}
@@ -433,6 +519,89 @@ TEST_F(LCSSATest, LCSSAWithBreak) {
   ir::LoopDescriptor ld{f};
 
   ir::Loop* loop = ld[19];
+  EXPECT_FALSE(loop->IsLCSSA());
+  opt::LoopUtils Util(context.get(), loop);
+  Util.MakeLoopClosedSSA();
+  EXPECT_TRUE(loop->IsLCSSA());
+  Match(text, context.get());
+}
+
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 330 core
+void main() {
+  int i = 0;
+  for (; i < 10; i++) {}
+  for (int j = i; j < 10;) { j = i + j; }
+}
+*/
+TEST_F(LCSSATest, LCSSAUseInNonEligiblePhi) {
+  const std::string text = R"(
+; CHECK: %12 = OpLabel
+; CHECK-NEXT: [[def_to_close:%\w+]] = OpPhi {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}} [[continue:%\w+]]
+; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]] None
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: [[closing_phi:%\w+]] = OpPhi {{%\w+}} [[def_to_close]] %17
+; CHECK: %16 = OpLabel
+; CHECK-NEXT: [[use_in_phi:%\w+]] = OpPhi {{%\w+}} %21 %22 [[closing_phi]] [[merge]]
+; CHECK: OpIAdd {{%\w+}} [[closing_phi]] [[use_in_phi]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 330
+               OpName %2 "main"
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeInt 32 1
+          %6 = OpTypePointer Function %5
+          %7 = OpConstant %5 0
+          %8 = OpConstant %5 10
+          %9 = OpTypeBool
+         %10 = OpConstant %5 1
+          %2 = OpFunction %3 None %4
+         %11 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+         %13 = OpPhi %5 %7 %11 %14 %15
+               OpLoopMerge %16 %15 None
+               OpBranch %17
+         %17 = OpLabel
+         %18 = OpSLessThan %9 %13 %8
+               OpBranchConditional %18 %19 %16
+         %19 = OpLabel
+               OpBranch %15
+         %15 = OpLabel
+         %14 = OpIAdd %5 %13 %10
+               OpBranch %12
+         %16 = OpLabel
+         %20 = OpPhi %5 %13 %17 %21 %22
+               OpLoopMerge %23 %22 None
+               OpBranch %24
+         %24 = OpLabel
+         %25 = OpSLessThan %9 %20 %8
+               OpBranchConditional %25 %26 %23
+         %26 = OpLabel
+         %21 = OpIAdd %5 %13 %20
+               OpBranch %22
+         %22 = OpLabel
+               OpBranch %16
+         %23 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 2);
+  ir::LoopDescriptor ld{f};
+
+  ir::Loop* loop = ld[12];
   EXPECT_FALSE(loop->IsLCSSA());
   opt::LoopUtils Util(context.get(), loop);
   Util.MakeLoopClosedSSA();

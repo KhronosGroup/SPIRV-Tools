@@ -57,7 +57,7 @@ class LCSSARewriter {
 
   struct UseRewriter {
     explicit UseRewriter(LCSSARewriter* base, const ir::Instruction& def_insn)
-        : base_(base), insn_type_(def_insn.type_id()) {}
+        : base_(base), def_insn_(def_insn) {}
     // Rewrites the use of |def_insn_| by the instruction |user| at the index
     // |operand_index| in terms of phi instruction. This recursively builds new
     // phi instructions from |user| to the loop exit blocks' phis. The use of
@@ -84,12 +84,6 @@ class LCSSARewriter {
       rewritten_.insert(user);
     }
 
-    // Notifies the addition of a phi node built to close the loop.
-    inline void RegisterExitPhi(ir::BasicBlock* bb, ir::Instruction* phi) {
-      bb_to_phi_[bb->id()] = phi;
-      rewritten_.insert(phi);
-    }
-
     // In-place update of some managers (avoid full invalidation).
     inline void UpdateManagers() {
       opt::analysis::DefUseManager* def_use_mgr =
@@ -110,6 +104,47 @@ class LCSSARewriter {
       return base_->context_->get_instr_block(instr);
     }
 
+    // Builds a phi instruction for the basic block |bb|. The function assumes
+    // that |defining_blocks| contains the list of basic block that define the
+    // usable value for each predecessor of |bb|.
+    inline ir::Instruction* CreatePhiInstruction(
+        ir::BasicBlock* bb, const std::vector<uint32_t>& defining_blocks) {
+      std::vector<uint32_t> incomings;
+      const std::vector<uint32_t>& bb_preds = base_->cfg_->preds(bb->id());
+      assert(bb_preds.size() == defining_blocks.size());
+      for (size_t i = 0; i < bb_preds.size(); i++) {
+        incomings.push_back(
+            GetOrBuildIncoming(defining_blocks[i])->result_id());
+        incomings.push_back(bb_preds[i]);
+      }
+      opt::InstructionBuilder<ir::IRContext::kAnalysisInstrToBlockMapping>
+          builder(base_->context_, &*bb->begin());
+      ir::Instruction* incoming_phi =
+          builder.AddPhi(def_insn_.type_id(), incomings);
+
+      rewritten_.insert(incoming_phi);
+      return incoming_phi;
+    }
+
+    // Builds a phi instruction for the basic block |bb|, all incoming values
+    // will be |value|.
+    inline ir::Instruction* CreatePhiInstruction(ir::BasicBlock* bb,
+                                                 const ir::Instruction& value) {
+      std::vector<uint32_t> incomings;
+      const std::vector<uint32_t>& bb_preds = base_->cfg_->preds(bb->id());
+      for (size_t i = 0; i < bb_preds.size(); i++) {
+        incomings.push_back(value.result_id());
+        incomings.push_back(bb_preds[i]);
+      }
+      opt::InstructionBuilder<ir::IRContext::kAnalysisInstrToBlockMapping>
+          builder(base_->context_, &*bb->begin());
+      ir::Instruction* incoming_phi =
+          builder.AddPhi(def_insn_.type_id(), incomings);
+
+      rewritten_.insert(incoming_phi);
+      return incoming_phi;
+    }
+
     // Return the new def to use for the basic block |bb_id|.
     // If |bb_id| does not have a suitable def to use then we:
     //   - return the common def used by all predecessors;
@@ -120,6 +155,27 @@ class LCSSARewriter {
 
       ir::Instruction*& incoming_phi = bb_to_phi_[bb_id];
       if (incoming_phi) {
+        return incoming_phi;
+      }
+
+      ir::BasicBlock* bb = &*base_->cfg_->block(bb_id);
+      // If this is an exit basic block, look if there already is an eligible
+      // phi instruction. An eligible phi has |def_insn_| as all incoming
+      // values.
+      if (base_->exit_bb_.count(bb)) {
+        // Look if there is an eligible phi in this block.
+        if (!bb->WhileEachPhiInst([&incoming_phi, this](ir::Instruction* phi) {
+              for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
+                if (phi->GetSingleWordInOperand(i) != def_insn_.result_id())
+                  return true;
+              }
+              incoming_phi = phi;
+              rewritten_.insert(incoming_phi);
+              return false;
+            })) {
+          return incoming_phi;
+        }
+        incoming_phi = CreatePhiInstruction(bb, def_insn_);
         return incoming_phi;
       }
 
@@ -134,23 +190,13 @@ class LCSSARewriter {
       // transformations if the merge block also holds a phi instruction like
       // the exit ones.
       if (defining_blocks.size() > 1 || bb_id == base_->merge_block_id_) {
-        assert(bb_id != base_->merge_block_id_ &&
-               defining_blocks.size() == base_->cfg_->preds(bb_id).size());
-        assert(bb_id == base_->merge_block_id_ &&
-               (defining_blocks.size() == base_->cfg_->preds(bb_id).size() ||
-                defining_blocks.size() == 1));
-        std::vector<uint32_t> incomings;
-        const std::vector<uint32_t>& bb_preds = base_->cfg_->preds(bb_id);
-        for (size_t i = 0; i < bb_preds.size(); i++) {
-          uint32_t def_bb = i < incomings.size() ? incomings[i] : incomings[0];
-          incomings.push_back(GetOrBuildIncoming(def_bb)->result_id());
-          incomings.push_back(bb_preds[i]);
+        if (defining_blocks.size() > 1) {
+          incoming_phi = CreatePhiInstruction(bb, defining_blocks);
+        } else {
+          assert(bb_id == base_->merge_block_id_);
+          incoming_phi =
+              CreatePhiInstruction(bb, *GetOrBuildIncoming(defining_blocks[0]));
         }
-        opt::InstructionBuilder<> builder(base_->context_,
-                                          &*base_->cfg_->block(bb_id)->begin());
-        incoming_phi = builder.AddPhi(insn_type_, incomings);
-
-        rewritten_.insert(incoming_phi);
       } else {
         incoming_phi = GetOrBuildIncoming(defining_blocks[0]);
       }
@@ -159,7 +205,7 @@ class LCSSARewriter {
     }
 
     LCSSARewriter* base_;
-    uint32_t insn_type_;
+    const ir::Instruction& def_insn_;
     std::unordered_map<uint32_t, ir::Instruction*> bb_to_phi_;
     std::unordered_set<ir::Instruction*> rewritten_;
   };
@@ -239,11 +285,10 @@ inline void MakeSetClosedSSA(ir::IRContext* context, ir::Function* function,
     // If bb does not dominate an exit block, then it cannot have escaping defs.
     if (!DominatesAnExit(bb, exit_bb, dom_tree)) continue;
     for (ir::Instruction& inst : *bb) {
-      std::unordered_set<ir::BasicBlock*> processed_exit;
       LCSSARewriter::UseRewriter rewriter(lcssa_rewriter, inst);
       def_use_manager->ForEachUse(
-          &inst, [&blocks, &rewriter, &exit_bb, &processed_exit, &inst, &cfg,
-                  context](ir::Instruction* use, uint32_t operand_index) {
+          &inst, [&blocks, &rewriter, &exit_bb, context](
+                     ir::Instruction* use, uint32_t operand_index) {
             ir::BasicBlock* use_parent = context->get_instr_block(use);
             assert(use_parent);
             if (blocks.count(use_parent->id())) return;
@@ -252,33 +297,14 @@ inline void MakeSetClosedSSA(ir::IRContext* context, ir::Function* function,
               // If the use is a Phi instruction and the incoming block is
               // coming from the loop, then that's consistent with LCSSA form.
               if (exit_bb.count(use_parent)) {
-                rewriter.RegisterExitPhi(use_parent, use);
                 return;
               } else {
                 // That's not an exit block, but the user is a phi instruction.
-                // Consider the incoming branch only: |use_parent| must be
-                // dominated by one of the exit block.
+                // Consider the incoming branch only.
                 use_parent = context->get_instr_block(
                     use->GetSingleWordOperand(operand_index + 1));
               }
             }
-
-            for (ir::BasicBlock* e_bb : exit_bb) {
-              if (processed_exit.count(e_bb)) continue;
-              processed_exit.insert(e_bb);
-
-              opt::InstructionBuilder<> builder(context, &*e_bb->begin());
-              const std::vector<uint32_t>& preds = cfg.preds(e_bb->id());
-              std::vector<uint32_t> incoming;
-              incoming.reserve(preds.size() * 2);
-              for (uint32_t pred_id : preds) {
-                incoming.push_back(inst.result_id());
-                incoming.push_back(pred_id);
-              }
-              rewriter.RegisterExitPhi(
-                  e_bb, builder.AddPhi(inst.type_id(), incoming));
-            }
-
             // Rewrite the use. Note that this call does not invalidate the
             // def/use manager. So this operation is safe.
             rewriter.RewriteUse(use_parent, use, operand_index);
@@ -351,9 +377,11 @@ void LoopUtils::CreateLoopDedicatedExits() {
     def_use_mgr->AnalyzeInstDefUse(exit.GetLabelInst());
     context_->set_instr_block(exit.GetLabelInst(), &exit);
 
-    // Patch the phi nodes.
-    opt::InstructionBuilder<PreservedAnalyses> builder(context_,
-                                                       &*exit.begin());
+    opt::InstructionBuilder<PreservedAnalyses> builder(context_, &exit);
+    // Now jump from our dedicate basic block to the old exit.
+    // We also reset the insert point so all instructions are inserted before
+    // the branch.
+    builder.SetInsertPoint(builder.AddBranch(non_dedicate->id()));
     non_dedicate->ForEachPhiInst([&builder, &exit, def_use_mgr,
                                   this](ir::Instruction* phi) {
       // New phi operands for this instruction.
@@ -387,8 +415,6 @@ void LoopUtils::CreateLoopDedicatedExits() {
       // Update the def/use manager for this |phi|.
       def_use_mgr->AnalyzeInstUse(phi);
     });
-    // now jump from our dedicate basic block to the old exit.
-    builder.AddBranch(non_dedicate->id());
     // Update the CFG.
     cfg.RegisterBlock(&exit);
     cfg.RemoveNonExistingEdges(non_dedicate->id());

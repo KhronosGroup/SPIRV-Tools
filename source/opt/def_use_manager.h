@@ -112,10 +112,12 @@ class DefUseManager {
   // Analyzes the defs in the given |inst|.
   void AnalyzeInstDef(ir::Instruction* inst);
 
-  // Analyzes the uses in the given |inst|.
+  // Analyzes the uses in the given |inst|. Setting |is_new_inst| to true make
+  // the function assumes that |inst| is unknown by other registered
+  // definitions.
   //
   // All operands of |inst| must be analyzed as defs.
-  void AnalyzeInstUse(ir::Instruction* inst);
+  void AnalyzeInstUse(ir::Instruction* inst, bool is_new_inst = false);
 
   // Analyzes the defs and uses in the given |inst|.
   void AnalyzeInstDefUse(ir::Instruction* inst);

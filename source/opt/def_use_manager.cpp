@@ -36,7 +36,8 @@ void DefUseManager::AnalyzeInstDef(ir::Instruction* inst) {
   }
 }
 
-void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
+void DefUseManager::AnalyzeInstUse(ir::Instruction* inst, bool is_new_inst) {
+  if (!is_new_inst) EraseUseRecordsOfOperandIds(inst);
   // Create entry for the given instruction. Note that the instruction may
   // not have any in-operands. In such cases, we still need a entry for those
   // instructions so this manager knows it has seen the instruction later.
@@ -64,7 +65,7 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
 
 void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
   AnalyzeInstDef(inst);
-  AnalyzeInstUse(inst);
+  AnalyzeInstUse(inst, true);
 }
 
 ir::Instruction* DefUseManager::GetDef(uint32_t id) {
@@ -212,8 +213,8 @@ void DefUseManager::AnalyzeDefUse(ir::Module* module) {
   // Analyze all the defs before any uses to catch forward references.
   module->ForEachInst(
       std::bind(&DefUseManager::AnalyzeInstDef, this, std::placeholders::_1));
-  module->ForEachInst(
-      std::bind(&DefUseManager::AnalyzeInstUse, this, std::placeholders::_1));
+  module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstUse, this,
+                                std::placeholders::_1, true));
 }
 
 void DefUseManager::ClearInst(ir::Instruction* inst) {
