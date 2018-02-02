@@ -222,6 +222,7 @@ if (NOT "${SPIRV_SKIP_TESTS}")
 endif()
 
 set(SPIRV_LIBRARIES "-lSPIRV-Tools -lSPIRV-Tools-link -lSPIRV-Tools-opt")
+set(SPIRV_SHARED_LIBRARIES "-lSPIRV-Tools-shared")
 if(SPIRV_BUILD_COMPRESSION)
   set(SPIRV_LIBRARIES "${SPIRV_LIBRARIES} -lSPIRV-Tools-comp")
 endif(SPIRV_BUILD_COMPRESSION)
@@ -236,12 +237,21 @@ add_custom_target(spirv-tools-pkg-config ALL
                       -DSPIRV_LIBRARIES=${SPIRV_LIBRARIES}
                       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
         DEPENDS "CHANGES" "cmake/SPIRV-Tools.pc.in" "cmake/write_pkg_config.cmake")
+add_custom_target(spirv-tools-shared-pkg-config ALL
+        COMMAND cmake -DCHANGES_FILE=${CMAKE_CURRENT_SOURCE_DIR}/CHANGES
+                      -DTEMPLATE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/cmake/SPIRV-Tools-shared.pc.in
+                      -DOUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc
+                      -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+                      -DSPIRV_SHARED_LIBRARIES=${SPIRV_SHARED_LIBRARIES}
+                      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
+        DEPENDS "CHANGES" "cmake/SPIRV-Tools-shared.pc.in" "cmake/write_pkg_config.cmake")
 
 # Install pkg-config file
 if (ENABLE_SPIRV_TOOLS_INSTALL)
   install(
     FILES
       ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc
+      ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc
     DESTINATION
       ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
