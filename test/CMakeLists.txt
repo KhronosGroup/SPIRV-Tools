@@ -154,6 +154,11 @@ add_spvtools_unittest(
   LIBS ${SPIRV_TOOLS})
 
 add_spvtools_unittest(
+  TARGET c_interface_shared
+  SRCS c_interface_test.cpp
+  LIBS ${SPIRV_TOOLS}-shared)
+
+add_spvtools_unittest(
   TARGET cpp_interface
   SRCS cpp_interface_test.cpp
   LIBS SPIRV-Tools-opt)
