@@ -326,7 +326,9 @@ OpControlBarrier %device %device %acquire_and_release_uniform
                         "AcquireRelease or SequentiallyConsistent"));
 }
 
-TEST_F(ValidateBarriers, OpControlBarrierVulkanSubgroupStorageClass) {
+// TODO(atgoo@github.com): the corresponding check fails Vulkan CTS,
+// reenable once fixed.
+TEST_F(ValidateBarriers, DISABLED_OpControlBarrierVulkanSubgroupStorageClass) {
   const std::string body = R"(
 OpControlBarrier %workgroup %device %acquire_release_subgroup
 )";
@@ -363,7 +365,6 @@ OpMemoryBarrier %device %uniform
 TEST_F(ValidateBarriers, OpMemoryBarrierVulkanSuccess) {
   const std::string body = R"(
 OpMemoryBarrier %workgroup %acquire_release_uniform_workgroup
-OpMemoryBarrier %device %uniform
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
@@ -450,9 +451,11 @@ OpMemoryBarrier %device %none
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("MemoryBarrier: expected Memory Semantics to include a "
-                        "Vulkan-supported storage class"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("MemoryBarrier: Vulkan specification requires Memory Semantics "
+                "to have one of the following bits set: Acquire, Release, "
+                "AcquireRelease or SequentiallyConsistent"));
 }
 
 TEST_F(ValidateBarriers, OpMemoryBarrierVulkanMemorySemanticsAcquire) {

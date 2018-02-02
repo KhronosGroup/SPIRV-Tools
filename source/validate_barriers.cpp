@@ -14,7 +14,6 @@
 
 // Validates correctness of barrier SPIR-V instructions.
 
-#include "latest_version_spirv_header.h"
 #include "validate.h"
 
 #include <tuple>
@@ -22,6 +21,7 @@
 #include "diagnostic.h"
 #include "opcode.h"
 #include "spirv_target_env.h"
+#include "util/bitutils.h"
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
@@ -29,18 +29,8 @@ namespace libspirv {
 
 namespace {
 
-// Returns number of '1' bits in a word.
-uint32_t CountSetBits(uint32_t word) {
-  uint32_t count = 0;
-  while (word) {
-    word &= word - 1;
-    ++count;
-  }
-  return count;
-}
-
-// Evaluates int32 value from |id| if possible,
-// returning tuple <is_int32, is_const_int32, value>.
+// Tries to evaluate a 32-bit signed or unsigned scalar integer constant.
+// Returns tuple <is_int32, is_const_int32, value>.
 std::tuple<bool, bool, uint32_t> EvalInt32IfConst(ValidationState_t& _,
                                                   uint32_t id) {
   const Instruction* const inst = _.FindDef(id);
@@ -87,6 +77,8 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
     }
   }
 
+  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
+
   return SPV_SUCCESS;
 }
 
@@ -119,6 +111,8 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _,
     }
   }
 
+  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
+
   return SPV_SUCCESS;
 }
 
@@ -141,7 +135,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
-  const uint32_t num_memory_order_set_bits = CountSetBits(
+  const size_t num_memory_order_set_bits = spvutils::CountSetBits(
       value & (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
                SpvMemorySemanticsAcquireReleaseMask |
                SpvMemorySemanticsSequentiallyConsistentMask));
@@ -154,13 +148,18 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   }
 
   if (spvIsVulkanEnv(_.context()->target_env)) {
-    // TODO(atgoo@github.com): the Vulkan spec is unclear if
-    // SequentiallyConsistent is supported.
-
     const bool includes_storage_class =
         value & (SpvMemorySemanticsUniformMemoryMask |
                  SpvMemorySemanticsWorkgroupMemoryMask |
                  SpvMemorySemanticsImageMemoryMask);
+
+    if (opcode == SpvOpMemoryBarrier && !num_memory_order_set_bits) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << spvOpcodeString(opcode)
+             << ": Vulkan specification requires Memory Semantics to have one "
+                "of the following bits set: Acquire, Release, AcquireRelease "
+                "or SequentiallyConsistent";
+    }
 
     if (opcode == SpvOpMemoryBarrier && !includes_storage_class) {
       return _.diag(SPV_ERROR_INVALID_DATA)
@@ -169,13 +168,18 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
                 "storage class";
     }
 
+#if 0
+    // TODO(atgoo@github.com): this check fails Vulkan CTS, reenable once fixed.
     if (opcode == SpvOpControlBarrier && value && !includes_storage_class) {
       return _.diag(SPV_ERROR_INVALID_DATA)
              << spvOpcodeString(opcode)
              << ": expected Memory Semantics to include a Vulkan-supported "
                 "storage class if Memory Semantics is not None";
     }
+#endif
   }
+
+  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
 
   return SPV_SUCCESS;
 }

@@ -76,6 +76,19 @@ static_assert(SetBits<uint64_t, 31, 1>::get == uint64_t(0x0000000080000000LL),
 static_assert(SetBits<uint64_t, 16, 16>::get == uint64_t(0x00000000FFFF0000LL),
               "SetBits failed");
 
+// Returns number of '1' bits in a word.
+template <typename T>
+size_t CountSetBits(T word) {
+  static_assert(std::is_integral<T>::value,
+                "CountSetBits requires integer type");
+  size_t count = 0;
+  while (word) {
+    word &= word - 1;
+    ++count;
+  }
+  return count;
+}
+
 }  // namespace spvutils
 
 #endif  // LIBSPIRV_UTIL_BITUTILS_H_
