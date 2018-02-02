@@ -334,7 +334,7 @@ set_property(TARGET ${SPIRV_TOOLS} PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(${SPIRV_TOOLS})
 
 add_library(${SPIRV_TOOLS}-shared SHARED ${SPIRV_SOURCES})
-spvtools_default_compile_options(${SPIRV_TOOLS})
+spvtools_default_compile_options(${SPIRV_TOOLS}-shared)
 target_include_directories(${SPIRV_TOOLS}-shared
   PUBLIC ${spirv-tools_SOURCE_DIR}/include
   PRIVATE ${spirv-tools_BINARY_DIR}
