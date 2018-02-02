@@ -77,14 +77,7 @@ class CFG {
   }
 
   // Registers |blk| to all of its successors.
-  void AddEdges(ir::BasicBlock* blk) {
-    uint32_t blk_id = blk->id();
-    // Force the creation of an entry, not all basic block have predecessors
-    // (such as the entry blocks and some unreachables).
-    label2preds_[blk_id];
-    blk->ForEachSuccessorLabel(
-        [blk_id, this](uint32_t succ_id) { AddEdge(blk_id, succ_id); });
-  }
+  void AddEdges(ir::BasicBlock* blk);
 
   // Registers the basic block id |pred_blk_id| as being a predecessor of the
   // basic block id |succ_blk_id|.

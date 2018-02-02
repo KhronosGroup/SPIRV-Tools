@@ -75,7 +75,8 @@ BasicBlock* Loop::FindLoopPreheader(IRContext* ir_context,
   // preheader.
   bool is_preheader = true;
   uint32_t loop_header_id = loop_header_->id();
-  loop_pred->ForEachSuccessorLabel(
+  const auto* const_loop_pred = loop_pred;
+  const_loop_pred->ForEachSuccessorLabel(
       [&is_preheader, loop_header_id](const uint32_t id) {
         if (id != loop_header_id) is_preheader = false;
       });
@@ -205,7 +206,8 @@ void Loop::SetLatchBlock(BasicBlock* latch) {
 #ifndef NDEBUG
   assert(latch->GetParent() && "The basic block does not belong to a function");
 
-  latch->ForEachSuccessorLabel([this](uint32_t id) {
+  const auto* const_latch = latch;
+  const_latch->ForEachSuccessorLabel([this](uint32_t id) {
     assert((!IsInsideLoop(id) || id == GetHeaderBlock()->id()) &&
            "A predecessor of the continue block does not belong to the loop");
   });

@@ -307,7 +307,8 @@ void CommonUniformElimPass::ComputeStructuredSuccessors(ir::Function* func) {
       }
     }
     // add true successors
-    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
+    const auto& const_blk = blk;
+    const_blk.ForEachSuccessorLabel([&blk, this](const uint32_t sbid) {
       block2structured_succs_[&blk].push_back(cfg()->block(sbid));
     });
   }

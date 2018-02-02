@@ -200,7 +200,8 @@ void SSAPropagator::Initialize(ir::Function* fn) {
       Edge(ctx_->cfg()->pseudo_entry_block(), fn->entry().get()));
 
   for (auto& block : *fn) {
-    block.ForEachSuccessorLabel([this, &block](uint32_t label_id) {
+    const auto& const_block = block;
+    const_block.ForEachSuccessorLabel([this, &block](const uint32_t label_id) {
       ir::BasicBlock* succ_bb =
           ctx_->get_instr_block(get_def_use_mgr()->GetDef(label_id));
       bb_succs_[&block].push_back(Edge(&block, succ_bb));

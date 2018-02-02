@@ -159,7 +159,8 @@ bool DeadBranchElimPass::MarkLiveBlocks(
       stack.push_back(GetParentBlock(live_lab_id));
     } else {
       // All successors are live.
-      block->ForEachSuccessorLabel([&stack, this](const uint32_t label) {
+      const auto* const_block = block;
+      const_block->ForEachSuccessorLabel([&stack, this](const uint32_t label) {
         stack.push_back(GetParentBlock(label));
       });
     }

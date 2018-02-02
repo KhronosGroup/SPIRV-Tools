@@ -640,7 +640,8 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
     // Look for successor backedge and patch phis in loop header
     // if found.
     uint32_t header = 0;
-    bp->ForEachSuccessorLabel([&header, this](uint32_t succ) {
+    const auto* const_bp = bp;
+    const_bp->ForEachSuccessorLabel([&header, this](uint32_t succ) {
       if (visitedBlocks_.find(succ) == visitedBlocks_.end()) return;
       assert(header == 0);
       header = succ;
@@ -806,7 +807,8 @@ bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
     worklist.pop();
 
     // All the successors of a live block are also live.
-    block->ForEachSuccessorLabel(mark_reachable);
+    static_cast<const ir::BasicBlock*>(block)->ForEachSuccessorLabel(
+        mark_reachable);
 
     // All the Merge and ContinueTarget blocks of a live block are also live.
     block->ForMergeAndContinueLabel(mark_reachable);

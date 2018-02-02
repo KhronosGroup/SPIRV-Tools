@@ -134,7 +134,8 @@ void LocalSingleStoreElimPass::CalculateImmediateDominators(
   successors_map_.clear();
   for (auto& blk : *func) {
     ordered_blocks.push_back(&blk);
-    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
+    const auto& const_blk = blk;
+    const_blk.ForEachSuccessorLabel([&blk, this](const uint32_t sbid) {
       successors_map_[&blk].push_back(label2block_[sbid]);
       predecessors_map_[label2block_[sbid]].push_back(&blk);
     });

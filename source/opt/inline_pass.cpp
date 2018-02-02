@@ -523,14 +523,16 @@ void InlinePass::UpdateSucceedingPhis(
   const auto lastBlk = new_blocks.end() - 1;
   const uint32_t firstId = (*firstBlk)->id();
   const uint32_t lastId = (*lastBlk)->id();
-  (*lastBlk)->ForEachSuccessorLabel([&firstId, &lastId, this](uint32_t succ) {
-    ir::BasicBlock* sbp = this->id2block_[succ];
-    sbp->ForEachPhiInst([&firstId, &lastId](ir::Instruction* phi) {
-      phi->ForEachInId([&firstId, &lastId](uint32_t* id) {
-        if (*id == firstId) *id = lastId;
+  const ir::BasicBlock& const_last_block = *lastBlk->get();
+  const_last_block.ForEachSuccessorLabel(
+      [&firstId, &lastId, this](const uint32_t succ) {
+        ir::BasicBlock* sbp = this->id2block_[succ];
+        sbp->ForEachPhiInst([&firstId, &lastId](ir::Instruction* phi) {
+          phi->ForEachInId([&firstId, &lastId](uint32_t* id) {
+            if (*id == firstId) *id = lastId;
+          });
+        });
       });
-    });
-  });
 }
 
 bool InlinePass::HasMultipleReturns(ir::Function* func) {
@@ -560,7 +562,8 @@ void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
     }
 
     // Add true successors.
-    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
+    const auto& const_blk = blk;
+    const_blk.ForEachSuccessorLabel([&blk, this](const uint32_t sbid) {
       block2structured_succs_[&blk].push_back(id2block_[sbid]);
     });
   }
