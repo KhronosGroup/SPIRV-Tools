@@ -36,7 +36,7 @@ namespace opt {
 class DeadInsertElimPass : public MemPass {
  public:
   DeadInsertElimPass();
-  const char* name() const override { return "eliminate-dead-insert"; }
+  const char* name() const override { return "eliminate-dead-inserts"; }
   Status Process(ir::IRContext*) override;
 
  private:

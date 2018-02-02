@@ -57,11 +57,13 @@ TEST_P(IntegerInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  inst = opt::FoldInstruction(inst);
+  bool succeeded = opt::FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
-  EXPECT_NE(inst, nullptr);
+  EXPECT_TRUE(succeeded);
   if (inst != nullptr) {
+    EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
+    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     EXPECT_EQ(inst->opcode(), SpvOpConstant);
     opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
     const opt::analysis::IntConstant* result =
@@ -94,7 +96,9 @@ OpName %main "main"
 %int = OpTypeInt 32 1
 %long = OpTypeInt 64 1
 %uint = OpTypeInt 32 1
+%v2int = OpTypeVector %int 2
 %v4int = OpTypeVector %int 4
+%struct_v2int_int_int = OpTypeStruct %v2int %int %int
 %_ptr_int = OpTypePointer Function %int
 %_ptr_uint = OpTypePointer Function %uint
 %_ptr_bool = OpTypePointer Function %bool
@@ -112,6 +116,7 @@ OpName %main "main"
 %uint_3 = OpConstant %uint 3
 %uint_32 = OpConstant %uint 32
 %uint_max = OpConstant %uint -1
+%struct_v2int_int_int_null = OpConstantNull %struct_v2int_int_int
 %v4int_0_0_0_0 = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
 )";
 
@@ -309,11 +314,13 @@ TEST_P(BooleanInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  inst = opt::FoldInstruction(inst);
+  bool succeeded = opt::FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
-  EXPECT_NE(inst, nullptr);
+  EXPECT_TRUE(succeeded);
   if (inst != nullptr) {
+    EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
+    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     std::vector<SpvOp> bool_opcodes = {SpvOpConstantTrue, SpvOpConstantFalse};
     EXPECT_THAT(bool_opcodes, Contains(inst->opcode()));
     opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
@@ -560,7 +567,7 @@ TEST_P(IntegerInstructionFoldingTestWithMap, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  inst = opt::FoldInstruction(inst, tc.id_map);
+  inst = opt::FoldInstructionToConstant(inst, tc.id_map);
 
   // Make sure the instruction folded as expected.
   EXPECT_NE(inst, nullptr);
@@ -607,7 +614,7 @@ TEST_P(BooleanInstructionFoldingTestWithMap, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  inst = opt::FoldInstruction(inst, tc.id_map);
+  inst = opt::FoldInstructionToConstant(inst, tc.id_map);
 
   // Make sure the instruction folded as expected.
   EXPECT_NE(inst, nullptr);
@@ -656,18 +663,27 @@ TEST_P(GeneralInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  inst = opt::FoldInstruction(inst);
+  std::unique_ptr<ir::Instruction> original_inst(inst->Clone(context.get()));
+  bool succeeded = opt::FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
-  EXPECT_TRUE((inst == nullptr) == (tc.expected_result == 0));
-  if (inst != nullptr) {
-    EXPECT_EQ(inst->result_id(), tc.expected_result);
+  EXPECT_EQ(inst->result_id(), original_inst->result_id());
+  EXPECT_EQ(inst->type_id(), original_inst->type_id());
+  EXPECT_TRUE((!succeeded) == (tc.expected_result == 0));
+  if (succeeded) {
+    EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
+    EXPECT_EQ(inst->GetSingleWordInOperand(0), tc.expected_result);
+  } else {
+    EXPECT_EQ(inst->NumInOperands(), original_inst->NumInOperands());
+    for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
+      EXPECT_EQ(inst->GetOperand(i), original_inst->GetOperand(i));
+    }
   }
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(TestCase, GeneralInstructionFoldingTest,
-::testing::Values(
+INSTANTIATE_TEST_CASE_P(IntegerArithmeticTestCases, GeneralInstructionFoldingTest,
+                        ::testing::Values(
     // Test case 0: Don't fold n * m
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
@@ -1123,8 +1139,12 @@ INSTANTIATE_TEST_CASE_P(TestCase, GeneralInstructionFoldingTest,
             "%2 = OpIMul %int %3 %int_1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 3),
-    // Test case 42: fold Insert feeding extract
+        2, 3)
+));
+
+INSTANTIATE_TEST_CASE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: fold Insert feeding extract
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -1137,7 +1157,174 @@ INSTANTIATE_TEST_CASE_P(TestCase, GeneralInstructionFoldingTest,
             "%7 = OpCompositeExtract %int %6 0\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        7, 2)
+        7, 2),
+    // Test case 1: fold Composite construct feeding extract (position 0)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%2 = OpLoad %int %n\n" +
+            "%3 = OpCompositeConstruct %v4int %2 %int_0 %int_0 %int_0\n" +
+            "%4 = OpCompositeExtract %int %3 0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, 2),
+    // Test case 2: fold Composite construct feeding extract (position 3)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%2 = OpLoad %int %n\n" +
+            "%3 = OpCompositeConstruct %v4int %2 %int_0 %int_0 %100\n" +
+            "%4 = OpCompositeExtract %int %3 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, INT_0_ID),
+    // Test case 3: fold Composite construct with vectors feeding extract (scalar element)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%2 = OpLoad %int %n\n" +
+            "%3 = OpCompositeConstruct %v2int %2 %int_0\n" +
+            "%4 = OpCompositeConstruct %v4int %3 %int_0 %100\n" +
+            "%5 = OpCompositeExtract %int %4 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, INT_0_ID),
+    // Test case 4: fold Composite construct with vectors feeding extract (start of vector element)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%2 = OpLoad %int %n\n" +
+            "%3 = OpCompositeConstruct %v2int %2 %int_0\n" +
+            "%4 = OpCompositeConstruct %v4int %3 %int_0 %100\n" +
+            "%5 = OpCompositeExtract %int %4 0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, 2),
+    // Test case 5: fold Composite construct with vectors feeding extract (middle of vector element)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%2 = OpLoad %int %n\n" +
+            "%3 = OpCompositeConstruct %v2int %int_0 %2\n" +
+            "%4 = OpCompositeConstruct %v4int %3 %int_0 %100\n" +
+            "%5 = OpCompositeExtract %int %4 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, 2),
+    // Test case 6: fold Composite construct with multiple indices.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%2 = OpLoad %int %n\n" +
+            "%3 = OpCompositeConstruct %v2int %int_0 %2\n" +
+            "%4 = OpCompositeConstruct %struct_v2int_int_int %3 %int_0 %100\n" +
+            "%5 = OpCompositeExtract %int %4 0 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, 2)
+));
+
+INSTANTIATE_TEST_CASE_P(CompositeConstructFoldingTest, GeneralInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: fold Extracts feeding construct
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpCopyObject %v4int %v4int_0_0_0_0\n" +
+            "%3 = OpCompositeExtract %int %2 0\n" +
+            "%4 = OpCompositeExtract %int %2 1\n" +
+            "%5 = OpCompositeExtract %int %2 2\n" +
+            "%6 = OpCompositeExtract %int %2 3\n" +
+            "%7 = OpCompositeConstruct %v4int %3 %4 %5 %6\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        7, 2),
+    // Test case 1: Don't fold Extracts feeding construct (Different source)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpCopyObject %v4int %v4int_0_0_0_0\n" +
+            "%3 = OpCompositeExtract %int %2 0\n" +
+            "%4 = OpCompositeExtract %int %2 1\n" +
+            "%5 = OpCompositeExtract %int %2 2\n" +
+            "%6 = OpCompositeExtract %int %v4int_0_0_0_0 3\n" +
+            "%7 = OpCompositeConstruct %v4int %3 %4 %5 %6\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        7, 0),
+    // Test case 2: Don't fold Extracts feeding construct (bad indices)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpCopyObject %v4int %v4int_0_0_0_0\n" +
+            "%3 = OpCompositeExtract %int %2 0\n" +
+            "%4 = OpCompositeExtract %int %2 0\n" +
+            "%5 = OpCompositeExtract %int %2 2\n" +
+            "%6 = OpCompositeExtract %int %2 3\n" +
+            "%7 = OpCompositeConstruct %v4int %3 %4 %5 %6\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        7, 0),
+    // Test case 3: Don't fold Extracts feeding construct (different type)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpCopyObject %struct_v2int_int_int %struct_v2int_int_int_null\n" +
+            "%3 = OpCompositeExtract %v2int %2 0\n" +
+            "%4 = OpCompositeExtract %int %2 1\n" +
+            "%5 = OpCompositeExtract %int %2 2\n" +
+            "%7 = OpCompositeConstruct %v4int %3 %4 %5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        7, 0)
+));
+
+INSTANTIATE_TEST_CASE_P(PhiFoldingTest, GeneralInstructionFoldingTest,
+::testing::Values(
+  // Test case 0: Fold phi with the same values for all edges.
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "            OpBranchConditional %true %l1 %l2\n" +
+          "%l1 = OpLabel\n" +
+          "      OpBranch %merge_lab\n" +
+          "%l2 = OpLabel\n" +
+          "      OpBranch %merge_lab\n" +
+          "%merge_lab = OpLabel\n" +
+          "%2 = OpPhi %int %100 %l1 %100 %l2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, INT_0_ID),
+  // Test case 1: Fold phi in pass through loop.
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "            OpBranch %l1\n" +
+          "%l1 = OpLabel\n" +
+          "%2 = OpPhi %int %100 %main_lab %2 %l1\n" +
+          "      OpBranchConditional %true %l1 %merge_lab\n" +
+          "%merge_lab = OpLabel\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, INT_0_ID),
+  // Test case 2: Don't Fold phi because of different values.
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "            OpBranch %l1\n" +
+          "%l1 = OpLabel\n" +
+          "%2 = OpPhi %int %int_0 %main_lab %int_3 %l1\n" +
+          "      OpBranchConditional %true %l1 %merge_lab\n" +
+          "%merge_lab = OpLabel\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 0)
 ));
 // clang-format off
 }  // anonymous namespace

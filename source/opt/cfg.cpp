@@ -87,6 +87,19 @@ void CFG::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
       root, get_structured_successors, ignore_block, post_order, ignore_edge);
 }
 
+void CFG::ForEachBlockInReversePostOrder(
+    BasicBlock* bb, const std::function<void(BasicBlock*)>& f) {
+  std::vector<BasicBlock*> po;
+  std::unordered_set<BasicBlock*> seen;
+  ComputePostOrderTraversal(bb, &po, &seen);
+
+  for (auto current_bb = po.rbegin(); current_bb != po.rend(); ++current_bb) {
+    if (!IsPseudoExitBlock(*current_bb) && !IsPseudoEntryBlock(*current_bb)) {
+      f(*current_bb);
+    }
+  }
+}
+
 void CFG::ComputeStructuredSuccessors(ir::Function* func) {
   block2structured_succs_.clear();
   for (auto& blk : *func) {
@@ -109,6 +122,19 @@ void CFG::ComputeStructuredSuccessors(ir::Function* func) {
       block2structured_succs_[&blk].push_back(id2block_[sbid]);
     });
   }
+}
+
+void CFG::ComputePostOrderTraversal(BasicBlock* bb, vector<BasicBlock*>* order,
+                                    unordered_set<BasicBlock*>* seen) {
+  seen->insert(bb);
+  static_cast<const BasicBlock*>(bb)->ForEachSuccessorLabel(
+      [&order, &seen, this](const uint32_t sbid) {
+        BasicBlock* succ_bb = id2block_[sbid];
+        if (!seen->count(succ_bb)) {
+          ComputePostOrderTraversal(succ_bb, order, seen);
+        }
+      });
+  order->push_back(bb);
 }
 
 }  // namespace ir

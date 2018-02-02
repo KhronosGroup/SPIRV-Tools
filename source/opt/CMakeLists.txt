@@ -70,6 +70,7 @@ add_library(SPIRV-Tools-opt
   replace_invalid_opc.h
   scalar_replacement_pass.h
   set_spec_constant_default_value_pass.h
+  simplification_pass.h
   strength_reduction_pass.h
   strip_debug_info_pass.h
   tree_iterator.h
@@ -135,6 +136,7 @@ add_library(SPIRV-Tools-opt
   replace_invalid_opc.cpp
   scalar_replacement_pass.cpp
   set_spec_constant_default_value_pass.cpp
+  simplification_pass.cpp
   strength_reduction_pass.cpp
   strip_debug_info_pass.cpp
   type_manager.cpp

@@ -255,6 +255,9 @@ Options (in lexicographical order):
                blank spaces, and in each pair, spec id and default value must
                be separated with colon ':' without any blank spaces in between.
                e.g.: --set-spec-const-default-value "1:100 2:400"
+  --simplify-instructions
+               Will simplfy all instructions in the function as much as
+               possible.
   --skip-validation
                Will not validate the SPIR-V before optimizing.  If the SPIR-V
                is invalid, the optimizer may fail or generate incorrect code.
@@ -465,6 +468,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         options->relax_struct_store = true;
       } else if (0 == strcmp(cur_arg, "--replace-invalid-opcode")) {
         optimizer->RegisterPass(CreateReplaceInvalidOpcodePass());
+      } else if (0 == strcmp(cur_arg, "--simplify-instructions")) {
+        optimizer->RegisterPass(CreateSimplificationPass());
       } else if (0 == strcmp(cur_arg, "--skip-validation")) {
         *skip_validator = true;
       } else if (0 == strcmp(cur_arg, "-O")) {

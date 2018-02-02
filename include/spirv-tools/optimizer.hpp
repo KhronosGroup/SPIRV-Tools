@@ -504,6 +504,9 @@ Optimizer::PassToken CreateIfConversionPass();
 // current shader stage by constants.  Has no effect on non-shader modules.
 Optimizer::PassToken CreateReplaceInvalidOpcodePass();
 
+// Creates a pass that simplifies instructions using the instruction folder.
+Optimizer::PassToken CreateSimplificationPass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

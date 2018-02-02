@@ -111,6 +111,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/replace_invalid_opc.cpp \
 		source/opt/scalar_replacement_pass.cpp \
 		source/opt/set_spec_constant_default_value_pass.cpp \
+		source/opt/simplification_pass.cpp \
 		source/opt/strength_reduction_pass.cpp \
 		source/opt/strip_debug_info_pass.cpp \
 		source/opt/type_manager.cpp \

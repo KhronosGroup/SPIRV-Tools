@@ -182,10 +182,10 @@ uint32_t OperateWords(SpvOp opcode,
   }
 }
 
-bool FoldInstructionInternal(ir::Instruction* inst,
-                             std::function<uint32_t(uint32_t)> id_map) {
+bool FoldInstructionInternal(ir::Instruction* inst) {
   ir::IRContext* context = inst->context();
-  ir::Instruction* folded_inst = FoldInstructionToConstant(inst, id_map);
+  auto identity_map = [](uint32_t id) { return id; };
+  ir::Instruction* folded_inst = FoldInstructionToConstant(inst, identity_map);
   if (folded_inst != nullptr) {
     inst->SetOpcode(SpvOpCopyObject);
     inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {folded_inst->result_id()}}});
@@ -201,8 +201,7 @@ bool FoldInstructionInternal(ir::Instruction* inst,
     if (operand->type != SPV_OPERAND_TYPE_ID) {
       constants.push_back(nullptr);
     } else {
-      uint32_t id = id_map(operand->words[0]);
-      inst->SetInOperand(i, {id});
+      uint32_t id = operand->words[0];
       const analysis::Constant* constant =
           const_manger->FindDeclaredConstant(id);
       constants.push_back(constant);
@@ -660,29 +659,13 @@ bool IsFoldableType(ir::Instruction* type_inst) {
   return false;
 }
 
-ir::Instruction* FoldInstruction(ir::Instruction* inst,
-                                 std::function<uint32_t(uint32_t)> id_map) {
-  ir::IRContext* context = inst->context();
+bool FoldInstruction(ir::Instruction* inst) {
   bool modified = false;
-  std::unique_ptr<ir::Instruction> folded_inst(inst->Clone(context));
-  while (FoldInstructionInternal(&*folded_inst, id_map)) {
+  ir::Instruction* folded_inst(inst);
+  while (FoldInstructionInternal(&*folded_inst)) {
     modified = true;
   }
-
-  if (modified) {
-    if (folded_inst->opcode() == SpvOpCopyObject) {
-      analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-      return def_use_mgr->GetDef(folded_inst->GetSingleWordInOperand(0));
-    } else {
-      InstructionBuilder ir_builder(
-          context, inst,
-          ir::IRContext::kAnalysisDefUse |
-              ir::IRContext::kAnalysisInstrToBlockMapping);
-      folded_inst->SetResultId(context->TakeNextId());
-      return ir_builder.AddInstruction(std::move(folded_inst));
-    }
-  }
-  return nullptr;
+  return modified;
 }
 
 }  // namespace opt
