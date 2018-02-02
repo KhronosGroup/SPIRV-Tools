@@ -201,6 +201,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // This is for in-operands modification only, but with |index| expressed in
   // terms of operand index rather than in-operand index.
   inline void SetOperand(uint32_t index, std::vector<uint32_t>&& data);
+  // Replace all of the in operands with those in |new_operands|.
+  inline void SetInOperands(std::vector<Operand>&& new_operands);
   // Sets the result type id.
   inline void SetResultType(uint32_t ty_id);
   // Sets the result id
@@ -463,6 +465,13 @@ inline void Instruction::SetOperand(uint32_t index,
   assert(index < operands_.size() && "operand index out of bound");
   assert(index >= TypeResultIdCount() && "operand is not a in-operand");
   operands_[index].words = std::move(data);
+}
+
+inline void Instruction::SetInOperands(std::vector<Operand>&& new_operands) {
+  // Remove the old in operands.
+  operands_.erase(operands_.begin() + TypeResultIdCount(), operands_.end());
+  // Add the new in operands.
+  operands_.insert(operands_.end(), new_operands.begin(), new_operands.end());
 }
 
 inline void Instruction::SetResultId(uint32_t res_id) {
