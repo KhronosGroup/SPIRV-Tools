@@ -342,6 +342,10 @@ target_include_directories(${SPIRV_TOOLS}-shared
   )
 set_property(TARGET ${SPIRV_TOOLS}-shared PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(${SPIRV_TOOLS}-shared)
+target_compile_definitions(${SPIRV_TOOLS}-shared
+  PRIVATE SPIRV_TOOLS_IMPLEMENTATION
+  PUBLIC SPIRV_TOOLS_SHAREDLIB
+)
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
   install(TARGETS ${SPIRV_TOOLS} ${SPIRV_TOOLS}-shared
