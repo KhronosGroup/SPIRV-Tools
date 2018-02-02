@@ -173,7 +173,7 @@ bool Type::operator==(const Type& other) const {
 
 void Type::GetHashWords(std::vector<uint32_t>* words) const {
   words->push_back(kind_);
-  for (auto d : decorations_) {
+  for (const auto& d : decorations_) {
     for (auto w : d) {
       words->push_back(w);
     }
@@ -407,7 +407,7 @@ void RuntimeArray::GetExtraHashWords(std::vector<uint32_t>* words) const {
 
 Struct::Struct(const std::vector<Type*>& types)
     : Type(kStruct), element_types_(types) {
-  for (auto* t : types) {
+  for (const auto* t : types) {
     (void)t;
     assert(!t->AsVoid());
   }
@@ -455,12 +455,12 @@ std::string Struct::str() const {
 }
 
 void Struct::GetExtraHashWords(std::vector<uint32_t>* words) const {
-  for (auto t : element_types_) {
+  for (auto* t : element_types_) {
     t->GetHashWords(words);
   }
-  for (auto pair : element_decorations_) {
+  for (const auto& pair : element_decorations_) {
     words->push_back(pair.first);
-    for (auto d : pair.second) {
+    for (const auto& d : pair.second) {
       for (auto w : d) {
         words->push_back(w);
       }
@@ -539,7 +539,7 @@ std::string Function::str() const {
 
 void Function::GetExtraHashWords(std::vector<uint32_t>* words) const {
   return_type_->GetHashWords(words);
-  for (auto t : param_types_) {
+  for (const auto* t : param_types_) {
     t->GetHashWords(words);
   }
 }
