@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2018.0-dev 2018-01-12
+v2018.0 2018-02-02
  - General
    - VisualStudio 2013 is no longer supported.  VisualStudio 2015 is supported.
    - Use "include/unified1" directory from SPIRV-Headers.  Requires recent SPIRV-Headers source.
