@@ -173,7 +173,7 @@ bool Type::operator==(const Type& other) const {
 
 void Type::GetHashWords(std::vector<uint32_t>* words) const {
   words->push_back(kind_);
-  for (auto d : decorations_) {
+  for (const auto& d : decorations_) {
     for (auto w : d) {
       words->push_back(w);
     }
