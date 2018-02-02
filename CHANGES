@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2018.1-dev 2018-02-02
+ - Start v2018.1-dev
+
 v2018.0 2018-02-02
  - General
    - VisualStudio 2013 is no longer supported.  VisualStudio 2015 is supported.
