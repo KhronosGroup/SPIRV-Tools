@@ -41,6 +41,11 @@ class FeatureManager {
   // Analyzes |module| and records enabled extensions and capabilities.
   void Analyze(ir::Module* module);
 
+  libspirv::CapabilitySet* GetCapabilities() { return &capabilities_; }
+  const libspirv::CapabilitySet* GetCapabilities() const {
+    return &capabilities_;
+  }
+
  private:
   // Analyzes |module| and records enabled extensions.
   void AddExtensions(ir::Module* module);

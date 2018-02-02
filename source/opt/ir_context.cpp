@@ -474,9 +474,8 @@ void IRContext::AddCombinatorsForExtension(ir::Instruction* extension) {
 }
 
 void IRContext::InitializeCombinators() {
-  for (auto& capability : module()->capabilities()) {
-    AddCombinatorsForCapability(capability.GetSingleWordInOperand(0));
-  }
+  get_feature_mgr()->GetCapabilities()->ForEach(
+      [this](SpvCapability cap) { AddCombinatorsForCapability(cap); });
 
   for (auto& extension : module()->ext_inst_imports()) {
     AddCombinatorsForExtension(&extension);
