@@ -413,7 +413,7 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("Block .\\[merge\\] is already a merge block "
-                             "for another header"));
+                             "for another header.*"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -447,7 +447,7 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("Block .\\[merge\\] is already a merge block "
-                             "for another header"));
+                             "for another header.*"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -470,7 +470,7 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
-                           "is targeted by block .\\[bad\\]"));
+                           "is targeted by block .\\[bad\\].*"));
 }
 
 TEST_P(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
@@ -494,7 +494,7 @@ TEST_P(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
-                           "is targeted by block .\\[bad\\]"));
+                           "is targeted by block .\\[bad\\].*"));
 }
 
 TEST_P(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
@@ -521,7 +521,7 @@ TEST_P(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
-                           "is targeted by block .\\[bad\\]"));
+                           "is targeted by block .\\[bad\\].*"));
 }
 
 TEST_P(ValidateCFG, SwitchTargetFirstBlockBad) {
@@ -555,7 +555,7 @@ TEST_P(ValidateCFG, SwitchTargetFirstBlockBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
-                           "is targeted by block .\\[bad\\]"));
+                           "is targeted by block .\\[bad\\].*"));
 }
 
 TEST_P(ValidateCFG, BranchToBlockInOtherFunctionBad) {

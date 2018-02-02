@@ -42,11 +42,11 @@
 
 using std::function;
 using std::ostream_iterator;
+using std::placeholders::_1;
 using std::string;
 using std::stringstream;
 using std::transform;
 using std::vector;
-using std::placeholders::_1;
 
 using libspirv::CfgPass;
 using libspirv::DataRulesPass;
@@ -158,7 +158,11 @@ spv_result_t ProcessExtensions(void* user_data,
 spv_result_t ProcessInstruction(void* user_data,
                                 const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
+
+  // Register the instruction early so it can be disassembled for diagnostics.
+  libspirv::Instruction* internal_instruction = _.RegisterInstruction(*inst);
   _.increment_instruction_count();
+
   if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint) {
     const auto entry_point = inst->words[2];
     _.RegisterEntryPointId(entry_point);
@@ -175,7 +179,7 @@ spv_result_t ProcessInstruction(void* user_data,
   DebugInstructionPass(_, inst);
   if (auto error = CapabilityPass(_, inst)) return error;
   if (auto error = DataRulesPass(_, inst)) return error;
-  if (auto error = IdPass(_, inst)) return error;
+  if (auto error = IdPass(_, inst, internal_instruction)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
   if (auto error = CfgPass(_, inst)) return error;
   if (auto error = InstructionPass(_, inst)) return error;
@@ -266,9 +270,16 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
+  // First set up a hook to print the at-fault instruction right after
+  // the error message.
+  vstate->SetDiagnosticSuffixGenerator([vstate]() {
+    return std::string("\n") +
+           vstate->Disassemble(vstate->ordered_instructions().back());
+  });
   if (auto error = spvBinaryParse(&context, vstate, words, num_words, setHeader,
                                   ProcessInstruction, pDiagnostic))
     return error;
+  vstate->SetDiagnosticSuffixGenerator(nullptr);
 
   if (vstate->in_function_body())
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT)
@@ -366,7 +377,7 @@ spv_result_t spvValidateBinary(const spv_const_context context,
   spv_validator_options default_options = spvValidatorOptionsCreate();
 
   // Create the ValidationState using the context and default options.
-  ValidationState_t vstate(&hijack_context, default_options);
+  ValidationState_t vstate(&hijack_context, default_options, words, num_words);
 
   spv_result_t result = ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, &vstate);
@@ -386,7 +397,8 @@ spv_result_t spvValidateWithOptions(const spv_const_context context,
   }
 
   // Create the ValidationState using the context.
-  ValidationState_t vstate(&hijack_context, options);
+  ValidationState_t vstate(&hijack_context, options, binary->code,
+                           binary->wordCount);
 
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, binary->code, binary->wordCount, pDiagnostic, &vstate);
@@ -404,7 +416,8 @@ spv_result_t ValidateBinaryAndKeepValidationState(
     libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
   }
 
-  vstate->reset(new ValidationState_t(&hijack_context, options));
+  vstate->reset(
+      new ValidationState_t(&hijack_context, options, words, num_words));
 
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, vstate->get());

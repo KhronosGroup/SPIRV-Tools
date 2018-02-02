@@ -183,8 +183,10 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForValidating) {
         // TODO(antiagainst): what validation reports is not a word offset here.
         // It is inconsistent with diassembler. Should be fixed.
         EXPECT_EQ(1u, position.index);
-        EXPECT_STREQ("Nop cannot appear before the memory model instruction",
-                     message);
+        EXPECT_STREQ(
+            "Nop cannot appear before the memory model instruction"
+            "\nOpNop ; 0x00000014",
+            message);
       });
 
   spv_binary binary = nullptr;
@@ -274,8 +276,10 @@ TEST(CInterface, SpecifyConsumerSpecifyDiagnosticForValidating) {
   EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, spvValidate(context, &b, &diagnostic));
 
   EXPECT_EQ(0, invocation);  // Consumer should not be invoked at all.
-  EXPECT_STREQ("Nop cannot appear before the memory model instruction",
-               diagnostic->error);
+  EXPECT_STREQ(
+      "Nop cannot appear before the memory model instruction"
+      "\nOpNop ; 0x00000014",
+      diagnostic->error);
 
   spvDiagnosticDestroy(diagnostic);
   spvBinaryDestroy(binary);

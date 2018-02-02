@@ -67,6 +67,9 @@ class Disassembler {
                             uint32_t schema);
   // Emits the assembly text for the given instruction.
   spv_result_t HandleInstruction(const spv_parsed_instruction_t& inst);
+  // Updates internal bookkeeping implied by scanning this instruction,
+  // but does not emit the instruction.  Returns SPV_SUCCESS.
+  spv_result_t SkipInstruction(const spv_parsed_instruction_t& inst);
 
   // If not printing, populates text_result with the accumulated text.
   // Returns SPV_SUCCESS on success.
@@ -189,9 +192,14 @@ spv_result_t Disassembler::HandleInstruction(
     ResetColor();
   }
 
-  byte_offset_ += inst.num_words * sizeof(uint32_t);
-
   stream_ << "\n";
+
+  return SkipInstruction(inst);
+}
+
+spv_result_t Disassembler::SkipInstruction(
+    const spv_parsed_instruction_t& inst) {
+  byte_offset_ += inst.num_words * sizeof(uint32_t);
   return SPV_SUCCESS;
 }
 
@@ -396,7 +404,8 @@ spv_result_t DisassembleTargetInstruction(
       return error;
     return SPV_REQUESTED_TERMINATION;
   }
-  return SPV_SUCCESS;
+  // Keep byte offsets bookkeeping updated.
+  return wrapped->disassembler()->SkipInstruction(*parsed_instruction);
 }
 
 }  // anonymous namespace

@@ -24,6 +24,7 @@
 
 namespace {
 
+using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
@@ -161,6 +162,21 @@ TEST_F(ValidateData, vec5) {
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(invalid_comp_error));
+}
+
+TEST_F(ValidateData, vec5_disassembles_instruction) {
+  // This tests that a validation failure during initial "inline" processing
+  // of instructions will disassemble the offending instruction.
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 5
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              Eq(std::string(invalid_comp_error) +
+                 " (5) for TypeVector\n"
+                 "%v5float = OpTypeVector %float 5 ; 0x0000003c"));
 }
 
 TEST_F(ValidateData, vec8) {

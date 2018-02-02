@@ -25,6 +25,7 @@ namespace {
 
 using std::string;
 using ::testing::HasSubstr;
+using ::testing::Eq;
 
 using ValidationStateTest = spvtest::ValidateBase<bool>;
 
@@ -150,6 +151,24 @@ TEST_F(ValidationStateTest, CheckAccessChainIndexesLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
       options_, spv_validator_limit_max_access_chain_indexes, 100u);
   EXPECT_EQ(100u, options_->universal_limits_.max_access_chain_indexes);
+}
+
+TEST_F(ValidationStateTest, DisassembleCapabilityInst) {
+  CompileSuccessfully("OpCapability Kernel");
+  ValidateAndRetrieveValidationState();
+  auto disassembly =
+      vstate_->Disassemble(vstate_->ordered_instructions().front());
+  EXPECT_THAT(disassembly, Eq("OpCapability Kernel ; 0x00000014"));
+}
+
+TEST_F(ValidationStateTest, DisassembleLastInstTypeUintGetsFriendlyName) {
+  string spirv =
+      string(header) + "%float = OpTypeFloat 32 %a_type = OpTypeInt 32 0";
+  CompileSuccessfully(spirv);
+  ValidateAndRetrieveValidationState();
+  auto disassembly =
+      vstate_->Disassemble(vstate_->ordered_instructions().back());
+  EXPECT_THAT(disassembly, Eq("%uint = OpTypeInt 32 0 ; 0x0000003c"));
 }
 
 }  // anonymous namespace

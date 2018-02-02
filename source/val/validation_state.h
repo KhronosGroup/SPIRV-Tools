@@ -16,10 +16,12 @@
 #define LIBSPIRV_VAL_VALIDATIONSTATE_H_
 
 #include <deque>
+#include <functional>
 #include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "assembly_grammar.h"
@@ -33,6 +35,32 @@
 #include "val/instruction.h"
 
 namespace libspirv {
+
+using StringGenerator = std::function<std::string()>;
+
+class SuffixableDiagnosticStream {
+ public:
+  SuffixableDiagnosticStream(DiagnosticStream&& ds, StringGenerator suffix_gen)
+      : diag_stream_(std::move(ds)), suffix_gen_(suffix_gen) {}
+
+  operator spv_result_t() {
+    if (suffix_gen_) {
+      diag_stream_ << suffix_gen_();
+      suffix_gen_ = nullptr;
+    }
+    return std::move(diag_stream_);
+  }
+
+  template <typename T>
+  SuffixableDiagnosticStream& operator<<(const T& val) {
+    diag_stream_ << val;
+    return *this;
+  }
+
+ private:
+  DiagnosticStream diag_stream_;
+  StringGenerator suffix_gen_;
+};
 
 /// This enum represents the sections of a SPIRV module. See section 2.4
 /// of the SPIRV spec for additional details of the order. The enumerant values
@@ -75,7 +103,9 @@ class ValidationState_t {
   };
 
   ValidationState_t(const spv_const_context context,
-                    const spv_const_validator_options opt);
+                    const spv_const_validator_options opt,
+                    const uint32_t* words,
+                    const size_t num_words);
 
   /// Returns the context
   spv_const_context context() const { return context_; }
@@ -134,7 +164,13 @@ class ValidationState_t {
   /// Determines if the op instruction is part of the current section
   bool IsOpcodeInCurrentLayoutSection(SpvOp op);
 
-  libspirv::DiagnosticStream diag(spv_result_t error_code) const;
+  // Returns a suffixable diagnostic stream for accumulating and emitting
+  // diagnostics.
+  SuffixableDiagnosticStream diag(spv_result_t error_code) const;
+
+  void SetDiagnosticSuffixGenerator(StringGenerator sg) {
+    diag_suffix_generator_ = sg;
+  }
 
   /// Returns the function states
   std::deque<Function>& functions();
@@ -234,8 +270,8 @@ class ValidationState_t {
 
   const AssemblyGrammar& grammar() const { return grammar_; }
 
-  /// Registers the instruction
-  void RegisterInstruction(const spv_parsed_instruction_t& inst);
+  /// Registers the instruction.  Returns the internal representation.
+  Instruction* RegisterInstruction(const spv_parsed_instruction_t& inst);
 
   /// Registers the decoration for the given <id>
   void RegisterDecorationForId(uint32_t id, const Decoration& dec) {
@@ -288,6 +324,9 @@ class ValidationState_t {
   const std::unordered_map<uint32_t, Instruction*>& all_definitions() const {
     return all_definitions_;
   }
+
+  // Records the instruction defining |result_id|.
+  void RegisterDefinition(uint32_t result_id, Instruction* inst);
 
   /// Returns a vector containing the Ids of instructions that consume the given
   /// SampledImage id.
@@ -413,6 +452,9 @@ class ValidationState_t {
   bool GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
                           uint32_t* storage_class) const;
 
+  // Returns the disassembly string for the given instruction.
+  std::string Disassemble(const Instruction&);
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -421,8 +463,14 @@ class ValidationState_t {
   /// Stores the Validator command line options. Must be a valid options object.
   const spv_const_validator_options options_;
 
+  /// The SPIR-V binary module we're validating.
+  const uint32_t* words_;
+  const size_t num_words_;
+
   /// Tracks the number of instructions evaluated by the validator
   int instruction_counter_;
+
+  StringGenerator diag_suffix_generator_;
 
   /// IDs which have been forward declared but have not been defined
   std::unordered_set<uint32_t> unresolved_forward_ids_;

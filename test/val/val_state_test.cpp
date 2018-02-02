@@ -35,13 +35,17 @@ using libspirv::ExtensionSet;
 using libspirv::ValidationState_t;
 using std::vector;
 
+
+// This is all we need for these tests.
+static uint32_t kFakeBinary[] = {0};
+
 // A test with a ValidationState_t member transparently.
 class ValidationStateTest : public testing::Test {
  public:
   ValidationStateTest()
       : context_(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)),
         options_(spvValidatorOptionsCreate()),
-        state_(context_, options_) {}
+        state_(context_, options_, kFakeBinary, 0) {}
 
   ~ValidationStateTest() {
     spvContextDestroy(context_);

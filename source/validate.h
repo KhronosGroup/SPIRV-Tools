@@ -26,8 +26,9 @@
 
 namespace libspirv {
 
-class ValidationState_t;
 class BasicBlock;
+class Instruction;
+class ValidationState_t;
 
 /// A function that returns a vector of BasicBlocks given a BasicBlock. Used to
 /// get the successor and predecessor nodes of a CFG block
@@ -101,8 +102,11 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
 spv_result_t CfgPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst);
 
-/// Performs Id and SSA validation of a module
-spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst);
+/// Performs Id and SSA validation of a module.  If |inst| is a definition,
+/// then also record |internal_instruction| as the internal representation
+/// of the its instruction.
+spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst,
+                    Instruction* internal_instruction);
 
 /// Performs validation of the Data Rules subsection of 2.16.1 Universal
 /// Validation Rules.

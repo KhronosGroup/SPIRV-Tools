@@ -48,9 +48,11 @@ namespace {
 // instruction.
 class StatsAggregator {
  public:
-  StatsAggregator(SpirvStats* in_out_stats, const spv_const_context context) {
+  StatsAggregator(SpirvStats* in_out_stats, const spv_const_context context,
+                  const uint32_t* words, size_t num_words) {
     stats_ = in_out_stats;
-    vstate_.reset(new ValidationState_t(context, &validator_options_));
+    vstate_.reset(
+        new ValidationState_t(context, &validator_options_, words, num_words));
   }
 
   // Collects header statistics and sets correct id_bound.
@@ -316,7 +318,7 @@ spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
            << "Invalid SPIR-V header.";
   }
 
-  StatsAggregator stats_aggregator(stats, &context);
+  StatsAggregator stats_aggregator(stats, &context, words, num_words);
 
   return spvBinaryParse(&context, &stats_aggregator, words, num_words,
                         ProcessHeader, ProcessInstruction, pDiagnostic);

@@ -16,6 +16,7 @@
 
 #include <cassert>
 
+#include "disassemble.h"
 #include "opcode.h"
 #include "val/basic_block.h"
 #include "val/construct.h"
@@ -135,10 +136,15 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
 }  // anonymous namespace
 
 ValidationState_t::ValidationState_t(const spv_const_context ctx,
-                                     const spv_const_validator_options opt)
+                                     const spv_const_validator_options opt,
+                                     const uint32_t* words,
+                                     const size_t num_words)
     : context_(ctx),
       options_(opt),
+      words_(words),
+      num_words_(num_words),
       instruction_counter_(0),
+      diag_suffix_generator_(nullptr),
       unresolved_forward_ids_{},
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
@@ -246,10 +252,13 @@ bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
   return IsInstructionInLayoutSection(current_layout_section_, op);
 }
 
-DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
-  return libspirv::DiagnosticStream(
-      {0, 0, static_cast<size_t>(instruction_counter_)}, context_->consumer,
-      error_code);
+SuffixableDiagnosticStream ValidationState_t::diag(
+    spv_result_t error_code) const {
+  return SuffixableDiagnosticStream(
+      libspirv::DiagnosticStream(
+          {0, 0, static_cast<size_t>(instruction_counter_)}, context_->consumer,
+          error_code),
+      diag_suffix_generator_);
 }
 
 deque<Function>& ValidationState_t::functions() { return module_functions_; }
@@ -392,7 +401,7 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   return SPV_SUCCESS;
 }
 
-void ValidationState_t::RegisterInstruction(
+Instruction* ValidationState_t::RegisterInstruction(
     const spv_parsed_instruction_t& inst) {
   if (in_function_body()) {
     ordered_instructions_.emplace_back(&inst, &current_function(),
@@ -400,13 +409,9 @@ void ValidationState_t::RegisterInstruction(
   } else {
     ordered_instructions_.emplace_back(&inst, nullptr, nullptr);
   }
-  uint32_t id = ordered_instructions_.back().id();
-  if (id) {
-    all_definitions_.insert(make_pair(id, &ordered_instructions_.back()));
-  }
 
-  // If the instruction is using an OpTypeSampledImage as an operand, it should
-  // be recorded. The validator will ensure that all usages of an
+  // If the instruction is using an OpSampledImage result as an operand, it
+  // should be recorded. The validator will ensure that all usages of an
   // OpTypeSampledImage and its definition are in the same basic block.
   for (uint16_t i = 0; i < inst.num_operands; ++i) {
     const spv_parsed_operand_t& operand = inst.operands[i];
@@ -418,6 +423,12 @@ void ValidationState_t::RegisterInstruction(
       }
     }
   }
+
+  return &(ordered_instructions_.back());
+}
+
+void ValidationState_t::RegisterDefinition(uint32_t id, Instruction* inst) {
+  all_definitions_.insert(make_pair(id, inst));
 }
 
 std::vector<uint32_t> ValidationState_t::getSampledImageConsumers(
@@ -764,6 +775,17 @@ bool ValidationState_t::GetConstantValUint64(uint32_t id, uint64_t* val) const {
     *val |= uint64_t(inst->word(4)) << 32;
   }
   return true;
+}
+
+std::string ValidationState_t::Disassemble(const Instruction& inst) {
+  const spv_parsed_instruction_t& c_inst(inst.c_inst());
+  uint32_t disassembly_options = SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                                 SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES |
+                                 SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET;
+
+  return spvtools::spvInstructionBinaryToText(
+      context()->target_env, c_inst.words, c_inst.num_words, words_, num_words_,
+      disassembly_options);
 }
 
 }  // namespace libspirv
