@@ -162,6 +162,11 @@ class TypeManager {
   // |type| (e.g. should be called in loop of |type|'s decorations).
   void AttachDecoration(const spvtools::ir::Instruction& inst, Type* type);
 
+  // Returns an equivalent pointer to |type| built in terms of pointers owned by
+  // |type_pool_|. For example, if |type| is a vec3 of bool, it will be rebuilt
+  // replacing the bool subtype with one owned by |type_pool_|.
+  Type* RebuildType(const Type& type);
+
   const MessageConsumer& consumer_;  // Message consumer.
   spvtools::ir::IRContext* context_;
   IdToTypeMap id_to_type_;  // Mapping from ids to their type representations.
