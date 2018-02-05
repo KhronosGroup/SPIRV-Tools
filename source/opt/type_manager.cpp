@@ -355,11 +355,11 @@ Type* TypeManager::RebuildType(const Type& type) {
   // when it goes out of scope at the end of the function in that case. Repeated
   // insertions of the same Type will atmost keep one corresponding object in
   // the type pool.
-  Type* rebuilt_ty = nullptr;
+  std::unique_ptr<Type> rebuilt_ty;
   switch (type.kind()) {
-#define DefineNoSubtypeCase(kind)                              \
-  case Type::k##kind:                                          \
-    rebuilt_ty = type_pool_.insert(type.Clone()).first->get(); \
+#define DefineNoSubtypeCase(kind)             \
+  case Type::k##kind:                         \
+    rebuilt_ty.reset(type.Clone().release()); \
     break;
     DefineNoSubtypeCase(Void);
     DefineNoSubtypeCase(Bool);
@@ -378,58 +378,45 @@ Type* TypeManager::RebuildType(const Type& type) {
     case Type::kVector: {
       const Vector* vec_ty = type.AsVector();
       const Type* ele_ty = vec_ty->element_type();
-      rebuilt_ty = type_pool_
-                       .insert(std::unique_ptr<Type>(new Vector(
-                           RebuildType(*ele_ty), vec_ty->element_count())))
-                       .first->get();
+      rebuilt_ty.reset(
+          new Vector(RebuildType(*ele_ty), vec_ty->element_count()));
       break;
     }
     case Type::kMatrix: {
       const Matrix* mat_ty = type.AsMatrix();
       const Type* ele_ty = mat_ty->element_type();
-      rebuilt_ty = type_pool_
-                       .insert(std::unique_ptr<Type>(new Matrix(
-                           RebuildType(*ele_ty), mat_ty->element_count())))
-                       .first->get();
+      rebuilt_ty.reset(
+          new Matrix(RebuildType(*ele_ty), mat_ty->element_count()));
       break;
     }
     case Type::kImage: {
       const Image* image_ty = type.AsImage();
       const Type* ele_ty = image_ty->sampled_type();
-      rebuilt_ty = type_pool_
-                       .insert(std::unique_ptr<Type>(new Image(
-                           RebuildType(*ele_ty), image_ty->dim(),
-                           image_ty->depth(), image_ty->is_arrayed(),
-                           image_ty->is_multisampled(), image_ty->sampled(),
-                           image_ty->format(), image_ty->access_qualifier())))
-                       .first->get();
+      rebuilt_ty.reset(new Image(RebuildType(*ele_ty), image_ty->dim(),
+                                 image_ty->depth(), image_ty->is_arrayed(),
+                                 image_ty->is_multisampled(),
+                                 image_ty->sampled(), image_ty->format(),
+                                 image_ty->access_qualifier()));
       break;
     }
     case Type::kSampledImage: {
       const SampledImage* image_ty = type.AsSampledImage();
       const Type* ele_ty = image_ty->image_type();
-      rebuilt_ty = type_pool_
-                       .insert(std::unique_ptr<Type>(
-                           new SampledImage(RebuildType(*ele_ty))))
-                       .first->get();
+      rebuilt_ty.reset(
+
+          new SampledImage(RebuildType(*ele_ty)));
       break;
     }
     case Type::kArray: {
       const Array* array_ty = type.AsArray();
       const Type* ele_ty = array_ty->element_type();
-      rebuilt_ty = type_pool_
-                       .insert(std::unique_ptr<Type>(new Array(
-                           RebuildType(*ele_ty), array_ty->LengthId())))
-                       .first->get();
+      rebuilt_ty.reset(new Array(RebuildType(*ele_ty), array_ty->LengthId()));
       break;
     }
     case Type::kRuntimeArray: {
       const RuntimeArray* array_ty = type.AsRuntimeArray();
       const Type* ele_ty = array_ty->element_type();
-      rebuilt_ty = type_pool_
-                       .insert(std::unique_ptr<Type>(
-                           new RuntimeArray(RebuildType(*ele_ty))))
-                       .first->get();
+      rebuilt_ty.reset(new RuntimeArray(RebuildType(*ele_ty)));
       break;
     }
     case Type::kStruct: {
@@ -439,9 +426,7 @@ Type* TypeManager::RebuildType(const Type& type) {
       for (const auto* ele_ty : struct_ty->element_types()) {
         subtypes.push_back(RebuildType(*ele_ty));
       }
-      rebuilt_ty =
-          type_pool_.insert(std::unique_ptr<Type>(new Struct(subtypes)))
-              .first->get();
+      rebuilt_ty.reset(new Struct(subtypes));
       Struct* rebuilt_struct = rebuilt_ty->AsStruct();
       for (auto pair : struct_ty->element_decorations()) {
         uint32_t index = pair.first;
@@ -456,10 +441,8 @@ Type* TypeManager::RebuildType(const Type& type) {
     case Type::kPointer: {
       const Pointer* pointer_ty = type.AsPointer();
       const Type* ele_ty = pointer_ty->pointee_type();
-      rebuilt_ty = type_pool_
-                       .insert(std::unique_ptr<Pointer>(new Pointer(
-                           RebuildType(*ele_ty), pointer_ty->storage_class())))
-                       .first->get();
+      rebuilt_ty.reset(
+          new Pointer(RebuildType(*ele_ty), pointer_ty->storage_class()));
       break;
     }
     case Type::kFunction: {
@@ -470,22 +453,18 @@ Type* TypeManager::RebuildType(const Type& type) {
       for (const auto* param_ty : function_ty->param_types()) {
         param_types.push_back(RebuildType(*param_ty));
       }
-      rebuilt_ty = type_pool_
-                       .insert(std::unique_ptr<Function>(
-                           new Function(RebuildType(*ret_ty), param_types)))
-                       .first->get();
+      rebuilt_ty.reset(new Function(RebuildType(*ret_ty), param_types));
       break;
     }
     case Type::kForwardPointer: {
       const ForwardPointer* forward_ptr_ty = type.AsForwardPointer();
-      std::unique_ptr<ForwardPointer> rebuilt_uniq_ty(new ForwardPointer(
-          forward_ptr_ty->target_id(), forward_ptr_ty->storage_class()));
+      rebuilt_ty.reset(new ForwardPointer(forward_ptr_ty->target_id(),
+                                          forward_ptr_ty->storage_class()));
       const Pointer* target_ptr = forward_ptr_ty->target_pointer();
       if (target_ptr) {
-        rebuilt_uniq_ty->SetTargetPointer(
+        rebuilt_ty->AsForwardPointer()->SetTargetPointer(
             RebuildType(*target_ptr)->AsPointer());
       }
-      rebuilt_ty = type_pool_.insert(std::move(rebuilt_uniq_ty)).first->get();
       break;
     }
     default:
@@ -498,7 +477,7 @@ Type* TypeManager::RebuildType(const Type& type) {
     rebuilt_ty->AddDecoration(std::move(copy));
   }
 
-  return rebuilt_ty;
+  return type_pool_.insert(std::move(rebuilt_ty)).first->get();
 }
 
 void TypeManager::RegisterType(uint32_t id, const Type& type) {
