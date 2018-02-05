@@ -485,6 +485,7 @@ class ForwardPointer : public Type {
   uint32_t target_id() const { return target_id_; }
   void SetTargetPointer(Pointer* pointer) { pointer_ = pointer; }
   SpvStorageClass storage_class() const { return storage_class_; }
+  const Pointer* target_pointer() const { return pointer_; }
 
   bool IsSame(const Type* that) const override;
   std::string str() const override;
