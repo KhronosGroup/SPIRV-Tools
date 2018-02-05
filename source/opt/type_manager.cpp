@@ -349,16 +349,166 @@ void TypeManager::CreateDecoration(uint32_t target,
   context()->get_def_use_mgr()->AnalyzeInstUse(inst);
 }
 
+Type* TypeManager::RebuildType(const Type& type) {
+  // The comparison and hash on the type pool will avoid inserting the rebuilt
+  // type if an equivalent type already exists. The rebuilt type will be deleted
+  // when it goes out of scope at the end of the function in that case. Repeated
+  // insertions of the same Type will atmost keep one corresponding object in
+  // the type pool.
+  Type* rebuilt_ty = nullptr;
+  switch (type.kind()) {
+#define DefineNoSubtypeCase(kind)                              \
+  case Type::k##kind:                                          \
+    rebuilt_ty = type_pool_.insert(type.Clone()).first->get(); \
+    break;
+    DefineNoSubtypeCase(Void);
+    DefineNoSubtypeCase(Bool);
+    DefineNoSubtypeCase(Integer);
+    DefineNoSubtypeCase(Float);
+    DefineNoSubtypeCase(Sampler);
+    DefineNoSubtypeCase(Opaque);
+    DefineNoSubtypeCase(Event);
+    DefineNoSubtypeCase(DeviceEvent);
+    DefineNoSubtypeCase(ReserveId);
+    DefineNoSubtypeCase(Queue);
+    DefineNoSubtypeCase(Pipe);
+    DefineNoSubtypeCase(PipeStorage);
+    DefineNoSubtypeCase(NamedBarrier);
+#undef DefineNoSubtypeCase
+    case Type::kVector: {
+      const Vector* vec_ty = type.AsVector();
+      const Type* ele_ty = vec_ty->element_type();
+      rebuilt_ty = type_pool_
+                       .insert(std::unique_ptr<Type>(new Vector(
+                           RebuildType(*ele_ty), vec_ty->element_count())))
+                       .first->get();
+      break;
+    }
+    case Type::kMatrix: {
+      const Matrix* mat_ty = type.AsMatrix();
+      const Type* ele_ty = mat_ty->element_type();
+      rebuilt_ty = type_pool_
+                       .insert(std::unique_ptr<Type>(new Matrix(
+                           RebuildType(*ele_ty), mat_ty->element_count())))
+                       .first->get();
+      break;
+    }
+    case Type::kImage: {
+      const Image* image_ty = type.AsImage();
+      const Type* ele_ty = image_ty->sampled_type();
+      rebuilt_ty = type_pool_
+                       .insert(std::unique_ptr<Type>(new Image(
+                           RebuildType(*ele_ty), image_ty->dim(),
+                           image_ty->depth(), image_ty->is_arrayed(),
+                           image_ty->is_multisampled(), image_ty->sampled(),
+                           image_ty->format(), image_ty->access_qualifier())))
+                       .first->get();
+      break;
+    }
+    case Type::kSampledImage: {
+      const SampledImage* image_ty = type.AsSampledImage();
+      const Type* ele_ty = image_ty->image_type();
+      rebuilt_ty = type_pool_
+                       .insert(std::unique_ptr<Type>(
+                           new SampledImage(RebuildType(*ele_ty))))
+                       .first->get();
+      break;
+    }
+    case Type::kArray: {
+      const Array* array_ty = type.AsArray();
+      const Type* ele_ty = array_ty->element_type();
+      rebuilt_ty = type_pool_
+                       .insert(std::unique_ptr<Type>(new Array(
+                           RebuildType(*ele_ty), array_ty->LengthId())))
+                       .first->get();
+      break;
+    }
+    case Type::kRuntimeArray: {
+      const RuntimeArray* array_ty = type.AsRuntimeArray();
+      const Type* ele_ty = array_ty->element_type();
+      rebuilt_ty = type_pool_
+                       .insert(std::unique_ptr<Type>(
+                           new RuntimeArray(RebuildType(*ele_ty))))
+                       .first->get();
+      break;
+    }
+    case Type::kStruct: {
+      const Struct* struct_ty = type.AsStruct();
+      std::vector<Type*> subtypes;
+      subtypes.reserve(struct_ty->element_types().size());
+      for (const auto* ele_ty : struct_ty->element_types()) {
+        subtypes.push_back(RebuildType(*ele_ty));
+      }
+      rebuilt_ty =
+          type_pool_.insert(std::unique_ptr<Type>(new Struct(subtypes)))
+              .first->get();
+      Struct* rebuilt_struct = rebuilt_ty->AsStruct();
+      for (auto pair : struct_ty->element_decorations()) {
+        uint32_t index = pair.first;
+        for (const auto& dec : pair.second) {
+          // Explicit copy intended.
+          std::vector<uint32_t> copy(dec);
+          rebuilt_struct->AddMemberDecoration(index, std::move(copy));
+        }
+      }
+      break;
+    }
+    case Type::kPointer: {
+      const Pointer* pointer_ty = type.AsPointer();
+      const Type* ele_ty = pointer_ty->pointee_type();
+      rebuilt_ty = type_pool_
+                       .insert(std::unique_ptr<Pointer>(new Pointer(
+                           RebuildType(*ele_ty), pointer_ty->storage_class())))
+                       .first->get();
+      break;
+    }
+    case Type::kFunction: {
+      const Function* function_ty = type.AsFunction();
+      const Type* ret_ty = function_ty->return_type();
+      std::vector<Type*> param_types;
+      param_types.reserve(function_ty->param_types().size());
+      for (const auto* param_ty : function_ty->param_types()) {
+        param_types.push_back(RebuildType(*param_ty));
+      }
+      rebuilt_ty = type_pool_
+                       .insert(std::unique_ptr<Function>(
+                           new Function(RebuildType(*ret_ty), param_types)))
+                       .first->get();
+      break;
+    }
+    case Type::kForwardPointer: {
+      const ForwardPointer* forward_ptr_ty = type.AsForwardPointer();
+      std::unique_ptr<ForwardPointer> rebuilt_uniq_ty(new ForwardPointer(
+          forward_ptr_ty->target_id(), forward_ptr_ty->storage_class()));
+      const Pointer* target_ptr = forward_ptr_ty->target_pointer();
+      if (target_ptr) {
+        rebuilt_uniq_ty->SetTargetPointer(
+            RebuildType(*target_ptr)->AsPointer());
+      }
+      rebuilt_ty = type_pool_.insert(std::move(rebuilt_uniq_ty)).first->get();
+      break;
+    }
+    default:
+      assert(false && "Unhandled type");
+      return nullptr;
+  }
+  for (const auto& dec : type.decorations()) {
+    // Explicit copy intended.
+    std::vector<uint32_t> copy(dec);
+    rebuilt_ty->AddDecoration(std::move(copy));
+  }
+
+  return rebuilt_ty;
+}
+
 void TypeManager::RegisterType(uint32_t id, const Type& type) {
-  // The comparison and hash on the type pool will avoid inserting the clone if
-  // an equivalent type already exists. The clone will be deleted when it goes
-  // out of scope at the end of the function in that case. Repeated insertions
-  // of the same Type will atmost keep one corresponding object in the type
+  // Rebuild |type| so it and all its constituent types are owned by the type
   // pool.
-  auto pair = type_pool_.insert(type.Clone());
-  id_to_type_[id] = pair.first->get();
-  if (GetId(pair.first->get()) == 0) {
-    type_to_id_[pair.first->get()] = id;
+  Type* rebuilt = RebuildType(type);
+  assert(rebuilt->IsSame(&type));
+  id_to_type_[id] = rebuilt;
+  if (GetId(rebuilt) == 0) {
+    type_to_id_[rebuilt] = id;
   }
 }
 

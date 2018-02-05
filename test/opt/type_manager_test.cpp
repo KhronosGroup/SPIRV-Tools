@@ -649,7 +649,7 @@ TEST(TypeManager, RegisterAndRemoveId) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 %1 = OpTypeInt 32 0
-  )";
+)";
 
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
@@ -662,6 +662,60 @@ OpMemoryModel Logical GLSL450
     Integer u32(32, false);
     Struct st({&u32});
     context->get_type_mgr()->RegisterType(id, st);
+  }
+
+  context->get_type_mgr()->RemoveId(id);
+  EXPECT_EQ(nullptr, context->get_type_mgr()->GetType(id));
+}
+
+TEST(TypeManager, RegisterAndRemoveIdAllTypes) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  std::vector<std::unique_ptr<Type>> types = GenerateAllTypes();
+  uint32_t id = 1u;
+  for (auto& t : types) {
+    context->get_type_mgr()->RegisterType(id, *t);
+    EXPECT_EQ(*t, *context->get_type_mgr()->GetType(id));
+  }
+  types.clear();
+
+  for (; id > 0; --id) {
+    context->get_type_mgr()->RemoveId(id);
+    EXPECT_EQ(nullptr, context->get_type_mgr()->GetType(id));
+  }
+}
+
+TEST(TypeManager, RegisterAndRemoveIdWithDecorations) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  uint32_t id = 2u;
+  {
+    Integer u32(32, false);
+    Struct st({&u32, &u32});
+    st.AddDecoration({10});
+    st.AddDecoration({11});
+    st.AddMemberDecoration(0, {{35, 4}});
+    st.AddMemberDecoration(1, {{35, 4}});
+    st.AddMemberDecoration(1, {{36, 5}});
+    context->get_type_mgr()->RegisterType(id, st);
+    EXPECT_EQ(st, *context->get_type_mgr()->GetType(id));
   }
 
   context->get_type_mgr()->RemoveId(id);
