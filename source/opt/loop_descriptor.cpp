@@ -296,7 +296,11 @@ bool Loop::IsLCSSA() const {
   return true;
 }
 
-LoopDescriptor::LoopDescriptor(const Function* f) { PopulateList(f); }
+LoopDescriptor::LoopDescriptor(const Function* f) : loops_() {
+  PopulateList(f);
+}
+
+LoopDescriptor::~LoopDescriptor() { ClearLoops(); }
 
 void LoopDescriptor::PopulateList(const Function* f) {
   IRContext* context = f->GetParent()->context();
@@ -304,7 +308,7 @@ void LoopDescriptor::PopulateList(const Function* f) {
   opt::DominatorAnalysis* dom_analysis =
       context->GetDominatorAnalysis(f, *context->cfg());
 
-  loops_.clear();
+  ClearLoops();
 
   // Post-order traversal of the dominator tree to find all the OpLoopMerge
   // instructions.
@@ -329,14 +333,14 @@ void LoopDescriptor::PopulateList(const Function* f) {
       BasicBlock* header_bb = context->get_instr_block(merge_inst);
 
       // Add the loop to the list of all the loops in the function.
-      loops_.emplace_back(MakeUnique<Loop>(context, dom_analysis, header_bb,
-                                           continue_bb, merge_bb));
-      Loop* current_loop = loops_.back().get();
+      Loop* current_loop =
+          new Loop(context, dom_analysis, header_bb, continue_bb, merge_bb);
+      loops_.push_back(current_loop);
 
       // We have a bottom-up construction, so if this loop has nested-loops,
       // they are by construction at the tail of the loop list.
       for (auto itr = loops_.rbegin() + 1; itr != loops_.rend(); ++itr) {
-        Loop* previous_loop = itr->get();
+        Loop* previous_loop = *itr;
 
         // If the loop already has a parent, then it has been processed.
         if (previous_loop->HasParent()) continue;
@@ -364,9 +368,16 @@ void LoopDescriptor::PopulateList(const Function* f) {
       }
     }
   }
-  for (std::unique_ptr<Loop>& loop : loops_) {
-    if (!loop->HasParent()) dummy_top_loop_.nested_loops_.push_back(loop.get());
+  for (Loop* loop : loops_) {
+    if (!loop->HasParent()) dummy_top_loop_.nested_loops_.push_back(loop);
   }
+}
+
+void LoopDescriptor::ClearLoops() {
+  for (Loop* loop : loops_) {
+    delete loop;
+  }
+  loops_.clear();
 }
 
 }  // namespace ir

@@ -256,6 +256,21 @@ class LoopDescriptor {
   // Creates a loop object for all loops found in |f|.
   explicit LoopDescriptor(const Function* f);
 
+  // Disable copy constructor, to avoid double-free on destruction.
+  LoopDescriptor(const LoopDescriptor&) = delete;
+  // Move constructor.
+  LoopDescriptor(LoopDescriptor&& other) {
+    // We need to take ownership of the Loop objects in the other
+    // LoopDescriptor, to avoid double-free.
+    loops_ = std::move(other.loops_);
+    other.loops_.clear();
+    basic_block_to_loop_ = std::move(other.basic_block_to_loop_);
+    other.basic_block_to_loop_.clear();
+  }
+
+  // Destructor
+  ~LoopDescriptor();
+
   // Returns the number of loops found in the function.
   inline size_t NumLoops() const { return loops_.size(); }
 
@@ -264,7 +279,7 @@ class LoopDescriptor {
   inline Loop& GetLoopByIndex(size_t index) const {
     assert(loops_.size() > index &&
            "Index out of range (larger than loop count)");
-    return *loops_[index].get();
+    return *loops_[index];
   }
 
   // Returns the inner most loop that contains the basic block id |block_id|.
@@ -296,7 +311,9 @@ class LoopDescriptor {
   }
 
  private:
-  using LoopContainerType = std::vector<std::unique_ptr<Loop>>;
+  // TODO(dneto): This should be a vector of unique_ptr.  But VisualStudio 2013
+  // is unable to compile it.
+  using LoopContainerType = std::vector<Loop*>;
 
   // Creates loop descriptors for the function |f|.
   void PopulateList(const Function* f);
@@ -308,7 +325,11 @@ class LoopDescriptor {
     return it != basic_block_to_loop_.end() ? it->second : nullptr;
   }
 
-  // A list of all the loops in the function.
+  // Erase all the loop information.
+  void ClearLoops();
+
+  // A list of all the loops in the function.  This variable owns the Loop
+  // objects.
   LoopContainerType loops_;
   // Dummy root: this "loop" is only there to help iterators creation.
   Loop dummy_top_loop_;
