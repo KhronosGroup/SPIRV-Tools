@@ -644,6 +644,30 @@ OpMemoryModel Logical GLSL450
   EXPECT_TRUE(type->IsSame(&st));
 }
 
+TEST(TypeManager, RegisterAndRemoveId) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  uint32_t id = 2u;
+  {
+    // Ensure that u32 goes out of scope.
+    Integer u32(32, false);
+    Struct st({&u32});
+    context->get_type_mgr()->RegisterType(id, st);
+  }
+
+  context->get_type_mgr()->RemoveId(id);
+  EXPECT_EQ(nullptr, context->get_type_mgr()->GetType(id));
+}
+
 #ifdef SPIRV_EFFCEE
 TEST(TypeManager, GetTypeInstructionInt) {
   const std::string text = R"(
