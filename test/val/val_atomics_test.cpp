@@ -195,7 +195,9 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanSuccess) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
-TEST_F(ValidateAtomics, AtomicLoadVulkanSubgroup) {
+// TODO(atgoo@github.com): the corresponding check fails Vulkan CTS,
+// reenable once fixed.
+TEST_F(ValidateAtomics, DISABLED_AtomicLoadVulkanSubgroup) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %u32 %u32_var %subgroup %acquire
 )";

@@ -43,6 +43,8 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
+#if 0
+  // TODO(atgoo@github.com): this check fails Vulkan CTS, reenable once fixed.
   if (spvIsVulkanEnv(_.context()->target_env)) {
     if (value != SpvScopeDevice && value != SpvScopeWorkgroup &&
         value != SpvScopeInvocation) {
@@ -52,6 +54,7 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _,
                 "Workgroup and Invocation";
     }
   }
+#endif
 
   // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
 
