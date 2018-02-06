@@ -62,6 +62,8 @@ void Match(const std::string& original, ir::IRContext* context,
       << assembly;
 }
 
+#endif
+
 std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   // Types in this test case are only equal to themselves, nothing else.
   std::vector<std::unique_ptr<Type>> types;
@@ -167,8 +169,6 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
 
   return types;
 }
-
-#endif
 
 TEST(TypeManager, TypeStrings) {
   const std::string text = R"(
