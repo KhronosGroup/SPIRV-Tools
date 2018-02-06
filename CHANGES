@@ -1,7 +1,18 @@
 Revision history for SPIRV-Tools
 
 v2018.1-dev 2018-02-02
- - Start v2018.1-dev
+ - General:
+   - Support Visual Studio 2013 again. (Continue support for VS 2015 and VS 2017.)
+ - Optimizer:
+   - Improve folding
+   - Aggressive dead code elimination: Understands capability hierarchy when finding
+     instructions it can eliminate (combinators). (PR #1268)
+ - Validator:
+   - Validate barrier instructions.
+ - Fixes:
+   - #1265: Optimizer: Fix use-after free bug in if-conversion. (Fix object lifecycle bug
+     in type manager.)
+
 
 v2018.0 2018-02-02
  - General
