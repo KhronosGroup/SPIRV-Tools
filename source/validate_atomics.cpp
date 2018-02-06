@@ -18,37 +18,67 @@
 
 #include "diagnostic.h"
 #include "opcode.h"
+#include "spirv_target_env.h"
 #include "util/bitutils.h"
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
 namespace libspirv {
 
+// Validates Memory Scope operand.
+spv_result_t ValidateMemoryScope(ValidationState_t& _,
+                                 const spv_parsed_instruction_t* inst,
+                                 uint32_t id) {
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  bool is_int32 = false, is_const_int32 = false;
+  uint32_t value = 0;
+  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
+
+  if (!is_int32) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode) << ": expected Scope to be 32-bit int";
+  }
+
+  if (!is_const_int32) {
+    return SPV_SUCCESS;
+  }
+
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (value != SpvScopeDevice && value != SpvScopeWorkgroup &&
+        value != SpvScopeInvocation) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << spvOpcodeString(opcode)
+             << ": in Vulkan environment memory scope is limited to Device, "
+                "Workgroup and Invocation";
+    }
+  }
+
+  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
+
+  return SPV_SUCCESS;
+}
+
 // Validates a Memory Semantics operand.
 spv_result_t ValidateMemorySemantics(ValidationState_t& _,
                                      const spv_parsed_instruction_t* inst,
                                      uint32_t operand_index) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t memory_semantics =
+  bool is_int32 = false, is_const_int32 = false;
+  uint32_t flags = 0;
+  const uint32_t memory_semantics_id =
       inst->words[inst->operands[operand_index].offset];
-  const Instruction* const memory_semantics_inst = _.FindDef(memory_semantics);
-  assert(memory_semantics_inst);
-  const uint32_t memory_semantics_type = memory_semantics_inst->type_id();
+  std::tie(is_int32, is_const_int32, flags) =
+      _.EvalInt32IfConst(memory_semantics_id);
 
-  if (!_.IsIntScalarType(memory_semantics_type) ||
-      _.GetBitWidth(memory_semantics_type) != 32) {
+  if (!is_int32) {
     return _.diag(SPV_ERROR_INVALID_DATA)
            << spvOpcodeString(opcode)
            << ": expected Memory Semantics to be 32-bit int";
   }
 
-  if (memory_semantics_inst->opcode() != SpvOpConstant &&
-      memory_semantics_inst->opcode() != SpvOpSpecConstant) {
+  if (!is_const_int32) {
     return SPV_SUCCESS;
   }
-
-  assert(memory_semantics_inst->words().size() == 4);
-  const uint32_t flags = memory_semantics_inst->word(3);
 
   if (spvutils::CountSetBits(
           flags &
@@ -93,6 +123,28 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
            << ": Memory Semantics Release and AcquireRelease cannot be used "
               "for operand Unequal";
   }
+
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (opcode == SpvOpAtomicLoad &&
+        (flags & SpvMemorySemanticsReleaseMask ||
+         flags & SpvMemorySemanticsAcquireReleaseMask ||
+         flags & SpvMemorySemanticsSequentiallyConsistentMask)) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << "Vulkan spec disallows OpAtomicLoad with Memory Semantics "
+                "Release, AcquireRelease and SequentiallyConsistent";
+    }
+
+    if (opcode == SpvOpAtomicStore &&
+        (flags & SpvMemorySemanticsAcquireMask ||
+         flags & SpvMemorySemanticsAcquireReleaseMask ||
+         flags & SpvMemorySemanticsSequentiallyConsistentMask)) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << "Vulkan spec disallows OpAtomicStore with Memory Semantics "
+                "Acquire, AcquireRelease and SequentiallyConsistent";
+    }
+  }
+
+  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
 
   return SPV_SUCCESS;
 }
@@ -199,11 +251,10 @@ spv_result_t AtomicsPass(ValidationState_t& _,
         }
       }
 
-      const uint32_t scope_type = _.GetOperandTypeId(inst, operand_index++);
-      if (!_.IsIntScalarType(scope_type) || _.GetBitWidth(scope_type) != 32) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-               << spvOpcodeString(opcode)
-               << ": expected Scope to be 32-bit int";
+      const uint32_t memory_scope =
+          inst->words[inst->operands[operand_index++].offset];
+      if (auto error = ValidateMemoryScope(_, inst, memory_scope)) {
+        return error;
       }
 
       if (auto error = ValidateMemorySemantics(_, inst, operand_index++))

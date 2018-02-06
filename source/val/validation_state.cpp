@@ -766,4 +766,22 @@ bool ValidationState_t::GetConstantValUint64(uint32_t id, uint64_t* val) const {
   return true;
 }
 
+std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
+    uint32_t id) {
+  const Instruction* const inst = FindDef(id);
+  assert(inst);
+  const uint32_t type = inst->type_id();
+
+  if (!IsIntScalarType(type) || GetBitWidth(type) != 32) {
+    return std::make_tuple(false, false, 0);
+  }
+
+  if (inst->opcode() != SpvOpConstant && inst->opcode() != SpvOpSpecConstant) {
+    return std::make_tuple(true, false, 0);
+  }
+
+  assert(inst->words().size() == 4);
+  return std::make_tuple(true, true, inst->word(3));
+}
+
 }  // namespace libspirv

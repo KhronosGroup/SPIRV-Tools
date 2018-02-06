@@ -16,8 +16,6 @@
 
 #include "validate.h"
 
-#include <tuple>
-
 #include "diagnostic.h"
 #include "opcode.h"
 #include "spirv_target_env.h"
@@ -29,26 +27,6 @@ namespace libspirv {
 
 namespace {
 
-// Tries to evaluate a 32-bit signed or unsigned scalar integer constant.
-// Returns tuple <is_int32, is_const_int32, value>.
-std::tuple<bool, bool, uint32_t> EvalInt32IfConst(ValidationState_t& _,
-                                                  uint32_t id) {
-  const Instruction* const inst = _.FindDef(id);
-  assert(inst);
-  const uint32_t type = inst->type_id();
-
-  if (!_.IsIntScalarType(type) || _.GetBitWidth(type) != 32) {
-    return std::make_tuple(false, false, 0);
-  }
-
-  if (inst->opcode() != SpvOpConstant && inst->opcode() != SpvOpSpecConstant) {
-    return std::make_tuple(true, false, 0);
-  }
-
-  assert(inst->words().size() == 4);
-  return std::make_tuple(true, true, inst->word(3));
-}
-
 // Validates Execution Scope operand.
 spv_result_t ValidateExecutionScope(ValidationState_t& _,
                                     const spv_parsed_instruction_t* inst,
@@ -56,7 +34,7 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
-  std::tie(is_int32, is_const_int32, value) = EvalInt32IfConst(_, id);
+  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
 
   if (!is_int32) {
     return _.diag(SPV_ERROR_INVALID_DATA)
@@ -89,7 +67,7 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _,
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
-  std::tie(is_int32, is_const_int32, value) = EvalInt32IfConst(_, id);
+  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
 
   if (!is_int32) {
     return _.diag(SPV_ERROR_INVALID_DATA)
@@ -123,7 +101,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
-  std::tie(is_int32, is_const_int32, value) = EvalInt32IfConst(_, id);
+  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
 
   if (!is_int32) {
     return _.diag(SPV_ERROR_INVALID_DATA)

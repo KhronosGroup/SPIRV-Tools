@@ -18,6 +18,7 @@
 #include <deque>
 #include <set>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -412,6 +413,10 @@ class ValidationState_t {
   // Provides information on pointer type. Returns false iff not pointer type.
   bool GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
                           uint32_t* storage_class) const;
+
+  // Tries to evaluate a 32-bit signed or unsigned scalar integer constant.
+  // Returns tuple <is_int32, is_const_int32, value>.
+  std::tuple<bool, bool, uint32_t> EvalInt32IfConst(uint32_t id);
 
  private:
   ValidationState_t(const ValidationState_t&);
