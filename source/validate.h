@@ -117,6 +117,9 @@ spv_result_t InstructionPass(ValidationState_t& _,
 /// Performs decoration validation.
 spv_result_t ValidateDecorations(ValidationState_t& _);
 
+/// Performs validation of built-in variables.
+spv_result_t ValidateBuiltIns(const ValidationState_t& _);
+
 /// Validates that type declarations are unique, unless multiple declarations
 /// of the same data type are allowed by the specification.
 /// (see section 2.8 Types and Variables)

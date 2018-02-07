@@ -18,6 +18,7 @@
 #define LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
 
 #include "source/val/validation_state.h"
+#include "test_fixture.h"
 #include "unit_spirv.h"
 
 namespace spvtest {
@@ -60,5 +61,78 @@ class ValidateBase : public ::testing::Test,
   spv_validator_options options_;
   std::unique_ptr<libspirv::ValidationState_t> vstate_;
 };
+
+template <typename T>
+ValidateBase<T>::ValidateBase() : binary_(), diagnostic_() {
+  // Initialize to default command line options. Different tests can then
+  // specialize specific options as necessary.
+  options_ = spvValidatorOptionsCreate();
+}
+
+template <typename T>
+spv_const_binary ValidateBase<T>::get_const_binary() {
+  return spv_const_binary(binary_);
+}
+
+template <typename T>
+void ValidateBase<T>::TearDown() {
+  if (diagnostic_) {
+    spvDiagnosticPrint(diagnostic_);
+  }
+  spvDiagnosticDestroy(diagnostic_);
+  spvBinaryDestroy(binary_);
+  spvValidatorOptionsDestroy(options_);
+}
+
+template <typename T>
+void ValidateBase<T>::CompileSuccessfully(std::string code,
+                                          spv_target_env env) {
+  spv_diagnostic diagnostic = nullptr;
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(ScopedContext(env).context, code.c_str(),
+                            code.size(), &binary_, &diagnostic))
+      << "ERROR: " << diagnostic->error
+      << "\nSPIR-V could not be compiled into binary:\n"
+      << code;
+}
+
+template <typename T>
+void ValidateBase<T>::OverwriteAssembledBinary(uint32_t index, uint32_t word) {
+  ASSERT_TRUE(index < binary_->wordCount)
+      << "OverwriteAssembledBinary: The given index is larger than the binary "
+         "word count.";
+  binary_->code[index] = word;
+}
+
+template <typename T>
+spv_result_t ValidateBase<T>::ValidateInstructions(spv_target_env env) {
+  return spvValidateWithOptions(ScopedContext(env).context, options_,
+                                get_const_binary(), &diagnostic_);
+}
+
+template <typename T>
+spv_result_t ValidateBase<T>::ValidateAndRetrieveValidationState(
+    spv_target_env env) {
+  return spvtools::ValidateBinaryAndKeepValidationState(
+      ScopedContext(env).context, options_, get_const_binary()->code,
+      get_const_binary()->wordCount, &diagnostic_, &vstate_);
+}
+
+template <typename T>
+std::string ValidateBase<T>::getDiagnosticString() {
+  return diagnostic_ == nullptr ? std::string()
+                                : std::string(diagnostic_->error);
+}
+
+template <typename T>
+spv_validator_options ValidateBase<T>::getValidatorOptions() {
+  return options_;
+}
+
+template <typename T>
+spv_position_t ValidateBase<T>::getErrorPosition() {
+  return diagnostic_ == nullptr ? spv_position_t() : diagnostic_->position;
+}
+
 }  // namespace spvtest
 #endif
