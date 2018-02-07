@@ -1139,7 +1139,7 @@ OpFunctionEnd
 #endif  // SPIRV_EFFCEE
 
 TEST_F(ScalarReplacementTest, ReplaceNoPartialRefs) {
-// Replace structs whose individual components are not referenced.
+  // Replace structs whose individual components are not referenced.
   const std::string before_predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"

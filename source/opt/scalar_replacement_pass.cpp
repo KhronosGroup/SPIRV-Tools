@@ -594,7 +594,7 @@ bool ScalarReplacementPass::CheckUses(const ir::Instruction* inst) const {
 
   // TODO(alanbaker/greg-lunarg): Add some meaningful heuristics about when
   // SRoA is costly, such as when the structure has many (unaccessed?)
-  // members. 
+  // members.
 
   return ok;
 }
