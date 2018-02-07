@@ -592,9 +592,9 @@ bool ScalarReplacementPass::CheckUses(const ir::Instruction* inst) const {
   VariableStats stats = {0, 0};
   bool ok = CheckUses(inst, &stats);
 
-  // TODO(alanbaker): Extend this to some meaningful heuristics about when
-  // SRoA is valuable.
-  if (stats.num_partial_accesses == 0) ok = false;
+  // TODO(alanbaker/greg-lunarg): Add some meaningful heuristics about when
+  // SRoA is costly, such as when the structure has many (unaccessed?)
+  // members.
 
   return ok;
 }
