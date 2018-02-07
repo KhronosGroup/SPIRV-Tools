@@ -455,24 +455,32 @@ TEST_F(ScalarReplacementTest, NonUniformCompositeInitialization) {
   const std::string text = R"(
 ;
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[long:%\w+]] = OpTypeInt 64 1
+; CHECK: [[dvector:%\w+]] = OpTypeVector
+; CHECK: [[vector:%\w+]] = OpTypeVector
 ; CHECK: [[array:%\w+]] = OpTypeArray
 ; CHECK: [[matrix:%\w+]] = OpTypeMatrix
-; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]]
+; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]] [[vector]]
 ; CHECK: [[struct2:%\w+]] = OpTypeStruct [[struct1]] [[matrix]] [[array]] [[uint]]
 ; CHECK: [[struct1_ptr:%\w+]] = OpTypePointer Function [[struct1]]
 ; CHECK: [[matrix_ptr:%\w+]] = OpTypePointer Function [[matrix]]
 ; CHECK: [[array_ptr:%\w+]] = OpTypePointer Function [[array]]
 ; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
 ; CHECK: [[struct2_ptr:%\w+]] = OpTypePointer Function [[struct2]]
-; CHECK: [[const_uint:%\w+]] = OpConstant [[uint]]
 ; CHECK: [[const_array:%\w+]] = OpConstantComposite [[array]]
 ; CHECK: [[const_matrix:%\w+]] = OpConstantNull [[matrix]]
 ; CHECK: [[const_struct1:%\w+]] = OpConstantComposite [[struct1]]
+; CHECK: [[vector_ptr:%\w+]] = OpTypePointer Function [[vector]]
+; CHECK: [[long_ptr:%\w+]] = OpTypePointer Function [[long]]
 ; CHECK-NOT: OpVariable [[struct2_ptr]] Function
-; CHECK: OpVariable [[uint_ptr]] Function [[const_uint]]
-; CHECK-NEXT: OpVariable [[array_ptr]] Function [[const_array]]
+; CHECK: OpVariable [[long_ptr]] Function 
+; CHECK: OpVariable [[long_ptr]] Function 
+; CHECK: OpVariable [[long_ptr]] Function 
+; CHECK: OpVariable [[vector_ptr]] Function 
+; CHECK: OpVariable [[uint_ptr]] Function 
+; CHECK: OpVariable [[uint_ptr]] Function 
 ; CHECK-NEXT: OpVariable [[matrix_ptr]] Function [[const_matrix]]
-; CHECK-NEXT: OpVariable [[struct1_ptr]] Function [[const_struct1]]
+; CHECK-NOT: OpVariable [[struct1_ptr]] Function [[const_struct1]]
 ; CHECK-NOT: OpVariable [[struct2_ptr]] Function
 ;
 OpCapability Shader
@@ -891,10 +899,10 @@ OpFunctionEnd
 TEST_F(ScalarReplacementTest, NoPartialAccesses) {
   const std::string text = R"(
 ;
-; CHECK: [[struct:%\w+]] = OpTypeStruct
-; CHECK: [[struct_ptr:%\w+]] = OpTypePointer Function [[struct]]
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
 ; CHECK: OpLabel
-; CHECK-NEXT: OpVariable [[struct_ptr]]
+; CHECK-NEXT: OpVariable [[uint_ptr]]
 ; CHECK-NOT: OpVariable
 ;
 OpCapability Shader
@@ -1136,12 +1144,23 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
-#endif  // SPIRV_EFFCEE
 
-TEST_F(ScalarReplacementTest, ReplaceNoPartialRefs) {
-  // Replace structs whose individual components are not referenced.
-  const std::string before_predefs =
-      R"(OpCapability Shader
+TEST_F(ScalarReplacementTest, NoPartialAccesses2) {
+  const std::string text = R"(
+;
+; CHECK: [[float:%\w+]] = OpTypeFloat 32
+; CHECK: [[float_ptr:%\w+]] = OpTypePointer Function [[float]]
+; CHECK: OpVariable [[float_ptr]] Function
+; CHECK: OpVariable [[float_ptr]] Function
+; CHECK: OpVariable [[float_ptr]] Function
+; CHECK: OpVariable [[float_ptr]] Function
+; CHECK: OpVariable [[float_ptr]] Function
+; CHECK: OpVariable [[float_ptr]] Function
+; CHECK: OpVariable [[float_ptr]] Function
+; CHECK: OpVariable [[float_ptr]] Function
+; CHECK-NOT: OpVariable
+;
+OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %fo
@@ -1202,64 +1221,7 @@ OpDecorate %fo Location 0
 %uint_0 = OpConstant %uint 0
 %_ptr_Output_float = OpTypePointer Output %float
 %fo = OpVariable %_ptr_Output_float Output
-)";
-
-  const std::string after_predefs =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %fo
-OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 430
-OpName %main "main"
-OpName %S "S"
-OpMemberName %S 0 "x"
-OpMemberName %S 1 "y"
-OpName %U_t "U_t"
-OpMemberName %U_t 0 "g_s1"
-OpMemberName %U_t 1 "g_s2"
-OpMemberName %U_t 2 "g_s3"
-OpName %_ ""
-OpName %_Globals_ "_Globals_"
-OpMemberName %_Globals_ 0 "g_b"
-OpName %__0 ""
-OpName %fo "fo"
-OpMemberDecorate %S 0 Offset 0
-OpMemberDecorate %S 1 Offset 4
-OpMemberDecorate %U_t 0 Offset 0
-OpMemberDecorate %U_t 1 Offset 8
-OpMemberDecorate %U_t 2 Offset 16
-OpDecorate %U_t BufferBlock
-OpDecorate %_ DescriptorSet 0
-OpMemberDecorate %_Globals_ 0 Offset 0
-OpDecorate %_Globals_ Block
-OpDecorate %__0 DescriptorSet 0
-OpDecorate %__0 Binding 0
-OpDecorate %fo Location 0
-%void = OpTypeVoid
-%15 = OpTypeFunction %void
-%float = OpTypeFloat 32
-%S = OpTypeStruct %float %float
-%U_t = OpTypeStruct %S %S %S
-%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
-%_ = OpVariable %_ptr_Uniform_U_t Uniform
-%int = OpTypeInt 32 1
-%int_0 = OpConstant %int 0
-%_ptr_Uniform_S = OpTypePointer Uniform %S
-%int_1 = OpConstant %int 1
-%uint = OpTypeInt 32 0
-%_Globals_ = OpTypeStruct %uint
-%_ptr_Uniform__Globals_ = OpTypePointer Uniform %_Globals_
-%__0 = OpVariable %_ptr_Uniform__Globals_ Uniform
-%_ptr_Uniform_uint = OpTypePointer Uniform %uint
-%bool = OpTypeBool
-%uint_0 = OpConstant %uint 0
-%_ptr_Output_float = OpTypePointer Output %float
-%fo = OpVariable %_ptr_Output_float Output
-)";
-
-  const std::string before_func =
-      R"(%main = OpFunction %void None %15
+%main = OpFunction %void None %15
 %30 = OpLabel
 %ts1 = OpVariable %_ptr_Function_S Function
 %ts2 = OpVariable %_ptr_Function_S Function
@@ -1302,37 +1264,10 @@ OpStore %ts4 %51
 OpStore %fo %53
 OpReturn
 OpFunctionEnd
-)";
+  )";
 
-  const std::string after_func =
-      R"(%main = OpFunction %void None %15
-%30 = OpLabel
-%31 = OpAccessChain %_ptr_Uniform_S %_ %int_0
-%32 = OpLoad %S %31
-%35 = OpCompositeExtract %float %32 1
-%37 = OpAccessChain %_ptr_Uniform_S %_ %int_1
-%38 = OpLoad %S %37
-%41 = OpCompositeExtract %float %38 1
-%43 = OpAccessChain %_ptr_Uniform_uint %__0 %int_0
-%44 = OpLoad %uint %43
-%45 = OpINotEqual %bool %44 %uint_0
-OpSelectionMerge %46 None
-OpBranchConditional %45 %47 %48
-%47 = OpLabel
-OpBranch %46
-%48 = OpLabel
-OpBranch %46
-%46 = OpLabel
-%78 = OpPhi %float %35 %47 %41 %48
-OpStore %fo %78
-OpReturn
-OpFunctionEnd
-)";
-
-  AddPass<opt::ScalarReplacementPass>();
-  AddPass<opt::LocalMultiStoreElimPass>();
-  AddPass<opt::InsertExtractElimPass>();
-  AddPass<opt::AggressiveDCEPass>();
-  RunAndCheck(before_predefs + before_func, after_predefs + after_func);
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
+#endif  // SPIRV_EFFCEE
+
 }  // namespace
