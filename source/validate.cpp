@@ -336,8 +336,13 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   }
 
   position.index = SPV_INDEX_INSTRUCTION;
-  return spvValidateIDs(instructions.data(), instructions.size(), *vstate,
-                        &position);
+  if (auto error = spvValidateIDs(instructions.data(), instructions.size(),
+                                  *vstate, &position))
+    return error;
+
+  if (auto error = ValidateBuiltIns(*vstate)) return error;
+
+  return SPV_SUCCESS;
 }
 }  // anonymous namespace
 
