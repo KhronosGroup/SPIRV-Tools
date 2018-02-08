@@ -66,7 +66,7 @@ macro(spvtools_vimsyntax VERSION CLVERSION)
   add_custom_command(OUTPUT ${VIMSYNTAX_FILE}
       COMMAND ${PYTHON_EXECUTABLE} ${VIMSYNTAX_PROCESSING_SCRIPT}
       --spirv-core-grammar=${GRAMMAR_JSON_FILE}
-      --exinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
+      --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
       --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
       --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
       >${VIMSYNTAX_FILE}

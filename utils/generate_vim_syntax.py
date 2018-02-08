@@ -150,6 +150,10 @@ def main():
                         type=str, required=False, default=None,
                         help='input JSON grammar file for OpenGL extended '
                         'instruction set')
+    parser.add_argument('--extinst-debuginfo-grammar', metavar='<path>',
+                        type=str, required=False, default=None,
+                        help='input JSON grammar file for DebugInfo extended '
+                        'instruction set')
     args = parser.parse_args()
 
     # Generate the syntax rules.
@@ -178,6 +182,17 @@ def main():
         opencl = json.loads(open(args.extinst_opencl_grammar).read())
         for inst in opencl["instructions"]:
             EmitAsEnumerant(inst['opname'])
+
+    if args.extinst_debuginfo_grammar is not None:
+        print('\n" DebugInfo extended instructions')
+        debuginfo = json.loads(open(args.extinst_debuginfo_grammar).read())
+        for inst in debuginfo["instructions"]:
+            EmitAsEnumerant(inst['opname'])
+        print('\n" DebugInfo operand enums')
+        for operand_kind in debuginfo["operand_kinds"]:
+            if 'enumerants' in operand_kind:
+                for e in operand_kind['enumerants']:
+                    EmitAsEnumerant(e['enumerant'])
 
     print('\n" OpSpecConstantOp opcodes')
     for word in SPEC_CONSTANT_OP_OPCODES.split(' '):
