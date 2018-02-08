@@ -45,6 +45,8 @@ add_library(SPIRV-Tools-opt
   inline_pass.h
   insert_extract_elim.h
   instruction.h
+  instruction_list.h
+  ir_builder.h
   ir_context.h
   ir_loader.h
   licm_pass.h
@@ -56,6 +58,7 @@ add_library(SPIRV-Tools-opt
   log.h
   loop_descriptor.h
   loop_utils.h
+  make_unique.h
   mem_pass.h
   merge_return_pass.h
   module.h
