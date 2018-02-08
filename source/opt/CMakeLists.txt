@@ -22,6 +22,7 @@ add_library(SPIRV-Tools-opt
   common_uniform_elim_pass.h
   compact_ids_pass.h
   composite.h
+  const_folding_rules.h
   constants.h
   dead_branch_elim_pass.h
   dead_insert_elim_pass.h
@@ -94,6 +95,7 @@ add_library(SPIRV-Tools-opt
   common_uniform_elim_pass.cpp
   compact_ids_pass.cpp
   composite.cpp
+  const_folding_rules.cpp
   constants.cpp
   dead_branch_elim_pass.cpp
   dead_insert_elim_pass.cpp

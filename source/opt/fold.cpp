@@ -14,14 +14,15 @@
 
 #include "fold.h"
 
+#include <cassert>
+#include <cstdint>
+#include <vector>
+
+#include "const_folding_rules.h"
 #include "def_use_manager.h"
 #include "folding_rules.h"
 #include "ir_builder.h"
 #include "ir_context.h"
-
-#include <cassert>
-#include <cstdint>
-#include <vector>
 
 namespace spvtools {
 namespace opt {
@@ -39,6 +40,11 @@ namespace {
 #ifndef UINT32_MAX
 #define UINT32_MAX 0xffffffff /* 4294967295U */
 #endif
+
+const ConstantFoldingRules& GetConstantFoldingRules() {
+  static ConstantFoldingRules* rules = new ConstantFoldingRules();
+  return *rules;
+}
 
 // Returns the single-word result from performing the given unary operation on
 // the operand value which is passed in as a 32-bit word.
@@ -603,10 +609,6 @@ bool IsFoldableConstant(const analysis::Constant* cst) {
 
 ir::Instruction* FoldInstructionToConstant(
     ir::Instruction* inst, std::function<uint32_t(uint32_t)> id_map) {
-  if (!inst->IsFoldable()) {
-    return nullptr;
-  }
-
   ir::IRContext* context = inst->context();
   analysis::ConstantManager* const_mgr = context->get_constant_mgr();
 
@@ -625,10 +627,25 @@ ir::Instruction* FoldInstructionToConstant(
     constants.push_back(const_op);
   });
 
+  if (GetConstantFoldingRules().HasFoldingRule(inst->opcode())) {
+    const analysis::Constant* folded_const = nullptr;
+    for (auto rule :
+        GetConstantFoldingRules().GetRulesForOpcode(inst->opcode())) {
+      folded_const = rule(inst, constants);
+      if (folded_const != nullptr) {
+        ir::Instruction* const_inst =
+            const_mgr->GetDefiningInstruction(folded_const);
+        // May be a new instruction that needs to be analysed.
+        context->UpdateDefUse(const_inst);
+        return const_inst;
+      }
+    }
+  }
+
   uint32_t result_val = 0;
   bool successful = false;
   // If all parameters are constant, fold the instruction to a constant.
-  if (!missing_constants) {
+  if (!missing_constants && inst->IsFoldable()) {
     result_val = FoldScalars(inst->opcode(), constants);
     successful = true;
   }
