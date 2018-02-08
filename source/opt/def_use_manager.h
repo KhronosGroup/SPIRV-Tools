@@ -214,6 +214,10 @@ class DefUseManager {
     return !(lhs == rhs);
   }
 
+  // If |inst| has not already been analysed, then analyses its defintion and
+  // uses.
+  void UpdateDefUse(ir::Instruction* inst);
+
  private:
   using InstToUsedIdsMap =
       std::unordered_map<const ir::Instruction*, std::vector<uint32_t>>;

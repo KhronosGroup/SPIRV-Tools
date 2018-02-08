@@ -204,7 +204,7 @@ class CompositeConstant : public Constant {
   CompositeConstant* AsCompositeConstant() override { return this; }
   const CompositeConstant* AsCompositeConstant() const override { return this; }
 
-  // Returns a const reference of the components holded in this composite
+  // Returns a const reference of the components held in this composite
   // constant.
   virtual const std::vector<const Constant*>& GetComponents() const {
     return components_;

@@ -69,8 +69,8 @@ FoldingRule CompositeConstructFeedingExtract() {
 
       // Add the remaining indices for extraction.
       for (uint32_t i = 2; i < inst->NumInOperands(); ++i) {
-        operands.push_back(
-            {SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(i)}});
+        operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                            {inst->GetSingleWordInOperand(i)}});
       }
 
     } else {
@@ -302,14 +302,14 @@ spvtools::opt::FoldingRules::FoldingRules() {
   // applies to the instruction, the rest of the rules will not be attempted.
   // Take that into consideration.
 
-  rules[SpvOpCompositeConstruct].push_back(CompositeExtractFeedingConstruct());
+  rules_[SpvOpCompositeConstruct].push_back(CompositeExtractFeedingConstruct());
 
-  rules[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
-  rules[SpvOpCompositeExtract].push_back(CompositeConstructFeedingExtract());
+  rules_[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
+  rules_[SpvOpCompositeExtract].push_back(CompositeConstructFeedingExtract());
 
-  rules[SpvOpIMul].push_back(IntMultipleBy1());
+  rules_[SpvOpIMul].push_back(IntMultipleBy1());
 
-  rules[SpvOpPhi].push_back(RedundantPhi());
+  rules_[SpvOpPhi].push_back(RedundantPhi());
 }
 }  // namespace opt
 }  // namespace spvtools

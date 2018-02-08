@@ -92,8 +92,6 @@ TEST_F(SimplificationTest, AcrossBasicBlocks) {
         %int = OpTypeInt 32 1
       %v4int = OpTypeVector %int 4
       %int_0 = OpConstant %int 0
-; CHECK: [[constant:%[a-zA-Z_\d]+]] = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
-         %13 = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
 %_ptr_Input_v4int = OpTypePointer Input %v4int
           %i = OpVariable %_ptr_Input_v4int Input
        %uint = OpTypeInt 32 0
@@ -115,14 +113,14 @@ TEST_F(SimplificationTest, AcrossBasicBlocks) {
                OpSelectionMerge %30 None
                OpBranchConditional %29 %31 %32
          %31 = OpLabel
-         %43 = OpCopyObject %v4int %13
+         %43 = OpCopyObject %v4int %25
                OpBranch %30
          %32 = OpLabel
-         %45 = OpCopyObject %v4int %13
+         %45 = OpCopyObject %v4int %25
                OpBranch %30
          %30 = OpLabel
          %50 = OpPhi %v4int %43 %31 %45 %32
-; CHECK: [[extract1:%[a-zA-Z_\d]+]] = OpCompositeExtract %int [[constant]] 0
+; CHECK: [[extract1:%[a-zA-Z_\d]+]] = OpCompositeExtract %int [[load]] 0
          %47 = OpCompositeExtract %int %50 0
 ; CHECK: [[extract2:%[a-zA-Z_\d]+]] = OpCompositeExtract %int [[load]] 1
          %49 = OpCompositeExtract %int %41 1
@@ -170,9 +168,11 @@ TEST_F(SimplificationTest, ThroughLoops) {
          %68 = OpUndef %v4int
        %main = OpFunction %void None %8
          %23 = OpLabel
+; CHECK: [[load:%[a-zA-Z_\d]+]] = OpLoad %v4int %i
+       %load = OpLoad %v4int %i
                OpBranch %24
          %24 = OpLabel
-         %67 = OpPhi %v4int %13 %23 %64 %26
+         %67 = OpPhi %v4int %load %23 %64 %26
 ; CHECK: OpLoopMerge [[merge_lab:%[a-zA-Z_\d]+]]
                OpLoopMerge %25 %26 None
                OpBranch %27
@@ -191,7 +191,7 @@ TEST_F(SimplificationTest, ThroughLoops) {
                OpBranch %24
          %25 = OpLabel
 ; CHECK: [[merge_lab]] = OpLabel
-; CHECK: [[extract:%[a-zA-Z_\d]+]] = OpCompositeExtract %int [[constant]] 0
+; CHECK: [[extract:%[a-zA-Z_\d]+]] = OpCompositeExtract %int [[load]] 0
          %66 = OpCompositeExtract %int %67 0
 ; CHECK-NEXT: OpStore %o [[extract]]
                OpStore %o %66

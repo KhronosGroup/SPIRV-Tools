@@ -63,15 +63,15 @@ class FoldingRules {
   FoldingRules();
 
   const std::vector<FoldingRule>& GetRulesForOpcode(SpvOp opcode) {
-    auto it = rules.find(opcode);
-    if (it != rules.end()) {
+    auto it = rules_.find(opcode);
+    if (it != rules_.end()) {
       return it->second;
     }
     return empty_vector_;
   }
 
  private:
-  std::unordered_map<uint32_t, std::vector<FoldingRule>> rules;
+  std::unordered_map<uint32_t, std::vector<FoldingRule>> rules_;
   std::vector<FoldingRule> empty_vector_;
 };
 

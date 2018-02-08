@@ -71,6 +71,18 @@ void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
   AnalyzeInstUse(inst);
 }
 
+void DefUseManager::UpdateDefUse(ir::Instruction* inst) {
+  const uint32_t def_id = inst->result_id();
+  if (def_id != 0) {
+    auto iter = id_to_def_.find(def_id);
+    if (iter != id_to_def_.end()) {
+      AnalyzeInstDef(inst);
+    } else {
+    }
+  }
+  AnalyzeInstUse(inst);
+}
+
 ir::Instruction* DefUseManager::GetDef(uint32_t id) {
   auto iter = id_to_def_.find(id);
   if (iter == id_to_def_.end()) return nullptr;

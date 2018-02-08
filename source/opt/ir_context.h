@@ -399,6 +399,10 @@ class IRContext {
   // Returns the grammar for this context.
   const libspirv::AssemblyGrammar& grammar() const { return grammar_; }
 
+  // If |inst| has not yet been analysed by the def-use manager, then analyse
+  // its definitions and uses.
+  inline void UpdateDefUse(Instruction* inst);
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -720,6 +724,12 @@ void IRContext::AddFunction(std::unique_ptr<Function>&& f) {
 void IRContext::AnalyzeDefUse(Instruction* inst) {
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->AnalyzeInstDefUse(inst);
+  }
+}
+
+void IRContext::UpdateDefUse(Instruction* inst) {
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->UpdateDefUse(inst);
   }
 }
 
