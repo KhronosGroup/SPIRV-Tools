@@ -82,7 +82,7 @@ bool SimplificationPass::SimplifyFunction(ir::Function* function) {
   for (size_t i = 0; i < work_list.size(); ++i) {
     ir::Instruction* inst = work_list[i];
     in_work_list.erase(inst);
-    if (FoldInstruction(inst)) {
+    if (inst->opcode() == SpvOpCopyObject || FoldInstruction(inst)) {
       modified = true;
       context()->AnalyzeUses(inst);
       get_def_use_mgr()->ForEachUser(

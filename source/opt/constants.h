@@ -26,6 +26,7 @@
 #include "module.h"
 #include "type_manager.h"
 #include "types.h"
+#include "util/hex_float.h"
 
 namespace spvtools {
 namespace opt {
@@ -172,6 +173,27 @@ class FloatConstant : public ScalarConstant {
   std::unique_ptr<Constant> Copy() const override {
     return std::unique_ptr<Constant>(CopyFloatConstant().release());
   }
+
+  // Returns the float value of |this|.  The type of |this| must be |Float| with
+  // width of 32.
+  float GetFloatValue() const {
+    assert(type()->AsFloat()->width() == 32 &&
+           "Not a 32-bit floating point value.");
+    spvutils::FloatProxy<float> a(words()[0]);
+    return a.getAsFloat();
+  }
+
+  // Returns the double value of |this|.  The type of |this| must be |Float|
+  // with width of 64.
+  double GetDoubleValue() const {
+    assert(type()->AsFloat()->width() == 64 &&
+           "Not a 32-bit floating point value.");
+    uint64_t combined_words = words()[1];
+    combined_words = combined_words << 32;
+    combined_words |= words()[0];
+    spvutils::FloatProxy<double> a(combined_words);
+    return a.getAsFloat();
+  }
 };
 
 // Bool type constant.
@@ -269,7 +291,7 @@ class VectorConstant : public CompositeConstant {
     return std::unique_ptr<Constant>(CopyVectorConstant().release());
   }
 
-  const Type* component_type() { return component_type_; }
+  const Type* component_type() const { return component_type_; }
 
  private:
   const Type* component_type_;

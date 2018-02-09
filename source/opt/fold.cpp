@@ -612,6 +612,10 @@ ir::Instruction* FoldInstructionToConstant(
   ir::IRContext* context = inst->context();
   analysis::ConstantManager* const_mgr = context->get_constant_mgr();
 
+  if (!inst->IsFoldable() &&
+      !GetConstantFoldingRules().HasFoldingRule(inst->opcode())) {
+    return nullptr;
+  }
   // Collect the values of the constant parameters.
   std::vector<const analysis::Constant*> constants;
   bool missing_constants = false;
@@ -622,9 +626,9 @@ ir::Instruction* FoldInstructionToConstant(
     if (!const_op) {
       constants.push_back(nullptr);
       missing_constants = true;
-      return;
+    } else {
+      constants.push_back(const_op);
     }
-    constants.push_back(const_op);
   });
 
   if (GetConstantFoldingRules().HasFoldingRule(inst->opcode())) {
@@ -659,7 +663,6 @@ ir::Instruction* FoldInstructionToConstant(
         const_mgr->GetConstant(const_mgr->GetType(inst), {result_val});
     return const_mgr->GetDefiningInstruction(result_const);
   }
-
   return nullptr;
 }
 
@@ -679,7 +682,8 @@ bool IsFoldableType(ir::Instruction* type_inst) {
 bool FoldInstruction(ir::Instruction* inst) {
   bool modified = false;
   ir::Instruction* folded_inst(inst);
-  while (FoldInstructionInternal(&*folded_inst)) {
+  while (folded_inst->opcode() != SpvOpCopyObject &&
+         FoldInstructionInternal(&*folded_inst)) {
     modified = true;
   }
   return modified;

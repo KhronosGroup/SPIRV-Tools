@@ -91,6 +91,9 @@ OpName %main "main"
 %void = OpTypeVoid
 %void_func = OpTypeFunction %void
 %bool = OpTypeBool
+%float16 = OpTypeFloat 16
+%float = OpTypeFloat 32
+%double = OpTypeFloat 64
 %101 = OpConstantTrue %bool ; Need a def with an numerical id to define id maps.
 %true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
@@ -124,6 +127,19 @@ OpName %main "main"
 %102 = OpConstantComposite %v2int %103 %103
 %v4int_0_0_0_0 = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
 %struct_undef_0_0 = OpConstantComposite %struct_v2int_int_int %v2int_undef %int_0 %int_0
+%float16_0 = OpConstant %float16 0
+%float16_1 = OpConstant %float16 1
+%float16_2 = OpConstant %float16 2
+%float_n1 = OpConstant %float -1
+%float_0 = OpConstant %float 0
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%double_n1 = OpConstant %double -1
+%double_0 = OpConstant %double 0
+%double_1 = OpConstant %double 1
+%double_2 = OpConstant %double 2
+%double_3 = OpConstant %double 3
 )";
 
   return header;
@@ -545,6 +561,183 @@ INSTANTIATE_TEST_CASE_P(TestCase, BooleanInstructionFoldingTest,
 ));
 // clang-format on
 
+using FloatInstructionFoldingTest =
+    ::testing::TestWithParam<InstructionFoldingCase<float>>;
+
+TEST_P(FloatInstructionFoldingTest, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  bool succeeded = opt::FoldInstruction(inst);
+
+  // Make sure the instruction folded as expected.
+  EXPECT_TRUE(succeeded);
+  if (inst != nullptr) {
+    EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
+    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+    EXPECT_EQ(inst->opcode(), SpvOpConstant);
+    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const opt::analysis::FloatConstant* result =
+        const_mrg->GetConstantFromInst(inst)->AsFloatConstant();
+    EXPECT_NE(result, nullptr);
+    if (result != nullptr) {
+      EXPECT_EQ(result->GetFloatValue(), tc.expected_result);
+    }
+  }
+}
+
+// Not testing NaNs because there are no expectations concerning NaNs according
+// to the "Precision and Operation of SPIR-V Instructions" section of the Vulkan
+// specification.
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: Fold 2.0 - 1.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFSub %float %float_2 %float_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0),
+    // Test case 1: Fold 2.0 + 1.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFAdd %float %float_2 %float_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3.0),
+    // Test case 2: Fold 3.0 * 2.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFMul %float %float_3 %float_2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 6.0),
+    // Test case 3: Fold 1.0 / 2.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFDiv %float %float_1 %float_2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0.5),
+    // Test case 4: Fold 1.0 / 0.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFDiv %float %float_1 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, std::numeric_limits<float>::infinity()),
+    // Test case 4: Fold -1.0 / 0.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFDiv %float %float_n1 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, -std::numeric_limits<float>::infinity())
+));
+// clang-format on
+
+using DoubleInstructionFoldingTest =
+    ::testing::TestWithParam<InstructionFoldingCase<double>>;
+
+TEST_P(DoubleInstructionFoldingTest, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  bool succeeded = opt::FoldInstruction(inst);
+
+  // Make sure the instruction folded as expected.
+  EXPECT_TRUE(succeeded);
+  if (inst != nullptr) {
+    EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
+    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+    EXPECT_EQ(inst->opcode(), SpvOpConstant);
+    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const opt::analysis::FloatConstant* result =
+        const_mrg->GetConstantFromInst(inst)->AsFloatConstant();
+    EXPECT_NE(result, nullptr);
+    if (result != nullptr) {
+      EXPECT_EQ(result->GetDoubleValue(), tc.expected_result);
+    }
+  }
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: Fold 2.0 - 1.0
+    InstructionFoldingCase<double>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFSub %double %double_2 %double_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0),
+        // Test case 1: Fold 2.0 + 1.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpFAdd %double %double_2 %double_1\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 3.0),
+        // Test case 2: Fold 3.0 * 2.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpFMul %double %double_3 %double_2\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 6.0),
+        // Test case 3: Fold 1.0 / 2.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpFDiv %double %double_1 %double_2\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 0.5),
+        // Test case 4: Fold 1.0 / 0.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpFDiv %double %double_1 %double_0\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, std::numeric_limits<double>::infinity()),
+        // Test case 4: Fold -1.0 / 0.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpFDiv %double %double_n1 %double_0\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, -std::numeric_limits<double>::infinity())
+));
+// clang-format on
 template <class ResultType>
 struct InstructionFoldingCaseWithMap {
   InstructionFoldingCaseWithMap(const std::string& tb, uint32_t id,
