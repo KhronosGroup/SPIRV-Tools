@@ -119,9 +119,11 @@ OpName %main "main"
 %uint_3 = OpConstant %uint 3
 %uint_32 = OpConstant %uint 32
 %uint_max = OpConstant %uint -1
+%v2int_undef = OpUndef %v2int
 %struct_v2int_int_int_null = OpConstantNull %struct_v2int_int_int
 %102 = OpConstantComposite %v2int %103 %103
 %v4int_0_0_0_0 = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
+%struct_undef_0_0 = OpConstantComposite %struct_v2int_int_int %v2int_undef %int_0 %int_0
 )";
 
   return header;
@@ -1239,7 +1241,15 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingTe
             "%2 = OpCompositeExtract %int %102 1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, INT_7_ID)
+        2, INT_7_ID),
+    // Test case 8: constant struct has OpUndef
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpCompositeExtract %int %struct_undef_0_0 0 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0)
 ));
 
 INSTANTIATE_TEST_CASE_P(CompositeConstructFoldingTest, GeneralInstructionFoldingTest,

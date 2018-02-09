@@ -21,6 +21,7 @@ namespace {
 const uint32_t kExtractCompositeIdInIdx = 0;
 
 ConstantFoldingRule FoldExtractWithConstants() {
+  // Folds an OpcompositeExtract where input is a composite constant.
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
@@ -58,6 +59,8 @@ ConstantFoldingRule FoldExtractWithConstants() {
 }
 
 ConstantFoldingRule FoldCompositeWithConstants() {
+  // Folds an OpCompositeConstruct where all of the inputs are constants to a
+  // constant.  A new constant is created if necessary.
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
