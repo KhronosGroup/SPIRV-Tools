@@ -240,7 +240,7 @@ INSTANTIATE_TEST_CASE_P(
     NumericLiterals, RoundTripInstructionsTest,
     // This test is independent of environment, so just test the one.
     Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                              SPV_ENV_UNIVERSAL_1_2),
+                              SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3),
             ::testing::ValuesIn(std::vector<std::string>{
                 "%1 = OpTypeInt 12 0\n%2 = OpConstant %1 1867\n",
                 "%1 = OpTypeInt 12 1\n%2 = OpConstant %1 1867\n",
@@ -274,7 +274,7 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     MemoryAccessMasks, RoundTripInstructionsTest,
     Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                              SPV_ENV_UNIVERSAL_1_2),
+                              SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3),
             ::testing::ValuesIn(std::vector<std::string>{
                 "OpStore %1 %2\n",       // 3 words long.
                 "OpStore %1 %2 None\n",  // 4 words long, explicit final 0.
@@ -291,7 +291,7 @@ INSTANTIATE_TEST_CASE_P(
     FPFastMathModeMasks, RoundTripInstructionsTest,
     Combine(
         ::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                          SPV_ENV_UNIVERSAL_1_2),
+                          SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3),
         ::testing::ValuesIn(std::vector<std::string>{
             "OpDecorate %1 FPFastMathMode None\n",
             "OpDecorate %1 FPFastMathMode NotNaN\n",
@@ -305,54 +305,55 @@ INSTANTIATE_TEST_CASE_P(
             "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ|AllowRecip|Fast\n",
         })), );
 
-INSTANTIATE_TEST_CASE_P(LoopControlMasks, RoundTripInstructionsTest,
-                        Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0,
-                                                  SPV_ENV_UNIVERSAL_1_1,
-                                                  SPV_ENV_UNIVERSAL_1_2),
-                                ::testing::ValuesIn(std::vector<std::string>{
-                                    "OpLoopMerge %1 %2 None\n",
-                                    "OpLoopMerge %1 %2 Unroll\n",
-                                    "OpLoopMerge %1 %2 DontUnroll\n",
-                                    "OpLoopMerge %1 %2 Unroll|DontUnroll\n",
-                                })), );
+INSTANTIATE_TEST_CASE_P(
+    LoopControlMasks, RoundTripInstructionsTest,
+    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                              SPV_ENV_UNIVERSAL_1_3, SPV_ENV_UNIVERSAL_1_2),
+            ::testing::ValuesIn(std::vector<std::string>{
+                "OpLoopMerge %1 %2 None\n",
+                "OpLoopMerge %1 %2 Unroll\n",
+                "OpLoopMerge %1 %2 DontUnroll\n",
+                "OpLoopMerge %1 %2 Unroll|DontUnroll\n",
+            })), );
 
 INSTANTIATE_TEST_CASE_P(LoopControlMasksV11, RoundTripInstructionsTest,
                         Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_1,
-                                                  SPV_ENV_UNIVERSAL_1_2),
+                                                  SPV_ENV_UNIVERSAL_1_2,
+                                                  SPV_ENV_UNIVERSAL_1_3),
                                 ::testing::ValuesIn(std::vector<std::string>{
                                     "OpLoopMerge %1 %2 DependencyInfinite\n",
                                     "OpLoopMerge %1 %2 DependencyLength 8\n",
                                 })), );
 
-INSTANTIATE_TEST_CASE_P(SelectionControlMasks, RoundTripInstructionsTest,
-                        Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0,
-                                                  SPV_ENV_UNIVERSAL_1_1,
-                                                  SPV_ENV_UNIVERSAL_1_2),
-                                ::testing::ValuesIn(std::vector<std::string>{
-                                    "OpSelectionMerge %1 None\n",
-                                    "OpSelectionMerge %1 Flatten\n",
-                                    "OpSelectionMerge %1 DontFlatten\n",
-                                    "OpSelectionMerge %1 Flatten|DontFlatten\n",
-                                })), );
+INSTANTIATE_TEST_CASE_P(
+    SelectionControlMasks, RoundTripInstructionsTest,
+    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                              SPV_ENV_UNIVERSAL_1_3, SPV_ENV_UNIVERSAL_1_2),
+            ::testing::ValuesIn(std::vector<std::string>{
+                "OpSelectionMerge %1 None\n",
+                "OpSelectionMerge %1 Flatten\n",
+                "OpSelectionMerge %1 DontFlatten\n",
+                "OpSelectionMerge %1 Flatten|DontFlatten\n",
+            })), );
 
-INSTANTIATE_TEST_CASE_P(FunctionControlMasks, RoundTripInstructionsTest,
-                        Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0,
-                                                  SPV_ENV_UNIVERSAL_1_1,
-                                                  SPV_ENV_UNIVERSAL_1_2),
-                                ::testing::ValuesIn(std::vector<std::string>{
-                                    "%2 = OpFunction %1 None %3\n",
-                                    "%2 = OpFunction %1 Inline %3\n",
-                                    "%2 = OpFunction %1 DontInline %3\n",
-                                    "%2 = OpFunction %1 Pure %3\n",
-                                    "%2 = OpFunction %1 Const %3\n",
-                                    "%2 = OpFunction %1 Inline|Pure|Const %3\n",
-                                    "%2 = OpFunction %1 DontInline|Const %3\n",
-                                })), );
+INSTANTIATE_TEST_CASE_P(
+    FunctionControlMasks, RoundTripInstructionsTest,
+    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                              SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3),
+            ::testing::ValuesIn(std::vector<std::string>{
+                "%2 = OpFunction %1 None %3\n",
+                "%2 = OpFunction %1 Inline %3\n",
+                "%2 = OpFunction %1 DontInline %3\n",
+                "%2 = OpFunction %1 Pure %3\n",
+                "%2 = OpFunction %1 Const %3\n",
+                "%2 = OpFunction %1 Inline|Pure|Const %3\n",
+                "%2 = OpFunction %1 DontInline|Const %3\n",
+            })), );
 
 INSTANTIATE_TEST_CASE_P(
     ImageMasks, RoundTripInstructionsTest,
     Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                              SPV_ENV_UNIVERSAL_1_2),
+                              SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3),
             ::testing::ValuesIn(std::vector<std::string>{
                 "%2 = OpImageFetch %1 %3 %4\n",
                 "%2 = OpImageFetch %1 %3 %4 None\n",
@@ -374,7 +375,7 @@ INSTANTIATE_TEST_CASE_P(
 
 INSTANTIATE_TEST_CASE_P(
     NewInstructionsInSPIRV1_2, RoundTripInstructionsTest,
-    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_2),
+    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3),
             ::testing::ValuesIn(std::vector<std::string>{
                 "OpExecutionModeId %1 SubgroupsPerWorkgroupId %2\n",
                 "OpExecutionModeId %1 LocalSizeId %2 %3 %4\n",
@@ -546,5 +547,7 @@ INSTANTIATE_TEST_CASE_P(GeneratorStrings, GeneratorStringTest,
                             {1000, 18, "Unknown(1000); 18"},
                             {65535, 32767, "Unknown(65535); 32767"},
                         }), );
+
+// TODO(dneto): Test new instructions and enums in SPIR-V 1.3
 
 }  // anonymous namespace
