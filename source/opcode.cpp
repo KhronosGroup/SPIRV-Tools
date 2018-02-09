@@ -32,9 +32,15 @@ struct OpcodeDescPtrLen {
   uint32_t len;
 };
 
-#include "core.insts-1.0.inc"  // defines kOpcodeTableEntries_1_0
-#include "core.insts-1.1.inc"  // defines kOpcodeTableEntries_1_1
-#include "core.insts-1.2.inc"  // defines kOpcodeTableEntries_1_2
+// For now, assume unified1 contains up to SPIR-V 1.3 and no later
+// SPIR-V version.
+// TODO(dneto): Make one set of tables, but with version tags on a
+// per-item basis. https://github.com/KhronosGroup/SPIRV-Tools/issues/1195
+
+#include "core.insts-1.0.inc"       // defines kOpcodeTableEntries_1_0
+#include "core.insts-1.1.inc"       // defines kOpcodeTableEntries_1_1
+#include "core.insts-1.2.inc"       // defines kOpcodeTableEntries_1_2
+#include "core.insts-unified1.inc"  // defines kOpcodeTableEntries_1_3
 
 static const spv_opcode_table_t kTable_1_0 = {
     ARRAY_SIZE(kOpcodeTableEntries_1_0), kOpcodeTableEntries_1_0};
@@ -42,6 +48,8 @@ static const spv_opcode_table_t kTable_1_1 = {
     ARRAY_SIZE(kOpcodeTableEntries_1_1), kOpcodeTableEntries_1_1};
 static const spv_opcode_table_t kTable_1_2 = {
     ARRAY_SIZE(kOpcodeTableEntries_1_2), kOpcodeTableEntries_1_2};
+static const spv_opcode_table_t kTable_1_3 = {
+    ARRAY_SIZE(kOpcodeTableEntries_1_3), kOpcodeTableEntries_1_3};
 
 // Represents a vendor tool entry in the SPIR-V XML Regsitry.
 struct VendorTool {
@@ -111,6 +119,10 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
     case SPV_ENV_OPENCL_2_2:
     case SPV_ENV_OPENCL_EMBEDDED_2_2:
       *pInstTable = &kTable_1_2;
+      return SPV_SUCCESS;
+    case SPV_ENV_UNIVERSAL_1_3:
+    case SPV_ENV_VULKAN_1_1:
+      *pInstTable = &kTable_1_3;
       return SPV_SUCCESS;
   }
   assert(0 && "Unknown spv_target_env in spvOpcodeTableGet()");
@@ -182,9 +194,9 @@ const char* spvOpcodeString(const SpvOp opcode) {
   // Use the latest SPIR-V version, which should be backward-compatible with all
   // previous ones.
 
-  const auto beg = kOpcodeTableEntries_1_2;
+  const auto beg = kOpcodeTableEntries_1_3;
   const auto end =
-      kOpcodeTableEntries_1_2 + ARRAY_SIZE(kOpcodeTableEntries_1_2);
+      kOpcodeTableEntries_1_3 + ARRAY_SIZE(kOpcodeTableEntries_1_3);
   spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
   auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
     return lhs.opcode < rhs.opcode;

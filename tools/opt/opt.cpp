@@ -48,20 +48,22 @@ std::string GetListOfPassesAsString(const spvtools::Optimizer& optimizer) {
   return ss.str();
 }
 
+const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_3;
+
 std::string GetLegalizationPasses() {
-  spvtools::Optimizer optimizer(SPV_ENV_UNIVERSAL_1_2);
+  spvtools::Optimizer optimizer(kDefaultEnvironment);
   optimizer.RegisterLegalizationPasses();
   return GetListOfPassesAsString(optimizer);
 }
 
 std::string GetOptimizationPasses() {
-  spvtools::Optimizer optimizer(SPV_ENV_UNIVERSAL_1_2);
+  spvtools::Optimizer optimizer(kDefaultEnvironment);
   optimizer.RegisterPerformancePasses();
   return GetListOfPassesAsString(optimizer);
 }
 
 std::string GetSizePasses() {
-  spvtools::Optimizer optimizer(SPV_ENV_UNIVERSAL_1_2);
+  spvtools::Optimizer optimizer(kDefaultEnvironment);
   optimizer.RegisterSizePasses();
   return GetListOfPassesAsString(optimizer);
 }
@@ -561,7 +563,7 @@ int main(int argc, const char** argv) {
   const char* out_file = nullptr;
   bool skip_validator = false;
 
-  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;
+  spv_target_env target_env = kDefaultEnvironment;
   spv_validator_options options = spvValidatorOptionsCreate();
 
   spvtools::Optimizer optimizer(target_env);
