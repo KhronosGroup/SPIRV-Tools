@@ -29,17 +29,20 @@ ConstantFoldingRule FoldExtractWithConstants() {
       return nullptr;
     }
 
-    for(uint32_t i = 1; i < inst->NumInOperands(); ++i) {
+    for (uint32_t i = 1; i < inst->NumInOperands(); ++i) {
       uint32_t element_index = inst->GetSingleWordInOperand(i);
       if (c->AsNullConstant()) {
         // Return Null for the return type.
         ir::IRContext* context = inst->context();
         analysis::ConstantManager* const_mgr = context->get_constant_mgr();
         analysis::TypeManager* type_mgr = context->get_type_mgr();
-        const analysis::NullConstant null_const(type_mgr->GetType(inst->type_id()));
-        const analysis::Constant* real_const = const_mgr->FindConstant(&null_const);
+        const analysis::NullConstant null_const(
+            type_mgr->GetType(inst->type_id()));
+        const analysis::Constant* real_const =
+            const_mgr->FindConstant(&null_const);
         if (real_const == nullptr) {
-          ir::Instruction* const_inst = const_mgr->GetDefiningInstruction(&null_const);
+          ir::Instruction* const_inst =
+              const_mgr->GetDefiningInstruction(&null_const);
           real_const = const_mgr->GetConstantFromInst(const_inst);
         }
         return real_const;
@@ -57,14 +60,14 @@ ConstantFoldingRule FoldExtractWithConstants() {
 ConstantFoldingRule FoldCompositeWithConstants() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
-      -> const analysis::Constant* {
+             -> const analysis::Constant* {
     ir::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* new_type = type_mgr->GetType(inst->type_id());
 
     std::vector<uint32_t> ids;
-    for(const analysis::Constant* element_const : constants) {
+    for (const analysis::Constant* element_const : constants) {
       if (element_const == nullptr) {
         return nullptr;
       }

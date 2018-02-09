@@ -78,6 +78,8 @@ TEST_P(IntegerInstructionFoldingTest, Case) {
 // Returns a common SPIR-V header for all of the test that follow.
 #define INT_0_ID 100
 #define TRUE_ID 101
+#define VEC2_0_ID 102
+#define INT_7_ID 103
 const std::string& Header() {
   static const std::string header = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -89,8 +91,8 @@ OpName %main "main"
 %void = OpTypeVoid
 %void_func = OpTypeFunction %void
 %bool = OpTypeBool
-%true = OpConstantTrue %bool
 %101 = OpConstantTrue %bool ; Need a def with an numerical id to define id maps.
+%true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
 %short = OpTypeInt 16 1
 %int = OpTypeInt 32 1
@@ -104,9 +106,10 @@ OpName %main "main"
 %_ptr_bool = OpTypePointer Function %bool
 %short_0 = OpConstant %short 0
 %short_3 = OpConstant %short 3
+%100 = OpConstant %int 0 ; Need a def with an numerical id to define id maps.
+%103 = OpConstant %int 7 ; Need a def with an numerical id to define id maps.
 %int_0 = OpConstant %int 0
 %int_1 = OpConstant %int 1
-%100 = OpConstant %int 0 ; Need a def with an numerical id to define id maps.
 %int_3 = OpConstant %int 3
 %int_min = OpConstant %int -2147483648
 %int_max = OpConstant %int 2147483647
@@ -117,6 +120,7 @@ OpName %main "main"
 %uint_32 = OpConstant %uint 32
 %uint_max = OpConstant %uint -1
 %struct_v2int_int_int_null = OpConstantNull %struct_v2int_int_int
+%102 = OpConstantComposite %v2int %103 %103
 %v4int_0_0_0_0 = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
 )";
 
@@ -1227,7 +1231,15 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingTe
             "%5 = OpCompositeExtract %int %4 0 1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        5, 2)
+        5, 2),
+    // Test case 7: fold constant extract.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpCompositeExtract %int %102 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, INT_7_ID)
 ));
 
 INSTANTIATE_TEST_CASE_P(CompositeConstructFoldingTest, GeneralInstructionFoldingTest,
@@ -1282,7 +1294,15 @@ INSTANTIATE_TEST_CASE_P(CompositeConstructFoldingTest, GeneralInstructionFolding
             "%7 = OpCompositeConstruct %v4int %3 %4 %5\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        7, 0)
+        7, 0),
+    // Test case 4: Fold construct with constants to constant.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpCompositeConstruct %v2int %103 %103\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, VEC2_0_ID)
 ));
 
 INSTANTIATE_TEST_CASE_P(PhiFoldingTest, GeneralInstructionFoldingTest,

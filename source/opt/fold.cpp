@@ -619,7 +619,7 @@ ir::Instruction* FoldInstructionToConstant(
                      &id_map](uint32_t* op_id) {
     uint32_t id = id_map(*op_id);
     const analysis::Constant* const_op = const_mgr->FindDeclaredConstant(id);
-    if (!const_op || !IsFoldableConstant(const_op)) {
+    if (!const_op) {
       constants.push_back(nullptr);
       missing_constants = true;
       return;
@@ -630,7 +630,7 @@ ir::Instruction* FoldInstructionToConstant(
   if (GetConstantFoldingRules().HasFoldingRule(inst->opcode())) {
     const analysis::Constant* folded_const = nullptr;
     for (auto rule :
-        GetConstantFoldingRules().GetRulesForOpcode(inst->opcode())) {
+         GetConstantFoldingRules().GetRulesForOpcode(inst->opcode())) {
       folded_const = rule(inst, constants);
       if (folded_const != nullptr) {
         ir::Instruction* const_inst =
@@ -650,7 +650,7 @@ ir::Instruction* FoldInstructionToConstant(
     successful = true;
   }
 
-  if (!successful) {
+  if (!successful && inst->IsFoldable()) {
     successful = FoldIntegerOpToConstant(inst, id_map, &result_val);
   }
 
