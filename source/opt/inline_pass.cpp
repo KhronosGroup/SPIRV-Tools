@@ -150,9 +150,8 @@ uint32_t InlinePass::CreateReturnVar(
     std::vector<std::unique_ptr<ir::Instruction>>* new_vars) {
   uint32_t returnVarId = 0;
   const uint32_t calleeTypeId = calleeFn->type_id();
-  const ir::Instruction* calleeType =
-      get_def_use_mgr()->id_to_defs().find(calleeTypeId)->second;
-  if (calleeType->opcode() != SpvOpTypeVoid) {
+  analysis::Type* calleeType = context()->get_type_mgr()->GetType(calleeTypeId);
+  if (calleeType->AsVoid() == nullptr) {
     // Find or create ptr to callee return type.
     uint32_t returnVarTypeId = context()->get_type_mgr()->FindPointerToType(
         calleeTypeId, SpvStorageClassFunction);
