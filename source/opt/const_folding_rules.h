@@ -17,12 +17,12 @@
 
 #include <vector>
 
-#include "../../external/spirv-headers/include/spirv/1.2/spirv.h"
 #include "constants.h"
 #include "def_use_manager.h"
 #include "folding_rules.h"
 #include "ir_builder.h"
 #include "ir_context.h"
+#include "spirv/1.2/spirv.h"
 
 namespace spvtools {
 namespace opt {
