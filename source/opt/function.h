@@ -59,6 +59,10 @@ class Function {
   inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a basic block to this function.
   inline void AddBasicBlock(std::unique_ptr<BasicBlock> b);
+  // Appends a basic block to this function at the position |ip|.
+  inline void AddBasicBlock(std::unique_ptr<BasicBlock> b, iterator ip);
+  template <typename T>
+  inline void AddBasicBlocks(T begin, T end, iterator ip);
 
   // Saves the given function end instruction.
   inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
@@ -72,6 +76,11 @@ class Function {
 
   // Returns function's return type id
   inline uint32_t type_id() const { return def_inst_->type_id(); }
+
+  // Returns the basic block container for this function.
+  const std::vector<std::unique_ptr<BasicBlock>>* GetBlocks() const {
+    return &blocks_;
+  }
 
   // Returns the entry basic block for this function.
   const std::unique_ptr<BasicBlock>& entry() const { return blocks_.front(); }
@@ -123,7 +132,18 @@ inline void Function::AddParameter(std::unique_ptr<Instruction> p) {
 }
 
 inline void Function::AddBasicBlock(std::unique_ptr<BasicBlock> b) {
-  blocks_.emplace_back(std::move(b));
+  AddBasicBlock(std::move(b), end());
+}
+
+inline void Function::AddBasicBlock(std::unique_ptr<BasicBlock> b,
+                                    iterator ip) {
+  ip.InsertBefore(std::move(b));
+}
+
+template <typename T>
+inline void Function::AddBasicBlocks(T src_begin, T src_end, iterator ip) {
+  blocks_.insert(ip.Get(), std::make_move_iterator(src_begin),
+                 std::make_move_iterator(src_end));
 }
 
 inline void Function::SetFunctionEnd(std::unique_ptr<Instruction> end_inst) {
