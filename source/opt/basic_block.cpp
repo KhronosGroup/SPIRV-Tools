@@ -14,6 +14,7 @@
 
 #include "basic_block.h"
 #include "function.h"
+#include "ir_context.h"
 #include "module.h"
 #include "reflect.h"
 
@@ -87,6 +88,14 @@ Instruction* BasicBlock::GetLoopMergeInst() {
     }
   }
   return nullptr;
+}
+
+void BasicBlock::KillAllInsts(bool killLabel) {
+  ForEachInst([killLabel](ir::Instruction* ip) {
+    if (killLabel || ip->opcode() != SpvOpLabel) {
+      ip->context()->KillInst(ip);
+    }
+  });
 }
 
 void BasicBlock::ForEachSuccessorLabel(

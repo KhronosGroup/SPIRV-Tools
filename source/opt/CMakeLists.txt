@@ -60,6 +60,7 @@ add_library(SPIRV-Tools-opt
   loop_descriptor.h
   loop_unroller.h
   loop_utils.h
+  loop_unswitch_pass.h
   make_unique.h
   mem_pass.h
   merge_return_pass.h
@@ -132,6 +133,7 @@ add_library(SPIRV-Tools-opt
   loop_descriptor.cpp
   loop_utils.cpp
   loop_unroller.cpp
+  loop_unswitch_pass.cpp
   mem_pass.cpp
   merge_return_pass.cpp
   module.cpp

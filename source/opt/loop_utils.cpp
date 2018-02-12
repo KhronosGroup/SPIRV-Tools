@@ -18,6 +18,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "cfa.h"
 #include "opt/cfg.h"
 #include "opt/ir_builder.h"
 #include "opt/ir_context.h"
@@ -479,6 +480,115 @@ void LoopUtils::MakeLoopClosedSSA() {
       ir::IRContext::Analysis::kAnalysisCFG |
       ir::IRContext::Analysis::kAnalysisDominatorAnalysis |
       ir::IRContext::Analysis::kAnalysisLoopAnalysis);
+}
+
+ir::Loop* LoopUtils::CloneLoop(
+    LoopCloningResult* cloning_result,
+    const std::vector<ir::BasicBlock*>& ordered_loop_blocks) const {
+  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+
+  std::unique_ptr<ir::Loop> new_loop = MakeUnique<ir::Loop>(context_);
+  if (loop_->HasParent()) new_loop->SetParent(loop_->GetParent());
+
+  ir::CFG& cfg = *context_->cfg();
+
+  // Clone and place blocks in a SPIR-V compliant order (dominators first).
+  for (ir::BasicBlock* old_bb : ordered_loop_blocks) {
+    // For each basic block in the loop, we clone it and register the mapping
+    // between old and new ids.
+    ir::BasicBlock* new_bb = old_bb->Clone(context_);
+    new_bb->SetParent(&function_);
+    new_bb->GetLabelInst()->SetResultId(context_->TakeNextId());
+    def_use_mgr->AnalyzeInstDef(new_bb->GetLabelInst());
+    context_->set_instr_block(new_bb->GetLabelInst(), new_bb);
+    cloning_result->cloned_bb_.emplace_back(new_bb);
+
+    cloning_result->old_to_new_bb_[old_bb->id()] = new_bb;
+    cloning_result->new_to_old_bb_[new_bb->id()] = old_bb;
+    cloning_result->value_map_[old_bb->id()] = new_bb->id();
+
+    if (loop_->IsInsideLoop(old_bb)) new_loop->AddBasicBlock(new_bb);
+
+    for (auto& inst : *new_bb) {
+      if (inst.HasResultId()) {
+        uint32_t old_result_id = inst.result_id();
+        inst.SetResultId(context_->TakeNextId());
+        cloning_result->value_map_[old_result_id] = inst.result_id();
+
+        // Only look at the defs for now, uses are not updated yet.
+        def_use_mgr->AnalyzeInstDef(&inst);
+      }
+    }
+  }
+
+  // All instructions (including all labels) have been cloned,
+  // remap instruction operands id with the new ones.
+  for (std::unique_ptr<ir::BasicBlock>& bb_ref : cloning_result->cloned_bb_) {
+    ir::BasicBlock* bb = bb_ref.get();
+
+    for (ir::Instruction& insn : *bb) {
+      insn.ForEachInId([cloning_result](uint32_t* old_id) {
+        // If the operand is defined in the loop, remap the id.
+        auto id_it = cloning_result->value_map_.find(*old_id);
+        if (id_it != cloning_result->value_map_.end()) {
+          *old_id = id_it->second;
+        }
+      });
+      // Only look at what the instruction uses. All defs are register, so all
+      // should be fine now.
+      def_use_mgr->AnalyzeInstUse(&insn);
+      context_->set_instr_block(&insn, bb);
+    }
+    cfg.RegisterBlock(bb);
+  }
+
+  PopulateLoopNest(new_loop.get(), *cloning_result);
+
+  return new_loop.release();
+}
+
+void LoopUtils::PopulateLoopNest(
+    ir::Loop* new_loop, const LoopCloningResult& cloning_result) const {
+  std::unordered_map<ir::Loop*, ir::Loop*> loop_mapping;
+  loop_mapping[loop_] = new_loop;
+
+  if (loop_->HasParent()) loop_->GetParent()->AddNestedLoop(new_loop);
+  PopulateLoopDesc(new_loop, loop_, cloning_result);
+
+  for (ir::Loop& sub_loop :
+       ir::make_range(++opt::TreeDFIterator<ir::Loop>(loop_),
+                      opt::TreeDFIterator<ir::Loop>())) {
+    ir::Loop* cloned = new ir::Loop(context_);
+    if (ir::Loop* parent = loop_mapping[sub_loop.GetParent()])
+      parent->AddNestedLoop(cloned);
+    loop_mapping[&sub_loop] = cloned;
+    PopulateLoopDesc(cloned, &sub_loop, cloning_result);
+  }
+
+  loop_desc_->AddLoopNest(std::unique_ptr<ir::Loop>(new_loop));
+}
+
+// Populates |new_loop| descriptor according to |old_loop|'s one.
+void LoopUtils::PopulateLoopDesc(
+    ir::Loop* new_loop, ir::Loop* old_loop,
+    const LoopCloningResult& cloning_result) const {
+  for (uint32_t bb_id : old_loop->GetBlocks()) {
+    ir::BasicBlock* bb = cloning_result.old_to_new_bb_.at(bb_id);
+    new_loop->AddBasicBlock(bb);
+  }
+  new_loop->SetHeaderBlock(
+      cloning_result.old_to_new_bb_.at(old_loop->GetHeaderBlock()->id()));
+  if (old_loop->GetLatchBlock())
+    new_loop->SetLatchBlock(
+        cloning_result.old_to_new_bb_.at(old_loop->GetLatchBlock()->id()));
+  if (old_loop->GetMergeBlock()) {
+    ir::BasicBlock* bb =
+        cloning_result.old_to_new_bb_.at(old_loop->GetMergeBlock()->id());
+    new_loop->SetMergeBlock(bb);
+  }
+  if (old_loop->GetPreHeaderBlock())
+    new_loop->SetPreHeaderBlock(
+        cloning_result.old_to_new_bb_.at(old_loop->GetPreHeaderBlock()->id()));
 }
 
 }  // namespace opt
