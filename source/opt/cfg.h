@@ -17,6 +17,7 @@
 
 #include "basic_block.h"
 
+#include <algorithm>
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
@@ -81,6 +82,22 @@ class CFG {
     uint32_t blk_id = blk->id();
     id2block_[blk_id] = blk;
     AddEdges(blk);
+  }
+
+  // Removes from the CFG any mapping for the basic block id |blk_id|.
+  void ForgetBlock(const ir::BasicBlock* blk) {
+    id2block_.erase(blk->id());
+    label2preds_.erase(blk->id());
+    blk->ForEachSuccessorLabel(
+        [blk, this](uint32_t succ_id) { RemoveEdge(blk->id(), succ_id); });
+  }
+
+  void RemoveEdge(uint32_t pred_blk_id, uint32_t succ_blk_id) {
+    auto pred_it = label2preds_.find(succ_blk_id);
+    if (pred_it == label2preds_.end()) return;
+    auto& preds_list = pred_it->second;
+    auto it = std::find(preds_list.begin(), preds_list.end(), pred_blk_id);
+    if (it != preds_list.end()) preds_list.erase(it);
   }
 
   // Registers |blk| to all of its successors.

@@ -203,4 +203,98 @@ TEST_F(PassClassTest, LoopWithNoPreHeader) {
   EXPECT_NE(loop->GetOrCreatePreHeaderBlock(), nullptr);
 }
 
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 330 core
+in vec4 c;
+void main() {
+  int i = 0;
+  bool cond = c[0] == 0;
+  for (; i < 10; i++) {
+    if (cond) {
+      return;
+    }
+    else {
+      return;
+    }
+  }
+  bool cond2 = i == 9;
+}
+*/
+TEST_F(PassClassTest, NoLoop) {
+  const std::string text = R"(; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 3
+; Bound: 47
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %16
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 330
+               OpName %4 "main"
+               OpName %16 "c"
+               OpDecorate %16 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %10 = OpTypeBool
+         %11 = OpTypePointer Function %10
+         %13 = OpTypeFloat 32
+         %14 = OpTypeVector %13 4
+         %15 = OpTypePointer Input %14
+         %16 = OpVariable %15 Input
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 0
+         %19 = OpTypePointer Input %13
+         %22 = OpConstant %13 0
+         %30 = OpConstant %6 10
+         %39 = OpConstant %6 1
+         %46 = OpUndef %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpAccessChain %19 %16 %18
+         %21 = OpLoad %13 %20
+         %23 = OpFOrdEqual %10 %21 %22
+               OpBranch %24
+         %24 = OpLabel
+         %45 = OpPhi %6 %9 %5 %40 %27
+               OpLoopMerge %26 %27 None
+               OpBranch %28
+         %28 = OpLabel
+         %31 = OpSLessThan %10 %45 %30
+               OpBranchConditional %31 %25 %26
+         %25 = OpLabel
+               OpSelectionMerge %34 None
+               OpBranchConditional %23 %33 %36
+         %33 = OpLabel
+               OpReturn
+         %36 = OpLabel
+               OpReturn
+         %34 = OpLabel
+               OpBranch %27
+         %27 = OpLabel
+         %40 = OpIAdd %6 %46 %39
+               OpBranch %24
+         %26 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 4);
+  ir::LoopDescriptor ld{f};
+
+  EXPECT_EQ(ld.NumLoops(), 0u);
+}
+
 }  // namespace

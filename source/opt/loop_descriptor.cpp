@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "opt/loop_descriptor.h"
+#include <algorithm>
 #include <iostream>
 #include <type_traits>
 #include <utility>
@@ -245,11 +246,10 @@ bool Loop::IsBasicBlockInLoopSlow(const BasicBlock* bb) {
   assert(bb->GetParent() && "The basic block does not belong to a function");
   opt::DominatorAnalysis* dom_analysis =
       context_->GetDominatorAnalysis(bb->GetParent(), *context_->cfg());
-  if (!dom_analysis->Dominates(GetHeaderBlock(), bb)) return false;
+  if (dom_analysis->IsReachable(bb) &&
+      !dom_analysis->Dominates(GetHeaderBlock(), bb))
+    return false;
 
-  opt::PostDominatorAnalysis* postdom_analysis =
-      context_->GetPostDominatorAnalysis(bb->GetParent(), *context_->cfg());
-  if (!postdom_analysis->Dominates(GetMergeBlock(), bb)) return false;
   return true;
 }
 
@@ -378,6 +378,17 @@ void Loop::SetMergeBlock(BasicBlock* merge) {
   }
 }
 
+void Loop::SetPreHeaderBlock(BasicBlock* preheader) {
+  assert(!IsInsideLoop(preheader) && "The preheader block is in the loop");
+  assert(preheader->tail()->opcode() == SpvOpBranch &&
+         "The preheader block does not unconditionally branch to the header "
+         "block");
+  assert(preheader->tail()->GetSingleWordOperand(0) == GetHeaderBlock()->id() &&
+         "The preheader block does not unconditionally branch to the header "
+         "block");
+  loop_preheader_ = preheader;
+}
+
 void Loop::GetExitBlocks(std::unordered_set<uint32_t>* exit_blocks) const {
   ir::CFG* cfg = context_->cfg();
   exit_blocks->clear();
@@ -410,6 +421,43 @@ void Loop::GetMergingBlocks(
       }
     }
   }
+}
+
+namespace {
+
+static inline bool IsBasicBlockSafeToClone(IRContext* context, BasicBlock* bb) {
+  for (ir::Instruction& inst : *bb) {
+    if (!inst.IsBranch() && !context->IsCombinatorInstruction(&inst))
+      return false;
+  }
+
+  return true;
+}
+
+}  // namespace
+
+bool Loop::IsSafeToClone() const {
+  ir::CFG& cfg = *context_->cfg();
+
+  for (uint32_t bb_id : GetBlocks()) {
+    BasicBlock* bb = cfg.block(bb_id);
+    assert(bb);
+    if (!IsBasicBlockSafeToClone(context_, bb)) return false;
+  }
+
+  // Look at the merge construct.
+  if (GetHeaderBlock()->GetLoopMergeInst()) {
+    std::unordered_set<uint32_t> blocks;
+    GetMergingBlocks(&blocks);
+    blocks.erase(GetMergeBlock()->id());
+    for (uint32_t bb_id : blocks) {
+      BasicBlock* bb = cfg.block(bb_id);
+      assert(bb);
+      if (!IsBasicBlockSafeToClone(context_, bb)) return false;
+    }
+  }
+
+  return true;
 }
 
 bool Loop::IsLCSSA() const {
@@ -482,7 +530,8 @@ void Loop::ComputeLoopStructuredOrder(
     ordered_loop_blocks->push_back(loop_merge_);
 }
 
-LoopDescriptor::LoopDescriptor(const Function* f) : loops_() {
+LoopDescriptor::LoopDescriptor(const Function* f)
+    : loops_(), dummy_top_loop_(nullptr) {
   PopulateList(f);
 }
 
@@ -503,6 +552,17 @@ void LoopDescriptor::PopulateList(const Function* f) {
        ir::make_range(dom_tree.post_begin(), dom_tree.post_end())) {
     Instruction* merge_inst = node.bb_->GetLoopMergeInst();
     if (merge_inst) {
+      bool all_backedge_unreachable = true;
+      for (uint32_t pid : context->cfg()->preds(node.bb_->id())) {
+        if (dom_analysis->IsReachable(pid) &&
+            dom_analysis->Dominates(node.bb_->id(), pid)) {
+          all_backedge_unreachable = false;
+          break;
+        }
+      }
+      if (all_backedge_unreachable)
+        continue;  // ignore this one, we actually never branch back.
+
       // The id of the merge basic block of this loop.
       uint32_t merge_bb_id = merge_inst->GetSingleWordOperand(0);
 
@@ -888,5 +948,48 @@ void LoopDescriptor::ClearLoops() {
   }
   loops_.clear();
 }
+
+// Adds a new loop nest to the descriptor set.
+ir::Loop* LoopDescriptor::AddLoopNest(std::unique_ptr<ir::Loop> new_loop) {
+  ir::Loop* loop = new_loop.release();
+  if (!loop->HasParent()) dummy_top_loop_.nested_loops_.push_back(loop);
+  // Iterate from inner to outer most loop, adding basic block to loop mapping
+  // as we go.
+  for (ir::Loop& current_loop :
+       make_range(iterator::begin(loop), iterator::end(nullptr))) {
+    loops_.push_back(&current_loop);
+    for (uint32_t bb_id : current_loop.GetBlocks())
+      basic_block_to_loop_.insert(std::make_pair(bb_id, &current_loop));
+  }
+
+  return loop;
+}
+
+void LoopDescriptor::RemoveLoop(ir::Loop* loop) {
+  ir::Loop* parent = loop->GetParent() ? loop->GetParent() : &dummy_top_loop_;
+  parent->nested_loops_.erase(std::find(parent->nested_loops_.begin(),
+                                        parent->nested_loops_.end(), loop));
+  std::for_each(
+      loop->nested_loops_.begin(), loop->nested_loops_.end(),
+      [loop](ir::Loop* sub_loop) { sub_loop->SetParent(loop->GetParent()); });
+  parent->nested_loops_.insert(parent->nested_loops_.end(),
+                               loop->nested_loops_.begin(),
+                               loop->nested_loops_.end());
+  for (uint32_t bb_id : loop->GetBlocks()) {
+    ir::Loop* l = FindLoopForBasicBlock(bb_id);
+    if (l == loop) {
+      SetBasicBlockToLoop(bb_id, l->GetParent());
+    } else {
+      ForgetBasicBlock(bb_id);
+    }
+  }
+
+  LoopContainerType::iterator it =
+      std::find(loops_.begin(), loops_.end(), loop);
+  assert(it != loops_.end());
+  delete loop;
+  loops_.erase(it);
+}
+
 }  // namespace ir
 }  // namespace spvtools

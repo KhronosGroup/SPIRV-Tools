@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_OPT_DOMINATOR_ANALYSIS_TREE_H_
 #define LIBSPIRV_OPT_DOMINATOR_ANALYSIS_TREE_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <utility>
@@ -195,7 +196,9 @@ class DominatorTree {
   }
 
   // Returns true if the basic block id |a| is reachable by this tree.
-  bool ReachableFromRoots(uint32_t a) const;
+  bool ReachableFromRoots(uint32_t a) const {
+    return GetTreeNode(a) != nullptr;
+  }
 
   // Returns true if this tree is a post dominator tree.
   bool IsPostDominator() const { return postdominator_; }
@@ -267,11 +270,14 @@ class DominatorTree {
     return &node_iter->second;
   }
 
- private:
   // Adds the basic block |bb| to the tree structure if it doesn't already
   // exist.
   DominatorTreeNode* GetOrInsertNode(ir::BasicBlock* bb);
 
+  // Recomputes the DF numbering of the tree.
+  void ResetDFNumbering();
+
+ private:
   // Wrapper function which gets the list of pairs of each BasicBlocks to its
   // immediately  dominating BasicBlock and stores the result in the the edges
   // parameter.

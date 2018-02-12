@@ -99,6 +99,14 @@ class UptrVectorIterator
   inline typename std::enable_if<!IsConstForMethod, UptrVectorIterator>::type
   Erase();
 
+  // Returns the underlying iterator.
+  UnderlyingIterator Get() const { return iterator_; }
+
+  // Returns a valid end iterator for the underlying container.
+  UptrVectorIterator End() const {
+    return UptrVectorIterator(container_, container_->end());
+  }
+
  private:
   UptrVector* container_;        // The container we are manipulating.
   UnderlyingIterator iterator_;  // The raw iterator from the container.
