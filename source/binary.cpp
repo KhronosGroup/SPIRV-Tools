@@ -25,9 +25,9 @@
 #include "assembly_grammar.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
+#include "latest_version_spirv_header.h"
 #include "opcode.h"
 #include "operand.h"
-#include "spirv/1.2/spirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
 
