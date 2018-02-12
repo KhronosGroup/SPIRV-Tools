@@ -23,13 +23,13 @@
 #include <unordered_set>
 #include <vector>
 
+#include "latest_version_spirv_header.h"
 #include "source/comp/markv_model.h"
 #include "source/enum_string_mapping.h"
 #include "source/opcode.h"
 #include "source/operand.h"
 #include "source/spirv_constant.h"
 #include "source/util/huffman_codec.h"
-#include "spirv/1.2/spirv.h"
 
 using libspirv::SpirvStats;
 using spvutils::HuffmanCodec;

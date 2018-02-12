@@ -23,8 +23,8 @@
 #include <unordered_set>
 
 #include "spirv-tools/libspirv.h"
-#include "spirv/1.2/spirv.h"
 
+#include "latest_version_spirv_header.h"
 #include "parsed_operand.h"
 
 namespace {

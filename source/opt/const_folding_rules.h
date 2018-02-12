@@ -22,7 +22,7 @@
 #include "folding_rules.h"
 #include "ir_builder.h"
 #include "ir_context.h"
-#include "spirv/1.2/spirv.h"
+#include "latest_version_spirv_header.h"
 
 namespace spvtools {
 namespace opt {
