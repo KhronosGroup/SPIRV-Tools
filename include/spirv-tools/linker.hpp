@@ -26,7 +26,10 @@ namespace spvtools {
 
 class LinkerOptions {
  public:
-  LinkerOptions() : create_library_(false), verify_ids_(false) {}
+  LinkerOptions()
+      : create_library_(false),
+        verify_ids_(false),
+        allow_partial_linkage_(false) {}
 
   // Returns whether a library or an executable should be produced by the
   // linking phase.
@@ -50,9 +53,20 @@ class LinkerOptions {
   // context.
   void SetVerifyIds(bool verify_ids) { verify_ids_ = verify_ids; }
 
+  // Returns whether to allow for imported symbols to have no corresponding
+  // exported symbols
+  bool GetAllowPartialLinkage() const { return allow_partial_linkage_; }
+
+  // Sets whether to allow for imported symbols to have no corresponding
+  // exported symbols
+  void SetAllowPartialLinkage(bool allow_partial_linkage) {
+    allow_partial_linkage_ = allow_partial_linkage;
+  }
+
  private:
   bool create_library_;
   bool verify_ids_;
+  bool allow_partial_linkage_;
 };
 
 // Links one or more SPIR-V modules into a new SPIR-V module. That is, combine

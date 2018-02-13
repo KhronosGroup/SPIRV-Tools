@@ -110,7 +110,8 @@ static spv_result_t MergeModules(const MessageConsumer& consumer,
 static spv_result_t GetImportExportPairs(
     const MessageConsumer& consumer, const ir::IRContext& linked_context,
     const DefUseManager& def_use_manager,
-    const DecorationManager& decoration_manager, LinkageTable* linkings_to_do);
+    const DecorationManager& decoration_manager, bool allow_partial_linkage,
+    LinkageTable* linkings_to_do);
 
 // Checks that for each pair of import and export, the import and export have
 // the same type as well as the same decorations.
@@ -134,7 +135,7 @@ static spv_result_t CheckImportExportCompatibility(
 // TODO(pierremoreau): Run a pass for removing dead instructions, for example
 //                     OpName for prototypes of imported funcions.
 static spv_result_t RemoveLinkageSpecificInstructions(
-    const MessageConsumer& consumer, bool create_executable,
+    const MessageConsumer& consumer, const LinkerOptions& options,
     const LinkageTable& linkings_to_do, DecorationManager* decoration_manager,
     ir::IRContext* linked_context);
 
@@ -222,9 +223,10 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
 
   // Phase 4: Find the import/export pairs
   LinkageTable linkings_to_do;
-  res = GetImportExportPairs(
-      consumer, linked_context, *linked_context.get_def_use_mgr(),
-      *linked_context.get_decoration_mgr(), &linkings_to_do);
+  res = GetImportExportPairs(consumer, linked_context,
+                             *linked_context.get_def_use_mgr(),
+                             *linked_context.get_decoration_mgr(),
+                             options.GetAllowPartialLinkage(), &linkings_to_do);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 5: Ensure the import and export have the same types and decorations.
@@ -246,9 +248,9 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
 
   // Phase 8: Remove linkage specific instructions, such as import/export
   // attributes, linkage capability, etc. if applicable
-  res = RemoveLinkageSpecificInstructions(
-      consumer, !options.GetCreateLibrary(), linkings_to_do,
-      linked_context.get_decoration_mgr(), &linked_context);
+  res = RemoveLinkageSpecificInstructions(consumer, options, linkings_to_do,
+                                          linked_context.get_decoration_mgr(),
+                                          &linked_context);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 9: Compact the IDs used in the module
@@ -481,7 +483,8 @@ static spv_result_t MergeModules(const MessageConsumer& consumer,
 static spv_result_t GetImportExportPairs(
     const MessageConsumer& consumer, const ir::IRContext& linked_context,
     const DefUseManager& def_use_manager,
-    const DecorationManager& decoration_manager, LinkageTable* linkings_to_do) {
+    const DecorationManager& decoration_manager, bool allow_partial_linkage,
+    LinkageTable* linkings_to_do) {
   spv_position_t position = {};
 
   if (linkings_to_do == nullptr)
@@ -561,7 +564,7 @@ static spv_result_t GetImportExportPairs(
     std::vector<LinkageSymbolInfo> possible_exports;
     const auto& exp = exports.find(import.name);
     if (exp != exports.end()) possible_exports = exp->second;
-    if (possible_exports.empty())
+    if (possible_exports.empty() && !allow_partial_linkage)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
              << "Unresolved external reference to \"" << import.name << "\".";
@@ -571,7 +574,8 @@ static spv_result_t GetImportExportPairs(
              << "Too many external references, " << possible_exports.size()
              << ", were found for \"" << import.name << "\".";
 
-    linkings_to_do->emplace_back(import, possible_exports.front());
+    if (!possible_exports.empty())
+      linkings_to_do->emplace_back(import, possible_exports.front());
   }
 
   return SPV_SUCCESS;
@@ -623,7 +627,7 @@ static spv_result_t CheckImportExportCompatibility(
 }
 
 static spv_result_t RemoveLinkageSpecificInstructions(
-    const MessageConsumer& consumer, bool create_executable,
+    const MessageConsumer& consumer, const LinkerOptions& options,
     const LinkageTable& linkings_to_do, DecorationManager* decoration_manager,
     ir::IRContext* linked_context) {
   spv_position_t position = {};
@@ -689,21 +693,40 @@ static spv_result_t RemoveLinkageSpecificInstructions(
     }
   }
 
+  // If partial linkage is allowed, we need an efficient way to check whether
+  // an imported ID had a corresponding export symbol. As uses of the imported
+  // symbol have already been replaced by the exported symbol, use the exported
+  // symbol ID.
+  // TODO(pierremoreau): This will not work if the decoration is applied
+  //                     through a group, but the linker does not support that
+  //                     either.
+  std::unordered_set<SpvId> imports;
+  if (options.GetAllowPartialLinkage()) {
+    imports.reserve(linkings_to_do.size());
+    for (const auto& linking_entry : linkings_to_do)
+      imports.emplace(linking_entry.exported_symbol.id);
+  }
+
   // Remove import linkage attributes
   auto next = linked_context->annotation_begin();
   for (auto inst = next; inst != linked_context->annotation_end();
        inst = next) {
     ++next;
+    // If this is an import annotation:
+    // * if we do not allow partial linkage, remove all import annotations;
+    // * otherwise, remove the annotation only if there was a corresponding
+    //   export.
     if (inst->opcode() == SpvOpDecorate &&
         inst->GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
-        inst->GetSingleWordOperand(3u) == SpvLinkageTypeImport) {
+        inst->GetSingleWordOperand(3u) == SpvLinkageTypeImport &&
+        (!options.GetAllowPartialLinkage() ||
+         imports.find(inst->GetSingleWordOperand(0u)) != imports.end())) {
       linked_context->KillInst(&*inst);
     }
   }
 
-  // Remove export linkage attributes and Linkage capability if making an
-  // executable
-  if (create_executable) {
+  // Remove export linkage attributes if making an executable
+  if (!options.GetCreateLibrary()) {
     next = linked_context->annotation_begin();
     for (auto inst = next; inst != linked_context->annotation_end();
          inst = next) {
@@ -714,7 +737,11 @@ static spv_result_t RemoveLinkageSpecificInstructions(
         linked_context->KillInst(&*inst);
       }
     }
+  }
 
+  // Remove Linkage capability if making an executable and partial linkage is
+  // not allowed
+  if (!options.GetCreateLibrary() && !options.GetAllowPartialLinkage()) {
     for (auto& inst : linked_context->capabilities())
       if (inst.GetSingleWordInOperand(0u) == SpvCapabilityLinkage) {
         linked_context->KillInst(&inst);
