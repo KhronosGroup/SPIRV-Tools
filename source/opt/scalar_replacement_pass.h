@@ -39,7 +39,8 @@ class ScalarReplacementPass : public Pass {
     return ir::IRContext::kAnalysisDefUse |
            ir::IRContext::kAnalysisInstrToBlockMapping |
            ir::IRContext::kAnalysisDecorations |
-           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG;
+           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
+           ir::IRContext::kAnalysisNameMap;
   }
 
  private:

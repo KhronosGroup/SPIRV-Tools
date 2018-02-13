@@ -38,7 +38,8 @@ class LocalRedundancyEliminationPass : public Pass {
            ir::IRContext::kAnalysisInstrToBlockMapping |
            ir::IRContext::kAnalysisDecorations |
            ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
-           ir::IRContext::kAnalysisDominatorAnalysis;
+           ir::IRContext::kAnalysisDominatorAnalysis |
+           ir::IRContext::kAnalysisNameMap;
   }
 
  protected:

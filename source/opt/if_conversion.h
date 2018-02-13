@@ -33,7 +33,7 @@ class IfConversion : public Pass {
     return ir::IRContext::kAnalysisDefUse |
            ir::IRContext::kAnalysisDominatorAnalysis |
            ir::IRContext::kAnalysisInstrToBlockMapping |
-           ir::IRContext::kAnalysisCFG;
+           ir::IRContext::kAnalysisCFG | ir::IRContext::kAnalysisNameMap;
   }
 
  private:

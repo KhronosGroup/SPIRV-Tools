@@ -57,7 +57,8 @@ class IRContext {
     kAnalysisCFG = 1 << 4,
     kAnalysisDominatorAnalysis = 1 << 5,
     kAnalysisLoopAnalysis = 1 << 6,
-    kAnalysisEnd = 1 << 7
+    kAnalysisNameMap = 1 << 7,
+    kAnalysisEnd = 1 << 8
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
@@ -75,7 +76,8 @@ class IRContext {
         def_use_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
         constant_mgr_(nullptr),
-        type_mgr_(nullptr) {
+        type_mgr_(nullptr),
+        id_to_name_(nullptr) {
     libspirv::SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
   }
@@ -89,8 +91,8 @@ class IRContext {
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
-        constant_mgr_(nullptr),
-        type_mgr_(nullptr) {
+        type_mgr_(nullptr),
+        id_to_name_(nullptr) {
     libspirv::SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
     InitializeCombinators();
@@ -255,6 +257,15 @@ class IRContext {
       type_mgr_.reset(new opt::analysis::TypeManager(consumer(), this));
     return type_mgr_.get();
   }
+
+  // Build the map from the ids to the OpName and OpMemberName instruction
+  // associated with it.
+  inline void BuildIdToNameMap();
+
+  // Returns a range of instrucions that contain all of the OpName and
+  // OpMemberNames associated with the given id.
+  inline IteratorRange<std::multimap<uint32_t, Instruction*>::iterator>
+  GetNames(uint32_t id);
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
@@ -465,6 +476,9 @@ class IRContext {
   // Add the combinator opcode for the given extension to combinator_ops_.
   void AddCombinatorsForExtension(ir::Instruction* extension);
 
+  // Remove |inst| from |id_to_name_| if it is in map.
+  void RemoveFromIdToName(const Instruction* inst);
+
   // The SPIR-V syntax context containing grammar tables for opcodes and
   // operands.
   spv_context syntax_context_;
@@ -523,6 +537,9 @@ class IRContext {
 
   // Type manager for |module_|.
   std::unique_ptr<opt::analysis::TypeManager> type_mgr_;
+
+  // A map from an id to its corresponding OpName and OpMemberName instructions.
+  std::unique_ptr<std::multimap<uint32_t, Instruction*>> id_to_name_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,
@@ -695,6 +712,11 @@ void IRContext::AddDebug1Inst(std::unique_ptr<Instruction>&& d) {
 }
 
 void IRContext::AddDebug2Inst(std::unique_ptr<Instruction>&& d) {
+  if (AreAnalysesValid(kAnalysisNameMap)) {
+    if (d->opcode() == SpvOpName || d->opcode() == SpvOpMemberName) {
+      id_to_name_->insert({d->result_id(), d.get()});
+    }
+  }
   module()->AddDebug2Inst(std::move(d));
 }
 
@@ -731,6 +753,26 @@ void IRContext::UpdateDefUse(Instruction* inst) {
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->UpdateDefUse(inst);
   }
+}
+
+void IRContext::BuildIdToNameMap() {
+  id_to_name_.reset(new std::multimap<uint32_t, Instruction*>());
+  for (Instruction& debug_inst : debugs2()) {
+    if (debug_inst.opcode() == SpvOpMemberName ||
+        debug_inst.opcode() == SpvOpName) {
+      id_to_name_->insert({debug_inst.GetSingleWordInOperand(0), &debug_inst});
+    }
+  }
+  valid_analyses_ = valid_analyses_ | kAnalysisNameMap;
+}
+
+IteratorRange<std::multimap<uint32_t, Instruction*>::iterator>
+IRContext::GetNames(uint32_t id) {
+  if (!AreAnalysesValid(kAnalysisNameMap)) {
+    BuildIdToNameMap();
+  }
+  auto result = id_to_name_->equal_range(id);
+  return make_range(std::move(result.first), std::move(result.second));
 }
 
 }  // namespace ir

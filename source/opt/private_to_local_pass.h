@@ -33,7 +33,8 @@ class PrivateToLocalPass : public Pass {
     return ir::IRContext::kAnalysisDefUse |
            ir::IRContext::kAnalysisDecorations |
            ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
-           ir::IRContext::kAnalysisDominatorAnalysis;
+           ir::IRContext::kAnalysisDominatorAnalysis |
+           ir::IRContext::kAnalysisNameMap;
   }
 
  private:
@@ -43,18 +44,19 @@ class PrivateToLocalPass : public Pass {
 
   // |inst| is an instruction declaring a varible.  If that variable is
   // referenced in a single function and all of uses are valid as defined by
-  // |IsValidUse|, then that function is returned.  Otherwise, the return value
-  // is |nullptr|.
+  // |IsValidUse|, then that function is returned.  Otherwise, the return
+  // value is |nullptr|.
   ir::Function* FindLocalFunction(const ir::Instruction& inst) const;
 
-  // Returns true is |inst| is a valid use of a pointer.  In this case, a valid
-  // use is one where the transformation is able to rewrite the type to match a
-  // change in storage class of the original variable.
+  // Returns true is |inst| is a valid use of a pointer.  In this case, a
+  // valid use is one where the transformation is able to rewrite the type to
+  // match a change in storage class of the original variable.
   bool IsValidUse(const ir::Instruction* inst) const;
 
-  // Given the result id of a pointer type, |old_type_id|, this function returns
-  // the id of a the same pointer type except the storage class has been changed
-  // to function.  If the type does not already exist, it will be created.
+  // Given the result id of a pointer type, |old_type_id|, this function
+  // returns the id of a the same pointer type except the storage class has
+  // been changed to function.  If the type does not already exist, it will be
+  // created.
   uint32_t GetNewType(uint32_t old_type_id);
 
   // Updates |inst|, and any instruction dependent on |inst|, to reflect the
