@@ -46,3 +46,8 @@ add_spvtools_unittest(TARGET link_unique_ids
   SRCS unique_ids_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
+
+add_spvtools_unittest(TARGET link_partial_linkage
+  SRCS partial_linkage_test.cpp
+  LIBS SPIRV-Tools-opt SPIRV-Tools-link
+)
