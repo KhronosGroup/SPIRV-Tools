@@ -44,6 +44,7 @@ OpDecorate %1 LinkageAttributes "bar" Export
             AssembleAndLink({body1, body2}, &linked_binary, linker_options));
 
   const std::string expected_res = R"(OpCapability Linkage
+OpModuleProcessed "Linked by SPIR-V Tools Linker"
 OpDecorate %1 LinkageAttributes "foo" Import
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
