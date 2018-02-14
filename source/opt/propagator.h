@@ -198,6 +198,20 @@ class SSAPropagator {
   // Instruction::GetSingleWordOperand.
   bool IsPhiArgExecutable(ir::Instruction* phi, uint32_t i) const;
 
+  // Returns true if |inst| has a recorded status. This will be true once |inst|
+  // has been simulated once.
+  bool HasStatus(ir::Instruction* inst) const { return statuses_.count(inst); }
+
+  // Returns the current propagation status of |inst|. Assumes
+  // |HasStatus(inst)| returns true.
+  PropStatus Status(ir::Instruction* inst) const {
+    return statuses_.find(inst)->second;
+  }
+
+  // Records the propagation status |status| for |inst|. Returns true if the
+  // status for |inst| has changed or set was set for the first time.
+  bool SetStatus(ir::Instruction* inst, PropStatus status);
+
  private:
   // Initialize processing.
   void Initialize(ir::Function* fn);
@@ -253,13 +267,8 @@ class SSAPropagator {
   void AddControlEdge(const Edge& e);
 
   // Adds all the instructions that use the result of |instr| to the SSA edges
-  // work list. If |instr| produces no result id, this does nothing.  This also
-  // does nothing if the instruction at the end of the def-use is a Phi
-  // instruction.  Phi instructions are treated specially because (a) they can
-  // be in def-use cycles with other Phi instructions, and (b) they are always
-  // executed when a basic block is simulated (see the description of the Sparse
-  // Conditional Constant algorithm in the original paper).
-  void AddSSAEdges(ir::Instruction* instr, bool traverse_phis = false);
+  // work list. If |instr| produces no result id, this does nothing.
+  void AddSSAEdges(ir::Instruction* instr);
 
   // IR context to use.
   ir::IRContext* ctx_;
@@ -296,7 +305,13 @@ class SSAPropagator {
 
   // Set of executable CFG edges.
   std::set<Edge> executable_edges_;
+
+  // Tracks instruction propagation status.
+  std::unordered_map<ir::Instruction*, SSAPropagator::PropStatus> statuses_;
 };
+
+std::ostream& operator<<(std::ostream& str,
+                         const SSAPropagator::PropStatus& status);
 
 }  // namespace opt
 }  // namespace spvtools
