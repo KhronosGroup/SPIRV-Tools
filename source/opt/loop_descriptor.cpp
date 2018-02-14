@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "constants.h"
 #include "opt/cfg.h"
 #include "opt/dominator_tree.h"
 #include "opt/ir_builder.h"
@@ -29,6 +30,107 @@
 namespace spvtools {
 namespace ir {
 
+// Takes in a phi instruction |induction| and the loop |header| and returns the
+// step operation of the loop.
+ir::Instruction* Loop::GetInductionStepOperation(
+    const ir::Loop* loop, const ir::Instruction* induction) const {
+  // Induction must be a phi instruction.
+  assert(induction->opcode() == SpvOpPhi);
+
+  ir::Instruction* step = nullptr;
+
+  opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
+
+  // Traverse the incoming operands of the phi instruction.
+  for (uint32_t operand_id = 1; operand_id < induction->NumInOperands();
+       operand_id += 2) {
+    // Incoming edge.
+    ir::BasicBlock* incoming_block =
+        context_->cfg()->block(induction->GetSingleWordInOperand(operand_id));
+
+    // Check if the block is dominated by header, and thus coming from within
+    // the loop.
+    if (loop->IsInsideLoop(incoming_block)) {
+      step = def_use_manager->GetDef(
+          induction->GetSingleWordInOperand(operand_id - 1));
+      break;
+    }
+  }
+
+  if (!step || !IsSupportedStepOp(step->opcode())) {
+    return nullptr;
+  }
+
+  return step;
+}
+
+// Returns true if the |step| operation is an induction variable step operation
+// which is currently handled.
+bool Loop::IsSupportedStepOp(SpvOp step) const {
+  switch (step) {
+    case SpvOp::SpvOpISub:
+    case SpvOp::SpvOpIAdd:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool Loop::IsSupportedCondition(SpvOp condition) const {
+  switch (condition) {
+    // <
+    case SpvOp::SpvOpULessThan:
+    case SpvOp::SpvOpSLessThan:
+    // >
+    case SpvOp::SpvOpUGreaterThan:
+    case SpvOp::SpvOpSGreaterThan:
+      return true;
+    default:
+      return false;
+  }
+}
+
+// Extract the initial value from the |induction| OpPhi instruction and store it
+// in |value|. If the function couldn't find the initial value of |induction|
+// return false.
+bool Loop::GetInductionInitValue(const ir::Loop* loop,
+                                 const ir::Instruction* induction,
+                                 int64_t* value) const {
+  ir::Instruction* constant_instruction = nullptr;
+  opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
+
+  for (uint32_t operand_id = 0; operand_id < induction->NumInOperands();
+       operand_id += 2) {
+    ir::BasicBlock* bb = context_->cfg()->block(
+        induction->GetSingleWordInOperand(operand_id + 1));
+
+    if (!loop->IsInsideLoop(bb)) {
+      constant_instruction = def_use_manager->GetDef(
+          induction->GetSingleWordInOperand(operand_id));
+    }
+  }
+
+  if (!constant_instruction) return false;
+
+  const opt::analysis::Constant* constant =
+      context_->get_constant_mgr()->FindDeclaredConstant(
+          constant_instruction->result_id());
+  if (!constant) return false;
+
+  if (value) {
+    const opt::analysis::Integer* type =
+        constant->AsIntConstant()->type()->AsInteger();
+
+    if (type->IsSigned()) {
+      *value = constant->AsIntConstant()->GetS32BitValue();
+    } else {
+      *value = constant->AsIntConstant()->GetU32BitValue();
+    }
+  }
+
+  return true;
+}
+
 Loop::Loop(IRContext* context, opt::DominatorAnalysis* dom_analysis,
            BasicBlock* header, BasicBlock* continue_target,
            BasicBlock* merge_target)
@@ -37,12 +139,11 @@ Loop::Loop(IRContext* context, opt::DominatorAnalysis* dom_analysis,
       loop_continue_(continue_target),
       loop_merge_(merge_target),
       loop_preheader_(nullptr),
-      parent_(nullptr) {
+      parent_(nullptr),
+      loop_is_marked_for_removal_(false) {
   assert(context);
   assert(dom_analysis);
   loop_preheader_ = FindLoopPreheader(dom_analysis);
-  AddBasicBlockToLoop(header);
-  AddBasicBlockToLoop(continue_target);
 }
 
 BasicBlock* Loop::FindLoopPreheader(opt::DominatorAnalysis* dom_analysis) {
@@ -92,7 +193,6 @@ bool Loop::IsInsideLoop(Instruction* inst) const {
 
 bool Loop::IsBasicBlockInLoopSlow(const BasicBlock* bb) {
   assert(bb->GetParent() && "The basic block does not belong to a function");
-
   opt::DominatorAnalysis* dom_analysis =
       context_->GetDominatorAnalysis(bb->GetParent(), *context_->cfg());
   if (!dom_analysis->Dominates(GetHeaderBlock(), bb)) return false;
@@ -219,14 +319,8 @@ void Loop::SetLatchBlock(BasicBlock* latch) {
 void Loop::SetMergeBlock(BasicBlock* merge) {
 #ifndef NDEBUG
   assert(merge->GetParent() && "The basic block does not belong to a function");
-  CFG& cfg = *merge->GetParent()->GetParent()->context()->cfg();
-
-  for (uint32_t pred : cfg.preds(merge->id())) {
-    assert(IsInsideLoop(pred) &&
-           "A predecessor of the merge block does not belong to the loop");
-  }
-  assert(!IsInsideLoop(merge) && "The merge block is in the loop");
 #endif  // NDEBUG
+  assert(!IsInsideLoop(merge) && "The merge block is in the loop");
 
   SetMergeBlockImpl(merge);
   if (GetHeaderBlock()->GetLoopMergeInst()) {
@@ -327,6 +421,7 @@ LoopDescriptor::~LoopDescriptor() { ClearLoops(); }
 
 void LoopDescriptor::PopulateList(const Function* f) {
   IRContext* context = f->GetParent()->context();
+
   opt::DominatorAnalysis* dom_analysis =
       context->GetDominatorAnalysis(f, *context->cfg());
 
@@ -384,7 +479,7 @@ void LoopDescriptor::PopulateList(const Function* f) {
            make_range(node.df_begin(), node.df_end())) {
         // Check if we are in the loop.
         if (dom_tree.Dominates(dom_merge_node, &loop_node)) continue;
-        current_loop->AddBasicBlockToLoop(loop_node.bb_);
+        current_loop->AddBasicBlock(loop_node.bb_);
         basic_block_to_loop_.insert(
             std::make_pair(loop_node.bb_->id(), current_loop));
       }
@@ -395,12 +490,262 @@ void LoopDescriptor::PopulateList(const Function* f) {
   }
 }
 
+ir::BasicBlock* Loop::FindConditionBlock() const {
+  const ir::Function& function = *loop_merge_->GetParent();
+  ir::BasicBlock* condition_block = nullptr;
+
+  const opt::DominatorAnalysis* dom_analysis =
+      context_->GetDominatorAnalysis(&function, *context_->cfg());
+  ir::BasicBlock* bb = dom_analysis->ImmediateDominator(loop_merge_);
+
+  if (!bb) return nullptr;
+
+  const ir::Instruction& branch = *bb->ctail();
+
+  // Make sure the branch is a conditional branch.
+  if (branch.opcode() != SpvOpBranchConditional) return nullptr;
+
+  // Make sure one of the two possible branches is to the merge block.
+  if (branch.GetSingleWordInOperand(1) == loop_merge_->id() ||
+      branch.GetSingleWordInOperand(2) == loop_merge_->id()) {
+    condition_block = bb;
+  }
+
+  return condition_block;
+}
+
+bool Loop::FindNumberOfIterations(const ir::Instruction* induction,
+                                  const ir::Instruction* branch_inst,
+                                  size_t* iterations_out,
+                                  int64_t* step_value_out,
+                                  int64_t* init_value_out) const {
+  // From the branch instruction find the branch condition.
+  opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
+
+  // Condition instruction from the OpConditionalBranch.
+  ir::Instruction* condition =
+      def_use_manager->GetDef(branch_inst->GetSingleWordOperand(0));
+
+  assert(IsSupportedCondition(condition->opcode()));
+
+  // Get the constant manager from the ir context.
+  opt::analysis::ConstantManager* const_manager = context_->get_constant_mgr();
+
+  // Find the constant value used by the condition variable. Exit out if it
+  // isn't a constant int.
+  const opt::analysis::Constant* upper_bound =
+      const_manager->FindDeclaredConstant(condition->GetSingleWordOperand(3));
+  if (!upper_bound) return false;
+
+  // Must be integer because of the opcode on the condition.
+  int64_t condition_value = 0;
+
+  const opt::analysis::Integer* type =
+      upper_bound->AsIntConstant()->type()->AsInteger();
+
+  if (type->IsSigned()) {
+    condition_value = upper_bound->AsIntConstant()->GetS32BitValue();
+  } else {
+    condition_value = upper_bound->AsIntConstant()->GetU32BitValue();
+  }
+
+  // Find the instruction which is stepping through the loop.
+  ir::Instruction* step_inst = GetInductionStepOperation(this, induction);
+  if (!step_inst) return false;
+
+  // Find the constant value used by the condition variable.
+  const opt::analysis::Constant* step_constant =
+      const_manager->FindDeclaredConstant(step_inst->GetSingleWordOperand(3));
+  if (!step_constant) return false;
+
+  // Must be integer because of the opcode on the condition.
+  int64_t step_value = 0;
+
+  const opt::analysis::Integer* step_type =
+      step_constant->AsIntConstant()->type()->AsInteger();
+
+  if (step_type->IsSigned()) {
+    step_value = step_constant->AsIntConstant()->GetS32BitValue();
+  } else {
+    step_value = step_constant->AsIntConstant()->GetU32BitValue();
+  }
+
+  // If this is a subtraction step we should negate the step value.
+  if (step_inst->opcode() == SpvOp::SpvOpISub) {
+    step_value = -step_value;
+  }
+
+  // Find the inital value of the loop and make sure it is a constant integer.
+  int64_t init_value = 0;
+  if (!GetInductionInitValue(this, induction, &init_value)) return false;
+
+  // If iterations is non null then store the value in that.
+  if (iterations_out) {
+    int64_t num_itrs = GetIterations(condition->opcode(), condition_value,
+                                     init_value, step_value);
+
+    // If the loop body will not be reached return false.
+    if (num_itrs <= 0) {
+      return false;
+    }
+    assert(static_cast<size_t>(num_itrs) <= std::numeric_limits<size_t>::max());
+    *iterations_out = static_cast<size_t>(num_itrs);
+  }
+
+  if (step_value_out) {
+    *step_value_out = step_value;
+  }
+
+  if (init_value_out) {
+    *init_value_out = init_value;
+  }
+
+  return true;
+}
+
+// We retrieve the number of iterations using the following formula, diff /
+// |step_value| where diff is calculated differently according to the
+// |condition| and uses the |condition_value| and |init_value|. If diff /
+// |step_value| is NOT cleanly divisable then we add one to the sum.
+int64_t Loop::GetIterations(SpvOp condition, int64_t condition_value,
+                            int64_t init_value, int64_t step_value) const {
+  int64_t diff = 0;
+
+  // Take the abs of - step values.
+  step_value = llabs(step_value);
+
+  switch (condition) {
+    case SpvOp::SpvOpSLessThan:
+    case SpvOp::SpvOpULessThan: {
+      diff = condition_value - init_value;
+      break;
+    }
+    case SpvOp::SpvOpSGreaterThan:
+    case SpvOp::SpvOpUGreaterThan: {
+      diff = init_value - condition_value;
+      break;
+    }
+    default:
+      assert(false &&
+             "Could not retrieve number of iterations from the loop condition. "
+             "Condition is not supported.");
+  }
+
+  int64_t result = diff / step_value;
+
+  if (diff % step_value != 0) {
+    result += 1;
+  }
+  return result;
+}
+
+ir::Instruction* Loop::FindInductionVariable(
+    const ir::BasicBlock* condition_block) const {
+  // Find the branch instruction.
+  const ir::Instruction& branch_inst = *condition_block->ctail();
+
+  ir::Instruction* induction = nullptr;
+  // Verify that the branch instruction is a conditional branch.
+  if (branch_inst.opcode() == SpvOp::SpvOpBranchConditional) {
+    // From the branch instruction find the branch condition.
+    opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
+
+    // Find the instruction representing the condition used in the conditional
+    // branch.
+    ir::Instruction* condition =
+        def_use_manager->GetDef(branch_inst.GetSingleWordOperand(0));
+
+    // Ensure that the condition is a less than operation.
+    if (condition && IsSupportedCondition(condition->opcode())) {
+      // The left hand side operand of the operation.
+      ir::Instruction* variable_inst =
+          def_use_manager->GetDef(condition->GetSingleWordOperand(2));
+
+      // Make sure the variable instruction used is a phi.
+      if (!variable_inst || variable_inst->opcode() != SpvOpPhi) return nullptr;
+
+      // Make sure the phi instruction only has two incoming blocks. Each
+      // incoming block will be represented by two in operands in the phi
+      // instruction, the value and the block which that value came from. We
+      // assume the cannocalised phi will have two incoming values, one from the
+      // preheader and one from the continue block.
+      size_t max_supported_operands = 4;
+      if (variable_inst->NumInOperands() == max_supported_operands) {
+        // The operand index of the first incoming block label.
+        uint32_t operand_label_1 = 1;
+
+        // The operand index of the second incoming block label.
+        uint32_t operand_label_2 = 3;
+
+        // Make sure one of them is the preheader.
+        if (variable_inst->GetSingleWordInOperand(operand_label_1) !=
+                loop_preheader_->id() &&
+            variable_inst->GetSingleWordInOperand(operand_label_2) !=
+                loop_preheader_->id()) {
+          return nullptr;
+        }
+
+        // And make sure that the other is the latch block.
+        if (variable_inst->GetSingleWordInOperand(operand_label_1) !=
+                loop_continue_->id() &&
+            variable_inst->GetSingleWordInOperand(operand_label_2) !=
+                loop_continue_->id()) {
+          return nullptr;
+        }
+      } else {
+        return nullptr;
+      }
+
+      if (!FindNumberOfIterations(variable_inst, &branch_inst, nullptr))
+        return nullptr;
+      induction = variable_inst;
+    }
+  }
+
+  return induction;
+}
+
+// Add and remove loops which have been marked for addition and removal to
+// maintain the state of the loop descriptor class.
+void LoopDescriptor::PostModificationCleanup() {
+  LoopContainerType loops_to_remove_;
+  for (ir::Loop* loop : loops_) {
+    if (loop->IsMarkedForRemoval()) {
+      loops_to_remove_.push_back(loop);
+      if (loop->HasParent()) {
+        loop->GetParent()->RemoveChildLoop(loop);
+      }
+    }
+  }
+
+  for (ir::Loop* loop : loops_to_remove_) {
+    loops_.erase(std::find(loops_.begin(), loops_.end(), loop));
+  }
+
+  for (auto& pair : loops_to_add_) {
+    ir::Loop* parent = pair.first;
+    ir::Loop* loop = pair.second;
+
+    if (parent) {
+      loop->SetParent(nullptr);
+      parent->AddNestedLoop(loop);
+
+      for (uint32_t block_id : loop->GetBlocks()) {
+        parent->AddBasicBlock(block_id);
+      }
+    }
+
+    loops_.emplace_back(loop);
+  }
+
+  loops_to_add_.clear();
+}
+
 void LoopDescriptor::ClearLoops() {
   for (Loop* loop : loops_) {
     delete loop;
   }
   loops_.clear();
 }
-
 }  // namespace ir
 }  // namespace spvtools

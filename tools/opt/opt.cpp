@@ -472,6 +472,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateReplaceInvalidOpcodePass());
       } else if (0 == strcmp(cur_arg, "--simplify-instructions")) {
         optimizer->RegisterPass(CreateSimplificationPass());
+      } else if (0 == strcmp(cur_arg, "--loop-unroll")) {
+        optimizer->RegisterPass(CreateLoopFullyUnrollPass());
       } else if (0 == strcmp(cur_arg, "--skip-validation")) {
         *skip_validator = true;
       } else if (0 == strcmp(cur_arg, "-O")) {

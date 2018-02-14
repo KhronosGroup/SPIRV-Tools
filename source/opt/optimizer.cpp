@@ -389,4 +389,9 @@ Optimizer::PassToken CreateSimplificationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::SimplificationPass>());
 }
+
+Optimizer::PassToken CreateLoopFullyUnrollPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LoopUnroller>());
+}
 }  // namespace spvtools
