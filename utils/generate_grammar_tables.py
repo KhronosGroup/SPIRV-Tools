@@ -572,8 +572,8 @@ def generate_string_to_extension_mapping(operands):
         const auto b = std::begin(known_ext_strs);
         const auto e = std::end(known_ext_strs);
         const auto found = std::equal_range(
-            b, e, str, [](const char* a, const char* b) {{
-                return std::strcmp(a, b) < 0;
+            b, e, str, [](const char* str1, const char* str2) {{
+                return std::strcmp(str1, str2) < 0;
             }});
         if (found.first == e || found.first == found.second) return false;
 
