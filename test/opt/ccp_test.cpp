@@ -641,6 +641,44 @@ OpFunctionEnd
   auto res = SinglePassRunToBinary<opt::CCPPass>(text, true);
   EXPECT_EQ(std::get<1>(res), opt::Pass::Status::SuccessWithoutChange);
 }
+
+TEST_F(CCPTest, UndefInPhi) {
+  const std::string text = R"(
+; CHECK: [[uint1:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: [[phi:%\w+]] = OpPhi
+; CHECK: OpIAdd {{%\w+}} [[phi]] [[uint1]]
+               OpCapability Kernel
+               OpCapability Linkage
+               OpMemoryModel Logical OpenCL
+               OpDecorate %1 LinkageAttributes "func" Export
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+          %7 = OpUndef %uint
+          %8 = OpTypeFunction %void %bool
+          %1 = OpFunction %void None %8
+          %9 = OpFunctionParameter %bool
+         %10 = OpLabel
+               OpBranchConditional %9 %11 %12
+         %11 = OpLabel
+               OpBranch %13
+         %12 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+               OpBranchConditional %9 %13 %15
+         %15 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+         %16 = OpPhi %uint %uint_0 %11 %7 %14 %uint_1 %15
+         %17 = OpIAdd %uint %16 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::CCPPass>(text, true);
+}
 #endif
 
 }  // namespace

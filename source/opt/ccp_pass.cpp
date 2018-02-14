@@ -273,10 +273,12 @@ void CCPPass::Initialize(ir::IRContext* c) {
   // Populate the constant table with values from constant declarations in the
   // module.  The values of each OpConstant declaration is the identity
   // assignment (i.e., each constant is its own value).
-  for (const auto& inst : context()->module()->GetConstants()) {
-    // Skip specialization constants.
-    if (inst->IsConstant()) {
-      values_[inst->result_id()] = inst->result_id();
+  for (const auto& inst : get_module()->types_values()) {
+    // Skip specialization constants. Treat undef as varying.
+    if (inst.IsConstant()) {
+      values_[inst.result_id()] = inst.result_id();
+    } else if (inst.opcode() == SpvOpUndef) {
+      values_[inst.result_id()] = kVaryingSSAId;
     }
   }
 }
