@@ -81,9 +81,10 @@ SSAPropagator::PropStatus CCPPass::VisitPhi(ir::Instruction* phi) {
         return MarkInstructionVarying(phi);
       }
     } else {
-      // If any argument is not a constant, the Phi produces nothing
-      // interesting for now. The propagator will callback again, if needed.
-      return SSAPropagator::kNotInteresting;
+      // The incoming value has no recorded value and is therefore not
+      // interesting. A not interesting value joined with any other value is the
+      // other value.
+      continue;
     }
   }
 
@@ -227,15 +228,17 @@ SSAPropagator::PropStatus CCPPass::VisitBranch(ir::Instruction* instr,
 
 SSAPropagator::PropStatus CCPPass::VisitInstruction(ir::Instruction* instr,
                                                     ir::BasicBlock** dest_bb) {
+  SSAPropagator::PropStatus status = SSAPropagator::kVarying;
   *dest_bb = nullptr;
   if (instr->opcode() == SpvOpPhi) {
-    return VisitPhi(instr);
+    status = VisitPhi(instr);
   } else if (instr->IsBranch()) {
-    return VisitBranch(instr, dest_bb);
+    status = VisitBranch(instr, dest_bb);
   } else if (instr->result_id()) {
-    return VisitAssignment(instr);
+    status = VisitAssignment(instr);
   }
-  return SSAPropagator::kVarying;
+  // return SSAPropagator::kVarying;
+  return status;
 }
 
 bool CCPPass::ReplaceValues() {
@@ -258,7 +261,19 @@ bool CCPPass::PropagateConstants(ir::Function* fp) {
 
   propagator_ =
       std::unique_ptr<SSAPropagator>(new SSAPropagator(context(), visit_fn));
-  if (propagator_->Run(fp)) {
+  bool modified = propagator_->Run(fp);
+
+#ifndef NDEBUG
+  // Verify all visited values have settled. No value that has been simulated
+  // should end on not interesting.
+  fp->ForEachInst([this](ir::Instruction* inst) {
+    assert(!propagator_->HasStatus(inst) ||
+           propagator_->Status(inst) != SSAPropagator::kNotInteresting &&
+               "Unsettled value");
+  });
+#endif
+
+  if (modified) {
     return ReplaceValues();
   }
 
