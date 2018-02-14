@@ -81,9 +81,10 @@ SSAPropagator::PropStatus CCPPass::VisitPhi(ir::Instruction* phi) {
         return MarkInstructionVarying(phi);
       }
     } else {
-      // If any argument is not a constant, the Phi produces nothing
-      // interesting for now. The propagator will callback again, if needed.
-      return SSAPropagator::kNotInteresting;
+      // The incoming value has no recorded value and is therefore not
+      // interesting. A not interesting value joined with any other value is the
+      // other value.
+      continue;
     }
   }
 
@@ -258,6 +259,7 @@ bool CCPPass::PropagateConstants(ir::Function* fp) {
 
   propagator_ =
       std::unique_ptr<SSAPropagator>(new SSAPropagator(context(), visit_fn));
+
   if (propagator_->Run(fp)) {
     return ReplaceValues();
   }

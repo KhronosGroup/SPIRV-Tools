@@ -36,22 +36,14 @@ void SSAPropagator::AddControlEdge(const Edge& edge) {
   blocks_.push(dest_bb);
 }
 
-void SSAPropagator::AddSSAEdges(ir::Instruction* instr, bool traverse_phis) {
+void SSAPropagator::AddSSAEdges(ir::Instruction* instr) {
   // Ignore instructions that produce no result.
   if (instr->result_id() == 0) {
     return;
   }
 
   get_def_use_mgr()->ForEachUser(
-      instr->result_id(), [this, traverse_phis](ir::Instruction* use_instr) {
-        // If |use_instr| is a Phi, ignore this edge.  Phi instructions can form
-        // cycles in the def-use web, which would get the propagator into an
-        // infinite loop.  Phi instructions are always simulated when a block is
-        // visited, so there is no need to traverse the SSA edges into them.
-        if (!traverse_phis && use_instr->opcode() == SpvOpPhi) {
-          return;
-        }
-
+      instr->result_id(), [this](ir::Instruction* use_instr) {
         // If the basic block for |use_instr| has not been simulated yet, do
         // nothing.  The instruction |use_instr| will be simulated next time the
         // block is scheduled.
@@ -75,6 +67,23 @@ bool SSAPropagator::IsPhiArgExecutable(ir::Instruction* phi, uint32_t i) const {
   return IsEdgeExecutable(Edge(in_bb, phi_bb));
 }
 
+bool SSAPropagator::SetStatus(ir::Instruction* inst, PropStatus status) {
+  bool has_old_status = false;
+  PropStatus old_status = kVarying;
+  if (HasStatus(inst)) {
+    has_old_status = true;
+    old_status = Status(inst);
+  }
+
+  assert((!has_old_status || old_status <= status) &&
+         "Invalid lattice transition");
+
+  bool status_changed = !has_old_status || (old_status != status);
+  if (status_changed) statuses_[inst] = status;
+
+  return status_changed;
+}
+
 bool SSAPropagator::Simulate(ir::Instruction* instr) {
   bool changed = false;
 
@@ -85,13 +94,15 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
 
   ir::BasicBlock* dest_bb = nullptr;
   PropStatus status = visit_fn_(instr, &dest_bb);
+  bool status_changed = SetStatus(instr, status);
 
   if (status == kVarying) {
     // The statement produces a varying result, add it to the list of statements
     // not to simulate anymore and add its SSA def-use edges for simulation.
-    // Force re-simulation of all uses of this instruction.
     DontSimulateAgain(instr);
-    AddSSAEdges(instr, /* traverse_phis = */ true);
+    if (status_changed) {
+      AddSSAEdges(instr);
+    }
 
     // If |instr| is a block terminator, add all the control edges out of its
     // block.
@@ -103,13 +114,16 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
     }
     return false;
   } else if (status == kInteresting) {
-    // Add the SSA edges coming out of this instruction.
-    AddSSAEdges(instr);
+    // Add the SSA edges coming out of this instruction if the propagation
+    // status has changed.
+    if (status_changed) {
+      AddSSAEdges(instr);
+    }
 
     // If there are multiple outgoing control flow edges and we know which one
     // will be taken, add the destination block to the CFG work list.
     if (dest_bb) {
-      blocks_.push(dest_bb);
+      AddControlEdge(Edge(ctx_->get_instr_block(instr), dest_bb));
     }
     changed = true;
   }
@@ -244,7 +258,33 @@ bool SSAPropagator::Run(ir::Function* fn) {
     }
   }
 
+#ifndef NDEBUG
+  // Verify all visited values have settled. No value that has been simulated
+  // should end on not interesting.
+  fn->ForEachInst([this](ir::Instruction* inst) {
+    assert(
+        (!HasStatus(inst) || Status(inst) != SSAPropagator::kNotInteresting) &&
+        "Unsettled value");
+  });
+#endif
+
   return changed;
+}
+
+std::ostream& operator<<(std::ostream& str,
+                         const SSAPropagator::PropStatus& status) {
+  switch (status) {
+    case SSAPropagator::kVarying:
+      str << "Varying";
+      break;
+    case SSAPropagator::kInteresting:
+      str << "Interesting";
+      break;
+    default:
+      str << "Not interesting";
+      break;
+  }
+  return str;
 }
 
 }  // namespace opt
