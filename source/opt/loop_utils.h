@@ -12,8 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOOP_UTILS_H_
-#define LIBSPIRV_OPT_LOOP_UTILS_H_
+#ifndef SOURCE_OPT_LOOP_UTILS_H_
+#define SOURCE_OPT_LOOP_UTILS_H_
+#include <list>
+#include <memory>
+#include <vector>
+#include "opt/loop_descriptor.h"
 
 namespace spvtools {
 
@@ -24,11 +28,15 @@ class IRContext;
 
 namespace opt {
 
-// Set of basic loop transformation.
+// LoopUtils is used to encapsulte loop optimizations and from the passes which
+// use them. Any pass which needs a loop optimization should do it through this
+// or through a pass which is using this.
 class LoopUtils {
  public:
   LoopUtils(ir::IRContext* context, ir::Loop* loop)
-      : context_(context), loop_(loop) {}
+      : context_(context),
+        loop_(loop),
+        function_(*loop_->GetHeaderBlock()->GetParent()) {}
 
   // The converts the current loop to loop closed SSA form.
   // In the loop closed SSA, all loop exiting values go through a dedicated Phi
@@ -64,12 +72,42 @@ class LoopUtils {
   // Preserves: CFG, def/use and instruction to block mapping.
   void CreateLoopDedicatedExits();
 
+  // Perfom a partial unroll of |loop| by given |factor|. This will copy the
+  // body of the loop |factor| times. So a |factor| of one would give a new loop
+  // with the original body plus one unrolled copy body.
+  bool PartiallyUnroll(size_t factor);
+
+  // Fully unroll |loop|.
+  bool FullyUnroll();
+
+  // This function validates that |loop| meets the assumptions made by the
+  // implementation of the loop unroller. As the implementation accommodates
+  // more types of loops this function can reduce its checks.
+  //
+  // The conditions checked to ensure the loop can be unrolled are as follows:
+  // 1. That the loop is in structured order.
+  // 2. That the condinue block is a branch to the header.
+  // 3. That the only phi used in the loop is the induction variable.
+  //  TODO(stephen@codeplay.com): This is a temporary mesure, after the loop is
+  //  converted into LCSAA form and has a single entry and exit we can rewrite
+  //  the other phis.
+  // 4. That this is an inner most loop, or that loops contained within this
+  // loop have already been fully unrolled.
+  // 5. That each instruction in the loop is only used within the loop.
+  // (Related to the above phi condition).
+  bool CanPerformUnroll();
+
+  // Maintains the loop descriptor object after the unroll functions have been
+  // called, otherwise the analysis should be invalidated.
+  void Finalize();
+
  private:
   ir::IRContext* context_;
   ir::Loop* loop_;
+  ir::Function& function_;
 };
 
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOOP_UTILS_H_
+#endif  // SOURCE_OPT_LOOP_UTILS_H_

@@ -16,9 +16,9 @@
 #define LIBSPIRV_OPT_IR_BUILDER_H_
 
 #include "opt/basic_block.h"
+#include "opt/constants.h"
 #include "opt/instruction.h"
 #include "opt/ir_context.h"
-
 namespace spvtools {
 namespace opt {
 
@@ -136,6 +136,12 @@ class InstructionBuilder {
     return AddInstruction(std::move(select));
   }
 
+  // Adds a signed int32 constant to the binary.
+  // The |value| parameter is the constant value to be added.
+  ir::Instruction* Add32BitSignedIntegerConstant(int32_t value) {
+    return Add32BitConstantInteger<int32_t>(value, true);
+  }
+
   // Create a composite construct.
   // |type| should be a composite type and the number of elements it has should
   // match the size od |ids|.
@@ -150,6 +156,38 @@ class InstructionBuilder {
         new ir::Instruction(GetContext(), SpvOpCompositeConstruct, type,
                             GetContext()->TakeNextId(), ops));
     return AddInstruction(std::move(construct));
+  }
+  // Adds an unsigned int32 constant to the binary.
+  // The |value| parameter is the constant value to be added.
+  ir::Instruction* Add32BitUnsignedIntegerConstant(uint32_t value) {
+    return Add32BitConstantInteger<uint32_t>(value, false);
+  }
+
+  // Adds either a signed or unsigned 32 bit integer constant to the binary
+  // depedning on the |sign|. If |sign| is true then the value is added as a
+  // signed constant otherwise as an unsigned constant. If |sign| is false the
+  // value must not be a negative number.
+  template <typename T>
+  ir::Instruction* Add32BitConstantInteger(T value, bool sign) {
+    // Assert that we are not trying to store a negative number in an unsigned
+    // type.
+    if (!sign)
+      assert(value > 0 &&
+             "Trying to add a signed integer with an unsigned type!");
+
+    // Get or create the integer type.
+    analysis::Integer int_type(32, sign);
+
+    // Even if the value is negative we need to pass the bit pattern as a
+    // uint32_t to GetConstant.
+    uint32_t word = value;
+
+    // Create the constant value.
+    const opt::analysis::Constant* constant =
+        GetContext()->get_constant_mgr()->GetConstant(&int_type, {word});
+
+    // Create the OpConstant instruction using the type and the value.
+    return GetContext()->get_constant_mgr()->GetDefiningInstruction(constant);
   }
 
   ir::Instruction* AddCompositeExtract(
