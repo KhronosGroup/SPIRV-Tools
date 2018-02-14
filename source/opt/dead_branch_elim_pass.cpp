@@ -211,12 +211,17 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
         operands.push_back(inst->GetOperand(0u));
         operands.push_back(inst->GetOperand(1u));
         // Iterate through the incoming labels and determine which to keep
-        // and/or modify.
+        // and/or modify.  If there in an unreachable continue block, there will
+        // be an edge from that block to the header.  We need to keep it to
+        // maintain the structured control flow.  If the header has more that 2
+        // incoming edges, then the OpPhi must have an entry for that edge.
+        // However, if there is only one other incoming edge, the OpPhi can be
+        // eliminated.
         for (uint32_t i = 1; i < inst->NumInOperands(); i += 2) {
           ir::BasicBlock* inc = GetParentBlock(inst->GetSingleWordInOperand(i));
           auto cont_iter = unreachable_continues.find(inc);
           if (cont_iter != unreachable_continues.end() &&
-              cont_iter->second == &block) {
+              cont_iter->second == &block && inst->NumInOperands() > 4) {
             if (get_def_use_mgr()
                     ->GetDef(inst->GetSingleWordInOperand(i - 1))
                     ->opcode() == SpvOpUndef) {
@@ -250,7 +255,8 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
           modified = true;
           uint32_t continue_id = block.ContinueBlockIdIfAny();
           if (!backedge_added && continue_id != 0 &&
-              unreachable_continues.count(GetParentBlock(continue_id))) {
+              unreachable_continues.count(GetParentBlock(continue_id)) &&
+              operands.size() > 4) {
             // Changed the backedge to branch from the continue block instead
             // of a successor of the continue block. Add an entry to the phi to
             // provide an undef for the continue block. Since the successor of

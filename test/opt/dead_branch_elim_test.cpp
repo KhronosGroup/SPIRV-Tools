@@ -1415,13 +1415,11 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
 }
 
-TEST_F(DeadBranchElimTest, UnreachableLoopMergeAndContinueTargets) {
+TEST_F(DeadBranchElimTest, RemovePhiWithUnreachableContinue) {
   const std::string text = R"(
-; CHECK: [[undef:%\w+]] = OpUndef %bool
 ; CHECK: [[entry:%\w+]] = OpLabel
 ; CHECK-NEXT: OpBranch [[header:%\w+]]
-; CHECK: OpPhi %bool %false [[entry]] [[undef]] [[continue:%\w+]]
-; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]] None
+; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
 ; CHECK-NEXT: OpBranch [[ret:%\w+]]
 ; CHECK-NEXT: [[ret]] = OpLabel
 ; CHECK-NEXT: OpReturn
@@ -1458,6 +1456,54 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
 }
 
+TEST_F(DeadBranchElimTest, UnreachableLoopMergeAndContinueTargets) {
+  const std::string text = R"(
+; CHECK: [[undef:%\w+]] = OpUndef %bool
+; CHECK: OpSelectionMerge [[header:%\w+]]
+; CHECK-NEXT: OpBranchConditional {{%\w+}} [[if_lab:%\w+]] [[else_lab:%\w+]]
+; CHECK: OpPhi %bool %false [[if_lab]] %false [[else_lab]] [[undef]] [[continue:%\w+]]
+; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]] None
+; CHECK-NEXT: OpBranch [[ret:%\w+]]
+; CHECK-NEXT: [[ret]] = OpLabel
+; CHECK-NEXT: OpReturn
+; CHECK: [[continue]] = OpLabel
+; CHECK-NEXT: OpBranch [[header]]
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: OpUnreachable
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpName %func "func"
+OpDecorate %func LinkageAttributes "func" Export
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%true = OpConstantTrue %bool
+%void = OpTypeVoid
+%funcTy = OpTypeFunction %void
+%func = OpFunction %void None %funcTy
+%1 = OpLabel
+%c = OpUndef %bool
+OpSelectionMerge %2 None
+OpBranchConditional %c %if %else
+%if = OpLabel
+OpBranch %2
+%else = OpLabel
+OpBranch %2
+%2 = OpLabel
+%phi = OpPhi %bool %false %if %false %else %true %continue
+OpLoopMerge %merge %continue None
+OpBranch %3
+%3 = OpLabel
+OpReturn
+%continue = OpLabel
+OpBranch %2
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::DeadBranchElimPass>(text, true);
+}
 TEST_F(DeadBranchElimTest, EarlyReconvergence) {
   const std::string text = R"(
 ; CHECK-NOT: OpBranchConditional
@@ -1721,12 +1767,10 @@ OpFunctionEnd
 
 TEST_F(DeadBranchElimTest, ExtraBackedgeBlocksUnreachable) {
   const std::string text = R"(
-; CHECK: [[undef:%\w+]] = OpUndef
 ; CHECK: [[entry:%\w+]] = OpLabel
 ; CHECK-NEXT: OpBranch [[header:%\w+]]
 ; CHECK-NEXT: [[header]] = OpLabel
-; CHECK-NEXT: OpPhi %bool %true [[entry]] [[undef]] [[continue:%\w+]]
-; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]] None
+; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
 ; CHECK-NEXT: OpBranch [[merge]]
 ; CHECK-NEXT: [[continue]] = OpLabel
 ; CHECK-NEXT: OpBranch [[header]]
@@ -1777,7 +1821,6 @@ OpEntryPoint Fragment %func "func"
 %1 = OpLabel
 OpBranch %2
 %2 = OpLabel
-%3 = OpPhi %bool %true %1 %undef %5
 OpLoopMerge %4 %5 None
 OpBranch %6
 %6 = OpLabel
@@ -1849,14 +1892,10 @@ OpFunctionEnd
 
 TEST_F(DeadBranchElimTest, UnreachableContinuePhiInMerge) {
   const std::string text = R"(
-; CHECK: [[float_undef:%\w+]] = OpUndef %float
-; CHECK: [[int_undef:%\w+]] = OpUndef %int
 ; CHECK: [[entry:%\w+]] = OpLabel
 ; CHECK-NEXT: OpBranch [[header:%\w+]]
 ; CHECK-NEXT: [[header]] = OpLabel
-; CHECK-NEXT: OpPhi %float {{%\w+}} [[entry]] [[float_undef]] [[continue:%\w+]]
-; CHECK-NEXT: OpPhi %int {{%\w+}} [[entry]] [[int_undef]] [[continue]]
-; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]] None
+; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
 ; CHECK-NEXT: OpBranch [[label:%\w+]]
 ; CHECK-NEXT: [[label]] = OpLabel
 ; CHECK-NEXT: [[fadd:%\w+]] = OpFAdd
