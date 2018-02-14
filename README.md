@@ -22,7 +22,7 @@ SPIR-V is defined by the Khronos Group Inc.
 See the [SPIR-V Registry][spirv-registry] for the SPIR-V specification,
 headers, and XML registry.
 
-## Verisoning SPIRV-Tools
+## Versioning SPIRV-Tools
 
 See [`CHANGES`](CHANGES) for a high level summary of recent changes, by version.
 
