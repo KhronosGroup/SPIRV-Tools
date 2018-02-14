@@ -40,7 +40,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
   EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
       << GetErrorMessage();
 
-  const std::string expected_res = R"(%1 = OpTypeFloat 32
+  const std::string expected_res =
+      R"(OpModuleProcessed "Linked by SPIR-V Tools Linker"
+%1 = OpTypeFloat 32
 %2 = OpVariable %1 Input
 %3 = OpConstant %1 42
 %4 = OpVariable %1 Uniform %3
@@ -64,7 +66,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
   EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body}, &linked_binary))
       << GetErrorMessage();
 
-  const std::string expected_res = R"(%1 = OpTypeFloat 32
+  const std::string expected_res =
+      R"(OpModuleProcessed "Linked by SPIR-V Tools Linker"
+%1 = OpTypeFloat 32
 %2 = OpVariable %1 Uniform
 )";
   std::string res_body;
@@ -89,6 +93,7 @@ OpDecorate %1 LinkageAttributes "foo" Export
       << GetErrorMessage();
 
   const std::string expected_res = R"(OpCapability Linkage
+OpModuleProcessed "Linked by SPIR-V Tools Linker"
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
@@ -267,6 +272,7 @@ OpFunctionEnd
       << GetErrorMessage();
 
   const std::string expected_res = R"(OpCapability Kernel
+OpModuleProcessed "Linked by SPIR-V Tools Linker"
 OpDecorate %1 FuncParamAttr Sext
 %2 = OpTypeVoid
 %3 = OpTypeInt 32 0
@@ -310,7 +316,9 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
       << GetErrorMessage();
 
-  const std::string expected_res = R"(%1 = OpTypeVoid
+  const std::string expected_res =
+      R"(OpModuleProcessed "Linked by SPIR-V Tools Linker"
+%1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpTypeFloat 32
 %4 = OpVariable %3 Uniform
