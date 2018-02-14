@@ -24,8 +24,6 @@ compiler:
   - gcc
 
 matrix:
-  allow_failures:
-    - os: osx
   fast_finish: true
   include:
     # Additional build using Android NDK with android-cmake
