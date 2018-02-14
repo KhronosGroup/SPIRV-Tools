@@ -478,8 +478,8 @@ INSTANTIATE_TEST_CASE_P(
         {1000.0f, "1000"},
 
         // Still normal numbers, but with large magnitude exponents.
-        {float(ldexp(1.f, 126)), "8.50706e+37"},
-        {float(ldexp(-1.f, -126)), "-1.17549e-38"},
+        {float(ldexp(1.f, 126)), "8.50705917e+37"},
+        {float(ldexp(-1.f, -126)), "-1.17549435e-38"},
 
         // denormalized values are printed as hex floats.
         {float(ldexp(1.0f, -127)), "0x1p-127"},
@@ -509,18 +509,18 @@ INSTANTIATE_TEST_CASE_P(
             {1000.0, "1000"},
 
             // Large outside the range of normal floats
-            {ldexp(1.0, 128), "3.40282366920938e+38"},
-            {ldexp(1.5, 129), "1.02084710076282e+39"},
-            {ldexp(-1.0, 128), "-3.40282366920938e+38"},
-            {ldexp(-1.5, 129), "-1.02084710076282e+39"},
+            {ldexp(1.0, 128), "3.4028236692093846e+38"},
+            {ldexp(1.5, 129), "1.0208471007628154e+39"},
+            {ldexp(-1.0, 128), "-3.4028236692093846e+38"},
+            {ldexp(-1.5, 129), "-1.0208471007628154e+39"},
 
             // Small outside the range of normal floats
-            {ldexp(1.5, -129), "2.20405190779179e-39"},
-            {ldexp(-1.5, -129), "-2.20405190779179e-39"},
+            {ldexp(1.5, -129), "2.2040519077917891e-39"},
+            {ldexp(-1.5, -129), "-2.2040519077917891e-39"},
 
             // lowest non-denorm
-            {ldexp(1.0, -1022), "2.2250738585072e-308"},
-            {ldexp(-1.0, -1022), "-2.2250738585072e-308"},
+            {ldexp(1.0, -1022), "2.2250738585072014e-308"},
+            {ldexp(-1.0, -1022), "-2.2250738585072014e-308"},
 
             // Denormalized values
             {ldexp(1.125, -1023), "0x1.2p-1023"},
