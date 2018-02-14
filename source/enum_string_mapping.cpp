@@ -14,7 +14,9 @@
 
 #include "enum_string_mapping.h"
 
+#include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <string>
 #include <unordered_map>
 

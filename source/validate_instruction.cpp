@@ -424,7 +424,7 @@ void CheckIfKnownExtension(ValidationState_t& _,
                            const spv_parsed_instruction_t* inst) {
   const std::string extension_str = GetExtensionString(inst);
   Extension extension;
-  if (!GetExtensionFromString(extension_str, &extension)) {
+  if (!GetExtensionFromString(extension_str.c_str(), &extension)) {
     _.diag(SPV_SUCCESS) << "Found unrecognized extension " << extension_str;
     return;
   }
