@@ -31,7 +31,7 @@ void FeatureManager::AddExtensions(ir::Module* module) {
     const std::string name =
         reinterpret_cast<const char*>(ext.GetInOperand(0u).words.data());
     libspirv::Extension extension;
-    if (libspirv::GetExtensionFromString(name, &extension)) {
+    if (libspirv::GetExtensionFromString(name.c_str(), &extension)) {
       extensions_.Add(extension);
     }
   }
