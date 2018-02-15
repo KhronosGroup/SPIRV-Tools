@@ -18,11 +18,15 @@
 #include <cstdint>
 #include <vector>
 
+#include "const_folding_rules.h"
 #include "constants.h"
 #include "def_use_manager.h"
 
 namespace spvtools {
 namespace opt {
+
+// Returns a reference to the ConstnatFoldingRules instance.
+const ConstantFoldingRules& GetConstantFoldingRules();
 
 // Returns the result of folding a scalar instruction with the given |opcode|
 // and |operands|. Each entry in |operands| is a pointer to an
