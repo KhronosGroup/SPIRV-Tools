@@ -738,6 +738,409 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
             2, -std::numeric_limits<double>::infinity())
 ));
 // clang-format on
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(DoubleOrderedCompareConstantFoldingTest, BooleanInstructionFoldingTest,
+                        ::testing::Values(
+  // Test case 0: fold 1.0 == 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdEqual %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 1: fold 1.0 != 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdNotEqual %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 2: fold 1.0 < 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThan %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 3: fold 1.0 > 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThan %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 4: fold 1.0 <= 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThanEqual %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 5: fold 1.0 >= 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThanEqual %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 6: fold 1.0 == 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 7: fold 1.0 != 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdNotEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 8: fold 1.0 < 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThan %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 9: fold 1.0 > 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThan %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 10: fold 1.0 <= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThanEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 11: fold 1.0 >= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThanEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true)
+));
+
+INSTANTIATE_TEST_CASE_P(DoubleUnorderedCompareConstantFoldingTest, BooleanInstructionFoldingTest,
+                        ::testing::Values(
+  // Test case 0: fold 1.0 == 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordEqual %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 1: fold 1.0 != 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordNotEqual %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 2: fold 1.0 < 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThan %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 3: fold 1.0 > 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThan %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 4: fold 1.0 <= 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThanEqual %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 5: fold 1.0 >= 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThanEqual %bool %double_1 %double_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 6: fold 1.0 == 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 7: fold 1.0 != 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordNotEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 8: fold 1.0 < 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThan %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 9: fold 1.0 > 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThan %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 10: fold 1.0 <= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThanEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 11: fold 1.0 >= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThanEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true)
+));
+
+INSTANTIATE_TEST_CASE_P(FloatOrderedCompareConstantFoldingTest, BooleanInstructionFoldingTest,
+                        ::testing::Values(
+  // Test case 0: fold 1.0 == 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdEqual %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 1: fold 1.0 != 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdNotEqual %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 2: fold 1.0 < 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThan %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 3: fold 1.0 > 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThan %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 4: fold 1.0 <= 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThanEqual %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 5: fold 1.0 >= 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThanEqual %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 6: fold 1.0 == 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 7: fold 1.0 != 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdNotEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 8: fold 1.0 < 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThan %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 9: fold 1.0 > 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThan %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 10: fold 1.0 <= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThanEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 11: fold 1.0 >= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThanEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true)
+));
+
+INSTANTIATE_TEST_CASE_P(FloatUnorderedCompareConstantFoldingTest, BooleanInstructionFoldingTest,
+                        ::testing::Values(
+  // Test case 0: fold 1.0 == 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordEqual %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 1: fold 1.0 != 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordNotEqual %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 2: fold 1.0 < 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThan %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 3: fold 1.0 > 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThan %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 4: fold 1.0 <= 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThanEqual %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 5: fold 1.0 >= 2.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThanEqual %bool %float_1 %float_2\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 6: fold 1.0 == 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 7: fold 1.0 != 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordNotEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 8: fold 1.0 < 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThan %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 9: fold 1.0 > 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThan %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 10: fold 1.0 <= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThanEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 11: fold 1.0 >= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThanEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true)
+));
+// clang-format on
+
 template <class ResultType>
 struct InstructionFoldingCaseWithMap {
   InstructionFoldingCaseWithMap(const std::string& tb, uint32_t id,
