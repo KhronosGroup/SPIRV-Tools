@@ -518,6 +518,14 @@ class ConstantManager {
     return false;
   }
 
+  void RemoveId(uint32_t id) {
+    auto it = id_to_const_val_.find(id);
+    if (it != id_to_const_val_.end()) {
+      const_val_to_id_.erase(it->second);
+      id_to_const_val_.erase(it);
+    }
+  }
+
   // Records a new mapping between |inst| and |const_value|. This updates the
   // two mappings |id_to_const_val_| and |const_val_to_id_|.
   void MapConstantToInst(const Constant* const_value, ir::Instruction* inst) {
