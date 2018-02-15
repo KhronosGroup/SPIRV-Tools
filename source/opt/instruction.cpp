@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "instruction.h"
+
 #include <initializer_list>
 
 #include "disassemble.h"
 #include "fold.h"
-#include "instruction.h"
 #include "ir_context.h"
 #include "reflect.h"
 
@@ -470,6 +471,11 @@ bool Instruction::IsOpaqueType() const {
 }
 
 bool Instruction::IsFoldable() const {
+  return IsFoldableByFoldScalar() ||
+         opt::GetConstantFoldingRules().HasFoldingRule(opcode());
+}
+
+bool Instruction::IsFoldableByFoldScalar() const {
   if (!opt::IsFoldableOpcode(opcode())) {
     return false;
   }
