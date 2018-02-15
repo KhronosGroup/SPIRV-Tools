@@ -281,14 +281,14 @@ bool CompareFloatingPoint(bool op_result, bool op_unordered,
       float fb = GetFloatFromConst(b);                                    \
       bool result = CompareFloatingPoint(                                 \
           fa op fb, std::isnan(fa) || std::isnan(fb), ord);               \
-      std::vector<uint32_t> words = {result};                             \
+      std::vector<uint32_t> words = {uint32_t(result)};                   \
       return const_mgr->GetConstant(result_type, words);                  \
     } else if (float_type->width() == 64) {                               \
       double fa = GetDoubleFromConst(a);                                  \
       double fb = GetDoubleFromConst(b);                                  \
       bool result = CompareFloatingPoint(                                 \
           fa op fb, std::isnan(fa) || std::isnan(fb), ord);               \
-      std::vector<uint32_t> words = {result};                             \
+      std::vector<uint32_t> words = {uint32_t(result)};                   \
       return const_mgr->GetConstant(result_type, words);                  \
     }                                                                     \
     return nullptr;                                                       \
