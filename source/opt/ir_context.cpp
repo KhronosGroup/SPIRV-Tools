@@ -106,6 +106,10 @@ Instruction* IRContext::KillInst(ir::Instruction* inst) {
     type_mgr_->RemoveId(inst->result_id());
   }
 
+  if (constant_mgr_ && ir::IsConstantInst(inst->opcode())) {
+    constant_mgr_->RemoveId(inst->result_id());
+  }
+
   RemoveFromIdToName(inst);
 
   Instruction* next_instruction = nullptr;
