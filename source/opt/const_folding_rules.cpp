@@ -156,18 +156,18 @@ ConstantFoldingRule FoldFloatingPointOp(FloatScalarFoldingRule scalar_rule) {
     }
 
     if (vector_type != nullptr) {
-      std::vector<const analysis::Constant*> a_componenets;
-      std::vector<const analysis::Constant*> b_componenets;
+      std::vector<const analysis::Constant*> a_components;
+      std::vector<const analysis::Constant*> b_components;
       std::vector<const analysis::Constant*> results_components;
 
-      a_componenets = GetVectorComponents(constants[0], const_mgr);
-      b_componenets = GetVectorComponents(constants[1], const_mgr);
+      a_components = GetVectorComponents(constants[0], const_mgr);
+      b_components = GetVectorComponents(constants[1], const_mgr);
 
       // Fold each component of the vector.
-      for (uint32_t i = 0; i < a_componenets.size(); ++i) {
+      for (uint32_t i = 0; i < a_components.size(); ++i) {
         results_components.push_back(scalar_rule(vector_type->element_type(),
-                                                 a_componenets[i],
-                                                 b_componenets[i], const_mgr));
+                                                 a_components[i],
+                                                 b_components[i], const_mgr));
         if (results_components[i] == nullptr) {
           return nullptr;
         }
