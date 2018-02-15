@@ -38,8 +38,8 @@ TEST_P(ExtensionTest, TestExtensionFromString) {
   const Extension extension = param.first;
   const std::string extension_str = param.second;
   Extension result_extension;
-  ASSERT_TRUE(
-      libspirv::GetExtensionFromString(extension_str, &result_extension));
+  ASSERT_TRUE(libspirv::GetExtensionFromString(extension_str.c_str(),
+                                               &result_extension));
   EXPECT_EQ(extension, result_extension);
 }
 
@@ -53,7 +53,8 @@ TEST_P(ExtensionTest, TestExtensionToString) {
 
 TEST_P(UnknownExtensionTest, TestExtensionFromStringFails) {
   Extension result_extension;
-  ASSERT_FALSE(libspirv::GetExtensionFromString(GetParam(), &result_extension));
+  ASSERT_FALSE(
+      libspirv::GetExtensionFromString(GetParam().c_str(), &result_extension));
 }
 
 TEST_P(CapabilityTest, TestCapabilityToString) {
@@ -86,6 +87,8 @@ INSTANTIATE_TEST_CASE_P(
 
 INSTANTIATE_TEST_CASE_P(UnknownExtensions, UnknownExtensionTest,
                         Values("", "SPV_KHR_", "SPV_KHR_device_group_ERROR",
+                               /*alphabetically before all extensions*/ "A",
+                               /*alphabetically after all extensions*/ "Z",
                                "SPV_ERROR_random_string_hfsdklhlktherh"));
 
 INSTANTIATE_TEST_CASE_P(

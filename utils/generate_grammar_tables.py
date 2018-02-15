@@ -328,7 +328,7 @@ def generate_instruction(inst, version, is_ext_inst):
 def generate_instruction_table(inst_table, version):
     """Returns the info table containing all SPIR-V instructions,
     sorted by opcode, and prefixed by capability arrays.
-    
+
     Note:
       - the built-in sorted() function is guaranteed to be stable.
         https://docs.python.org/3/library/functions.html#sorted
@@ -551,7 +551,7 @@ def generate_capability_to_string_table(operands):
 def generate_extension_to_string_mapping(operands):
     """Returns mapping function from extensions to corresponding strings."""
     extensions = get_extension_list(operands)
-    function = 'std::string ExtensionToString(Extension extension) {\n'
+    function = 'const char* ExtensionToString(Extension extension) {\n'
     function += '  switch (extension) {\n'
     template = '    case Extension::k{extension}:\n' \
         '      return "{extension}";\n'
@@ -563,14 +563,26 @@ def generate_extension_to_string_mapping(operands):
 
 def generate_string_to_extension_mapping(operands):
     """Returns mapping function from strings to corresponding extensions."""
-    function = 'bool GetExtensionFromString(' \
-        'const std::string& str, Extension* extension) {\n ' \
-        'static const std::unordered_map<std::string, Extension> mapping =\n'
-    function += generate_string_to_extension_table(operands)
-    function += ';\n\n'
-    function += '  const auto it = mapping.find(str);\n\n' \
-        '  if (it == mapping.end()) return false;\n\n' \
-        '  *extension = it->second;\n  return true;\n}'
+    extensions = get_extension_list(operands)  # Already sorted
+
+    function = '''
+    bool GetExtensionFromString(const char* str, Extension* extension) {{
+        static const char* known_ext_strs[] = {{ {strs} }};
+        static const Extension known_ext_ids[] = {{ {ids} }};
+        const auto b = std::begin(known_ext_strs);
+        const auto e = std::end(known_ext_strs);
+        const auto found = std::equal_range(
+            b, e, str, [](const char* str1, const char* str2) {{
+                return std::strcmp(str1, str2) < 0;
+            }});
+        if (found.first == e || found.first == found.second) return false;
+
+        *extension = known_ext_ids[found.first - b];
+        return true;
+    }}
+    '''.format(strs=', '.join(['"{}"'.format(e) for e in extensions]),
+               ids=', '.join(['Extension::k{}'.format(e) for e in extensions]))
+
     return function
 
 
@@ -578,7 +590,7 @@ def generate_capability_to_string_mapping(operands):
     """Returns mapping function from capabilities to corresponding strings.
     We take care to avoid emitting duplicate values.
     """
-    function = 'std::string CapabilityToString(SpvCapability capability) {\n'
+    function = 'const char* CapabilityToString(SpvCapability capability) {\n'
     function += '  switch (capability) {\n'
     template = '    case SpvCapability{capability}:\n' \
         '      return "{capability}";\n'

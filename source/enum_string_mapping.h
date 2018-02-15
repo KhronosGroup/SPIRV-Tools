@@ -24,13 +24,13 @@
 namespace libspirv {
 
 // Finds Extension enum corresponding to |str|. Returns false if not found.
-bool GetExtensionFromString(const std::string& str, Extension* extension);
+bool GetExtensionFromString(const char* str, Extension* extension);
 
 // Returns text string corresponding to |extension|.
-std::string ExtensionToString(Extension extension);
+const char* ExtensionToString(Extension extension);
 
 // Returns text string corresponding to |capability|.
-std::string CapabilityToString(SpvCapability capability);
+const char* CapabilityToString(SpvCapability capability);
 
 }  // namespace libspirv
 
