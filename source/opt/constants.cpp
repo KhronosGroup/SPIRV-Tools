@@ -72,7 +72,9 @@ ir::Instruction* ConstantManager::GetDefiningInstruction(
     if (pos == nullptr) pos = &iter;
     return BuildInstructionAndAddToModule(c, pos);
   } else {
-    return context()->get_def_use_mgr()->GetDef(decl_id);
+    auto def = context()->get_def_use_mgr()->GetDef(decl_id);
+    assert(def != nullptr);
+    return def;
   }
 }
 
