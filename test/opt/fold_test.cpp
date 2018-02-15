@@ -1549,5 +1549,39 @@ INSTANTIATE_TEST_CASE_P(PhiFoldingTest, GeneralInstructionFoldingTest,
           "OpFunctionEnd",
       2, 0)
 ));
+
+INSTANTIATE_TEST_CASE_P(SelectFoldingTest, GeneralInstructionFoldingTest,
+::testing::Values(
+  // Test case 0: Fold select with the same values for both sides
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_bool Function\n" +
+          "%load = OpLoad %bool %n\n" +
+          "%2 = OpSelect %int %load %100 %100\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, INT_0_ID),
+  // Test case 1: Fold select true to left side
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_int Function\n" +
+          "%load = OpLoad %bool %n\n" +
+          "%2 = OpSelect %int %true %100 %n\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, INT_0_ID),
+  // Test case 2: Fold select false to right side
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_int Function\n" +
+          "%load = OpLoad %bool %n\n" +
+          "%2 = OpSelect %int %false %n %100\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, INT_0_ID)
+));
 // clang-format off
 }  // anonymous namespace

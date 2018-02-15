@@ -294,6 +294,38 @@ FoldingRule RedundantPhi() {
         return true;
       };
 }
+
+FoldingRule RedundantSelect() {
+  // An OpSelect instruction where both values are the same or the condition is
+  // constant can be replaced by one of the values
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpSelect &&
+           "Wrong opcode.  Should be OpSelect.");
+    assert(inst->NumInOperands() == 3);
+    assert(constants.size() == 3);
+
+    const analysis::BoolConstant* bc =
+        constants[0] ? constants[0]->AsBoolConstant() : nullptr;
+    uint32_t true_id = inst->GetSingleWordInOperand(1);
+    uint32_t false_id = inst->GetSingleWordInOperand(2);
+
+    if (bc) {
+      // Select condition is constant, result is known
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {bc->value() ? true_id : false_id}}});
+      return true;
+    } else if (true_id == false_id) {
+      // Both results are the same, condition doesn't matter
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {true_id}}});
+      return true;
+    } else {
+      return false;
+    }
+  };
+}
 }  // namespace
 
 spvtools::opt::FoldingRules::FoldingRules() {
@@ -310,6 +342,8 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpIMul].push_back(IntMultipleBy1());
 
   rules_[SpvOpPhi].push_back(RedundantPhi());
+
+  rules_[SpvOpSelect].push_back(RedundantSelect());
 }
 }  // namespace opt
 }  // namespace spvtools
