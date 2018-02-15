@@ -679,6 +679,32 @@ TEST_F(CCPTest, UndefInPhi) {
 
   SinglePassRunAndMatch<opt::CCPPass>(text, true);
 }
+
+// Just test to make sure the constant fold rules are being used.  Will rely on
+// the folding test for specific testing of specific rules.
+TEST_F(CCPTest, UseConstantFoldingRules) {
+  const std::string text = R"(
+; CHECK: [[float1:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpReturnValue [[float1]]
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpDecorate %1 LinkageAttributes "func" Export
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+      %float = OpTypeFloat 32
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+          %8 = OpTypeFunction %float
+          %1 = OpFunction %float None %8
+         %10 = OpLabel
+         %17 = OpFAdd %float %float_0 %float_1
+               OpReturnValue %17
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::CCPPass>(text, true);
+}
 #endif
 
 }  // namespace
