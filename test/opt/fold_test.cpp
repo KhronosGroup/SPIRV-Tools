@@ -839,6 +839,38 @@ INSTANTIATE_TEST_CASE_P(DoubleOrderedCompareConstantFoldingTest, BooleanInstruct
           "%2 = OpFOrdGreaterThanEqual %bool %double_1 %double_1\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
+      2, true),
+  // Test case 12: fold 2.0 < 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThan %bool %double_2 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 13: fold 2.0 > 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThan %bool %double_2 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 14: fold 2.0 <= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThanEqual %bool %double_2 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 15: fold 2.0 >= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThanEqual %bool %double_2 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
       2, true)
 ));
 
@@ -937,6 +969,38 @@ INSTANTIATE_TEST_CASE_P(DoubleUnorderedCompareConstantFoldingTest, BooleanInstru
       Header() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFUnordGreaterThanEqual %bool %double_1 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 12: fold 2.0 < 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThan %bool %double_2 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 13: fold 2.0 > 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThan %bool %double_2 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 14: fold 2.0 <= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThanEqual %bool %double_2 %double_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 15: fold 2.0 >= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThanEqual %bool %double_2 %double_1\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
       2, true)
@@ -1039,6 +1103,38 @@ INSTANTIATE_TEST_CASE_P(FloatOrderedCompareConstantFoldingTest, BooleanInstructi
           "%2 = OpFOrdGreaterThanEqual %bool %float_1 %float_1\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
+      2, true),
+  // Test case 12: fold 2.0 < 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThan %bool %float_2 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 13: fold 2.0 > 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThan %bool %float_2 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 14: fold 2.0 <= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdLessThanEqual %bool %float_2 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 15: fold 2.0 >= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdGreaterThanEqual %bool %float_2 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
       2, true)
 ));
 
@@ -1137,6 +1233,38 @@ INSTANTIATE_TEST_CASE_P(FloatUnorderedCompareConstantFoldingTest, BooleanInstruc
       Header() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFUnordGreaterThanEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 12: fold 2.0 < 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThan %bool %float_2 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 13: fold 2.0 > 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThan %bool %float_2 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 14: fold 2.0 <= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordLessThanEqual %bool %float_2 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 15: fold 2.0 >= 1.0
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordGreaterThanEqual %bool %float_2 %float_1\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
       2, true)
