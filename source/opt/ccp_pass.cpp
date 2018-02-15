@@ -228,17 +228,15 @@ SSAPropagator::PropStatus CCPPass::VisitBranch(ir::Instruction* instr,
 
 SSAPropagator::PropStatus CCPPass::VisitInstruction(ir::Instruction* instr,
                                                     ir::BasicBlock** dest_bb) {
-  SSAPropagator::PropStatus status = SSAPropagator::kVarying;
   *dest_bb = nullptr;
   if (instr->opcode() == SpvOpPhi) {
-    status = VisitPhi(instr);
+    return VisitPhi(instr);
   } else if (instr->IsBranch()) {
-    status = VisitBranch(instr, dest_bb);
+    return VisitBranch(instr, dest_bb);
   } else if (instr->result_id()) {
-    status = VisitAssignment(instr);
+    return VisitAssignment(instr);
   }
-  // return SSAPropagator::kVarying;
-  return status;
+  return SSAPropagator::kVarying;
 }
 
 bool CCPPass::ReplaceValues() {
