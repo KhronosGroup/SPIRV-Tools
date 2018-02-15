@@ -140,6 +140,8 @@ OpName %main "main"
 %double_1 = OpConstant %double 1
 %double_2 = OpConstant %double 2
 %double_3 = OpConstant %double 3
+%float_nan = OpConstant %float -0x1.8p+128
+%double_nan = OpConstant %double -0x1.8p+1024
 )";
 
   return header;
@@ -1135,6 +1137,78 @@ INSTANTIATE_TEST_CASE_P(FloatUnorderedCompareConstantFoldingTest, BooleanInstruc
       Header() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFUnordGreaterThanEqual %bool %float_1 %float_1\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true)
+));
+
+INSTANTIATE_TEST_CASE_P(DoubleNaNCompareConstantFoldingTest, BooleanInstructionFoldingTest,
+                        ::testing::Values(
+  // Test case 0: fold NaN == 0 (ord)
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdEqual %bool %double_nan %double_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 1: fold NaN == NaN (unord)
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordEqual %bool %double_nan %double_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 2: fold NaN != NaN (ord)
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdNotEqual %bool %double_nan %double_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 3: fold NaN != NaN (unord)
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordNotEqual %bool %double_nan %double_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true)
+));
+
+INSTANTIATE_TEST_CASE_P(FloatNaNCompareConstantFoldingTest, BooleanInstructionFoldingTest,
+                        ::testing::Values(
+  // Test case 0: fold NaN == 0 (ord)
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdEqual %bool %float_nan %float_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 1: fold NaN == NaN (unord)
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordEqual %bool %float_nan %float_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, true),
+  // Test case 2: fold NaN != NaN (ord)
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFOrdNotEqual %bool %float_nan %float_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, false),
+  // Test case 3: fold NaN != NaN (unord)
+  InstructionFoldingCase<bool>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpFUnordNotEqual %bool %float_nan %float_0\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
       2, true)
