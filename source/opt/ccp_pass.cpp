@@ -259,19 +259,8 @@ bool CCPPass::PropagateConstants(ir::Function* fp) {
 
   propagator_ =
       std::unique_ptr<SSAPropagator>(new SSAPropagator(context(), visit_fn));
-  bool modified = propagator_->Run(fp);
 
-#ifndef NDEBUG
-  // Verify all visited values have settled. No value that has been simulated
-  // should end on not interesting.
-  fp->ForEachInst([this](ir::Instruction* inst) {
-    assert(!propagator_->HasStatus(inst) ||
-           propagator_->Status(inst) != SSAPropagator::kNotInteresting &&
-               "Unsettled value");
-  });
-#endif
-
-  if (modified) {
+  if (propagator_->Run(fp)) {
     return ReplaceValues();
   }
 

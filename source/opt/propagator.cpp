@@ -251,6 +251,16 @@ bool SSAPropagator::Run(ir::Function* fn) {
     }
   }
 
+#ifndef NDEBUG
+  // Verify all visited values have settled. No value that has been simulated
+  // should end on not interesting.
+  fn->ForEachInst([this](ir::Instruction* inst) {
+    assert(
+        (!HasStatus(inst) || Status(inst) != SSAPropagator::kNotInteresting) &&
+        "Unsettled value");
+  });
+#endif
+
   return changed;
 }
 
