@@ -76,6 +76,12 @@ struct FloatProxyTraits<float> {
   static float max() { return std::numeric_limits<float>::max(); }
   // Returns the lowest normal value.
   static float lowest() { return std::numeric_limits<float>::lowest(); }
+  // Returns the value as the native floating point format.
+  static float getAsFloat(const uint_type& t) { return BitwiseCast<float>(t); }
+  // Returns the bits from the given floating pointer number.
+  static uint_type getBitsFromFloat(const float& t) {
+    return BitwiseCast<uint_type>(t);
+  }
 };
 
 template <>
@@ -88,6 +94,14 @@ struct FloatProxyTraits<double> {
   static double max() { return std::numeric_limits<double>::max(); }
   // Returns the lowest normal value.
   static double lowest() { return std::numeric_limits<double>::lowest(); }
+  // Returns the value as the native floating point format.
+  static double getAsFloat(const uint_type& t) {
+    return BitwiseCast<double>(t);
+  }
+  // Returns the bits from the given floating pointer number.
+  static uint_type getBitsFromFloat(const double& t) {
+    return BitwiseCast<uint_type>(t);
+  }
 };
 
 template <>
@@ -100,6 +114,10 @@ struct FloatProxyTraits<Float16> {
   static Float16 max() { return Float16::max(); }
   // Returns the lowest normal value.
   static Float16 lowest() { return Float16::lowest(); }
+  // Returns the value as the native floating point format.
+  static Float16 getAsFloat(const uint_type& t) { return Float16(t); }
+  // Returns the bits from the given floating pointer number.
+  static uint_type getBitsFromFloat(const Float16& t) { return t.get_value(); }
 };
 
 // Since copying a floating point number (especially if it is NaN)
@@ -116,7 +134,7 @@ class FloatProxy {
 
   // Intentionally non-explicit. This is a proxy type so
   // implicit conversions allow us to use it more transparently.
-  FloatProxy(T val) { data_ = BitwiseCast<uint_type>(val); }
+  FloatProxy(T val) { data_ = FloatProxyTraits<T>::getBitsFromFloat(val); }
 
   // Intentionally non-explicit. This is a proxy type so
   // implicit conversions allow us to use it more transparently.
@@ -129,7 +147,7 @@ class FloatProxy {
   }
 
   // Returns the data as a floating point value.
-  T getAsFloat() const { return BitwiseCast<T>(data_); }
+  T getAsFloat() const { return FloatProxyTraits<T>::getAsFloat(data_); }
 
   // Returns the raw data.
   uint_type data() const { return data_; }
@@ -317,12 +335,11 @@ class HexFloat {
   static const int_type min_exponent = -static_cast<int_type>(exponent_bias);
 
   // Returns the bits associated with the value.
-  uint_type getBits() const { return spvutils::BitwiseCast<uint_type>(value_); }
+  uint_type getBits() const { return value_.data(); }
 
   // Returns the bits associated with the value, without the leading sign bit.
   uint_type getUnsignedBits() const {
-    return static_cast<uint_type>(spvutils::BitwiseCast<uint_type>(value_) &
-                                  ~sign_mask);
+    return static_cast<uint_type>(value_.data() & ~sign_mask);
   }
 
   // Returns the bits associated with the exponent, shifted to start at the
@@ -423,7 +440,7 @@ class HexFloat {
                                       exponent_mask);
     significand = static_cast<uint_type>(significand & fraction_encode_mask);
     new_value = static_cast<uint_type>(new_value | (exponent | significand));
-    value_ = BitwiseCast<T>(new_value);
+    value_ = T(new_value);
   }
 
   // Increments the significand of this number by the given amount.
@@ -710,7 +727,7 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   static_assert(HF::num_fraction_bits != 0,
                 "num_fractin_bits must be non-zero for a valid float");
 
-  const uint_type bits = spvutils::BitwiseCast<uint_type>(value.value());
+  const uint_type bits = value.value().data();
   const char* const sign = (bits & HF::sign_mask) ? "-" : "";
   const uint_type exponent = static_cast<uint_type>(
       (bits & HF::exponent_mask) >> HF::num_fraction_bits);
@@ -1072,7 +1089,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
       HF::exponent_mask);
   output_bits |= shifted_exponent;
 
-  T output_float = spvutils::BitwiseCast<T>(output_bits);
+  T output_float(output_bits);
   value.set_value(output_float);
 
   return is;
