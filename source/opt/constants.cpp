@@ -22,6 +22,76 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
+float Constant::GetFloat() const {
+  assert(type()->AsFloat() != nullptr && type()->AsFloat()->width() == 32);
+
+  if (const FloatConstant* fc = AsFloatConstant()) {
+    return fc->GetFloatValue();
+  } else {
+    assert(AsNullConstant() && "Must be a floating point constant.");
+    return 0.0f;
+  }
+}
+
+double Constant::GetDouble() const {
+  assert(type()->AsFloat() != nullptr && type()->AsFloat()->width() == 64);
+
+  if (const FloatConstant* fc = AsFloatConstant()) {
+    return fc->GetDoubleValue();
+  } else {
+    assert(AsNullConstant() && "Must be a floating point constant.");
+    return 0.0;
+  }
+}
+
+uint32_t Constant::GetU32() const {
+  assert(type()->AsInteger() != nullptr);
+  assert(type()->AsInteger()->width() == 32);
+
+  if (const IntConstant* ic = AsIntConstant()) {
+    return ic->GetU32BitValue();
+  } else {
+    assert(AsNullConstant() && "Must be an integer constant.");
+    return 0u;
+  }
+}
+
+uint64_t Constant::GetU64() const {
+  assert(type()->AsInteger() != nullptr);
+  assert(type()->AsInteger()->width() == 64);
+
+  if (const IntConstant* ic = AsIntConstant()) {
+    return ic->GetU64BitValue();
+  } else {
+    assert(AsNullConstant() && "Must be an integer constant.");
+    return 0u;
+  }
+}
+
+int32_t Constant::GetS32() const {
+  assert(type()->AsInteger() != nullptr);
+  assert(type()->AsInteger()->width() == 32);
+
+  if (const IntConstant* ic = AsIntConstant()) {
+    return ic->GetS32BitValue();
+  } else {
+    assert(AsNullConstant() && "Must be an integer constant.");
+    return 0;
+  }
+}
+
+int64_t Constant::GetS64() const {
+  assert(type()->AsInteger() != nullptr);
+  assert(type()->AsInteger()->width() == 64);
+
+  if (const IntConstant* ic = AsIntConstant()) {
+    return ic->GetS64BitValue();
+  } else {
+    assert(AsNullConstant() && "Must be an integer constant.");
+    return 0;
+  }
+}
+
 ConstantManager::ConstantManager(ir::IRContext* ctx) : ctx_(ctx) {
   // Populate the constant table with values from constant declarations in the
   // module.  The values of each OpConstant declaration is the identity
@@ -33,6 +103,22 @@ ConstantManager::ConstantManager(ir::IRContext* ctx) : ctx_(ctx) {
 
 Type* ConstantManager::GetType(const ir::Instruction* inst) const {
   return context()->get_type_mgr()->GetType(inst->type_id());
+}
+
+std::vector<const Constant*> ConstantManager::GetOperandConstants(
+    ir::Instruction* inst) const {
+  std::vector<const Constant*> constants;
+  for (uint32_t i = 0; i < inst->NumInOperands(); i++) {
+    const ir::Operand* operand = &inst->GetInOperand(i);
+    if (operand->type != SPV_OPERAND_TYPE_ID) {
+      constants.push_back(nullptr);
+    } else {
+      uint32_t id = operand->words[0];
+      const analysis::Constant* constant = FindDeclaredConstant(id);
+      constants.push_back(constant);
+    }
+  }
+  return constants;
 }
 
 std::vector<const Constant*> ConstantManager::GetConstantsFromIds(

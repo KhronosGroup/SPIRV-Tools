@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <vector>
 
 #include "bitutils.h"
 
@@ -82,6 +83,8 @@ struct FloatProxyTraits<float> {
   static uint_type getBitsFromFloat(const float& t) {
     return BitwiseCast<uint_type>(t);
   }
+  // Returns the bitwidth.
+  static uint32_t width() { return 32u; }
 };
 
 template <>
@@ -102,6 +105,8 @@ struct FloatProxyTraits<double> {
   static uint_type getBitsFromFloat(const double& t) {
     return BitwiseCast<uint_type>(t);
   }
+  // Returns the bitwidth.
+  static uint32_t width() { return 64u; }
 };
 
 template <>
@@ -118,6 +123,8 @@ struct FloatProxyTraits<Float16> {
   static Float16 getAsFloat(const uint_type& t) { return Float16(t); }
   // Returns the bits from the given floating pointer number.
   static uint_type getBitsFromFloat(const Float16& t) { return t.get_value(); }
+  // Returns the bitwidth.
+  static uint32_t width() { return 16u; }
 };
 
 // Since copying a floating point number (especially if it is NaN)
@@ -151,6 +158,19 @@ class FloatProxy {
 
   // Returns the raw data.
   uint_type data() const { return data_; }
+
+  // Returns a vector of words suitable for use in an Operand.
+  std::vector<uint32_t> GetWords() const {
+    std::vector<uint32_t> words;
+    if (FloatProxyTraits<T>::width() == 64) {
+      FloatProxyTraits<double>::uint_type d = data();
+      words.push_back(static_cast<uint32_t>(d));
+      words.push_back(static_cast<uint32_t>(d >> 32));
+    } else {
+      words.push_back(static_cast<uint32_t>(data()));
+    }
+    return words;
+  }
 
   // Returns true if the value represents any type of NaN.
   bool isNan() { return FloatProxyTraits<T>::isNan(getAsFloat()); }
