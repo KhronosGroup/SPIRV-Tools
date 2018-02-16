@@ -577,5 +577,20 @@ opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
   return &post_dominator_trees_[f];
 }
 
+bool IRContext::CanFoldFloatingPoint(uint32_t id) {
+  // TODO: Add the rules for kernels.  For now it will be pessimistic.
+  if (!get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
+    return false;
+  }
+
+  bool is_nocontract = false;
+  get_decoration_mgr()->WhileEachDecoration(
+      id, SpvDecorationNoContraction, [&is_nocontract](const ir::Instruction&) {
+        is_nocontract = true;
+        return false;
+      });
+  return !is_nocontract;
+}
+
 }  // namespace ir
 }  // namespace spvtools

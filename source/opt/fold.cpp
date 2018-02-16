@@ -194,20 +194,10 @@ bool FoldInstructionInternal(ir::Instruction* inst) {
   }
 
   SpvOp opcode = inst->opcode();
-  analysis::ConstantManager* const_manger = context->get_constant_mgr();
+  analysis::ConstantManager* const_manager = context->get_constant_mgr();
 
-  std::vector<const analysis::Constant*> constants;
-  for (uint32_t i = 0; i < inst->NumInOperands(); i++) {
-    const ir::Operand* operand = &inst->GetInOperand(i);
-    if (operand->type != SPV_OPERAND_TYPE_ID) {
-      constants.push_back(nullptr);
-    } else {
-      uint32_t id = operand->words[0];
-      const analysis::Constant* constant =
-          const_manger->FindDeclaredConstant(id);
-      constants.push_back(constant);
-    }
-  }
+  std::vector<const analysis::Constant*> constants =
+      const_manager->GetOperandConstants(inst);
 
   static FoldingRules* rules = new FoldingRules();
   for (FoldingRule rule : rules->GetRulesForOpcode(opcode)) {
@@ -466,7 +456,7 @@ bool FoldBinaryBooleanOpToConstant(ir::Instruction* inst,
   }
 
   switch (opcode) {
-      // Logical
+    // Logical
     case SpvOp::SpvOpLogicalOr:
       for (uint32_t i = 0; i < 2; i++) {
         if (constants[i] != nullptr) {

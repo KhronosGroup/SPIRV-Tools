@@ -414,6 +414,10 @@ class IRContext {
   // its definitions and uses.
   inline void UpdateDefUse(Instruction* inst);
 
+  // Returns true if we are allowed to fold or otherwise manipulate the
+  // instruction that defines |id|.
+  bool CanFoldFloatingPoint(uint32_t id);
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {

@@ -20,16 +20,6 @@ namespace opt {
 namespace {
 const uint32_t kExtractCompositeIdInIdx = 0;
 
-// Returns a vector that contains the two 32-bit integers that result from
-// splitting |a| in two.  The first entry in vector are the low order bit if
-// |a|.
-inline std::vector<uint32_t> ExtractInts(uint64_t a) {
-  std::vector<uint32_t> result;
-  result.push_back(static_cast<uint32_t>(a));
-  result.push_back(static_cast<uint32_t>(a >> 32));
-  return result;
-}
-
 // Folds an OpcompositeExtract where input is a composite constant.
 ConstantFoldingRule FoldExtractWithConstants() {
   return [](ir::Instruction* inst,
@@ -168,34 +158,6 @@ ConstantFoldingRule FoldFloatingPointOp(FloatScalarFoldingRule scalar_rule) {
   };
 }
 
-// Returns the floating point value of |c|.  The constant |c| must have type
-// |Float|, and width |32|.
-float GetFloatFromConst(const analysis::Constant* c) {
-  assert(c->type()->AsFloat() != nullptr &&
-         c->type()->AsFloat()->width() == 32);
-  const analysis::FloatConstant* fc = c->AsFloatConstant();
-  if (fc) {
-    return fc->GetFloatValue();
-  } else {
-    assert(c->AsNullConstant() && "c must be a float point constant.");
-    return 0.0f;
-  }
-}
-
-// Returns the double value of |c|.  The constant |c| must have type
-// |Float|, and width |64|.
-double GetDoubleFromConst(const analysis::Constant* c) {
-  assert(c->type()->AsFloat() != nullptr &&
-         c->type()->AsFloat()->width() == 64);
-  const analysis::FloatConstant* fc = c->AsFloatConstant();
-  if (fc) {
-    return fc->GetDoubleValue();
-  } else {
-    assert(c->AsNullConstant() && "c must be a float point constant.");
-    return 0.0;
-  }
-}
-
 // This macro defines a |FloatScalarFoldingRule| that applies |op|.  The
 // operator |op| must work for both float and double, and use syntax "f1 op f2".
 #define FOLD_FPARITH_OP(op)                                               \
@@ -207,14 +169,14 @@ double GetDoubleFromConst(const analysis::Constant* c) {
     const analysis::Float* float_type = result_type->AsFloat();           \
     assert(float_type != nullptr);                                        \
     if (float_type->width() == 32) {                                      \
-      float fa = GetFloatFromConst(a);                                    \
-      float fb = GetFloatFromConst(b);                                    \
+      float fa = a->GetFloat(); \
+      float fb = b->GetFloat(); \
       spvutils::FloatProxy<float> result(fa op fb);                       \
       std::vector<uint32_t> words = {result.data()};                      \
       return const_mgr->GetConstant(result_type, words);                  \
     } else if (float_type->width() == 64) {                               \
-      double fa = GetDoubleFromConst(a);                                  \
-      double fb = GetDoubleFromConst(b);                                  \
+      double fa = a->GetDouble(); \
+      double fb = b->GetDouble(); \
       spvutils::FloatProxy<double> result(fa op fb);                      \
       std::vector<uint32_t> words(ExtractInts(result.data()));            \
       return const_mgr->GetConstant(result_type, words);                  \
