@@ -67,6 +67,23 @@ bool SSAPropagator::IsPhiArgExecutable(ir::Instruction* phi, uint32_t i) const {
   return IsEdgeExecutable(Edge(in_bb, phi_bb));
 }
 
+bool SSAPropagator::SetStatus(ir::Instruction* inst, PropStatus status) {
+  bool has_old_status = false;
+  PropStatus old_status = kVarying;
+  if (HasStatus(inst)) {
+    has_old_status = true;
+    old_status = Status(inst);
+  }
+
+  assert(!has_old_status ||
+         old_status <= status && "Invalid lattice transition");
+
+  bool status_changed = !has_old_status || (old_status != status);
+  if (status_changed) statuses_[inst] = status;
+
+  return status_changed;
+}
+
 bool SSAPropagator::Simulate(ir::Instruction* instr) {
   bool changed = false;
 
@@ -75,19 +92,9 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
     return changed;
   }
 
-  bool has_old_status = false;
-  PropStatus old_status = kVarying;
-  if (HasStatus(instr)) {
-    has_old_status = true;
-    old_status = Status(instr);
-  }
-
   ir::BasicBlock* dest_bb = nullptr;
   PropStatus status = visit_fn_(instr, &dest_bb);
-  assert(!has_old_status ||
-         old_status <= status && "Invalid lattice transition");
-  bool status_changed = !has_old_status || (old_status != status);
-  if (status_changed) SetStatus(instr, status);
+  bool status_changed = SetStatus(instr, status);
 
   if (status == kVarying) {
     // The statement produces a varying result, add it to the list of statements

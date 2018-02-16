@@ -202,15 +202,15 @@ class SSAPropagator {
   // has been simulated once.
   bool HasStatus(ir::Instruction* inst) const { return statuses_.count(inst); }
 
-  // Returns the current propagation status of |inst|.
+  // Returns the current propagation status of |inst|. Assumes
+  // |HasStatus(inst)| returns true.
   PropStatus Status(ir::Instruction* inst) const {
     return statuses_.find(inst)->second;
   }
 
-  // Records the propagation status |status| for |inst|.
-  void SetStatus(ir::Instruction* inst, PropStatus status) {
-    statuses_[inst] = status;
-  }
+  // Records the propagation status |status| for |inst|. Returns true if the
+  // status for |inst| has changed or set was set for the first time.
+  bool SetStatus(ir::Instruction* inst, PropStatus status);
 
  private:
   // Initialize processing.
