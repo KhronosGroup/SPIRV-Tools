@@ -23,15 +23,15 @@
 
 namespace {
 
-using libspirv::CapabilitySet;
-using spvtest::ElementsIn;
-using std::get;
-using std::tuple;
 using ::testing::Combine;
 using ::testing::Eq;
 using ::testing::TestWithParam;
 using ::testing::Values;
 using ::testing::ValuesIn;
+using libspirv::CapabilitySet;
+using spvtest::ElementsIn;
+using std::get;
+using std::tuple;
 
 // A test case for mapping an enum to a capability mask.
 struct EnumCapabilityCase {
@@ -532,12 +532,12 @@ INSTANTIATE_TEST_CASE_P(
             CASE1(BUILT_IN, BuiltInGlobalOffset, Kernel),
             CASE1(BUILT_IN, BuiltInGlobalLinearId, Kernel),
             // Value 35 intentionally missing
-            CASE1(BUILT_IN, BuiltInSubgroupSize, Kernel),
+            CASE2(BUILT_IN, BuiltInSubgroupSize, Kernel, SubgroupBallotKHR),
             CASE1(BUILT_IN, BuiltInSubgroupMaxSize, Kernel),
             CASE1(BUILT_IN, BuiltInNumSubgroups, Kernel),
             CASE1(BUILT_IN, BuiltInNumEnqueuedSubgroups, Kernel),
             CASE1(BUILT_IN, BuiltInSubgroupId, Kernel),
-            CASE1(BUILT_IN, BuiltInSubgroupLocalInvocationId, Kernel),
+            CASE2(BUILT_IN, BuiltInSubgroupLocalInvocationId, Kernel, SubgroupBallotKHR),
             CASE1(BUILT_IN, BuiltInVertexIndex, Shader),
             CASE1(BUILT_IN, BuiltInInstanceIndex, Shader),
             // clang-format on
