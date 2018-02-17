@@ -27,6 +27,7 @@
 
 #include "basic_block.h"
 #include "def_use_manager.h"
+#include "dominator_analysis.h"
 #include "module.h"
 #include "pass.h"
 
@@ -150,11 +151,7 @@ class MemPass : public Pass {
   // function |func|, specifically block predecessors and target variables.
   void InitSSARewrite(ir::Function* func);
 
-  // Initialize label2ssa_map_ entry for block |block_ptr| with single
-  // predecessor.
-  void SSABlockInitSinglePred(ir::BasicBlock* block_ptr);
-
-  // Initialize label2ssa_map_ entry for loop header block pointed to
+  // Initialize block_defs_map_ entry for loop header block pointed to
   // |block_itr| by merging entries from all predecessors. If any value
   // ids differ for any variable across predecessors, create a phi function
   // in the block and use that value id for the variable in the new map.
@@ -163,8 +160,8 @@ class MemPass : public Pass {
   // until the back edge block is visited and patch the phi value then.
   void SSABlockInitLoopHeader(std::list<ir::BasicBlock*>::iterator block_itr);
 
-  // Initialize label2ssa_map_ entry for multiple predecessor block
-  // |block_ptr| by merging label2ssa_map_ entries for all predecessors.
+  // Initialize block_defs_map_ entry for multiple predecessor block
+  // |block_ptr| by merging block_defs_map_ entries for all predecessors.
   // If any value ids differ for any variable across predecessors, create
   // a phi function in the block and use that value id for the variable in
   // the new map. Assumes all predecessors have been visited by
@@ -193,10 +190,30 @@ class MemPass : public Pass {
   void RemovePhiOperands(ir::Instruction* phi,
                          std::unordered_set<ir::BasicBlock*> reachable_blocks);
 
-  // Map from block's label id to a map of a variable to its value at the
-  // end of the block.
+  // Collects a map of all the live variables and their values along the path of
+  // dominator parents starting at |block_label|.  Each entry
+  // |live_vars[var_id]| returns the latest value of |var_id| along that
+  // dominator path.  Note that the mapping |live_vars| is never cleared,
+  // multiple calls to this function will accumulate new <var_id, value_id>
+  // mappings.  This is done to support the logic in
+  // MemPass::SSABlockInitLoopHeader.
+  void CollectLiveVars(uint32_t block_label,
+                       std::map<uint32_t, uint32_t>* live_vars);
+
+  // Returns the ID of the most current value taken by variable |var_id| on the
+  // dominator path starting at |block_id|.  This walks the dominator parents
+  // starting at |block_id| and returns the first value it finds for |var_id|.
+  // If no value for |var_id| is found along the dominator path, this returns 0.
+  uint32_t GetCurrentValue(uint32_t var_id, uint32_t block_label);
+
+  // Dominator information.
+  DominatorAnalysis* dominator_;
+
+  // Each entry |block_defs_map_[block_id]| contains a map {variable_id,
+  // value_id} associating all the variables |variable_id| stored in |block_id|
+  // to their respective value |value_id|.
   std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
-      label2ssa_map_;
+      block_defs_map_;
 
   // Set of label ids of visited blocks
   std::unordered_set<uint32_t> visitedBlocks_;
