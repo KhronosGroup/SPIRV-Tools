@@ -483,6 +483,22 @@ bool Instruction::IsFoldableByFoldScalar() const {
   return opt::IsFoldableType(type);
 }
 
+bool Instruction::IsFloatingPointFoldingAllowed() const {
+  // TODO: Add the rules for kernels.  For now it will be pessimistic.
+  if (!context_->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
+    return false;
+  }
+
+  bool is_nocontract = false;
+  context_->get_decoration_mgr()->WhileEachDecoration(
+      opcode_, SpvDecorationNoContraction,
+      [&is_nocontract](const ir::Instruction&) {
+        is_nocontract = true;
+        return false;
+      });
+  return !is_nocontract;
+}
+
 std::string Instruction::PrettyPrint(uint32_t options) const {
   // Convert the module to binary.
   std::vector<uint32_t> module_binary;
