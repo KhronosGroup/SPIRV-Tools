@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "folding_rules.h"
+#include "latest_version_glsl_std_450_header.h"
 
 namespace spvtools {
 namespace opt {
@@ -21,6 +22,10 @@ namespace {
 const uint32_t kExtractCompositeIdInIdx = 0;
 const uint32_t kInsertObjectIdInIdx = 0;
 const uint32_t kInsertCompositeIdInIdx = 1;
+const uint32_t kExtInstSetIdInIdx = 0;
+const uint32_t kExtInstInstructionInIdx = 1;
+const uint32_t kFMixXIdInIdx = 2;
+const uint32_t kFMixYIdInIdx = 3;
 
 FoldingRule IntMultipleBy1() {
   return [](ir::Instruction* inst,
@@ -326,6 +331,199 @@ FoldingRule RedundantSelect() {
     }
   };
 }
+
+enum class FloatConstantKind { Unknown, Zero, One };
+
+FloatConstantKind getFloatConstantKind(const analysis::Constant* constant) {
+  if (constant == nullptr) {
+    return FloatConstantKind::Unknown;
+  }
+
+  if (const analysis::VectorConstant* vc = constant->AsVectorConstant()) {
+    const std::vector<const analysis::Constant*>& components =
+        vc->GetComponents();
+    assert(!components.empty());
+
+    FloatConstantKind kind = getFloatConstantKind(components[0]);
+
+    for (size_t i = 1; i < components.size(); ++i) {
+      if (getFloatConstantKind(components[i]) != kind) {
+        return FloatConstantKind::Unknown;
+      }
+    }
+
+    return kind;
+  } else if (const analysis::FloatConstant* fc = constant->AsFloatConstant()) {
+    double value = (fc->type()->AsFloat()->width() == 64) ? fc->GetDoubleValue()
+                                                          : fc->GetFloatValue();
+
+    if (value == 0.0) {
+      return FloatConstantKind::Zero;
+    } else if (value == 1.0) {
+      return FloatConstantKind::One;
+    } else {
+      return FloatConstantKind::Unknown;
+    }
+  } else {
+    return FloatConstantKind::Unknown;
+  }
+}
+
+FoldingRule RedundantFAdd() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFAdd && "Wrong opcode.  Should be OpFAdd.");
+    assert(constants.size() == 2);
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return false;
+    }
+
+    FloatConstantKind kind0 = getFloatConstantKind(constants[0]);
+    FloatConstantKind kind1 = getFloatConstantKind(constants[1]);
+
+    if (kind0 == FloatConstantKind::Zero || kind1 == FloatConstantKind::Zero) {
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID,
+                            {inst->GetSingleWordInOperand(
+                                kind0 == FloatConstantKind::Zero ? 1 : 0)}}});
+      return true;
+    }
+
+    return false;
+  };
+}
+
+FoldingRule RedundantFSub() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFSub && "Wrong opcode.  Should be OpFSub.");
+    assert(constants.size() == 2);
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return false;
+    }
+
+    FloatConstantKind kind0 = getFloatConstantKind(constants[0]);
+    FloatConstantKind kind1 = getFloatConstantKind(constants[1]);
+
+    if (kind0 == FloatConstantKind::Zero) {
+      inst->SetOpcode(SpvOpFNegate);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(1)}}});
+      return true;
+    }
+
+    if (kind1 == FloatConstantKind::Zero) {
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
+      return true;
+    }
+
+    return false;
+  };
+}
+
+FoldingRule RedundantFMul() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFMul && "Wrong opcode.  Should be OpFMul.");
+    assert(constants.size() == 2);
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return false;
+    }
+
+    FloatConstantKind kind0 = getFloatConstantKind(constants[0]);
+    FloatConstantKind kind1 = getFloatConstantKind(constants[1]);
+
+    if (kind0 == FloatConstantKind::Zero || kind1 == FloatConstantKind::Zero) {
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID,
+                            {inst->GetSingleWordInOperand(
+                                kind0 == FloatConstantKind::Zero ? 0 : 1)}}});
+      return true;
+    }
+
+    if (kind0 == FloatConstantKind::One || kind1 == FloatConstantKind::One) {
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID,
+                            {inst->GetSingleWordInOperand(
+                                kind0 == FloatConstantKind::One ? 1 : 0)}}});
+      return true;
+    }
+
+    return false;
+  };
+}
+
+FoldingRule RedundantFDiv() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFDiv && "Wrong opcode.  Should be OpFDiv.");
+    assert(constants.size() == 2);
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return false;
+    }
+
+    FloatConstantKind kind0 = getFloatConstantKind(constants[0]);
+    FloatConstantKind kind1 = getFloatConstantKind(constants[1]);
+
+    if (kind0 == FloatConstantKind::Zero) {
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
+      return true;
+    }
+
+    if (kind1 == FloatConstantKind::One) {
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
+      return true;
+    }
+
+    return false;
+  };
+}
+
+FoldingRule RedundantFMix() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpExtInst &&
+           "Wrong opcode.  Should be OpExtInst.");
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return false;
+    }
+
+    uint32_t instSetId =
+        inst->context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+
+    if (inst->GetSingleWordInOperand(kExtInstSetIdInIdx) == instSetId &&
+        inst->GetSingleWordInOperand(kExtInstInstructionInIdx) ==
+            GLSLstd450FMix) {
+      assert(constants.size() == 5);
+
+      FloatConstantKind kind4 = getFloatConstantKind(constants[4]);
+
+      if (kind4 == FloatConstantKind::Zero || kind4 == FloatConstantKind::One) {
+        inst->SetOpcode(SpvOpCopyObject);
+        inst->SetInOperands(
+            {{SPV_OPERAND_TYPE_ID,
+              {inst->GetSingleWordInOperand(kind4 == FloatConstantKind::Zero
+                                                ? kFMixXIdInIdx
+                                                : kFMixYIdInIdx)}}});
+        return true;
+      }
+    }
+
+    return false;
+  };
+}
+
 }  // namespace
 
 spvtools::opt::FoldingRules::FoldingRules() {
@@ -339,11 +537,19 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
   rules_[SpvOpCompositeExtract].push_back(CompositeConstructFeedingExtract());
 
+  rules_[SpvOpExtInst].push_back(RedundantFMix());
+
+  rules_[SpvOpFAdd].push_back(RedundantFAdd());
+  rules_[SpvOpFDiv].push_back(RedundantFDiv());
+  rules_[SpvOpFMul].push_back(RedundantFMul());
+  rules_[SpvOpFSub].push_back(RedundantFSub());
+
   rules_[SpvOpIMul].push_back(IntMultipleBy1());
 
   rules_[SpvOpPhi].push_back(RedundantPhi());
 
   rules_[SpvOpSelect].push_back(RedundantSelect());
 }
+
 }  // namespace opt
 }  // namespace spvtools

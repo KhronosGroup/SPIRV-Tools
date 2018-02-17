@@ -30,23 +30,6 @@ inline std::vector<uint32_t> ExtractInts(uint64_t a) {
   return result;
 }
 
-// Returns true if we are allowed to fold or otherwise manipulate the
-// instruction that defines |id| in the given context.
-bool CanFoldFloatingPoint(ir::IRContext* context, uint32_t id) {
-  // TODO: Add the rules for kernels.  For now it will be pessimistic.
-  if (!context->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
-    return false;
-  }
-
-  bool is_nocontract = false;
-  context->get_decoration_mgr()->WhileEachDecoration(
-      id, SpvDecorationNoContraction, [&is_nocontract](const ir::Instruction&) {
-        is_nocontract = true;
-        return false;
-      });
-  return !is_nocontract;
-}
-
 // Folds an OpcompositeExtract where input is a composite constant.
 ConstantFoldingRule FoldExtractWithConstants() {
   return [](ir::Instruction* inst,
@@ -147,7 +130,7 @@ ConstantFoldingRule FoldFloatingPointOp(FloatScalarFoldingRule scalar_rule) {
     const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
     const analysis::Vector* vector_type = result_type->AsVector();
 
-    if (!CanFoldFloatingPoint(context, inst->result_id())) {
+    if (!inst->IsFloatingPointFoldingAllowed()) {
       return nullptr;
     }
 

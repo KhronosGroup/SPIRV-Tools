@@ -82,6 +82,10 @@ class Pass {
     return context()->get_decoration_mgr();
   }
 
+  FeatureManager* get_feature_mgr() const {
+    return context()->get_feature_mgr();
+  }
+
   // Returns a pointer to the current module for this pass.
   ir::Module* get_module() const { return context_->module(); }
 
