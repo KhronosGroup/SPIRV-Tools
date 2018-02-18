@@ -75,8 +75,8 @@ bool SSAPropagator::SetStatus(ir::Instruction* inst, PropStatus status) {
     old_status = Status(inst);
   }
 
-  assert(!has_old_status ||
-         old_status <= status && "Invalid lattice transition");
+  assert((!has_old_status || old_status <= status) &&
+         "Invalid lattice transition");
 
   bool status_changed = !has_old_status || (old_status != status);
   if (status_changed) statuses_[inst] = status;
