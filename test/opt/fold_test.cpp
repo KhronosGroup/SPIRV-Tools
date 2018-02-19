@@ -107,6 +107,7 @@ OpName %main "main"
 %_ptr_int = OpTypePointer Function %int
 %_ptr_uint = OpTypePointer Function %uint
 %_ptr_bool = OpTypePointer Function %bool
+%_ptr_struct_v2int_int_int = OpTypePointer Function %struct_v2int_int_int
 %short_0 = OpConstant %short 0
 %short_3 = OpConstant %short 3
 %100 = OpConstant %int 0 ; Need a def with an numerical id to define id maps.
@@ -2047,7 +2048,29 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingTe
             "%2 = OpCompositeExtract %int %struct_undef_0_0 0 1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 0)
+        2, 0),
+    // Test case 9: constant struct has OpUndef
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_struct_v2int_int_int Function\n" +
+            "%2 = OpLoad %struct_v2int_int_int %n\n" +
+            "%3 = OpCompositeInsert %struct_v2int_int_int %102 %2 0\n" +
+            "%4 = OpCompositeExtract %int %3 0 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, 103),
+    // Test case 10: constant struct has OpUndef
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_struct_v2int_int_int Function\n" +
+            "%2 = OpLoad %struct_v2int_int_int %n\n" +
+            "%3 = OpCompositeInsert %struct_v2int_int_int %int_0 %2 0 1\n" +
+            "%4 = OpCompositeExtract %v2int %3 0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, 0)
 ));
 
 INSTANTIATE_TEST_CASE_P(CompositeConstructFoldingTest, GeneralInstructionFoldingTest,

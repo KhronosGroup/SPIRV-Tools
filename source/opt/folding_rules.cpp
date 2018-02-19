@@ -216,18 +216,18 @@ FoldingRule InsertFeedingExtract() {
 
     // Extracting the value that was inserted along with values for the base
     // composite.  Cannot do anything.
-    if (i + 1 == cinst->NumInOperands()) {
+    if (i == inst->NumInOperands()) {
       return false;
     }
 
     // Extracting an element of the value that was inserted.  Extract from
     // that value directly.
-    if (i == inst->NumInOperands()) {
+    if (i + 1 == cinst->NumInOperands()) {
       std::vector<ir::Operand> operands;
       operands.push_back(
           {SPV_OPERAND_TYPE_ID,
            {cinst->GetSingleWordInOperand(kInsertObjectIdInIdx)}});
-      for (i = i + 1; i < cinst->NumInOperands(); ++i) {
+      for (; i < inst->NumInOperands(); ++i) {
         operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER,
                             {cinst->GetSingleWordInOperand(i)}});
       }
