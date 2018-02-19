@@ -352,7 +352,7 @@ FloatConstantKind getFloatConstantKind(const analysis::Constant* constant) {
       }
     }
 
-	return kind;
+    return kind;
   } else if (const analysis::FloatConstant* fc = constant->AsFloatConstant()) {
     double value = (fc->type()->AsFloat()->width() == 64) ? fc->GetDoubleValue()
                                                           : fc->GetFloatValue();
@@ -365,7 +365,7 @@ FloatConstantKind getFloatConstantKind(const analysis::Constant* constant) {
       return FloatConstantKind::Unknown;
     }
   } else {
-	return FloatConstantKind::Unknown;
+    return FloatConstantKind::Unknown;
   }
 }
 
@@ -473,8 +473,8 @@ FoldingRule RedundantFDiv() {
 
     if (kind0 == FloatConstantKind::Zero) {
       inst->SetOpcode(SpvOpCopyObject);
-      inst->SetInOperands({{SPV_OPERAND_TYPE_ID,
-                            {inst->GetSingleWordInOperand(0)}}});
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
       return true;
     }
 
@@ -499,9 +499,8 @@ FoldingRule RedundantFMix() {
       return false;
     }
 
-	// TODO: This should be cached in module object
     uint32_t instSetId =
-        inst->context()->module()->GetExtInstImportId("GLSL.std.450");
+        inst->context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
 
     if (inst->GetSingleWordInOperand(kExtInstSetIdInIdx) == instSetId &&
         inst->GetSingleWordInOperand(kExtInstInstructionInIdx) ==
