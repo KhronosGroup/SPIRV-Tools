@@ -461,7 +461,7 @@ inline bool Instruction::operator<(const Instruction& other) const {
 inline const Operand& Instruction::GetOperand(uint32_t index) const {
   assert(index < operands_.size() && "operand index out of bound");
   return operands_[index];
-};
+}
 
 inline void Instruction::AddOperand(Operand&& operand) {
   operands_.push_back(std::move(operand));
