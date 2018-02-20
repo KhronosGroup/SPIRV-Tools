@@ -27,6 +27,14 @@ class SimplificationPass : public Pass {
  public:
   const char* name() const override { return "simplify-instructions"; }
   Status Process(ir::IRContext*) override;
+  virtual ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
+           ir::IRContext::kAnalysisDecorations |
+           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
+           ir::IRContext::kAnalysisDominatorAnalysis |
+           ir::IRContext::kAnalysisNameMap;
+  }
 
  private:
   // Returns true if the module was changed.  The simplifier is called on every
