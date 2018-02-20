@@ -537,18 +537,18 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
   rules_[SpvOpCompositeExtract].push_back(CompositeConstructFeedingExtract());
 
+  rules_[SpvOpExtInst].push_back(RedundantFMix());
+
+  rules_[SpvOpFAdd].push_back(RedundantFAdd());
+  rules_[SpvOpFDiv].push_back(RedundantFDiv());
+  rules_[SpvOpFMul].push_back(RedundantFMul());
+  rules_[SpvOpFSub].push_back(RedundantFSub());
+
   rules_[SpvOpIMul].push_back(IntMultipleBy1());
 
   rules_[SpvOpPhi].push_back(RedundantPhi());
 
   rules_[SpvOpSelect].push_back(RedundantSelect());
-
-  rules_[SpvOpFAdd].push_back(RedundantFAdd());
-  rules_[SpvOpFSub].push_back(RedundantFSub());
-  rules_[SpvOpFMul].push_back(RedundantFMul());
-  rules_[SpvOpFDiv].push_back(RedundantFDiv());
-
-  rules_[SpvOpExtInst].push_back(RedundantFMix());
 }
 
 }  // namespace opt
