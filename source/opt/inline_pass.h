@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "decoration_manager.h"
-#include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
 
@@ -158,9 +157,6 @@ class InlinePass : public Pass {
 
   // Initialize state for optimization of |module|
   void InitializeInline(ir::IRContext* c);
-
-  // Update the DefUseManager when cloning decorations.
-  std::function<void(ir::Instruction&, bool)> update_def_use_mgr_;
 
   // Map from function's result id to function.
   std::unordered_map<uint32_t, ir::Function*> id2function_;
