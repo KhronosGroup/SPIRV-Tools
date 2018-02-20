@@ -317,8 +317,10 @@ void InlinePass::GenInlineCode(
         if (firstBlock) {
           // Copy contents of original caller block up to call instruction.
           for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
-               ++cii) {
-            std::unique_ptr<ir::Instruction> cp_inst(cii->Clone(context()));
+               cii = call_block_itr->begin()) {
+            ir::Instruction* inst = &*cii;
+            inst->RemoveFromList();
+            std::unique_ptr<ir::Instruction> cp_inst(inst);
             // Remember same-block ops for possible regeneration.
             if (IsSameBlockOp(&*cp_inst)) {
               auto* sb_inst_ptr = cp_inst.get();
@@ -425,9 +427,10 @@ void InlinePass::GenInlineCode(
           AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
         }
         // Copy remaining instructions from caller block.
-        auto cii = call_inst_itr;
-        for (++cii; cii != call_block_itr->end(); ++cii) {
-          std::unique_ptr<ir::Instruction> cp_inst(cii->Clone(context()));
+        for (ir::Instruction* inst = call_inst_itr->NextNode(); inst;
+             inst = call_inst_itr->NextNode()) {
+          inst->RemoveFromList();
+          std::unique_ptr<ir::Instruction> cp_inst(inst);
           // If multiple blocks generated, regenerate any same-block
           // instruction that has not been seen in this last block.
           if (multiBlocks) {
