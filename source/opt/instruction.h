@@ -186,6 +186,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return NumInOperandWords() + TypeResultIdCount();
   }
   // Gets the |index|-th logical operand.
+  inline Operand& GetOperand(uint32_t index);
   inline const Operand& GetOperand(uint32_t index) const;
   // Adds |operand| to the list of operands of this instruction.
   // It is the responsibility of the caller to make sure
@@ -218,6 +219,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return static_cast<uint32_t>(operands_.size() - TypeResultIdCount());
   }
   uint32_t NumInOperandWords() const;
+  Operand& GetInOperand(uint32_t index) {
+    return GetOperand(index + TypeResultIdCount());
+  }
   const Operand& GetInOperand(uint32_t index) const {
     return GetOperand(index + TypeResultIdCount());
   }
@@ -458,10 +462,15 @@ inline bool Instruction::operator<(const Instruction& other) const {
   return unique_id() < other.unique_id();
 }
 
+inline Operand& Instruction::GetOperand(uint32_t index) {
+  assert(index < operands_.size() && "operand index out of bound");
+  return operands_[index];
+}
+
 inline const Operand& Instruction::GetOperand(uint32_t index) const {
   assert(index < operands_.size() && "operand index out of bound");
   return operands_[index];
-};
+}
 
 inline void Instruction::AddOperand(Operand&& operand) {
   operands_.push_back(std::move(operand));
