@@ -183,9 +183,15 @@ SSAPropagator::PropStatus CCPPass::VisitBranch(ir::Instruction* instr,
     uint32_t pred_val_id = it->second;
     const analysis::Constant* c = const_mgr_->FindDeclaredConstant(pred_val_id);
     assert(c && "Expected to find a constant declaration for a known value.");
-    const analysis::BoolConstant* val = c->AsBoolConstant();
-    dest_label = val->value() ? instr->GetSingleWordOperand(1)
-                              : instr->GetSingleWordOperand(2);
+    // Undef values should have returned as varying above.
+    assert(c->AsBoolConstant() || c->AsNullConstant());
+    if (c->AsNullConstant()) {
+      dest_label = instr->GetSingleWordOperand(2u);
+    } else {
+      const analysis::BoolConstant* val = c->AsBoolConstant();
+      dest_label = val->value() ? instr->GetSingleWordOperand(1)
+                                : instr->GetSingleWordOperand(2);
+    }
   } else {
     // For an OpSwitch, extract the value taken by the switch selector and check
     // which of the target literals it matches.  The branch associated with that
@@ -209,12 +215,20 @@ SSAPropagator::PropStatus CCPPass::VisitBranch(ir::Instruction* instr,
     const analysis::Constant* c =
         const_mgr_->FindDeclaredConstant(select_val_id);
     assert(c && "Expected to find a constant declaration for a known value.");
-    const analysis::IntConstant* val = c->AsIntConstant();
+    // TODO: support 64-bit integer switches.
+    uint32_t constant_cond = 0;
+    if (const analysis::IntConstant* val = c->AsIntConstant()) {
+      constant_cond = val->words()[0];
+    } else {
+      // Undef values should have returned varying above.
+      assert(c->AsNullConstant());
+      constant_cond = 0;
+    }
 
     // Start assuming that the selector will take the default value;
     dest_label = instr->GetSingleWordOperand(1);
     for (uint32_t i = 2; i < instr->NumOperands(); i += 2) {
-      if (val->words()[0] == instr->GetSingleWordOperand(i)) {
+      if (constant_cond == instr->GetSingleWordOperand(i)) {
         dest_label = instr->GetSingleWordOperand(i + 1);
         break;
       }
