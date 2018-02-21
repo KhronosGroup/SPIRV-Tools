@@ -222,8 +222,10 @@ void MemPass::DCEInst(ir::Instruction* inst,
     // For all operands with no remaining uses, add their instruction
     // to the dead instruction queue.
     for (auto id : ids)
-      if (HasOnlyNamesAndDecorates(id))
-        deadInsts.push(get_def_use_mgr()->GetDef(id));
+      if (HasOnlyNamesAndDecorates(id)) {
+        ir::Instruction* odi = get_def_use_mgr()->GetDef(id);
+        if (context()->IsCombinatorInstruction(odi)) deadInsts.push(odi);
+      }
     // if a load was deleted and it was the variable's
     // last load, add all its stores to dead queue
     if (varId != 0 && !IsLiveVar(varId)) AddStores(varId, &deadInsts);

@@ -722,6 +722,89 @@ OpFunctionEnd
       predefs_before + before, predefs_after + after, true, true);
 }
 
+TEST_F(LocalSingleStoreElimTest, OptStoreOfNonCombinator) {
+  // Unused local store is removed but non-combinator operand remains
+
+  const std::string predefs_before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_GlobalInvocationID
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%v2uint = OpTypeVector %uint 2
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%_ptr_Input_v2uint = OpTypePointer Input %v2uint
+%164 = OpTypeImage %uint 2D 0 0 0 2 R32ui
+%_ptr_UniformConstant_164 = OpTypePointer UniformConstant %164
+%5661 = OpVariable %_ptr_UniformConstant_164 UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v2uint Input
+%4930 = OpVariable %_ptr_Uniform_uint Uniform
+%_ptr_Image_uint = OpTypePointer Image %uint
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main" %gl_GlobalInvocationID
+OpExecutionMode %2 OriginUpperLeft
+OpSource GLSL 140
+OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%v2uint = OpTypeVector %uint 2
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%_ptr_Input_v2uint = OpTypePointer Input %v2uint
+%11 = OpTypeImage %uint 2D 0 0 0 2 R32ui
+%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
+%13 = OpVariable %_ptr_UniformConstant_11 UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v2uint Input
+%14 = OpVariable %_ptr_Uniform_uint Uniform
+%_ptr_Image_uint = OpTypePointer Image %uint
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %6
+%12 = OpLabel
+%5297 = OpVariable %_ptr_Function_uint Function
+%4061 = OpLoad %164 %5661
+%16843 = OpLoad %v2uint %gl_GlobalInvocationID
+%24748 = OpLoad %uint %4930
+%15928 = OpImageTexelPointer %_ptr_Image_uint %4061 %16843 %uint_0
+%21946 = OpAtomicExchange %uint %15928 %uint_1 %uint_0 %24748
+OpStore %5297 %21946
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%2 = OpFunction %void None %5
+%18 = OpLabel
+%20 = OpLoad %11 %13
+%21 = OpLoad %v2uint %gl_GlobalInvocationID
+%22 = OpLoad %uint %14
+%23 = OpImageTexelPointer %_ptr_Image_uint %20 %21 %uint_0
+%24 = OpAtomicExchange %uint %23 %uint_1 %uint_0 %22
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+      predefs_before + before, predefs_after + after, true, true);
+}
+
 TEST_F(LocalSingleStoreElimTest, PointerVariable) {
   // Test that checks if a pointer variable is removed.
 
