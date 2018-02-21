@@ -22,11 +22,13 @@
 #include "opt/def_use_manager.h"
 #include "opt/ir_context.h"
 #include "opt/module.h"
+#include "pass_fixture.h"
 #include "pass_utils.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace {
 
+using ::testing::Contains;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
@@ -1666,5 +1668,46 @@ INSTANTIATE_TEST_CASE_P(
         },
       },
       }));
+
+using UpdateUsesTest = PassTest<::testing::Test>;
+
+TEST_F(UpdateUsesTest, KeepOldUses) {
+  const std::vector<const char*> text = {
+      // clang-format off
+      "OpCapability Shader",
+      "%1 = OpExtInstImport \"GLSL.std.450\"",
+      "OpMemoryModel Logical GLSL450",
+      "OpEntryPoint Vertex %main \"main\"",
+      "OpName %main \"main\"",
+      "%void = OpTypeVoid",
+      "%4 = OpTypeFunction %void",
+      "%uint = OpTypeInt 32 0",
+      "%uint_5 = OpConstant %uint 5",
+      "%25 = OpConstant %uint 25",
+      "%main = OpFunction %void None %4",
+      "%8 = OpLabel",
+      "%9 = OpIMul %uint %uint_5 %uint_5",
+      "%10 = OpIMul %uint %9 %uint_5",
+      "OpReturn",
+      "OpFunctionEnd"
+      // clang-format on
+  };
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text),
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  ir::Instruction* def = def_use_mgr->GetDef(9);
+  ir::Instruction* use = def_use_mgr->GetDef(10);
+  def->SetOpcode(SpvOpCopyObject);
+  def->SetInOperands({{SPV_OPERAND_TYPE_ID, {25}}});
+  context->UpdateDefUse(def);
+
+  auto users = def_use_mgr->id_to_users();
+  opt::analysis::UserEntry entry = {def, use};
+  EXPECT_THAT(users, Contains(entry));
+}
 // clang-format on
 }  // anonymous namespace
