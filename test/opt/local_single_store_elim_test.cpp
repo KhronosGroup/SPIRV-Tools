@@ -40,7 +40,7 @@ TEST_F(LocalSingleStoreElimTest, PositiveAndNegative) {
   //     gl_FragColor = v + f;
   // }
 
-  const std::string predefs_before =
+  const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -49,34 +49,6 @@ OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
 OpName %v "v"
-OpName %BaseColor "BaseColor"
-OpName %f "f"
-OpName %fi "fi"
-OpName %gl_FragColor "gl_FragColor"
-%void = OpTypeVoid
-%9 = OpTypeFunction %void
-%float = OpTypeFloat 32
-%v4float = OpTypeVector %float 4
-%_ptr_Function_v4float = OpTypePointer Function %v4float
-%_ptr_Input_v4float = OpTypePointer Input %v4float
-%BaseColor = OpVariable %_ptr_Input_v4float Input
-%_ptr_Function_float = OpTypePointer Function %float
-%_ptr_Input_float = OpTypePointer Input %float
-%fi = OpVariable %_ptr_Input_float Input
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-)";
-
-  const std::string predefs_after =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %BaseColor %fi %gl_FragColor
-OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 140
-OpName %main "main"
 OpName %BaseColor "BaseColor"
 OpName %f "f"
 OpName %fi "fi"
@@ -126,8 +98,10 @@ OpFunctionEnd
   const std::string after =
       R"(%main = OpFunction %void None %9
 %19 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
 %f = OpVariable %_ptr_Function_float Function
 %20 = OpLoad %v4float %BaseColor
+OpStore %v %20
 %21 = OpLoad %float %fi
 OpStore %f %21
 %22 = OpLoad %float %f
@@ -138,6 +112,7 @@ OpBranchConditional %23 %25 %24
 OpStore %f %float_0
 OpBranch %24
 %24 = OpLabel
+%26 = OpLoad %v4float %v
 %27 = OpLoad %float %f
 %28 = OpCompositeConstruct %v4float %27 %27 %27 %27
 %29 = OpFAdd %v4float %20 %28
@@ -147,7 +122,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, predefs_after + after, true, true);
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, MultipleLoads) {
@@ -167,7 +142,7 @@ TEST_F(LocalSingleStoreElimTest, MultipleLoads) {
   //     gl_FragColor = v + f;
   // }
 
-  const std::string predefs_before =
+  const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -176,34 +151,6 @@ OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
 OpName %v "v"
-OpName %BaseColor "BaseColor"
-OpName %fi "fi"
-OpName %r "r"
-OpName %gl_FragColor "gl_FragColor"
-%void = OpTypeVoid
-%9 = OpTypeFunction %void
-%float = OpTypeFloat 32
-%v4float = OpTypeVector %float 4
-%_ptr_Function_v4float = OpTypePointer Function %v4float
-%_ptr_Input_v4float = OpTypePointer Input %v4float
-%BaseColor = OpVariable %_ptr_Input_v4float Input
-%_ptr_Input_float = OpTypePointer Input %float
-%fi = OpVariable %_ptr_Input_float Input
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%float_1 = OpConstant %float 1
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-)";
-
-  const std::string predefs_after =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %BaseColor %fi %gl_FragColor
-OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 140
-OpName %main "main"
 OpName %BaseColor "BaseColor"
 OpName %fi "fi"
 OpName %r "r"
@@ -255,16 +202,20 @@ OpFunctionEnd
   const std::string after =
       R"(%main = OpFunction %void None %9
 %19 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
 %r = OpVariable %_ptr_Function_v4float Function
 %20 = OpLoad %v4float %BaseColor
+OpStore %v %20
 %21 = OpLoad %float %fi
 %22 = OpFOrdLessThan %bool %21 %float_0
 OpSelectionMerge %23 None
 OpBranchConditional %22 %24 %25
 %24 = OpLabel
+%26 = OpLoad %v4float %v
 OpStore %r %20
 OpBranch %23
 %25 = OpLabel
+%27 = OpLoad %v4float %v
 %28 = OpCompositeConstruct %v4float %float_1 %float_1 %float_1 %float_1
 %29 = OpFSub %v4float %28 %20
 OpStore %r %29
@@ -277,7 +228,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, predefs_after + after, true, true);
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoStoreElimWithInterveningAccessChainLoad) {
@@ -294,7 +245,7 @@ TEST_F(LocalSingleStoreElimTest, NoStoreElimWithInterveningAccessChainLoad) {
   //     gl_FragColor = v * f;
   // }
 
-  const std::string predefs_before =
+  const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -305,31 +256,6 @@ OpName %main "main"
 OpName %v "v"
 OpName %BaseColor "BaseColor"
 OpName %f "f"
-OpName %gl_FragColor "gl_FragColor"
-%void = OpTypeVoid
-%8 = OpTypeFunction %void
-%float = OpTypeFloat 32
-%v4float = OpTypeVector %float 4
-%_ptr_Function_v4float = OpTypePointer Function %v4float
-%_ptr_Input_v4float = OpTypePointer Input %v4float
-%BaseColor = OpVariable %_ptr_Input_v4float Input
-%_ptr_Function_float = OpTypePointer Function %float
-%uint = OpTypeInt 32 0
-%uint_3 = OpConstant %uint 3
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-)";
-
-  const std::string predefs_after =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
-OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 140
-OpName %main "main"
-OpName %v "v"
-OpName %BaseColor "BaseColor"
 OpName %gl_FragColor "gl_FragColor"
 %void = OpTypeVoid
 %8 = OpTypeFunction %void
@@ -367,10 +293,14 @@ OpFunctionEnd
       R"(%main = OpFunction %void None %8
 %17 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
+%f = OpVariable %_ptr_Function_float Function
 %18 = OpLoad %v4float %BaseColor
 OpStore %v %18
 %19 = OpAccessChain %_ptr_Function_float %v %uint_3
 %20 = OpLoad %float %19
+OpStore %f %20
+%21 = OpLoad %v4float %v
+%22 = OpLoad %float %f
 %23 = OpVectorTimesScalar %v4float %18 %20
 OpStore %gl_FragColor %23
 OpReturn
@@ -378,7 +308,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, predefs_after + after, true, true);
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoReplaceOfDominatingPartialStore) {
@@ -453,7 +383,7 @@ TEST_F(LocalSingleStoreElimTest, ElimIfCopyObjectInFunction) {
   //     gl_FragColor = v + f;
   // }
 
-  const std::string predefs_before =
+  const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -462,34 +392,6 @@ OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
 OpName %v "v"
-OpName %BaseColor "BaseColor"
-OpName %f "f"
-OpName %fi "fi"
-OpName %gl_FragColor "gl_FragColor"
-%void = OpTypeVoid
-%9 = OpTypeFunction %void
-%float = OpTypeFloat 32
-%v4float = OpTypeVector %float 4
-%_ptr_Function_v4float = OpTypePointer Function %v4float
-%_ptr_Input_v4float = OpTypePointer Input %v4float
-%BaseColor = OpVariable %_ptr_Input_v4float Input
-%_ptr_Function_float = OpTypePointer Function %float
-%_ptr_Input_float = OpTypePointer Input %float
-%fi = OpVariable %_ptr_Input_float Input
-%float_0 = OpConstant %float 0
-%bool = OpTypeBool
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-)";
-
-  const std::string predefs_after =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %BaseColor %fi %gl_FragColor
-OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 140
-OpName %main "main"
 OpName %BaseColor "BaseColor"
 OpName %f "f"
 OpName %fi "fi"
@@ -540,8 +442,10 @@ OpFunctionEnd
   const std::string after =
       R"(%main = OpFunction %void None %9
 %19 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
 %f = OpVariable %_ptr_Function_float Function
 %20 = OpLoad %v4float %BaseColor
+OpStore %v %20
 %21 = OpLoad %float %fi
 OpStore %f %21
 %22 = OpLoad %float %f
@@ -552,6 +456,8 @@ OpBranchConditional %23 %25 %24
 OpStore %f %float_0
 OpBranch %24
 %24 = OpLabel
+%26 = OpCopyObject %_ptr_Function_v4float %v
+%27 = OpLoad %v4float %26
 %28 = OpLoad %float %f
 %29 = OpCompositeConstruct %v4float %28 %28 %28 %28
 %30 = OpFAdd %v4float %20 %29
@@ -561,7 +467,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, predefs_after + after, true, true);
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoOptIfStoreNotDominating) {
@@ -657,7 +563,7 @@ TEST_F(LocalSingleStoreElimTest, OptInitializedVariableLikeStore) {
   //     gl_FragColor = vec4(f);
   // }
 
-  const std::string predefs_before =
+  const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -666,26 +572,6 @@ OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
 OpName %f "f"
-OpName %gl_FragColor "gl_FragColor"
-OpDecorate %gl_FragColor Location 0
-%void = OpTypeVoid
-%6 = OpTypeFunction %void
-%float = OpTypeFloat 32
-%_ptr_Function_float = OpTypePointer Function %float
-%float_0 = OpConstant %float 0
-%v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-)";
-
-  const std::string predefs_after =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %gl_FragColor
-OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 140
-OpName %main "main"
 OpName %gl_FragColor "gl_FragColor"
 OpDecorate %gl_FragColor Location 0
 %void = OpTypeVoid
@@ -712,6 +598,8 @@ OpFunctionEnd
   const std::string after =
       R"(%main = OpFunction %void None %6
 %12 = OpLabel
+%f = OpVariable %_ptr_Function_float Function %float_0
+%13 = OpLoad %float %f
 %14 = OpCompositeConstruct %v4float %float_0 %float_0 %float_0 %float_0
 OpStore %gl_FragColor %14
 OpReturn
@@ -719,90 +607,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, predefs_after + after, true, true);
-}
-
-TEST_F(LocalSingleStoreElimTest, OptStoreOfNonCombinator) {
-  // Unused local store is removed but non-combinator operand remains
-
-  const std::string predefs_before =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %gl_GlobalInvocationID
-OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 140
-OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
-%void = OpTypeVoid
-%6 = OpTypeFunction %void
-%uint = OpTypeInt 32 0
-%v2uint = OpTypeVector %uint 2
-%_ptr_Function_uint = OpTypePointer Function %uint
-%_ptr_Uniform_uint = OpTypePointer Uniform %uint
-%_ptr_Input_v2uint = OpTypePointer Input %v2uint
-%164 = OpTypeImage %uint 2D 0 0 0 2 R32ui
-%_ptr_UniformConstant_164 = OpTypePointer UniformConstant %164
-%5661 = OpVariable %_ptr_UniformConstant_164 UniformConstant
-%gl_GlobalInvocationID = OpVariable %_ptr_Input_v2uint Input
-%4930 = OpVariable %_ptr_Uniform_uint Uniform
-%_ptr_Image_uint = OpTypePointer Image %uint
-%uint_0 = OpConstant %uint 0
-%uint_1 = OpConstant %uint 1
-)";
-
-  const std::string predefs_after =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %2 "main" %gl_GlobalInvocationID
-OpExecutionMode %2 OriginUpperLeft
-OpSource GLSL 140
-OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
-%void = OpTypeVoid
-%5 = OpTypeFunction %void
-%uint = OpTypeInt 32 0
-%v2uint = OpTypeVector %uint 2
-%_ptr_Function_uint = OpTypePointer Function %uint
-%_ptr_Uniform_uint = OpTypePointer Uniform %uint
-%_ptr_Input_v2uint = OpTypePointer Input %v2uint
-%11 = OpTypeImage %uint 2D 0 0 0 2 R32ui
-%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
-%13 = OpVariable %_ptr_UniformConstant_11 UniformConstant
-%gl_GlobalInvocationID = OpVariable %_ptr_Input_v2uint Input
-%14 = OpVariable %_ptr_Uniform_uint Uniform
-%_ptr_Image_uint = OpTypePointer Image %uint
-%uint_0 = OpConstant %uint 0
-%uint_1 = OpConstant %uint 1
-)";
-
-  const std::string before =
-      R"(%main = OpFunction %void None %6
-%12 = OpLabel
-%5297 = OpVariable %_ptr_Function_uint Function
-%4061 = OpLoad %164 %5661
-%16843 = OpLoad %v2uint %gl_GlobalInvocationID
-%24748 = OpLoad %uint %4930
-%15928 = OpImageTexelPointer %_ptr_Image_uint %4061 %16843 %uint_0
-%21946 = OpAtomicExchange %uint %15928 %uint_1 %uint_0 %24748
-OpStore %5297 %21946
-OpReturn
-OpFunctionEnd
-)";
-
-  const std::string after =
-      R"(%2 = OpFunction %void None %5
-%18 = OpLabel
-%20 = OpLoad %11 %13
-%21 = OpLoad %v2uint %gl_GlobalInvocationID
-%22 = OpLoad %uint %14
-%23 = OpImageTexelPointer %_ptr_Image_uint %20 %21 %uint_0
-%24 = OpAtomicExchange %uint %23 %uint_1 %uint_0 %22
-OpReturn
-OpFunctionEnd
-)";
-
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, predefs_after + after, true, true);
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, PointerVariable) {
@@ -891,6 +696,9 @@ OpDecorate %7 Binding 0
 %7 = OpVariable %_ptr_Uniform__struct_5 Uniform
 %1 = OpFunction %void None %10
 %23 = OpLabel
+%24 = OpVariable %_ptr_Function__ptr_Uniform__struct_5 Function
+OpStore %24 %7
+%26 = OpLoad %_ptr_Uniform__struct_5 %24
 %27 = OpAccessChain %_ptr_Uniform_v4float %7 %int_0 %uint_0 %int_0
 %28 = OpLoad %v4float %27
 %29 = OpCopyObject %v4float %28

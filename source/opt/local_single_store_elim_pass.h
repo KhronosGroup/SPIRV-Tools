@@ -85,11 +85,6 @@ class LocalSingleStoreElimPass : public MemPass {
   // if any instructions are modified.
   bool SingleStoreProcess(ir::Function* func);
 
-  // Remove all stores to useless SSA variables. Remove useless
-  // access chains and variables as well. Assumes SingleStoreAnalyze
-  // and SingleStoreProcess has been run.
-  bool SingleStoreDCE();
-
   // Do "single-store" optimization of function variables defined only
   // with a single non-access-chain store in |func|. Replace all their
   // non-access-chain loads with the value that is stored and eliminate

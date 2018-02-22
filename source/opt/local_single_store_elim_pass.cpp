@@ -184,7 +184,6 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     uint32_t instIdx = 0;
-    std::vector<ir::Instruction*> dead_instructions;
     for (auto ii = bi->begin(); ii != bi->end(); ++ii, ++instIdx) {
       if (ii->opcode() != SpvOpLoad) continue;
       uint32_t varId;
@@ -208,55 +207,6 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       // and add load to removal list
       context()->KillNamesAndDecorates(&*ii);
       context()->ReplaceAllUsesWith(ii->result_id(), replId);
-      dead_instructions.push_back(&*ii);
-      modified = true;
-    }
-
-    // Define the function that will update the data structures as instructions
-    // are deleted.
-    auto update_function = [&dead_instructions,
-                            this](ir::Instruction* other_inst) {
-      // Update dead_instructions.
-      auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
-                         other_inst);
-      if (i != dead_instructions.end()) {
-        dead_instructions.erase(i);
-      }
-
-      // Update the variable-to-store map if any of its members is DCE'd.
-      uint32_t id;
-      if (other_inst->opcode() == SpvOpStore) GetPtr(other_inst, &id);
-      if (other_inst->opcode() == SpvOpVariable)
-        id = other_inst->result_id();
-      else
-        return;
-
-      auto store = ssa_var2store_.find(id);
-      if (store != ssa_var2store_.end()) {
-        ssa_var2store_.erase(store);
-      }
-    };
-
-    while (!dead_instructions.empty()) {
-      ir::Instruction* inst = dead_instructions.back();
-      dead_instructions.pop_back();
-      DCEInst(inst, update_function);
-    }
-  }
-  return modified;
-}
-
-bool LocalSingleStoreElimPass::SingleStoreDCE() {
-  bool modified = false;
-  std::unordered_set<ir::Instruction*> already_deleted;
-  for (auto v : ssa_var2store_) {
-    // check that it hasn't already been DCE'd
-    if (already_deleted.find(v.second) != already_deleted.end()) continue;
-    if (non_ssa_vars_.find(v.first) != non_ssa_vars_.end()) continue;
-    if (!IsLiveVar(v.first)) {
-      DCEInst(v.second, [&already_deleted](ir::Instruction* inst) {
-        already_deleted.insert(inst);
-      });
       modified = true;
     }
   }
@@ -268,7 +218,6 @@ bool LocalSingleStoreElimPass::LocalSingleStoreElim(ir::Function* func) {
   SingleStoreAnalyze(func);
   if (ssa_var2store_.empty()) return false;
   modified |= SingleStoreProcess(func);
-  modified |= SingleStoreDCE();
   return modified;
 }
 
