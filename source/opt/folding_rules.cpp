@@ -86,6 +86,13 @@ uint32_t NegateFloatingPointConstant(analysis::ConstantManager* const_mgr,
   return const_mgr->GetDefiningInstruction(negated_const)->result_id();
 }
 
+std::vector<uint32_t> ExtractInts(uint64_t val) {
+  std::vector<uint32_t> words;
+  words.push_back(static_cast<uint32_t>(val));
+  words.push_back(static_cast<uint32_t>(val >> 32));
+  return words;
+}
+
 uint32_t NegateIntegerConstant(analysis::ConstantManager* const_mgr,
                                const analysis::Constant* c) {
   assert(c);
@@ -95,8 +102,7 @@ uint32_t NegateIntegerConstant(analysis::ConstantManager* const_mgr,
   std::vector<uint32_t> words;
   if (width == 64) {
     uint64_t uval = static_cast<uint64_t>(0 - c->GetU64());
-    words.push_back(static_cast<uint32_t>(uval));
-    words.push_back(static_cast<uint32_t>(uval >> 32));
+    words = ExtractInts(uval);
   } else {
     words.push_back(static_cast<uint32_t>(0 - c->GetU32()));
   }
@@ -397,6 +403,56 @@ uint32_t PerformFloatingPointOperation(analysis::ConstantManager* const_mgr,
   return const_mgr->GetDefiningInstruction(merged_const)->result_id();
 }
 
+uint32_t PerformIntegerOperation(analysis::ConstantManager* const_mgr,
+                                 SpvOp opcode, const analysis::Constant* input1,
+                                 const analysis::Constant* input2) {
+  assert(input1->type()->AsInteger());
+  const analysis::Integer* type = input1->type()->AsInteger();
+  uint32_t width = type->AsInteger()->width();
+  assert(width == 32 || width == 64);
+  std::vector<uint32_t> words;
+#define FOLD_OP(op)                                        \
+  if (width == 64) {                                       \
+    if (type->IsSigned()) {                                \
+      int64_t val = input1->GetS64() op input2->GetS64();  \
+      words = ExtractInts(static_cast<uint64_t>(val));     \
+    } else {                                               \
+      uint64_t val = input1->GetU64() op input2->GetU64(); \
+      words = ExtractInts(val);                            \
+    }                                                      \
+  } else {                                                 \
+    if (type->IsSigned()) {                                \
+      int32_t val = input1->GetS32() op input2->GetS32();  \
+      words.push_back(static_cast<uint32_t>(val));         \
+    } else {                                               \
+      uint32_t val = input1->GetU32() op input2->GetU32(); \
+      words.push_back(val);                                \
+    }                                                      \
+  }
+  switch (opcode) {
+    case SpvOpIMul:
+      FOLD_OP(*);
+      break;
+    case SpvOpSDiv:
+    case SpvOpUDiv:
+      if (input2->AsIntConstant()->IsZero()) return 0;
+      FOLD_OP(/);
+      break;
+    case SpvOpIAdd:
+      FOLD_OP(+);
+      break;
+    case SpvOpISub:
+      FOLD_OP(-);
+      break;
+    default:
+      assert(false && "Unexpected operation");
+      break;
+  }
+#undef FOLD_OP
+  const analysis::Constant* merged_const = const_mgr->GetConstant(type, words);
+  return const_mgr->GetDefiningInstruction(merged_const)->result_id();
+}
+
 uint32_t PerformOperation(analysis::ConstantManager* const_mgr, SpvOp opcode,
                           const analysis::Constant* input1,
                           const analysis::Constant* input2) {
@@ -416,8 +472,8 @@ uint32_t PerformOperation(analysis::ConstantManager* const_mgr, SpvOp opcode,
                                            input2_comp);
       } else {
         assert(ele_type->AsInteger());
-        // id = PerformIntegerOperation(const_mgr, opcode, input1_comp,
-        // input2_comp);
+        id = PerformIntegerOperation(const_mgr, opcode, input1_comp,
+                                     input2_comp);
       }
       if (id == 0) return 0;
       words.push_back(id);
@@ -429,10 +485,8 @@ uint32_t PerformOperation(analysis::ConstantManager* const_mgr, SpvOp opcode,
     return PerformFloatingPointOperation(const_mgr, opcode, input1, input2);
   } else {
     assert(type->AsInteger());
-    // return PerformIntegerOperation(const_mgr, opcode, input1, input2);
+    return PerformIntegerOperation(const_mgr, opcode, input1, input2);
   }
-
-  return 0;
 }
 
 FoldingRule MergeMulMulArithmetic() {
@@ -462,16 +516,18 @@ FoldingRule MergeMulMulArithmetic() {
     }
 
     if (!const_input1) return false;
+    if (HasFloatingPoint(type) && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
 
-    if (other_inst->opcode() == SpvOpFMul) {
+    if (other_inst->opcode() == inst->opcode()) {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
       if (other_constants[0] || other_constants[1]) {
         bool other_first_is_variable = other_constants[0] == nullptr;
         const analysis::Constant* const_input2 =
             other_first_is_variable ? other_constants[1] : other_constants[0];
-        uint32_t merged_id =
-            PerformOperation(const_mgr, SpvOpFMul, const_input1, const_input2);
+        uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
+                                              const_input1, const_input2);
         if (merged_id == 0) return false;
 
         uint32_t non_const_id = other_first_is_variable
@@ -496,11 +552,17 @@ FoldingRule IntMultipleBy1() {
         continue;
       }
       const analysis::IntConstant* int_constant = constants[i]->AsIntConstant();
-      if (int_constant && int_constant->GetU32BitValue() == 1) {
-        inst->SetOpcode(SpvOpCopyObject);
-        inst->SetInOperands(
-            {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(1 - i)}}});
-        return true;
+      if (int_constant) {
+        uint32_t width = ElementWidth(int_constant->type());
+        if (width != 32 && width != 64) return false;
+        bool is_one = (width == 32) ? int_constant->GetU32BitValue() == 1u
+                                    : int_constant->GetU64BitValue() == 1ull;
+        if (is_one) {
+          inst->SetOpcode(SpvOpCopyObject);
+          inst->SetInOperands(
+              {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(1 - i)}}});
+          return true;
+        }
       }
     }
     return false;
@@ -1015,6 +1077,7 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpFSub].push_back(RedundantFSub());
 
   rules_[SpvOpIMul].push_back(IntMultipleBy1());
+  rules_[SpvOpIMul].push_back(MergeMulMulArithmetic());
 
   rules_[SpvOpSNegate].push_back(MergeNegateArithmetic());
   rules_[SpvOpSNegate].push_back(MergeNegateMulDivArithmetic());

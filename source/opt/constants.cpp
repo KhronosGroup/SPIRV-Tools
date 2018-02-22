@@ -73,7 +73,7 @@ int32_t Constant::GetS32() const {
   assert(type()->AsInteger()->width() == 32);
 
   if (const IntConstant* ic = AsIntConstant()) {
-    return ic->GetU32BitValue();
+    return ic->GetS32BitValue();
   } else {
     assert(AsNullConstant() && "Must be an integer constant.");
     return 0;
@@ -85,7 +85,7 @@ int64_t Constant::GetS64() const {
   assert(type()->AsInteger()->width() == 64);
 
   if (const IntConstant* ic = AsIntConstant()) {
-    return ic->GetU64BitValue();
+    return ic->GetS64BitValue();
   } else {
     assert(AsNullConstant() && "Must be an integer constant.");
     return 0;
