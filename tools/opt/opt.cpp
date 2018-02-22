@@ -195,9 +195,6 @@ Options (in lexicographical order):
 
                These conditions are guaranteed to be met after running
                dead-branch elimination.
-  --local-redundancy-elimination
-               Looks for instructions in the same basic block that compute the
-               same value, and deletes the redundant ones.
   --loop-unswitch
                Hoists loop-invariant conditionals out of loops by duplicating
                the loop on each branch of the conditional and adjusting each
@@ -265,6 +262,9 @@ Options (in lexicographical order):
                Replaces instructions whose opcode is valid for shader modules,
                but not for the current shader stage.  To have an effect, all
                entry points must have the same execution model.
+  --ssa-rewrite
+               Replace loads and stores to function local variables with
+               operations on SSA IDs.
   --scalar-replacement
                Replace aggregate function scope variables that are only accessed
                via their elements with new function variables representing each
@@ -277,7 +277,7 @@ Options (in lexicographical order):
                be separated with colon ':' without any blank spaces in between.
                e.g.: --set-spec-const-default-value "1:100 2:400"
   --simplify-instructions
-               Will simplfy all instructions in the function as much as
+               Will simplify all instructions in the function as much as
                possible.
   --skip-validation
                Will not validate the SPIR-V before optimizing.  If the SPIR-V
@@ -515,6 +515,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateReplaceInvalidOpcodePass());
       } else if (0 == strcmp(cur_arg, "--simplify-instructions")) {
         optimizer->RegisterPass(CreateSimplificationPass());
+      } else if (0 == strcmp(cur_arg, "--ssa-rewrite")) {
+        optimizer->RegisterPass(CreateSSARewritePass());
       } else if (0 == strcmp(cur_arg, "--loop-unroll")) {
         optimizer->RegisterPass(CreateLoopUnrollPass(true));
       } else if (0 == strcmp(cur_arg, "--loop-unroll-partial")) {

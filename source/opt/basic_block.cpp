@@ -190,10 +190,16 @@ uint32_t BasicBlock::ContinueBlockIdIfAny() const {
 }
 
 std::ostream& operator<<(std::ostream& str, const BasicBlock& block) {
-  block.ForEachInst([&str](const ir::Instruction* inst) {
-    str << *inst;
+  str << block.PrettyPrint();
+  return str;
+}
+
+std::string BasicBlock::PrettyPrint(uint32_t options) const {
+  std::string str;
+  ForEachInst([&str, options](const ir::Instruction* inst) {
+    str += inst->PrettyPrint(options);
     if (!IsTerminatorInst(inst->opcode())) {
-      str << std::endl;
+      str += "\n";
     }
   });
   return str;

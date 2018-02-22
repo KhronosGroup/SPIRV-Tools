@@ -536,6 +536,13 @@ Optimizer::PassToken CreateSimplificationPass();
 // won't be unrolled. See CanPerformUnroll LoopUtils.h for more information.
 Optimizer::PassToken CreateLoopUnrollPass(bool fully_unroll, int factor = 0);
 
+// Create the SSA rewrite pass.
+// This pass converts load/store operations on function local variables into
+// operations on SSA IDs.  This allows SSA optimizers to act on these variables.
+// Only variables that are local to the function and of supported types are
+// processed (see IsSSATargetVar for details).
+Optimizer::PassToken CreateSSARewritePass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

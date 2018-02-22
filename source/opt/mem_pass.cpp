@@ -38,7 +38,7 @@ const uint32_t kVariableInitIdInIdx = 1;
 
 }  // namespace
 
-bool MemPass::IsBaseTargetType(const ir::Instruction* typeInst) const {
+bool MemPass::IsSSABaseTargetType(const ir::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
@@ -56,20 +56,29 @@ bool MemPass::IsBaseTargetType(const ir::Instruction* typeInst) const {
   return false;
 }
 
-bool MemPass::IsTargetType(const ir::Instruction* typeInst) const {
-  if (IsBaseTargetType(typeInst)) return true;
+bool MemPass::IsSSATargetType(const ir::Instruction* typeInst) const {
+  if (IsSSABaseTargetType(typeInst)) {
+    return true;
+  }
+
   if (typeInst->opcode() == SpvOpTypeArray) {
-    if (!IsTargetType(
+    if (!IsSSATargetType(
             get_def_use_mgr()->GetDef(typeInst->GetSingleWordOperand(1)))) {
       return false;
     }
     return true;
   }
-  if (typeInst->opcode() != SpvOpTypeStruct) return false;
-  // All struct members must be math type
+
+  if (typeInst->opcode() != SpvOpTypeStruct) {
+    return false;
+  }
+
+  // All struct members must be SSA target types.
   return typeInst->WhileEachInId([this](const uint32_t* tid) {
     ir::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
-    if (!IsTargetType(compTypeInst)) return false;
+    if (!IsSSATargetType(compTypeInst)) {
+      return false;
+    }
     return true;
   });
 }
@@ -263,7 +272,7 @@ void MemPass::InitSSARewrite(ir::Function* func) {
         case SpvOpLoad: {
           uint32_t varId;
           (void)GetPtr(&inst, &varId);
-          if (!IsTargetVar(varId)) break;
+          if (!IsSSATargetVar(varId)) break;
           if (HasOnlySupportedRefs(varId)) break;
           seen_non_target_vars_.insert(varId);
           seen_target_vars_.erase(varId);
@@ -366,7 +375,7 @@ bool MemPass::SSABlockInitLoopHeader(
       }
       uint32_t varId;
       (void)GetPtr(&*ii, &varId);
-      if (!IsTargetVar(varId)) {
+      if (!IsSSATargetVar(varId)) {
         continue;
       }
       liveVars[varId] = 0;
@@ -524,16 +533,25 @@ bool MemPass::SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr) {
     return SSABlockInitMultiPred(*block_itr);
 }
 
-bool MemPass::IsTargetVar(uint32_t varId) {
+bool MemPass::IsSSATargetVar(uint32_t varId) {
   if (varId == 0) {
     return false;
   }
 
-  if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
+  // If |varId| has been analyzed before, return its status.
+  if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end()) {
     return false;
-  if (seen_target_vars_.find(varId) != seen_target_vars_.end()) return true;
+  }
+
+  if (seen_target_vars_.find(varId) != seen_target_vars_.end()) {
+    return true;
+  }
+
+  // Check that |varId| is an OpVariable of Function storage class.
   const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
-  if (varInst->opcode() != SpvOpVariable) return false;
+  if (varInst->opcode() != SpvOpVariable) {
+    return false;
+  }
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
@@ -541,13 +559,16 @@ bool MemPass::IsTargetVar(uint32_t varId) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
+
+  // Check that |varId|'s type is also an SSA target.
   const uint32_t varPteTypeId =
       varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
   ir::Instruction* varPteTypeInst = get_def_use_mgr()->GetDef(varPteTypeId);
-  if (!IsTargetType(varPteTypeInst)) {
+  if (!IsSSATargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
+
   seen_target_vars_.insert(varId);
   return true;
 }
@@ -621,7 +642,7 @@ bool MemPass::InsertPhiInstructions(ir::Function* func) {
         case SpvOpStore: {
           uint32_t varId;
           (void)GetPtr(inst, &varId);
-          if (!IsTargetVar(varId)) break;
+          if (!IsSSATargetVar(varId)) break;
           // Register new stored value for the variable
           block_defs_map_[label][varId] =
               inst->GetSingleWordInOperand(kStoreValIdInIdx);
@@ -630,7 +651,7 @@ bool MemPass::InsertPhiInstructions(ir::Function* func) {
           // Treat initialized OpVariable like an OpStore
           if (inst->NumInOperands() < 2) break;
           uint32_t varId = inst->result_id();
-          if (!IsTargetVar(varId)) break;
+          if (!IsSSATargetVar(varId)) break;
           // Register new stored value for the variable
           block_defs_map_[label][varId] =
               inst->GetSingleWordInOperand(kVariableInitIdInIdx);
@@ -638,7 +659,7 @@ bool MemPass::InsertPhiInstructions(ir::Function* func) {
         case SpvOpLoad: {
           uint32_t varId;
           (void)GetPtr(inst, &varId);
-          if (!IsTargetVar(varId)) break;
+          if (!IsSSATargetVar(varId)) break;
           modified = true;
           uint32_t replId = GetCurrentValue(varId, label);
           // If the variable is not defined, use undef.
@@ -870,6 +891,37 @@ bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
 bool MemPass::CFGCleanup(ir::Function* func) {
   bool modified = false;
   modified |= RemoveUnreachableBlocks(func);
+  return modified;
+}
+
+bool MemPass::RemoveDeadStores(ir::Function* func) {
+  bool modified = false;
+  for (auto bi = func->begin(); bi != func->end(); ++bi) {
+    std::vector<ir::Instruction*> dead_instructions;
+    for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
+      if (ii->opcode() != SpvOpStore) continue;
+      uint32_t varId;
+      (void)GetPtr(&*ii, &varId);
+      if (!IsSSATargetVar(varId)) continue;
+      if (!HasLoads(varId)) {
+        dead_instructions.push_back(&*ii);
+        modified = true;
+      }
+    }
+
+    while (!dead_instructions.empty()) {
+      ir::Instruction* inst = dead_instructions.back();
+      dead_instructions.pop_back();
+      DCEInst(inst, [&dead_instructions](ir::Instruction* other_inst) {
+        auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
+                           other_inst);
+        if (i != dead_instructions.end()) {
+          dead_instructions.erase(i);
+        }
+      });
+    }
+  }
+
   return modified;
 }
 

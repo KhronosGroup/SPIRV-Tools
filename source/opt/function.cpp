@@ -89,12 +89,19 @@ BasicBlock* Function::InsertBasicBlockAfter(
 }
 
 std::ostream& operator<<(std::ostream& str, const Function& func) {
-  func.ForEachInst([&str](const ir::Instruction* inst) {
-    str << *inst;
+  str << func.PrettyPrint();
+  return str;
+}
+
+std::string Function::PrettyPrint(uint32_t options) const {
+  std::string str;
+  ForEachInst([&str, options](const ir::Instruction* inst) {
+    str += inst->PrettyPrint(options);
     if (inst->opcode() != SpvOpFunctionEnd) {
-      str << std::endl;
+      str += "\n";
     }
   });
+
   return str;
 }
 

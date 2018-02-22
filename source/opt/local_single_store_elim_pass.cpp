@@ -83,7 +83,7 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
         continue;
       }
       // Verify target type and function storage class
-      if (!IsTargetVar(varId)) {
+      if (!IsSSATargetVar(varId)) {
         non_ssa_vars_.insert(varId);
         continue;
       }

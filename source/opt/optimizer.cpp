@@ -426,4 +426,10 @@ Optimizer::PassToken CreateLoopUnrollPass(bool fully_unroll, int factor) {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::LoopUnroller>(fully_unroll, factor));
 }
+
+Optimizer::PassToken CreateSSARewritePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::SSARewritePass>());
+}
+
 }  // namespace spvtools
