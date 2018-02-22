@@ -95,6 +95,9 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // Make private variable function scope
           .RegisterPass(CreateEliminateDeadFunctionsPass())
           .RegisterPass(CreatePrivateToLocalPass())
+          // Propagate the value stored to the loads in very simple cases.
+          .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
+          .RegisterPass(CreateLocalSingleStoreElimPass())
           // Split up aggragates so they are easier to deal with.
           .RegisterPass(CreateScalarReplacementPass())
           // Remove loads and stores so everything is in intermediate values.
@@ -123,6 +126,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
+      .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateScalarReplacementPass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
