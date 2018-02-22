@@ -224,8 +224,7 @@ void MemPass::DCEInst(ir::Instruction* inst,
     for (auto id : ids)
       if (HasOnlyNamesAndDecorates(id)) {
         ir::Instruction* odi = get_def_use_mgr()->GetDef(id);
-        if (context()->IsCombinatorInstruction(odi))
-          deadInsts.push(odi);
+        if (context()->IsCombinatorInstruction(odi)) deadInsts.push(odi);
       }
     // if a load was deleted and it was the variable's
     // last load, add all its stores to dead queue
