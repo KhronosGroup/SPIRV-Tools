@@ -112,25 +112,25 @@ OpStore %f %float_0
 OpStore %i %int_0
 OpBranch %23
 %23 = OpLabel
-%38 = OpPhi %float %float_0 %22 %34 %25
-%39 = OpPhi %int %int_0 %22 %36 %25
+%39 = OpPhi %float %float_0 %22 %34 %25
+%38 = OpPhi %int %int_0 %22 %36 %25
 OpLoopMerge %24 %25 None
 OpBranch %26
 %26 = OpLabel
-%28 = OpSLessThan %bool %39 %int_4
+%28 = OpSLessThan %bool %38 %int_4
 OpBranchConditional %28 %29 %24
 %29 = OpLabel
-%32 = OpAccessChain %_ptr_Input_float %BC %39
+%32 = OpAccessChain %_ptr_Input_float %BC %38
 %33 = OpLoad %float %32
-%34 = OpFAdd %float %38 %33
+%34 = OpFAdd %float %39 %33
 OpStore %f %34
 OpBranch %25
 %25 = OpLabel
-%36 = OpIAdd %int %39 %int_1
+%36 = OpIAdd %int %38 %int_1
 OpStore %i %36
 OpBranch %23
 %24 = OpLabel
-OpStore %fo %38
+OpStore %fo %39
 OpReturn
 OpFunctionEnd
 )";
@@ -241,8 +241,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%46 = OpUndef %float
-%main = OpFunction %void None %9
+      R"(%main = OpFunction %void None %9
 %23 = OpLabel
 %f = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
@@ -251,16 +250,15 @@ OpStore %f %float_0
 OpStore %i %int_0
 OpBranch %24
 %24 = OpLabel
-%44 = OpPhi %float %float_0 %23 %48 %26
-%45 = OpPhi %int %int_0 %23 %42 %26
-%47 = OpPhi %float %46 %23 %33 %26
+%45 = OpPhi %float %float_0 %23 %47 %26
+%44 = OpPhi %int %int_0 %23 %42 %26
 OpLoopMerge %25 %26 None
 OpBranch %27
 %27 = OpLabel
-%29 = OpSLessThan %bool %45 %int_4
+%29 = OpSLessThan %bool %44 %int_4
 OpBranchConditional %29 %30 %25
 %30 = OpLabel
-%32 = OpAccessChain %_ptr_Input_float %BC %45
+%32 = OpAccessChain %_ptr_Input_float %BC %44
 %33 = OpLoad %float %32
 OpStore %t %33
 %35 = OpFOrdLessThan %bool %33 %float_0
@@ -269,16 +267,16 @@ OpBranchConditional %35 %37 %36
 %37 = OpLabel
 OpBranch %26
 %36 = OpLabel
-%40 = OpFAdd %float %44 %33
+%40 = OpFAdd %float %45 %33
 OpStore %f %40
 OpBranch %26
 %26 = OpLabel
-%48 = OpPhi %float %44 %37 %40 %36
-%42 = OpIAdd %int %45 %int_1
+%47 = OpPhi %float %45 %37 %40 %36
+%42 = OpIAdd %int %44 %int_1
 OpStore %i %42
 OpBranch %24
 %25 = OpLabel
-OpStore %fo %44
+OpStore %fo %45
 OpReturn
 OpFunctionEnd
 )";
@@ -385,8 +383,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%47 = OpUndef %float
-%main = OpFunction %void None %9
+      R"(%main = OpFunction %void None %9
 %24 = OpLabel
 %f = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
@@ -395,18 +392,17 @@ OpStore %f %float_0
 OpStore %i %int_0
 OpBranch %25
 %25 = OpLabel
-%45 = OpPhi %float %float_0 %24 %36 %27
-%46 = OpPhi %int %int_0 %24 %43 %27
-%48 = OpPhi %float %47 %24 %36 %27
+%46 = OpPhi %float %float_0 %24 %36 %27
+%45 = OpPhi %int %int_0 %24 %43 %27
 OpLoopMerge %26 %27 None
 OpBranch %28
 %28 = OpLabel
-%30 = OpSLessThan %bool %46 %int_4
+%30 = OpSLessThan %bool %45 %int_4
 OpBranchConditional %30 %31 %26
 %31 = OpLabel
-%34 = OpAccessChain %_ptr_Input_float %BC %46
+%34 = OpAccessChain %_ptr_Input_float %BC %45
 %35 = OpLoad %float %34
-%36 = OpFAdd %float %45 %35
+%36 = OpFAdd %float %46 %35
 OpStore %t %36
 %38 = OpFOrdGreaterThan %bool %36 %float_1
 OpSelectionMerge %39 None
@@ -417,12 +413,11 @@ OpBranch %26
 OpStore %f %36
 OpBranch %27
 %27 = OpLabel
-%43 = OpIAdd %int %46 %int_1
+%43 = OpIAdd %int %45 %int_1
 OpStore %i %43
 OpBranch %25
 %26 = OpLabel
-%49 = OpPhi %float %48 %28 %36 %40
-OpStore %fo %45
+OpStore %fo %46
 OpReturn
 OpFunctionEnd
 )";
@@ -526,8 +521,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%43 = OpUndef %float
-%main = OpFunction %void None %11
+      R"(%main = OpFunction %void None %11
 %23 = OpLabel
 %f1 = OpVariable %_ptr_Function_float Function
 %f2 = OpVariable %_ptr_Function_float Function
@@ -542,26 +536,25 @@ OpStore %ie %25
 OpStore %i %int_0
 OpBranch %26
 %26 = OpLabel
-%40 = OpPhi %float %float_0 %23 %41 %28
-%41 = OpPhi %float %float_1 %23 %40 %28
-%42 = OpPhi %int %int_0 %23 %38 %28
-%44 = OpPhi %float %43 %23 %40 %28
+%43 = OpPhi %float %float_1 %23 %42 %28
+%42 = OpPhi %float %float_0 %23 %43 %28
+%40 = OpPhi %int %int_0 %23 %38 %28
 OpLoopMerge %27 %28 None
 OpBranch %29
 %29 = OpLabel
-%32 = OpSLessThan %bool %42 %25
+%32 = OpSLessThan %bool %40 %25
 OpBranchConditional %32 %33 %27
 %33 = OpLabel
-OpStore %t %40
-OpStore %f1 %41
-OpStore %f2 %40
+OpStore %t %42
+OpStore %f1 %43
+OpStore %f2 %42
 OpBranch %28
 %28 = OpLabel
-%38 = OpIAdd %int %42 %int_1
+%38 = OpIAdd %int %40 %int_1
 OpStore %i %38
 OpBranch %26
 %27 = OpLabel
-OpStore %fo %40
+OpStore %fo %42
 OpReturn
 OpFunctionEnd
 )";
@@ -668,7 +661,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%47 = OpUndef %float
+      R"(%49 = OpUndef %float
 %main = OpFunction %void None %9
 %24 = OpLabel
 %f = OpVariable %_ptr_Function_float Function
@@ -678,19 +671,19 @@ OpStore %f %float_0
 OpStore %i %int_0
 OpBranch %25
 %25 = OpLabel
-%45 = OpPhi %float %float_0 %24 %37 %27
-%46 = OpPhi %int %int_0 %24 %43 %27
-%48 = OpPhi %float %47 %24 %45 %27
+%46 = OpPhi %float %float_0 %24 %37 %27
+%45 = OpPhi %int %int_0 %24 %43 %27
+%48 = OpPhi %float %49 %24 %46 %27
 OpLoopMerge %26 %27 None
 OpBranch %28
 %28 = OpLabel
-%30 = OpSLessThan %bool %46 %int_4
+%30 = OpSLessThan %bool %45 %int_4
 OpBranchConditional %30 %31 %26
 %31 = OpLabel
-OpStore %t %45
-%35 = OpAccessChain %_ptr_Input_float %BC %46
+OpStore %t %46
+%35 = OpAccessChain %_ptr_Input_float %BC %45
 %36 = OpLoad %float %35
-%37 = OpFAdd %float %45 %36
+%37 = OpFAdd %float %46 %36
 OpStore %f %37
 %39 = OpFOrdGreaterThan %bool %37 %float_1
 OpSelectionMerge %40 None
@@ -700,13 +693,12 @@ OpBranch %26
 %40 = OpLabel
 OpBranch %27
 %27 = OpLabel
-%43 = OpIAdd %int %46 %int_1
+%43 = OpIAdd %int %45 %int_1
 OpStore %i %43
 OpBranch %25
 %26 = OpLabel
-%49 = OpPhi %float %45 %28 %37 %41
-%50 = OpPhi %float %48 %28 %45 %41
-OpStore %fo %50
+%47 = OpPhi %float %48 %28 %46 %41
+OpStore %fo %47
 OpReturn
 OpFunctionEnd
 )";
@@ -1488,6 +1480,103 @@ OpFunctionEnd
   const auto status = pass->Run(context.get());
   EXPECT_TRUE(status == opt::Pass::Status::SuccessWithChange);
 }
+
+// TODO(dneto): Add Effcee as required dependency, and make this unconditional.
+#ifdef SPIRV_EFFCEE
+TEST_F(LocalSSAElimTest, CompositeExtractProblem) {
+  const std::string spv_asm = R"(
+               OpCapability Tessellation
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationControl %2 "main"
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %uint = OpTypeInt 32 0
+     %uint_3 = OpConstant %uint 3
+    %v3float = OpTypeVector %float 3
+    %v2float = OpTypeVector %float 2
+ %_struct_11 = OpTypeStruct %v4float %v4float %v4float %v3float %v3float %v2float %v2float
+%_arr__struct_11_uint_3 = OpTypeArray %_struct_11 %uint_3
+%_ptr_Function__arr__struct_11_uint_3 = OpTypePointer Function %_arr__struct_11_uint_3
+%_arr_v4float_uint_3 = OpTypeArray %v4float %uint_3
+%_ptr_Input__arr_v4float_uint_3 = OpTypePointer Input %_arr_v4float_uint_3
+         %16 = OpVariable %_ptr_Input__arr_v4float_uint_3 Input
+         %17 = OpVariable %_ptr_Input__arr_v4float_uint_3 Input
+         %18 = OpVariable %_ptr_Input__arr_v4float_uint_3 Input
+%_ptr_Input_uint = OpTypePointer Input %uint
+         %20 = OpVariable %_ptr_Input_uint Input
+%_ptr_Output__arr_v4float_uint_3 = OpTypePointer Output %_arr_v4float_uint_3
+         %22 = OpVariable %_ptr_Output__arr_v4float_uint_3 Output
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_arr_v3float_uint_3 = OpTypeArray %v3float %uint_3
+%_ptr_Input__arr_v3float_uint_3 = OpTypePointer Input %_arr_v3float_uint_3
+         %26 = OpVariable %_ptr_Input__arr_v3float_uint_3 Input
+         %27 = OpVariable %_ptr_Input__arr_v3float_uint_3 Input
+%_arr_v2float_uint_3 = OpTypeArray %v2float %uint_3
+%_ptr_Input__arr_v2float_uint_3 = OpTypePointer Input %_arr_v2float_uint_3
+         %30 = OpVariable %_ptr_Input__arr_v2float_uint_3 Input
+         %31 = OpVariable %_ptr_Input__arr_v2float_uint_3 Input
+%_ptr_Function__struct_11 = OpTypePointer Function %_struct_11
+          %2 = OpFunction %void None %4
+         %33 = OpLabel
+         %34 = OpLoad %_arr_v4float_uint_3 %16
+         %35 = OpLoad %_arr_v4float_uint_3 %17
+         %36 = OpLoad %_arr_v4float_uint_3 %18
+         %37 = OpLoad %_arr_v3float_uint_3 %26
+         %38 = OpLoad %_arr_v3float_uint_3 %27
+         %39 = OpLoad %_arr_v2float_uint_3 %30
+         %40 = OpLoad %_arr_v2float_uint_3 %31
+         %41 = OpCompositeExtract %v4float %34 0
+         %42 = OpCompositeExtract %v4float %35 0
+         %43 = OpCompositeExtract %v4float %36 0
+         %44 = OpCompositeExtract %v3float %37 0
+         %45 = OpCompositeExtract %v3float %38 0
+         %46 = OpCompositeExtract %v2float %39 0
+         %47 = OpCompositeExtract %v2float %40 0
+         %48 = OpCompositeConstruct %_struct_11 %41 %42 %43 %44 %45 %46 %47
+         %49 = OpCompositeExtract %v4float %34 1
+         %50 = OpCompositeExtract %v4float %35 1
+         %51 = OpCompositeExtract %v4float %36 1
+         %52 = OpCompositeExtract %v3float %37 1
+         %53 = OpCompositeExtract %v3float %38 1
+         %54 = OpCompositeExtract %v2float %39 1
+         %55 = OpCompositeExtract %v2float %40 1
+         %56 = OpCompositeConstruct %_struct_11 %49 %50 %51 %52 %53 %54 %55
+         %57 = OpCompositeExtract %v4float %34 2
+         %58 = OpCompositeExtract %v4float %35 2
+         %59 = OpCompositeExtract %v4float %36 2
+         %60 = OpCompositeExtract %v3float %37 2
+         %61 = OpCompositeExtract %v3float %38 2
+         %62 = OpCompositeExtract %v2float %39 2
+         %63 = OpCompositeExtract %v2float %40 2
+         %64 = OpCompositeConstruct %_struct_11 %57 %58 %59 %60 %61 %62 %63
+         %65 = OpCompositeConstruct %_arr__struct_11_uint_3 %48 %56 %64
+         %66 = OpVariable %_ptr_Function__arr__struct_11_uint_3 Function
+         %67 = OpLoad %uint %20
+
+; CHECK OpStore {{%\d+}} [[store_source:%\d+]]
+               OpStore %66 %65
+         %68 = OpAccessChain %_ptr_Function__struct_11 %66 %67
+
+; This load was being removed, because %_ptr_Function__struct_11 was being
+; wrongfully considered an SSA target.
+; CHECK OpLoad %_struct_11 %68
+         %69 = OpLoad %_struct_11 %68
+
+; Similarly, %69 cannot be replaced with %65.
+; CHECK-NOT: OpCompositeExtract %v4float [[store_source]] 0
+         %70 = OpCompositeExtract %v4float %69 0
+
+         %71 = OpAccessChain %_ptr_Output_v4float %22 %67
+               OpStore %71 %70
+               OpReturn
+               OpFunctionEnd)";
+
+  SinglePassRunAndMatch<opt::SSARewritePass>(spv_asm, true);
+}
+#endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //

@@ -79,6 +79,7 @@ add_library(SPIRV-Tools-opt
   scalar_replacement_pass.h
   set_spec_constant_default_value_pass.h
   simplification_pass.h
+  ssa_rewrite_pass.h
   strength_reduction_pass.h
   strip_debug_info_pass.h
   strip_reflect_info_pass.h
@@ -151,6 +152,7 @@ add_library(SPIRV-Tools-opt
   scalar_replacement_pass.cpp
   set_spec_constant_default_value_pass.cpp
   simplification_pass.cpp
+  ssa_rewrite_pass.cpp
   strength_reduction_pass.cpp
   strip_debug_info_pass.cpp
   strip_reflect_info_pass.cpp

@@ -245,34 +245,11 @@ bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
 
 void MemPass::InitSSARewrite(ir::Function* func) {
   // Clear collections.
-  seen_target_vars_.clear();
-  seen_non_target_vars_.clear();
   visitedBlocks_.clear();
-  type2undefs_.clear();
-  supported_ref_vars_.clear();
   block_defs_map_.clear();
   phis_to_patch_.clear();
   dominator_ = context()->GetDominatorAnalysis(func, *cfg());
-
-  // Collect target (and non-) variable sets. Remove variables with
-  // non-load/store refs from target variable set
-  for (auto& blk : *func) {
-    for (auto& inst : blk) {
-      switch (inst.opcode()) {
-        case SpvOpStore:
-        case SpvOpLoad: {
-          uint32_t varId;
-          (void)GetPtr(&inst, &varId);
-          if (!IsTargetVar(varId)) break;
-          if (HasOnlySupportedRefs(varId)) break;
-          seen_non_target_vars_.insert(varId);
-          seen_target_vars_.erase(varId);
-        } break;
-        default:
-          break;
-      }
-    }
-  }
+  CollectTargetVars(func);
 }
 
 bool MemPass::IsLiveAfter(uint32_t var_id, uint32_t label) const {
@@ -871,6 +848,33 @@ bool MemPass::CFGCleanup(ir::Function* func) {
   bool modified = false;
   modified |= RemoveUnreachableBlocks(func);
   return modified;
+}
+
+void MemPass::CollectTargetVars(ir::Function* func) {
+  seen_target_vars_.clear();
+  seen_non_target_vars_.clear();
+  supported_ref_vars_.clear();
+  type2undefs_.clear();
+
+  // Collect target (and non-) variable sets. Remove variables with
+  // non-load/store refs from target variable set
+  for (auto& blk : *func) {
+    for (auto& inst : blk) {
+      switch (inst.opcode()) {
+        case SpvOpStore:
+        case SpvOpLoad: {
+          uint32_t varId;
+          (void)GetPtr(&inst, &varId);
+          if (!IsTargetVar(varId)) break;
+          if (HasOnlySupportedRefs(varId)) break;
+          seen_non_target_vars_.insert(varId);
+          seen_target_vars_.erase(varId);
+        } break;
+        default:
+          break;
+      }
+    }
+  }
 }
 
 }  // namespace opt

@@ -41,6 +41,34 @@ class MemPass : public Pass {
   MemPass();
   virtual ~MemPass() = default;
 
+  // Returns an undef value for the given |var_id|'s type.
+  uint32_t GetUndefVal(uint32_t var_id) {
+    return Type2Undef(GetPointeeTypeId(get_def_use_mgr()->GetDef(var_id)));
+  }
+
+  // Given a load or store |ip|, return the pointer instruction.
+  // Also return the base variable's id in |varId|.  If no base variable is
+  // found, |varId| will be 0.
+  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
+
+  // Return true if |varId| is a previously identified target variable.
+  // Return false if |varId| is a previously identified non-target variable.
+  //
+  // Non-target variables are variable of function scope of a target type that
+  // are accessed with constant-index access chains. not accessed with
+  // non-constant-index access chains. Also cache non-target variables.
+  //
+  // If variable is not cached, return true if variable is a function scope
+  // variable of target type, false otherwise. Updates caches of target and
+  // non-target variables.
+  bool IsTargetVar(uint32_t varId);
+
+  // Collect target SSA variables.  This traverses all the loads and stores in
+  // function |func| looking for variables that can be replaced with SSA IDs. It
+  // populates the sets |seen_target_vars_|, |seen_non_target_vars_| and
+  // |supported_ref_vars_|.
+  void CollectTargetVars(ir::Function* func);
+
  protected:
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
@@ -62,11 +90,6 @@ class MemPass : public Pass {
   // Also return the base variable's id in |varId|.  If no base variable is
   // found, |varId| will be 0.
   ir::Instruction* GetPtr(uint32_t ptrId, uint32_t* varId);
-
-  // Given a load or store |ip|, return the pointer instruction.
-  // Also return the base variable's id in |varId|.  If no base variable is
-  // found, |varId| will be 0.
-  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
   // Return true if all uses of |id| are only name or decorate ops.
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
@@ -102,18 +125,6 @@ class MemPass : public Pass {
   inline bool IsNonTypeDecorate(uint32_t op) const {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
-
-  // Return true if |varId| is a previously identified target variable.
-  // Return false if |varId| is a previously identified non-target variable.
-  //
-  // Non-target variables are variable of function scope of a target type that
-  // are accessed with constant-index access chains. not accessed with
-  // non-constant-index access chains. Also cache non-target variables.
-  //
-  // If variable is not cached, return true if variable is a function scope
-  // variable of target type, false otherwise. Updates caches of target and
-  // non-target variables.
-  bool IsTargetVar(uint32_t varId);
 
   // Return undef in function for type. Create and insert an undef after the
   // first non-variable in the function if it doesn't already exist. Add

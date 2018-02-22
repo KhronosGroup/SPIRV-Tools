@@ -118,6 +118,12 @@ class Function {
   BasicBlock* InsertBasicBlockAfter(std::unique_ptr<ir::BasicBlock>&& new_block,
                                     BasicBlock* position);
 
+  // Pretty-prints all the basic blocks in this function into a std::string.
+  //
+  // |options| are the disassembly options. SPV_BINARY_TO_TEXT_OPTION_NO_HEADER
+  // is always added to |options|.
+  std::string PrettyPrint(uint32_t options = 0u) const;
+
  private:
   // The enclosing module.
   Module* module_;

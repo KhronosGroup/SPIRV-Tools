@@ -18,6 +18,7 @@
 
 #include "cfa.h"
 #include "iterator.h"
+#include "ssa_rewrite_pass.h"
 
 namespace spvtools {
 namespace opt {
@@ -41,10 +42,6 @@ bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
 }
 
 Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
-  // Assumes all control flow structured.
-  // TODO(greg-lunarg): Do SSA rewrite for non-structured control flow
-  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
-    return Status::SuccessWithoutChange;
   // Assumes relaxed logical addressing only (see instruction.h)
   // TODO(greg-lunarg): Add support for physical addressing
   if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses))
@@ -58,7 +55,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
   // Process functions
   ProcessFunction pfn = [this](ir::Function* fp) {
-    return InsertPhiInstructions(fp);
+    return SSARewriter(this).RewriteFunctionIntoSSA(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;

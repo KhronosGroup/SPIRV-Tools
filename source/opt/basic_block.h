@@ -20,6 +20,7 @@
 
 #include <functional>
 #include <memory>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -180,6 +181,13 @@ class BasicBlock {
   // prior to |iter| remain in this basic block.
   BasicBlock* SplitBasicBlock(IRContext* context, uint32_t label_id,
                               iterator iter);
+
+  // Pretty-prints this basic block into a std::string by printing every
+  // instruction in it.
+  //
+  // |options| are the disassembly options. SPV_BINARY_TO_TEXT_OPTION_NO_HEADER
+  // is always added to |options|.
+  std::string PrettyPrint(uint32_t options = 0u) const;
 
  private:
   // The enclosing function.
