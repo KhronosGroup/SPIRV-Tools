@@ -146,6 +146,7 @@ OpName %main "main"
 %_ptr_float = OpTypePointer Function %float
 %_ptr_double = OpTypePointer Function %double
 %_ptr_long = OpTypePointer Function %long
+%_ptr_v2int = OpTypePointer Function %v2int
 %_ptr_v4float = OpTypePointer Function %v4float
 %_ptr_v4double = OpTypePointer Function %v4double
 %_ptr_struct_v2int_int_int = OpTypePointer Function %struct_v2int_int_int
@@ -168,6 +169,8 @@ OpName %main "main"
 %uint_32 = OpConstant %uint 32
 %uint_max = OpConstant %uint 4294967295
 %v2int_undef = OpUndef %v2int
+%v2int_2_3 = OpConstantComposite %v2int %int_2 %int_3
+%v2int_3_2 = OpConstantComposite %v2int %int_3 %int_2
 %struct_v2int_int_int_null = OpConstantNull %struct_v2int_int_int
 %102 = OpConstantComposite %v2int %103 %103
 %v4int_0_0_0_0 = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
@@ -3178,6 +3181,24 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "%2 = OpLoad %long %var\n" +
       "%3 = OpIMul %long %2 %long_3\n" +
       "%4 = OpIMul %long %3 %long_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 7: merge vector integer mults
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: [[v2int:%\\w+]] = OpTypeVector [[int]] 2\n" +
+      "; CHECK: [[int_6:%\\w+]] = OpConstant [[int]] 6\n" +
+      "; CHECK: [[v2int_6_6:%\\w+]] = OpConstantComposite [[v2int]] [[int_6]] [[int_6]]\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[v2int]]\n" +
+      "; CHECK: %4 = OpIMul [[v2int]] [[ld]] [[v2int_6_6]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_v2int Function\n" +
+      "%2 = OpLoad %v2int %var\n" +
+      "%3 = OpIMul %v2int %2 %v2int_2_3\n" +
+      "%4 = OpIMul %v2int %3 %v2int_3_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, true)
