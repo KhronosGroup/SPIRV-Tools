@@ -122,8 +122,8 @@ class MemPass : public Pass {
 
   // Insert Phi instructions in the CFG of |func|.  This removes extra
   // load/store operations to local storage while preserving the SSA form of the
-  // code.
-  Pass::Status InsertPhiInstructions(ir::Function* func);
+  // code.  Returns true if the code was modified.
+  bool InsertPhiInstructions(ir::Function* func);
 
   // Cache of verified target vars
   std::unordered_set<uint32_t> seen_target_vars_;
@@ -158,7 +158,8 @@ class MemPass : public Pass {
   // Assumes all predecessors have been visited by EliminateLocalMultiStore
   // except the back edge. Use a dummy value in the phi for the back edge
   // until the back edge block is visited and patch the phi value then.
-  void SSABlockInitLoopHeader(std::list<ir::BasicBlock*>::iterator block_itr);
+  // Returns true if the code was modified.
+  bool SSABlockInitLoopHeader(std::list<ir::BasicBlock*>::iterator block_itr);
 
   // Initialize block_defs_map_ entry for multiple predecessor block
   // |block_ptr| by merging block_defs_map_ entries for all predecessors.
@@ -166,13 +167,15 @@ class MemPass : public Pass {
   // a phi function in the block and use that value id for the variable in
   // the new map. Assumes all predecessors have been visited by
   // EliminateLocalMultiStore.
-  void SSABlockInitMultiPred(ir::BasicBlock* block_ptr);
+  // Returns true if the code was modified.
+  bool SSABlockInitMultiPred(ir::BasicBlock* block_ptr);
 
   // Initialize the label2ssa_map entry for a block pointed to by |block_itr|.
   // Insert phi instructions into block when necessary. All predecessor
   // blocks must have been visited by EliminateLocalMultiStore except for
   // backedges.
-  void SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr);
+  // Returns true if the code was modified.
+  bool SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr);
 
   // Return true if variable is loaded in block with |label| or in any
   // succeeding block in structured order.

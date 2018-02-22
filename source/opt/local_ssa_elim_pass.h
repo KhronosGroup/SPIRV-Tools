@@ -56,13 +56,6 @@ class LocalMultiStoreElimPass : public MemPass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  // Remove remaining loads and stores of function scope variables only
-  // referenced with non-access-chain loads and stores from function |func|.
-  // Insert Phi functions where necessary. Running LocalAccessChainRemoval,
-  // SingleBlockLocalElim and SingleStoreLocalElim beforehand will improve
-  // the runtime and effectiveness of this function.
-  bool EliminateMultiStoreLocal(ir::Function* func);
-
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 

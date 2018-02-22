@@ -98,13 +98,16 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // Propagate the value stored to the loads in very simple cases.
           .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
           .RegisterPass(CreateLocalSingleStoreElimPass())
+          .RegisterPass(CreateAggressiveDCEPass())
           // Split up aggragates so they are easier to deal with.
           .RegisterPass(CreateScalarReplacementPass())
           // Remove loads and stores so everything is in intermediate values.
           // Takes care of copy propagation of non-members.
           .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
           .RegisterPass(CreateLocalSingleStoreElimPass())
+          .RegisterPass(CreateAggressiveDCEPass())
           .RegisterPass(CreateLocalMultiStoreElimPass())
+          .RegisterPass(CreateAggressiveDCEPass())
           // Propagate constants to get as many constant conditions on branches
           // as possible.
           .RegisterPass(CreateCCPPass())
@@ -128,11 +131,14 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateScalarReplacementPass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateRedundancyEliminationPass())
@@ -160,9 +166,11 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
