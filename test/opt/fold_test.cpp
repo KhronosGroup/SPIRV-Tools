@@ -2989,7 +2989,6 @@ INSTANTIATE_TEST_CASE_P(MergeNegateTest, MatchingInstructionFoldingTest,
       "OpReturn\n" +
       "OpFunctionEnd",
     4, true),
-
   // Test case 11: fold snegate(iadd with const).
   // -(2 + x) = -2 - x
   InstructionFoldingCase<bool>(
@@ -3269,6 +3268,40 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "%2 = OpLoad %v2int %var\n" +
       "%3 = OpIMul %v2int %2 %v2int_2_3\n" +
       "%4 = OpIMul %v2int %3 %v2int_3_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 8: merge fmul of fdiv
+  // 2.0 * (2.0 / x) = 4.0 / x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_4:%\\w+]] = OpConstant [[float]] 4\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFDiv [[float]] [[float_4]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFDiv %float %float_2 %2\n" +
+      "%4 = OpFMul %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 9: merge fmul of fdiv
+  // (2.0 / x) * 2.0 = 4.0 / x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_4:%\\w+]] = OpConstant [[float]] 4\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFDiv [[float]] [[float_4]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFDiv %float %float_2 %2\n" +
+      "%4 = OpFMul %float %3 %float_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, true)
