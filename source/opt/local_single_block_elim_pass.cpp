@@ -50,7 +50,6 @@ bool LocalSingleBlockLoadStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
 bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
     ir::Function* func) {
   // Perform local store/load and load/load elimination on each block
-  std::vector<ir::Instruction*> dead_instructions;
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     var2store_.clear();
@@ -72,7 +71,6 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
             if (pinned_vars_.find(varId) == pinned_vars_.end()) {
               auto si = var2store_.find(varId);
               if (si != var2store_.end()) {
-                dead_instructions.push_back(si->second);
               }
             }
             var2store_[varId] = &*ii;
@@ -106,7 +104,6 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
             // replace load's result id and delete load
             context()->KillNamesAndDecorates(&*ii);
             context()->ReplaceAllUsesWith(ii->result_id(), replId);
-            dead_instructions.push_back(&*ii);
             modified = true;
           } else {
             if (ptrInst->opcode() == SpvOpVariable)
@@ -124,38 +121,6 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
         default:
           break;
       }
-    }
-
-    while (!dead_instructions.empty()) {
-      ir::Instruction* inst = dead_instructions.back();
-      dead_instructions.pop_back();
-      DCEInst(inst, [&dead_instructions](ir::Instruction* other_inst) {
-        auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
-                           other_inst);
-        if (i != dead_instructions.end()) {
-          dead_instructions.erase(i);
-        }
-      });
-    }
-
-    // Go back and delete useless stores in block
-    // TODO(greg-lunarg): Consider moving DCE into separate pass
-    std::vector<ir::Instruction*> dead_stores;
-    for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
-      if (ii->opcode() != SpvOpStore) continue;
-      if (IsLiveStore(&*ii)) continue;
-      dead_stores.push_back(&*ii);
-    }
-
-    while (!dead_stores.empty()) {
-      ir::Instruction* inst = dead_stores.back();
-      dead_stores.pop_back();
-      DCEInst(inst, [&dead_stores](ir::Instruction* other_inst) {
-        auto i = std::find(dead_stores.begin(), dead_stores.end(), other_inst);
-        if (i != dead_stores.end()) {
-          dead_stores.erase(i);
-        }
-      });
     }
   }
   return modified;

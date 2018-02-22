@@ -330,8 +330,9 @@ uint32_t MemPass::GetCurrentValue(uint32_t var_id, uint32_t block_label) {
   return 0;
 }
 
-void MemPass::SSABlockInitLoopHeader(
+bool MemPass::SSABlockInitLoopHeader(
     std::list<ir::BasicBlock*>::iterator block_itr) {
+  bool modified = false;
   const uint32_t label = (*block_itr)->id();
 
   // Determine the back-edge label.
@@ -416,6 +417,7 @@ void MemPass::SSABlockInitLoopHeader(
     // use the variable id. We will patch this after visiting back
     // edge predecessor. For predecessors that do not define a value,
     // use undef.
+    modified = true;
     std::vector<ir::Operand> phi_in_operands;
     uint32_t typeId = GetPointeeTypeId(get_def_use_mgr()->GetDef(varId));
     for (uint32_t predLabel : cfg()->preds(label)) {
@@ -447,9 +449,11 @@ void MemPass::SSABlockInitLoopHeader(
     ++insertItr;
     block_defs_map_[label].insert({varId, phiId});
   }
+  return modified;
 }
 
-void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
+bool MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
+  bool modified = false;
   const uint32_t label = block_ptr->id();
   // Collect all live variables and a default value for each across all
   // predecesors. Must be ordered map because phis are generated based on
@@ -487,6 +491,8 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
       continue;
     }
 
+    modified = true;
+
     // Val differs across predecessors. Add phi op to block and add its result
     // id to the map.
     std::vector<ir::Operand> phi_in_operands;
@@ -510,15 +516,16 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
     ++insertItr;
     block_defs_map_[label].insert({varId, phiId});
   }
+  return modified;
 }
 
-void MemPass::SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr) {
+bool MemPass::SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr) {
   const size_t numPreds = cfg()->preds((*block_itr)->id()).size();
-  if (numPreds == 0) return;
+  if (numPreds == 0) return false;
   if ((*block_itr)->IsLoopHeader())
-    SSABlockInitLoopHeader(block_itr);
+    return SSABlockInitLoopHeader(block_itr);
   else
-    SSABlockInitMultiPred(*block_itr);
+    return SSABlockInitMultiPred(*block_itr);
 }
 
 bool MemPass::IsTargetVar(uint32_t varId) {
@@ -580,12 +587,14 @@ void MemPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
   }
 }
 
-Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
+bool MemPass::InsertPhiInstructions(ir::Function* func) {
   // TODO(dnovillo) the current Phi placement mechanism assumes structured
   // control-flow. This should be generalized
   // (https://github.com/KhronosGroup/SPIRV-Tools/issues/893).
   assert(context()->get_feature_mgr()->HasCapability(SpvCapabilityShader) &&
          "This only works on structured control flow");
+
+  bool modified = false;
 
   // Initialize the data structures used to insert Phi instructions.
   InitSSARewrite(func);
@@ -603,7 +612,10 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
     }
 
     // Process all stores and loads of targeted variables.
-    SSABlockInit(bi);
+    if (SSABlockInit(bi)) {
+      modified = true;
+    }
+
     ir::BasicBlock* bp = *bi;
     const uint32_t label = bp->id();
     ir::Instruction* inst = &*bp->begin();
@@ -631,6 +643,7 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
           uint32_t varId;
           (void)GetPtr(inst, &varId);
           if (!IsTargetVar(varId)) break;
+          modified = true;
           uint32_t replId = GetCurrentValue(varId, label);
           // If the variable is not defined, use undef.
           if (replId == 0) {
@@ -664,7 +677,7 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
     if (header != 0) PatchPhis(header, label);
   }
 
-  return Status::SuccessWithChange;
+  return modified;
 }
 
 // Remove all |phi| operands coming from unreachable blocks (i.e., blocks not in
