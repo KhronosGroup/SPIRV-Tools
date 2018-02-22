@@ -169,16 +169,16 @@ ConstantFoldingRule FoldFloatingPointOp(FloatScalarFoldingRule scalar_rule) {
     const analysis::Float* float_type = result_type->AsFloat();           \
     assert(float_type != nullptr);                                        \
     if (float_type->width() == 32) {                                      \
-      float fa = a->GetFloat(); \
-      float fb = b->GetFloat(); \
+      float fa = a->GetFloat();                                           \
+      float fb = b->GetFloat();                                           \
       spvutils::FloatProxy<float> result(fa op fb);                       \
-      std::vector<uint32_t> words = {result.data()};                      \
+      std::vector<uint32_t> words = result.GetWords();                    \
       return const_mgr->GetConstant(result_type, words);                  \
     } else if (float_type->width() == 64) {                               \
-      double fa = a->GetDouble(); \
-      double fb = b->GetDouble(); \
+      double fa = a->GetDouble();                                         \
+      double fb = b->GetDouble();                                         \
       spvutils::FloatProxy<double> result(fa op fb);                      \
-      std::vector<uint32_t> words(ExtractInts(result.data()));            \
+      std::vector<uint32_t> words = result.GetWords();                    \
       return const_mgr->GetConstant(result_type, words);                  \
     }                                                                     \
     return nullptr;                                                       \
@@ -222,15 +222,15 @@ bool CompareFloatingPoint(bool op_result, bool op_unordered,
     const analysis::Float* float_type = a->type()->AsFloat();             \
     assert(float_type != nullptr);                                        \
     if (float_type->width() == 32) {                                      \
-      float fa = GetFloatFromConst(a);                                    \
-      float fb = GetFloatFromConst(b);                                    \
+      float fa = a->GetFloat();                                           \
+      float fb = b->GetFloat();                                           \
       bool result = CompareFloatingPoint(                                 \
           fa op fb, std::isnan(fa) || std::isnan(fb), ord);               \
       std::vector<uint32_t> words = {uint32_t(result)};                   \
       return const_mgr->GetConstant(result_type, words);                  \
     } else if (float_type->width() == 64) {                               \
-      double fa = GetDoubleFromConst(a);                                  \
-      double fb = GetDoubleFromConst(b);                                  \
+      double fa = a->GetDouble();                                         \
+      double fb = b->GetDouble();                                         \
       bool result = CompareFloatingPoint(                                 \
           fa op fb, std::isnan(fa) || std::isnan(fb), ord);               \
       std::vector<uint32_t> words = {uint32_t(result)};                   \

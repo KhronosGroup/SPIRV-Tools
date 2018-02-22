@@ -176,7 +176,7 @@ FoldingRule ReciprocalFDiv() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    if (!context->CanFoldFloatingPoint(inst->result_id())) return false;
+    if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
@@ -218,14 +218,12 @@ FoldingRule MergeNegateArithmetic() {
     ir::IRContext* context = inst->context();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    if (HasFloatingPoint(type) &&
-        !context->CanFoldFloatingPoint(inst->result_id()))
+    if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
       return false;
 
     ir::Instruction* op_inst =
         context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
-    if (HasFloatingPoint(type) &&
-        !context->CanFoldFloatingPoint(op_inst->result_id()))
+    if (HasFloatingPoint(type) && !op_inst->IsFloatingPointFoldingAllowed())
       return false;
 
     if (op_inst->opcode() == inst->opcode()) {
@@ -251,14 +249,12 @@ FoldingRule MergeNegateMulDivArithmetic() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    if (HasFloatingPoint(type) &&
-        !context->CanFoldFloatingPoint(inst->result_id()))
+    if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
       return false;
 
     ir::Instruction* op_inst =
         context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
-    if (HasFloatingPoint(type) &&
-        !context->CanFoldFloatingPoint(op_inst->result_id()))
+    if (HasFloatingPoint(type) && !op_inst->IsFloatingPointFoldingAllowed())
       return false;
 
     uint32_t width = ElementWidth(type);
@@ -308,14 +304,12 @@ FoldingRule MergeFNegateAddSubArithmetic() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    if (HasFloatingPoint(type) &&
-        !context->CanFoldFloatingPoint(inst->result_id()))
+    if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
       return false;
 
     ir::Instruction* op_inst =
         context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
-    if (HasFloatingPoint(type) &&
-        !context->CanFoldFloatingPoint(op_inst->result_id()))
+    if (HasFloatingPoint(type) && !op_inst->IsFloatingPointFoldingAllowed())
       return false;
 
     uint32_t width = ElementWidth(type);
@@ -449,8 +443,7 @@ FoldingRule MergeMulMulArithmetic() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    if (HasFloatingPoint(type) &&
-        !context->CanFoldFloatingPoint(inst->result_id()))
+    if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
       return false;
 
     uint32_t width = ElementWidth(type);

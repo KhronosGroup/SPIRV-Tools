@@ -83,11 +83,28 @@ class Constant {
   virtual const ArrayConstant* AsArrayConstant() const { return nullptr; }
   virtual const NullConstant* AsNullConstant() const { return nullptr; }
 
+  // Returns the float representation of the constant. Must be a 32 bit
+  // FloatConstant.
   float GetFloat() const;
+
+  // Returns the double representation of the constant. Must be a 64 bit
+  // FloatConstant.
   double GetDouble() const;
+
+  // Returns uint32_t representation of the constant. Must be a 32 bit
+  // IntConstant.
   uint32_t GetU32() const;
+
+  // Returns uint64_t representation of the constant. Must be a 64 bit
+  // IntConstant.
   uint64_t GetU64() const;
+
+  // Returns int32_t representation of the constant. Must be a 32 bit
+  // IntConstant.
   int32_t GetS32() const;
+
+  // Returns int64_t representation of the constant. Must be a 64 bit
+  // IntConstant.
   int64_t GetS64() const;
 
   const Type* type() const { return type_; }
