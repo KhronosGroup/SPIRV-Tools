@@ -2988,6 +2988,77 @@ INSTANTIATE_TEST_CASE_P(MergeNegateTest, MatchingInstructionFoldingTest,
       "%4 = OpFNegate %v2float %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd",
+    4, true),
+
+  // Test case 11: fold snegate(iadd with const).
+  // -(2 + x) = -2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: OpConstant [[int]] -2147483648\n" +
+      "; CHECK: [[int_n2:%\\w+]] = OpConstant [[int]] -2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
+      "; CHECK: %4 = OpISub [[int]] [[int_n2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_int Function\n" +
+      "%2 = OpLoad %int %var\n" +
+      "%3 = OpIAdd %int %int_2 %2\n" +
+      "%4 = OpSNegate %int %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+    4, true),
+  // Test case 12: fold snegate(iadd with const).
+  // -(x + 2) = -2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: OpConstant [[int]] -2147483648\n" +
+      "; CHECK: [[int_n2:%\\w+]] = OpConstant [[int]] -2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
+      "; CHECK: %4 = OpISub [[int]] [[int_n2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_int Function\n" +
+      "%2 = OpLoad %int %var\n" +
+      "%3 = OpIAdd %int %2 %int_2\n" +
+      "%4 = OpSNegate %int %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+    4, true),
+  // Test case 13: fold snegate(isub with const).
+  // -(2 - x) = x - 2
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
+      "; CHECK: %4 = OpISub [[int]] [[ld]] [[int_2]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_int Function\n" +
+      "%2 = OpLoad %int %var\n" +
+      "%3 = OpISub %int %int_2 %2\n" +
+      "%4 = OpSNegate %int %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+    4, true),
+  // Test case 14: fold snegate(isub with const).
+  // -(x - 2) = 2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
+      "; CHECK: %4 = OpISub [[int]] [[int_2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_int Function\n" +
+      "%2 = OpLoad %int %var\n" +
+      "%3 = OpISub %int %2 %int_2\n" +
+      "%4 = OpSNegate %int %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
     4, true)
 ));
 
@@ -3032,8 +3103,7 @@ INSTANTIATE_TEST_CASE_P(ReciprocalFDivTest, MatchingInstructionFoldingTest,
       "; CHECK: [[v2float:%\\w+]] = OpTypeVector [[float]] 2\n" +
       "; CHECK: [[float_2:%\\w+]] = OpConstant [[float]] 2\n" +
       "; CHECK: [[float_0p5:%\\w+]] = OpConstant [[float]] 0.5\n" +
-      "; CHECK: [[v2float_0p5_2:%\\w+]] = OpConstantComposite "
-      "[[v2float]] [[float_0p5]] [[float_2]]\n" +
+      "; CHECK: [[v2float_0p5_2:%\\w+]] = OpConstantComposite [[v2float]] [[float_0p5]] [[float_2]]\n" +
       "; CHECK: [[ld:%\\w+]] = OpLoad [[v2float]]\n" +
       "; CHECK: %3 = OpFMul [[v2float]] [[ld]] [[v2float_0p5_2]]\n" +
       "%main = OpFunction %void None %void_func\n" +

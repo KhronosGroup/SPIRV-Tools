@@ -301,10 +301,10 @@ FoldingRule MergeNegateMulDivArithmetic() {
 
 // Merges negate into a add or sub operation if that operation contains a
 // constant operand.
-FoldingRule MergeFNegateAddSubArithmetic() {
+FoldingRule MergeNegateAddSubArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
-    assert(inst->opcode() == SpvOpFNegate);
+    assert(inst->opcode() == SpvOpFNegate || inst->opcode() == SpvOpSNegate);
     (void)constants;
     ir::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
@@ -321,14 +321,16 @@ FoldingRule MergeFNegateAddSubArithmetic() {
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
 
-    if (op_inst->opcode() == SpvOpFAdd || op_inst->opcode() == SpvOpFSub) {
+    if (op_inst->opcode() == SpvOpFAdd || op_inst->opcode() == SpvOpFSub ||
+        op_inst->opcode() == SpvOpIAdd || op_inst->opcode() == SpvOpISub) {
       std::vector<const analysis::Constant*> op_constants =
           const_mgr->GetOperandConstants(op_inst);
       if (op_constants[0] || op_constants[1]) {
         bool zero_is_variable = op_constants[0] == nullptr;
-        bool swap_operands =
-            !(!zero_is_variable && op_inst->opcode() == SpvOpFAdd);
-        bool negate_const = op_inst->opcode() == SpvOpFAdd;
+        bool is_add = (op_inst->opcode() == SpvOpFAdd) ||
+                      (op_inst->opcode() == SpvOpIAdd);
+        bool swap_operands = !(!zero_is_variable && is_add);
+        bool negate_const = is_add;
         const analysis::Constant* c =
             zero_is_variable ? op_constants[1] : op_constants[0];
         uint32_t const_id = 0;
@@ -345,7 +347,7 @@ FoldingRule MergeFNegateAddSubArithmetic() {
         uint32_t op1 =
             zero_is_variable ? const_id : op_inst->GetSingleWordInOperand(1u);
         if (swap_operands) std::swap(op0, op1);
-        inst->SetOpcode(SpvOpFSub);
+        inst->SetOpcode(HasFloatingPoint(type) ? SpvOpFSub : SpvOpISub);
         inst->SetInOperands(
             {{SPV_OPERAND_TYPE_ID, {op0}}, {SPV_OPERAND_TYPE_ID, {op1}}});
         return true;
@@ -1069,7 +1071,7 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpFMul].push_back(RedundantFMul());
 
   rules_[SpvOpFNegate].push_back(MergeNegateArithmetic());
-  rules_[SpvOpFNegate].push_back(MergeFNegateAddSubArithmetic());
+  rules_[SpvOpFNegate].push_back(MergeNegateAddSubArithmetic());
   rules_[SpvOpFNegate].push_back(MergeNegateMulDivArithmetic());
 
   rules_[SpvOpFMul].push_back(MergeMulMulArithmetic());
@@ -1081,6 +1083,7 @@ spvtools::opt::FoldingRules::FoldingRules() {
 
   rules_[SpvOpSNegate].push_back(MergeNegateArithmetic());
   rules_[SpvOpSNegate].push_back(MergeNegateMulDivArithmetic());
+  rules_[SpvOpSNegate].push_back(MergeNegateAddSubArithmetic());
 
   rules_[SpvOpPhi].push_back(RedundantPhi());
 
