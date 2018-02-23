@@ -446,8 +446,30 @@ uint32_t PerformIntegerOperation(analysis::ConstantManager* const_mgr,
       break;
     case SpvOpSDiv:
     case SpvOpUDiv:
+      // To avoid losing precision we won't perform division that would result
+      // in a remainder. Unfortunate code duplication results.
       if (input2->AsIntConstant()->IsZero()) return 0;
-      FOLD_OP(/);
+      if (width == 64) {
+        if (type->IsSigned()) {
+          if (input1->GetS64() % input2->GetS64() != 0) return 0;
+          int64_t val = input1->GetS64() / input2->GetS64();
+          words = ExtractInts(static_cast<uint64_t>(val));
+        } else {
+          if (input1->GetU64() % input2->GetU64() != 0) return 0;
+          uint64_t val = input1->GetU64() / input2->GetU64();
+          words = ExtractInts(val);
+        }
+      } else {
+        if (type->IsSigned()) {
+          if (input1->GetS32() % input2->GetS32() != 0) return 0;
+          int32_t val = input1->GetS32() / input2->GetS32();
+          words.push_back(static_cast<uint32_t>(val));
+        } else {
+          if (input1->GetU32() % input2->GetU32() != 0) return 0;
+          uint32_t val = input1->GetU32() / input2->GetU32();
+          words.push_back(val);
+        }
+      }
       break;
     case SpvOpIAdd:
       FOLD_OP(+);
@@ -1155,13 +1177,12 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpFDiv].push_back(ReciprocalFDiv());
 
   rules_[SpvOpFMul].push_back(RedundantFMul());
+  rules_[SpvOpFMul].push_back(MergeMulMulArithmetic());
+  rules_[SpvOpFMul].push_back(MergeMulDivArithmetic());
 
   rules_[SpvOpFNegate].push_back(MergeNegateArithmetic());
   rules_[SpvOpFNegate].push_back(MergeNegateAddSubArithmetic());
   rules_[SpvOpFNegate].push_back(MergeNegateMulDivArithmetic());
-
-  rules_[SpvOpFMul].push_back(MergeMulMulArithmetic());
-  rules_[SpvOpFMul].push_back(MergeMulDivArithmetic());
 
   rules_[SpvOpFSub].push_back(RedundantFSub());
 
