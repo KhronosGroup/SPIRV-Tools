@@ -251,6 +251,11 @@ FoldingRule MergeNegateArithmetic() {
 
 // Merges negate into a mul or div operation if that operation contains a
 // constant operand.
+// Cases:
+// -(x * 2) = x * -2
+// -(2 * x) = x * -2
+// -(x / 2) = x / -2
+// -(2 / x) = -2 / x
 FoldingRule MergeNegateMulDivArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
@@ -306,6 +311,11 @@ FoldingRule MergeNegateMulDivArithmetic() {
 
 // Merges negate into a add or sub operation if that operation contains a
 // constant operand.
+// Cases:
+// -(x + 2) = -2 - x
+// -(2 + x) = -2 - x
+// -(x - 2) = x + 2
+// -(2 - x) = x - 2
 FoldingRule MergeNegateAddSubArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
@@ -525,7 +535,25 @@ uint32_t PerformOperation(analysis::ConstantManager* const_mgr, SpvOp opcode,
   }
 }
 
+const analysis::Constant* ConstInput(
+    const std::vector<const analysis::Constant*>& constants) {
+  return constants[0] ? constants[0] : constants[1];
+}
+
+ir::Instruction* NonConstInput(ir::IRContext* context,
+                               const analysis::Constant* c,
+                               ir::Instruction* inst) {
+  uint32_t in_op = c ? 1u : 0u;
+  return context->get_def_use_mgr()->GetDef(
+      inst->GetSingleWordInOperand(in_op));
+}
+
 // Merges consecutive multiplies where each contains one constant operand.
+// Cases:
+// 2 * (x * 2) = x * 4
+// 2 * (2 * x) = x * 4
+// (x * 2) * 2 = x * 4
+// (2 * x) * 2 = x * 4
 FoldingRule MergeMulMulArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
@@ -541,18 +569,8 @@ FoldingRule MergeMulMulArithmetic() {
     if (width != 32 && width != 64) return false;
 
     // Determine the constant input and the variable input in |inst|.
-    const analysis::Constant* const_input1 = nullptr;
-    ir::Instruction* other_inst = nullptr;
-    if (constants[0]) {
-      const_input1 = constants[0];
-      other_inst =
-          context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(1u));
-    } else {
-      const_input1 = constants[1];
-      other_inst =
-          context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
-    }
-
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!const_input1) return false;
     if (HasFloatingPoint(type) && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
@@ -583,6 +601,11 @@ FoldingRule MergeMulMulArithmetic() {
 
 // Merges divides into subsequent multiplies if each instruction contains one
 // constant operand.
+// Cases:
+// 2 * (x / 2) = 4 / x
+// 2 * (2 / x) = x * 1
+// (x / 2) * 2 = x * 1
+// (2 / x) * 2 = 4 / x
 FoldingRule MergeMulDivArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
@@ -597,18 +620,8 @@ FoldingRule MergeMulDivArithmetic() {
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
 
-    const analysis::Constant* const_input1 = nullptr;
-    ir::Instruction* other_inst = nullptr;
-    if (constants[0]) {
-      const_input1 = constants[0];
-      other_inst =
-          context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(1u));
-    } else {
-      const_input1 = constants[1];
-      other_inst =
-          context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
-    }
-
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!const_input1) return false;
     if (HasFloatingPoint(type) && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
@@ -645,6 +658,143 @@ FoldingRule MergeMulDivArithmetic() {
           inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {merged_id}},
                                {SPV_OPERAND_TYPE_ID, {non_const_id}}});
         }
+        return true;
+      }
+    }
+
+    return false;
+  };
+}
+
+// Merges consecutive divides if each instruction contains one constant operand.
+// Cases:
+// 2 / (x / 2) = 4 / x
+// 4 / (2 / x) = 2 * x
+// (4 / x) / 2 = 2 / x
+// (x / 2) / 2 = x / 4
+FoldingRule MergeDivDivArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFDiv || inst->opcode() == SpvOpSDiv ||
+           inst->opcode() == SpvOpUDiv);
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (!const_input1) return false;
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    bool first_is_variable = constants[0] == nullptr;
+    if (other_inst->opcode() == inst->opcode()) {
+      std::vector<const analysis::Constant*> other_constants =
+          const_mgr->GetOperandConstants(other_inst);
+      if (other_constants[0] || other_constants[1]) {
+        bool other_first_is_variable = other_constants[0] == nullptr;
+        const analysis::Constant* const_input2 =
+            other_first_is_variable ? other_constants[1] : other_constants[0];
+
+        SpvOp merge_op = inst->opcode();
+        if (other_first_is_variable) {
+          // Constants magnify.
+          merge_op = uses_float ? SpvOpFMul : SpvOpIMul;
+        }
+
+        // This is an x / (*) case. Swap the inputs. Doesn't harm multiply
+        // because it is commutative.
+        if (first_is_variable) std::swap(const_input1, const_input2);
+        uint32_t merged_id =
+            PerformOperation(const_mgr, merge_op, const_input1, const_input2);
+        if (merged_id == 0) return false;
+
+        uint32_t non_const_id = other_first_is_variable
+                                    ? other_inst->GetSingleWordInOperand(0u)
+                                    : other_inst->GetSingleWordInOperand(1u);
+
+        SpvOp op = inst->opcode();
+        if (!first_is_variable && !other_first_is_variable) {
+          // Effectively div of 1/x, so change to multiply.
+          op = uses_float ? SpvOpFMul : SpvOpIMul;
+        }
+
+        uint32_t op1 = merged_id;
+        uint32_t op2 = non_const_id;
+        if (first_is_variable && other_first_is_variable) std::swap(op1, op2);
+        inst->SetOpcode(op);
+        inst->SetInOperands(
+            {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
+        return true;
+      }
+    }
+
+    return false;
+  };
+}
+
+// Fold multiplies succeeded by divides where each instruction contains a
+// constant operand.
+// Cases:
+// 4 / (x * 2) = 2 / x
+// 4 / (2 * x) = 2 / x
+// (x * 4) / 2 = x * 2
+// (4 * x) / 2 = x * 2
+FoldingRule MergeDivMulArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFDiv || inst->opcode() == SpvOpSDiv ||
+           inst->opcode() == SpvOpUDiv);
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (!const_input1) return false;
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    bool first_is_variable = constants[0] == nullptr;
+    if (other_inst->opcode() == SpvOpFMul ||
+        other_inst->opcode() == SpvOpIMul) {
+      std::vector<const analysis::Constant*> other_constants =
+          const_mgr->GetOperandConstants(other_inst);
+      if (other_constants[0] || other_constants[1]) {
+        bool other_first_is_variable = other_constants[0] == nullptr;
+        const analysis::Constant* const_input2 =
+            other_first_is_variable ? other_constants[1] : other_constants[0];
+
+        // This is an x / (*) case. Swap the inputs.
+        if (first_is_variable) std::swap(const_input1, const_input2);
+        uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
+                                              const_input1, const_input2);
+        if (merged_id == 0) return false;
+
+        uint32_t non_const_id = other_first_is_variable
+                                    ? other_inst->GetSingleWordInOperand(0u)
+                                    : other_inst->GetSingleWordInOperand(1u);
+
+        uint32_t op1 = merged_id;
+        uint32_t op2 = non_const_id;
+        if (first_is_variable) std::swap(op1, op2);
+
+        // Convert to multiply
+        if (first_is_variable) inst->SetOpcode(other_inst->opcode());
+        inst->SetInOperands(
+            {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
         return true;
       }
     }
@@ -1175,6 +1325,8 @@ spvtools::opt::FoldingRules::FoldingRules() {
 
   rules_[SpvOpFDiv].push_back(RedundantFDiv());
   rules_[SpvOpFDiv].push_back(ReciprocalFDiv());
+  rules_[SpvOpFDiv].push_back(MergeDivDivArithmetic());
+  rules_[SpvOpFDiv].push_back(MergeDivMulArithmetic());
 
   rules_[SpvOpFMul].push_back(RedundantFMul());
   rules_[SpvOpFMul].push_back(MergeMulMulArithmetic());
@@ -1190,13 +1342,19 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpIMul].push_back(MergeMulMulArithmetic());
   rules_[SpvOpIMul].push_back(MergeMulDivArithmetic());
 
+  rules_[SpvOpPhi].push_back(RedundantPhi());
+
+  rules_[SpvOpSDiv].push_back(MergeDivDivArithmetic());
+  rules_[SpvOpSDiv].push_back(MergeDivMulArithmetic());
+
   rules_[SpvOpSNegate].push_back(MergeNegateArithmetic());
   rules_[SpvOpSNegate].push_back(MergeNegateMulDivArithmetic());
   rules_[SpvOpSNegate].push_back(MergeNegateAddSubArithmetic());
 
-  rules_[SpvOpPhi].push_back(RedundantPhi());
-
   rules_[SpvOpSelect].push_back(RedundantSelect());
+
+  rules_[SpvOpUDiv].push_back(MergeDivDivArithmetic());
+  rules_[SpvOpUDiv].push_back(MergeDivMulArithmetic());
 }
 
 }  // namespace opt
