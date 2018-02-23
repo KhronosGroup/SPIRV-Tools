@@ -33,12 +33,13 @@ The SPIR-V binaries are read from the different <filename>.
 NOTE: The linker is a work in progress.
 
 Options:
-  -h, --help       Print this help.
-  -o               Name of the resulting linked SPIR-V binary.
-  --create-library Link the binaries into a library, keeping all exported symbols.
-  --version        Display linker version information
-  --target-env     {vulkan1.0|spv1.0|spv1.1|spv1.2|opencl2.1|opencl2.2}
-                   Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1/SPIR-V1.2/OpenCL-2.1/OpenCL2.2 validation rules.
+  -h, --help              Print this help.
+  -o                      Name of the resulting linked SPIR-V binary.
+  --create-library        Link the binaries into a library, keeping all exported symbols.
+  --allow-partial-linkage Allow partial linkage by accepting imported symbols to be unresolved.
+  --version               Display linker version information
+  --target-env            {vulkan1.0|spv1.0|spv1.1|spv1.2|opencl2.1|opencl2.2}
+                          Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1/SPIR-V1.2/OpenCL-2.1/OpenCL2.2 validation rules.
 )",
       argv0, argv0);
 }
@@ -70,6 +71,8 @@ int main(int argc, char** argv) {
         }
       } else if (0 == strcmp(cur_arg, "--create-library")) {
         options.SetCreateLibrary(true);
+      } else if (0 == strcmp(cur_arg, "--allow-partial-linkage")) {
+        options.SetAllowPartialLinkage(true);
       } else if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", spvSoftwareVersionDetailsString());
         // TODO(dneto): Add OpenCL 2.2 at least.
