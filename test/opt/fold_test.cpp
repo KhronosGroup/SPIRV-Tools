@@ -2756,6 +2756,46 @@ INSTANTIATE_TEST_CASE_P(DoubleVectorRedundantFoldingTest, GeneralInstructionFold
             "OpFunctionEnd",
         2, 3)
 ));
+
+INSTANTIATE_TEST_CASE_P(FToIConstantFoldingTest, IntegerInstructionFoldingTest,
+                        ::testing::Values(
+    // Test case 0: Fold int(3.0)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpConvertFToS %int %float_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 1: Fold uint(3.0)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpConvertFToU %int %float_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3)
+));
+
+INSTANTIATE_TEST_CASE_P(IToFConstantFoldingTest, FloatInstructionFoldingTest,
+                        ::testing::Values(
+    // Test case 0: Fold float(3)
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpConvertSToF %float %int_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3.0),
+    // Test case 1: Fold float(3u)
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpConvertUToF %float %uint_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3.0)
+));
 // clang-format on
 
 using ToNegateFoldingTest =
