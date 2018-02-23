@@ -64,6 +64,19 @@ bool IsValidResult(T val) {
   }
 }
 
+const analysis::Constant* ConstInput(
+    const std::vector<const analysis::Constant*>& constants) {
+  return constants[0] ? constants[0] : constants[1];
+}
+
+ir::Instruction* NonConstInput(ir::IRContext* context,
+                               const analysis::Constant* c,
+                               ir::Instruction* inst) {
+  uint32_t in_op = c ? 1u : 0u;
+  return context->get_def_use_mgr()->GetDef(
+      inst->GetSingleWordInOperand(in_op));
+}
+
 // Returns the negation of |c|. |c| must be a 32 or 64 bit floating point
 // constant.
 uint32_t NegateFloatingPointConstant(analysis::ConstantManager* const_mgr,
@@ -284,8 +297,7 @@ FoldingRule MergeNegateMulDivArithmetic() {
       // Merge negate into mul or div if one operand is constant.
       if (op_constants[0] || op_constants[1]) {
         bool zero_is_variable = op_constants[0] == nullptr;
-        const analysis::Constant* c =
-            zero_is_variable ? op_constants[1] : op_constants[0];
+        const analysis::Constant* c = ConstInput(op_constants);
         uint32_t neg_id = NegateConstant(const_mgr, c);
         uint32_t non_const_id = zero_is_variable
                                     ? op_inst->GetSingleWordInOperand(0u)
@@ -314,7 +326,7 @@ FoldingRule MergeNegateMulDivArithmetic() {
 // Cases:
 // -(x + 2) = -2 - x
 // -(2 + x) = -2 - x
-// -(x - 2) = x + 2
+// -(x - 2) = 2 - x
 // -(2 - x) = x - 2
 FoldingRule MergeNegateAddSubArithmetic() {
   return [](ir::Instruction* inst,
@@ -344,10 +356,9 @@ FoldingRule MergeNegateAddSubArithmetic() {
         bool zero_is_variable = op_constants[0] == nullptr;
         bool is_add = (op_inst->opcode() == SpvOpFAdd) ||
                       (op_inst->opcode() == SpvOpIAdd);
-        bool swap_operands = !(!zero_is_variable && is_add);
+        bool swap_operands = !is_add || zero_is_variable;
         bool negate_const = is_add;
-        const analysis::Constant* c =
-            zero_is_variable ? op_constants[1] : op_constants[0];
+        const analysis::Constant* c = ConstInput(op_constants);
         uint32_t const_id = 0;
         if (negate_const) {
           const_id = NegateConstant(const_mgr, c);
@@ -535,19 +546,6 @@ uint32_t PerformOperation(analysis::ConstantManager* const_mgr, SpvOp opcode,
   }
 }
 
-const analysis::Constant* ConstInput(
-    const std::vector<const analysis::Constant*>& constants) {
-  return constants[0] ? constants[0] : constants[1];
-}
-
-ir::Instruction* NonConstInput(ir::IRContext* context,
-                               const analysis::Constant* c,
-                               ir::Instruction* inst) {
-  uint32_t in_op = c ? 1u : 0u;
-  return context->get_def_use_mgr()->GetDef(
-      inst->GetSingleWordInOperand(in_op));
-}
-
 // Merges consecutive multiplies where each contains one constant operand.
 // Cases:
 // 2 * (x * 2) = x * 4
@@ -570,8 +568,8 @@ FoldingRule MergeMulMulArithmetic() {
 
     // Determine the constant input and the variable input in |inst|.
     const analysis::Constant* const_input1 = ConstInput(constants);
-    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (HasFloatingPoint(type) && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -580,8 +578,7 @@ FoldingRule MergeMulMulArithmetic() {
           const_mgr->GetOperandConstants(other_inst);
       if (other_constants[0] || other_constants[1]) {
         bool other_first_is_variable = other_constants[0] == nullptr;
-        const analysis::Constant* const_input2 =
-            other_first_is_variable ? other_constants[1] : other_constants[0];
+        const analysis::Constant* const_input2 = ConstInput(other_constants);
         uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
                                               const_input1, const_input2);
         if (merged_id == 0) return false;
@@ -621,8 +618,8 @@ FoldingRule MergeMulDivArithmetic() {
     if (width != 32 && width != 64) return false;
 
     const analysis::Constant* const_input1 = ConstInput(constants);
-    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (HasFloatingPoint(type) && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -633,8 +630,7 @@ FoldingRule MergeMulDivArithmetic() {
           const_mgr->GetOperandConstants(other_inst);
       if (other_constants[0] || other_constants[1]) {
         bool other_first_is_variable = other_constants[0] == nullptr;
-        const analysis::Constant* const_input2 =
-            other_first_is_variable ? other_constants[1] : other_constants[0];
+        const analysis::Constant* const_input2 = ConstInput(other_constants);
         // If the variable value is the second operand of the divide, multiply
         // the constants together. Otherwise divide the constants.
         uint32_t merged_id = PerformOperation(
@@ -685,8 +681,8 @@ FoldingRule MergeMulNegateArithmetic() {
     if (width != 32 && width != 64) return false;
 
     const analysis::Constant* const_input1 = ConstInput(constants);
-    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -726,8 +722,8 @@ FoldingRule MergeDivDivArithmetic() {
     if (width != 32 && width != 64) return false;
 
     const analysis::Constant* const_input1 = ConstInput(constants);
-    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -737,8 +733,7 @@ FoldingRule MergeDivDivArithmetic() {
           const_mgr->GetOperandConstants(other_inst);
       if (other_constants[0] || other_constants[1]) {
         bool other_first_is_variable = other_constants[0] == nullptr;
-        const analysis::Constant* const_input2 =
-            other_first_is_variable ? other_constants[1] : other_constants[0];
+        const analysis::Constant* const_input2 = ConstInput(other_constants);
 
         SpvOp merge_op = inst->opcode();
         if (other_first_is_variable) {
@@ -800,8 +795,8 @@ FoldingRule MergeDivMulArithmetic() {
     if (width != 32 && width != 64) return false;
 
     const analysis::Constant* const_input1 = ConstInput(constants);
-    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -812,8 +807,7 @@ FoldingRule MergeDivMulArithmetic() {
           const_mgr->GetOperandConstants(other_inst);
       if (other_constants[0] || other_constants[1]) {
         bool other_first_is_variable = other_constants[0] == nullptr;
-        const analysis::Constant* const_input2 =
-            other_first_is_variable ? other_constants[1] : other_constants[0];
+        const analysis::Constant* const_input2 = ConstInput(other_constants);
 
         // This is an x / (*) case. Swap the inputs.
         if (first_is_variable) std::swap(const_input1, const_input2);
@@ -861,8 +855,8 @@ FoldingRule MergeDivNegateArithmetic() {
     if (width != 32 && width != 64) return false;
 
     const analysis::Constant* const_input1 = ConstInput(constants);
-    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
