@@ -666,6 +666,44 @@ FoldingRule MergeMulDivArithmetic() {
   };
 }
 
+// Merges multiply of constant and negation.
+// Cases:
+// (-x) * 2 = x * -2
+// 2 * (-x) = x * -2
+FoldingRule MergeMulNegateArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFMul || inst->opcode() == SpvOpIMul);
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (!const_input1) return false;
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    if (other_inst->opcode() == SpvOpFNegate ||
+        other_inst->opcode() == SpvOpSNegate) {
+      uint32_t neg_id = NegateConstant(const_mgr, const_input1);
+
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {other_inst->GetSingleWordInOperand(0u)}},
+           {SPV_OPERAND_TYPE_ID, {neg_id}}});
+      return true;
+    }
+
+    return false;
+  };
+}
+
 // Merges consecutive divides if each instruction contains one constant operand.
 // Cases:
 // 2 / (x / 2) = 4 / x
@@ -797,6 +835,52 @@ FoldingRule MergeDivMulArithmetic() {
             {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
         return true;
       }
+    }
+
+    return false;
+  };
+}
+
+// Fold divides of a constant and a negation.
+// Cases:
+// (-x) / 2 = x / -2
+// 2 / (-x) = 2 / -x
+FoldingRule MergeDivNegateArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFDiv || inst->opcode() == SpvOpSDiv ||
+           inst->opcode() == SpvOpUDiv);
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (!const_input1) return false;
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    bool first_is_variable = constants[0] == nullptr;
+    if (other_inst->opcode() == SpvOpFNegate ||
+        other_inst->opcode() == SpvOpSNegate) {
+      uint32_t neg_id = NegateConstant(const_mgr, const_input1);
+
+      if (first_is_variable) {
+        inst->SetInOperands(
+            {{SPV_OPERAND_TYPE_ID, {other_inst->GetSingleWordInOperand(0u)}},
+             {SPV_OPERAND_TYPE_ID, {neg_id}}});
+      } else {
+        inst->SetInOperands(
+            {{SPV_OPERAND_TYPE_ID, {neg_id}},
+             {SPV_OPERAND_TYPE_ID, {other_inst->GetSingleWordInOperand(0u)}}});
+      }
+      return true;
     }
 
     return false;
@@ -1327,10 +1411,12 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpFDiv].push_back(ReciprocalFDiv());
   rules_[SpvOpFDiv].push_back(MergeDivDivArithmetic());
   rules_[SpvOpFDiv].push_back(MergeDivMulArithmetic());
+  rules_[SpvOpFDiv].push_back(MergeDivNegateArithmetic());
 
   rules_[SpvOpFMul].push_back(RedundantFMul());
   rules_[SpvOpFMul].push_back(MergeMulMulArithmetic());
   rules_[SpvOpFMul].push_back(MergeMulDivArithmetic());
+  rules_[SpvOpFMul].push_back(MergeMulNegateArithmetic());
 
   rules_[SpvOpFNegate].push_back(MergeNegateArithmetic());
   rules_[SpvOpFNegate].push_back(MergeNegateAddSubArithmetic());
@@ -1341,11 +1427,13 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpIMul].push_back(IntMultipleBy1());
   rules_[SpvOpIMul].push_back(MergeMulMulArithmetic());
   rules_[SpvOpIMul].push_back(MergeMulDivArithmetic());
+  rules_[SpvOpIMul].push_back(MergeMulNegateArithmetic());
 
   rules_[SpvOpPhi].push_back(RedundantPhi());
 
   rules_[SpvOpSDiv].push_back(MergeDivDivArithmetic());
   rules_[SpvOpSDiv].push_back(MergeDivMulArithmetic());
+  rules_[SpvOpSDiv].push_back(MergeDivNegateArithmetic());
 
   rules_[SpvOpSNegate].push_back(MergeNegateArithmetic());
   rules_[SpvOpSNegate].push_back(MergeNegateMulDivArithmetic());
@@ -1355,6 +1443,7 @@ spvtools::opt::FoldingRules::FoldingRules() {
 
   rules_[SpvOpUDiv].push_back(MergeDivDivArithmetic());
   rules_[SpvOpUDiv].push_back(MergeDivMulArithmetic());
+  rules_[SpvOpUDiv].push_back(MergeDivNegateArithmetic());
 }
 
 }  // namespace opt

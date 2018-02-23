@@ -3464,6 +3464,46 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "%4 = OpIMul %v2int %3 %v2int_4_4\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
+    4, true),
+  // Test case 15: merge vector imul of snegate
+  // (-x) * {2,2} = x * {-2,-2}
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: [[v2int:%\\w+]] = OpTypeVector [[int]] 2\n" +
+      "; CHECK: OpConstant [[int]] -2147483648\n" +
+      "; CHECK: [[int_n2:%\\w+]] = OpConstant [[int]] -2\n" +
+      "; CHECK: [[v2int_n2_n2:%\\w+]] = OpConstantComposite [[v2int]] [[int_n2]] [[int_n2]]\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[v2int]]\n" +
+      "; CHECK: %4 = OpIMul [[v2int]] [[ld]] [[v2int_n2_n2]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_v2int Function\n" +
+      "%2 = OpLoad %v2int %var\n" +
+      "%3 = OpSNegate %v2int %2\n" +
+      "%4 = OpIMul %v2int %3 %v2int_2_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 15: merge vector imul of snegate
+  // {2,2} * (-x) = x * {-2,-2}
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: [[v2int:%\\w+]] = OpTypeVector [[int]] 2\n" +
+      "; CHECK: OpConstant [[int]] -2147483648\n" +
+      "; CHECK: [[int_n2:%\\w+]] = OpConstant [[int]] -2\n" +
+      "; CHECK: [[v2int_n2_n2:%\\w+]] = OpConstantComposite [[v2int]] [[int_n2]] [[int_n2]]\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[v2int]]\n" +
+      "; CHECK: %4 = OpIMul [[v2int]] [[ld]] [[v2int_n2_n2]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_v2int Function\n" +
+      "%2 = OpLoad %v2int %var\n" +
+      "%3 = OpSNegate %v2int %2\n" +
+      "%4 = OpIMul %v2int %v2int_2_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
     4, true)
 ));
 
@@ -3653,6 +3693,42 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%2 = OpLoad %int %var\n" +
       "%3 = OpIMul %int %2 %int_4\n" +
       "%4 = OpSDiv %int %3 %int_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 11: merge sdiv of snegate
+  // (-x) / 2 = x / -2
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: OpConstant [[int]] -2147483648\n" +
+      "; CHECK: [[int_n2:%\\w+]] = OpConstant [[int]] -2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
+      "; CHECK: %4 = OpSDiv [[int]] [[ld]] [[int_n2]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_int Function\n" +
+      "%2 = OpLoad %int %var\n" +
+      "%3 = OpSNegate %int %2\n" +
+      "%4 = OpSDiv %int %3 %int_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 12: merge sdiv of snegate
+  // 2 / (-x) = -2 / x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+      "; CHECK: OpConstant [[int]] -2147483648\n" +
+      "; CHECK: [[int_n2:%\\w+]] = OpConstant [[int]] -2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
+      "; CHECK: %4 = OpSDiv [[int]] [[int_n2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_int Function\n" +
+      "%2 = OpLoad %int %var\n" +
+      "%3 = OpSNegate %int %2\n" +
+      "%4 = OpSDiv %int %int_2 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, true)
