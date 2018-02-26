@@ -177,6 +177,7 @@ OpName %main "main"
 %v2int_3_2 = OpConstantComposite %v2int %int_3 %int_2
 %v2int_4_4 = OpConstantComposite %v2int %int_4 %int_4
 %struct_v2int_int_int_null = OpConstantNull %struct_v2int_int_int
+%v2int_null = OpConstantNull %v2int
 %102 = OpConstantComposite %v2int %103 %103
 %v4int_0_0_0_0 = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
 %struct_undef_0_0 = OpConstantComposite %struct_v2int_int_int %v2int_undef %int_0 %int_0
@@ -186,6 +187,7 @@ OpName %main "main"
 %float_n1 = OpConstant %float -1
 %104 = OpConstant %float 0 ; Need a def with an numerical id to define id maps.
 %float_0 = OpConstant %float 0
+%float_half = OpConstant %float 0.5
 %float_1 = OpConstant %float 1
 %float_2 = OpConstant %float 2
 %float_3 = OpConstant %float 3
@@ -388,6 +390,70 @@ INSTANTIATE_TEST_CASE_P(TestCase, IntegerInstructionFoldingTest,
           "OpReturn\n" +
           "OpFunctionEnd",
       2, 0)
+));
+// clang-format on
+
+using IntVectorInstructionFoldingTest =
+    ::testing::TestWithParam<InstructionFoldingCase<std::vector<uint32_t>>>;
+
+TEST_P(IntVectorInstructionFoldingTest, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  bool succeeded = opt::FoldInstruction(inst);
+
+  // Make sure the instruction folded as expected.
+  EXPECT_TRUE(succeeded);
+  if (inst != nullptr) {
+    EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
+    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+    std::vector<SpvOp> opcodes = {SpvOpConstantComposite};
+    EXPECT_THAT(opcodes, Contains(inst->opcode()));
+    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const opt::analysis::Constant* result =
+        const_mrg->GetConstantFromInst(inst);
+    EXPECT_NE(result, nullptr);
+    if (result != nullptr) {
+      const std::vector<const opt::analysis::Constant*>& componenets =
+          result->AsVectorConstant()->GetComponents();
+      EXPECT_EQ(componenets.size(), tc.expected_result.size());
+      for (size_t i = 0; i < componenets.size(); i++) {
+        EXPECT_EQ(tc.expected_result[i], componenets[i]->GetU32());
+      }
+    }
+  }
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(TestCase, IntVectorInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: fold 0*n
+    InstructionFoldingCase<std::vector<uint32_t>>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%load = OpLoad %int %n\n" +
+            "%2 = OpVectorShuffle %v2int %v2int_2_2 %v2int_2_3 0 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, {2,3}),
+    InstructionFoldingCase<std::vector<uint32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_int Function\n" +
+          "%load = OpLoad %int %n\n" +
+          "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 0 3\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, {0,3})
 ));
 // clang-format on
 
@@ -2116,7 +2182,7 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingTe
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0),
-    // Test case 9: constant struct has OpUndef
+    // Test case 9: Extracting a member of element inserted via Insert
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -2127,7 +2193,7 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingTe
             "OpReturn\n" +
             "OpFunctionEnd",
         4, 103),
-    // Test case 10: constant struct has OpUndef
+    // Test case 10: Extracting a element that is partially changed by Insert. (Don't fold)
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -2137,7 +2203,29 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingTe
             "%4 = OpCompositeExtract %v2int %3 0\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        4, 0)
+        4, 0),
+    // Test case 11: Extracting from result of vector shuffle (first input)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v2int Function\n" +
+            "%2 = OpLoad %v2int %n\n" +
+            "%3 = OpVectorShuffle %v2int %102 %2 3 0\n" +
+            "%4 = OpCompositeExtract %int %3 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, INT_7_ID),
+    // Test case 12: Extracting from result of vector shuffle (second input)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v2int Function\n" +
+            "%2 = OpLoad %v2int %n\n" +
+            "%3 = OpVectorShuffle %v2int %2 %102 2 0\n" +
+            "%4 = OpCompositeExtract %int %3 0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, INT_7_ID)
 ));
 
 INSTANTIATE_TEST_CASE_P(CompositeConstructFoldingTest, GeneralInstructionFoldingTest,

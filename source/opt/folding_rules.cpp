@@ -1444,6 +1444,54 @@ FoldingRule InsertFeedingExtract() {
   };
 }
 
+// When a VectorShuffle is feeding an Extract, we can extract from one of the
+// operands of the VectorShuffle.  We just need to adjust the index in the
+// extract instruction.
+FoldingRule VectorShuffleFeedingExtract() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>&) {
+    assert(inst->opcode() == SpvOpCompositeExtract &&
+           "Wrong opcode.  Should be OpCompositeExtract.");
+    analysis::DefUseManager* def_use_mgr = inst->context()->get_def_use_mgr();
+    analysis::TypeManager* type_mgr = inst->context()->get_type_mgr();
+    uint32_t cid = inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
+    ir::Instruction* cinst = def_use_mgr->GetDef(cid);
+
+    if (cinst->opcode() != SpvOpVectorShuffle) {
+      return false;
+    }
+
+    // Find the size of the first vector operand of the VectorShuffle
+    ir::Instruction* first_input =
+        def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+    analysis::Type* first_input_type =
+        type_mgr->GetType(first_input->type_id());
+    assert(first_input_type->AsVector() &&
+           "Input to vector shuffle should be vectors.");
+    uint32_t first_input_size = first_input_type->AsVector()->element_count();
+
+    // Get index of the element the vector shuffle is placing in the position
+    // being extracted.
+    uint32_t new_index =
+        cinst->GetSingleWordInOperand(2 + inst->GetSingleWordInOperand(1));
+
+    // Get the id of the of the vector the elemtent comes from, and update the
+    // index if needed.
+    uint32_t new_vector = 0;
+    if (new_index < first_input_size) {
+      new_vector = cinst->GetSingleWordInOperand(0);
+    } else {
+      new_vector = cinst->GetSingleWordInOperand(1);
+      new_index -= first_input_size;
+    }
+
+    // Update the extract instruction.
+    inst->SetInOperand(kExtractCompositeIdInIdx, {new_vector});
+    inst->SetInOperand(1, {new_index});
+    return true;
+  };
+}
+
 FoldingRule RedundantPhi() {
   // An OpPhi instruction where all values are the same or the result of the phi
   // itself, can be replaced by the value itself.
@@ -1725,6 +1773,7 @@ spvtools::opt::FoldingRules::FoldingRules() {
 
   rules_[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
   rules_[SpvOpCompositeExtract].push_back(CompositeConstructFeedingExtract());
+  rules_[SpvOpCompositeExtract].push_back(VectorShuffleFeedingExtract());
 
   rules_[SpvOpExtInst].push_back(RedundantFMix());
 
