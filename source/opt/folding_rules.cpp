@@ -513,6 +513,7 @@ uint32_t PerformIntegerOperation(analysis::ConstantManager* const_mgr,
 uint32_t PerformOperation(analysis::ConstantManager* const_mgr, SpvOp opcode,
                           const analysis::Constant* input1,
                           const analysis::Constant* input2) {
+  assert(input1 && input2);
   assert(input1->type() == input2->type());
   const analysis::Type* type = input1->type();
   std::vector<uint32_t> words;
@@ -877,6 +878,331 @@ FoldingRule MergeDivNegateArithmetic() {
       return true;
     }
 
+    return false;
+  };
+}
+
+// Folds addition of a constant and a negation.
+// Cases:
+// (-x) + 2 = 2 - x
+// 2 + (-x) = 2 - x
+FoldingRule MergeAddNegateArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFAdd || inst->opcode() == SpvOpIAdd);
+    ir::IRContext* context = inst->context();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    if (other_inst->opcode() == SpvOpSNegate ||
+        other_inst->opcode() == SpvOpFNegate) {
+      inst->SetOpcode(HasFloatingPoint(type) ? SpvOpFSub : SpvOpISub);
+      uint32_t const_id = constants[0] ? inst->GetSingleWordInOperand(0u)
+                                       : inst->GetSingleWordInOperand(1u);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {const_id}},
+           {SPV_OPERAND_TYPE_ID, {other_inst->GetSingleWordInOperand(0u)}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Folds subtraction of a constant and a negation.
+// Cases:
+// (-x) - 2 = -2 - x
+// 2 - (-x) = x + 2
+FoldingRule MergeSubNegateArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFSub || inst->opcode() == SpvOpISub);
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    if (other_inst->opcode() == SpvOpSNegate ||
+        other_inst->opcode() == SpvOpFNegate) {
+      uint32_t op1 = 0;
+      uint32_t op2 = 0;
+      SpvOp opcode = inst->opcode();
+      if (constants[0] != nullptr) {
+        op1 = other_inst->GetSingleWordInOperand(0u);
+        op2 = inst->GetSingleWordInOperand(0u);
+        opcode = HasFloatingPoint(type) ? SpvOpFAdd : SpvOpIAdd;
+      } else {
+        op1 = NegateConstant(const_mgr, const_input1);
+        op2 = other_inst->GetSingleWordInOperand(0u);
+      }
+
+      inst->SetOpcode(opcode);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Folds addition of an addition where each operation has a constant operand.
+// Cases:
+// (x + 2) + 2 = x + 4
+// (2 + x) + 2 = x + 4
+// 2 + (x + 2) = x + 4
+// 2 + (2 + x) = x + 4
+FoldingRule MergeAddAddArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFAdd || inst->opcode() == SpvOpIAdd);
+    ir::IRContext* context = inst->context();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    if (other_inst->opcode() == SpvOpFAdd ||
+        other_inst->opcode() == SpvOpIAdd) {
+      std::vector<const analysis::Constant*> other_constants =
+          const_mgr->GetOperandConstants(other_inst);
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
+      ir::Instruction* non_const_input =
+          NonConstInput(context, other_constants[0], other_inst);
+      uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
+                                            const_input1, const_input2);
+      if (merged_id == 0) return false;
+
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {non_const_input->result_id()}},
+           {SPV_OPERAND_TYPE_ID, {merged_id}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Folds addition of a subtraction where each operation has a constant operand.
+// Cases:
+// (x - 2) + 2 = x + 0
+// (2 - x) + 2 = 4 - x
+// 2 + (x - 2) = x + 0
+// 2 + (2 - x) = 4 - x
+FoldingRule MergeAddSubArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFAdd || inst->opcode() == SpvOpIAdd);
+    ir::IRContext* context = inst->context();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    if (other_inst->opcode() == SpvOpFSub ||
+        other_inst->opcode() == SpvOpISub) {
+      std::vector<const analysis::Constant*> other_constants =
+          const_mgr->GetOperandConstants(other_inst);
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
+
+      bool first_is_variable = other_constants[0] == nullptr;
+      SpvOp op = inst->opcode();
+      uint32_t op1 = 0;
+      uint32_t op2 = 0;
+      if (first_is_variable) {
+        // Subtract constants. Non-constant operand is first.
+        op1 = other_inst->GetSingleWordInOperand(0u);
+        op2 = PerformOperation(const_mgr, other_inst->opcode(), const_input1,
+                               const_input2);
+      } else {
+        // Add constants. Constant operand is first. Change the opcode.
+        op1 = PerformOperation(const_mgr, inst->opcode(), const_input1,
+                               const_input2);
+        op2 = other_inst->GetSingleWordInOperand(1u);
+        op = other_inst->opcode();
+      }
+      if (op1 == 0 || op2 == 0) return false;
+
+      inst->SetOpcode(op);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Folds subtraction of an addition where each operand has a constant operand.
+// Cases:
+// (x + 2) - 2 = x + 0
+// (2 + x) - 2 = x + 0
+// 2 - (x + 2) = 0 - x
+// 2 - (2 + x) = 0 - x
+FoldingRule MergeSubAddArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFSub || inst->opcode() == SpvOpISub);
+    ir::IRContext* context = inst->context();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    if (other_inst->opcode() == SpvOpFAdd ||
+        other_inst->opcode() == SpvOpIAdd) {
+      std::vector<const analysis::Constant*> other_constants =
+          const_mgr->GetOperandConstants(other_inst);
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
+      ir::Instruction* non_const_input =
+          NonConstInput(context, other_constants[0], other_inst);
+
+      // If the first operand of the sub is not a constant, swap the constants
+      // so the subtraction has the correct operands.
+      if (constants[0] == nullptr) std::swap(const_input1, const_input2);
+      // Subtract the constants.
+      uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
+                                            const_input1, const_input2);
+      SpvOp op = inst->opcode();
+      uint32_t op1 = 0;
+      uint32_t op2 = 0;
+      if (constants[0] == nullptr) {
+        // Non-constant operand is first. Change the opcode.
+        op1 = non_const_input->result_id();
+        op2 = merged_id;
+        op = other_inst->opcode();
+      } else {
+        // Constant operand is first.
+        op1 = merged_id;
+        op2 = non_const_input->result_id();
+      }
+      if (op1 == 0 || op2 == 0) return false;
+
+      inst->SetOpcode(op);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Folds subtraction of a subtraction where each operand has a constant operand.
+// Cases:
+// (x - 2) - 2 = x - 4
+// (2 - x) - 2 = 0 - x
+// 2 - (x - 2) = 4 - x
+// 2 - (2 - x) = x + 0
+FoldingRule MergeSubSubArithmetic() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpFSub || inst->opcode() == SpvOpISub);
+    ir::IRContext* context = inst->context();
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    uint32_t width = ElementWidth(type);
+    if (width != 32 && width != 64) return false;
+
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    if (!const_input1) return false;
+    ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
+      return false;
+
+    if (other_inst->opcode() == SpvOpFSub ||
+        other_inst->opcode() == SpvOpISub) {
+      std::vector<const analysis::Constant*> other_constants =
+          const_mgr->GetOperandConstants(other_inst);
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
+      ir::Instruction* non_const_input =
+          NonConstInput(context, other_constants[0], other_inst);
+
+      // Merge the constants.
+      uint32_t merged_id = 0;
+      SpvOp merge_op = inst->opcode();
+      if (other_constants[0] == nullptr) {
+        merge_op = uses_float ? SpvOpFAdd : SpvOpIAdd;
+      } else if (constants[0] == nullptr) {
+        std::swap(const_input1, const_input2);
+      }
+      merged_id =
+          PerformOperation(const_mgr, merge_op, const_input1, const_input2);
+      if (merged_id == 0) return false;
+
+      SpvOp op = inst->opcode();
+      if (constants[0] != nullptr && other_constants[0] != nullptr) {
+        // Change the operation.
+        op = uses_float ? SpvOpFAdd : SpvOpIAdd;
+      }
+
+      uint32_t op1 = 0;
+      uint32_t op2 = 0;
+      if ((constants[0] == nullptr) ^ (other_constants[0] == nullptr)) {
+        op1 = merged_id;
+        op2 = non_const_input->result_id();
+      } else {
+        op1 = non_const_input->result_id();
+        op2 = merged_id;
+      }
+
+      inst->SetOpcode(op);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
+      return true;
+    }
     return false;
   };
 }
@@ -1400,6 +1726,9 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpExtInst].push_back(RedundantFMix());
 
   rules_[SpvOpFAdd].push_back(RedundantFAdd());
+  rules_[SpvOpFAdd].push_back(MergeAddNegateArithmetic());
+  rules_[SpvOpFAdd].push_back(MergeAddAddArithmetic());
+  rules_[SpvOpFAdd].push_back(MergeAddSubArithmetic());
 
   rules_[SpvOpFDiv].push_back(RedundantFDiv());
   rules_[SpvOpFDiv].push_back(ReciprocalFDiv());
@@ -1417,11 +1746,22 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpFNegate].push_back(MergeNegateMulDivArithmetic());
 
   rules_[SpvOpFSub].push_back(RedundantFSub());
+  rules_[SpvOpFSub].push_back(MergeSubNegateArithmetic());
+  rules_[SpvOpFSub].push_back(MergeSubAddArithmetic());
+  rules_[SpvOpFSub].push_back(MergeSubSubArithmetic());
+
+  rules_[SpvOpIAdd].push_back(MergeAddNegateArithmetic());
+  rules_[SpvOpIAdd].push_back(MergeAddAddArithmetic());
+  rules_[SpvOpIAdd].push_back(MergeAddSubArithmetic());
 
   rules_[SpvOpIMul].push_back(IntMultipleBy1());
   rules_[SpvOpIMul].push_back(MergeMulMulArithmetic());
   rules_[SpvOpIMul].push_back(MergeMulDivArithmetic());
   rules_[SpvOpIMul].push_back(MergeMulNegateArithmetic());
+
+  rules_[SpvOpISub].push_back(MergeSubNegateArithmetic());
+  rules_[SpvOpISub].push_back(MergeSubAddArithmetic());
+  rules_[SpvOpISub].push_back(MergeSubSubArithmetic());
 
   rules_[SpvOpPhi].push_back(RedundantPhi());
 

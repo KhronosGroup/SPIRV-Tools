@@ -2809,7 +2809,9 @@ TEST_P(MatchingInstructionFoldingTest, Case) {
   std::unique_ptr<ir::Instruction> original_inst(inst->Clone(context.get()));
   bool succeeded = opt::FoldInstruction(inst);
   EXPECT_EQ(succeeded, tc.expected_result);
-  Match(tc.test_body, context.get());
+  if (succeeded) {
+    Match(tc.test_body, context.get());
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(MergeNegateTest, MatchingInstructionFoldingTest,
@@ -3434,9 +3436,6 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
   // (x / 3) * 4 
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[uint:%\\w+]] = OpTypeInt 32 0\n" +
-      "; CHECK: [[uint_4:%\\w+]] = OpConstant [[uint]] 4\n" +
-      "; CHECK: %4 = OpIMul [[uint]] %3 [[uint_4]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_uint Function\n" +
@@ -3729,6 +3728,439 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%2 = OpLoad %int %var\n" +
       "%3 = OpSNegate %int %2\n" +
       "%4 = OpSDiv %int %int_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true)
+));
+
+INSTANTIATE_TEST_CASE_P(MergeAddTest, MatchingInstructionFoldingTest,
+::testing::Values(
+  // Test case 0: merge add of negate
+  // (-x) + 2 = 2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_2:%\\w+]] = OpConstant [[float]] 2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFNegate %float %2\n" +
+      "%4 = OpFAdd %float %3 %float_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 1: merge add of negate
+  // 2 + (-x) = 2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_2:%\\w+]] = OpConstant [[float]] 2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpSNegate %float %2\n" +
+      "%4 = OpIAdd %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 2: merge add of negate
+  // (-x) + 2 = 2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[long:%\\w+]] = OpTypeInt 64 1\n" +
+      "; CHECK: [[long_2:%\\w+]] = OpConstant [[long]] 2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[long]]\n" +
+      "; CHECK: %4 = OpISub [[long]] [[long_2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_long Function\n" +
+      "%2 = OpLoad %long %var\n" +
+      "%3 = OpSNegate %long %2\n" +
+      "%4 = OpIAdd %long %3 %long_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 3: merge add of negate
+  // 2 + (-x) = 2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[long:%\\w+]] = OpTypeInt 64 1\n" +
+      "; CHECK: [[long_2:%\\w+]] = OpConstant [[long]] 2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[long]]\n" +
+      "; CHECK: %4 = OpISub [[long]] [[long_2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_long Function\n" +
+      "%2 = OpLoad %long %var\n" +
+      "%3 = OpSNegate %long %2\n" +
+      "%4 = OpIAdd %long %long_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 4: merge add of subtract
+  // (x - 1) + 2 = x + 1
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_1]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %2 %float_1\n" +
+      "%4 = OpFAdd %float %3 %float_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 5: merge add of subtract
+  // (1 - x) + 2 = 3 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_3:%\\w+]] = OpConstant [[float]] 3\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_3]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %float_1 %2\n" +
+      "%4 = OpFAdd %float %3 %float_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 6: merge add of subtract
+  // 2 + (x - 1) = x + 1
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_1]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %2 %float_1\n" +
+      "%4 = OpFAdd %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 7: merge add of subtract
+  // 2 + (1 - x) = 3 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_3:%\\w+]] = OpConstant [[float]] 3\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_3]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %float_1 %2\n" +
+      "%4 = OpFAdd %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 8: merge add of add
+  // (x + 1) + 2 = x + 3
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_3:%\\w+]] = OpConstant [[float]] 3\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_3]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFAdd %float %2 %float_1\n" +
+      "%4 = OpFAdd %float %3 %float_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 9: merge add of add
+  // (1 + x) + 2 = 3 + x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_3:%\\w+]] = OpConstant [[float]] 3\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_3]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFAdd %float %float_1 %2\n" +
+      "%4 = OpFAdd %float %3 %float_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 10: merge add of add
+  // 2 + (x + 1) = x + 1
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_3:%\\w+]] = OpConstant [[float]] 3\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_3]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFAdd %float %2 %float_1\n" +
+      "%4 = OpFAdd %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 11: merge add of add
+  // 2 + (1 + x) = 3 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_3:%\\w+]] = OpConstant [[float]] 3\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_3]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFAdd %float %float_1 %2\n" +
+      "%4 = OpFAdd %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true)
+));
+
+INSTANTIATE_TEST_CASE_P(MergeSubTest, MatchingInstructionFoldingTest,
+::testing::Values(
+  // Test case 0: merge sub of negate
+  // (-x) - 2 = -2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_n2:%\\w+]] = OpConstant [[float]] -2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_n2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFNegate %float %2\n" +
+      "%4 = OpFSub %float %3 %float_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 1: merge sub of negate
+  // 2 - (-x) = x + 2
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_2:%\\w+]] = OpConstant [[float]] 2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_2]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFNegate %float %2\n" +
+      "%4 = OpFSub %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 2: merge sub of negate
+  // (-x) - 2 = -2 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[long:%\\w+]] = OpTypeInt 64 1\n" +
+      "; CHECK: [[long_n2:%\\w+]] = OpConstant [[long]] -2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[long]]\n" +
+      "; CHECK: %4 = OpISub [[long]] [[long_n2]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_long Function\n" +
+      "%2 = OpLoad %long %var\n" +
+      "%3 = OpSNegate %long %2\n" +
+      "%4 = OpISub %long %3 %long_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 3: merge sub of negate
+  // 2 - (-x) = x + 2
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[long:%\\w+]] = OpTypeInt 64 1\n" +
+      "; CHECK: [[long_2:%\\w+]] = OpConstant [[long]] 2\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[long]]\n" +
+      "; CHECK: %4 = OpIAdd [[long]] [[ld]] [[long_2]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_long Function\n" +
+      "%2 = OpLoad %long %var\n" +
+      "%3 = OpSNegate %long %2\n" +
+      "%4 = OpISub %long %long_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 4: merge add of subtract
+  // (x + 2) - 1 = x + 1
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_1]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFAdd %float %2 %float_2\n" +
+      "%4 = OpFSub %float %3 %float_1\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 5: merge add of subtract
+  // (2 + x) - 1 = x + 1
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_1]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFAdd %float %float_2 %2\n" +
+      "%4 = OpFSub %float %3 %float_1\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 6: merge add of subtract
+  // 2 - (x + 1) = 1 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_1]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFAdd %float %2 %float_1\n" +
+      "%4 = OpFSub %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 7: merge add of subtract
+  // 2 - (1 + x) = 1 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_1]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFAdd %float %float_1 %2\n" +
+      "%4 = OpFSub %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 8: merge subtract of subtract
+  // (x - 2) - 1 = x - 3
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_3:%\\w+]] = OpConstant [[float]] 3\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[ld]] [[float_3]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %2 %float_2\n" +
+      "%4 = OpFSub %float %3 %float_1\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 9: merge subtract of subtract
+  // (2 - x) - 1 = 1 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_1]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %float_2 %2\n" +
+      "%4 = OpFSub %float %3 %float_1\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 10: merge subtract of subtract
+  // 2 - (x - 1) = 3 - x
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_3:%\\w+]] = OpConstant [[float]] 3\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFSub [[float]] [[float_3]] [[ld]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %2 %float_1\n" +
+      "%4 = OpFSub %float %float_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 11: merge subtract of subtract
+  // 1 - (2 - x) = x + (-1)
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_n1:%\\w+]] = OpConstant [[float]] -1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_n1]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %float_2 %2\n" +
+      "%4 = OpFSub %float %float_1 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, true),
+  // Test case 12: merge subtract of subtract
+  // 2 - (1 - x) = x + 1
+  InstructionFoldingCase<bool>(
+    Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[float]]\n" +
+      "; CHECK: %4 = OpFAdd [[float]] [[ld]] [[float_1]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFSub %float %float_1 %2\n" +
+      "%4 = OpFSub %float %float_2 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, true)
