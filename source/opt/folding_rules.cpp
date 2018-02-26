@@ -577,20 +577,20 @@ FoldingRule MergeMulMulArithmetic() {
     if (other_inst->opcode() == inst->opcode()) {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
-      if (other_constants[0] || other_constants[1]) {
-        bool other_first_is_variable = other_constants[0] == nullptr;
-        const analysis::Constant* const_input2 = ConstInput(other_constants);
-        uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
-                                              const_input1, const_input2);
-        if (merged_id == 0) return false;
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
 
-        uint32_t non_const_id = other_first_is_variable
-                                    ? other_inst->GetSingleWordInOperand(0u)
-                                    : other_inst->GetSingleWordInOperand(1u);
-        inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {non_const_id}},
-                             {SPV_OPERAND_TYPE_ID, {merged_id}}});
-        return true;
-      }
+      bool other_first_is_variable = other_constants[0] == nullptr;
+      uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
+                                            const_input1, const_input2);
+      if (merged_id == 0) return false;
+
+      uint32_t non_const_id = other_first_is_variable
+                                  ? other_inst->GetSingleWordInOperand(0u)
+                                  : other_inst->GetSingleWordInOperand(1u);
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {non_const_id}},
+                           {SPV_OPERAND_TYPE_ID, {merged_id}}});
+      return true;
     }
 
     return false;
@@ -629,34 +629,34 @@ FoldingRule MergeMulDivArithmetic() {
         other_inst->opcode() == SpvOpUDiv) {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
-      if (other_constants[0] || other_constants[1]) {
-        bool other_first_is_variable = other_constants[0] == nullptr;
-        const analysis::Constant* const_input2 = ConstInput(other_constants);
-        // If the variable value is the second operand of the divide, multiply
-        // the constants together. Otherwise divide the constants.
-        uint32_t merged_id = PerformOperation(
-            const_mgr,
-            other_first_is_variable ? other_inst->opcode() : inst->opcode(),
-            const_input1, const_input2);
-        if (merged_id == 0) return false;
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
 
-        uint32_t non_const_id = other_first_is_variable
-                                    ? other_inst->GetSingleWordInOperand(0u)
-                                    : other_inst->GetSingleWordInOperand(1u);
+      bool other_first_is_variable = other_constants[0] == nullptr;
+      // If the variable value is the second operand of the divide, multiply
+      // the constants together. Otherwise divide the constants.
+      uint32_t merged_id = PerformOperation(
+          const_mgr,
+          other_first_is_variable ? other_inst->opcode() : inst->opcode(),
+          const_input1, const_input2);
+      if (merged_id == 0) return false;
 
-        // If the variable value is on the second operand of the div, then this
-        // operation is a div. Otherwise it should be a multiply.
-        inst->SetOpcode(other_first_is_variable ? inst->opcode()
-                                                : other_inst->opcode());
-        if (other_first_is_variable) {
-          inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {non_const_id}},
-                               {SPV_OPERAND_TYPE_ID, {merged_id}}});
-        } else {
-          inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {merged_id}},
-                               {SPV_OPERAND_TYPE_ID, {non_const_id}}});
-        }
-        return true;
+      uint32_t non_const_id = other_first_is_variable
+                                  ? other_inst->GetSingleWordInOperand(0u)
+                                  : other_inst->GetSingleWordInOperand(1u);
+
+      // If the variable value is on the second operand of the div, then this
+      // operation is a div. Otherwise it should be a multiply.
+      inst->SetOpcode(other_first_is_variable ? inst->opcode()
+                                              : other_inst->opcode());
+      if (other_first_is_variable) {
+        inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {non_const_id}},
+                             {SPV_OPERAND_TYPE_ID, {merged_id}}});
+      } else {
+        inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {merged_id}},
+                             {SPV_OPERAND_TYPE_ID, {non_const_id}}});
       }
+      return true;
     }
 
     return false;
@@ -732,41 +732,41 @@ FoldingRule MergeDivDivArithmetic() {
     if (other_inst->opcode() == inst->opcode()) {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
-      if (other_constants[0] || other_constants[1]) {
-        bool other_first_is_variable = other_constants[0] == nullptr;
-        const analysis::Constant* const_input2 = ConstInput(other_constants);
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
 
-        SpvOp merge_op = inst->opcode();
-        if (other_first_is_variable) {
-          // Constants magnify.
-          merge_op = uses_float ? SpvOpFMul : SpvOpIMul;
-        }
+      bool other_first_is_variable = other_constants[0] == nullptr;
 
-        // This is an x / (*) case. Swap the inputs. Doesn't harm multiply
-        // because it is commutative.
-        if (first_is_variable) std::swap(const_input1, const_input2);
-        uint32_t merged_id =
-            PerformOperation(const_mgr, merge_op, const_input1, const_input2);
-        if (merged_id == 0) return false;
-
-        uint32_t non_const_id = other_first_is_variable
-                                    ? other_inst->GetSingleWordInOperand(0u)
-                                    : other_inst->GetSingleWordInOperand(1u);
-
-        SpvOp op = inst->opcode();
-        if (!first_is_variable && !other_first_is_variable) {
-          // Effectively div of 1/x, so change to multiply.
-          op = uses_float ? SpvOpFMul : SpvOpIMul;
-        }
-
-        uint32_t op1 = merged_id;
-        uint32_t op2 = non_const_id;
-        if (first_is_variable && other_first_is_variable) std::swap(op1, op2);
-        inst->SetOpcode(op);
-        inst->SetInOperands(
-            {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
-        return true;
+      SpvOp merge_op = inst->opcode();
+      if (other_first_is_variable) {
+        // Constants magnify.
+        merge_op = uses_float ? SpvOpFMul : SpvOpIMul;
       }
+
+      // This is an x / (*) case. Swap the inputs. Doesn't harm multiply
+      // because it is commutative.
+      if (first_is_variable) std::swap(const_input1, const_input2);
+      uint32_t merged_id =
+          PerformOperation(const_mgr, merge_op, const_input1, const_input2);
+      if (merged_id == 0) return false;
+
+      uint32_t non_const_id = other_first_is_variable
+                                  ? other_inst->GetSingleWordInOperand(0u)
+                                  : other_inst->GetSingleWordInOperand(1u);
+
+      SpvOp op = inst->opcode();
+      if (!first_is_variable && !other_first_is_variable) {
+        // Effectively div of 1/x, so change to multiply.
+        op = uses_float ? SpvOpFMul : SpvOpIMul;
+      }
+
+      uint32_t op1 = merged_id;
+      uint32_t op2 = non_const_id;
+      if (first_is_variable && other_first_is_variable) std::swap(op1, op2);
+      inst->SetOpcode(op);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
+      return true;
     }
 
     return false;
@@ -806,30 +806,30 @@ FoldingRule MergeDivMulArithmetic() {
         other_inst->opcode() == SpvOpIMul) {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
-      if (other_constants[0] || other_constants[1]) {
-        bool other_first_is_variable = other_constants[0] == nullptr;
-        const analysis::Constant* const_input2 = ConstInput(other_constants);
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
 
-        // This is an x / (*) case. Swap the inputs.
-        if (first_is_variable) std::swap(const_input1, const_input2);
-        uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
-                                              const_input1, const_input2);
-        if (merged_id == 0) return false;
+      bool other_first_is_variable = other_constants[0] == nullptr;
 
-        uint32_t non_const_id = other_first_is_variable
-                                    ? other_inst->GetSingleWordInOperand(0u)
-                                    : other_inst->GetSingleWordInOperand(1u);
+      // This is an x / (*) case. Swap the inputs.
+      if (first_is_variable) std::swap(const_input1, const_input2);
+      uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
+                                            const_input1, const_input2);
+      if (merged_id == 0) return false;
 
-        uint32_t op1 = merged_id;
-        uint32_t op2 = non_const_id;
-        if (first_is_variable) std::swap(op1, op2);
+      uint32_t non_const_id = other_first_is_variable
+                                  ? other_inst->GetSingleWordInOperand(0u)
+                                  : other_inst->GetSingleWordInOperand(1u);
 
-        // Convert to multiply
-        if (first_is_variable) inst->SetOpcode(other_inst->opcode());
-        inst->SetInOperands(
-            {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
-        return true;
-      }
+      uint32_t op1 = merged_id;
+      uint32_t op2 = non_const_id;
+      if (first_is_variable) std::swap(op1, op2);
+
+      // Convert to multiply
+      if (first_is_variable) inst->SetOpcode(other_inst->opcode());
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
+      return true;
     }
 
     return false;
@@ -995,6 +995,7 @@ FoldingRule MergeAddAddArithmetic() {
           const_mgr->GetOperandConstants(other_inst);
       const analysis::Constant* const_input2 = ConstInput(other_constants);
       if (!const_input2) return false;
+
       ir::Instruction* non_const_input =
           NonConstInput(context, other_constants[0], other_inst);
       uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
@@ -1102,6 +1103,7 @@ FoldingRule MergeSubAddArithmetic() {
           const_mgr->GetOperandConstants(other_inst);
       const analysis::Constant* const_input2 = ConstInput(other_constants);
       if (!const_input2) return false;
+
       ir::Instruction* non_const_input =
           NonConstInput(context, other_constants[0], other_inst);
 
@@ -1167,6 +1169,7 @@ FoldingRule MergeSubSubArithmetic() {
           const_mgr->GetOperandConstants(other_inst);
       const analysis::Constant* const_input2 = ConstInput(other_constants);
       if (!const_input2) return false;
+
       ir::Instruction* non_const_input =
           NonConstInput(context, other_constants[0], other_inst);
 
