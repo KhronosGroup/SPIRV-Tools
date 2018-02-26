@@ -49,6 +49,59 @@ ConstantFoldingRule FoldExtractWithConstants() {
   };
 }
 
+ConstantFoldingRule FoldVectorShuffleWithConstants() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    assert(inst->opcode() == SpvOpVectorShuffle);
+    const analysis::Constant* c1 = constants[0];
+    const analysis::Constant* c2 = constants[1];
+    if (c1 == nullptr || c2 == nullptr) {
+      return nullptr;
+    }
+
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Type* element_type = c1->type()->AsVector()->element_type();
+
+    std::vector<const analysis::Constant*> c1_components;
+    if (const analysis::VectorConstant* vec_const = c1->AsVectorConstant()) {
+      c1_components = vec_const->GetComponents();
+    } else {
+      assert(c1->AsNullConstant());
+      const analysis::Constant* element =
+          const_mgr->GetConstant(element_type, {});
+      c1_components.resize(c1->type()->AsVector()->element_count(), element);
+    }
+    std::vector<const analysis::Constant*> c2_components;
+    if (const analysis::VectorConstant* vec_const = c2->AsVectorConstant()) {
+      c2_components = vec_const->GetComponents();
+    } else {
+      assert(c2->AsNullConstant());
+      const analysis::Constant* element =
+          const_mgr->GetConstant(element_type, {});
+      c2_components.resize(c2->type()->AsVector()->element_count(), element);
+    }
+
+    std::vector<uint32_t> ids;
+    for (uint32_t i = 2; i < inst->NumInOperands(); ++i) {
+      uint32_t index = inst->GetSingleWordInOperand(i);
+      if (index < c1_components.size()) {
+        ir::Instruction* member_inst =
+            const_mgr->GetDefiningInstruction(c1_components[index]);
+        ids.push_back(member_inst->result_id());
+      } else {
+        ir::Instruction* member_inst = const_mgr->GetDefiningInstruction(
+            c2_components[index - c1_components.size()]);
+        ids.push_back(member_inst->result_id());
+      }
+    }
+
+    analysis::TypeManager* type_mgr = context->get_type_mgr();
+    return const_mgr->GetConstant(type_mgr->GetType(inst->type_id()), ids);
+  };
+}  // namespace
+
 ConstantFoldingRule FoldCompositeWithConstants() {
   // Folds an OpCompositeConstruct where all of the inputs are constants to a
   // constant.  A new constant is created if necessary.
@@ -306,6 +359,8 @@ spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
   rules_[SpvOpFUnordLessThanEqual].push_back(FoldFUnordLessThanEqual());
   rules_[SpvOpFOrdGreaterThanEqual].push_back(FoldFOrdGreaterThanEqual());
   rules_[SpvOpFUnordGreaterThanEqual].push_back(FoldFUnordGreaterThanEqual());
+
+  rules_[SpvOpVectorShuffle].push_back(FoldVectorShuffleWithConstants());
 }
 }  // namespace opt
 }  // namespace spvtools
