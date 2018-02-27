@@ -513,12 +513,12 @@ Optimizer::PassToken CreateReplaceInvalidOpcodePass();
 Optimizer::PassToken CreateSimplificationPass();
 
 // Create loop unroller pass.
-// Creates a pass to fully unroll loops which have the "Unroll" loop control
+// Creates a pass to unroll loops which have the "Unroll" loop control
 // mask set. The loops must meet a specific criteria in order to be unrolled
 // safely this criteria is checked before doing the unroll by the
 // LoopUtils::CanPerformUnroll method. Any loop that does not meet the criteria
 // won't be unrolled. See CanPerformUnroll LoopUtils.h for more information.
-Optimizer::PassToken CreateLoopFullyUnrollPass();
+Optimizer::PassToken CreateLoopUnrollPass(bool fully_unroll, int factor = 0);
 
 }  // namespace spvtools
 
