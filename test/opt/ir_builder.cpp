@@ -296,6 +296,120 @@ OpFunctionEnd
   Match(text, context.get());
 }
 
+TEST_F(IRBuilderTest, ConstantAdder) {
+  const std::string text = R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: OpConstant [[uint]] 13
+; CHECK: [[sint:%\w+]] = OpTypeInt 32 1
+; CHECK: OpConstant [[sint]] -1
+; CHECK: OpConstant [[uint]] 1
+; CHECK: OpConstant [[sint]] 34
+; CHECK: OpConstant [[uint]] 0
+; CHECK: OpConstant [[sint]] 0
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(nullptr, context);
+
+  opt::InstructionBuilder builder(
+      context.get(), &*context->module()->begin()->begin()->begin());
+  EXPECT_NE(nullptr, builder.Add32BitUnsignedIntegerConstant(13));
+  EXPECT_NE(nullptr, builder.Add32BitSignedIntegerConstant(-1));
+
+  // Try adding the same constants again to make sure they aren't added.
+  EXPECT_NE(nullptr, builder.Add32BitUnsignedIntegerConstant(13));
+  EXPECT_NE(nullptr, builder.Add32BitSignedIntegerConstant(-1));
+
+  // Try adding different constants to make sure the type is reused.
+  EXPECT_NE(nullptr, builder.Add32BitUnsignedIntegerConstant(1));
+  EXPECT_NE(nullptr, builder.Add32BitSignedIntegerConstant(34));
+
+  // Try adding 0 as both signed and unsigned.
+  EXPECT_NE(nullptr, builder.Add32BitUnsignedIntegerConstant(0));
+  EXPECT_NE(nullptr, builder.Add32BitSignedIntegerConstant(0));
+
+  Match(text, context.get());
+}
+
+TEST_F(IRBuilderTest, ConstantAdderTypeAlreadyExists) {
+  const std::string text = R"(
+; CHECK: OpConstant %uint 13
+; CHECK: OpConstant %int -1
+; CHECK: OpConstant %uint 1
+; CHECK: OpConstant %int 34
+; CHECK: OpConstant %uint 0
+; CHECK: OpConstant %int 0
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%uint = OpTypeInt 32 0
+%int = OpTypeInt 32 1
+%4 = OpTypeFunction %1
+%5 = OpFunction %1 None %4
+%6 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(nullptr, context);
+
+  opt::InstructionBuilder builder(
+      context.get(), &*context->module()->begin()->begin()->begin());
+  ir::Instruction* const_1 = builder.Add32BitUnsignedIntegerConstant(13);
+  ir::Instruction* const_2 = builder.Add32BitSignedIntegerConstant(-1);
+
+  EXPECT_NE(nullptr, const_1);
+  EXPECT_NE(nullptr, const_2);
+
+  // Try adding the same constants again to make sure they aren't added.
+  EXPECT_EQ(const_1, builder.Add32BitUnsignedIntegerConstant(13));
+  EXPECT_EQ(const_2, builder.Add32BitSignedIntegerConstant(-1));
+
+  ir::Instruction* const_3 = builder.Add32BitUnsignedIntegerConstant(1);
+  ir::Instruction* const_4 = builder.Add32BitSignedIntegerConstant(34);
+
+  // Try adding different constants to make sure the type is reused.
+  EXPECT_NE(nullptr, const_3);
+  EXPECT_NE(nullptr, const_4);
+
+  ir::Instruction* const_5 = builder.Add32BitUnsignedIntegerConstant(0);
+  ir::Instruction* const_6 = builder.Add32BitSignedIntegerConstant(0);
+
+  // Try adding 0 as both signed and unsigned.
+  EXPECT_NE(nullptr, const_5);
+  EXPECT_NE(nullptr, const_6);
+
+  // They have the same value but different types so should be unique.
+  EXPECT_NE(const_5, const_6);
+
+  // Check the types are correct.
+  uint32_t type_id_unsigned = const_1->GetSingleWordOperand(0);
+  uint32_t type_id_signed = const_2->GetSingleWordOperand(0);
+
+  EXPECT_NE(type_id_unsigned, type_id_signed);
+
+  EXPECT_EQ(const_3->GetSingleWordOperand(0), type_id_unsigned);
+  EXPECT_EQ(const_5->GetSingleWordOperand(0), type_id_unsigned);
+
+  EXPECT_EQ(const_4->GetSingleWordOperand(0), type_id_signed);
+  EXPECT_EQ(const_6->GetSingleWordOperand(0), type_id_signed);
+
+  Match(text, context.get());
+}
+
 #endif  // SPIRV_EFFCEE
 
 }  // anonymous namespace
