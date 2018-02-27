@@ -3,15 +3,32 @@ Revision history for SPIRV-Tools
 v2018.1-dev 2018-02-02
  - General:
    - Support Visual Studio 2013 again. (Continue support for VS 2015 and VS 2017.)
+   - Support building SPIRV-Tools as a shared library.
+   - Improve the HLSL legalization optimization recipe. #1311
  - Optimizer:
-   - Improve folding
+   - General speedups.
+   - Improve folding, including coverage for floating point and OpSelect.
+   - Add loop-invariant code motion pass.
+   - Add loop-unrolling pass, for honouring unroll hits.
+   - Add loop-unswitch pass.
+   - Add instruction simplification pass.
    - Aggressive dead code elimination: Understands capability hierarchy when finding
      instructions it can eliminate (combinators). (PR #1268)
+   - CCP can now fold floating point arithmetic. #1311
  - Validator:
    - Validate barrier instructions.
+   - Check Vulkan-specific rules for atomics.
  - Fixes:
    - #1265: Optimizer: Fix use-after free bug in if-conversion. (Fix object lifecycle bug
      in type manager.)
+   - #1282: Fix new warnings found by GCC 8.0.1.
+   - #1285: Optimizer: Fix random failures during inlining.  (Dangling references in DefUseManager)
+   - #1295: Optimizer: Fix incorrect handling of Phi nodes in CCP.
+   - #1300: Fix CCP: avoid bad CCP transitions and unsettled values.
+   - #1304: Avoid static-duration variables of class type (with constructors).
+   - #1323: Fix folding of an insert composite feeding a composite extract.
+   - #1339: Fix CCP: Handle OpConstantNull boolean values as conditions.
+   - #1341: DCEInst: Keep atomic instructions (and some others with side effects).
 
 
 v2018.0 2018-02-02
