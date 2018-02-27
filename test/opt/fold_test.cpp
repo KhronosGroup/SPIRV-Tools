@@ -191,8 +191,10 @@ OpName %main "main"
 %float_3 = OpConstant %float 3
 %float_4 = OpConstant %float 4
 %float_0p5 = OpConstant %float 0.5
+%v2float_2_2 = OpConstantComposite %v2float %float_2 %float_2
 %v2float_2_3 = OpConstantComposite %v2float %float_2 %float_3
 %v2float_3_2 = OpConstantComposite %v2float %float_3 %float_2
+%v2float_4_4 = OpConstantComposite %v2float %float_4 %float_4
 %v2float_2_0p5 = OpConstantComposite %v2float %float_2 %float_0p5
 %double_n1 = OpConstant %double -1
 %105 = OpConstant %double 0 ; Need a def with an numerical id to define id maps.
@@ -3364,14 +3366,10 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, true),
-  // Test case 10: merge imul of sdiv
-  // 4 * (x / 2) = 2 * x
+  // Test case 10: Do not merge imul of sdiv
+  // 4 * (x / 2)
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpIMul [[int]] [[ld]] [[int_2]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3380,15 +3378,11 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "%4 = OpIMul %int %int_4 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 11: merge imul of sdiv
-  // (x / 2) * 4 = 2 * x
+    4, false),
+  // Test case 11: Do not merge imul of sdiv
+  // (x / 2) * 4
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpIMul [[int]] [[ld]] [[int_2]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3397,15 +3391,11 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "%4 = OpIMul %int %3 %int_4\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 12: merge imul of udiv
-  // 4 * (x / 2) = 2 * x
+    4, false),
+  // Test case 12: Do not merge imul of udiv
+  // 4 * (x / 2)
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[uint:%\\w+]] = OpTypeInt 32 0\n" +
-      "; CHECK: [[uint_2:%\\w+]] = OpConstant [[uint]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[uint]]\n" +
-      "; CHECK: %4 = OpIMul [[uint]] [[ld]] [[uint_2]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_uint Function\n" +
@@ -3414,15 +3404,11 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "%4 = OpIMul %uint %uint_4 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 13: merge imul of udiv
-  // (x / 2) * 4 = 2 * x
+    4, false),
+  // Test case 13: Do not merge imul of udiv
+  // (x / 2) * 4
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[uint:%\\w+]] = OpTypeInt 32 0\n" +
-      "; CHECK: [[uint_2:%\\w+]] = OpConstant [[uint]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[uint]]\n" +
-      "; CHECK: %4 = OpIMul [[uint]] [[ld]] [[uint_2]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_uint Function\n" +
@@ -3431,9 +3417,9 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "%4 = OpIMul %uint %3 %uint_4\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 14: Don't fold if would have remainder
-  // (x / 3) * 4 
+    4, false),
+  // Test case 14: Don't fold
+  // (x / 3) * 4
   InstructionFoldingCase<bool>(
     Header() +
       "%main = OpFunction %void None %void_func\n" +
@@ -3445,26 +3431,26 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, false),
-  // Test case 15: merge vector imul of sdiv
+  // Test case 15: merge vector fmul of fdiv
   // (x / {2,2}) * {4,4} = x * {2,2}
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[v2int:%\\w+]] = OpTypeVector [[int]] 2\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[v2int_2_2:%\\w+]] = OpConstantComposite [[v2int]] [[int_2]] [[int_2]]\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[v2int]]\n" +
-      "; CHECK: %4 = OpIMul [[v2int]] [[ld]] [[v2int_2_2]]\n" +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[v2float:%\\w+]] = OpTypeVector [[float]] 2\n" +
+      "; CHECK: [[float_2:%\\w+]] = OpConstant [[float]] 2\n" +
+      "; CHECK: [[v2float_2_2:%\\w+]] = OpConstantComposite [[v2float]] [[float_2]] [[float_2]]\n" +
+      "; CHECK: [[ld:%\\w+]] = OpLoad [[v2float]]\n" +
+      "; CHECK: %4 = OpFMul [[v2float]] [[ld]] [[v2float_2_2]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
-      "%var = OpVariable %_ptr_v2int Function\n" +
-      "%2 = OpLoad %v2int %var\n" +
-      "%3 = OpSDiv %v2int %2 %v2int_2_2\n" +
-      "%4 = OpIMul %v2int %3 %v2int_4_4\n" +
+      "%var = OpVariable %_ptr_v2float Function\n" +
+      "%2 = OpLoad %v2float %var\n" +
+      "%3 = OpFDiv %v2float %2 %v2float_2_2\n" +
+      "%4 = OpFMul %v2float %3 %v2float_4_4\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, true),
-  // Test case 15: merge vector imul of snegate
+  // Test case 16: merge vector imul of snegate
   // (-x) * {2,2} = x * {-2,-2}
   InstructionFoldingCase<bool>(
     Header() +
@@ -3484,7 +3470,7 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, true),
-  // Test case 15: merge vector imul of snegate
+  // Test case 17: merge vector imul of snegate
   // {2,2} * (-x) = x * {-2,-2}
   InstructionFoldingCase<bool>(
     Header() +
@@ -3559,14 +3545,10 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, true),
-  // Test case 3: merge consecutive sdiv
-  // 4 / (2 / x) = 2 * x
+  // Test case 3: Do not merge consecutive sdiv
+  // 4 / (2 / x)
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpIMul [[int]] [[int_2]] [[ld]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3575,15 +3557,11 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %int_4 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 4: merge consecutive sdiv
-  // 4 / (x / 2) = 8 / x
+    4, false),
+  // Test case 4: Do not merge consecutive sdiv
+  // 4 / (x / 2)
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_8:%\\w+]] = OpConstant [[int]] 8\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpSDiv [[int]] [[int_8]] [[ld]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3592,15 +3570,11 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %int_4 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 5: merge consecutive sdiv
-  // (4 / x) / 2 = 2 / x
+    4, false),
+  // Test case 5: Do not merge consecutive sdiv
+  // (4 / x) / 2
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpSDiv [[int]] [[int_2]] [[ld]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3609,15 +3583,11 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %3 %int_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 6: merge consecutive sdiv
-  // (x / 4) / 2 = x / 8
+    4, false),
+  // Test case 6: Do not merge consecutive sdiv
+  // (x / 4) / 2
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_8:%\\w+]] = OpConstant [[int]] 8\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpSDiv [[int]] [[ld]] [[int_8]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3626,15 +3596,11 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %3 %int_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 7: merge sdiv of imul
-  // 4 / (2 * x) = 2 / x
+    4, false),
+  // Test case 7: Do not merge sdiv of imul
+  // 4 / (2 * x)
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpSDiv [[int]] [[int_2]] [[ld]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3643,15 +3609,11 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %int_4 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 8: merge sdiv of imul
-  // 4 / (x * 2) = 2 / x
+    4, false),
+  // Test case 8: Do not merge sdiv of imul
+  // 4 / (x * 2)
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpSDiv [[int]] [[int_2]] [[ld]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3660,15 +3622,11 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %int_4 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 9: merge sdiv of imul
-  // (4 * x) / 2 = x * 2
+    4, false),
+  // Test case 9: Do not merge sdiv of imul
+  // (4 * x) / 2
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpIMul [[int]] [[ld]] [[int_2]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3677,15 +3635,11 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %3 %int_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 10: merge sdiv of imul
-  // (x * 4) / 2 = x * 2
+    4, false),
+  // Test case 10: Do not merge sdiv of imul
+  // (x * 4) / 2
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: [[int_2:%\\w+]] = OpConstant [[int]] 2\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpIMul [[int]] [[ld]] [[int_2]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -3694,7 +3648,7 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %3 %int_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
+    4, false),
   // Test case 11: merge sdiv of snegate
   // (-x) / 2 = x / -2
   InstructionFoldingCase<bool>(
