@@ -33,7 +33,7 @@ namespace ir {
 // Takes in a phi instruction |induction| and the loop |header| and returns the
 // step operation of the loop.
 ir::Instruction* Loop::GetInductionStepOperation(
-    const ir::Loop* loop, const ir::Instruction* induction) const {
+    const ir::Instruction* induction) const {
   // Induction must be a phi instruction.
   assert(induction->opcode() == SpvOpPhi);
 
@@ -50,7 +50,7 @@ ir::Instruction* Loop::GetInductionStepOperation(
 
     // Check if the block is dominated by header, and thus coming from within
     // the loop.
-    if (loop->IsInsideLoop(incoming_block)) {
+    if (IsInsideLoop(incoming_block)) {
       step = def_use_manager->GetDef(
           induction->GetSingleWordInOperand(operand_id - 1));
       break;
@@ -58,6 +58,21 @@ ir::Instruction* Loop::GetInductionStepOperation(
   }
 
   if (!step || !IsSupportedStepOp(step->opcode())) {
+    return nullptr;
+  }
+
+  // The induction variable which binds the loop must only be modified once.
+  uint32_t lhs = step->GetSingleWordInOperand(0);
+  uint32_t rhs = step->GetSingleWordInOperand(1);
+
+  // One of the left hand side or right hand side of the step instruction must
+  // be the induction phi and the other must be an OpConstant.
+  if (lhs != induction->result_id() && rhs != induction->result_id()) {
+    return nullptr;
+  }
+
+  if (def_use_manager->GetDef(lhs)->opcode() != SpvOp::SpvOpConstant &&
+      def_use_manager->GetDef(rhs)->opcode() != SpvOp::SpvOpConstant) {
     return nullptr;
   }
 
@@ -84,17 +99,52 @@ bool Loop::IsSupportedCondition(SpvOp condition) const {
     // >
     case SpvOp::SpvOpUGreaterThan:
     case SpvOp::SpvOpSGreaterThan:
+
+    // >=
+    case SpvOp::SpvOpSGreaterThanEqual:
+    case SpvOp::SpvOpUGreaterThanEqual:
+    // <=
+    case SpvOp::SpvOpSLessThanEqual:
+    case SpvOp::SpvOpULessThanEqual:
+
       return true;
     default:
       return false;
   }
 }
 
+int64_t Loop::GetResidualConditionValue(SpvOp condition, int64_t initial_value,
+                                        int64_t step_value,
+                                        size_t number_of_iterations,
+                                        size_t factor) {
+  int64_t remainder =
+      initial_value + (number_of_iterations % factor) * step_value;
+
+  // We subtract or add one as the above formula calculates the remainder if the
+  // loop where just less than or greater than. Adding or subtracting one should
+  // give a functionally equivalent value.
+  switch (condition) {
+    case SpvOp::SpvOpSGreaterThanEqual:
+    case SpvOp::SpvOpUGreaterThanEqual: {
+      remainder -= 1;
+      break;
+    }
+    case SpvOp::SpvOpSLessThanEqual:
+    case SpvOp::SpvOpULessThanEqual: {
+      remainder += 1;
+      break;
+    }
+
+    default:
+      break;
+  }
+  return remainder;
+}
+
 // Extract the initial value from the |induction| OpPhi instruction and store it
 // in |value|. If the function couldn't find the initial value of |induction|
 // return false.
-bool Loop::GetInductionInitValue(const ir::Loop* loop,
-                                 const ir::Instruction* induction,
+bool Loop::GetInductionInitValue(const ir::Instruction* induction,
                                  int64_t* value) const {
   ir::Instruction* constant_instruction = nullptr;
   opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
@@ -104,7 +154,7 @@ bool Loop::GetInductionInitValue(const ir::Loop* loop,
     ir::BasicBlock* bb = context_->cfg()->block(
         induction->GetSingleWordInOperand(operand_id + 1));
 
-    if (!loop->IsInsideLoop(bb)) {
+    if (!IsInsideLoop(bb)) {
       constant_instruction = def_use_manager->GetDef(
           induction->GetSingleWordInOperand(operand_id));
     }
@@ -413,6 +463,25 @@ bool Loop::AreAllOperandsOutsideLoop(IRContext* context, Instruction* inst) {
   return all_outside_loop;
 }
 
+void Loop::ComputeLoopStructuredOrder(
+    std::vector<ir::BasicBlock*>* ordered_loop_blocks, bool include_pre_header,
+    bool include_merge) const {
+  ir::CFG& cfg = *context_->cfg();
+
+  // Reserve the memory: all blocks in the loop + extra if needed.
+  ordered_loop_blocks->reserve(GetBlocks().size() + include_pre_header +
+                               include_merge);
+
+  if (include_pre_header && GetPreHeaderBlock())
+    ordered_loop_blocks->push_back(loop_preheader_);
+  cfg.ForEachBlockInReversePostOrder(
+      loop_header_, [ordered_loop_blocks, this](BasicBlock* bb) {
+        if (IsInsideLoop(bb)) ordered_loop_blocks->push_back(bb);
+      });
+  if (include_merge && GetMergeBlock())
+    ordered_loop_blocks->push_back(loop_merge_);
+}
+
 LoopDescriptor::LoopDescriptor(const Function* f) : loops_() {
   PopulateList(f);
 }
@@ -550,7 +619,7 @@ bool Loop::FindNumberOfIterations(const ir::Instruction* induction,
   }
 
   // Find the instruction which is stepping through the loop.
-  ir::Instruction* step_inst = GetInductionStepOperation(this, induction);
+  ir::Instruction* step_inst = GetInductionStepOperation(induction);
   if (!step_inst) return false;
 
   // Find the constant value used by the condition variable.
@@ -577,17 +646,18 @@ bool Loop::FindNumberOfIterations(const ir::Instruction* induction,
 
   // Find the inital value of the loop and make sure it is a constant integer.
   int64_t init_value = 0;
-  if (!GetInductionInitValue(this, induction, &init_value)) return false;
+  if (!GetInductionInitValue(induction, &init_value)) return false;
 
   // If iterations is non null then store the value in that.
-  if (iterations_out) {
-    int64_t num_itrs = GetIterations(condition->opcode(), condition_value,
-                                     init_value, step_value);
+  int64_t num_itrs = GetIterations(condition->opcode(), condition_value,
+                                   init_value, step_value);
 
-    // If the loop body will not be reached return false.
-    if (num_itrs <= 0) {
-      return false;
-    }
+  // If the loop body will not be reached return false.
+  if (num_itrs <= 0) {
+    return false;
+  }
+
+  if (iterations_out) {
     assert(static_cast<size_t>(num_itrs) <= std::numeric_limits<size_t>::max());
     *iterations_out = static_cast<size_t>(num_itrs);
   }
@@ -611,26 +681,87 @@ int64_t Loop::GetIterations(SpvOp condition, int64_t condition_value,
                             int64_t init_value, int64_t step_value) const {
   int64_t diff = 0;
 
-  // Take the abs of - step values.
-  step_value = llabs(step_value);
-
   switch (condition) {
     case SpvOp::SpvOpSLessThan:
     case SpvOp::SpvOpULessThan: {
+      // If the condition is not met to begin with the loop will never iterate.
+      if (!(init_value < condition_value)) return 0;
+
       diff = condition_value - init_value;
+
+      // If the operation is a less then operation then the diff and step must
+      // have the same sign otherwise the induction will never cross the
+      // condition (either never true or always true).
+      if ((diff < 0 && step_value > 0) || (diff > 0 && step_value < 0)) {
+        return 0;
+      }
+
       break;
     }
     case SpvOp::SpvOpSGreaterThan:
     case SpvOp::SpvOpUGreaterThan: {
+      // If the condition is not met to begin with the loop will never iterate.
+      if (!(init_value > condition_value)) return 0;
+
       diff = init_value - condition_value;
+
+      // If the operation is a greater than operation then the diff and step
+      // must have opposite signs. Otherwise the condition will always be true
+      // or will never be true.
+      if ((diff < 0 && step_value < 0) || (diff > 0 && step_value > 0)) {
+        return 0;
+      }
+
       break;
     }
+
+    case SpvOp::SpvOpSGreaterThanEqual:
+    case SpvOp::SpvOpUGreaterThanEqual: {
+      // If the condition is not met to begin with the loop will never iterate.
+      if (!(init_value >= condition_value)) return 0;
+
+      // We subract one to make it the same as SpvOpGreaterThan as it is
+      // functionally equivalent.
+      diff = init_value - (condition_value - 1);
+
+      // If the operation is a greater than operation then the diff and step
+      // must have opposite signs. Otherwise the condition will always be true
+      // or will never be true.
+      if ((diff > 0 && step_value > 0) || (diff < 0 && step_value < 0)) {
+        return 0;
+      }
+
+      break;
+    }
+
+    case SpvOp::SpvOpSLessThanEqual:
+    case SpvOp::SpvOpULessThanEqual: {
+      // If the condition is not met to begin with the loop will never iterate.
+      if (!(init_value <= condition_value)) return 0;
+
+      // We add one to make it the same as SpvOpLessThan as it is functionally
+      // equivalent.
+      diff = (condition_value + 1) - init_value;
+
+      // If the operation is a less than operation then the diff and step must
+      // have the same sign otherwise the induction will never cross the
+      // condition (either never true or always true).
+      if ((diff < 0 && step_value > 0) || (diff > 0 && step_value < 0)) {
+        return 0;
+      }
+
+      break;
+    }
+
     default:
       assert(false &&
              "Could not retrieve number of iterations from the loop condition. "
              "Condition is not supported.");
   }
 
+  // Take the abs of - step values.
+  step_value = llabs(step_value);
+  diff = llabs(diff);
   int64_t result = diff / step_value;
 
   if (diff % step_value != 0) {
@@ -639,7 +770,17 @@ int64_t Loop::GetIterations(SpvOp condition, int64_t condition_value,
   return result;
 }
 
-ir::Instruction* Loop::FindInductionVariable(
+// Returns the list of induction variables within the loop.
+void Loop::GetInductionVariables(
+    std::vector<ir::Instruction*>& induction_variables) const {
+  for (ir::Instruction& inst : *loop_header_) {
+    if (inst.opcode() == SpvOp::SpvOpPhi) {
+      induction_variables.push_back(&inst);
+    }
+  }
+}
+
+ir::Instruction* Loop::FindConditionVariable(
     const ir::BasicBlock* condition_block) const {
   // Find the branch instruction.
   const ir::Instruction& branch_inst = *condition_block->ctail();

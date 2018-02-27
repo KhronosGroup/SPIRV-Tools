@@ -21,7 +21,9 @@ namespace opt {
 
 class LoopUnroller : public Pass {
  public:
-  LoopUnroller() : Pass() {}
+  LoopUnroller() : Pass(), fully_unroll_(true), unroll_factor_(0) {}
+  LoopUnroller(bool fully_unroll, int unroll_factor)
+      : Pass(), fully_unroll_(fully_unroll), unroll_factor_(unroll_factor) {}
 
   const char* name() const override { return "Loop unroller"; }
 
@@ -29,6 +31,8 @@ class LoopUnroller : public Pass {
 
  private:
   ir::IRContext* context_;
+  bool fully_unroll_;
+  int unroll_factor_;
 };
 
 }  // namespace opt

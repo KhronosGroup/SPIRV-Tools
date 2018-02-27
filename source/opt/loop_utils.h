@@ -86,7 +86,7 @@ class LoopUtils {
   //
   // The conditions checked to ensure the loop can be unrolled are as follows:
   // 1. That the loop is in structured order.
-  // 2. That the condinue block is a branch to the header.
+  // 2. That the continue block is a branch to the header.
   // 3. That the only phi used in the loop is the induction variable.
   //  TODO(stephen@codeplay.com): This is a temporary mesure, after the loop is
   //  converted into LCSAA form and has a single entry and exit we can rewrite

@@ -207,10 +207,13 @@ class Loop {
     AddBasicBlock(bb);
   }
 
-  // This function uses the |condition| to find the induction variable within
-  // the loop. This only works if the loop is bound by a single condition and a
-  // single induction variable.
-  ir::Instruction* FindInductionVariable(const ir::BasicBlock* condition) const;
+  // Returns the list of induction variables within the loop.
+  void GetInductionVariables(std::vector<ir::Instruction*>& inductions) const;
+
+  // This function uses the |condition| to find the induction variable which is
+  // used by the loop condition within the loop. This only works if the loop is
+  // bound by a single condition and single induction variable.
+  ir::Instruction* FindConditionVariable(const ir::BasicBlock* condition) const;
 
   // Returns the number of iterations within a loop when given the |induction|
   // variable and the loop |condition| check. It stores the found number of
@@ -275,14 +278,13 @@ class Loop {
   // Extract the initial value from the |induction| variable and store it in
   // |value|. If the function couldn't find the initial value of |induction|
   // return false.
-  bool GetInductionInitValue(const ir::Loop* loop,
-                             const ir::Instruction* induction,
+  bool GetInductionInitValue(const ir::Instruction* induction,
                              int64_t* value) const;
 
   // Takes in a phi instruction |induction| and the loop |header| and returns
   // the step operation of the loop.
   ir::Instruction* GetInductionStepOperation(
-      const ir::Loop* loop, const ir::Instruction* induction) const;
+      const ir::Instruction* induction) const;
 
   // Returns true if we can deduce the number of loop iterations in the step
   // operation |step|. IsSupportedCondition must also be true for the condition
@@ -293,6 +295,24 @@ class Loop {
   // condition operation |condition|. IsSupportedStepOp must also be true for
   // the step instruction.
   bool IsSupportedCondition(SpvOp condition) const;
+
+  // Creates the list of the loop's basic block in structured order and store
+  // the result in |ordered_loop_blocks|. If |include_pre_header| is true, the
+  // pre-header block will also be included at the beginning of the list if it
+  // exist. If |include_merge| is true, the merge block will also be included at
+  // the end of the list if it exist.
+  void ComputeLoopStructuredOrder(
+      std::vector<ir::BasicBlock*>* ordered_loop_blocks,
+      bool include_pre_header = false, bool include_merge = false) const;
+
+  // Given the loop |condition|, |initial_value|, |step_value|, the trip count
+  // |number_of_iterations|, and the |unroll_factor| requested, get the new
+  // condition value for the residual loop.
+  static int64_t GetResidualConditionValue(SpvOp condition,
+                                           int64_t initial_value,
+                                           int64_t step_value,
+                                           size_t number_of_iterations,
+                                           size_t unroll_factor);
 
  private:
   IRContext* context_;

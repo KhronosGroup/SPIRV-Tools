@@ -172,11 +172,20 @@ class InstructionBuilder {
     // Assert that we are not trying to store a negative number in an unsigned
     // type.
     if (!sign)
-      assert(value > 0 &&
+      assert(value >= 0 &&
              "Trying to add a signed integer with an unsigned type!");
 
-    // Get or create the integer type.
-    analysis::Integer int_type(32, sign);
+    analysis::Integer int_type{32, sign};
+
+    // Get or create the integer type. This rebuilds the type and manages the
+    // memory for the rebuilt type.
+    uint32_t type_id =
+        GetContext()->get_type_mgr()->GetTypeInstruction(&int_type);
+
+    // Get the memory managed type so that it is safe to be stored by
+    // GetConstant.
+    analysis::Type* rebuilt_type =
+        GetContext()->get_type_mgr()->GetType(type_id);
 
     // Even if the value is negative we need to pass the bit pattern as a
     // uint32_t to GetConstant.
@@ -184,7 +193,7 @@ class InstructionBuilder {
 
     // Create the constant value.
     const opt::analysis::Constant* constant =
-        GetContext()->get_constant_mgr()->GetConstant(&int_type, {word});
+        GetContext()->get_constant_mgr()->GetConstant(rebuilt_type, {word});
 
     // Create the OpConstant instruction using the type and the value.
     return GetContext()->get_constant_mgr()->GetDefiningInstruction(constant);
