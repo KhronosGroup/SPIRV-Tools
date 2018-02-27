@@ -467,30 +467,7 @@ uint32_t PerformIntegerOperation(analysis::ConstantManager* const_mgr,
       break;
     case SpvOpSDiv:
     case SpvOpUDiv:
-      // To avoid losing precision we won't perform division that would result
-      // in a remainder. Unfortunate code duplication results.
-      if (input2->AsIntConstant()->IsZero()) return 0;
-      if (width == 64) {
-        if (type->IsSigned()) {
-          if (input1->GetS64() % input2->GetS64() != 0) return 0;
-          int64_t val = input1->GetS64() / input2->GetS64();
-          words = ExtractInts(static_cast<uint64_t>(val));
-        } else {
-          if (input1->GetU64() % input2->GetU64() != 0) return 0;
-          uint64_t val = input1->GetU64() / input2->GetU64();
-          words = ExtractInts(val);
-        }
-      } else {
-        if (type->IsSigned()) {
-          if (input1->GetS32() % input2->GetS32() != 0) return 0;
-          int32_t val = input1->GetS32() / input2->GetS32();
-          words.push_back(static_cast<uint32_t>(val));
-        } else {
-          if (input1->GetU32() % input2->GetU32() != 0) return 0;
-          uint32_t val = input1->GetU32() / input2->GetU32();
-          words.push_back(val);
-        }
-      }
+      assert(false && "Should not merge integer division");
       break;
     case SpvOpIAdd:
       FOLD_OP(+);
@@ -598,22 +575,21 @@ FoldingRule MergeMulMulArithmetic() {
 }
 
 // Merges divides into subsequent multiplies if each instruction contains one
-// constant operand.
+// constant operand. Does not support integer operations.
 // Cases:
-// 2 * (x / 2) = 4 / x
-// 2 * (2 / x) = x * 1
+// 2 * (x / 2) = x * 1
+// 2 * (2 / x) = 4 / x
 // (x / 2) * 2 = x * 1
 // (2 / x) * 2 = 4 / x
 FoldingRule MergeMulDivArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
-    assert(inst->opcode() == SpvOpFMul || inst->opcode() == SpvOpIMul);
+    assert(inst->opcode() == SpvOpFMul);
     ir::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
-      return false;
+    if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
@@ -621,12 +597,9 @@ FoldingRule MergeMulDivArithmetic() {
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
     ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
-    if (HasFloatingPoint(type) && !other_inst->IsFloatingPointFoldingAllowed())
-      return false;
+    if (!other_inst->IsFloatingPointFoldingAllowed()) return false;
 
-    if (other_inst->opcode() == SpvOpFDiv ||
-        other_inst->opcode() == SpvOpSDiv ||
-        other_inst->opcode() == SpvOpUDiv) {
+    if (other_inst->opcode() == SpvOpFDiv) {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
       const analysis::Constant* const_input2 = ConstInput(other_constants);
@@ -702,6 +675,7 @@ FoldingRule MergeMulNegateArithmetic() {
 }
 
 // Merges consecutive divides if each instruction contains one constant operand.
+// Does not support integer division.
 // Cases:
 // 2 / (x / 2) = 4 / x
 // 4 / (2 / x) = 2 * x
@@ -710,14 +684,12 @@ FoldingRule MergeMulNegateArithmetic() {
 FoldingRule MergeDivDivArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
-    assert(inst->opcode() == SpvOpFDiv || inst->opcode() == SpvOpSDiv ||
-           inst->opcode() == SpvOpUDiv);
+    assert(inst->opcode() == SpvOpFDiv);
     ir::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    bool uses_float = HasFloatingPoint(type);
-    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+    if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
@@ -725,8 +697,7 @@ FoldingRule MergeDivDivArithmetic() {
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
     ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
-    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
-      return false;
+    if (!other_inst->IsFloatingPointFoldingAllowed()) return false;
 
     bool first_is_variable = constants[0] == nullptr;
     if (other_inst->opcode() == inst->opcode()) {
@@ -740,7 +711,7 @@ FoldingRule MergeDivDivArithmetic() {
       SpvOp merge_op = inst->opcode();
       if (other_first_is_variable) {
         // Constants magnify.
-        merge_op = uses_float ? SpvOpFMul : SpvOpIMul;
+        merge_op = SpvOpFMul;
       }
 
       // This is an x / (*) case. Swap the inputs. Doesn't harm multiply
@@ -757,7 +728,7 @@ FoldingRule MergeDivDivArithmetic() {
       SpvOp op = inst->opcode();
       if (!first_is_variable && !other_first_is_variable) {
         // Effectively div of 1/x, so change to multiply.
-        op = uses_float ? SpvOpFMul : SpvOpIMul;
+        op = SpvOpFMul;
       }
 
       uint32_t op1 = merged_id;
@@ -774,7 +745,7 @@ FoldingRule MergeDivDivArithmetic() {
 }
 
 // Fold multiplies succeeded by divides where each instruction contains a
-// constant operand.
+// constant operand. Does not support integer divide.
 // Cases:
 // 4 / (x * 2) = 2 / x
 // 4 / (2 * x) = 2 / x
@@ -783,14 +754,12 @@ FoldingRule MergeDivDivArithmetic() {
 FoldingRule MergeDivMulArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
-    assert(inst->opcode() == SpvOpFDiv || inst->opcode() == SpvOpSDiv ||
-           inst->opcode() == SpvOpUDiv);
+    assert(inst->opcode() == SpvOpFDiv);
     ir::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    bool uses_float = HasFloatingPoint(type);
-    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+    if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
@@ -798,12 +767,10 @@ FoldingRule MergeDivMulArithmetic() {
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
     ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
-    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
-      return false;
+    if (!other_inst->IsFloatingPointFoldingAllowed()) return false;
 
     bool first_is_variable = constants[0] == nullptr;
-    if (other_inst->opcode() == SpvOpFMul ||
-        other_inst->opcode() == SpvOpIMul) {
+    if (other_inst->opcode() == SpvOpFMul) {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
       const analysis::Constant* const_input2 = ConstInput(other_constants);
@@ -1808,7 +1775,6 @@ spvtools::opt::FoldingRules::FoldingRules() {
 
   rules_[SpvOpIMul].push_back(IntMultipleBy1());
   rules_[SpvOpIMul].push_back(MergeMulMulArithmetic());
-  rules_[SpvOpIMul].push_back(MergeMulDivArithmetic());
   rules_[SpvOpIMul].push_back(MergeMulNegateArithmetic());
 
   rules_[SpvOpISub].push_back(MergeSubNegateArithmetic());
@@ -1817,8 +1783,6 @@ spvtools::opt::FoldingRules::FoldingRules() {
 
   rules_[SpvOpPhi].push_back(RedundantPhi());
 
-  rules_[SpvOpSDiv].push_back(MergeDivDivArithmetic());
-  rules_[SpvOpSDiv].push_back(MergeDivMulArithmetic());
   rules_[SpvOpSDiv].push_back(MergeDivNegateArithmetic());
 
   rules_[SpvOpSNegate].push_back(MergeNegateArithmetic());
@@ -1827,8 +1791,6 @@ spvtools::opt::FoldingRules::FoldingRules() {
 
   rules_[SpvOpSelect].push_back(RedundantSelect());
 
-  rules_[SpvOpUDiv].push_back(MergeDivDivArithmetic());
-  rules_[SpvOpUDiv].push_back(MergeDivMulArithmetic());
   rules_[SpvOpUDiv].push_back(MergeDivNegateArithmetic());
 }
 
