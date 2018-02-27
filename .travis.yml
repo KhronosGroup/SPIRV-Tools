@@ -8,7 +8,7 @@ os:
 
 # Use Ubuntu 14.04 LTS (Trusty) as the Linux testing environment.
 dist: trusty
-sudo: false
+sudo: required
 
 env:
   global:
@@ -47,7 +47,14 @@ branches:
   only:
     - master
 
+addons:
+  apt:
+    packages:
+      - ninja-build
+
 before_install:
+  # Install ninja on macOS.
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install ninja; fi
   - if [[ "$BUILD_ANDROID_CMAKE" == "ON" ]] || [[ "$BUILD_ANDROID_MK" == "ON" ]]; then
       git clone --depth=1 https://github.com/urho3d/android-ndk.git $HOME/android-ndk;
       export ANDROID_NDK=$HOME/android-ndk;
@@ -83,14 +90,14 @@ script:
             -DCMAKE_BUILD_TYPE=Release
             -DANDROID_ABI="armeabi-v7a with NEON"
             -DSPIRV_BUILD_COMPRESSION=ON
-            -DSPIRV_SKIP_TESTS=ON ..;
-      make -j${NPROC};
+            -DSPIRV_SKIP_TESTS=ON -GNinja ..;
+      ninja -j${NPROC};
     elif [[ "$CHECK_FORMAT" == "ON" ]]; then
       cd ..;
       ./utils/check_code_format.sh;
     else
-      cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_INSTALL_PREFIX=install ..;
-      make -j${NPROC} install;
+      cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_INSTALL_PREFIX=install -GNinja ..;
+      ninja -j${NPROC} install;
       ctest -j${NPROC} --output-on-failure --timeout 300;
     fi
 
