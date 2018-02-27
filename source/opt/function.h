@@ -77,11 +77,6 @@ class Function {
   // Returns function's return type id
   inline uint32_t type_id() const { return def_inst_->type_id(); }
 
-  // Returns the basic block container for this function.
-  const std::vector<std::unique_ptr<BasicBlock>>* GetBlocks() const {
-    return &blocks_;
-  }
-
   // Returns the entry basic block for this function.
   const std::unique_ptr<BasicBlock>& entry() const { return blocks_.front(); }
 
