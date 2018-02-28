@@ -218,9 +218,12 @@ FoldingRule ReciprocalFDiv() {
         const analysis::Constant* negated_const =
             const_mgr->GetConstant(constants[1]->type(), std::move(neg_ids));
         id = const_mgr->GetDefiningInstruction(negated_const)->result_id();
-      } else {
+      } else if (constants[1]->AsFloatConstant()) {
         id = Reciprocal(const_mgr, constants[1]);
         if (id == 0) return false;
+      } else {
+        // Don't fold a null constant.
+        return false;
       }
       inst->SetOpcode(SpvOpFMul);
       inst->SetInOperands(
@@ -384,6 +387,22 @@ FoldingRule MergeNegateAddSubArithmetic() {
   };
 }
 
+// Returns true if |c| has a zero element.
+bool HasZero(const analysis::Constant* c) {
+  if (c->AsNullConstant()) {
+    return true;
+  }
+  if (const analysis::VectorConstant* vec_const = c->AsVectorConstant()) {
+    for (auto& comp : vec_const->GetComponents())
+      if (HasZero(comp)) return true;
+  } else {
+    assert(c->AsScalarConstant());
+    return c->AsScalarConstant()->IsZero();
+  }
+
+  return false;
+}
+
 // Performs |input1| |opcode| |input2| and returns the merged constant result
 // id. Returns 0 if the result is not a valid value. The input types must be
 // Float.
@@ -415,6 +434,7 @@ uint32_t PerformFloatingPointOperation(analysis::ConstantManager* const_mgr,
       FOLD_OP(*);
       break;
     case SpvOpFDiv:
+      if (HasZero(input2)) return 0;
       FOLD_OP(/);
       break;
     case SpvOpFAdd:
@@ -498,10 +518,25 @@ uint32_t PerformOperation(analysis::ConstantManager* const_mgr, SpvOp opcode,
     const analysis::Type* ele_type = vector_type->element_type();
     for (uint32_t i = 0; i != vector_type->element_count(); ++i) {
       uint32_t id = 0;
-      const analysis::Constant* input1_comp =
-          input1->AsVectorConstant()->GetComponents()[i];
-      const analysis::Constant* input2_comp =
-          input2->AsVectorConstant()->GetComponents()[i];
+
+      const analysis::Constant* input1_comp = nullptr;
+      if (const analysis::VectorConstant* input1_vector =
+              input1->AsVectorConstant()) {
+        input1_comp = input1_vector->GetComponents()[i];
+      } else {
+        assert(input1->AsNullConstant());
+        input1_comp = const_mgr->GetConstant(ele_type, {});
+      }
+
+      const analysis::Constant* input2_comp = nullptr;
+      if (const analysis::VectorConstant* input2_vector =
+              input2->AsVectorConstant()) {
+        input2_comp = input2_vector->GetComponents()[i];
+      } else {
+        assert(input2->AsNullConstant());
+        input2_comp = const_mgr->GetConstant(ele_type, {});
+      }
+
       if (ele_type->AsFloat()) {
         id = PerformFloatingPointOperation(const_mgr, opcode, input1_comp,
                                            input2_comp);
@@ -603,7 +638,7 @@ FoldingRule MergeMulDivArithmetic() {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
       const analysis::Constant* const_input2 = ConstInput(other_constants);
-      if (!const_input2) return false;
+      if (!const_input2 || HasZero(const_input2)) return false;
 
       bool other_first_is_variable = other_constants[0] == nullptr;
       // If the variable value is the second operand of the divide, multiply
@@ -695,7 +730,7 @@ FoldingRule MergeDivDivArithmetic() {
     if (width != 32 && width != 64) return false;
 
     const analysis::Constant* const_input1 = ConstInput(constants);
-    if (!const_input1) return false;
+    if (!const_input1 || HasZero(const_input1)) return false;
     ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!other_inst->IsFloatingPointFoldingAllowed()) return false;
 
@@ -704,7 +739,7 @@ FoldingRule MergeDivDivArithmetic() {
       std::vector<const analysis::Constant*> other_constants =
           const_mgr->GetOperandConstants(other_inst);
       const analysis::Constant* const_input2 = ConstInput(other_constants);
-      if (!const_input2) return false;
+      if (!const_input2 || HasZero(const_input2)) return false;
 
       bool other_first_is_variable = other_constants[0] == nullptr;
 
@@ -765,7 +800,7 @@ FoldingRule MergeDivMulArithmetic() {
     if (width != 32 && width != 64) return false;
 
     const analysis::Constant* const_input1 = ConstInput(constants);
-    if (!const_input1) return false;
+    if (!const_input1 || HasZero(const_input1)) return false;
     ir::Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!other_inst->IsFloatingPointFoldingAllowed()) return false;
 
@@ -1543,7 +1578,12 @@ FloatConstantKind getFloatConstantKind(const analysis::Constant* constant) {
     return FloatConstantKind::Unknown;
   }
 
-  if (const analysis::VectorConstant* vc = constant->AsVectorConstant()) {
+  assert(HasFloatingPoint(constant->type()) && "Unexpected constant type");
+
+  if (constant->AsNullConstant()) {
+    return FloatConstantKind::Zero;
+  } else if (const analysis::VectorConstant* vc =
+                 constant->AsVectorConstant()) {
     const std::vector<const analysis::Constant*>& components =
         vc->GetComponents();
     assert(!components.empty());

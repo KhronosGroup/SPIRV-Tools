@@ -198,6 +198,7 @@ OpName %main "main"
 %v2float_3_2 = OpConstantComposite %v2float %float_3 %float_2
 %v2float_4_4 = OpConstantComposite %v2float %float_4 %float_4
 %v2float_2_0p5 = OpConstantComposite %v2float %float_2 %float_0p5
+%v2float_null = OpConstantNull %v2float
 %double_n1 = OpConstant %double -1
 %105 = OpConstant %double 0 ; Need a def with an numerical id to define id maps.
 %double_0 = OpConstant %double 0
@@ -2526,7 +2527,37 @@ INSTANTIATE_TEST_CASE_P(FloatRedundantFoldingTest, GeneralInstructionFoldingTest
             "%2 = OpExtInst %float %1 FMix %3 %4 %float_1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 4)
+        2, 4),
+    // Test case 15: Fold vector fadd with null
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%a = OpVariable %_ptr_v2float Function\n" +
+            "%2 = OpLoad %v2float %a\n" +
+            "%3 = OpFAdd %v2float %2 %v2float_null\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 2),
+    // Test case 16: Fold vector fadd with null
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%a = OpVariable %_ptr_v2float Function\n" +
+            "%2 = OpLoad %v2float %a\n" +
+            "%3 = OpFAdd %v2float %v2float_null %2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 2),
+    // Test case 15: Fold vector fsub with null
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%a = OpVariable %_ptr_v2float Function\n" +
+            "%2 = OpLoad %v2float %a\n" +
+            "%3 = OpFSub %v2float %2 %v2float_null\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 2)
 ));
 
 INSTANTIATE_TEST_CASE_P(DoubleRedundantFoldingTest, GeneralInstructionFoldingTest,
@@ -3317,7 +3348,18 @@ INSTANTIATE_TEST_CASE_P(ReciprocalFDivTest, MatchingInstructionFoldingTest,
       "%3 = OpFDiv %double %2 %double_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    3, true)
+    3, true),
+  // Test case 4: don't fold x / 0.
+  InstructionFoldingCase<bool>(
+    Header() +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_v2float Function\n" +
+      "%2 = OpLoad %v2float %var\n" +
+      "%3 = OpFDiv %v2float %2 %v2float_null\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    3, false)
 ));
 
 INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
@@ -3812,7 +3854,20 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %int_2 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true)
+    4, true),
+  // Test case 13: Don't merge
+  // (x / {null}) / {null}
+  InstructionFoldingCase<bool>(
+    Header() +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_v2float Function\n" +
+      "%2 = OpLoad %float %var\n" +
+      "%3 = OpFDiv %float %2 %v2float_null\n" +
+      "%4 = OpFDiv %float %3 %v2float_null\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, false)
 ));
 
 INSTANTIATE_TEST_CASE_P(MergeAddTest, MatchingInstructionFoldingTest,
