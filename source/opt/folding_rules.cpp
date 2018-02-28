@@ -1578,8 +1578,7 @@ FloatConstantKind getFloatConstantKind(const analysis::Constant* constant) {
     return FloatConstantKind::Unknown;
   }
 
-  const analysis::Type* type = constant->type();
-  assert(HasFloatingPoint(type));
+  assert(HasFloatingPoint(constant->type()) && "Unexpected constant type");
 
   if (constant->AsNullConstant()) {
     return FloatConstantKind::Zero;
