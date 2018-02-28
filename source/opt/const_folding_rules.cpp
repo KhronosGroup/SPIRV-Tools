@@ -269,20 +269,6 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
   };
 }
 
-// Returns the integer value of |c|.  The constant |c| must have type
-// |Integer|, and width |32|.
-uint32_t GetIntegerFromConst(const analysis::Constant* c) {
-  assert(c->type()->AsInteger() != nullptr &&
-         c->type()->AsInteger()->width() == 32);
-  const analysis::IntConstant* ic = c->AsIntConstant();
-  if (ic) {
-    return ic->GetU32BitValue();
-  } else {
-    assert(c->AsNullConstant() && "c must be an integer constant.");
-    return 0.0f;
-  }
-}
-
 // This macro defines a |UnaryScalarFoldingRule| that performs float to
 // integer conversion.
 // TODO(greg-lunarg): Support for 64-bit integer types.
@@ -304,7 +290,7 @@ uint32_t GetIntegerFromConst(const analysis::Constant* c) {
       std::vector<uint32_t> words = {result};                                 \
       return const_mgr->GetConstant(result_type, words);                      \
     } else if (float_type->width() == 64) {                                   \
-      double fa = GetDoubleFromConst(a);                                      \
+      double fa = a->GetDouble();                                             \
       uint32_t result = integer_type->IsSigned()                              \
                             ? static_cast<uint32_t>(static_cast<int32_t>(fa)) \
                             : static_cast<uint32_t>(fa);                      \
@@ -327,7 +313,7 @@ uint32_t GetIntegerFromConst(const analysis::Constant* c) {
     assert(integer_type != nullptr);                                          \
     if (integer_type->width() != 32)                                          \
       return nullptr;                                                         \
-    uint32_t ua = GetIntegerFromConst(a);                                     \
+    uint32_t ua = a->GetU32();                                     \
     if (float_type->width() == 32) {                                          \
       float result_val = integer_type->IsSigned()                             \
                              ? static_cast<float>(static_cast<int32_t>(ua))   \
@@ -340,7 +326,7 @@ uint32_t GetIntegerFromConst(const analysis::Constant* c) {
                               ? static_cast<double>(static_cast<int32_t>(ua)) \
                               : static_cast<double>(ua);                      \
       spvutils::FloatProxy<double> result(result_val);                        \
-      std::vector<uint32_t> words(ExtractInts(result.data()));                \
+      std::vector<uint32_t> words = result.GetWords();                        \
       return const_mgr->GetConstant(result_type, words);                      \
     }                                                                         \
     return nullptr;                                                           \
