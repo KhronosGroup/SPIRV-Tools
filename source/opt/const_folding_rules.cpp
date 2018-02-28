@@ -272,65 +272,63 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
 // This macro defines a |UnaryScalarFoldingRule| that performs float to
 // integer conversion.
 // TODO(greg-lunarg): Support for 64-bit integer types.
-#define FOLD_FTOI_OP()                                                        \
-  [](const analysis::Type* result_type, const analysis::Constant* a,          \
-     analysis::ConstantManager* const_mgr) -> const analysis::Constant* {     \
-    assert(result_type != nullptr && a != nullptr);                           \
-    const analysis::Integer* integer_type = result_type->AsInteger();         \
-    const analysis::Float* float_type = a->type()->AsFloat();                 \
-    assert(float_type != nullptr);                                            \
-    assert(integer_type != nullptr);                                          \
-    if (integer_type->width() != 32)                                          \
-      return nullptr;                                                         \
-    if (float_type->width() == 32) {                                          \
-      float fa = a->GetFloat();                                               \
-      uint32_t result = integer_type->IsSigned()                              \
-                            ? static_cast<uint32_t>(static_cast<int32_t>(fa)) \
-                            : static_cast<uint32_t>(fa);                      \
-      std::vector<uint32_t> words = {result};                                 \
-      return const_mgr->GetConstant(result_type, words);                      \
-    } else if (float_type->width() == 64) {                                   \
-      double fa = a->GetDouble();                                             \
-      uint32_t result = integer_type->IsSigned()                              \
-                            ? static_cast<uint32_t>(static_cast<int32_t>(fa)) \
-                            : static_cast<uint32_t>(fa);                      \
-      std::vector<uint32_t> words = {result};                                 \
-      return const_mgr->GetConstant(result_type, words);                      \
-    }                                                                         \
-    return nullptr;                                                           \
-  }
+UnaryScalarFoldingRule FoldFToIOp =
+  [](const analysis::Type* result_type, const analysis::Constant* a,
+     analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
+    assert(result_type != nullptr && a != nullptr);
+    const analysis::Integer* integer_type = result_type->AsInteger();
+    const analysis::Float* float_type = a->type()->AsFloat();
+    assert(float_type != nullptr);
+    assert(integer_type != nullptr);
+    if (integer_type->width() != 32) return nullptr;
+    if (float_type->width() == 32) {
+      float fa = a->GetFloat();
+      uint32_t result = integer_type->IsSigned()
+                            ? static_cast<uint32_t>(static_cast<int32_t>(fa))
+                            : static_cast<uint32_t>(fa);
+      std::vector<uint32_t> words = {result};
+      return const_mgr->GetConstant(result_type, words);
+    } else if (float_type->width() == 64) {
+      double fa = a->GetDouble();
+      uint32_t result = integer_type->IsSigned()
+                            ? static_cast<uint32_t>(static_cast<int32_t>(fa))
+                            : static_cast<uint32_t>(fa);
+      std::vector<uint32_t> words = {result};
+      return const_mgr->GetConstant(result_type, words);
+    }
+    return nullptr;
+  };
 
 // This macro defines a |UnaryScalarFoldingRule| that performs integer to
 // float conversion.
 // TODO(greg-lunarg): Support for 64-bit integer types.
-#define FOLD_ITOF_OP()                                                        \
-  [](const analysis::Type* result_type, const analysis::Constant* a,          \
-     analysis::ConstantManager* const_mgr) -> const analysis::Constant* {     \
-    assert(result_type != nullptr && a != nullptr);                           \
-    const analysis::Integer* integer_type = a->type()->AsInteger();           \
-    const analysis::Float* float_type = result_type->AsFloat();               \
-    assert(float_type != nullptr);                                            \
-    assert(integer_type != nullptr);                                          \
-    if (integer_type->width() != 32)                                          \
-      return nullptr;                                                         \
-    uint32_t ua = a->GetU32();                                     \
-    if (float_type->width() == 32) {                                          \
-      float result_val = integer_type->IsSigned()                             \
-                             ? static_cast<float>(static_cast<int32_t>(ua))   \
-                             : static_cast<float>(ua);                        \
-      spvutils::FloatProxy<float> result(result_val);                         \
-      std::vector<uint32_t> words = {result.data()};                          \
-      return const_mgr->GetConstant(result_type, words);                      \
-    } else if (float_type->width() == 64) {                                   \
-      double result_val = integer_type->IsSigned()                            \
-                              ? static_cast<double>(static_cast<int32_t>(ua)) \
-                              : static_cast<double>(ua);                      \
-      spvutils::FloatProxy<double> result(result_val);                        \
-      std::vector<uint32_t> words = result.GetWords();                        \
-      return const_mgr->GetConstant(result_type, words);                      \
-    }                                                                         \
-    return nullptr;                                                           \
-  }
+UnaryScalarFoldingRule FoldIToFOp =
+  [](const analysis::Type* result_type, const analysis::Constant* a,
+     analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
+    assert(result_type != nullptr && a != nullptr);
+    const analysis::Integer* integer_type = a->type()->AsInteger();
+    const analysis::Float* float_type = result_type->AsFloat();
+    assert(float_type != nullptr);
+    assert(integer_type != nullptr);
+    if (integer_type->width() != 32) return nullptr;
+    uint32_t ua = a->GetU32();
+    if (float_type->width() == 32) {
+      float result_val = integer_type->IsSigned()
+                             ? static_cast<float>(static_cast<int32_t>(ua))
+                             : static_cast<float>(ua);
+      spvutils::FloatProxy<float> result(result_val);
+      std::vector<uint32_t> words = {result.data()};
+      return const_mgr->GetConstant(result_type, words);
+    } else if (float_type->width() == 64) {
+      double result_val = integer_type->IsSigned()
+                              ? static_cast<double>(static_cast<int32_t>(ua))
+                              : static_cast<double>(ua);
+      spvutils::FloatProxy<double> result(result_val);
+      std::vector<uint32_t> words = result.GetWords();
+      return const_mgr->GetConstant(result_type, words);
+    }
+    return nullptr;
+  };
 
 // This macro defines a |BinaryScalarFoldingRule| that applies |op|.  The
 // operator |op| must work for both float and double, and use syntax "f1 op f2".
@@ -359,8 +357,8 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
   }
 
 // Define the folding rule for conversion between floating point and integer
-ConstantFoldingRule FoldFToI() { return FoldFPUnaryOp(FOLD_FTOI_OP()); }
-ConstantFoldingRule FoldIToF() { return FoldFPUnaryOp(FOLD_ITOF_OP()); }
+ConstantFoldingRule FoldFToI() { return FoldFPUnaryOp(FoldFToIOp); }
+ConstantFoldingRule FoldIToF() { return FoldFPUnaryOp(FoldIToFOp); }
 
 // Define the folding rules for subtraction, addition, multiplication, and
 // division for floating point values.
