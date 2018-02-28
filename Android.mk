@@ -39,6 +39,7 @@ SPVTOOLS_SRC_FILES := \
 		source/validate_atomics.cpp \
 		source/validate_barriers.cpp \
 		source/validate_bitwise.cpp \
+		source/validate_builtins.cpp \
 		source/validate_capability.cpp \
 		source/validate_cfg.cpp \
 		source/validate_composites.cpp \
