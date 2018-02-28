@@ -126,6 +126,18 @@ class ScalarConstant : public Constant {
   // Returns a const reference of the value of this constant in 32-bit words.
   virtual const std::vector<uint32_t>& words() const { return words_; }
 
+  // Returns true if the value is zero.
+  bool IsZero() const {
+    bool is_zero = true;
+    for (uint32_t v : words()) {
+      if (v != 0) {
+        is_zero = false;
+        break;
+      }
+    }
+    return is_zero;
+  }
+
  protected:
   ScalarConstant(const Type* ty, const std::vector<uint32_t>& w)
       : Constant(ty), words_(w) {}
@@ -173,17 +185,6 @@ class IntConstant : public ScalarConstant {
     assert(words().size() == 2);
     return static_cast<uint64_t>(words()[1]) << 32 |
            static_cast<uint64_t>(words()[0]);
-  }
-
-  bool IsZero() const {
-    bool is_zero = true;
-    for (uint32_t v : words()) {
-      if (v != 0) {
-        is_zero = false;
-        break;
-      }
-    }
-    return is_zero;
   }
 
   // Make a copy of this IntConstant instance.
