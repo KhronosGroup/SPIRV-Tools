@@ -644,7 +644,7 @@ spv_result_t BuiltInsValidator::ValidateI32Arr(
   const uint32_t component_type = type_inst->word(2);
   if (!_.IsIntScalarType(component_type)) {
     return diag(GetDefinitionDesc(decoration, inst) +
-                " has components which are not int scalar.");
+                " components are not int scalar.");
   }
 
   const uint32_t bit_width = _.GetBitWidth(component_type);
@@ -676,7 +676,7 @@ spv_result_t BuiltInsValidator::ValidateF32Arr(
   const uint32_t component_type = type_inst->word(2);
   if (!_.IsFloatScalarType(component_type)) {
     return diag(GetDefinitionDesc(decoration, inst) +
-                " has components which are not float scalar.");
+                " components are not float scalar.");
   }
 
   const uint32_t bit_width = _.GetBitWidth(component_type);
@@ -714,8 +714,7 @@ spv_result_t BuiltInsValidator::ValidateNotCalledWithExecutionModel(
     const char* built_in_str = _.grammar().lookupOperandName(
         SPV_OPERAND_TYPE_BUILT_IN, decoration.params()[0]);
     return _.diag(SPV_ERROR_INVALID_DATA)
-           << comment << " " << GetIdDesc(referenced_inst)
-           << " with Input storage class depends on "
+           << comment << " " << GetIdDesc(referenced_inst) << " depends on "
            << GetIdDesc(built_in_inst) << " which is decorated with BuiltIn "
            << built_in_str << "."
            << " Id <" << referenced_inst.id() << "> is later referenced by "
@@ -959,7 +958,7 @@ spv_result_t BuiltInsValidator::ValidateFrontFacingAtDefinition(
             [this](const std::string& message) -> spv_result_t {
               return _.diag(SPV_ERROR_INVALID_DATA)
                      << "According to the Vulkan spec BuiltIn FrontFacing "
-                        "variable needs to be a boolean scalar. "
+                        "variable needs to be a bool scalar. "
                      << message;
             })) {
       return error;
@@ -1019,7 +1018,7 @@ spv_result_t BuiltInsValidator::ValidateHelperInvocationAtDefinition(
             [this](const std::string& message) -> spv_result_t {
               return _.diag(SPV_ERROR_INVALID_DATA)
                      << "According to the Vulkan spec BuiltIn HelperInvocation "
-                        "variable needs to be a boolean scalar. "
+                        "variable needs to be a bool scalar. "
                      << message;
             })) {
       return error;
@@ -1118,8 +1117,7 @@ spv_result_t BuiltInsValidator::ValidateInvocationIdAtReference(
           execution_model != SpvExecutionModelGeometry) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Vulkan spec allows BuiltIn InvocationId to be used only "
-                  "with "
-                  "TessellationControl and Geometry execution models. "
+                  "with TessellationControl or Geometry execution models. "
                << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                    referenced_from_inst, execution_model);
       }
@@ -1240,7 +1238,7 @@ spv_result_t BuiltInsValidator::ValidatePatchVerticesAtReference(
           execution_model != SpvExecutionModelTessellationEvaluation) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Vulkan spec allows BuiltIn PatchVertices to be used only "
-                  "with TessellationControl and TessellationEvaluation "
+                  "with TessellationControl or TessellationEvaluation "
                   "execution models. "
                << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                    referenced_from_inst, execution_model);
@@ -2090,7 +2088,7 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
                  << "Vulkan spec allows BuiltIn "
                  << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                                   decoration.params()[0])
-                 << " to be used only with Geometry or Fragment execution "
+                 << " to be used only with Fragment or Geometry execution "
                     "models. "
                  << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                      referenced_from_inst, execution_model);
