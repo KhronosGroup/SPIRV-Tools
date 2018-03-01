@@ -19,6 +19,7 @@
 
 #include "diagnostic.h"
 #include "opcode.h"
+#include "spirv_target_env.h"
 #include "val/validation_state.h"
 
 using libspirv::Decoration;
@@ -103,11 +104,13 @@ spv_result_t CheckImportedVariableInitialization(ValidationState_t& vstate) {
 spv_result_t CheckBuiltInVariable(uint32_t var_id, ValidationState_t& vstate) {
   const auto& decorations = vstate.id_decorations(var_id);
   for (const auto& d : decorations) {
-    if (d.dec_type() == SpvDecorationLocation ||
-        d.dec_type() == SpvDecorationComponent) {
-      return vstate.diag(SPV_ERROR_INVALID_ID)
-             << "A BuiltIn variable (id " << var_id
-             << ") cannot have any Location or Component decorations";
+    if (spvIsVulkanEnv(vstate.context()->target_env)) {
+      if (d.dec_type() == SpvDecorationLocation ||
+          d.dec_type() == SpvDecorationComponent) {
+        return vstate.diag(SPV_ERROR_INVALID_ID)
+               << "A BuiltIn variable (id " << var_id
+               << ") cannot have any Location or Component decorations";
+      }
     }
   }
   return SPV_SUCCESS;

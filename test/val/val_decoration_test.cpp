@@ -448,7 +448,8 @@ TEST_F(ValidateDecorations, FunctionDefinitionWithoutImportLinkageGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
-TEST_F(ValidateDecorations, BuiltinVariablesGood) {
+TEST_F(ValidateDecorations, BuiltinVariablesGoodVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -474,11 +475,12 @@ OpReturn
 OpFunctionEnd
 )";
 
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
 }
 
-TEST_F(ValidateDecorations, BuiltinVariablesWithLocationDecoration) {
+TEST_F(ValidateDecorations, BuiltinVariablesWithLocationDecorationVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -505,13 +507,14 @@ OpReturn
 OpFunctionEnd
 )";
 
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("A BuiltIn variable (id 2) cannot have any Location or "
                         "Component decorations"));
 }
-TEST_F(ValidateDecorations, BuiltinVariablesWithComponentDecoration) {
+TEST_F(ValidateDecorations, BuiltinVariablesWithComponentDecorationVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -538,8 +541,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("A BuiltIn variable (id 2) cannot have any Location or "
                         "Component decorations"));
