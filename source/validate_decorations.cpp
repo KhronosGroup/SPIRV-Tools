@@ -19,6 +19,7 @@
 
 #include "diagnostic.h"
 #include "opcode.h"
+#include "spirv_target_env.h"
 #include "val/validation_state.h"
 
 using libspirv::Decoration;
@@ -27,6 +28,14 @@ using libspirv::Instruction;
 using libspirv::ValidationState_t;
 
 namespace {
+
+// Returns whether the given variable has a BuiltIn decoration.
+bool isBuiltInVar(uint32_t var_id, ValidationState_t& vstate) {
+  const auto& decorations = vstate.id_decorations(var_id);
+  return std::any_of(
+      decorations.begin(), decorations.end(),
+      [](const Decoration& d) { return SpvDecorationBuiltIn == d.dec_type(); });
+}
 
 // Returns whether the given structure type has any members with BuiltIn
 // decoration.
@@ -91,6 +100,22 @@ spv_result_t CheckImportedVariableInitialization(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
+// Checks whether a builtin variable is valid.
+spv_result_t CheckBuiltInVariable(uint32_t var_id, ValidationState_t& vstate) {
+  const auto& decorations = vstate.id_decorations(var_id);
+  for (const auto& d : decorations) {
+    if (spvIsVulkanEnv(vstate.context()->target_env)) {
+      if (d.dec_type() == SpvDecorationLocation ||
+          d.dec_type() == SpvDecorationComponent) {
+        return vstate.diag(SPV_ERROR_INVALID_ID)
+               << "A BuiltIn variable (id " << var_id
+               << ") cannot have any Location or Component decorations";
+      }
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 // Checks whether proper decorations have been appied to the entry points.
 spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
   for (uint32_t entry_point : vstate.entry_points()) {
@@ -126,6 +151,9 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
         if (storage_class == SpvStorageClassInput) ++num_builtin_inputs;
         if (storage_class == SpvStorageClassOutput) ++num_builtin_outputs;
         if (num_builtin_inputs > 1 || num_builtin_outputs > 1) break;
+        if (auto error = CheckBuiltInVariable(interface, vstate)) return error;
+      } else if (isBuiltInVar(interface, vstate)) {
+        if (auto error = CheckBuiltInVariable(interface, vstate)) return error;
       }
     }
     if (num_builtin_inputs > 1 || num_builtin_outputs > 1) {

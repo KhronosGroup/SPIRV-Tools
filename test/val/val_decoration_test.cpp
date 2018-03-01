@@ -21,11 +21,11 @@
 
 namespace {
 
+using ::testing::Eq;
+using ::testing::HasSubstr;
 using libspirv::Decoration;
 using std::string;
 using std::vector;
-using ::testing::Eq;
-using ::testing::HasSubstr;
 
 using ValidateDecorations = spvtest::ValidateBase<bool>;
 
@@ -446,6 +446,106 @@ TEST_F(ValidateDecorations, FunctionDefinitionWithoutImportLinkageGood) {
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, BuiltinVariablesGoodVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragCoord %_entryPointOutput
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 500
+OpDecorate %gl_FragCoord BuiltIn FragCoord
+OpDecorate %_entryPointOutput Location 0
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%float_0 = OpConstant %float 0
+%14 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_entryPointOutput = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpStore %_entryPointOutput %14
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
+}
+
+TEST_F(ValidateDecorations, BuiltinVariablesWithLocationDecorationVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragCoord %_entryPointOutput
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 500
+OpDecorate %gl_FragCoord BuiltIn FragCoord
+OpDecorate %gl_FragCoord Location 0
+OpDecorate %_entryPointOutput Location 0
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%float_0 = OpConstant %float 0
+%14 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_entryPointOutput = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpStore %_entryPointOutput %14
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("A BuiltIn variable (id 2) cannot have any Location or "
+                        "Component decorations"));
+}
+TEST_F(ValidateDecorations, BuiltinVariablesWithComponentDecorationVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragCoord %_entryPointOutput
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 500
+OpDecorate %gl_FragCoord BuiltIn FragCoord
+OpDecorate %gl_FragCoord Component 0
+OpDecorate %_entryPointOutput Location 0
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%float_0 = OpConstant %float 0
+%14 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_entryPointOutput = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpStore %_entryPointOutput %14
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("A BuiltIn variable (id 2) cannot have any Location or "
+                        "Component decorations"));
 }
 
 }  // anonymous namespace
