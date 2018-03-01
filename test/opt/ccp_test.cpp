@@ -855,6 +855,41 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::CCPPass>(text, true);
 }
+
+// Test for #1361.
+TEST_F(CCPTest, CompositeConstructOfGlobalValue) {
+  const std::string text = R"(
+; CHECK: [[phi:%\w+]] = OpPhi
+; CHECK-NEXT: OpCompositeExtract {{%\w+}} [[phi]] 0
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func" %in
+%void = OpTypeVoid
+%int = OpTypeInt 32 1
+%bool = OpTypeBool
+%functy = OpTypeFunction %void
+%ptr_int_Input = OpTypePointer Input %int
+%in = OpVariable %ptr_int_Input Input
+%struct = OpTypeStruct %ptr_int_Input %ptr_int_Input
+%struct_null = OpConstantNull %struct
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+%phi = OpPhi %struct %struct_null %1 %5 %4
+%extract = OpCompositeExtract %ptr_int_Input %phi 0
+OpLoopMerge %3 %4 None
+OpBranch %4
+%4 = OpLabel
+%5 = OpCompositeConstruct %struct %in %in
+OpBranch %2
+%3 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::CCPPass>(text, true);
+}
 #endif
 
 }  // namespace

@@ -143,6 +143,15 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(ir::Instruction* instr) {
     return SSAPropagator::kInteresting;
   }
 
+  // Conservatively mark this instruction as varying if any input id is varying.
+  if (!instr->WhileEachInId([this](uint32_t* op_id) {
+        auto iter = values_.find(*op_id);
+        if (iter != values_.end() && IsVaryingValue(iter->second)) return false;
+        return true;
+      })) {
+    return MarkInstructionVarying(instr);
+  }
+
   // If not, see if there is a least one unknown operand to the instruction.  If
   // so, we might be able to fold it later.
   if (!instr->WhileEachInId([this](uint32_t* op_id) {
@@ -266,6 +275,11 @@ bool CCPPass::ReplaceValues() {
 }
 
 bool CCPPass::PropagateConstants(ir::Function* fp) {
+  // Mark function parameters as varying.
+  fp->ForEachParam([this](const ir::Instruction* inst) {
+    values_[inst->result_id()] = kVaryingSSAId;
+  });
+
   const auto visit_fn = [this](ir::Instruction* instr,
                                ir::BasicBlock** dest_bb) {
     return VisitInstruction(instr, dest_bb);
@@ -290,10 +304,11 @@ void CCPPass::Initialize(ir::IRContext* c) {
   // module.  The values of each OpConstant declaration is the identity
   // assignment (i.e., each constant is its own value).
   for (const auto& inst : get_module()->types_values()) {
-    // Skip specialization constants. Treat undef as varying.
+    // Record compile time constant ids. Treat all other global values as
+    // varying.
     if (inst.IsConstant()) {
       values_[inst.result_id()] = inst.result_id();
-    } else if (inst.opcode() == SpvOpUndef) {
+    } else {
       values_[inst.result_id()] = kVaryingSSAId;
     }
   }
