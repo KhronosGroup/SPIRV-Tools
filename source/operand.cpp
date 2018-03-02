@@ -336,10 +336,6 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
       pattern->push_back(type);
       pattern->push_back(SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER);
       return true;
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_STRING:
-      pattern->push_back(type);
-      pattern->push_back(SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING);
-      return true;
     case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID:
       // Represents Zero or more (Literal number, Id) pairs,
       // where the literal number must be a scalar integer.
