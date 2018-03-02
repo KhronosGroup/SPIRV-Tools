@@ -7,7 +7,14 @@ v2018.1-dev 2018-02-02
    - Improve the HLSL legalization optimization recipe. #1311
  - Optimizer:
    - General speedups.
-   - Improve folding, including coverage for floating point and OpSelect.
+   - Remove generic dead code elimination functionality from transforms:
+       --eliminate-local-single-block
+       --eliminate-local-single-store
+       --eliminate-local-multi-store
+     To recover the previous behaviour, a recipe using those transforms should now
+     also invoke the --eliminate-dead-code-aggressive transform.
+   - Improve folding, including coverage for floating point, OpSelect, and arithmetic
+     with non-trivial constant operands.
    - Add loop-invariant code motion pass.
    - Add loop-unrolling pass, for honouring unroll hits.
    - Add loop-unswitch pass.
@@ -18,6 +25,11 @@ v2018.1-dev 2018-02-02
  - Validator:
    - Validate barrier instructions.
    - Check Vulkan-specific rules for atomics.
+   - Check Vulkan prohibition of Location or Component decorations on BuiltIn variables.
+ - Linker:
+   - Add --verify-ids option
+   - Add option to allow a resulting module to be partially linked.
+   - Handle OpModuleProcessed (instructions in SPIR-V layout section 7c)
  - Fixes:
    - #1265: Optimizer: Fix use-after free bug in if-conversion. (Fix object lifecycle bug
      in type manager.)
@@ -29,7 +41,9 @@ v2018.1-dev 2018-02-02
    - #1323: Fix folding of an insert composite feeding a composite extract.
    - #1339: Fix CCP: Handle OpConstantNull boolean values as conditions.
    - #1341: DCEInst: Keep atomic instructions (and some others with side effects).
-
+   - #1354: Don't fold integer division.
+   - #1357: Support OpConstantNull in folding.
+   - #1361: CCP: Fix handling of non-constant module-scope values
 
 v2018.0 2018-02-02
  - General
