@@ -1549,25 +1549,65 @@ FoldingRule RedundantSelect() {
     assert(inst->NumInOperands() == 3);
     assert(constants.size() == 3);
 
-    const analysis::BoolConstant* bc =
-        constants[0] ? constants[0]->AsBoolConstant() : nullptr;
     uint32_t true_id = inst->GetSingleWordInOperand(1);
     uint32_t false_id = inst->GetSingleWordInOperand(2);
 
-    if (bc) {
-      // Select condition is constant, result is known
-      inst->SetOpcode(SpvOpCopyObject);
-      inst->SetInOperands(
-          {{SPV_OPERAND_TYPE_ID, {bc->value() ? true_id : false_id}}});
-      return true;
-    } else if (true_id == false_id) {
+    if (true_id == false_id) {
       // Both results are the same, condition doesn't matter
       inst->SetOpcode(SpvOpCopyObject);
       inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {true_id}}});
       return true;
-    } else {
-      return false;
+    } else if (constants[0]) {
+      const analysis::Type* type = constants[0]->type();
+      if (type->AsBool()) {
+        // Scalar constant value, select the corresponding value.
+        inst->SetOpcode(SpvOpCopyObject);
+        if (constants[0]->AsNullConstant() ||
+            !constants[0]->AsBoolConstant()->value()) {
+          inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {false_id}}});
+        } else {
+          inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {true_id}}});
+        }
+        return true;
+      } else {
+        assert(type->AsVector());
+        if (constants[0]->AsNullConstant()) {
+          // All values come from false id.
+          inst->SetOpcode(SpvOpCopyObject);
+          inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {false_id}}});
+          return true;
+        } else {
+          // Convert to a vector shuffle.
+          std::vector<ir::Operand> ops;
+          ops.push_back({SPV_OPERAND_TYPE_ID, {true_id}});
+          ops.push_back({SPV_OPERAND_TYPE_ID, {false_id}});
+          const analysis::VectorConstant* vector_const =
+              constants[0]->AsVectorConstant();
+          uint32_t size =
+              static_cast<uint32_t>(vector_const->GetComponents().size());
+          for (uint32_t i = 0; i != size; ++i) {
+            const analysis::Constant* component =
+                vector_const->GetComponents()[i];
+            if (component->AsNullConstant() ||
+                !component->AsBoolConstant()->value()) {
+              // Selecting from the false vector which is the second input
+              // vector to the shuffle. Offset the index by |size|.
+              ops.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {i + size}});
+            } else {
+              // Selecting from true vector which is the first input vector to
+              // the shuffle.
+              ops.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {i}});
+            }
+          }
+
+          inst->SetOpcode(SpvOpVectorShuffle);
+          inst->SetInOperands(std::move(ops));
+          return true;
+        }
+      }
     }
+
+    return false;
   };
 }
 
