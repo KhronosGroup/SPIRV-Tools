@@ -409,6 +409,9 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     case SpvOpSelectionMerge:
     case SpvOpDecorate:
     case SpvOpMemberDecorate:
+    case SpvOpDecorateId:
+    case SpvOpDecorateStringGOOGLE:
+    case SpvOpMemberDecorateStringGOOGLE:
     case SpvOpTypeStruct:
     case SpvOpBranch:
     case SpvOpLoopMerge:
