@@ -36,6 +36,7 @@ using ::testing::Contains;
 using namespace spvtools;
 using spvtools::opt::analysis::DefUseManager;
 
+#ifdef SPIRV_EFFCEE
 std::string Disassemble(const std::string& original, ir::IRContext* context,
                         uint32_t disassemble_options = 0) {
   std::vector<uint32_t> optimized_bin;
@@ -50,7 +51,6 @@ std::string Disassemble(const std::string& original, ir::IRContext* context,
   return optimized_asm;
 }
 
-#ifdef SPIRV_EFFCEE
 void Match(const std::string& original, ir::IRContext* context,
            uint32_t disassemble_options = 0) {
   std::string disassembly = Disassemble(original, context, disassemble_options);
