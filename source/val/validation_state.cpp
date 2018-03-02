@@ -73,6 +73,9 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
         case SpvOpGroupDecorate:
         case SpvOpGroupMemberDecorate:
         case SpvOpDecorationGroup:
+        case SpvOpDecorateId:
+        case SpvOpDecorateStringGOOGLE:
+        case SpvOpMemberDecorateStringGOOGLE:
           out = true;
           break;
         default: break;
