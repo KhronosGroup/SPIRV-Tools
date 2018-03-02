@@ -330,6 +330,8 @@ bool spvOpcodeIsDecoration(const SpvOp opcode) {
     case SpvOpMemberDecorate:
     case SpvOpGroupDecorate:
     case SpvOpGroupMemberDecorate:
+    case SpvOpDecorateStringGOOGLE:
+    case SpvOpMemberDecorateStringGOOGLE:
       return true;
     default:
       break;
