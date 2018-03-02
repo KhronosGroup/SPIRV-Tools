@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2018.1-dev 2018-02-02
+v2018.1 2018-03-02
  - General:
    - Support Visual Studio 2013 again. (Continue support for VS 2015 and VS 2017.)
    - Support building SPIRV-Tools as a shared library.
