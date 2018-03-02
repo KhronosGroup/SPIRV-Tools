@@ -216,6 +216,8 @@ typedef enum spv_operand_type_t {
   // operand types.
   FIRST_VARIABLE(SPV_OPERAND_TYPE_VARIABLE_ID),
   SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER,
+  // A sequence of zero or more literal strings.
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_STRING,
   // A sequence of zero or more pairs of (typed literal integer, Id).
   // Expands to zero or more:
   //  (SPV_OPERAND_TYPE_TYPED_LITERAL_INTEGER, SPV_OPERAND_TYPE_ID)
