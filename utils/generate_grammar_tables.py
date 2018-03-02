@@ -54,6 +54,7 @@ SPV_EXT_shader_viewport_index_layer
 SPV_AMD_shader_image_load_store_lod
 SPV_AMD_shader_fragment_mask
 SPV_GOOGLE_decorate_string
+SPV_GOOGLE_hlsl_functionality1
 """
 
 
