@@ -60,7 +60,8 @@ INSTANTIATE_TEST_CASE_P(
         "SPV_AMD_gpu_shader_int16", "SPV_KHR_post_depth_coverage",
         "SPV_KHR_shader_atomic_counter_ops", "SPV_EXT_shader_stencil_export",
         "SPV_EXT_shader_viewport_index_layer",
-        "SPV_AMD_shader_image_load_store_lod", "SPV_AMD_shader_fragment_mask"));
+        "SPV_AMD_shader_image_load_store_lod", "SPV_AMD_shader_fragment_mask",
+        "SPV_GOOGLE_decorate_string", "SPV_GOOGLE_hlsl_functionality1"));
 
 INSTANTIATE_TEST_CASE_P(FailSilently, ValidateUnknownExtensions,
                         Values("ERROR_unknown_extension", "SPV_KHR_",
@@ -107,7 +108,6 @@ TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailure) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("SPV_KHR_device_group"));
 }
 
-
 using ValidateAMDShaderBallotCapabilities = spvtest::ValidateBase<string>;
 
 // Returns a vector of strings for the prefix of a SPIR-V assembly shader
@@ -139,38 +139,56 @@ std::vector<string> ShaderPartsForAMDShaderBallot() {
 // of ShaderPartsForAMDShaderBallot.
 std::vector<string> AMDShaderBallotGroupInstructions() {
   return std::vector<string>{
-  "%iadd_reduce = OpGroupIAddNonUniformAMD %uint %scope Reduce %uint_const",
-  "%iadd_iscan = OpGroupIAddNonUniformAMD %uint %scope InclusiveScan %uint_const",
-  "%iadd_escan = OpGroupIAddNonUniformAMD %uint %scope ExclusiveScan %uint_const",
+      "%iadd_reduce = OpGroupIAddNonUniformAMD %uint %scope Reduce %uint_const",
+      "%iadd_iscan = OpGroupIAddNonUniformAMD %uint %scope InclusiveScan "
+      "%uint_const",
+      "%iadd_escan = OpGroupIAddNonUniformAMD %uint %scope ExclusiveScan "
+      "%uint_const",
 
-  "%fadd_reduce = OpGroupFAddNonUniformAMD %float %scope Reduce %float_const",
-  "%fadd_iscan = OpGroupFAddNonUniformAMD %float %scope InclusiveScan %float_const",
-  "%fadd_escan = OpGroupFAddNonUniformAMD %float %scope ExclusiveScan %float_const",
+      "%fadd_reduce = OpGroupFAddNonUniformAMD %float %scope Reduce "
+      "%float_const",
+      "%fadd_iscan = OpGroupFAddNonUniformAMD %float %scope InclusiveScan "
+      "%float_const",
+      "%fadd_escan = OpGroupFAddNonUniformAMD %float %scope ExclusiveScan "
+      "%float_const",
 
-  "%fmin_reduce = OpGroupFMinNonUniformAMD %float %scope Reduce %float_const",
-  "%fmin_iscan = OpGroupFMinNonUniformAMD %float %scope InclusiveScan %float_const",
-  "%fmin_escan = OpGroupFMinNonUniformAMD %float %scope ExclusiveScan %float_const",
+      "%fmin_reduce = OpGroupFMinNonUniformAMD %float %scope Reduce "
+      "%float_const",
+      "%fmin_iscan = OpGroupFMinNonUniformAMD %float %scope InclusiveScan "
+      "%float_const",
+      "%fmin_escan = OpGroupFMinNonUniformAMD %float %scope ExclusiveScan "
+      "%float_const",
 
-  "%umin_reduce = OpGroupUMinNonUniformAMD %uint %scope Reduce %uint_const",
-  "%umin_iscan = OpGroupUMinNonUniformAMD %uint %scope InclusiveScan %uint_const",
-  "%umin_escan = OpGroupUMinNonUniformAMD %uint %scope ExclusiveScan %uint_const",
+      "%umin_reduce = OpGroupUMinNonUniformAMD %uint %scope Reduce %uint_const",
+      "%umin_iscan = OpGroupUMinNonUniformAMD %uint %scope InclusiveScan "
+      "%uint_const",
+      "%umin_escan = OpGroupUMinNonUniformAMD %uint %scope ExclusiveScan "
+      "%uint_const",
 
-  "%smin_reduce = OpGroupUMinNonUniformAMD %int %scope Reduce %int_const",
-  "%smin_iscan = OpGroupUMinNonUniformAMD %int %scope InclusiveScan %int_const",
-  "%smin_escan = OpGroupUMinNonUniformAMD %int %scope ExclusiveScan %int_const",
+      "%smin_reduce = OpGroupUMinNonUniformAMD %int %scope Reduce %int_const",
+      "%smin_iscan = OpGroupUMinNonUniformAMD %int %scope InclusiveScan "
+      "%int_const",
+      "%smin_escan = OpGroupUMinNonUniformAMD %int %scope ExclusiveScan "
+      "%int_const",
 
-  "%fmax_reduce = OpGroupFMaxNonUniformAMD %float %scope Reduce %float_const",
-  "%fmax_iscan = OpGroupFMaxNonUniformAMD %float %scope InclusiveScan %float_const",
-  "%fmax_escan = OpGroupFMaxNonUniformAMD %float %scope ExclusiveScan %float_const",
+      "%fmax_reduce = OpGroupFMaxNonUniformAMD %float %scope Reduce "
+      "%float_const",
+      "%fmax_iscan = OpGroupFMaxNonUniformAMD %float %scope InclusiveScan "
+      "%float_const",
+      "%fmax_escan = OpGroupFMaxNonUniformAMD %float %scope ExclusiveScan "
+      "%float_const",
 
-  "%umax_reduce = OpGroupUMaxNonUniformAMD %uint %scope Reduce %uint_const",
-  "%umax_iscan = OpGroupUMaxNonUniformAMD %uint %scope InclusiveScan %uint_const",
-  "%umax_escan = OpGroupUMaxNonUniformAMD %uint %scope ExclusiveScan %uint_const",
+      "%umax_reduce = OpGroupUMaxNonUniformAMD %uint %scope Reduce %uint_const",
+      "%umax_iscan = OpGroupUMaxNonUniformAMD %uint %scope InclusiveScan "
+      "%uint_const",
+      "%umax_escan = OpGroupUMaxNonUniformAMD %uint %scope ExclusiveScan "
+      "%uint_const",
 
-  "%smax_reduce = OpGroupUMaxNonUniformAMD %int %scope Reduce %int_const",
-  "%smax_iscan = OpGroupUMaxNonUniformAMD %int %scope InclusiveScan %int_const",
-  "%smax_escan = OpGroupUMaxNonUniformAMD %int %scope ExclusiveScan %int_const"
-  };
+      "%smax_reduce = OpGroupUMaxNonUniformAMD %int %scope Reduce %int_const",
+      "%smax_iscan = OpGroupUMaxNonUniformAMD %int %scope InclusiveScan "
+      "%int_const",
+      "%smax_escan = OpGroupUMaxNonUniformAMD %int %scope ExclusiveScan "
+      "%int_const"};
 }
 
 TEST_P(ValidateAMDShaderBallotCapabilities, ExpectSuccess) {
@@ -188,7 +206,8 @@ INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateAMDShaderBallotCapabilities,
                         ValuesIn(AMDShaderBallotGroupInstructions()));
 
 TEST_P(ValidateAMDShaderBallotCapabilities, ExpectFailure) {
-  // Fail because the module does not specify the SPV_AMD_shader_ballot extension.
+  // Fail because the module does not specify the SPV_AMD_shader_ballot
+  // extension.
   auto parts = ShaderPartsForAMDShaderBallot();
 
   const string assembly =
