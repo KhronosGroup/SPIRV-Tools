@@ -113,8 +113,10 @@ TEST_P(IntegerInstructionFoldingTest, Case) {
 #define DOUBLE_0_ID 105
 #define VEC4_0_ID 106
 #define DVEC4_0_ID 106
+#define HALF_0_ID 108
 const std::string& Header() {
   static const std::string header = R"(OpCapability Shader
+OpCapability Float16
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
@@ -127,6 +129,7 @@ OpName %main "main"
 %float16 = OpTypeFloat 16
 %float = OpTypeFloat 32
 %double = OpTypeFloat 64
+%half = OpTypeFloat 16
 %101 = OpConstantTrue %bool ; Need a def with an numerical id to define id maps.
 %true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
@@ -147,6 +150,7 @@ OpName %main "main"
 %_ptr_bool = OpTypePointer Function %bool
 %_ptr_float = OpTypePointer Function %float
 %_ptr_double = OpTypePointer Function %double
+%_ptr_half = OpTypePointer Function %half
 %_ptr_long = OpTypePointer Function %long
 %_ptr_v2int = OpTypePointer Function %v2int
 %_ptr_v4float = OpTypePointer Function %v4float
@@ -212,6 +216,8 @@ OpName %main "main"
 %double_3 = OpConstant %double 3
 %float_nan = OpConstant %float -0x1.8p+128
 %double_nan = OpConstant %double -0x1.8p+1024
+%108 = OpConstant %half 0
+%half_1 = OpConstant %half 1
 %106 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %v4float_0_0_0_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %v4float_0_0_0_1 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_1
@@ -785,7 +791,7 @@ INSTANTIATE_TEST_CASE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
             "OpReturn\n" +
             "OpFunctionEnd",
         2, std::numeric_limits<float>::infinity()),
-    // Test case 4: Fold -1.0 / 0.0
+    // Test case 5: Fold -1.0 / 0.0
     InstructionFoldingCase<float>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -2528,7 +2534,35 @@ INSTANTIATE_TEST_CASE_P(FloatRedundantFoldingTest, GeneralInstructionFoldingTest
             "%3 = OpFSub %v2float %2 %v2float_null\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        3, 2)
+        3, 2),
+    // Test case 16: Fold 0.0(half) * n
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_half Function\n" +
+            "%3 = OpLoad %half %n\n" +
+            "%2 = OpFMul %half %108 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, HALF_0_ID),
+    // Test case 17: Don't fold 1.0(half) * n
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_half Function\n" +
+            "%3 = OpLoad %half %n\n" +
+            "%2 = OpFMul %half %half_1 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 18: Don't fold 1.0 * 1.0 (half)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFMul %half %half_1 %half_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0)
 ));
 
 INSTANTIATE_TEST_CASE_P(DoubleRedundantFoldingTest, GeneralInstructionFoldingTest,

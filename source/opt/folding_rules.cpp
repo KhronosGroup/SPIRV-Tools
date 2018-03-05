@@ -1638,8 +1638,12 @@ FloatConstantKind getFloatConstantKind(const analysis::Constant* constant) {
 
     return kind;
   } else if (const analysis::FloatConstant* fc = constant->AsFloatConstant()) {
-    double value = (fc->type()->AsFloat()->width() == 64) ? fc->GetDoubleValue()
-                                                          : fc->GetFloatValue();
+    if (fc->IsZero()) return FloatConstantKind::Zero;
+
+    uint32_t width = fc->type()->AsFloat()->width();
+    if (width != 32 && width != 64) return FloatConstantKind::Unknown;
+
+    double value = (width == 64) ? fc->GetDoubleValue() : fc->GetFloatValue();
 
     if (value == 0.0) {
       return FloatConstantKind::Zero;
