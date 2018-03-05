@@ -342,6 +342,8 @@ UnaryScalarFoldingRule FoldIToFOp() {
     assert(result_type == a->type() && result_type == b->type());         \
     const analysis::Float* float_type = result_type->AsFloat();           \
     assert(float_type != nullptr);                                        \
+    if (float_type->width() != 32 && float_type->width() != 64)           \
+      return nullptr;                                                     \
     if (float_type->width() == 32) {                                      \
       float fa = a->GetFloat();                                           \
       float fb = b->GetFloat();                                           \
@@ -391,6 +393,8 @@ bool CompareFloatingPoint(bool op_result, bool op_unordered,
     assert(a->type() == b->type());                                       \
     const analysis::Float* float_type = a->type()->AsFloat();             \
     assert(float_type != nullptr);                                        \
+    if (float_type->width() != 32 && float_type->width() != 64)           \
+      return nullptr;                                                     \
     if (float_type->width() == 32) {                                      \
       float fa = a->GetFloat();                                           \
       float fb = b->GetFloat();                                           \
