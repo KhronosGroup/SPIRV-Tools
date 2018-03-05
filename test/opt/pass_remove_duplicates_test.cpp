@@ -219,6 +219,29 @@ OpDecorate %1 GLSLPacked
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
+TEST_F(RemoveDuplicatesTest, SameTypeAndDifferentName) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %1 "Type1"
+OpName %2 "Type2"
+%3 = OpTypeInt 32 0
+%1 = OpTypeStruct %3 %3
+%2 = OpTypeStruct %3 %3
+)";
+  const std::string after = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %1 "Type1"
+%3 = OpTypeInt 32 0
+%1 = OpTypeStruct %3 %3
+)";
+
+  EXPECT_THAT(RunPass(spirv), after);
+  EXPECT_THAT(GetErrorMessage(), "");
+}
+
 // Check that #1033 has been fixed.
 TEST_F(RemoveDuplicatesTest, DoNotRemoveDifferentOpDecorationGroup) {
   const std::string spirv = R"(

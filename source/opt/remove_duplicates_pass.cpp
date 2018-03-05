@@ -130,6 +130,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
       visited_types.emplace_back(i);
     } else {
       // The same type has already been seen before, remove this one.
+      ir_context->KillNamesAndDecorates(i->result_id());
       ir_context->ReplaceAllUsesWith(i->result_id(), id_to_keep);
       modified = true;
       to_delete.emplace_back(i);
