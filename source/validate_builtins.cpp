@@ -708,19 +708,27 @@ spv_result_t BuiltInsValidator::ValidateNotCalledWithExecutionModel(
     const Decoration& decoration, const Instruction& built_in_inst,
     const Instruction& referenced_inst,
     const Instruction& referenced_from_inst) {
-  if (execution_models_.count(execution_model)) {
-    const char* execution_model_str = _.grammar().lookupOperandName(
-        SPV_OPERAND_TYPE_EXECUTION_MODEL, execution_model);
-    const char* built_in_str = _.grammar().lookupOperandName(
-        SPV_OPERAND_TYPE_BUILT_IN, decoration.params()[0]);
-    return _.diag(SPV_ERROR_INVALID_DATA)
-           << comment << " " << GetIdDesc(referenced_inst) << " depends on "
-           << GetIdDesc(built_in_inst) << " which is decorated with BuiltIn "
-           << built_in_str << "."
-           << " Id <" << referenced_inst.id() << "> is later referenced by "
-           << GetIdDesc(referenced_from_inst) << " in function <"
-           << function_id_ << "> which is called with execution model "
-           << execution_model_str << ".";
+  if (function_id_) {
+    if (execution_models_.count(execution_model)) {
+      const char* execution_model_str = _.grammar().lookupOperandName(
+          SPV_OPERAND_TYPE_EXECUTION_MODEL, execution_model);
+      const char* built_in_str = _.grammar().lookupOperandName(
+          SPV_OPERAND_TYPE_BUILT_IN, decoration.params()[0]);
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << comment << " " << GetIdDesc(referenced_inst) << " depends on "
+             << GetIdDesc(built_in_inst) << " which is decorated with BuiltIn "
+             << built_in_str << "."
+             << " Id <" << referenced_inst.id() << "> is later referenced by "
+             << GetIdDesc(referenced_from_inst) << " in function <"
+             << function_id_ << "> which is called with execution model "
+             << execution_model_str << ".";
+    }
+  } else {
+    // Propagate this rule to all dependant ids in the global scope.
+    id_to_at_reference_checks_[referenced_from_inst.id()].push_back(
+        std::bind(&BuiltInsValidator::ValidateNotCalledWithExecutionModel, this,
+                  comment, execution_model, decoration, built_in_inst,
+                  referenced_from_inst, std::placeholders::_1));
   }
   return SPV_SUCCESS;
 }
@@ -1529,7 +1537,7 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
           "Vulkan spec doesn't allow BuiltIn PrimitiveId to be used for "
           "variables with Input storage class if execution model is "
           "TessellationControl.",
-          SpvExecutionModelTessellationEvaluation, decoration, built_in_inst,
+          SpvExecutionModelTessellationControl, decoration, built_in_inst,
           referenced_from_inst, std::placeholders::_1));
       id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
           &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this,
@@ -1552,7 +1560,16 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
 
     for (const SpvExecutionModel execution_model : execution_models_) {
       switch (execution_model) {
-        case SpvExecutionModelFragment:
+        case SpvExecutionModelFragment: {
+          if (!_.HasCapability(SpvCapabilityGeometry) &&
+              !_.HasCapability(SpvCapabilityTessellation)) {
+            return _.diag(SPV_ERROR_INVALID_DATA)
+                   << "According to the Vulkan spec BuiltIn PrimitiveId "
+                      "requires either Geometry or Tessellation capability "
+                      "when used with Fragment execution model.";
+          }
+          break;
+        }
         case SpvExecutionModelTessellationControl:
         case SpvExecutionModelTessellationEvaluation:
         case SpvExecutionModelGeometry: {
@@ -1563,9 +1580,8 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
         default: {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << "Vulkan spec allows BuiltIn PrimitiveId to be used only "
-                    "with "
-                    "Fragment, TessellationControl, TessellationEvaluation or "
-                    "Geometry execution models. "
+                    "with Fragment, TessellationControl, "
+                    "TessellationEvaluation or Geometry execution models. "
                  << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                      referenced_from_inst, execution_model);
         }

@@ -603,7 +603,7 @@ INSTANTIATE_TEST_CASE_P(
             Values("%u32"), Values(TestResult())), );
 
 INSTANTIATE_TEST_CASE_P(
-    InstanceIndexInvalidaExecutionModel,
+    InstanceIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
         Values("InstanceIndex"),
@@ -654,7 +654,7 @@ INSTANTIATE_TEST_CASE_P(
             Values("Output"), Values("%u32"), Values(TestResult())), );
 
 INSTANTIATE_TEST_CASE_P(
-    LayerAndViewportIndexInvalidaExecutionModel,
+    LayerAndViewportIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
         Values("Layer", "ViewportIndex"),
@@ -921,6 +921,68 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
                               "has components with bit width 64"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    PrimitiveIdInputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("PrimitiveId"), Values("Fragment", "Geometry"),
+            Values("Input"), Values("%u32"), Values(TestResult())), );
+
+INSTANTIATE_TEST_CASE_P(
+    PrimitiveIdOutputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("PrimitiveId"),
+            Values("Geometry", "TessellationControl", "TessellationEvaluation"),
+            Values("Output"), Values("%u32"), Values(TestResult())), );
+
+INSTANTIATE_TEST_CASE_P(
+    PrimitiveIdInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("PrimitiveId"), Values("Vertex", "GLCompute"),
+            Values("Input"), Values("%u32"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be used only with Fragment, TessellationControl, "
+                "TessellationEvaluation or Geometry execution models"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    PrimitiveIdNotInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(
+        Values("PrimitiveId"), Values("Fragment"), Values("Output"),
+        Values("%u32"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "Output storage class if execution model is Fragment",
+                          "which is called with execution model Fragment"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    PrimitiveIdGeometryNotOutput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("PrimitiveId"),
+            Values("TessellationControl", "TessellationEvaluation"),
+            Values("Input"), Values("%u32"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "Input storage class if execution model is Tessellation",
+                "which is called with execution model Tessellation"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    PrimitiveIdNotIntScalar,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("PrimitiveId"), Values("Fragment"), Values("Input"),
+            Values("%f32", "%u32vec3"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    PrimitiveIdNotInt32,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("PrimitiveId"), Values("Fragment"), Values("Input"),
+            Values("%u64"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "has bit width 64"))), );
 
 TEST_F(ValidateBuiltIns, GeometryPositionInOutSuccess) {
   CodeGenerator generator = GetDefaultShaderCodeGenerator();
