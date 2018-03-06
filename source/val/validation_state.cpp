@@ -331,6 +331,11 @@ void ValidationState_t::RegisterExtension(Extension ext) {
   module_extensions_.Add(ext);
 
   switch (ext) {
+    case kSPV_AMD_gpu_shader_half_float:
+      // SPV_AMD_gpu_shader_half_float enables float16 type.
+      // https://github.com/KhronosGroup/SPIRV-Tools/issues/1375
+      features_.declare_float16_type = true;
+      break;
     case kSPV_AMD_shader_ballot:
       // The grammar doesn't encode the fact that SPV_AMD_shader_ballot
       // enables the use of group operations Reduce, InclusiveScan,
