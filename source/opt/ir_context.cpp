@@ -195,17 +195,25 @@ bool IRContext::IsConsistent() {
       return false;
     }
   }
+
   if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
     for (auto& func : *module()) {
       for (auto& block : func) {
         if (!block.WhileEachInst([this, &block](ir::Instruction* inst) {
-              if (get_instr_block(inst) != &block) return false;
+              if (get_instr_block(inst) != &block) {
+                return false;
+              }
               return true;
             }))
           return false;
       }
     }
   }
+
+  if (!CheckCFG()) {
+    return false;
+  }
+
   return true;
 }
 
@@ -577,5 +585,56 @@ opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
   return &post_dominator_trees_[f];
 }
 
+bool ir::IRContext::CheckCFG() {
+  std::unordered_map<uint32_t, std::vector<uint32_t>> real_preds;
+  if (!AreAnalysesValid(kAnalysisCFG)) {
+    return true;
+  }
+
+  for (ir::Function& function : *module()) {
+    for (const auto& bb : function) {
+      bb.ForEachSuccessorLabel([&bb, &real_preds](const uint32_t lab_id) {
+        real_preds[lab_id].push_back(bb.id());
+      });
+    }
+
+    for (auto& bb : function) {
+      std::vector<uint32_t> preds = cfg()->preds(bb.id());
+      std::vector<uint32_t> real = real_preds[bb.id()];
+      std::sort(preds.begin(), preds.end());
+      std::sort(real.begin(), real.end());
+
+      bool same = true;
+      if (preds.size() != real.size()) {
+        same = false;
+      }
+
+      for (size_t i = 0; i < real.size() && same; i++) {
+        if (preds[i] != real[i]) {
+          same = false;
+        }
+      }
+
+      if (!same) {
+        std::cerr << "Predecessors for " << bb.id() << " are different:\n";
+
+        std::cerr << "Real:";
+        for (uint32_t i : real) {
+          std::cerr << ' ' << i;
+        }
+        std::cerr << std::endl;
+
+        std::cerr << "Recorded:";
+        for (uint32_t i : preds) {
+          std::cerr << ' ' << i;
+        }
+        std::cerr << std::endl;
+      }
+      if (!same) return false;
+    }
+  }
+
+  return true;
+}
 }  // namespace ir
 }  // namespace spvtools

@@ -453,16 +453,19 @@ Optimizer::PassToken CreateCFGCleanupPass();
 // that are not referenced.
 Optimizer::PassToken CreateDeadVariableEliminationPass();
 
-// Create merge return pass.
-// This pass replaces all returns with unconditional branches to a new block
-// containing a return. If necessary, this new block will contain a PHI node to
-// select the correct return value.
+// create merge return pass.
+// changes functions that have multiple return statements so they have a single
+// return statement.
 //
-// This pass does not consider unreachable code, nor does it perform any other
-// optimizations.
+// for structured control flow it is assumed that the only unreachable blocks in
+// the function are trivial merge and continue blocks.
 //
-// This pass does not currently support structured control flow. It bails out if
-// the shader capability is detected.
+// a trivial merge block contains the label and an opunreachable instructions,
+// nothing else.  a trivial continue block contain a label and an opbranch to
+// the header, nothing else.
+//
+// these conditions are guaranteed to be met after running dead-branch
+// elimination.
 Optimizer::PassToken CreateMergeReturnPass();
 
 // Create value numbering pass.

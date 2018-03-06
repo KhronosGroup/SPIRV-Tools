@@ -14,6 +14,7 @@
 
 #include "cfg.h"
 #include "cfa.h"
+#include "ir_builder.h"
 #include "ir_context.h"
 #include "module.h"
 
@@ -113,15 +114,17 @@ void CFG::ComputeStructuredSuccessors(ir::Function* func) {
     // successor if there is one.
     uint32_t mbid = blk.MergeBlockIdIfAny();
     if (mbid != 0) {
-      block2structured_succs_[&blk].push_back(id2block_[mbid]);
+      block2structured_succs_[&blk].push_back(block(mbid));
       uint32_t cbid = blk.ContinueBlockIdIfAny();
-      if (cbid != 0) block2structured_succs_[&blk].push_back(id2block_[cbid]);
+      if (cbid != 0) {
+        block2structured_succs_[&blk].push_back(block(cbid));
+      }
     }
 
     // Add true successors.
     const auto& const_blk = blk;
     const_blk.ForEachSuccessorLabel([&blk, this](const uint32_t sbid) {
-      block2structured_succs_[&blk].push_back(id2block_[sbid]);
+      block2structured_succs_[&blk].push_back(block(sbid));
     });
   }
 }
@@ -137,6 +140,172 @@ void CFG::ComputePostOrderTraversal(BasicBlock* bb, vector<BasicBlock*>* order,
         }
       });
   order->push_back(bb);
+}
+
+BasicBlock* CFG::SplitLoopHeader(ir::BasicBlock* bb) {
+  assert(bb->GetLoopMergeInst() && "Expecting bb to be the header of a loop.");
+
+  Function* fn = bb->GetParent();
+  IRContext* context = fn->context();
+
+  // Find the insertion point for the new bb.
+  Function::iterator header_it = std::find_if(
+      fn->begin(), fn->end(),
+      [bb](BasicBlock& block_in_func) { return &block_in_func == bb; });
+  assert(header_it != fn->end());
+
+  const std::vector<uint32_t>& pred = label2preds_[bb->id()];
+  // Find the back edge
+  ir::BasicBlock* latch_block = nullptr;
+  {
+    Function::iterator latch_block_iter = header_it;
+    while (++latch_block_iter != fn->end()) {
+      // If blocks are in the proper order, then the only branch that appears
+      // after the header is the latch.
+      if (std::find(pred.begin(), pred.end(), latch_block_iter->id()) !=
+          pred.end()) {
+        break;
+      }
+    }
+    assert(latch_block_iter != fn->end() && "Could not find the latch.");
+    latch_block = &*latch_block_iter;
+  }
+
+  RemoveSuccessorEdges(bb);
+
+  // Create the new header bb basic bb.
+  // Leave the phi instructions behind.
+  auto iter = bb->begin();
+  while (iter->opcode() == SpvOpPhi) {
+    ++iter;
+  }
+
+  std::unique_ptr<ir::BasicBlock> newBlock(
+      bb->SplitBasicBlock(context, context->TakeNextId(), iter));
+
+  // Insert the new bb in the correct position
+  auto insert_pos = header_it;
+  ++insert_pos;
+  ir::BasicBlock* new_header = &*insert_pos.InsertBefore(std::move(newBlock));
+  new_header->SetParent(fn);
+  uint32_t new_header_id = new_header->id();
+  context->AnalyzeDefUse(new_header->GetLabelInst());
+
+  // Update cfg
+  RegisterBlock(new_header);
+
+  // Update bb mappings.
+  context->set_instr_block(new_header->GetLabelInst(), new_header);
+  new_header->ForEachInst([new_header, context](ir::Instruction* inst) {
+    context->set_instr_block(inst, new_header);
+  });
+
+  // Adjust the OpPhi instructions as needed.
+  bb->ForEachPhiInst([latch_block, bb, new_header, context](Instruction* phi) {
+    std::vector<uint32_t> preheader_phi_ops;
+    std::vector<Operand> header_phi_ops;
+
+    // Idendify where the original inputs to original OpPhi belong: header or
+    // preheader.
+    for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
+      uint32_t def_id = phi->GetSingleWordInOperand(i);
+      uint32_t branch_id = phi->GetSingleWordInOperand(i + 1);
+      if (branch_id == latch_block->id()) {
+        header_phi_ops.push_back({SPV_OPERAND_TYPE_ID, {def_id}});
+        header_phi_ops.push_back({SPV_OPERAND_TYPE_ID, {branch_id}});
+      } else {
+        preheader_phi_ops.push_back(def_id);
+        preheader_phi_ops.push_back(branch_id);
+      }
+    }
+
+    // Create a phi instruction if and only if the preheader_phi_ops has more
+    // than one pair.
+    if (preheader_phi_ops.size() > 2) {
+      opt::InstructionBuilder builder(
+          context, &*bb->begin(),
+          ir::IRContext::kAnalysisDefUse |
+              ir::IRContext::kAnalysisInstrToBlockMapping);
+
+      ir::Instruction* new_phi =
+          builder.AddPhi(phi->type_id(), preheader_phi_ops);
+
+      // Add the OpPhi to the header bb.
+      header_phi_ops.push_back({SPV_OPERAND_TYPE_ID, {new_phi->result_id()}});
+      header_phi_ops.push_back({SPV_OPERAND_TYPE_ID, {bb->id()}});
+    } else {
+      // An OpPhi with a single entry is just a copy.  In this case use the same
+      // instruction in the new header.
+      header_phi_ops.push_back({SPV_OPERAND_TYPE_ID, {preheader_phi_ops[0]}});
+      header_phi_ops.push_back({SPV_OPERAND_TYPE_ID, {bb->id()}});
+    }
+
+    phi->RemoveFromList();
+    std::unique_ptr<ir::Instruction> phi_owner(phi);
+    phi->SetInOperands(std::move(header_phi_ops));
+    new_header->begin()->InsertBefore(std::move(phi_owner));
+    context->set_instr_block(phi, new_header);
+    context->AnalyzeUses(phi);
+  });
+
+  // Add a branch to the new header.
+  opt::InstructionBuilder branch_builder(
+      context, bb,
+      ir::IRContext::kAnalysisDefUse |
+          ir::IRContext::kAnalysisInstrToBlockMapping);
+  bb->AddInstruction(MakeUnique<ir::Instruction>(
+      context, SpvOpBranch, 0, 0,
+      std::initializer_list<ir::Operand>{
+          {SPV_OPERAND_TYPE_ID, {new_header->id()}}}));
+  context->AnalyzeUses(bb->terminator());
+  context->set_instr_block(bb->terminator(), bb);
+  label2preds_[new_header->id()].push_back(bb->id());
+
+  // Update the latch to branch to the new header.
+  latch_block->ForEachSuccessorLabel([bb, new_header_id](uint32_t* id) {
+    if (*id == bb->id()) {
+      *id = new_header_id;
+    }
+  });
+  ir::Instruction* latch_branch = latch_block->terminator();
+  context->AnalyzeUses(latch_branch);
+  label2preds_[new_header->id()].push_back(latch_block->id());
+
+  auto& block_preds = label2preds_[bb->id()];
+  auto latch_pos =
+      std::find(block_preds.begin(), block_preds.end(), latch_block->id());
+  assert(latch_pos != block_preds.end() && "The cfg was invalid.");
+  block_preds.erase(latch_pos);
+
+  // Update the loop descriptors
+  if (context->AreAnalysesValid(ir::IRContext::kAnalysisLoopAnalysis)) {
+    LoopDescriptor* loop_desc = context->GetLoopDescriptor(bb->GetParent());
+    Loop* loop = (*loop_desc)[bb->id()];
+
+    loop->AddBasicBlock(new_header_id);
+    loop->SetHeaderBlock(new_header);
+    loop_desc->SetBasicBlockToLoop(new_header_id, loop);
+
+    loop->RemoveBasicBlock(bb->id());
+    loop->SetPreHeaderBlock(bb);
+
+    Loop* parent_loop = loop->GetParent();
+    if (parent_loop != nullptr) {
+      parent_loop->AddBasicBlock(bb->id());
+      loop_desc->SetBasicBlockToLoop(bb->id(), parent_loop);
+    } else {
+      loop_desc->SetBasicBlockToLoop(bb->id(), nullptr);
+    }
+  }
+  return new_header;
+}
+
+unordered_set<BasicBlock*> CFG::FindReachableBlocks(BasicBlock* start) {
+  std::unordered_set<BasicBlock*> reachable_blocks;
+  ForEachBlockInReversePostOrder(start, [&reachable_blocks](BasicBlock* bb) {
+    reachable_blocks.insert(bb);
+  });
+  return reachable_blocks;
 }
 
 }  // namespace ir

@@ -128,7 +128,7 @@ bool IfConversion::CheckBlock(ir::BasicBlock* block,
   // for this block. If there is no common dominator, then we cannot transform
   // any phi in this basic block.
   *common = dominators->CommonDominator(inc0, inc1);
-  if (!*common) return false;
+  if (!*common || cfg()->IsPseudoEntryBlock(*common)) return false;
   ir::Instruction* branch = (*common)->terminator();
   if (branch->opcode() != SpvOpBranchConditional) return false;
 

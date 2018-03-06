@@ -181,6 +181,12 @@ class IntrusiveList {
   const NodeType& front() const;
   const NodeType& back() const;
 
+  // Transfers [|first|, |last|) from |other| into the list at |where|.
+  //
+  // If |other| is |this|, no change is made.
+  void Splice(iterator where, IntrusiveList<NodeType>* other, iterator first,
+              iterator last);
+
  protected:
   // Doing a deep copy of the list does not make sense if the list does not own
   // the data.  It is not clear who will own the newly created data.  Making
@@ -305,6 +311,29 @@ const NodeType& IntrusiveList<NodeType>::back() const {
   NodeType* node = sentinel_.PreviousNode();
   assert(node != nullptr && "Can't get the back of an empty list.");
   return *node;
+}
+
+template <class NodeType>
+void IntrusiveList<NodeType>::Splice(iterator where,
+                                     IntrusiveList<NodeType>* other,
+                                     iterator first, iterator last) {
+  if (first == last) return;
+  if (other == this) return;
+
+  NodeType* first_prev = first.node_->previous_node_;
+  NodeType* where_next = where.node_->next_node_;
+
+  // Attach first.
+  where.node_->next_node_ = first.node_;
+  first.node_->previous_node_ = where.node_;
+
+  // Attach last.
+  where_next->previous_node_ = last.node_->previous_node_;
+  last.node_->previous_node_->next_node_ = where_next;
+
+  // Fixup other.
+  first_prev->next_node_ = last.node_;
+  last.node_->previous_node_ = first_prev;
 }
 
 template <class NodeType>

@@ -216,6 +216,11 @@ void InlinePass::GenInlineCode(
   // Post-call same-block op ids
   std::unordered_map<uint32_t, uint32_t> postCallSB;
 
+  // Invalidate the def-use chains.  They are not kept up to date while
+  // inlining.  However, certain calls try to keep them up-to-date if they are
+  // valid.  These operations can fail.
+  context()->InvalidateAnalyses(ir::IRContext::kAnalysisDefUse);
+
   ir::Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
       kSpvFunctionCallFunctionId)];
 
