@@ -27,6 +27,7 @@
 namespace spvtools {
 namespace ir {
 
+class CFG;
 class IRContext;
 class Module;
 
@@ -102,6 +103,12 @@ class Function {
   // and optionally on debug line instructions that might precede them.
   void ForEachParam(const std::function<void(const Instruction*)>& f,
                     bool run_on_debug_line_insts = false) const;
+
+  // Returns the context of the current function.
+  IRContext* context() const { return def_inst_->context(); }
+
+  BasicBlock* InsertBasicBlockAfter(std::unique_ptr<ir::BasicBlock>&& new_block,
+                                    BasicBlock* position);
 
  private:
   // The enclosing module.

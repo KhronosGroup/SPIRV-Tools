@@ -122,6 +122,8 @@ class TypeManager {
   // unchanged.
   void RegisterType(uint32_t id, const Type& type);
 
+  Type* GetRegisteredType(const Type* type);
+
   // Removes knowledge of |id| from the manager.
   //
   // If |id| is an ambiguous type the multiple ids may be registered to |id|'s

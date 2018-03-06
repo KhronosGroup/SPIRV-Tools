@@ -196,8 +196,6 @@ void BasicBlockSuccessorHelper<BBType>::CreateSuccessorMap(
       }
     }
   } else {
-    // Technically, this is not needed, but it unifies
-    // the handling of dominator and postdom tree later on.
     successors_[dummy_start_node].push_back(f.entry().get());
     predecessors_[f.entry().get()].push_back(
         const_cast<BasicBlock*>(dummy_start_node));
@@ -211,6 +209,13 @@ void BasicBlockSuccessorHelper<BBType>::CreateSuccessorMap(
         predecessors_[succ].push_back(&bb);
       });
     }
+    /*
+    for (BasicBlock& bb : f) {
+      if (predecessors_[&bb].empty()) {
+        predecessors_[&bb].push_back(const_cast<BasicBlock*>(dummy_start_node));
+        successors_[dummy_start_node].push_back(&bb);
+      }
+    } */
   }
 }
 
@@ -357,7 +362,6 @@ void DominatorTree::InitializeTree(const ir::Function* f, const ir::CFG& cfg) {
     first->parent_ = second;
     second->children_.push_back(first);
   }
-
   ResetDFNumbering();
 }
 

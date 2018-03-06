@@ -491,6 +491,11 @@ void TypeManager::RegisterType(uint32_t id, const Type& type) {
   }
 }
 
+Type* TypeManager::GetRegisteredType(const Type* type) {
+  uint32_t id = GetTypeInstruction(type);
+  return GetType(id);
+}
+
 Type* TypeManager::RecordIfTypeDefinition(
     const spvtools::ir::Instruction& inst) {
   if (!spvtools::ir::IsTypeInst(inst.opcode())) return nullptr;

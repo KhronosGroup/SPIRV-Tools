@@ -35,6 +35,7 @@ class CFG {
   // Return the list of predecesors for basic block with label |blkid|.
   // TODO(dnovillo): Move this to ir::BasicBlock.
   const std::vector<uint32_t>& preds(uint32_t blk_id) const {
+    assert(label2preds_.count(blk_id));
     return label2preds_.at(blk_id);
   }
 
@@ -88,8 +89,7 @@ class CFG {
   void ForgetBlock(const ir::BasicBlock* blk) {
     id2block_.erase(blk->id());
     label2preds_.erase(blk->id());
-    blk->ForEachSuccessorLabel(
-        [blk, this](uint32_t succ_id) { RemoveEdge(blk->id(), succ_id); });
+    RemoveSuccessorEdges(blk);
   }
 
   void RemoveEdge(uint32_t pred_blk_id, uint32_t succ_blk_id) {
@@ -112,6 +112,21 @@ class CFG {
   // Removes any edges that no longer exist from the predecessor mapping for
   // the basic block id |blk_id|.
   void RemoveNonExistingEdges(uint32_t blk_id);
+
+  // Remove all edges that leave |bb|.
+  void RemoveSuccessorEdges(const ir::BasicBlock* bb) {
+    bb->ForEachSuccessorLabel(
+        [bb, this](uint32_t succ_id) { RemoveEdge(bb->id(), succ_id); });
+  }
+
+  // Divides |block| into two basic blocks.  The first block will have the same
+  // id as |block| and will become a preheader for the loop.  The other block
+  // becomes is a new block that will be the new loop header.
+  //
+  // Returns a pointer to the new loop header.
+  BasicBlock* SplitLoopHeader(ir::BasicBlock* bb);
+
+  std::unordered_set<BasicBlock*> FindReachableBlocks(BasicBlock* start);
 
  private:
   using cbb_ptr = const ir::BasicBlock*;

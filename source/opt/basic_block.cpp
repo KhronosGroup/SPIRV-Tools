@@ -199,5 +199,24 @@ std::ostream& operator<<(std::ostream& str, const BasicBlock& block) {
   return str;
 }
 
+BasicBlock* BasicBlock::SplitBasicBlock(IRContext* context, uint32_t label_id,
+                                        iterator iter) {
+  assert(!insts_.empty());
+
+  BasicBlock* new_block = new BasicBlock(MakeUnique<Instruction>(
+      context, SpvOpLabel, 0, label_id, std::initializer_list<ir::Operand>{}));
+
+  new_block->insts_.Splice(new_block->end(), &insts_, iter, end());
+  new_block->SetParent(GetParent());
+
+  if (context->AreAnalysesValid(ir::IRContext::kAnalysisInstrToBlockMapping)) {
+    new_block->ForEachInst([new_block, context](ir::Instruction* inst) {
+      context->set_instr_block(inst, new_block);
+    });
+  }
+
+  return new_block;
+}
+
 }  // namespace ir
 }  // namespace spvtools
