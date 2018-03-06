@@ -101,6 +101,8 @@ SpvStorageClass GetStorageClass(const Instruction& inst) {
 }
 
 // Helper class managing validation of built-ins.
+// TODO: Generic functionality of this class can be moved into
+// ValidationState_t to be made available to other users.
 class BuiltInsValidator {
  public:
   BuiltInsValidator(const ValidationState_t& vstate) : _(vstate) {}
@@ -1051,8 +1053,7 @@ spv_result_t BuiltInsValidator::ValidateHelperInvocationAtReference(
         storage_class != SpvStorageClassInput) {
       return _.diag(SPV_ERROR_INVALID_DATA)
              << "Vulkan spec allows BuiltIn HelperInvocation to be only used "
-                "for "
-                "variables with Input storage class. "
+                "for variables with Input storage class. "
              << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                  referenced_from_inst)
              << " " << GetStorageClassDesc(referenced_from_inst);
@@ -1062,8 +1063,7 @@ spv_result_t BuiltInsValidator::ValidateHelperInvocationAtReference(
       if (execution_model != SpvExecutionModelFragment) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Vulkan spec allows BuiltIn HelperInvocation to be used only "
-                  "with "
-                  "Fragment execution model. "
+                  "with Fragment execution model. "
                << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                    referenced_from_inst, execution_model);
       }
@@ -1560,16 +1560,7 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
 
     for (const SpvExecutionModel execution_model : execution_models_) {
       switch (execution_model) {
-        case SpvExecutionModelFragment: {
-          if (!_.HasCapability(SpvCapabilityGeometry) &&
-              !_.HasCapability(SpvCapabilityTessellation)) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
-                   << "According to the Vulkan spec BuiltIn PrimitiveId "
-                      "requires either Geometry or Tessellation capability "
-                      "when used with Fragment execution model.";
-          }
-          break;
-        }
+        case SpvExecutionModelFragment:
         case SpvExecutionModelTessellationControl:
         case SpvExecutionModelTessellationEvaluation:
         case SpvExecutionModelGeometry: {
@@ -1826,7 +1817,7 @@ spv_result_t BuiltInsValidator::ValidateTessCoordAtReference(
       if (execution_model != SpvExecutionModelTessellationEvaluation) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Vulkan spec allows BuiltIn TessCoord to be used only with "
-                  "TesselationEvaluation execution model. "
+                  "TessellationEvaluation execution model. "
                << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                    referenced_from_inst, execution_model);
       }
@@ -1917,7 +1908,7 @@ spv_result_t BuiltInsValidator::ValidateTessLevelAtReference(
           &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this,
           "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be used "
           "for variables with Input storage class if execution model is "
-          "TesselationControl.",
+          "TessellationControl.",
           SpvExecutionModelTessellationControl, decoration, built_in_inst,
           referenced_from_inst, std::placeholders::_1));
     }
@@ -1928,7 +1919,7 @@ spv_result_t BuiltInsValidator::ValidateTessLevelAtReference(
           &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this,
           "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be used "
           "for variables with Output storage class if execution model is "
-          "TesselationEvaluation.",
+          "TessellationEvaluation.",
           SpvExecutionModelTessellationEvaluation, decoration, built_in_inst,
           referenced_from_inst, std::placeholders::_1));
     }
