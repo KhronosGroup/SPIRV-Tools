@@ -153,6 +153,7 @@ OpName %main "main"
 %_ptr_half = OpTypePointer Function %half
 %_ptr_long = OpTypePointer Function %long
 %_ptr_v2int = OpTypePointer Function %v2int
+%_ptr_v4int = OpTypePointer Function %v4int
 %_ptr_v4float = OpTypePointer Function %v4float
 %_ptr_v4double = OpTypePointer Function %v4double
 %_ptr_struct_v2int_int_int = OpTypePointer Function %struct_v2int_int_int
@@ -4414,6 +4415,56 @@ INSTANTIATE_TEST_CASE_P(SelectFoldingTest, MatchingInstructionFoldingTest,
           "OpReturn\n" +
           "OpFunctionEnd",
       4, true)
+));
+
+INSTANTIATE_TEST_CASE_P(CompositeExtractMatchingTest, MatchingInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: Extracting from result of consecutive shuffles of differing
+    // size.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+            "; CHECK: %5 = OpCompositeExtract [[int]] %2 2\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4int Function\n" +
+            "%2 = OpLoad %v4int %n\n" +
+            "%3 = OpVectorShuffle %v2int %2 %2 2 3\n" +
+            "%4 = OpVectorShuffle %v4int %2 %3 0 4 2 5\n" +
+            "%5 = OpCompositeExtract %int %4 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, true),
+    // Test case 1: Extracting from result of vector shuffle of differing
+    // input and result sizes.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+            "; CHECK: %4 = OpCompositeExtract [[int]] %2 2\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4int Function\n" +
+            "%2 = OpLoad %v4int %n\n" +
+            "%3 = OpVectorShuffle %v2int %2 %2 2 3\n" +
+            "%4 = OpCompositeExtract %int %3 0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, true),
+    // Test case 2: Extracting from result of vector shuffle of differing
+    // input and result sizes.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+            "; CHECK: %4 = OpCompositeExtract [[int]] %2 3\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4int Function\n" +
+            "%2 = OpLoad %v4int %n\n" +
+            "%3 = OpVectorShuffle %v2int %2 %2 2 3\n" +
+            "%4 = OpCompositeExtract %int %3 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, true)
 ));
 #endif
 }  // anonymous namespace

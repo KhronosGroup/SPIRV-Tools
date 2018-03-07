@@ -1465,7 +1465,7 @@ FoldingRule VectorShuffleFeedingExtract() {
 
     // Find the size of the first vector operand of the VectorShuffle
     ir::Instruction* first_input =
-        def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+        def_use_mgr->GetDef(cinst->GetSingleWordInOperand(0));
     analysis::Type* first_input_type =
         type_mgr->GetType(first_input->type_id());
     assert(first_input_type->AsVector() &&
