@@ -290,6 +290,13 @@ Options (in lexicographical order):
   --strip-reflect
                Remove all reflection information.  For now, this covers
                reflection information defined by SPV_GOOGLE_hlsl_functionality1.
+  --time-report
+               Print the resource utilization of each pass (e.g., CPU time,
+               RSS) to standard error output. Currently it supports only Unix
+               systems. This option is the same as -ftime-report in GCC. It
+               prints CPU/WALL/USR/SYS time (and RSS if possible), but note that
+               USR/SYS time are returned by getrusage() and can have a small
+               error.
   --workaround-1209
                Rewrites instructions for which there are known driver bugs to
                avoid triggering those bugs.
@@ -544,6 +551,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCCPPass());
       } else if (0 == strcmp(cur_arg, "--print-all")) {
         optimizer->SetPrintAll(&std::cerr);
+      } else if (0 == strcmp(cur_arg, "--time-report")) {
+        optimizer->SetTimeReport(&std::cerr);
       } else if ('\0' == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!*in_file) {
