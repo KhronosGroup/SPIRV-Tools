@@ -289,13 +289,16 @@ void Loop::SetMergeBlock(BasicBlock* merge) {
 }
 
 void Loop::SetPreHeaderBlock(BasicBlock* preheader) {
-  assert(!IsInsideLoop(preheader) && "The preheader block is in the loop");
-  assert(preheader->tail()->opcode() == SpvOpBranch &&
-         "The preheader block does not unconditionally branch to the header "
-         "block");
-  assert(preheader->tail()->GetSingleWordOperand(0) == GetHeaderBlock()->id() &&
-         "The preheader block does not unconditionally branch to the header "
-         "block");
+  if (preheader) {
+    assert(!IsInsideLoop(preheader) && "The preheader block is in the loop");
+    assert(preheader->tail()->opcode() == SpvOpBranch &&
+           "The preheader block does not unconditionally branch to the header "
+           "block");
+    assert(preheader->tail()->GetSingleWordOperand(0) ==
+               GetHeaderBlock()->id() &&
+           "The preheader block does not unconditionally branch to the header "
+           "block");
+  }
   loop_preheader_ = preheader;
 }
 

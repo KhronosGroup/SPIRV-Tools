@@ -582,13 +582,20 @@ void LoopUtils::PopulateLoopDesc(
     new_loop->SetLatchBlock(
         cloning_result.old_to_new_bb_.at(old_loop->GetLatchBlock()->id()));
   if (old_loop->GetMergeBlock()) {
-    ir::BasicBlock* bb =
-        cloning_result.old_to_new_bb_.at(old_loop->GetMergeBlock()->id());
+    auto it =
+        cloning_result.old_to_new_bb_.find(old_loop->GetMergeBlock()->id());
+    ir::BasicBlock* bb = it != cloning_result.old_to_new_bb_.end()
+                             ? it->second
+                             : old_loop->GetMergeBlock();
     new_loop->SetMergeBlock(bb);
   }
-  if (old_loop->GetPreHeaderBlock())
-    new_loop->SetPreHeaderBlock(
-        cloning_result.old_to_new_bb_.at(old_loop->GetPreHeaderBlock()->id()));
+  if (old_loop->GetPreHeaderBlock()) {
+    auto it =
+        cloning_result.old_to_new_bb_.find(old_loop->GetPreHeaderBlock()->id());
+    if (it != cloning_result.old_to_new_bb_.end()) {
+      new_loop->SetPreHeaderBlock(it->second);
+    }
+  }
 }
 
 }  // namespace opt

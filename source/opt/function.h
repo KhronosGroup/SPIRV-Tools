@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_OPT_CONSTRUCTS_H_
 #define LIBSPIRV_OPT_CONSTRUCTS_H_
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <utility>
@@ -90,6 +91,13 @@ class Function {
   }
   const_iterator cend() const {
     return const_iterator(&blocks_, blocks_.cend());
+  }
+
+  // Returns an iterator to the basic block |id|.
+  iterator FindBlock(uint32_t bb_id) {
+    return std::find_if(begin(), end(), [bb_id](const ir::BasicBlock& it_bb) {
+      return bb_id == it_bb.id();
+    });
   }
 
   // Runs the given function |f| on each instruction in this function, and
