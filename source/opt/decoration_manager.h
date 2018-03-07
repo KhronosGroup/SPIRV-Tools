@@ -36,8 +36,11 @@ class DecorationManager {
   }
   DecorationManager() = delete;
 
-  // Removes all decorations from |id| for which |pred| returns true.
-  // |id| should not be a group ID.
+  // Removes all decorations from |id| (either directly or indirectly) for
+  // which |pred| returns true.
+  // If |id| is a group ID, OpGroupDecorate and OpGroupMemberDecorate will be
+  // removed if they have no targets left, and OpDecorationGroup will be
+  // removed if the group is not applied to anyone and contains no decorations.
   void RemoveDecorationsFrom(uint32_t id,
                              std::function<bool(const ir::Instruction&)> pred =
                                  [](const ir::Instruction&) { return true; });

@@ -232,10 +232,6 @@ OpDecorate %1 Constant
 OpDecorate %2 Restrict
 %2      = OpDecorationGroup
 OpGroupDecorate %2 %1 %3
-OpDecorate %4 Invariant
-%4      = OpDecorationGroup
-OpGroupDecorate %4 %2
-OpDecorate %1 Restrict
 %uint   = OpTypeInt 32 0
 %1      = OpVariable %uint Uniform
 %3      = OpVariable %uint Uniform
@@ -249,8 +245,7 @@ OpDecorate %1 Restrict
   decorations = decoManager->GetDecorationsFor(3u, false);
   EXPECT_THAT(GetErrorMessage(), "");
 
-  const std::string expected_decorations = R"(OpDecorate %4 Invariant
-OpDecorate %2 Restrict
+  const std::string expected_decorations = R"(OpDecorate %2 Restrict
 )";
   EXPECT_THAT(ToText(decorations), expected_decorations);
 
@@ -260,9 +255,6 @@ OpMemoryModel Logical GLSL450
 OpDecorate %2 Restrict
 %2 = OpDecorationGroup
 OpGroupDecorate %2 %3
-OpDecorate %4 Invariant
-%4 = OpDecorationGroup
-OpGroupDecorate %4 %2
 %uint = OpTypeInt 32 0
 %1 = OpVariable %uint Uniform
 %3 = OpVariable %uint Uniform
@@ -279,14 +271,9 @@ OpDecorate %1 Constant
 OpDecorate %2 Restrict
 %2      = OpDecorationGroup
 OpGroupDecorate %2 %1 %3
-OpDecorate %4 Invariant
-%4      = OpDecorationGroup
-OpGroupDecorate %4 %2 %5
-OpDecorate %1 Restrict
 %uint   = OpTypeInt 32 0
 %1      = OpVariable %uint Uniform
 %3      = OpVariable %uint Uniform
-%5      = OpVariable %uint Uniform
 )";
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
@@ -298,7 +285,6 @@ OpDecorate %1 Restrict
   EXPECT_THAT(GetErrorMessage(), "");
 
   const std::string expected_decorations = R"(OpDecorate %1 Constant
-OpDecorate %1 Restrict
 )";
   EXPECT_THAT(ToText(decorations), expected_decorations);
   decorations = decoManager->GetDecorationsFor(3u, false);
@@ -309,14 +295,9 @@ OpDecorate %1 Restrict
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %1 Constant
-OpDecorate %4 Invariant
-%4 = OpDecorationGroup
-OpGroupDecorate %4 %5
-OpDecorate %1 Restrict
 %uint = OpTypeInt 32 0
 %1 = OpVariable %uint Uniform
 %3 = OpVariable %uint Uniform
-%5 = OpVariable %uint Uniform
 )";
   EXPECT_THAT(ModuleToText(), expected_binary);
 }
@@ -330,42 +311,30 @@ OpMemoryModel Logical GLSL450
 OpDecorate %1 Constant
 OpDecorate %2 Restrict
 %2      = OpDecorationGroup
-OpGroupDecorate %2 %1 %3
-OpDecorate %4 Invariant
-%4      = OpDecorationGroup
-OpGroupDecorate %4 %2
-OpDecorate %1 Restrict
+OpGroupDecorate %2 %1
 %uint   = OpTypeInt 32 0
 %1      = OpVariable %uint Uniform
-%3      = OpVariable %uint Uniform
 )";
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
-  decoManager->RemoveDecorationsFrom(2u);
-  auto decorations = decoManager->GetDecorationsFor(2u, false);
+  decoManager->RemoveDecorationsFrom(1u);
+  auto decorations = decoManager->GetDecorationsFor(1u, false);
   EXPECT_THAT(GetErrorMessage(), "");
   EXPECT_TRUE(decorations.empty());
-  decorations = decoManager->GetDecorationsFor(1u, false);
+  decorations = decoManager->GetDecorationsFor(2u, false);
   EXPECT_THAT(GetErrorMessage(), "");
 
-  const std::string expected_decorations = R"(OpDecorate %1 Constant
-OpDecorate %1 Restrict
+  const std::string expected_decorations = R"(OpDecorate %2 Restrict
 )";
   EXPECT_THAT(ToText(decorations), expected_decorations);
-  decorations = decoManager->GetDecorationsFor(3u, false);
-  EXPECT_THAT(GetErrorMessage(), "");
-  EXPECT_THAT(ToText(decorations), "");
 
   const std::string expected_binary = R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %1 Constant
-OpDecorate %4 Invariant
-%4 = OpDecorationGroup
-OpDecorate %1 Restrict
+OpDecorate %2 Restrict
+%2 = OpDecorationGroup
 %uint = OpTypeInt 32 0
 %1 = OpVariable %uint Uniform
-%3 = OpVariable %uint Uniform
 )";
   EXPECT_THAT(ModuleToText(), expected_binary);
 }

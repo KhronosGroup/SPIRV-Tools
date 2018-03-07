@@ -46,6 +46,21 @@ void DecorationManager::RemoveDecorationsFrom(
   for (ir::Instruction* inst : decorations_info.indirect_decorations) {
     assert(inst->opcode() == SpvOpGroupDecorate ||
            inst->opcode() == SpvOpGroupMemberDecorate);
+
+    std::vector<ir::Instruction*> group_decorations_to_keep;
+    const uint32_t group_id = inst->GetSingleWordInOperand(0u);
+    const auto group_iter = id_to_decoration_insts_.find(group_id);
+    for (ir::Instruction* group_decoration :
+         group_iter->second.direct_decorations)
+      if (!pred(*group_decoration))
+        group_decorations_to_keep.push_back(group_decoration);
+
+    // If all decorations should be kept, move to the next group
+    if (group_decorations_to_keep.size() ==
+        group_iter->second.direct_decorations.size())
+      continue;
+
+    // Otherwise, remove |id| from the targets of |group_id|
     const uint32_t stride = inst->opcode() == SpvOpGroupDecorate ? 1u : 2u;
     bool was_modified = false;
     for (uint32_t i = 1u; i < inst->NumInOperands();) {
@@ -74,15 +89,25 @@ void DecorationManager::RemoveDecorationsFrom(
       indirect_decorations_to_remove.emplace(inst);
       insts_to_kill.push_back(inst);
     } else if (was_modified) {
+      context->ForgetUses(inst);
       indirect_decorations_to_remove.emplace(inst);
       context->AnalyzeUses(inst);
     }
-  }
 
-  // Schedule all instructions applying the group for removal if instructed as
-  // such by |pred|.
-  for (ir::Instruction* inst : decorations_info.decorate_insts)
-    insts_to_kill.push_back(inst);
+    // If only some of the decorations should be kept, clone them and apply
+    // them directly to |id|.
+    if (!group_decorations_to_keep.empty()) {
+      for (ir::Instruction* decoration : group_decorations_to_keep) {
+        // simply clone decoration and change |group_id| to |id|
+        std::unique_ptr<ir::Instruction> new_inst(
+            decoration->Clone(module_->context()));
+        new_inst->SetInOperand(0, {id});
+        module_->AddAnnotationInst(std::move(new_inst));
+        auto decoration_iter = --module_->annotation_end();
+        context->AnalyzeDefUse(&*decoration_iter);
+      }
+    }
+  }
 
   auto& indirect_decorations = decorations_info.indirect_decorations;
   indirect_decorations.erase(
@@ -94,15 +119,24 @@ void DecorationManager::RemoveDecorationsFrom(
       indirect_decorations.end());
 
   for (ir::Instruction* inst : insts_to_kill) context->KillInst(inst);
+  insts_to_kill.clear();
+
+  // Schedule all instructions applying the group for removal if this group no
+  // longer applies decorations, either directly or indirectly.
+  if (is_group && decorations_info.direct_decorations.empty() &&
+      decorations_info.indirect_decorations.empty())
+    for (ir::Instruction* inst : decorations_info.decorate_insts)
+      insts_to_kill.push_back(inst);
+  for (ir::Instruction* inst : insts_to_kill) context->KillInst(inst);
 
   if (decorations_info.direct_decorations.empty() &&
       decorations_info.indirect_decorations.empty() &&
       decorations_info.decorate_insts.empty()) {
     id_to_decoration_insts_.erase(ids_iter);
-  }
 
-  // Remove the OpDecorationGroup defining this group.
-  if (is_group) context->KillInst(context->get_def_use_mgr()->GetDef(id));
+    // Remove the OpDecorationGroup defining this group.
+    if (is_group) context->KillInst(context->get_def_use_mgr()->GetDef(id));
+  }
 }
 
 std::vector<ir::Instruction*> DecorationManager::GetDecorationsFor(
@@ -254,7 +288,6 @@ std::vector<T> DecorationManager::InternalGetDecorationsFor(
       };
 
   // Process |id|'s decorations.
-  decorations.reserve(target_data.direct_decorations.size());
   process_direct_decorations(ids_iter->second.direct_decorations);
 
   // Process the decorations of all groups applied to |id|.
