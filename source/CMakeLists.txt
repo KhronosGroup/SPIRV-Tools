@@ -221,6 +221,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/parse_number.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/string_utils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/util/timer.h
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/cfa.h
@@ -305,6 +306,12 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/function.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validation_state.cpp)
+
+if (${SPIRV_TIMER_ENABLED})
+  set(SPIRV_SOURCES
+    ${SPIRV_SOURCES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/util/timer.cpp)
+endif()
 
 # The software_version.cpp file includes build-version.inc.
 # Rebuild the software_version.cpp object file if it is older than
