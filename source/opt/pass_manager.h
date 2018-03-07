@@ -39,7 +39,7 @@ class PassManager {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  PassManager() : consumer_(nullptr), print_all_stream_(nullptr) {}
+  PassManager() : consumer_(nullptr), print_all_stream_(nullptr), ftime_report_stream_(nullptr) {}
 
   // Sets the message consumer to the given |consumer|.
   void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
@@ -77,6 +77,14 @@ class PassManager {
     return *this;
   }
 
+  // Sets the option to print the resource utilization of each pass. Output is
+  // written to |out| if that is not null. No output is generated if |out| is
+  // null.
+  PassManager& SetFTimeReport(std::ostream* out) {
+    ftime_report_stream_ = out;
+    return *this;
+  }
+
  private:
   // Consumer for messages.
   MessageConsumer consumer_;
@@ -85,6 +93,9 @@ class PassManager {
   // The output stream to write disassembly to before each pass, and after
   // the last pass.  If this is null, no output is generated.
   std::ostream* print_all_stream_;
+  // The output stream to write the resource utilization of each pass. If this
+  // is null, no output is generated.
+  std::ostream* ftime_report_stream_;
 };
 
 inline void PassManager::AddPass(std::unique_ptr<Pass> pass) {
