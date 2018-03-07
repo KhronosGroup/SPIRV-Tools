@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2018.3-dev 2018-03-07
+ - Start v2018.3 development
+
 v2018.2 2018-03-07
  - General:
    - Support SPIR-V 1.3 and Vulkan 1.1.
