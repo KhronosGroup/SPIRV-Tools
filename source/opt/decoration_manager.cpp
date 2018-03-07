@@ -242,35 +242,27 @@ std::vector<T> DecorationManager::InternalGetDecorationsFor(
 
   const TargetData& target_data = ids_iter->second;
 
+  const auto process_direct_decorations =
+      [include_linkage,
+       &decorations](const std::vector<ir::Instruction*>& direct_decorations) {
+        for (ir::Instruction* inst : direct_decorations) {
+          const bool is_linkage = inst->opcode() == SpvOpDecorate &&
+                                  inst->GetSingleWordInOperand(1u) ==
+                                      SpvDecorationLinkageAttributes;
+          if (include_linkage || !is_linkage) decorations.push_back(inst);
+        }
+      };
+
   // Process |id|'s decorations.
   decorations.reserve(target_data.direct_decorations.size());
-  for (ir::Instruction* inst : ids_iter->second.direct_decorations) {
-    const bool is_linkage =
-        inst->opcode() == SpvOpDecorate &&
-        inst->GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes;
-    if (include_linkage || !is_linkage) decorations.push_back(inst);
-  }
+  process_direct_decorations(ids_iter->second.direct_decorations);
 
   // Process the decorations of all groups applied to |id|.
-  std::stack<uint32_t> groups_to_process;
-  for (const ir::Instruction* inst : target_data.indirect_decorations)
-    groups_to_process.push(inst->GetSingleWordInOperand(0u));
-
-  std::unordered_set<uint32_t> group_ids;
-  while (!groups_to_process.empty()) {
-    const uint32_t group_id = groups_to_process.top();
-    groups_to_process.pop();
-    group_ids.emplace(group_id);
-    for (const ir::Instruction* inst :
-         id_to_decoration_insts_.find(group_id)->second.indirect_decorations)
-      groups_to_process.emplace(inst->GetSingleWordInOperand(0u));
-  }
-
-  for (uint32_t group_id : group_ids) {
+  for (const ir::Instruction* inst : target_data.indirect_decorations) {
+    const uint32_t group_id = inst->GetSingleWordInOperand(0u);
     const auto group_iter = id_to_decoration_insts_.find(group_id);
-    decorations.insert(decorations.end(),
-                       group_iter->second.direct_decorations.begin(),
-                       group_iter->second.direct_decorations.end());
+    assert(group_iter != id_to_decoration_insts_.end() && "Unknown group ID");
+    process_direct_decorations(group_iter->second.direct_decorations);
   }
 
   return decorations;
