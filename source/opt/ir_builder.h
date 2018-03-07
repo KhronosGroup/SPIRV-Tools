@@ -159,6 +159,64 @@ class InstructionBuilder {
     return AddInstruction(std::move(phi_inst));
   }
 
+  // Creates an addtion instruction.
+  // The id |type| must be the id of the instruction's type, must be the same as
+  // |op1| and |op2| types.
+  // The id |op1| is the left hand side of the operation.
+  // The id |op2| is the right hand side of the operation.
+  ir::Instruction* AddIAdd(uint32_t type, uint32_t op1, uint32_t op2) {
+    std::unique_ptr<ir::Instruction> inst(new ir::Instruction(
+        GetContext(), SpvOpIAdd, type, GetContext()->TakeNextId(),
+        {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}}));
+    return AddInstruction(std::move(inst));
+  }
+
+  // Creates a less than instruction for unsigned integer.
+  // The id |type| must be the id of an unsigned int and must be the same as
+  // |op1| and |op2| types.
+  // The id |op1| is the left hand side of the operation.
+  // The id |op2| is the right hand side of the operation.
+  // It is assumed that |type| represents the type of both operand as well.
+  ir::Instruction* AddULessThan(uint32_t op1, uint32_t op2) {
+    analysis::Bool bool_type;
+    uint32_t type = GetContext()->get_type_mgr()->GetId(&bool_type);
+    std::unique_ptr<ir::Instruction> inst(new ir::Instruction(
+        GetContext(), SpvOpULessThan, type, GetContext()->TakeNextId(),
+        {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}}));
+    return AddInstruction(std::move(inst));
+  }
+
+  // Creates a less than instruction for signed integer.
+  // The id |op1| is the left hand side of the operation.
+  // The id |op2| is the right hand side of the operation.
+  // It is assumed that |type| represents the type of both operand as well.
+  ir::Instruction* AddSLessThan(uint32_t op1, uint32_t op2) {
+    analysis::Bool bool_type;
+    uint32_t type = GetContext()->get_type_mgr()->GetId(&bool_type);
+    std::unique_ptr<ir::Instruction> inst(new ir::Instruction(
+        GetContext(), SpvOpSLessThan, type, GetContext()->TakeNextId(),
+        {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}}));
+    return AddInstruction(std::move(inst));
+  }
+
+  // Creates an OpILessThan or OpULessThen instruction depending on the signed
+  // of |type|. The |type| is the type of the instruction. The id |op1| is the
+  // left hand side of the operation. The id |op2| is the right hand side of the
+  // operation. It is assumed that |type| represents the type of both operand as
+  // well.
+  ir::Instruction* AddLessThan(uint32_t op1, uint32_t op2) {
+    ir::Instruction* op1_insn = context_->get_def_use_mgr()->GetDef(op1);
+    analysis::Type* type =
+        GetContext()->get_type_mgr()->GetType(op1_insn->type_id());
+    analysis::Integer* int_type = type->AsInteger();
+    assert(int_type && "Operand is not of int type");
+
+    if (int_type->IsSigned())
+      return AddSLessThan(op1, op2);
+    else
+      return AddULessThan(op1, op2);
+  }
+
   // Creates a select instruction.
   // |type| must match the types of |true_value| and |false_value|. It is up to
   // the caller to ensure that |cond| is a correct type (bool or vector of
