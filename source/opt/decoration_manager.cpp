@@ -308,32 +308,29 @@ void DecorationManager::ForEachDecoration(
   });
 }
 
-void DecorationManager::CloneDecorations(
-    uint32_t from, uint32_t to, std::function<void(ir::Instruction&, bool)> f) {
-  assert(f && "Missing function parameter f");
+void DecorationManager::CloneDecorations(uint32_t from, uint32_t to) {
   const auto decoration_list = id_to_decoration_insts_.find(from);
   if (decoration_list == id_to_decoration_insts_.end()) return;
+  auto context = module_->context();
   for (ir::Instruction* inst : decoration_list->second.direct_decorations) {
     // simply clone decoration and change |target-id| to |to|
     std::unique_ptr<ir::Instruction> new_inst(inst->Clone(module_->context()));
     new_inst->SetInOperand(0, {to});
-    id_to_decoration_insts_[to].direct_decorations.push_back(new_inst.get());
     module_->AddAnnotationInst(std::move(new_inst));
     auto decoration_iter = --module_->annotation_end();
-    f(*decoration_iter, true);
+    context->AnalyzeDefUse(&*decoration_iter);
   }
   for (ir::Instruction* inst : decoration_list->second.indirect_decorations) {
     switch (inst->opcode()) {
       case SpvOpGroupDecorate:
-        f(*inst, false);
+        context->ForgetUses(inst);
         // add |to| to list of decorated id's
         inst->AddOperand(
             ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
-        id_to_decoration_insts_[to].indirect_decorations.push_back(inst);
-        f(*inst, true);
+        context->AnalyzeUses(inst);
         break;
       case SpvOpGroupMemberDecorate: {
-        f(*inst, false);
+        context->ForgetUses(inst);
         // for each (id == from), add (to, literal) as operands
         const uint32_t num_operands = inst->NumOperands();
         for (uint32_t i = 1; i < num_operands; i += 2) {
@@ -345,8 +342,7 @@ void DecorationManager::CloneDecorations(
             inst->AddOperand(std::move(op));
           }
         }
-        id_to_decoration_insts_[to].indirect_decorations.push_back(inst);
-        f(*inst, true);
+        context->AnalyzeUses(inst);
         break;
       }
       default:
