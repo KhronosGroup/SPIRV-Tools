@@ -211,6 +211,11 @@ Optimizer& Optimizer::SetPrintAll(std::ostream* out) {
   return *this;
 }
 
+Optimizer& Optimizer::SetFTimeReport(std::ostream* out) {
+  impl_->pass_manager.SetFTimeReport(out);
+  return *this;
+}
+
 Optimizer::PassToken CreateNullPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::NullPass>());
 }

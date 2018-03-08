@@ -19,6 +19,7 @@
 
 #include "ir_context.h"
 #include "spirv-tools/libspirv.hpp"
+#include "util/timer.h"
 
 namespace spvtools {
 
@@ -41,8 +42,10 @@ Pass::Status PassManager::Run(ir::IRContext* context) {
     }
   };
 
+  SPIRV_TIMER_DESCRIPTION(ftime_report_stream_);
   for (const auto& pass : passes_) {
     print_disassembly("; IR before pass ", pass.get());
+    SPIRV_TIMER_SCROPED(ftime_report_stream_, (pass ? pass->name() : ""));
     const auto one_status = pass->Run(context);
     if (one_status == Pass::Status::Failure) return one_status;
     if (one_status == Pass::Status::SuccessWithChange) status = one_status;

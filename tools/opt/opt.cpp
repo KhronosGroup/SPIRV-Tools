@@ -239,6 +239,10 @@ Options (in lexicographical order):
   --print-all
                Print SPIR-V assembly to standard error output before each pass
                and after the last pass.
+  -ftime-report
+               Print the resource utilization of each pass (e.g., CPU time,
+               RSS). Currently it supports only Unix systems. This option is
+               same with -ftime-report in GCC.
   --private-to-local
                Change the scope of private variables that are used in a single
                function to that function.
@@ -528,6 +532,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCCPPass());
       } else if (0 == strcmp(cur_arg, "--print-all")) {
         optimizer->SetPrintAll(&std::cerr);
+      } else if (0 == strcmp(cur_arg, "-ftime-report")) {
+        optimizer->SetFTimeReport(&std::cerr);
       } else if ('\0' == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!*in_file) {
