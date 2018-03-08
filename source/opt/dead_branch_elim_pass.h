@@ -128,17 +128,8 @@ class DeadBranchElimPass : public MemPass {
       const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
           unreachable_continues);
 
-  // Initialize extensions whitelist
-  void InitExtensions();
-
-  // Return true if all extensions in this module are allowed by this pass.
-  bool AllExtensionsSupported() const;
-
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
-
-  // Extensions supported by this pass.
-  std::unordered_set<std::string> extensions_whitelist_;
 };
 
 }  // namespace opt

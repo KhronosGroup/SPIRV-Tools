@@ -51,17 +51,8 @@ class InsertExtractElimPass : public MemPass {
   // CompositeConstruct or ConstantComposite.
   bool EliminateInsertExtract(ir::Function* func);
 
-  // Initialize extensions whitelist
-  void InitExtensions();
-
-  // Return true if all extensions in this module are allowed by this pass.
-  bool AllExtensionsSupported() const;
-
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
-
-  // Extensions supported by this pass.
-  std::unordered_set<std::string> extensions_whitelist_;
 };
 
 }  // namespace opt
