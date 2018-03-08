@@ -355,9 +355,10 @@ OpDecorate %1 Restrict
   decoManager->RemoveDecoration(decorations.front());
   decorations = decoManager->GetDecorationsFor(1u, false);
   EXPECT_THAT(GetErrorMessage(), "");
-  EXPECT_THAT(ToText(decorations),
-              R"(OpDecorate %1 Restrict
-)");
+
+  const std::string expected_decorations = R"(OpDecorate %1 Restrict
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
 }
 
 TEST_F(DecorationManagerTest, HaveTheSameDecorationsWithoutGroupsTrue) {
