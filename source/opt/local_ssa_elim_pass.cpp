@@ -103,6 +103,8 @@ void LocalMultiStoreElimPass::InitExtensions() {
       "SPV_AMD_shader_fragment_mask",
       "SPV_EXT_fragment_fully_covered",
       "SPV_AMD_gpu_shader_half_float_fetch",
+      "SPV_GOOGLE_decorate_string",
+      "SPV_GOOGLE_hlsl_functionality1",
   });
 }
 
