@@ -55,7 +55,7 @@ class DecorationManagerTest : public ::testing::Test {
           error_message_ +=
               ": " + std::to_string(position.index) + ": " + message;
         }),
-        disassemble_options_(spvtools::SpirvTools::kDefaultDisassembleOption),
+        disassemble_options_(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER),
         error_message_() {
     tools_.SetMessageConsumer(consumer_);
   }
@@ -232,9 +232,9 @@ OpDecorate %1 Constant
 OpDecorate %2 Restrict
 %2      = OpDecorationGroup
 OpGroupDecorate %2 %1 %3
-%uint   = OpTypeInt 32 0
-%1      = OpVariable %uint Uniform
-%3      = OpVariable %uint Uniform
+%4   = OpTypeInt 32 0
+%1      = OpVariable %4 Uniform
+%3      = OpVariable %4 Uniform
 )";
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
@@ -255,9 +255,9 @@ OpMemoryModel Logical GLSL450
 OpDecorate %2 Restrict
 %2 = OpDecorationGroup
 OpGroupDecorate %2 %3
-%uint = OpTypeInt 32 0
-%1 = OpVariable %uint Uniform
-%3 = OpVariable %uint Uniform
+%4 = OpTypeInt 32 0
+%1 = OpVariable %4 Uniform
+%3 = OpVariable %4 Uniform
 )";
   EXPECT_THAT(ModuleToText(), expected_binary);
 }
@@ -271,9 +271,9 @@ OpDecorate %1 Constant
 OpDecorate %2 Restrict
 %2      = OpDecorationGroup
 OpGroupDecorate %2 %1 %3
-%uint   = OpTypeInt 32 0
-%1      = OpVariable %uint Uniform
-%3      = OpVariable %uint Uniform
+%4   = OpTypeInt 32 0
+%1      = OpVariable %4 Uniform
+%3      = OpVariable %4 Uniform
 )";
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
@@ -295,9 +295,9 @@ OpGroupDecorate %2 %1 %3
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %1 Constant
-%uint = OpTypeInt 32 0
-%1 = OpVariable %uint Uniform
-%3 = OpVariable %uint Uniform
+%4 = OpTypeInt 32 0
+%1 = OpVariable %4 Uniform
+%3 = OpVariable %4 Uniform
 )";
   EXPECT_THAT(ModuleToText(), expected_binary);
 }
@@ -312,8 +312,8 @@ OpDecorate %1 Constant
 OpDecorate %2 Restrict
 %2      = OpDecorationGroup
 OpGroupDecorate %2 %1
-%uint   = OpTypeInt 32 0
-%1      = OpVariable %uint Uniform
+%3   = OpTypeInt 32 0
+%1      = OpVariable %3 Uniform
 )";
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
@@ -333,8 +333,115 @@ OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %2 Restrict
 %2 = OpDecorationGroup
-%uint = OpTypeInt 32 0
-%1 = OpVariable %uint Uniform
+%3 = OpTypeInt 32 0
+%1 = OpVariable %3 Uniform
+)";
+  EXPECT_THAT(ModuleToText(), expected_binary);
+}
+
+TEST_F(DecorationManagerTest, RemoveAllDecorationsAppliedByGroup) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %2 Restrict
+%2      = OpDecorationGroup
+OpGroupDecorate %2 %1
+OpDecorate %3 BuiltIn VertexId
+%3      = OpDecorationGroup
+OpGroupDecorate %3 %1
+%4      = OpTypeInt 32 0
+%1      = OpVariable %4 Input
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  decoManager->RemoveDecorationsFrom(
+      1u, [](const spvtools::ir::Instruction& inst) {
+        return inst.opcode() == SpvOpDecorate &&
+               inst.GetSingleWordInOperand(0u) == 3u;
+      });
+  auto decorations = decoManager->GetDecorationsFor(1u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  std::string expected_decorations = R"(OpDecorate %1 Constant
+OpDecorate %2 Restrict
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+  decorations = decoManager->GetDecorationsFor(2u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  expected_decorations = R"(OpDecorate %2 Restrict
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+
+  const std::string expected_binary = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %2 Restrict
+%2 = OpDecorationGroup
+OpGroupDecorate %2 %1
+OpDecorate %3 BuiltIn VertexId
+%3 = OpDecorationGroup
+%4 = OpTypeInt 32 0
+%1 = OpVariable %4 Input
+)";
+  EXPECT_THAT(ModuleToText(), expected_binary);
+}
+
+TEST_F(DecorationManagerTest, RemoveSomeDecorationsAppliedByGroup) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %2 Restrict
+%2      = OpDecorationGroup
+OpGroupDecorate %2 %1
+OpDecorate %3 BuiltIn VertexId
+OpDecorate %3 Invariant
+%3      = OpDecorationGroup
+OpGroupDecorate %3 %1
+%uint   = OpTypeInt 32 0
+%1      = OpVariable %uint Input
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  decoManager->RemoveDecorationsFrom(
+      1u, [](const spvtools::ir::Instruction& inst) {
+        return inst.opcode() == SpvOpDecorate &&
+               inst.GetSingleWordInOperand(0u) == 3u &&
+               inst.GetSingleWordInOperand(1u) == SpvDecorationBuiltIn;
+      });
+  auto decorations = decoManager->GetDecorationsFor(1u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  std::string expected_decorations = R"(OpDecorate %1 Constant
+OpDecorate %1 Invariant
+OpDecorate %2 Restrict
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+  decorations = decoManager->GetDecorationsFor(2u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  expected_decorations = R"(OpDecorate %2 Restrict
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+
+  const std::string expected_binary = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %2 Restrict
+%2 = OpDecorationGroup
+OpGroupDecorate %2 %1
+OpDecorate %3 BuiltIn VertexId
+OpDecorate %3 Invariant
+%3 = OpDecorationGroup
+OpDecorate %1 Invariant
+%4 = OpTypeInt 32 0
+%1 = OpVariable %4 Input
 )";
   EXPECT_THAT(ModuleToText(), expected_binary);
 }
@@ -346,8 +453,8 @@ OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %1 Constant
 OpDecorate %1 Restrict
-%u32    = OpTypeInt 32 0
-%1      = OpVariable %u32 Uniform
+%2    = OpTypeInt 32 0
+%1    = OpVariable %2 Uniform
 )";
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
@@ -359,6 +466,66 @@ OpDecorate %1 Restrict
   const std::string expected_decorations = R"(OpDecorate %1 Restrict
 )";
   EXPECT_THAT(ToText(decorations), expected_decorations);
+}
+
+TEST_F(DecorationManagerTest, CloneDecorations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %2 Restrict
+%2      = OpDecorationGroup
+OpGroupDecorate %2 %1
+OpDecorate %3 BuiltIn VertexId
+OpDecorate %3 Invariant
+%3      = OpDecorationGroup
+OpGroupDecorate %3 %1
+%4      = OpTypeInt 32 0
+%1      = OpVariable %4 Input
+%5      = OpVariable %4 Input
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  auto decorations = decoManager->GetDecorationsFor(5u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decorations.empty());
+
+  decoManager->CloneDecorations(1u, 5u);
+  decorations = decoManager->GetDecorationsFor(5u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  std::string expected_decorations = R"(OpDecorate %5 Constant
+OpDecorate %2 Restrict
+OpDecorate %3 BuiltIn VertexId
+OpDecorate %3 Invariant
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+  decorations = decoManager->GetDecorationsFor(2u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  expected_decorations = R"(OpDecorate %2 Restrict
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+
+  const std::string expected_binary = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 Constant
+OpDecorate %2 Restrict
+%2 = OpDecorationGroup
+OpGroupDecorate %2 %1 %5
+OpDecorate %3 BuiltIn VertexId
+OpDecorate %3 Invariant
+%3 = OpDecorationGroup
+OpGroupDecorate %3 %1 %5
+OpDecorate %5 Constant
+%4 = OpTypeInt 32 0
+%1 = OpVariable %4 Input
+%5 = OpVariable %4 Input
+)";
+  EXPECT_THAT(ModuleToText(), expected_binary);
 }
 
 TEST_F(DecorationManagerTest, HaveTheSameDecorationsWithoutGroupsTrue) {

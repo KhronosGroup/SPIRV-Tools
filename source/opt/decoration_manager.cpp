@@ -50,15 +50,15 @@ void DecorationManager::RemoveDecorationsFrom(
     std::vector<ir::Instruction*> group_decorations_to_keep;
     const uint32_t group_id = inst->GetSingleWordInOperand(0u);
     const auto group_iter = id_to_decoration_insts_.find(group_id);
-    for (ir::Instruction* group_decoration :
-         group_iter->second.direct_decorations)
-      if (!pred(*group_decoration))
-        group_decorations_to_keep.push_back(group_decoration);
+    assert(group_iter != id_to_decoration_insts_.end() &&
+           "Unknown decoration group");
+    const auto& group_decorations = group_iter->second.direct_decorations;
+    for (ir::Instruction* decoration : group_decorations) {
+      if (!pred(*decoration)) group_decorations_to_keep.push_back(decoration);
+    }
 
     // If all decorations should be kept, move to the next group
-    if (group_decorations_to_keep.size() ==
-        group_iter->second.direct_decorations.size())
-      continue;
+    if (group_decorations_to_keep.size() == group_decorations.size()) continue;
 
     // Otherwise, remove |id| from the targets of |group_id|
     const uint32_t stride = inst->opcode() == SpvOpGroupDecorate ? 1u : 2u;
@@ -104,7 +104,7 @@ void DecorationManager::RemoveDecorationsFrom(
         new_inst->SetInOperand(0, {id});
         module_->AddAnnotationInst(std::move(new_inst));
         auto decoration_iter = --module_->annotation_end();
-        context->AnalyzeDefUse(&*decoration_iter);
+        context->AnalyzeUses(&*decoration_iter);
       }
     }
   }
@@ -124,9 +124,10 @@ void DecorationManager::RemoveDecorationsFrom(
   // Schedule all instructions applying the group for removal if this group no
   // longer applies decorations, either directly or indirectly.
   if (is_group && decorations_info.direct_decorations.empty() &&
-      decorations_info.indirect_decorations.empty())
+      decorations_info.indirect_decorations.empty()) {
     for (ir::Instruction* inst : decorations_info.decorate_insts)
       insts_to_kill.push_back(inst);
+  }
   for (ir::Instruction* inst : insts_to_kill) context->KillInst(inst);
 
   if (decorations_info.direct_decorations.empty() &&
@@ -343,9 +344,13 @@ void DecorationManager::CloneDecorations(uint32_t from, uint32_t to) {
     new_inst->SetInOperand(0, {to});
     module_->AddAnnotationInst(std::move(new_inst));
     auto decoration_iter = --module_->annotation_end();
-    context->AnalyzeDefUse(&*decoration_iter);
+    context->AnalyzeUses(&*decoration_iter);
   }
-  for (ir::Instruction* inst : decoration_list->second.indirect_decorations) {
+  // We need to copy the list of instructions as ForgetUses and AnalyzeUses are
+  // going to modify it.
+  std::vector<ir::Instruction*> indirect_decorations =
+      decoration_list->second.indirect_decorations;
+  for (ir::Instruction* inst : indirect_decorations) {
     switch (inst->opcode()) {
       case SpvOpGroupDecorate:
         context->ForgetUses(inst);
@@ -399,8 +404,8 @@ void DecorationManager::RemoveDecoration(ir::Instruction* inst) {
         if (iter == id_to_decoration_insts_.end()) continue;
         remove_from_container(iter->second.indirect_decorations);
       }
-      const auto target_id = inst->GetSingleWordInOperand(0u);
-      auto const iter = id_to_decoration_insts_.find(target_id);
+      const auto group_id = inst->GetSingleWordInOperand(0u);
+      auto const iter = id_to_decoration_insts_.find(group_id);
       if (iter == id_to_decoration_insts_.end()) return;
       remove_from_container(iter->second.decorate_insts);
     } break;
