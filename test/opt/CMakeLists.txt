@@ -46,6 +46,11 @@ add_spvtools_unittest(TARGET pass_strip_debug_info
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_strip_reflect_info
+  SRCS strip_reflect_info_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET pass_compact_ids
   SRCS compact_ids_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
