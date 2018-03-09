@@ -250,7 +250,7 @@ OpStore %f %float_0
 OpStore %i %int_0
 OpBranch %24
 %24 = OpLabel
-%45 = OpPhi %float %float_0 %23 %47 %26
+%45 = OpPhi %float %float_0 %23 %46 %26
 %44 = OpPhi %int %int_0 %23 %42 %26
 OpLoopMerge %25 %26 None
 OpBranch %27
@@ -271,7 +271,7 @@ OpBranch %26
 OpStore %f %40
 OpBranch %26
 %26 = OpLabel
-%47 = OpPhi %float %45 %37 %40 %36
+%46 = OpPhi %float %45 %37 %40 %36
 %42 = OpIAdd %int %44 %int_1
 OpStore %i %42
 OpBranch %24
@@ -661,7 +661,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%50 = OpUndef %float
+      R"(%47 = OpUndef %float
 %main = OpFunction %void None %9
 %24 = OpLabel
 %f = OpVariable %_ptr_Function_float Function
@@ -671,7 +671,7 @@ OpStore %f %float_0
 OpStore %i %int_0
 OpBranch %25
 %25 = OpLabel
-%48 = OpPhi %float %50 %24 %46 %27
+%48 = OpPhi %float %47 %24 %46 %27
 %46 = OpPhi %float %float_0 %24 %37 %27
 %45 = OpPhi %int %int_0 %24 %43 %27
 OpLoopMerge %26 %27 None
@@ -697,8 +697,8 @@ OpBranch %27
 OpStore %i %43
 OpBranch %25
 %26 = OpLabel
-%47 = OpPhi %float %48 %28 %46 %41
-OpStore %fo %47
+%49 = OpPhi %float %48 %28 %46 %41
+OpStore %fo %49
 OpReturn
 OpFunctionEnd
 )";

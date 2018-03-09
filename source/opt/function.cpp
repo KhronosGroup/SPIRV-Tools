@@ -14,7 +14,8 @@
 
 #include "function.h"
 
-#include <iostream>
+#include <ostream>
+#include <sstream>
 
 namespace spvtools {
 namespace ir {
@@ -94,15 +95,14 @@ std::ostream& operator<<(std::ostream& str, const Function& func) {
 }
 
 std::string Function::PrettyPrint(uint32_t options) const {
-  std::string str;
+  std::ostringstream str;
   ForEachInst([&str, options](const ir::Instruction* inst) {
-    str += inst->PrettyPrint(options);
+    str << inst->PrettyPrint(options);
     if (inst->opcode() != SpvOpFunctionEnd) {
-      str += "\n";
+      str << std::endl;
     }
   });
-
-  return str;
+  return str.str();
 }
 
 }  // namespace ir

@@ -195,14 +195,14 @@ std::ostream& operator<<(std::ostream& str, const BasicBlock& block) {
 }
 
 std::string BasicBlock::PrettyPrint(uint32_t options) const {
-  std::string str;
+  std::ostringstream str;
   ForEachInst([&str, options](const ir::Instruction* inst) {
-    str += inst->PrettyPrint(options);
+    str << inst->PrettyPrint(options);
     if (!IsTerminatorInst(inst->opcode())) {
-      str += "\n";
+      str << std::endl;
     }
   });
-  return str;
+  return str.str();
 }
 
 BasicBlock* BasicBlock::SplitBasicBlock(IRContext* context, uint32_t label_id,
