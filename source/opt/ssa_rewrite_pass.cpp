@@ -171,7 +171,7 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
 
   // Otherwise, look up the value for |var_id| in |bb|'s predecessors.
   uint32_t val_id = 0;
-  size_t num_preds = pass_->cfg()->preds(bb->id()).size();
+  auto& predecessors = pass_->cfg()->preds(bb->id());
   if (!IsBlockSealed(bb)) {
     // If |bb| is not yet sealed (i.e., it still has not been processed), create
     // an empty Phi instruction for |var_id|.  This will act as a proxy for when
@@ -179,13 +179,11 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
     // CFG has been processed.
     auto& phi_cand = CreatePhiCandidate(var_id, bb, nullptr);
     val_id = phi_cand.result_id();
-  } else if (num_preds == 1) {
+  } else if (predecessors.size() == 1) {
     // If |bb| has exactly one predecessor, we look for |var_id|'s definition
     // there.
-    ir::BasicBlock* pred_bb =
-        pass_->cfg()->block(pass_->cfg()->preds(bb->id())[0]);
-    val_id = GetReachingDef(var_id, pred_bb);
-  } else if (num_preds > 1) {
+    val_id = GetReachingDef(var_id, pass_->cfg()->block(predecessors[0]));
+  } else if (predecessors.size() > 1) {
     // If there is more than one predecessor, this is a join block which may
     // require a Phi instruction.  This will act as |var_id|'s current
     // definition to break potential cycles.
