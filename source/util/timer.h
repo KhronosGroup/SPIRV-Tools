@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Google Inc.
+// Copyright (c) 2018 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,17 @@
 #if defined(SPIRV_ANDROID) || defined(SPIRV_LINUX) || defined(SPIRV_MAC) || \
     defined(SPIRV_FREEBSD)
 
+#include <iostream>
+#include <sys/resource.h>
+
 #define SPIRV_TIMER_ENABLED
 #define SPIRV_TIMER_DESCRIPTION(out) spvutils::TimerPrintDescription(out)
-#define SPIRV_TIMER_SCROPED(out, tag) \
-  spvutils::ScropedTimer timer##__LINE__(out, tag)
+#define SPIRV_TIMER_SCOPED(out, tag) \
+  spvutils::ScopedTimer timer##__LINE__(out, tag)
 
 #if defined(SPIRV_LINUX)
 #define SPIRV_MEMORY_MEASUREMENT_ENABLED
 #endif  // defined(SPIRV_LINUX)
-
-#include <sys/resource.h>
 
 namespace spvutils {
 
@@ -37,7 +38,7 @@ void TimerPrintDescription(std::ostream* out);
 
 class Timer {
  public:
-  Timer(std::ostream* out) : report_stream_(out), usage_fail(kNotFailed) {}
+  Timer(std::ostream* out) : report_stream_(out), usage_status(kSucceeded) {}
   void Start();
   void Stop();
   void Report(const char* tag);
@@ -46,7 +47,7 @@ class Timer {
  private:
   std::ostream* report_stream_;
 
-  enum { kGetrusageFail, kGettimeofdayFail, kNotFailed } usage_fail;
+  enum { kGetrusageFail, kGettimeofdayFail, kSucceeded } usage_status;
 
   rusage usage_before;
   rusage usage_after;
@@ -54,12 +55,12 @@ class Timer {
   timeval wall_after;
 };
 
-class ScropedTimer : Timer {
+class ScopedTimer : Timer {
  public:
-  ScropedTimer(std::ostream* out, const char* tag) : Timer(out), tag_(tag) {
+  ScopedTimer(std::ostream* out, const char* tag) : Timer(out), tag_(tag) {
     Start();
   }
-  ~ScropedTimer() { StopAndReport(tag_); }
+  ~ScopedTimer() { StopAndReport(tag_); }
 
  private:
   const char* tag_;
@@ -67,11 +68,11 @@ class ScropedTimer : Timer {
 
 }  // namespace spvutils
 
-#elif  // defined(SPIRV_ANDROID) || defined(SPIRV_LINUX) ||
+#else  // defined(SPIRV_ANDROID) || defined(SPIRV_LINUX) ||
        // defined(SPIRV_MAC) || defined(SPIRV_FREEBSD)
 
 #define SPIRV_TIMER_DESCRIPTION(out)
-#define SPIRV_TIMER_SCROPED(out, tag)
+#define SPIRV_TIMER_SCOPED(out, tag)
 
 #endif  // defined(SPIRV_ANDROID) || defined(SPIRV_LINUX) ||
         // defined(SPIRV_MAC) || defined(SPIRV_FREEBSD)

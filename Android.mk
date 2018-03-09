@@ -27,6 +27,7 @@ SPVTOOLS_SRC_FILES := \
 		source/util/bit_stream.cpp \
 		source/util/parse_number.cpp \
 		source/util/string_utils.cpp \
+		source/util/timer.cpp \
 		source/val/basic_block.cpp \
 		source/val/construct.cpp \
 		source/val/function.cpp \

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Google Inc.
+// Copyright (c) 2018 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <sys/resource.h>
-#include <sys/time.h>
+#include "util/timer.h"
+
 #include <iomanip>
 #include <iostream>
-
-#include "util/timer.h"
+#include <sys/resource.h>
+#include <sys/time.h>
 
 namespace spvutils {
 
@@ -44,25 +44,28 @@ void TimerPrintDescription(std::ostream* out) {
 void Timer::Start() {
   if (report_stream_) {
     if (getrusage(RUSAGE_SELF, &usage_before) == -1) {
-      usage_fail = kGetrusageFail;
+      usage_status = kGetrusageFail;
     } else if (gettimeofday(&wall_before, NULL) == -1) {
-      usage_fail = kGettimeofdayFail;
+      usage_status = kGettimeofdayFail;
     }
   }
 }
 
 void Timer::Stop() {
-  if (report_stream_ && usage_fail == kNotFailed) {
+  if (report_stream_ && usage_status == kSucceeded) {
     if (getrusage(RUSAGE_SELF, &usage_after) == -1) {
-      usage_fail = kGetrusageFail;
+      usage_status = kGetrusageFail;
     } else if (gettimeofday(&wall_after, NULL) == -1) {
-      usage_fail = kGettimeofdayFail;
+      usage_status = kGettimeofdayFail;
     }
   }
 }
 
 void Timer::Report(const char* tag) {
-  switch (usage_fail) {
+  if (!report_stream_)
+    return;
+
+  switch (usage_status) {
     case kGetrusageFail:
       *report_stream_ << std::setw(30) << tag
                       << " ERROR: calling getrusage() fails";
@@ -75,24 +78,22 @@ void Timer::Report(const char* tag) {
       break;
   }
 
-  if (report_stream_) {
-    report_stream_->precision(2);
-    *report_stream_ << std::fixed << std::setw(30) << tag << std::setw(12)
-                    << TimeDifference(usage_before.ru_utime,
-                                      usage_after.ru_utime)
-                    << std::setw(12) << TimeDifference(wall_before, wall_after)
-                    << std::setw(12)
-                    << TimeDifference(usage_before.ru_stime,
-                                      usage_after.ru_stime)
+  report_stream_->precision(2);
+  *report_stream_ << std::fixed << std::setw(30) << tag << std::setw(12)
+                  << TimeDifference(usage_before.ru_utime,
+                                    usage_after.ru_utime)
+                  << std::setw(12) << TimeDifference(wall_before, wall_after)
+                  << std::setw(12)
+                  << TimeDifference(usage_before.ru_stime,
+                                    usage_after.ru_stime)
 #if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
-                    << std::setw(12)
-                    << (usage_after.ru_maxrss - usage_before.ru_maxrss)
-                    << std::setw(12)
-                    << ((usage_after.ru_minflt - usage_before.ru_minflt) +
-                        (usage_after.ru_majflt - usage_before.ru_majflt))
+                  << std::setw(12)
+                  << (usage_after.ru_maxrss - usage_before.ru_maxrss)
+                  << std::setw(12)
+                  << ((usage_after.ru_minflt - usage_before.ru_minflt) +
+                      (usage_after.ru_majflt - usage_before.ru_majflt))
 #endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
-                    << std::endl;
-  }
+                  << std::endl;
 }
 
 void Timer::StopAndReport(const char* tag) {

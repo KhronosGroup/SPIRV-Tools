@@ -250,8 +250,8 @@ Options (in lexicographical order):
                and after the last pass.
   -ftime-report
                Print the resource utilization of each pass (e.g., CPU time,
-               RSS). Currently it supports only Unix systems. This option is
-               same with -ftime-report in GCC.
+               RSS) to standard error output. Currently it supports only Unix
+               systems. This option is the same as -ftime-report in GCC.
   --private-to-local
                Change the scope of private variables that are used in a single
                function to that function.
