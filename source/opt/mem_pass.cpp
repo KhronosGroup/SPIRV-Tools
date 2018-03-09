@@ -894,36 +894,5 @@ bool MemPass::CFGCleanup(ir::Function* func) {
   return modified;
 }
 
-bool MemPass::RemoveDeadStores(ir::Function* func) {
-  bool modified = false;
-  for (auto bi = func->begin(); bi != func->end(); ++bi) {
-    std::vector<ir::Instruction*> dead_instructions;
-    for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
-      if (ii->opcode() != SpvOpStore) continue;
-      uint32_t varId;
-      (void)GetPtr(&*ii, &varId);
-      if (!IsSSATargetVar(varId)) continue;
-      if (!HasLoads(varId)) {
-        dead_instructions.push_back(&*ii);
-        modified = true;
-      }
-    }
-
-    while (!dead_instructions.empty()) {
-      ir::Instruction* inst = dead_instructions.back();
-      dead_instructions.pop_back();
-      DCEInst(inst, [&dead_instructions](ir::Instruction* other_inst) {
-        auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
-                           other_inst);
-        if (i != dead_instructions.end()) {
-          dead_instructions.erase(i);
-        }
-      });
-    }
-  }
-
-  return modified;
-}
-
 }  // namespace opt
 }  // namespace spvtools

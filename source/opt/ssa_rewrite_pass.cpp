@@ -49,7 +49,7 @@
 // Debug logging (0: Off, 1-N: Verbosity level).  Replace this with the
 // implementation done for
 // https://github.com/KhronosGroup/SPIRV-Tools/issues/1351
-// #define SSA_REWRITE_DEBUGGING_LEVEL 3
+#define SSA_REWRITE_DEBUGGING_LEVEL 3
 
 #ifdef SSA_REWRITE_DEBUGGING_LEVEL
 #include <ostream>

@@ -75,13 +75,6 @@ class MemPass : public Pass {
   // non-target variables.
   bool IsSSATargetVar(uint32_t varId);
 
-  // Removes any store operation to an SSA-target variable that has no load
-  // operations in the given function |func|.
-  //
-  // Returns true if it found and removed any such store.  Returns false,
-  // otherwise.
-  bool RemoveDeadStores(ir::Function* func);
-
  protected:
   // Returns true if |typeInst| is a scalar type, or a vector or matrix.
   bool IsSSABaseTargetType(const ir::Instruction* typeInst) const;
