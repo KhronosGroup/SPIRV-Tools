@@ -220,6 +220,11 @@ Optimizer::PassToken CreateStripDebugInfoPass() {
       MakeUnique<opt::StripDebugInfoPass>());
 }
 
+Optimizer::PassToken CreateStripReflectInfoPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::StripReflectInfoPass>());
+}
+
 Optimizer::PassToken CreateEliminateDeadFunctionsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::EliminateDeadFunctionsPass>());
