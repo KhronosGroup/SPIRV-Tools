@@ -215,8 +215,8 @@ Optimizer& Optimizer::SetPrintAll(std::ostream* out) {
   return *this;
 }
 
-Optimizer& Optimizer::SetFTimeReport(std::ostream* out) {
-  impl_->pass_manager.SetFTimeReport(out);
+Optimizer& Optimizer::SetTimeReport(std::ostream* out) {
+  impl_->pass_manager.SetTimeReport(out);
   return *this;
 }
 

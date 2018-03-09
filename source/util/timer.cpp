@@ -14,65 +14,81 @@
 
 #include "util/timer.h"
 
-#include <iomanip>
-#include <iostream>
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <string>
 
 namespace spvutils {
 
 #if defined(SPIRV_TIMER_ENABLED)
 
-namespace {
-inline double TimeDifference(const timeval& before, const timeval& after) {
-  return static_cast<double>(after.tv_sec - before.tv_sec) +
-         static_cast<double>((after.tv_usec - before.tv_usec) / 10000) * .01;
-}
-}  // namespace
+// A map data structure to search a CumulativeTimer object by its name. The key
+// of the map is the name and the value is the CumulativeTimer object.
+static std::map<const char*, CumulativeTimer* > CumulativeTimerMap;
 
-void TimerPrintDescription(std::ostream* out) {
+// Print the description of resource types measured by Timer class. If |out| is
+// NULL, it does nothing. Otherwise, it prints resource types. The second is
+// optional and if it is true, the function also prints resource type fields
+// related to memory. Its default is false. In usual, this must be placed before
+// calling Timer::Report() to inform what those fields printed by
+// Timer::Report() indicate.
+void PrintTimerDescription(std::ostream* out, bool measure_mem_usage) {
   if (out) {
-    *out << std::setw(30) << "PASS name" << std::setw(12) << "USR time"
-         << std::setw(12) << "WALL time" << std::setw(12) << "SYS time"
+    *out << std::setw(30) << "PASS name" << std::setw(12) << "CPU time"
+         << std::setw(12) << "WALL time" << std::setw(12) << "USR time"
+         << std::setw(12) << "SYS time";
 #if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
-         << std::setw(12) << "RSS" << std::setw(12) << "Pagefault"
+    if (measure_mem_usage) {
+      *out << std::setw(12) << "RSS" << std::setw(12) << "Pagefault";
+    }
 #endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
-         << std::endl;
+    *out << std::endl;
   }
 }
 
+// Do not change the order of invoking system calls. We want to make CPU/Wall
+// time correct as much as possible. Calling functions to get CPU/Wall time must
+// closely surround the target code of measuring.
 void Timer::Start() {
   if (report_stream_) {
-    if (getrusage(RUSAGE_SELF, &usage_before) == -1) {
-      usage_status = kGetrusageFail;
-    } else if (gettimeofday(&wall_before, NULL) == -1) {
-      usage_status = kGettimeofdayFail;
+    if (getrusage(RUSAGE_SELF, &usage_before_) == -1) {
+      usage_status_ = kClockGettimeFailed;
+    } else if (clock_gettime(CLOCK_MONOTONIC, &wall_before_) == -1) {
+      usage_status_ = kClockGettimeFailed;
+    } else if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu_before_) == -1) {
+      usage_status_ = kGetrusageFailed;
     }
   }
 }
 
+// The order of invoking system calls is important with the same reason as
+// Timer::Start().
 void Timer::Stop() {
-  if (report_stream_ && usage_status == kSucceeded) {
-    if (getrusage(RUSAGE_SELF, &usage_after) == -1) {
-      usage_status = kGetrusageFail;
-    } else if (gettimeofday(&wall_after, NULL) == -1) {
-      usage_status = kGettimeofdayFail;
+  if (report_stream_ && usage_status_ == kSucceeded) {
+    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu_after_) == -1) {
+      usage_status_ = kClockGettimeFailed;
+    } else if (clock_gettime(CLOCK_MONOTONIC, &wall_after_) == -1) {
+      usage_status_ = kClockGettimeFailed;
+    } else if (getrusage(RUSAGE_SELF, &usage_after_) == -1) {
+      usage_status_ = kGetrusageFailed;
     }
   }
 }
 
 void Timer::Report(const char* tag) {
-  if (!report_stream_)
-    return;
+  if (!report_stream_) return;
 
-  switch (usage_status) {
-    case kGetrusageFail:
+  switch (usage_status_) {
+    case kGetrusageFailed:
       *report_stream_ << std::setw(30) << tag
                       << " ERROR: calling getrusage() fails";
       return;
-    case kGettimeofdayFail:
+    case kClockGettimeFailed:
       *report_stream_ << std::setw(30) << tag
-                      << " ERROR: calling gettimeofday() fails";
+                      << " ERROR: calling clock_gettime() fails";
       return;
     default:
       break;
@@ -80,25 +96,36 @@ void Timer::Report(const char* tag) {
 
   report_stream_->precision(2);
   *report_stream_ << std::fixed << std::setw(30) << tag << std::setw(12)
-                  << TimeDifference(usage_before.ru_utime,
-                                    usage_after.ru_utime)
-                  << std::setw(12) << TimeDifference(wall_before, wall_after)
-                  << std::setw(12)
-                  << TimeDifference(usage_before.ru_stime,
-                                    usage_after.ru_stime)
+                  << CPUTime() << std::setw(12) << WallTime() << std::setw(12)
+                  << UserTime() << std::setw(12) << SystemTime();
 #if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
-                  << std::setw(12)
-                  << (usage_after.ru_maxrss - usage_before.ru_maxrss)
-                  << std::setw(12)
-                  << ((usage_after.ru_minflt - usage_before.ru_minflt) +
-                      (usage_after.ru_majflt - usage_before.ru_majflt))
+  if (measure_mem_usage_) {
+    *report_stream_ << std::fixed << std::setw(12) << RSS() << std::setw(12)
+                    << PageFault();
+  }
 #endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
-                  << std::endl;
+  *report_stream_ << std::endl;
 }
 
-void Timer::StopAndReport(const char* tag) {
-  Stop();
-  Report(tag);
+CumulativeTimer* CumulativeTimer::GetCumulativeTimer(const char* name) {
+  if (name == NULL) return NULL;
+
+  auto elem = CumulativeTimerMap.find(name);
+  if (elem == CumulativeTimerMap.end()) return NULL;
+  return elem->second;
+}
+
+void CumulativeTimer::SetCumulativeTimer(const char* name, CumulativeTimer* ctimer) {
+  if (name == NULL) return;
+  CumulativeTimerMap[name] = ctimer;
+}
+
+void CumulativeTimer::DeleteCumulativeTimer(const char* name) {
+  if (name == NULL) return;
+
+  auto elem = CumulativeTimerMap.find(name);
+  if (elem == CumulativeTimerMap.end()) return;
+  CumulativeTimerMap.erase(elem);
 }
 
 #endif  // defined(SPIRV_TIMER_ENABLED)

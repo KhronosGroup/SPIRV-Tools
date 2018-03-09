@@ -179,6 +179,11 @@ add_spvtools_unittest(
   LIBS ${SPIRV_TOOLS})
 
 add_spvtools_unittest(
+  TARGET timer
+  SRCS timer_test.cpp
+  LIBS ${SPIRV_TOOLS})
+
+add_spvtools_unittest(
   TARGET log
   SRCS log_test.cpp
   LIBS ${SPIRV_TOOLS})

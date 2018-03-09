@@ -42,10 +42,10 @@ Pass::Status PassManager::Run(ir::IRContext* context) {
     }
   };
 
-  SPIRV_TIMER_DESCRIPTION(ftime_report_stream_);
+  SPIRV_TIMER_DESCRIPTION(time_report_stream_, true);
   for (const auto& pass : passes_) {
     print_disassembly("; IR before pass ", pass.get());
-    SPIRV_TIMER_SCOPED(ftime_report_stream_, (pass ? pass->name() : ""));
+    SPIRV_TIMER_SCOPED(time_report_stream_, (pass ? pass->name() : ""), true);
     const auto one_status = pass->Run(context);
     if (one_status == Pass::Status::Failure) return one_status;
     if (one_status == Pass::Status::SuccessWithChange) status = one_status;
