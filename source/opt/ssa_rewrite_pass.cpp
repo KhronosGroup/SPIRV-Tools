@@ -204,8 +204,6 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
     phi_candidate->phi_args().push_back(arg_id);
 
     if (arg_id == 0) {
-      // Add |phi_candidate| to the list of incomplete phi candidates.
-      incomplete_phis_.push(phi_candidate);
       phi_candidate->MarkIncomplete();
     } else {
       // If this argument is another Phi candidate, add |phi_candidate| to the
@@ -217,9 +215,14 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
     }
   }
 
-  // Only try to remove trivial Phis if we could complete them.
-  return phi_candidate->is_incomplete() ? phi_candidate->result_id()
-                                        : TryRemoveTrivialPhi(phi_candidate);
+  // If |phi_candidate| is incomplete, add it to the list of Phis to complete.
+  if (phi_candidate->is_incomplete()) {
+    incomplete_phis_.push(phi_candidate);
+    return phi_candidate->result_id();
+  }
+
+  // Try to remove |phi_candidate|, if it's trivial.
+  return TryRemoveTrivialPhi(phi_candidate);
 }
 
 uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
@@ -237,13 +240,11 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
   uint32_t val_id = 0;
   auto& predecessors = pass_->cfg()->preds(bb->id());
   if (!IsBlockSealed(bb)) {
-    // If |bb| is not yet sealed (i.e., it still has not been processed), create
-    // an empty Phi instruction for |var_id|.  This will act as a proxy for when
-    // we determine the real reaching definition for |var_id| after the whole
-    // CFG has been processed.
-    auto& phi_candidate = CreatePhiCandidate(var_id, bb);
-    incomplete_phis_.push(&phi_candidate);
-    val_id = phi_candidate.result_id();
+    // We should only be reaching unsealed blocks trying to populate Phi
+    // arguments. This is already handled by AddPhiOperands.
+    assert(false &&
+           "Trying to get a reaching definition in an unsealed block.");
+    return 0;
   } else if (predecessors.size() == 1) {
     // If |bb| has exactly one predecessor, we look for |var_id|'s definition
     // there.
