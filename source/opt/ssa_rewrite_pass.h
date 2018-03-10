@@ -54,6 +54,7 @@ class SSARewriter {
           bb_(block),
           phi_args_(),
           is_trivial_(false),
+          is_incomplete_(false),
           users_() {}
 
     PhiCandidate(const PhiCandidate&) = delete;
@@ -66,32 +67,22 @@ class SSARewriter {
     std::vector<uint32_t>& phi_args() { return phi_args_; }
     const std::vector<uint32_t>& phi_args() const { return phi_args_; }
     bool is_trivial() const { return is_trivial_; }
+    bool is_incomplete() const { return is_incomplete_; }
     std::vector<uint32_t>& users() { return users_; }
     const std::vector<uint32_t>& users() const { return users_; }
 
     // Marks this phi candidate as trivial.
     void MarkTrivial() { is_trivial_ = true; }
 
-    // Copies the argument vector |args| into |phi_args_|.
-    void SetPhiArgs(const std::vector<uint32_t>& args) { phi_args_ = args; }
+    // Marks this phi candidate as incomplete.
+    void MarkIncomplete() { is_incomplete_ = true; }
+
+    // Marks this phi candidate as complete.
+    void MarkComplete() { is_incomplete_ = false; }
 
     // Pretty prints this Phi candidate into a string and returns it. |cfg| is
     // needed to lookup basic block predecessors.
     std::string PrettyPrint(const ir::CFG* cfg) const;
-
-    // Returns true if this Phi candidate is incomplete.  Incomplete Phi
-    // candidates are those that lack arguments or those that have at least one
-    // nil argument.
-    bool IsIncomplete() const {
-      if (phi_args_.size() == 0) {
-        return true;
-      } else {
-        for (auto& arg : phi_args_) {
-          if (arg == 0) return true;
-        }
-        return false;
-      }
-    }
 
     // Registers |operand_id| as a user of this Phi candidate.
     void AddUser(uint32_t operand_id) { users_.push_back(operand_id); }
@@ -114,6 +105,10 @@ class SSARewriter {
 
     // True, if this Phi candidate has been found to be trivial.
     bool is_trivial_;
+
+    // Ture, if this Phi candidate has no arguments or at least one argument is
+    // %0.
+    bool is_incomplete_;
 
     // List of all users for this Phi instruction. Each element is the result ID
     // of the load instruction replaced by this Phi, or the result ID of a Phi
@@ -184,11 +179,6 @@ class SSARewriter {
     defs_at_block_[bb][var_id] = val_id;
   }
 
-  // Populates the map of stores to SSA-target variables in basic block |bb|.
-  // Returns an iterator pointing to the location of this map in
-  // |defs_at_block_|.
-  void ScanBlockForDefs(ir::BasicBlock* bb);
-
   // Processes the store operation |inst| in basic block |bb|. This extracts the
   // variable ID being stored into, determines whether the variable is an
   // SSA-target variable, and, if it is, it stores its value in the
@@ -209,42 +199,22 @@ class SSARewriter {
   // definition for |var_id|.
   uint32_t GetReachingDef(uint32_t var_id, ir::BasicBlock* bb);
 
-  // Decides whether to create a Phi candidate for |var_id| at basic block |bb|.
-  // The decision is made by examining all the definitions for |var_id| reaching
-  // through the predecessors of |bb|.  If all the reaching definitions are the
-  // same id, no Phi candidate is created.  Instead the unique reaching
-  // definition id is returned.  Otherwise, a new Phi candidate is created at
-  // |bb| for |var_id| and its result id is returned.
-  uint32_t MaybeCreatePhiCandidate(uint32_t var_id, ir::BasicBlock* bb);
+  // Adds arguments to |phi_candidate| by getting the reaching definition of
+  // |phi_candidate|'s variable on each of the predecessors of its basic block.
+  // After populating the argument list, it determines whether all its arguments
+  // are the same.  If so, it returns the ID of the argument that this Phi
+  // copies.
+  uint32_t AddPhiOperands(PhiCandidate* phi_candidate);
 
   // Creates a Phi candidate instruction for variable |var_id| in basic block
-  // |bb| with the arguments in |phi_args|.  The vector of argument is such that
-  // the Ith element in the vector corresponds to the Ith incoming edge into
-  // |bb|.  Phi candidates are potential Phi instructions that will be created
-  // at the end of the SSA rewrite pass.
+  // |bb|.
   //
   // Since the rewriting algorithm may remove Phi candidates when it finds them
   // to be trivial, we avoid the expense of creating actual Phi instructions by
   // keeping a pool of Phi candidates (|phi_candidates_|) during rewriting.
   //
   // Once the candidate Phi is created, it returns its ID.
-  PhiCandidate& CreatePhiCandidate(
-      uint32_t var_id, ir::BasicBlock* bb,
-      std::unique_ptr<std::vector<uint32_t>> phi_args);
-
-  // Returns a unique pointer to a vector of Phi candidate operand for variable
-  // |var_id| in basic block |bb|.  If all the new operands are the same, the
-  // unique value is returned in |same_id|.  If that value is anything other
-  // than 0, it means that these operands would define a trivial Phi candidate
-  // that does not need to be created.  If |same_id| is 0, it means that the
-  // operands are coming from unsealed blocks, which means that the Phi
-  // candidate may be required, so it should be created.
-  //
-  // This approach is based on an observation from Sebastian Hack, one of the
-  // authors of the original paper.
-  std::unique_ptr<std::vector<uint32_t>> GetPhiOperands(uint32_t var_id,
-                                                        ir::BasicBlock* bb,
-                                                        uint32_t* same_id);
+  PhiCandidate& CreatePhiCandidate(uint32_t var_id, ir::BasicBlock* bb);
 
   // Attempts to remove a trivial Phi candidate |phi_cand|. Trivial Phis are
   // those that only reference themselves and one other value |val| any number
@@ -255,9 +225,9 @@ class SSARewriter {
   // replace it.  Otherwise, it returns the SSA ID for |phi_cand|.
   uint32_t TryRemoveTrivialPhi(PhiCandidate* phi_cand);
 
-  // Completes |phi_cand| by adding missing arguments or replacing unknown
-  // arguments with their correct reaching definition.
-  void CompletePhiCandidate(PhiCandidate* phi_cand);
+  // Finalizes |phi_candidate| by replacing every argument that is still %0 with
+  // its reaching definition.
+  void FinalizePhiCandidate(PhiCandidate* phi_candidate);
 
   // Finalizes processing of Phi candidates.  Once the whole function has been
   // scanned for loads and stores, the CFG will still have some incomplete and
@@ -281,6 +251,11 @@ class SSARewriter {
   // rewriting.  phi_candidates_[id] returns the Phi candidate whose result is
   // |id|.
   std::unordered_map<uint32_t, PhiCandidate> phi_candidates_;
+
+  // Queue of incomplete Phi candidates. These are Phi candidates created at
+  // unsealed blocks. They need to be completed before they are instantiated in
+  // ApplyReplacements.
+  std::queue<PhiCandidate*> incomplete_phis_;
 
   // SSA replacement table.  This maps variable IDs, resulting from a load
   // operation, to the value IDs that will replace them after SSA rewriting.

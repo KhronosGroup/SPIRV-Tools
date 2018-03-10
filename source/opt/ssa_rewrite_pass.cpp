@@ -68,7 +68,6 @@ const uint32_t kVariableInitIdInIdx = 1;
 
 std::string SSARewriter::PhiCandidate::PrettyPrint(const ir::CFG* cfg) const {
   std::ostringstream str;
-  bool is_incomplete = false;
   str << "%" << result_id_ << " = Phi[%" << var_id_ << ", BB %" << bb_->id()
       << "](";
   if (phi_args_.size() > 0) {
@@ -76,20 +75,16 @@ std::string SSARewriter::PhiCandidate::PrettyPrint(const ir::CFG* cfg) const {
     for (uint32_t pred_label : cfg->preds(bb_->id())) {
       uint32_t arg_id = phi_args_[arg_ix++];
       str << "[%" << arg_id << ", bb(%" << pred_label << ")] ";
-      if (arg_id == 0) is_incomplete = true;
     }
-  } else {
-    is_incomplete = true;
   }
   str << ")" << ((is_trivial_) ? " [TRIVIAL PHI]" : "")
-      << ((is_incomplete) ? "  [INCOMPLETE]" : "");
+      << ((is_incomplete_) ? "  [INCOMPLETE]" : "");
 
   return str.str();
 }
 
-SSARewriter::PhiCandidate& SSARewriter::CreatePhiCandidate(
-    uint32_t var_id, ir::BasicBlock* bb,
-    std::unique_ptr<std::vector<uint32_t>> phi_args) {
+SSARewriter::PhiCandidate& SSARewriter::CreatePhiCandidate(uint32_t var_id,
+                                                           ir::BasicBlock* bb) {
   uint32_t phi_result_id = pass_->context()->TakeNextId();
   auto result = phi_candidates_.emplace(
       phi_result_id, PhiCandidate(var_id, phi_result_id, bb));
@@ -99,63 +94,132 @@ SSARewriter::PhiCandidate& SSARewriter::CreatePhiCandidate(
   assert(result.second == true);
 
   PhiCandidate& phi_candidate = result.first->second;
-  if (phi_args) {
-    phi_candidate.SetPhiArgs(*phi_args);
-    for (auto arg : phi_candidate.phi_args()) {
-      PhiCandidate* defining_phi = GetPhiCandidate(arg);
-      if (defining_phi) {
-        defining_phi->AddUser(phi_candidate.result_id());
+  return phi_candidate;
+}
+
+void SSARewriter::ReplacePhiUsersWith(const PhiCandidate& phi_to_remove,
+                                      uint32_t repl_id) {
+  for (uint32_t user_id : phi_to_remove.users()) {
+    PhiCandidate* user_phi = GetPhiCandidate(user_id);
+    if (user_phi) {
+      // If the user is a Phi candidate, replace all arguments that refer to
+      // |phi_to_remove.result_id()| with |repl_id|.
+      for (uint32_t& arg : user_phi->phi_args()) {
+        if (arg == phi_to_remove.result_id()) {
+          arg = repl_id;
+        }
+      }
+    } else {
+      // For regular loads, traverse the |load_replacement_| table looking for
+      // instances of |phi_to_remove|.
+      for (auto& it : load_replacement_) {
+        if (it.second == phi_to_remove.result_id()) {
+          it.second = repl_id;
+        }
+      }
+    }
+  }
+}
+
+uint32_t SSARewriter::TryRemoveTrivialPhi(PhiCandidate* phi_candidate) {
+  uint32_t same_id = 0;
+  for (uint32_t arg_id : phi_candidate->phi_args()) {
+    if (arg_id == same_id || arg_id == phi_candidate->result_id()) {
+      // This is a self-reference operand or a reference to the same value ID.
+      continue;
+    }
+    if (same_id != 0) {
+      // This Phi candidate merges at least two values.  Therefore, it is not
+      // trivial.
+      return phi_candidate->result_id();
+    }
+    same_id = arg_id;
+  }
+
+  // The previous logic has determined that this Phi candidate |phi_candidate|
+  // is trivial.  It is essentially the copy operation phi_candidate->phi_result
+  // = Phi(same, same, same, ...).  Since it is not necessary, we can re-route
+  // all the users of |phi_candidate->phi_result| to all its users, and remove
+  // |phi_candidate|.
+  //
+  // Mark the Phi candidate as trivial, so it won't be generated.
+  phi_candidate->MarkTrivial();
+
+  if (same_id == 0) {
+    // If this Phi is in the start block or unreachable, its result is
+    // undefined.
+    same_id = pass_->GetUndefVal(phi_candidate->var_id());
+  }
+
+  // Since |phi_candidate| always produces |same_id|, replace all the users of
+  // |phi_candidate| with |same_id|.
+  ReplacePhiUsersWith(*phi_candidate, same_id);
+
+  return same_id;
+}
+
+uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
+  assert(phi_candidate->phi_args().size() == 0 &&
+         "Phi candidate already has arguments");
+
+  for (uint32_t pred : pass_->cfg()->preds(phi_candidate->bb()->id())) {
+    ir::BasicBlock* pred_bb = pass_->cfg()->block(pred);
+
+    // If |pred_bb| is not sealed, use %0 to indicate that
+    // |phi_candidate| needs to be completed after the whole CFG has
+    // been processed.
+    //
+    // Note that we cannot call GetReachingDef() in these cases
+    // because this would generate an empty Phi candidate in
+    // |pred_bb|.  When |pred_bb| is later processed, a new definition
+    // for |phi_candidate->var_id_| will be lost because
+    // |phi_candidate| will still be reached by the empty Phi.
+    //
+    // Consider:
+    //
+    //       BB %23:
+    //           %38 = Phi[%i](%int_0[%1], %39[%25])
+    //
+    //           ...
+    //
+    //       BB %25: [Starts unsealed]
+    //       %39 = Phi[%i]()
+    //       %34 = ...
+    //       OpStore %i %34    -> Currdef(%i) at %25 is %34
+    //       OpBranch %23
+    //
+    // When we first create the Phi in %38, we add an operandless Phi in
+    // %39 to hold the unknown reaching def for %i.
+    //
+    // But then, when we go to complete %39 at the end.  The reaching def
+    // for %i in %25's predecessor is %38 itself.  So we miss the fact
+    // that %25 has a def for %i that should be used.
+    //
+    // By making the argument %0, we make |phi_candidate| incomplete,
+    // which will cause it to be completed after the whole CFG has
+    // been scanned.
+    uint32_t arg_id = IsBlockSealed(pred_bb)
+                          ? GetReachingDef(phi_candidate->var_id(), pred_bb)
+                          : 0;
+    phi_candidate->phi_args().push_back(arg_id);
+
+    if (arg_id == 0) {
+      // Add |phi_candidate| to the list of incomplete phi candidates.
+      incomplete_phis_.push(phi_candidate);
+      phi_candidate->MarkIncomplete();
+    } else {
+      // If this argument is another Phi candidate, add |phi_candidate| to the
+      // list of users for the defining Phi.
+      PhiCandidate* defining_phi = GetPhiCandidate(arg_id);
+      if (defining_phi && defining_phi != phi_candidate) {
+        defining_phi->AddUser(phi_candidate->result_id());
       }
     }
   }
 
-  return phi_candidate;
-}
-
-std::unique_ptr<std::vector<uint32_t>> SSARewriter::GetPhiOperands(
-    uint32_t var_id, ir::BasicBlock* bb, uint32_t* same_id) {
-  uint32_t prev_arg = 0;
-  bool first_arg = true, all_same = true;
-  std::unique_ptr<std::vector<uint32_t>> operands =
-      MakeUnique<std::vector<uint32_t>>();
-
-  *same_id = 0;
-  for (uint32_t pred : pass_->cfg()->preds(bb->id())) {
-    // Only try to get the reaching definition for this edge if the
-    // corresponding block is already sealed. Otherwise, we will be creating
-    // unnecessary empty Phis.
-    ir::BasicBlock* pred_bb = pass_->cfg()->block(pred);
-    uint32_t arg =
-        (IsBlockSealed(pred_bb)) ? GetReachingDef(var_id, pred_bb) : 0;
-    operands->push_back(arg);
-    if (!first_arg && prev_arg != arg) {
-      all_same = false;
-    }
-    prev_arg = arg;
-    first_arg = false;
-  }
-
-  if (all_same) {
-    *same_id = prev_arg;
-  }
-
-  return std::move(operands);
-}
-
-uint32_t SSARewriter::MaybeCreatePhiCandidate(uint32_t var_id,
-                                              ir::BasicBlock* bb) {
-  uint32_t same_id;
-  std::unique_ptr<std::vector<uint32_t>> phi_args =
-      GetPhiOperands(var_id, bb, &same_id);
-  if (same_id > 0) {
-    // If all the operands are the same ID, we do not need to create a
-    // new Phi candidate.  Instead, return the reaching definition
-    // for |var_id| that reaches all the operands.
-    return same_id;
-  }
-
-  PhiCandidate& phi_cand = CreatePhiCandidate(var_id, bb, std::move(phi_args));
-  return phi_cand.result_id();
+  // Only try to remove trivial Phis if we could complete them.
+  return phi_candidate->is_incomplete() ? phi_candidate->result_id()
+                                        : TryRemoveTrivialPhi(phi_candidate);
 }
 
 uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
@@ -177,8 +241,9 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
     // an empty Phi instruction for |var_id|.  This will act as a proxy for when
     // we determine the real reaching definition for |var_id| after the whole
     // CFG has been processed.
-    auto& phi_cand = CreatePhiCandidate(var_id, bb, nullptr);
-    val_id = phi_cand.result_id();
+    auto& phi_candidate = CreatePhiCandidate(var_id, bb);
+    incomplete_phis_.push(&phi_candidate);
+    val_id = phi_candidate.result_id();
   } else if (predecessors.size() == 1) {
     // If |bb| has exactly one predecessor, we look for |var_id|'s definition
     // there.
@@ -187,7 +252,9 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
     // If there is more than one predecessor, this is a join block which may
     // require a Phi instruction.  This will act as |var_id|'s current
     // definition to break potential cycles.
-    val_id = MaybeCreatePhiCandidate(var_id, bb);
+    PhiCandidate& phi_candidate = CreatePhiCandidate(var_id, bb);
+    WriteVariable(var_id, bb, phi_candidate.result_id());
+    val_id = AddPhiOperands(&phi_candidate);
   }
 
   // If we could not find a store for this variable in the path from the root
@@ -320,7 +387,6 @@ bool SSARewriter::ApplyReplacements() {
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
   std::cerr << "\n\nApplying replacement decisions to IR\n\n";
-
   PrintPhiCandidates();
   PrintReplacementTable();
   std::cerr << "\n\n";
@@ -344,7 +410,7 @@ bool SSARewriter::ApplyReplacements() {
       continue;
     }
 
-    assert(!phi_candidate.IsIncomplete() &&
+    assert(!phi_candidate.is_incomplete() &&
            "Tried to instantiate a Phi instruction from an incomplete Phi "
            "candidate");
 
@@ -413,101 +479,30 @@ bool SSARewriter::ApplyReplacements() {
   return modified;
 }
 
-void SSARewriter::ReplacePhiUsersWith(const PhiCandidate& phi_to_remove,
-                                      uint32_t repl_id) {
-  for (uint32_t user_id : phi_to_remove.users()) {
-    PhiCandidate* user_phi = GetPhiCandidate(user_id);
-    if (user_phi) {
-      // If the user is a Phi candidate, replace all arguments using
-      // |phi_to_remove| with |repl_id|.
-      for (uint32_t& arg : user_phi->phi_args()) {
-        if (arg == phi_to_remove.result_id()) {
-          arg = repl_id;
-        }
-      }
-    } else {
-      // For regular loads, traverse the |load_replacement_| table looking for
-      // instances of |phi_to_remove|.
-      for (auto& it : load_replacement_) {
-        if (it.second == phi_to_remove.result_id()) {
-          it.second = repl_id;
-        }
-      }
-    }
-  }
-}
+void SSARewriter::FinalizePhiCandidate(PhiCandidate* phi_candidate) {
+  assert(phi_candidate->phi_args().size() > 0 &&
+         "Phi candidate should have arguments");
 
-uint32_t SSARewriter::TryRemoveTrivialPhi(PhiCandidate* phi_cand) {
-  uint32_t same_id = 0;
-  for (uint32_t op : phi_cand->phi_args()) {
-    if (op == same_id || op == phi_cand->result_id()) {
-      // This is a self-reference operand or a reference to the same value ID.
+  uint32_t ix = 0;
+  for (uint32_t pred : pass_->cfg()->preds(phi_candidate->bb()->id())) {
+    ir::BasicBlock* pred_bb = pass_->cfg()->block(pred);
+    uint32_t& arg_id = phi_candidate->phi_args()[ix++];
+    if (arg_id != 0) {
+      assert(GetReachingDef(phi_candidate->var_id(), pred_bb) == arg_id &&
+             "Phi argument not coming from its reaching definition");
       continue;
     }
-    if (same_id != 0) {
-      // This Phi candidate merges at least two values.  Therefore, it is not
-      // trivial.
-      return phi_cand->result_id();
-    }
-    same_id = op;
+
+    // If |pred_bb| is still not sealed, it means it's unreachable. In this
+    // case, we just use Undef as an argument.
+    arg_id = IsBlockSealed(pred_bb)
+                 ? GetReachingDef(phi_candidate->var_id(), pred_bb)
+                 : pass_->GetUndefVal(phi_candidate->var_id());
   }
 
-  // The previous logic has determined that this Phi candidate |phi_cand| is
-  // trivial.  It is essentially the copy operation phi_cand->phi_result =
-  // Phi(same, same, same, ...).  Since it is not necessary, we can re-route
-  // all the users of |phi_cand->phi_result| to all its users, and remove
-  // |phi_cand|.
-  //
-  // Mark the Phi candidate as trivial, so it won't be generated.
-  phi_cand->MarkTrivial();
+  phi_candidate->MarkComplete();
 
-  if (same_id == 0) {
-    // If this Phi is in the start block or unreachable, its result is
-    // undefined.
-    same_id = pass_->GetUndefVal(phi_cand->var_id());
-  }
-
-  // Since |phi_cand| always produces |same_id|, replace all the users of
-  // |phi_cand| with |same_id|.
-  ReplacePhiUsersWith(*phi_cand, same_id);
-
-  return same_id;
-}
-
-void SSARewriter::CompletePhiCandidate(PhiCandidate* phi_cand) {
-  assert(phi_cand->IsIncomplete());
-
-#if SSA_REWRITE_DEBUGGING_LEVEL > 1
-  std::cerr << "Incomplete Phi candidate at BB % " << phi_cand->bb()->id()
-            << " : " << phi_cand->PrettyPrint(pass_->cfg()) << " -> ";
-#endif
-
-  if (phi_cand->phi_args().size() == 0) {
-    uint32_t same_id;
-    phi_cand->SetPhiArgs(
-        *GetPhiOperands(phi_cand->var_id(), phi_cand->bb(), &same_id));
-  } else {
-    uint32_t arg_ix = 0;
-    for (uint32_t pred : pass_->cfg()->preds(phi_cand->bb()->id())) {
-      uint32_t* curr_arg_id = &phi_cand->phi_args()[arg_ix++];
-      if (*curr_arg_id == 0) {
-        // If a predecessor block remains unsealed, it means that it is not
-        // reachable from the entry basic block.  Any definition coming through
-        // this block is irrelevant, so we use Undef as the operand.
-        ir::BasicBlock* pred_bb = pass_->cfg()->block(pred);
-        *curr_arg_id = (IsBlockSealed(pred_bb))
-                           ? GetReachingDef(phi_cand->var_id(), pred_bb)
-                           : pass_->GetUndefVal(phi_cand->var_id());
-      }
-    }
-  }
-
-  // If the Phi became trivial, remove it.
-  TryRemoveTrivialPhi(phi_cand);
-
-#if SSA_REWRITE_DEBUGGING_LEVEL > 1
-  std::cerr << phi_cand->PrettyPrint(pass_->cfg()) << "\n";
-#endif
+  TryRemoveTrivialPhi(phi_candidate);
 }
 
 void SSARewriter::FinalizePhiCandidates() {
@@ -517,19 +512,11 @@ void SSARewriter::FinalizePhiCandidates() {
   std::cerr << "\n";
 #endif
 
-  // Note that completing Phi candidates may generate new Phi candidates.  New
-  // Phi candidates at this stage are guaranteed to be complete, because the
-  // whole CFG has been scanned already.  To avoid invalidating the iterator, we
-  // first collect all the incomplete Phi candidates and then complete them.
-  std::vector<PhiCandidate*> phis_to_complete;
-  for (auto& it : phi_candidates_) {
-    PhiCandidate* phi_cand = &it.second;
-    if (phi_cand->IsIncomplete()) phis_to_complete.push_back(phi_cand);
-  }
-
   // Now, complete the collected candidates.
-  for (PhiCandidate* phi_cand : phis_to_complete) {
-    CompletePhiCandidate(phi_cand);
+  while (incomplete_phis_.size() > 0) {
+    PhiCandidate* phi_candidate = incomplete_phis_.front();
+    incomplete_phis_.pop();
+    FinalizePhiCandidate(phi_candidate);
   }
 }
 
