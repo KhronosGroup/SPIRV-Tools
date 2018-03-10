@@ -487,17 +487,13 @@ void SSARewriter::FinalizePhiCandidate(PhiCandidate* phi_candidate) {
   for (uint32_t pred : pass_->cfg()->preds(phi_candidate->bb()->id())) {
     ir::BasicBlock* pred_bb = pass_->cfg()->block(pred);
     uint32_t& arg_id = phi_candidate->phi_args()[ix++];
-    if (arg_id != 0) {
-      assert(GetReachingDef(phi_candidate->var_id(), pred_bb) == arg_id &&
-             "Phi argument not coming from its reaching definition");
-      continue;
+    if (arg_id == 0) {
+      // If |pred_bb| is still not sealed, it means it's unreachable. In this
+      // case, we just use Undef as an argument.
+      arg_id = IsBlockSealed(pred_bb)
+                   ? GetReachingDef(phi_candidate->var_id(), pred_bb)
+                   : pass_->GetUndefVal(phi_candidate->var_id());
     }
-
-    // If |pred_bb| is still not sealed, it means it's unreachable. In this
-    // case, we just use Undef as an argument.
-    arg_id = IsBlockSealed(pred_bb)
-                 ? GetReachingDef(phi_candidate->var_id(), pred_bb)
-                 : pass_->GetUndefVal(phi_candidate->var_id());
   }
 
   phi_candidate->MarkComplete();
