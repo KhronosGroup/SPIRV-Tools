@@ -494,6 +494,8 @@ void SSARewriter::FinalizePhiCandidate(PhiCandidate* phi_candidate) {
       arg_id = IsBlockSealed(pred_bb)
                    ? GetReachingDef(phi_candidate->var_id(), pred_bb)
                    : pass_->GetUndefVal(phi_candidate->var_id());
+    } else if (arg_id != GetReachingDef(phi_candidate->var_id(), pred_bb)) {
+      assert(false && "Phi argument and its reaching definition do not match.");
     }
   }
 
