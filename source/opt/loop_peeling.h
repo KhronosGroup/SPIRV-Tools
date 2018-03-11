@@ -19,6 +19,7 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "opt/ir_context.h"
@@ -28,16 +29,47 @@
 namespace spvtools {
 namespace opt {
 
-// Utility class to perform the actual peeling of a given loop.
+// Utility class to perform the peeling of a given loop.
+// The loop peeling transformation make a certain amount of a loop iterations to
+// be executed either before (peel before) or after (peel after) the transformed
+// loop.
+//
+// For peeling cases the transformation does the following steps:
+//   - It clones the loop and inserts the cloned loop before the original loop;
+//   - It connects all iterating values of the cloned loop with the
+//     corresponding original loop values so that the second loop starts with
+//     the appropriate values.
+//   - It inserts a new induction variable "i" is inserted into the cloned that
+//     starts with the value 0 and increment by step of one.
+//
+// The last step is specific to each case:
+//   - Peel before: the transformation is to peel the "N" first iterations.
+//     The exit condition of the cloned loop is changed so that the loop
+//     exits when "i < N" becomes false.
+//   - Peel after: the transformation is to peel the "N" last iterations,
+//     then the exit condition of the cloned loop is changed so that the loop
+//     exits when "i + N < max_iteration" becomes false, where "max_iteration"
+//     is the upper bound of the loop.
+//
+// To be peelable:
+//   - The loop must be in LCSSA form;
+//   - The loop must not contain any breaks;
+//   - The loop must not have any ambiguous iterators updates (see
+//     "CanPeelLoop").
+// The method "CanPeelLoop" checks that those constrained are met.
+//
+// Fixme(Victor): Allow the utility it accept an canonical induction variable
+// rather than automatically create one.
+// Fixme(Victor): When possible, evaluate the initial value of the second loop
+// iterating values rather than using the exit value of the first loop.
 class LoopPeeling {
  public:
   LoopPeeling(ir::IRContext* context, ir::Loop* loop)
       : context_(context),
         loop_utils_(context, loop),
         loop_(loop),
-        extra_induction_variable_(nullptr) {
-    assert(loop_->IsLCSSA() && "Loop is not in LCSSA form");
-    GetIteratingExitValue();
+        canonical_induction_variable_(nullptr) {
+    GetIteratingExitValues();
   }
 
   // Returns true if the loop can be peeled.
@@ -56,6 +88,9 @@ class LoopPeeling {
   bool CanPeelLoop() {
     ir::CFG& cfg = *context_->cfg();
 
+    if (!loop_->IsLCSSA()) {
+      return false;
+    }
     if (!loop_->GetMergeBlock()) {
       return false;
     }
@@ -77,40 +112,37 @@ class LoopPeeling {
   // dedicated loop.
   void PeelAfter(ir::Instruction* factor, ir::Instruction* iteration_count);
 
-  // Returns the first loop (peeled loop for PeelBefore).
-  ir::Loop* GetBeforeLoop() { return new_loop_; }
-  // Returns the second loop (peeled loop for PeelAfter).
-  ir::Loop* GetAfterLoop() { return loop_; }
-  // Returns the induction variable build and use to peel the loop.
-  ir::Instruction* GetExtraInductionVariable() {
-    return extra_induction_variable_;
-  }
+  // Returns the cloned loop.
+  ir::Loop* GetClonedLoop() { return cloned_loop_; }
+  // Returns the original loop.
+  ir::Loop* GetOriginalLoop() { return loop_; }
 
  private:
   ir::IRContext* context_;
   LoopUtils loop_utils_;
   // The original loop.
   ir::Loop* loop_;
-  // Peeled loop.
-  ir::Loop* new_loop_;
+  // The cloned loop.
+  ir::Loop* cloned_loop_;
   // This is set to true when the exit and back-edge branch instruction is the
   // same.
   bool do_while_form_;
 
-  ir::Instruction* extra_induction_variable_;
+  // The canonical induction variable of the cloned loop. The induction variable
+  // is initialized to 0 and incremented by step of 1.
+  ir::Instruction* canonical_induction_variable_;
 
-  // Map between loop iterators and exit values.
+  // Map between loop iterators and exit values. Loop iterators
   std::unordered_map<uint32_t, ir::Instruction*> exit_value_;
 
-  // Duplicate |loop_| and place the new loop before the cloned loop.
-  // |loop_| must be in LCSSA form and have a merge block with a using
-  // incoming
-  // branch (i.e. must not contain a break).
-  void DuplicateLoop();
+  // Duplicate |loop_| and place the new loop before the cloned loop. Iterating
+  // values from the cloned loop are then connected to the original loop as
+  // initializer.
+  void DuplicateAndConnectLoop();
 
-  // Insert an induction variable into the first loop as a simplified counter.
-  // Fixme(Victor): with a scalar evolution, this can removed.
-  void InsertIterator(ir::Instruction* factor);
+  // Insert the canonical induction variable into the first loop as a simplified
+  // counter.
+  void InsertCanonicalInductionVariable(ir::Instruction* factor);
 
   // Fixes the exit condition of the before loop. The function calls
   // |condition_builder| to get the condition to use in the conditional branch
@@ -118,27 +150,6 @@ class LoopPeeling {
   // true.
   void FixExitCondition(
       const std::function<uint32_t(ir::BasicBlock*)>& condition_builder);
-
-  // Connects iterating values so that loop like
-  // int z = 0;
-  // for (int i = 0; i++ < M; i += cst1) {
-  //   if (cond)
-  //     z += cst2;
-  // }
-  //
-  // Becomes:
-  //
-  // int z = 0;
-  // int i = 0;
-  // for (; i++ < M; i += cst1) {
-  //   if (cond)
-  //     z += cst2;
-  // }
-  // for (; i++ < M; i += cst1) {
-  //   if (cond)
-  //     z += cst2;
-  // }
-  void ConnectIterators(const LoopUtils::LoopCloningResult& clone_results);
 
   // Gathers all operations involved in the update of |iterator| into
   // |operations|.
@@ -150,7 +161,7 @@ class LoopPeeling {
   // iterating value in the loop (a phi instruction in the loop header) and its
   // SSA value when it exit the loop. If no exit value can be accurately found,
   // it is map to nullptr (see comment on CanPeelLoop).
-  void GetIteratingExitValue();
+  void GetIteratingExitValues();
 };
 
 }  // namespace opt

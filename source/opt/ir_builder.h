@@ -159,7 +159,7 @@ class InstructionBuilder {
     return AddInstruction(std::move(phi_inst));
   }
 
-  // Creates an addtion instruction.
+  // Creates an addition instruction.
   // The id |type| must be the id of the instruction's type, must be the same as
   // |op1| and |op2| types.
   // The id |op1| is the left hand side of the operation.
@@ -172,11 +172,9 @@ class InstructionBuilder {
   }
 
   // Creates a less than instruction for unsigned integer.
-  // The id |type| must be the id of an unsigned int and must be the same as
-  // |op1| and |op2| types.
   // The id |op1| is the left hand side of the operation.
   // The id |op2| is the right hand side of the operation.
-  // It is assumed that |type| represents the type of both operand as well.
+  // It is assumed that |op1| and |op2| have the same underlying type.
   ir::Instruction* AddULessThan(uint32_t op1, uint32_t op2) {
     analysis::Bool bool_type;
     uint32_t type = GetContext()->get_type_mgr()->GetId(&bool_type);
@@ -189,7 +187,7 @@ class InstructionBuilder {
   // Creates a less than instruction for signed integer.
   // The id |op1| is the left hand side of the operation.
   // The id |op2| is the right hand side of the operation.
-  // It is assumed that |type| represents the type of both operand as well.
+  // It is assumed that |op1| and |op2| have the same underlying type.
   ir::Instruction* AddSLessThan(uint32_t op1, uint32_t op2) {
     analysis::Bool bool_type;
     uint32_t type = GetContext()->get_type_mgr()->GetId(&bool_type);
@@ -199,11 +197,10 @@ class InstructionBuilder {
     return AddInstruction(std::move(inst));
   }
 
-  // Creates an OpILessThan or OpULessThen instruction depending on the signed
-  // of |type|. The |type| is the type of the instruction. The id |op1| is the
-  // left hand side of the operation. The id |op2| is the right hand side of the
-  // operation. It is assumed that |type| represents the type of both operand as
-  // well.
+  // Creates an OpILessThan or OpULessThen instruction depending on the sign of
+  // |op1|. The id |op1| is the left hand side of the operation. The id |op2| is
+  // the right hand side of the operation. It is assumed that |op1| and |op2|
+  // have the same underlying type.
   ir::Instruction* AddLessThan(uint32_t op1, uint32_t op2) {
     ir::Instruction* op1_insn = context_->get_def_use_mgr()->GetDef(op1);
     analysis::Type* type =
