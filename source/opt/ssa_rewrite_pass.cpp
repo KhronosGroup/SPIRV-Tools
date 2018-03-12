@@ -77,7 +77,7 @@ std::string SSARewriter::PhiCandidate::PrettyPrint(const ir::CFG* cfg) const {
       str << "[%" << arg_id << ", bb(%" << pred_label << ")] ";
     }
   }
-  str << ")" << ((is_trivial_) ? " [TRIVIAL PHI]" : "")
+  str << ")" << ((is_trivial_) ? " [TRIVIAL]" : "")
       << ((is_complete_) ? "  [COMPLETE]" : "  [INCOMPLETE]");
 
   return str.str();
@@ -122,9 +122,6 @@ void SSARewriter::ReplacePhiUsersWith(const PhiCandidate& phi_to_remove,
 }
 
 uint32_t SSARewriter::TryRemoveTrivialPhi(PhiCandidate* phi_candidate) {
-  assert(phi_candidate->is_complete() &&
-         "Cannot determine triviality on incomplete Phi candidates.");
-
   uint32_t same_id = 0;
   for (uint32_t arg_id : phi_candidate->phi_args()) {
     if (arg_id == same_id || arg_id == phi_candidate->result_id()) {
@@ -161,10 +158,7 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
   assert(phi_candidate->phi_args().size() == 0 &&
          "Phi candidate already has arguments");
 
-  // Assume we are going to fill-in all the operands. If any reaching
-  // definition is %0, then |phi_candidate| will become incomplete.
-  phi_candidate->MarkComplete();
-
+  bool found_0_arg = false;
   for (uint32_t pred : pass_->cfg()->preds(phi_candidate->bb()->id())) {
     ir::BasicBlock* pred_bb = pass_->cfg()->block(pred);
 
@@ -207,7 +201,7 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
     phi_candidate->phi_args().push_back(arg_id);
 
     if (arg_id == 0) {
-      phi_candidate->MarkIncomplete();
+      found_0_arg = true;
     } else {
       // If this argument is another Phi candidate, add |phi_candidate| to the
       // list of users for the defining Phi.
@@ -218,8 +212,10 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
     }
   }
 
-  // If |phi_candidate| is incomplete, add it to the list of Phis to complete.
-  if (!phi_candidate->is_complete()) {
+  // If we could not fill-in all the arguments of this Phi, mark it incomplete
+  // so it gets completed after the whole CFG has been processed.
+  if (found_0_arg) {
+    phi_candidate->MarkIncomplete();
     incomplete_phis_.push(phi_candidate);
     return phi_candidate->result_id();
   }
@@ -229,6 +225,7 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
   if (repl_id == phi_candidate->result_id()) {
     // |phi_candidate| is complete and not trivial.  Add it to the
     // list of Phi candidates to generate.
+    phi_candidate->MarkComplete();
     phis_to_generate_.push_back(phi_candidate);
   }
 
@@ -411,7 +408,7 @@ bool SSARewriter::ApplyReplacements() {
               << "\n";
 #endif
 
-    assert(phi_candidate->is_complete() && !phi_candidate->is_trivial() &&
+    assert(phi_candidate->is_complete() &&
            "Tried to instantiate a Phi instruction from an incomplete Phi "
            "candidate");
 
@@ -508,21 +505,13 @@ void SSARewriter::FinalizePhiCandidate(PhiCandidate* phi_candidate) {
   phi_candidate->MarkComplete();
 
   // If |phi_candidate| is not trivial, add it to the list of Phis to generate.
-  do {
-    uint32_t new_id = TryRemoveTrivialPhi(phi_candidate);
-    if (new_id == phi_candidate->result_id()) {
-      // If we could not remove |phi_canidate|, it means that it is complete and
-      // not trivial. Add it to the list of Phis to generate.
-      assert(!phi_candidate->is_trivial() &&
-             "A completed Phi cannot be trivial.");
-      phis_to_generate_.push_back(phi_candidate);
-      return;
-    }
-
-    // Otherwise, see if |new_id| refers to another completed Phi candidate that
-    // may need to be removed.
-    phi_candidate = GetPhiCandidate(new_id);
-  } while (phi_candidate && phi_candidate->is_complete());
+  if (TryRemoveTrivialPhi(phi_candidate) == phi_candidate->result_id()) {
+    // If we could not remove |phi_candidate|, it means that it is complete
+    // and not trivial. Add it to the list of Phis to generate.
+    assert(!phi_candidate->is_trivial() &&
+           "A completed Phi cannot be trivial.");
+    phis_to_generate_.push_back(phi_candidate);
+  }
 }
 
 void SSARewriter::FinalizePhiCandidates() {

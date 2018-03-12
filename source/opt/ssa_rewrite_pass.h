@@ -248,7 +248,7 @@ class SSARewriter {
   BlockDefsMap defs_at_block_;
 
   // Map, indexed by Phi ID, holding all the Phi candidates created during SSA
-  // rewriting.  phi_candidates_[id] returns the Phi candidate whose result is
+  // rewriting.  |phi_candidates_[id]| returns the Phi candidate whose result is
   // |id|.
   std::unordered_map<uint32_t, PhiCandidate> phi_candidates_;
 
