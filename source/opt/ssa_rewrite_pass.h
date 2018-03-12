@@ -54,7 +54,7 @@ class SSARewriter {
           bb_(block),
           phi_args_(),
           is_trivial_(false),
-          is_incomplete_(false),
+          is_complete_(false),
           users_() {}
 
     PhiCandidate(const PhiCandidate&) = delete;
@@ -67,7 +67,7 @@ class SSARewriter {
     std::vector<uint32_t>& phi_args() { return phi_args_; }
     const std::vector<uint32_t>& phi_args() const { return phi_args_; }
     bool is_trivial() const { return is_trivial_; }
-    bool is_incomplete() const { return is_incomplete_; }
+    bool is_complete() const { return is_complete_; }
     std::vector<uint32_t>& users() { return users_; }
     const std::vector<uint32_t>& users() const { return users_; }
 
@@ -75,10 +75,10 @@ class SSARewriter {
     void MarkTrivial() { is_trivial_ = true; }
 
     // Marks this phi candidate as incomplete.
-    void MarkIncomplete() { is_incomplete_ = true; }
+    void MarkIncomplete() { is_complete_ = false; }
 
     // Marks this phi candidate as complete.
-    void MarkComplete() { is_incomplete_ = false; }
+    void MarkComplete() { is_complete_ = true; }
 
     // Pretty prints this Phi candidate into a string and returns it. |cfg| is
     // needed to lookup basic block predecessors.
@@ -106,9 +106,9 @@ class SSARewriter {
     // True, if this Phi candidate has been found to be trivial.
     bool is_trivial_;
 
-    // Ture, if this Phi candidate has no arguments or at least one argument is
+    // False, if this Phi candidate has no arguments or at least one argument is
     // %0.
-    bool is_incomplete_;
+    bool is_complete_;
 
     // List of all users for this Phi instruction. Each element is the result ID
     // of the load instruction replaced by this Phi, or the result ID of a Phi
@@ -256,6 +256,10 @@ class SSARewriter {
   // unsealed blocks. They need to be completed before they are instantiated in
   // ApplyReplacements.
   std::queue<PhiCandidate*> incomplete_phis_;
+
+  // List of completed Phi candidates.  These are the only candidates that will
+  // become real Phi instructions.
+  std::vector<PhiCandidate*> phis_to_generate_;
 
   // SSA replacement table.  This maps variable IDs, resulting from a load
   // operation, to the value IDs that will replace them after SSA rewriting.

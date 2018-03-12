@@ -671,9 +671,9 @@ OpStore %f %float_0
 OpStore %i %int_0
 OpBranch %25
 %25 = OpLabel
-%48 = OpPhi %float %49 %24 %46 %27
 %46 = OpPhi %float %float_0 %24 %37 %27
 %45 = OpPhi %int %int_0 %24 %43 %27
+%48 = OpPhi %float %49 %24 %46 %27
 OpLoopMerge %26 %27 None
 OpBranch %28
 %28 = OpLabel
