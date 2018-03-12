@@ -50,7 +50,7 @@
 // Debug logging (0: Off, 1-N: Verbosity level).  Replace this with the
 // implementation done for
 // https://github.com/KhronosGroup/SPIRV-Tools/issues/1351
-// #define SSA_REWRITE_DEBUGGING_LEVEL 3
+#define SSA_REWRITE_DEBUGGING_LEVEL 1
 
 #ifdef SSA_REWRITE_DEBUGGING_LEVEL
 #include <ostream>
@@ -300,7 +300,7 @@ void SSARewriter::ProcessStore(ir::Instruction* inst, ir::BasicBlock* bb) {
   if (pass_->IsSSATargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
 
-#if SSA_REWRITE_DEBUGGING_LEVEL > 0
+#if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
               << inst->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
               << "\n";
@@ -326,7 +326,7 @@ void SSARewriter::ProcessLoad(ir::Instruction* inst, ir::BasicBlock* bb) {
       defining_phi->AddUser(load_id);
     }
 
-#if SSA_REWRITE_DEBUGGING_LEVEL > 0
+#if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound load: "
               << inst->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
               << " (replacement for %" << load_id << " is %" << val_id << ")\n";
@@ -352,7 +352,7 @@ void SSARewriter::PrintReplacementTable() const {
 }
 
 void SSARewriter::GenerateSSAReplacements(ir::BasicBlock* bb) {
-#if SSA_REWRITE_DEBUGGING_LEVEL > 0
+#if SSA_REWRITE_DEBUGGING_LEVEL > 1
   std::cerr << "Generating SSA replacements for block: " << bb->id() << "\n";
   std::cerr << bb->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
             << "\n";
@@ -373,7 +373,7 @@ void SSARewriter::GenerateSSAReplacements(ir::BasicBlock* bb) {
     }
   }
 
-#if SSA_REWRITE_DEBUGGING_LEVEL > 0
+#if SSA_REWRITE_DEBUGGING_LEVEL > 1
   PrintPhiCandidates();
   PrintReplacementTable();
   std::cerr << "\n\n";
@@ -393,7 +393,7 @@ uint32_t SSARewriter::GetReplacement(std::pair<uint32_t, uint32_t> repl) {
 bool SSARewriter::ApplyReplacements() {
   bool modified = false;
 
-#if SSA_REWRITE_DEBUGGING_LEVEL > 1
+#if SSA_REWRITE_DEBUGGING_LEVEL > 2
   std::cerr << "\n\nApplying replacement decisions to IR\n\n";
   PrintPhiCandidates();
   PrintReplacementTable();
@@ -403,7 +403,7 @@ bool SSARewriter::ApplyReplacements() {
   // Add Phi instructions from completed Phi candidates.
   std::vector<ir::Instruction*> generated_phis;
   for (const PhiCandidate* phi_candidate : phis_to_generate_) {
-#if SSA_REWRITE_DEBUGGING_LEVEL > 1
+#if SSA_REWRITE_DEBUGGING_LEVEL > 2
     std::cerr << "Phi candidate: " << phi_candidate->PrettyPrint(pass_->cfg())
               << "\n";
 #endif
@@ -421,10 +421,12 @@ bool SSARewriter::ApplyReplacements() {
       uint32_t op_val_id = phi_candidate->phi_args()[arg_ix++];
       if (op_val_id >= first_phi_id_) {
         PhiCandidate* phi_user = GetPhiCandidate(op_val_id);
-        assert((phi_user == nullptr ||
-                (phi_user->is_complete() && !phi_user->is_trivial())) &&
-               "Found phi argument coming from a phi candidate that is "
-               "trivial or incomplete");
+        if (phi_user && !phi_user->is_complete()) {
+          assert(false &&
+                 "Found phi argument coming from a phi candidate that is "
+                 "trivial or incomplete");
+          op_val_id = 0;
+        }
       }
       phi_operands.push_back(
           {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {op_val_id}});
@@ -452,7 +454,7 @@ bool SSARewriter::ApplyReplacements() {
     pass_->get_def_use_mgr()->AnalyzeInstUse(&*phi_inst);
   }
 
-#if SSA_REWRITE_DEBUGGING_LEVEL > 0
+#if SSA_REWRITE_DEBUGGING_LEVEL > 1
   std::cerr << "\n\nReplacing the result of load instructions with the "
                "corresponding SSA id\n\n";
 #endif
@@ -464,7 +466,7 @@ bool SSARewriter::ApplyReplacements() {
     ir::Instruction* load_inst =
         pass_->context()->get_def_use_mgr()->GetDef(load_id);
 
-#if SSA_REWRITE_DEBUGGING_LEVEL > 1
+#if SSA_REWRITE_DEBUGGING_LEVEL > 2
     std::cerr << "\t"
               << load_inst->PrettyPrint(
                      SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
@@ -515,7 +517,7 @@ void SSARewriter::FinalizePhiCandidate(PhiCandidate* phi_candidate) {
 }
 
 void SSARewriter::FinalizePhiCandidates() {
-#if SSA_REWRITE_DEBUGGING_LEVEL > 0
+#if SSA_REWRITE_DEBUGGING_LEVEL > 1
   std::cerr << "Finalizing Phi candidates:\n\n";
   PrintPhiCandidates();
   std::cerr << "\n";
@@ -532,8 +534,7 @@ void SSARewriter::FinalizePhiCandidates() {
 bool SSARewriter::RewriteFunctionIntoSSA(ir::Function* fp) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 0
   std::cerr << "Function before SSA rewrite:\n"
-            << fp->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
-            << "\n\n\n";
+            << fp->PrettyPrint(0) << "\n\n\n";
 #endif
 
   // Generate all the SSA replacements and Phi candidates. This will
@@ -550,8 +551,7 @@ bool SSARewriter::RewriteFunctionIntoSSA(ir::Function* fp) {
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 0
   std::cerr << "\n\n\nFunction after SSA rewrite:\n"
-            << fp->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
-            << "\n";
+            << fp->PrettyPrint(0) << "\n";
 #endif
 
   return modified;
