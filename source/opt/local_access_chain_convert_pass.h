@@ -97,7 +97,7 @@ class LocalAccessChainConvertPass : public MemPass {
   // indices. Convert all loads and stores of such variables into equivalent
   // loads, stores, extracts and inserts. This unifies access to these
   // variables to a single mode and simplifies analysis and optimization.
-  // See IsSSATargetType() for targeted types.
+  // See IsTargetType() for targeted types.
   //
   // Nested access chains and pointer access chains are not currently
   // converted.

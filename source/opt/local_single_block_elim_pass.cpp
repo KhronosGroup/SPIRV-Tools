@@ -63,7 +63,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
           // Verify store variable is target type
           uint32_t varId;
           ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-          if (!IsSSATargetVar(varId)) continue;
+          if (!IsTargetVar(varId)) continue;
           if (!HasOnlySupportedRefs(varId)) continue;
           // Register the store
           if (ptrInst->opcode() == SpvOpVariable) {
@@ -85,7 +85,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
           // Verify store variable is target type
           uint32_t varId;
           ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-          if (!IsSSATargetVar(varId)) continue;
+          if (!IsTargetVar(varId)) continue;
           if (!HasOnlySupportedRefs(varId)) continue;
           // Look for previous store or load
           uint32_t replId = 0;

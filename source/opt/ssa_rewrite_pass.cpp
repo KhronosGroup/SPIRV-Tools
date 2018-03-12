@@ -50,7 +50,7 @@
 // Debug logging (0: Off, 1-N: Verbosity level).  Replace this with the
 // implementation done for
 // https://github.com/KhronosGroup/SPIRV-Tools/issues/1351
-#define SSA_REWRITE_DEBUGGING_LEVEL 1
+// #define SSA_REWRITE_DEBUGGING_LEVEL 1
 
 #ifdef SSA_REWRITE_DEBUGGING_LEVEL
 #include <ostream>
@@ -297,7 +297,7 @@ void SSARewriter::ProcessStore(ir::Instruction* inst, ir::BasicBlock* bb) {
     var_id = inst->result_id();
     val_id = inst->GetSingleWordInOperand(kVariableInitIdInIdx);
   }
-  if (pass_->IsSSATargetVar(var_id)) {
+  if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
@@ -311,7 +311,7 @@ void SSARewriter::ProcessStore(ir::Instruction* inst, ir::BasicBlock* bb) {
 void SSARewriter::ProcessLoad(ir::Instruction* inst, ir::BasicBlock* bb) {
   uint32_t var_id = 0;
   (void)pass_->GetPtr(inst, &var_id);
-  if (pass_->IsSSATargetVar(var_id)) {
+  if (pass_->IsTargetVar(var_id)) {
     // Get the immediate reaching definition for |var_id|.
     uint32_t val_id = GetReachingDef(var_id, bb);
 

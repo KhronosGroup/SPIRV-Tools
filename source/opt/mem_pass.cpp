@@ -38,7 +38,7 @@ const uint32_t kVariableInitIdInIdx = 1;
 
 }  // namespace
 
-bool MemPass::IsSSABaseTargetType(const ir::Instruction* typeInst) const {
+bool MemPass::IsBaseTargetType(const ir::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
@@ -56,29 +56,20 @@ bool MemPass::IsSSABaseTargetType(const ir::Instruction* typeInst) const {
   return false;
 }
 
-bool MemPass::IsSSATargetType(const ir::Instruction* typeInst) const {
-  if (IsSSABaseTargetType(typeInst)) {
-    return true;
-  }
-
+bool MemPass::IsTargetType(const ir::Instruction* typeInst) const {
+  if (IsBaseTargetType(typeInst)) return true;
   if (typeInst->opcode() == SpvOpTypeArray) {
-    if (!IsSSATargetType(
+    if (!IsTargetType(
             get_def_use_mgr()->GetDef(typeInst->GetSingleWordOperand(1)))) {
       return false;
     }
     return true;
   }
-
-  if (typeInst->opcode() != SpvOpTypeStruct) {
-    return false;
-  }
-
-  // All struct members must be SSA target types.
+  if (typeInst->opcode() != SpvOpTypeStruct) return false;
+  // All struct members must be math type
   return typeInst->WhileEachInId([this](const uint32_t* tid) {
     ir::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
-    if (!IsSSATargetType(compTypeInst)) {
-      return false;
-    }
+    if (!IsTargetType(compTypeInst)) return false;
     return true;
   });
 }
@@ -272,7 +263,7 @@ void MemPass::InitSSARewrite(ir::Function* func) {
         case SpvOpLoad: {
           uint32_t varId;
           (void)GetPtr(&inst, &varId);
-          if (!IsSSATargetVar(varId)) break;
+          if (!IsTargetVar(varId)) break;
           if (HasOnlySupportedRefs(varId)) break;
           seen_non_target_vars_.insert(varId);
           seen_target_vars_.erase(varId);
@@ -375,7 +366,7 @@ bool MemPass::SSABlockInitLoopHeader(
       }
       uint32_t varId;
       (void)GetPtr(&*ii, &varId);
-      if (!IsSSATargetVar(varId)) {
+      if (!IsTargetVar(varId)) {
         continue;
       }
       liveVars[varId] = 0;
@@ -533,25 +524,16 @@ bool MemPass::SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr) {
     return SSABlockInitMultiPred(*block_itr);
 }
 
-bool MemPass::IsSSATargetVar(uint32_t varId) {
+bool MemPass::IsTargetVar(uint32_t varId) {
   if (varId == 0) {
     return false;
   }
 
-  // If |varId| has been analyzed before, return its status.
-  if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end()) {
+  if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
     return false;
-  }
-
-  if (seen_target_vars_.find(varId) != seen_target_vars_.end()) {
-    return true;
-  }
-
-  // Check that |varId| is an OpVariable of Function storage class.
+  if (seen_target_vars_.find(varId) != seen_target_vars_.end()) return true;
   const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
-  if (varInst->opcode() != SpvOpVariable) {
-    return false;
-  }
+  if (varInst->opcode() != SpvOpVariable) return false;
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
@@ -559,16 +541,13 @@ bool MemPass::IsSSATargetVar(uint32_t varId) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
-
-  // Check that |varId|'s type is also an SSA target.
   const uint32_t varPteTypeId =
       varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
   ir::Instruction* varPteTypeInst = get_def_use_mgr()->GetDef(varPteTypeId);
-  if (!IsSSATargetType(varPteTypeInst)) {
+  if (!IsTargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
-
   seen_target_vars_.insert(varId);
   return true;
 }
@@ -642,7 +621,7 @@ bool MemPass::InsertPhiInstructions(ir::Function* func) {
         case SpvOpStore: {
           uint32_t varId;
           (void)GetPtr(inst, &varId);
-          if (!IsSSATargetVar(varId)) break;
+          if (!IsTargetVar(varId)) break;
           // Register new stored value for the variable
           block_defs_map_[label][varId] =
               inst->GetSingleWordInOperand(kStoreValIdInIdx);
@@ -651,7 +630,7 @@ bool MemPass::InsertPhiInstructions(ir::Function* func) {
           // Treat initialized OpVariable like an OpStore
           if (inst->NumInOperands() < 2) break;
           uint32_t varId = inst->result_id();
-          if (!IsSSATargetVar(varId)) break;
+          if (!IsTargetVar(varId)) break;
           // Register new stored value for the variable
           block_defs_map_[label][varId] =
               inst->GetSingleWordInOperand(kVariableInitIdInIdx);
@@ -659,7 +638,7 @@ bool MemPass::InsertPhiInstructions(ir::Function* func) {
         case SpvOpLoad: {
           uint32_t varId;
           (void)GetPtr(inst, &varId);
-          if (!IsSSATargetVar(varId)) break;
+          if (!IsTargetVar(varId)) break;
           modified = true;
           uint32_t replId = GetCurrentValue(varId, label);
           // If the variable is not defined, use undef.

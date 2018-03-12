@@ -155,7 +155,7 @@ void LocalAccessChainConvertPass::FindTargetVars(ir::Function* func) {
         case SpvOpLoad: {
           uint32_t varId;
           ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-          if (!IsSSATargetVar(varId)) break;
+          if (!IsTargetVar(varId)) break;
           const SpvOp op = ptrInst->opcode();
           // Rule out variables with non-supported refs eg function calls
           if (!HasOnlySupportedRefs(varId)) {
@@ -198,7 +198,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
           uint32_t varId;
           ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
           if (!IsNonPtrAccessChain(ptrInst->opcode())) break;
-          if (!IsSSATargetVar(varId)) break;
+          if (!IsTargetVar(varId)) break;
           std::vector<std::unique_ptr<ir::Instruction>> newInsts;
           uint32_t replId = GenAccessChainLoadReplacement(ptrInst, &newInsts);
           context()->KillNamesAndDecorates(&*ii);
@@ -213,7 +213,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
           uint32_t varId;
           ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
           if (!IsNonPtrAccessChain(ptrInst->opcode())) break;
-          if (!IsSSATargetVar(varId)) break;
+          if (!IsTargetVar(varId)) break;
           std::vector<std::unique_ptr<ir::Instruction>> newInsts;
           uint32_t valId = ii->GetSingleWordInOperand(kStoreValIdInIdx);
           GenAccessChainStoreReplacement(ptrInst, valId, &newInsts);

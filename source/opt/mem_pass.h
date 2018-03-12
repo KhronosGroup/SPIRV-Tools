@@ -46,25 +46,13 @@ class MemPass : public Pass {
     return Type2Undef(GetPointeeTypeId(get_def_use_mgr()->GetDef(var_id)));
   }
 
-  // Given the id of a pointer |ptrId|, return the top-most non-CopyObj.
-  // Also return the base variable's id in |varId|.  If no base variable is
-  // found, |varId| will be 0.
-  ir::Instruction* GetPtr(uint32_t ptrId, uint32_t* varId);
-
   // Given a load or store |ip|, return the pointer instruction.
   // Also return the base variable's id in |varId|.  If no base variable is
   // found, |varId| will be 0.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
-  // Returns true if |varId| is a variable that can be rewritten into SSA.
-  // Rewriting a variable into SSA means replacing all its load/store operations
-  // with operations on SSA IDs.  Target variables have the following properies:
-  //
-  // - The variable has local function scope. That is, it is declared by an
-  // OpVariable instruction with Function storage class.
-  //
-  // previously identified target variable.
-  // Returns false if |varId| is a previously identified non-target variable.
+  // Return true if |varId| is a previously identified target variable.
+  // Return false if |varId| is a previously identified non-target variable.
   //
   // Non-target variables are variable of function scope of a target type that
   // are accessed with constant-index access chains. not accessed with
@@ -73,17 +61,17 @@ class MemPass : public Pass {
   // If variable is not cached, return true if variable is a function scope
   // variable of target type, false otherwise. Updates caches of target and
   // non-target variables.
-  bool IsSSATargetVar(uint32_t varId);
+  bool IsTargetVar(uint32_t varId);
 
  protected:
-  // Returns true if |typeInst| is a scalar type, or a vector or matrix.
-  bool IsSSABaseTargetType(const ir::Instruction* typeInst) const;
+  // Returns true if |typeInst| is a scalar type
+  // or a vector or matrix
+  bool IsBaseTargetType(const ir::Instruction* typeInst) const;
 
-  // Returns true if |typeInst| is one of the concrete types or a struct or
-  // array
-  // of a concrete type.
+  // Returns true if |typeInst| is a math type or a struct or array
+  // of a math type.
   // TODO(): Add more complex types to convert
-  bool IsSSATargetType(const ir::Instruction* typeInst) const;
+  bool IsTargetType(const ir::Instruction* typeInst) const;
 
   // Returns true if |opcode| is a non-ptr access chain op
   bool IsNonPtrAccessChain(const SpvOp opcode) const;
@@ -92,21 +80,26 @@ class MemPass : public Pass {
   // a variable, a non-ptr access chain or a parameter of pointer type.
   bool IsPtr(uint32_t ptrId);
 
-  // Returns true if all uses of |id| are only name or decorate ops.
+  // Given the id of a pointer |ptrId|, return the top-most non-CopyObj.
+  // Also return the base variable's id in |varId|.  If no base variable is
+  // found, |varId| will be 0.
+  ir::Instruction* GetPtr(uint32_t ptrId, uint32_t* varId);
+
+  // Return true if all uses of |id| are only name or decorate ops.
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
 
   // Kill all instructions in block |bp|. Whether or not to kill the label is
   // indicated by |killLabel|.
   void KillAllInsts(ir::BasicBlock* bp, bool killLabel = true);
 
-  // Returns true if any instruction loads from |varId|
+  // Return true if any instruction loads from |varId|
   bool HasLoads(uint32_t varId) const;
 
-  // Returns true if |varId| is not a function variable or if it has
+  // Return true if |varId| is not a function variable or if it has
   // a load
   bool IsLiveVar(uint32_t varId) const;
 
-  // Returns true if |storeInst| is not a function variable or if its
+  // Return true if |storeInst| is not a function variable or if its
   // base variable has a load
   bool IsLiveStore(ir::Instruction* storeInst);
 
@@ -122,12 +115,12 @@ class MemPass : public Pass {
   // Call all the cleanup helper functions on |func|.
   bool CFGCleanup(ir::Function* func);
 
-  // Returns true if |op| is supported decorate.
+  // Return true if |op| is supported decorate.
   inline bool IsNonTypeDecorate(uint32_t op) const {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
 
-  // Returns undef in function for type. Create and insert an undef after the
+  // Return undef in function for type. Create and insert an undef after the
   // first non-variable in the function if it doesn't already exist. Add
   // undef to function undef map.
   uint32_t Type2Undef(uint32_t type_id);
@@ -144,7 +137,7 @@ class MemPass : public Pass {
   std::unordered_set<uint32_t> seen_non_target_vars_;
 
  private:
-  // Returns true if all uses of |varId| are only through supported reference
+  // Return true if all uses of |varId| are only through supported reference
   // operations ie. loads and store. Also cache in supported_ref_vars_.
   // TODO(dnovillo): This function is replicated in other passes and it's
   // slightly different in every pass. Is it possible to make one common
@@ -189,7 +182,7 @@ class MemPass : public Pass {
   // Returns true if the code was modified.
   bool SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr);
 
-  // Returns true if variable is loaded in block with |label| or in any
+  // Return true if variable is loaded in block with |label| or in any
   // succeeding block in structured order.
   bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
 
