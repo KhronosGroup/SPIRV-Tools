@@ -1425,7 +1425,7 @@ FoldingRule InsertFeedingExtract() {
            {cinst->GetSingleWordInOperand(kInsertObjectIdInIdx)}});
       for (; i < inst->NumInOperands(); ++i) {
         operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                            {cinst->GetSingleWordInOperand(i)}});
+                            {inst->GetSingleWordInOperand(i)}});
       }
       inst->SetInOperands(std::move(operands));
       return true;
