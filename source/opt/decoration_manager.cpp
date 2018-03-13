@@ -160,18 +160,22 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
   const InstructionList decorations_for2 = GetDecorationsFor(id2, false);
 
   // This function splits the decoration instructions into different sets,
-  // based on their opcode; only OpDecorate, OpDecorateId and OpMemberDecorate
-  // are considered, the other opcodes are ignored.
+  // based on their opcode; only OpDecorate, OpDecorateId,
+  // OpDecorateStringGOOGLE, and OpMemberDecorate are considered, the other
+  // opcodes are ignored.
   const auto fillDecorationSets =
       [](const InstructionList& decoration_list, DecorationSet* decorate_set,
-         DecorationSet* decorate_id_set, DecorationSet* member_decorate_set) {
+         DecorationSet* decorate_id_set, DecorationSet* decorate_string_set,
+         DecorationSet* member_decorate_set) {
         for (const ir::Instruction* inst : decoration_list) {
           std::u32string decoration_payload;
           // Ignore the opcode and the target as we do not want them to be
           // compared.
-          for (uint32_t i = 1u; i < inst->NumInOperands(); ++i)
-            for (uint32_t word : inst->GetInOperand(i).words)
+          for (uint32_t i = 1u; i < inst->NumInOperands(); ++i) {
+            for (uint32_t word : inst->GetInOperand(i).words) {
               decoration_payload.push_back(word);
+            }
+          }
 
           switch (inst->opcode()) {
             case SpvOpDecorate:
@@ -183,6 +187,9 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
             case SpvOpDecorateId:
               decorate_id_set->emplace(std::move(decoration_payload));
               break;
+            case SpvOpDecorateStringGOOGLE:
+              decorate_string_set->emplace(std::move(decoration_payload));
+              break;
             default:
               break;
           }
@@ -191,19 +198,26 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
 
   DecorationSet decorate_set_for1;
   DecorationSet decorate_id_set_for1;
+  DecorationSet decorate_string_set_for1;
   DecorationSet member_decorate_set_for1;
   fillDecorationSets(decorations_for1, &decorate_set_for1,
-                     &decorate_id_set_for1, &member_decorate_set_for1);
+                     &decorate_id_set_for1, &decorate_string_set_for1,
+                     &member_decorate_set_for1);
 
   DecorationSet decorate_set_for2;
   DecorationSet decorate_id_set_for2;
+  DecorationSet decorate_string_set_for2;
   DecorationSet member_decorate_set_for2;
   fillDecorationSets(decorations_for2, &decorate_set_for2,
-                     &decorate_id_set_for2, &member_decorate_set_for2);
+                     &decorate_id_set_for2, &decorate_string_set_for2,
+                     &member_decorate_set_for2);
 
-  return decorate_set_for1 == decorate_set_for2 &&
-         decorate_id_set_for1 == decorate_id_set_for2 &&
-         member_decorate_set_for1 == member_decorate_set_for2;
+  const bool result = decorate_set_for1 == decorate_set_for2 &&
+                      decorate_id_set_for1 == decorate_id_set_for2 &&
+                      member_decorate_set_for1 == member_decorate_set_for2 &&
+                      // Compare string sets last in case the strings are long.
+                      decorate_string_set_for1 == decorate_string_set_for2;
+  return result;
 }
 
 // TODO(pierremoreau): If OpDecorateId is referencing an OpConstant, one could
@@ -216,6 +230,7 @@ bool DecorationManager::AreDecorationsTheSame(const ir::Instruction* inst1,
     case SpvOpDecorate:
     case SpvOpMemberDecorate:
     case SpvOpDecorateId:
+    case SpvOpDecorateStringGOOGLE:
       break;
     default:
       return false;
@@ -243,6 +258,7 @@ void DecorationManager::AddDecoration(ir::Instruction* inst) {
   switch (inst->opcode()) {
     case SpvOpDecorate:
     case SpvOpDecorateId:
+    case SpvOpDecorateStringGOOGLE:
     case SpvOpMemberDecorate: {
       const auto target_id = inst->GetSingleWordInOperand(0u);
       id_to_decoration_insts_[target_id].direct_decorations.push_back(inst);
@@ -314,6 +330,7 @@ bool DecorationManager::WhileEachDecoration(
         break;
       case SpvOpDecorate:
       case SpvOpDecorateId:
+      case SpvOpDecorateStringGOOGLE:
         if (inst->GetSingleWordInOperand(1) == decoration) {
           if (!f(*inst)) return false;
         }
@@ -389,6 +406,7 @@ void DecorationManager::RemoveDecoration(ir::Instruction* inst) {
   switch (inst->opcode()) {
     case SpvOpDecorate:
     case SpvOpDecorateId:
+    case SpvOpDecorateStringGOOGLE:
     case SpvOpMemberDecorate: {
       const auto target_id = inst->GetSingleWordInOperand(0u);
       auto const iter = id_to_decoration_insts_.find(target_id);
