@@ -66,8 +66,8 @@ class AggressiveDCEPass : public MemPass {
   // Returns true if |inst| is dead.
   bool IsDead(ir::Instruction* inst);
 
-  // Adds entry points and execution modes to the worklist for processing with
-  // the first function.
+  // Adds entry points, execution modes and workgroup size decorations to the
+  // worklist for processing with the first function.
   void InitializeModuleScopeLiveInstructions();
 
   // Add |inst| to worklist_ and live_insts_.

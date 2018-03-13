@@ -478,11 +478,22 @@ void AggressiveDCEPass::Initialize(ir::IRContext* c) {
 }
 
 void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
+  // Keep all execution modes.
   for (auto& exec : get_module()->execution_modes()) {
     AddToWorklist(&exec);
   }
+  // Keep all entry points.
   for (auto& entry : get_module()->entry_points()) {
     AddToWorklist(&entry);
+  }
+  // Keep workgroup size.
+  for (auto& anno : get_module()->annotations()) {
+    if (anno.opcode() == SpvOpDecorate) {
+      if (anno.GetSingleWordInOperand(1u) == SpvDecorationBuiltIn &&
+          anno.GetSingleWordInOperand(2u) == SpvBuiltInWorkgroupSize) {
+        AddToWorklist(&anno);
+      }
+    }
   }
 }
 
