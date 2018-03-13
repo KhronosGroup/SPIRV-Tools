@@ -5176,6 +5176,31 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
 }
+
+// Test for #1404
+TEST_F(AggressiveDCETest, DontRemoveWorkgroupSize) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[wgs:%\w+]] BuiltIn WorkgroupSize
+; CHECK: [[wgs]] = OpSpecConstantComposite
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func"
+OpExecutionMode %func LocalSize 1 1 1
+OpDecorate %1 BuiltIn WorkgroupSize
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%functy = OpTypeFunction %void
+%v3int = OpTypeVector %int 3
+%2 = OpSpecConstant %int 1
+%1 = OpSpecConstantComposite %v3int %2 %2 %2
+%func = OpFunction %void None %functy
+%3 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::AggressiveDCEPass>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 // Test for #1214
