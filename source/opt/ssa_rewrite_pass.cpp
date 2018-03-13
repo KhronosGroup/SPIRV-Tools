@@ -537,6 +537,9 @@ bool SSARewriter::RewriteFunctionIntoSSA(ir::Function* fp) {
             << fp->PrettyPrint(0) << "\n\n\n";
 #endif
 
+  // Collect variables that can be converted into SSA IDs.
+  pass_->CollectTargetVars(fp);
+
   // Generate all the SSA replacements and Phi candidates. This will
   // generate incomplete and trivial Phis.
   pass_->cfg()->ForEachBlockInReversePostOrder(

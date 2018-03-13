@@ -63,6 +63,12 @@ class MemPass : public Pass {
   // non-target variables.
   bool IsTargetVar(uint32_t varId);
 
+  // Collect target SSA variables.  This traverses all the loads and stores in
+  // function |func| looking for variables that can be replaced with SSA IDs. It
+  // populates the sets |seen_target_vars_|, |seen_non_target_vars_| and
+  // |supported_ref_vars_|.
+  void CollectTargetVars(ir::Function* func);
+
  protected:
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix

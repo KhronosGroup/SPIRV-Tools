@@ -1481,6 +1481,103 @@ OpFunctionEnd
   EXPECT_TRUE(status == opt::Pass::Status::SuccessWithChange);
 }
 
+// TODO(dneto): Add Effcee as required dependency, and make this unconditional.
+#ifdef SPIRV_EFFCEE
+TEST_F(LocalSSAElimTest, CompositeExtractProblem) {
+  const std::string spv_asm = R"(
+               OpCapability Tessellation
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationControl %2 "main"
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %uint = OpTypeInt 32 0
+     %uint_3 = OpConstant %uint 3
+    %v3float = OpTypeVector %float 3
+    %v2float = OpTypeVector %float 2
+ %_struct_11 = OpTypeStruct %v4float %v4float %v4float %v3float %v3float %v2float %v2float
+%_arr__struct_11_uint_3 = OpTypeArray %_struct_11 %uint_3
+%_ptr_Function__arr__struct_11_uint_3 = OpTypePointer Function %_arr__struct_11_uint_3
+%_arr_v4float_uint_3 = OpTypeArray %v4float %uint_3
+%_ptr_Input__arr_v4float_uint_3 = OpTypePointer Input %_arr_v4float_uint_3
+         %16 = OpVariable %_ptr_Input__arr_v4float_uint_3 Input
+         %17 = OpVariable %_ptr_Input__arr_v4float_uint_3 Input
+         %18 = OpVariable %_ptr_Input__arr_v4float_uint_3 Input
+%_ptr_Input_uint = OpTypePointer Input %uint
+         %20 = OpVariable %_ptr_Input_uint Input
+%_ptr_Output__arr_v4float_uint_3 = OpTypePointer Output %_arr_v4float_uint_3
+         %22 = OpVariable %_ptr_Output__arr_v4float_uint_3 Output
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_arr_v3float_uint_3 = OpTypeArray %v3float %uint_3
+%_ptr_Input__arr_v3float_uint_3 = OpTypePointer Input %_arr_v3float_uint_3
+         %26 = OpVariable %_ptr_Input__arr_v3float_uint_3 Input
+         %27 = OpVariable %_ptr_Input__arr_v3float_uint_3 Input
+%_arr_v2float_uint_3 = OpTypeArray %v2float %uint_3
+%_ptr_Input__arr_v2float_uint_3 = OpTypePointer Input %_arr_v2float_uint_3
+         %30 = OpVariable %_ptr_Input__arr_v2float_uint_3 Input
+         %31 = OpVariable %_ptr_Input__arr_v2float_uint_3 Input
+%_ptr_Function__struct_11 = OpTypePointer Function %_struct_11
+          %2 = OpFunction %void None %4
+         %33 = OpLabel
+         %34 = OpLoad %_arr_v4float_uint_3 %16
+         %35 = OpLoad %_arr_v4float_uint_3 %17
+         %36 = OpLoad %_arr_v4float_uint_3 %18
+         %37 = OpLoad %_arr_v3float_uint_3 %26
+         %38 = OpLoad %_arr_v3float_uint_3 %27
+         %39 = OpLoad %_arr_v2float_uint_3 %30
+         %40 = OpLoad %_arr_v2float_uint_3 %31
+         %41 = OpCompositeExtract %v4float %34 0
+         %42 = OpCompositeExtract %v4float %35 0
+         %43 = OpCompositeExtract %v4float %36 0
+         %44 = OpCompositeExtract %v3float %37 0
+         %45 = OpCompositeExtract %v3float %38 0
+         %46 = OpCompositeExtract %v2float %39 0
+         %47 = OpCompositeExtract %v2float %40 0
+         %48 = OpCompositeConstruct %_struct_11 %41 %42 %43 %44 %45 %46 %47
+         %49 = OpCompositeExtract %v4float %34 1
+         %50 = OpCompositeExtract %v4float %35 1
+         %51 = OpCompositeExtract %v4float %36 1
+         %52 = OpCompositeExtract %v3float %37 1
+         %53 = OpCompositeExtract %v3float %38 1
+         %54 = OpCompositeExtract %v2float %39 1
+         %55 = OpCompositeExtract %v2float %40 1
+         %56 = OpCompositeConstruct %_struct_11 %49 %50 %51 %52 %53 %54 %55
+         %57 = OpCompositeExtract %v4float %34 2
+         %58 = OpCompositeExtract %v4float %35 2
+         %59 = OpCompositeExtract %v4float %36 2
+         %60 = OpCompositeExtract %v3float %37 2
+         %61 = OpCompositeExtract %v3float %38 2
+         %62 = OpCompositeExtract %v2float %39 2
+         %63 = OpCompositeExtract %v2float %40 2
+         %64 = OpCompositeConstruct %_struct_11 %57 %58 %59 %60 %61 %62 %63
+         %65 = OpCompositeConstruct %_arr__struct_11_uint_3 %48 %56 %64
+         %66 = OpVariable %_ptr_Function__arr__struct_11_uint_3 Function
+         %67 = OpLoad %uint %20
+
+; CHECK OpStore {{%\d+}} [[store_source:%\d+]]
+               OpStore %66 %65
+         %68 = OpAccessChain %_ptr_Function__struct_11 %66 %67
+
+; This load was being removed, because %_ptr_Function__struct_11 was being
+; wrongfully considered an SSA target.
+; CHECK OpLoad %_struct_11 %68
+         %69 = OpLoad %_struct_11 %68
+
+; Similarly, %69 cannot be replaced with %65.
+; CHECK-NOT: OpCompositeExtract %v4float [[store_source]] 0
+         %70 = OpCompositeExtract %v4float %69 0
+
+         %71 = OpAccessChain %_ptr_Output_v4float %22 %67
+               OpStore %71 %70
+               OpReturn
+               OpFunctionEnd)";
+
+  SinglePassRunAndMatch<opt::SSARewritePass>(spv_asm, true);
+}
+#endif
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    No optimization in the presence of
