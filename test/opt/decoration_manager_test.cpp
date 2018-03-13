@@ -24,8 +24,9 @@
 
 namespace {
 
-using spvtools::ir::IRContext;
+using spvtest::MakeVector;
 using spvtools::ir::Instruction;
+using spvtools::ir::IRContext;
 using spvtools::opt::analysis::DecorationManager;
 
 class DecorationManagerTest : public ::testing::Test {
@@ -111,21 +112,45 @@ class DecorationManagerTest : public ::testing::Test {
   std::string error_message_;
 };
 
-TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffOpcodes) {
+TEST_F(DecorationManagerTest,
+       ComparingDecorationsWithDiffOpcodesDecorateDecorateId) {
   spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  // This parameter can be interprated both as { SpvDecorationConstant }
+  // and also as a list of IDs:  { 22 }
+  const std::vector<uint32_t> param{SpvDecorationConstant};
   // OpDecorate %1 Constant
-  Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
-                    {{SPV_OPERAND_TYPE_ID, {1u}},
-                     {SPV_OPERAND_TYPE_DECORATION, {SpvDecorationConstant}}});
-  // OpDecorateId %1 %2
-  Instruction inst2(&ir_context, SpvOpDecorateId, 0u, 0u,
-                    {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_ID, {2u}}});
+  Instruction inst1(
+      &ir_context, SpvOpDecorate, 0u, 0u,
+      {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_DECORATION, param}});
+  // OpDecorateId %1 %22   ; 'Constant' is decoration number 22
+  Instruction inst2(
+      &ir_context, SpvOpDecorateId, 0u, 0u,
+      {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_ID, param}});
   DecorationManager* decoManager = ir_context.get_decoration_mgr();
   EXPECT_THAT(GetErrorMessage(), "");
   EXPECT_FALSE(decoManager->AreDecorationsTheSame(&inst1, &inst2, true));
 }
 
-TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDeco) {
+TEST_F(DecorationManagerTest,
+       ComparingDecorationsWithDiffOpcodesDecorateDecorateString) {
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  // This parameter can be interprated both as { SpvDecorationConstant }
+  // and also as a null-terminated string with a single character with value 22.
+  const std::vector<uint32_t> param{SpvDecorationConstant};
+  // OpDecorate %1 Constant
+  Instruction inst1(
+      &ir_context, SpvOpDecorate, 0u, 0u,
+      {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_DECORATION, param}});
+  // OpDecorateStringGOOGLE %1 !22
+  Instruction inst2(
+      &ir_context, SpvOpDecorateStringGOOGLE, 0u, 0u,
+      {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_LITERAL_STRING, param}});
+  DecorationManager* decoManager = ir_context.get_decoration_mgr();
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->AreDecorationsTheSame(&inst1, &inst2, true));
+}
+
+TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateParam) {
   spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
@@ -135,6 +160,36 @@ TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDeco) {
   Instruction inst2(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
                      {SPV_OPERAND_TYPE_DECORATION, {SpvDecorationRestrict}}});
+  DecorationManager* decoManager = ir_context.get_decoration_mgr();
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->AreDecorationsTheSame(&inst1, &inst2, true));
+}
+
+TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateIdParam) {
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  // OpDecorate %1 Constant
+  Instruction inst1(
+      &ir_context, SpvOpDecorateId, 0u, 0u,
+      {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_ID, {555}}});
+  // OpDecorate %1 Restrict
+  Instruction inst2(
+      &ir_context, SpvOpDecorateId, 0u, 0u,
+      {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_ID, {666}}});
+  DecorationManager* decoManager = ir_context.get_decoration_mgr();
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->AreDecorationsTheSame(&inst1, &inst2, true));
+}
+
+TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateStringParam) {
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  // OpDecorate %1 Constant
+  Instruction inst1(&ir_context, SpvOpDecorateStringGOOGLE, 0u, 0u,
+                    {{SPV_OPERAND_TYPE_ID, {1u}},
+                     {SPV_OPERAND_TYPE_LITERAL_STRING, MakeVector("Hello!")}});
+  // OpDecorate %1 Restrict
+  Instruction inst2(&ir_context, SpvOpDecorateStringGOOGLE, 0u, 0u,
+                    {{SPV_OPERAND_TYPE_ID, {1u}},
+                     {SPV_OPERAND_TYPE_LITERAL_STRING, MakeVector("Hellx")}});
   DecorationManager* decoManager = ir_context.get_decoration_mgr();
   EXPECT_THAT(GetErrorMessage(), "");
   EXPECT_FALSE(decoManager->AreDecorationsTheSame(&inst1, &inst2, true));
@@ -150,6 +205,33 @@ TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetAllowed) {
   Instruction inst2(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {2u}},
                      {SPV_OPERAND_TYPE_DECORATION, {SpvDecorationConstant}}});
+  DecorationManager* decoManager = ir_context.get_decoration_mgr();
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decoManager->AreDecorationsTheSame(&inst1, &inst2, true));
+}
+
+TEST_F(DecorationManagerTest, ComparingSameDecorationIdsOnDiffTargetAllowed) {
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  Instruction inst1(
+      &ir_context, SpvOpDecorateId, 0u, 0u,
+      {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_DECORATION, {44}}});
+  Instruction inst2(
+      &ir_context, SpvOpDecorateId, 0u, 0u,
+      {{SPV_OPERAND_TYPE_ID, {2u}}, {SPV_OPERAND_TYPE_DECORATION, {44}}});
+  DecorationManager* decoManager = ir_context.get_decoration_mgr();
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decoManager->AreDecorationsTheSame(&inst1, &inst2, true));
+}
+
+TEST_F(DecorationManagerTest,
+       ComparingSameDecorationStringsOnDiffTargetAllowed) {
+  spvtools::ir::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  Instruction inst1(&ir_context, SpvOpDecorateStringGOOGLE, 0u, 0u,
+                    {{SPV_OPERAND_TYPE_ID, {1u}},
+                     {SPV_OPERAND_TYPE_LITERAL_STRING, MakeVector("hello")}});
+  Instruction inst2(&ir_context, SpvOpDecorateStringGOOGLE, 0u, 0u,
+                    {{SPV_OPERAND_TYPE_ID, {2u}},
+                     {SPV_OPERAND_TYPE_LITERAL_STRING, MakeVector("hello")}});
   DecorationManager* decoManager = ir_context.get_decoration_mgr();
   EXPECT_THAT(GetErrorMessage(), "");
   EXPECT_TRUE(decoManager->AreDecorationsTheSame(&inst1, &inst2, true));
@@ -251,6 +333,49 @@ OpGroupDecorate %2 %1 %3
 
   const std::string expected_binary = R"(OpCapability Shader
 OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %2 Restrict
+%2 = OpDecorationGroup
+OpGroupDecorate %2 %3
+%4 = OpTypeInt 32 0
+%1 = OpVariable %4 Uniform
+%3 = OpVariable %4 Uniform
+)";
+  EXPECT_THAT(ModuleToText(), expected_binary);
+}
+
+TEST_F(DecorationManagerTest, RemoveDecorationStringFromVariable) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "hello world"
+OpDecorate %2 Restrict
+%2      = OpDecorationGroup
+OpGroupDecorate %2 %1 %3
+%4   = OpTypeInt 32 0
+%1      = OpVariable %4 Uniform
+%3      = OpVariable %4 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  decoManager->RemoveDecorationsFrom(1u);
+  auto decorations = decoManager->GetDecorationsFor(1u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decorations.empty());
+  decorations = decoManager->GetDecorationsFor(3u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  const std::string expected_decorations = R"(OpDecorate %2 Restrict
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+
+  const std::string expected_binary = R"(OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
 OpMemoryModel Logical GLSL450
 OpDecorate %2 Restrict
 %2 = OpDecorationGroup
@@ -468,6 +593,30 @@ OpDecorate %1 Restrict
   EXPECT_THAT(ToText(decorations), expected_decorations);
 }
 
+TEST_F(DecorationManagerTest, RemoveDecorationStringDecorate) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "foobar"
+OpDecorate %1 Restrict
+%2    = OpTypeInt 32 0
+%1    = OpVariable %2 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  auto decorations = decoManager->GetDecorationsFor(1u, false);
+  decoManager->RemoveDecoration(decorations.front());
+  decorations = decoManager->GetDecorationsFor(1u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  const std::string expected_decorations = R"(OpDecorate %1 Restrict
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+}
+
 TEST_F(DecorationManagerTest, CloneDecorations) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -488,6 +637,7 @@ OpGroupDecorate %3 %1
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
 
+  // Check cloning OpDecorate including group decorations.
   auto decorations = decoManager->GetDecorationsFor(5u, false);
   EXPECT_THAT(GetErrorMessage(), "");
   EXPECT_TRUE(decorations.empty());
@@ -502,6 +652,8 @@ OpDecorate %3 BuiltIn VertexId
 OpDecorate %3 Invariant
 )";
   EXPECT_THAT(ToText(decorations), expected_decorations);
+
+  // Check that bookkeeping for ID 2 remains the same.
   decorations = decoManager->GetDecorationsFor(2u, false);
   EXPECT_THAT(GetErrorMessage(), "");
 
@@ -524,6 +676,60 @@ OpDecorate %5 Constant
 %4 = OpTypeInt 32 0
 %1 = OpVariable %4 Input
 %5 = OpVariable %4 Input
+)";
+  EXPECT_THAT(ModuleToText(), expected_binary);
+}
+
+TEST_F(DecorationManagerTest, CloneDecorationsStringAndId) {
+  const std::string spirv = R"(OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "blah"
+OpDecorateId %1 HlslCounterBufferGOOGLE %2
+OpDecorate %1 Aliased
+%3      = OpTypeInt 32 0
+%4      = OpTypePointer Uniform %3
+%1      = OpVariable %4 Uniform
+%2      = OpVariable %4 Uniform
+%5      = OpVariable %4 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  // Check cloning OpDecorate including group decorations.
+  auto decorations = decoManager->GetDecorationsFor(5u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decorations.empty());
+
+  decoManager->CloneDecorations(1u, 5u);
+  decorations = decoManager->GetDecorationsFor(5u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  std::string expected_decorations =
+      R"(OpDecorateStringGOOGLE %5 HlslSemanticGOOGLE "blah"
+OpDecorateId %5 HlslCounterBufferGOOGLE %2
+OpDecorate %5 Aliased
+)";
+  EXPECT_THAT(ToText(decorations), expected_decorations);
+
+  const std::string expected_binary = R"(OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "blah"
+OpDecorateId %1 HlslCounterBufferGOOGLE %2
+OpDecorate %1 Aliased
+OpDecorateStringGOOGLE %5 HlslSemanticGOOGLE "blah"
+OpDecorateId %5 HlslCounterBufferGOOGLE %2
+OpDecorate %5 Aliased
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Uniform %3
+%1 = OpVariable %4 Uniform
+%2 = OpVariable %4 Uniform
+%5 = OpVariable %4 Uniform
 )";
   EXPECT_THAT(ModuleToText(), expected_binary);
 }
@@ -554,6 +760,82 @@ OpMemoryModel Logical GLSL450
 OpDecorate %1 Restrict
 OpDecorate %2 Constant
 OpDecorate %2 Restrict
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsIdWithoutGroupsTrue) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorateId %1 AlignmentId %nine
+OpDecorateId %3 MaxByteOffsetId %nine
+OpDecorateId %3 AlignmentId %nine
+OpDecorateId %1 MaxByteOffsetId %nine
+%u32    = OpTypeInt 32 0
+%nine   = OpConstant %u32 9
+%1      = OpVariable %u32 Uniform
+%3      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decoManager->HaveTheSameDecorations(1u, 3u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsIdWithoutGroupsFalse) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorateId %1 AlignmentId %nine
+OpDecorateId %2 MaxByteOffsetId %nine
+OpDecorateId %2 AlignmentId %nine
+%u32    = OpTypeInt 32 0
+%nine   = OpConstant %u32 9
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsStringWithoutGroupsTrue) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "world"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "world"
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsStringWithoutGroupsFalse) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "world"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "hello"
 %u32    = OpTypeInt 32 0
 %1      = OpVariable %u32 Uniform
 %2      = OpVariable %u32 Uniform
@@ -708,6 +990,26 @@ OpDecorateId %3 AlignmentId %2
   EXPECT_TRUE(decoManager->HaveTheSameDecorations(1u, 3u));
 }
 
+TEST_F(DecorationManagerTest,
+       HaveTheSameDecorationsDuplicateStringDecorations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "hello"
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_TRUE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
 TEST_F(DecorationManagerTest, HaveTheSameDecorationsDifferentIdVariations) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -726,7 +1028,23 @@ OpDecorateId %3 AlignmentId %4
   EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
 }
 
+TEST_F(DecorationManagerTest, HaveTheSameDecorationsDifferentStringVariations) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "world"
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
 TEST_F(DecorationManagerTest, HaveTheSameDecorationsLeftSymmetry) {
+  // Left being a subset of right is not enough.
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -745,6 +1063,7 @@ OpDecorate %2 Restrict
 }
 
 TEST_F(DecorationManagerTest, HaveTheSameDecorationsRightSymmetry) {
+  // Right being a subset of left is not enough.
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -753,6 +1072,84 @@ OpDecorate %1 Constant
 OpDecorate %1 Restrict
 OpDecorate %2 Constant
 OpDecorate %2 Constant
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationIdsLeftSymmetry) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorateId %1 AlignmentId %nine
+OpDecorateId %1 AlignmentId %nine
+OpDecorateId %2 AlignmentId %nine
+OpDecorateId %2 MaxByteOffsetId %nine
+%u32    = OpTypeInt 32 0
+%nine   = OpConstant %u32 9
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationIdsRightSymmetry) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorateId %1 AlignmentId %nine
+OpDecorateId %1 MaxByteOffsetId %nine
+OpDecorateId %2 AlignmentId %nine
+OpDecorateId %2 AlignmentId %nine
+%u32    = OpTypeInt 32 0
+%nine   = OpConstant %u32 9
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationStringsLeftSymmetry) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "world"
+%u32    = OpTypeInt 32 0
+%1      = OpVariable %u32 Uniform
+%2      = OpVariable %u32 Uniform
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_FALSE(decoManager->HaveTheSameDecorations(1u, 2u));
+}
+
+TEST_F(DecorationManagerTest, HaveTheSameDecorationStringsRightSymmetry) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpExtension "SPV_GOOGLE_decorate_string"
+OpMemoryModel Logical GLSL450
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %1 HlslSemanticGOOGLE "world"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "hello"
+OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "hello"
 %u32    = OpTypeInt 32 0
 %1      = OpVariable %u32 Uniform
 %2      = OpVariable %u32 Uniform
