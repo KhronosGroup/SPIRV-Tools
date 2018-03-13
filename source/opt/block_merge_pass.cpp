@@ -69,8 +69,24 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       continue;
     }
 
-    // Merge blocks.
     ir::Instruction* merge_inst = bi->GetMergeInst();
+    if (pred_is_header && lab_id != merge_inst->GetSingleWordInOperand(0u)) {
+      // If this is a header block and the successor is not its merge, we must
+      // be careful about which blocks we are willing to merge together.
+      // OpLoopMerge must be followed by a conditional or unconditional branch.
+      // The merge must be a loop merge because a selection merge cannot be
+      // followed by an unconditional branch.
+      ir::BasicBlock* succ_block = context()->get_instr_block(lab_id);
+      SpvOp succ_term_op = succ_block->terminator()->opcode();
+      assert(merge_inst->opcode() == SpvOpLoopMerge);
+      if (succ_term_op != SpvOpBranch &&
+          succ_term_op != SpvOpBranchConditional) {
+        ++bi;
+        continue;
+      }
+    }
+
+    // Merge blocks.
     context()->KillInst(br);
     auto sbi = bi;
     for (; sbi != func->end(); ++sbi)
