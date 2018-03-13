@@ -174,6 +174,7 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new Pointer(f32, SpvStorageClassInput));
   types.emplace_back(new Pointer(sts32f32, SpvStorageClassFunction));
   types.emplace_back(new Pointer(a42f32, SpvStorageClassFunction));
+  types.emplace_back(new Pointer(voidt, SpvStorageClassFunction));
 
   // Function
   types.emplace_back(new Function(voidt, {}));
