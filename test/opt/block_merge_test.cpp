@@ -518,6 +518,177 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::BlockMergePass>(assembly, true);
 }
+
+TEST_F(BlockMergeTest, DontMergeKill) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] [[cont:%\w+]] None
+; CHECK-NEXT: OpBranch [[ret:%\w+]]
+; CHECK: [[ret:%\w+]] = OpLabel
+; CHECK-NEXT: OpKill
+; CHECK-DAG: [[cont]] = OpLabel
+; CHECK-DAG: [[merge]] = OpLabel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %3 %4 None
+OpBranch %5
+%5 = OpLabel
+OpKill
+%4 = OpLabel
+OpBranch %2
+%3 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, DontMergeUnreachable) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] [[cont:%\w+]] None
+; CHECK-NEXT: OpBranch [[ret:%\w+]]
+; CHECK: [[ret:%\w+]] = OpLabel
+; CHECK-NEXT: OpUnreachable
+; CHECK-DAG: [[cont]] = OpLabel
+; CHECK-DAG: [[merge]] = OpLabel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %3 %4 None
+OpBranch %5
+%5 = OpLabel
+OpUnreachable
+%4 = OpLabel
+OpBranch %2
+%3 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, DontMergeReturn) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] [[cont:%\w+]] None
+; CHECK-NEXT: OpBranch [[ret:%\w+]]
+; CHECK: [[ret:%\w+]] = OpLabel
+; CHECK-NEXT: OpReturn
+; CHECK-DAG: [[cont]] = OpLabel
+; CHECK-DAG: [[merge]] = OpLabel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %3 %4 None
+OpBranch %5
+%5 = OpLabel
+OpReturn
+%4 = OpLabel
+OpBranch %2
+%3 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, DontMergeSwitch) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] [[cont:%\w+]] None
+; CHECK-NEXT: OpBranch [[ret:%\w+]]
+; CHECK: [[ret:%\w+]] = OpLabel
+; CHECK-NEXT: OpSwitch
+; CHECK-DAG: [[cont]] = OpLabel
+; CHECK-DAG: [[merge]] = OpLabel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %3 %4 None
+OpBranch %5
+%5 = OpLabel
+OpSwitch %int_0 %6
+%6 = OpLabel
+OpReturn
+%4 = OpLabel
+OpBranch %2
+%3 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
+
+TEST_F(BlockMergeTest, DontMergeReturnValue) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] [[cont:%\w+]] None
+; CHECK-NEXT: OpBranch [[ret:%\w+]]
+; CHECK: [[ret:%\w+]] = OpLabel
+; CHECK-NEXT: OpReturn
+; CHECK-DAG: [[cont]] = OpLabel
+; CHECK-DAG: [[merge]] = OpLabel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%functy = OpTypeFunction %void
+%otherfuncty = OpTypeFunction %bool
+%true = OpConstantTrue %bool
+%func = OpFunction %void None %functy
+%1 = OpLabel
+%2 = OpFunctionCall %bool %3
+OpReturn
+OpFunctionEnd
+%3 = OpFunction %bool None %otherfuncty
+%4 = OpLabel
+OpBranch %5
+%5 = OpLabel
+OpLoopMerge %6 %7 None
+OpBranch %8
+%8 = OpLabel
+OpReturnValue %true
+%7 = OpLabel
+OpBranch %5
+%6 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
