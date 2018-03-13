@@ -16,6 +16,7 @@
 #define SOURCE_OPT_LOOP_PEELING_H_
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
@@ -45,11 +46,14 @@ namespace opt {
 // The last step is specific to each case:
 //   - Peel before: the transformation is to peel the "N" first iterations.
 //     The exit condition of the cloned loop is changed so that the loop
-//     exits when "i < N" becomes false.
+//     exits when "i < N" becomes false. The original loop is then protected to
+//     only execute if there is any iteration left to do.
 //   - Peel after: the transformation is to peel the "N" last iterations,
 //     then the exit condition of the cloned loop is changed so that the loop
 //     exits when "i + N < max_iteration" becomes false, where "max_iteration"
-//     is the upper bound of the loop.
+//     is the upper bound of the loop. The cloned loop is then protected to
+//     only execute if there is any iteration left to do no covered by the
+//     second.
 //
 // To be peelable:
 //   - The loop must be in LCSSA form;
@@ -58,17 +62,34 @@ namespace opt {
 //     "CanPeelLoop").
 // The method "CanPeelLoop" checks that those constrained are met.
 //
-// Fixme(Victor): Allow the utility it accept an canonical induction variable
+// FIXME(Victor): Allow the utility it accept an canonical induction variable
 // rather than automatically create one.
-// Fixme(Victor): When possible, evaluate the initial value of the second loop
+// FIXME(Victor): When possible, evaluate the initial value of the second loop
 // iterating values rather than using the exit value of the first loop.
+// FIXME(Victor): Make the utility work-out the upper bound without having to
+// provide it. This should become easy once the scalar evolution is in.
 class LoopPeeling {
  public:
-  LoopPeeling(ir::IRContext* context, ir::Loop* loop)
+  // LoopPeeling constructor.
+  // |loop| is the loop to peel.
+  // |loop_iteration_count| is the instruction holding the |loop| iteration
+  // count, must be invariant for |loop| and must be of an int 32 type (signed
+  // or unsigned).
+  LoopPeeling(ir::IRContext* context, ir::Loop* loop,
+              ir::Instruction* loop_iteration_count)
       : context_(context),
         loop_utils_(context, loop),
         loop_(loop),
+        loop_iteration_count_(!loop->IsInsideLoop(loop_iteration_count)
+                                  ? loop_iteration_count
+                                  : nullptr),
+        int_type_(nullptr),
         canonical_induction_variable_(nullptr) {
+    if (loop_iteration_count_) {
+      int_type_ = context_->get_type_mgr()
+                      ->GetType(loop_iteration_count_->type_id())
+                      ->AsInteger();
+    }
     GetIteratingExitValues();
   }
 
@@ -85,9 +106,18 @@ class LoopPeeling {
   //
   // This restriction will not apply if a loop rotate is applied before (i.e.
   // becomes a do-while loop).
-  bool CanPeelLoop() {
+  bool CanPeelLoop() const {
     ir::CFG& cfg = *context_->cfg();
 
+    if (!loop_iteration_count_) {
+      return false;
+    }
+    if (!int_type_) {
+      return false;
+    }
+    if (int_type_->width() != 32) {
+      return false;
+    }
     if (!loop_->IsLCSSA()) {
       return false;
     }
@@ -106,11 +136,11 @@ class LoopPeeling {
 
   // Moves the execution of the |factor| first iterations of the loop into a
   // dedicated loop.
-  void PeelBefore(ir::Instruction* factor);
+  void PeelBefore(uint32_t factor);
 
   // Moves the execution of the |factor| last iterations of the loop into a
   // dedicated loop.
-  void PeelAfter(ir::Instruction* factor, ir::Instruction* iteration_count);
+  void PeelAfter(uint32_t factor);
 
   // Returns the cloned loop.
   ir::Loop* GetClonedLoop() { return cloned_loop_; }
@@ -122,6 +152,10 @@ class LoopPeeling {
   LoopUtils loop_utils_;
   // The original loop.
   ir::Loop* loop_;
+  // The initial |loop_| upper bound.
+  ir::Instruction* loop_iteration_count_;
+  // The int type to use for the canonical_induction_variable_.
+  analysis::Integer* int_type_;
   // The cloned loop.
   ir::Loop* cloned_loop_;
   // This is set to true when the exit and back-edge branch instruction is the
@@ -138,11 +172,11 @@ class LoopPeeling {
   // Duplicate |loop_| and place the new loop before the cloned loop. Iterating
   // values from the cloned loop are then connected to the original loop as
   // initializer.
-  void DuplicateAndConnectLoop();
+  void DuplicateAndConnectLoop(LoopUtils::LoopCloningResult* clone_results);
 
   // Insert the canonical induction variable into the first loop as a simplified
   // counter.
-  void InsertCanonicalInductionVariable(ir::Instruction* factor);
+  void InsertCanonicalInductionVariable();
 
   // Fixes the exit condition of the before loop. The function calls
   // |condition_builder| to get the condition to use in the conditional branch
@@ -162,6 +196,17 @@ class LoopPeeling {
   // SSA value when it exit the loop. If no exit value can be accurately found,
   // it is map to nullptr (see comment on CanPeelLoop).
   void GetIteratingExitValues();
+
+  // Creates a new basic block and insert it between |bb| and the predecessor of
+  // |bb|.
+  ir::BasicBlock* CreateBlockBefore(ir::BasicBlock* bb);
+
+  // Inserts code to only execute |loop| only if the given |condition| is true.
+  // |if_merge| is a suitable basic block to be used by the if condition as
+  // merge block.
+  // The function returns the if block protecting the loop.
+  ir::BasicBlock* ProtectLoop(ir::Loop* loop, ir::Instruction* condition,
+                              ir::BasicBlock* if_merge);
 };
 
 }  // namespace opt

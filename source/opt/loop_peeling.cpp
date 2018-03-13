@@ -27,20 +27,19 @@
 namespace spvtools {
 namespace opt {
 
-void LoopPeeling::DuplicateAndConnectLoop() {
+void LoopPeeling::DuplicateAndConnectLoop(
+    LoopUtils::LoopCloningResult* clone_results) {
   ir::CFG& cfg = *context_->cfg();
   analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
   assert(CanPeelLoop() && "Cannot peel loop!");
-
-  LoopUtils::LoopCloningResult clone_results;
 
   std::vector<ir::BasicBlock*> ordered_loop_blocks;
   ir::BasicBlock* pre_header = loop_->GetOrCreatePreHeaderBlock();
 
   loop_->ComputeLoopStructuredOrder(&ordered_loop_blocks);
 
-  cloned_loop_ = loop_utils_.CloneLoop(&clone_results, ordered_loop_blocks);
+  cloned_loop_ = loop_utils_.CloneLoop(clone_results, ordered_loop_blocks);
 
   // Add the basic block to the function.
   ir::Function::iterator it =
@@ -48,7 +47,7 @@ void LoopPeeling::DuplicateAndConnectLoop() {
   assert(it != loop_utils_.GetFunction()->end() &&
          "Pre-header not found in the function.");
   loop_utils_.GetFunction()->AddBasicBlocks(
-      clone_results.cloned_bb_.begin(), clone_results.cloned_bb_.end(), ++it);
+      clone_results->cloned_bb_.begin(), clone_results->cloned_bb_.end(), ++it);
 
   // Make the |loop_|'s preheader the |cloned_loop_| one.
   ir::BasicBlock* cloned_header = cloned_loop_->GetHeaderBlock();
@@ -81,9 +80,6 @@ void LoopPeeling::DuplicateAndConnectLoop() {
   cfg.RemoveNonExistingEdges(loop_->GetMergeBlock()->id());
   cfg.AddEdge(cloned_loop_exit, loop_->GetHeaderBlock()->id());
 
-  // Set the merge block of the cloned loop as the original loop's header block.
-  cloned_loop_->SetMergeBlock(loop_->GetHeaderBlock());
-
   // Patch the phi of the original loop header:
   //  - Set the loop entry branch to come from the cloned loop exit block;
   //  - Set the initial value of the phi using the corresponding cloned loop
@@ -115,12 +111,12 @@ void LoopPeeling::DuplicateAndConnectLoop() {
   //     z += cst2;
   // }
   loop_->GetHeaderBlock()->ForEachPhiInst([cloned_loop_exit, def_use_mgr,
-                                           &clone_results,
+                                           clone_results,
                                            this](ir::Instruction* phi) {
     for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
       if (!loop_->IsInsideLoop(phi->GetSingleWordInOperand(i + 1))) {
         phi->SetInOperand(i,
-                          {clone_results.value_map_.at(
+                          {clone_results->value_map_.at(
                               exit_value_.at(phi->result_id())->result_id())});
         phi->SetInOperand(i + 1, {cloned_loop_exit});
         def_use_mgr->AnalyzeInstUse(phi);
@@ -128,34 +124,30 @@ void LoopPeeling::DuplicateAndConnectLoop() {
       }
     }
   });
+
+  // Force the creation of a new preheader for the original loop and set it as
+  // the merge block for the cloned loop.
+  cloned_loop_->SetMergeBlock(loop_->GetOrCreatePreHeaderBlock());
 }
 
-void LoopPeeling::InsertCanonicalInductionVariable(ir::Instruction* factor) {
-  analysis::Type* factor_type =
-      context_->get_type_mgr()->GetType(factor->type_id());
-  assert(factor_type->kind() == analysis::Type::kInteger);
-  analysis::Integer* int_type = factor_type->AsInteger();
-  assert(int_type->width() == 32);
-
+void LoopPeeling::InsertCanonicalInductionVariable() {
   InstructionBuilder builder(context_,
                              &*GetClonedLoop()->GetLatchBlock()->tail(),
                              ir::IRContext::kAnalysisDefUse |
                                  ir::IRContext::kAnalysisInstrToBlockMapping);
+  ir::Instruction* uint_1_cst =
+      builder.Add32BitConstantInteger<uint32_t>(1, int_type_->IsSigned());
   // Create the increment.
-  // Note that "factor->result_id()" is wrong, the proper id should the phi
-  // value but we don't have it yet. The operand will be set latter, leave
-  // "factor->result_id()" so that the id is a valid and so avoid any assert
-  // that's could be added.
+  // Note that we do "1 + 1" here, one of the operand should the phi
+  // value but we don't have it yet. The operand will be set latter.
   ir::Instruction* iv_inc = builder.AddIAdd(
-      factor->type_id(), factor->result_id(),
-      builder.Add32BitConstantInteger<uint32_t>(1, int_type->IsSigned())
-          ->result_id());
+      uint_1_cst->type_id(), uint_1_cst->result_id(), uint_1_cst->result_id());
 
   builder.SetInsertPoint(&*GetClonedLoop()->GetHeaderBlock()->begin());
 
   canonical_induction_variable_ = builder.AddPhi(
-      factor->type_id(),
-      {builder.Add32BitConstantInteger<uint32_t>(0, int_type->IsSigned())
+      uint_1_cst->type_id(),
+      {builder.Add32BitConstantInteger<uint32_t>(0, int_type_->IsSigned())
            ->result_id(),
        GetClonedLoop()->GetPreHeaderBlock()->id(), iv_inc->result_id(),
        GetClonedLoop()->GetLatchBlock()->id()});
@@ -256,8 +248,8 @@ void LoopPeeling::FixExitCondition(
   ir::CFG& cfg = *context_->cfg();
 
   uint32_t condition_block_id = 0;
-  for (uint32_t id : cfg.preds(GetOriginalLoop()->GetHeaderBlock()->id())) {
-    if (!GetOriginalLoop()->IsInsideLoop(id)) {
+  for (uint32_t id : cfg.preds(GetClonedLoop()->GetMergeBlock()->id())) {
+    if (GetClonedLoop()->IsInsideLoop(id)) {
       condition_block_id = id;
       break;
     }
@@ -273,66 +265,244 @@ void LoopPeeling::FixExitCondition(
 
   exit_condition->SetInOperand(0, {condition_builder(condition_block)});
 
-  uint32_t to_continue_block = exit_condition->GetSingleWordInOperand(
-      exit_condition->GetSingleWordInOperand(1) ==
-              GetOriginalLoop()->GetHeaderBlock()->id()
-          ? 2
-          : 1);
-  exit_condition->SetInOperand(1, {to_continue_block});
-  exit_condition->SetInOperand(2, {GetOriginalLoop()->GetHeaderBlock()->id()});
+  uint32_t to_continue_block_idx =
+      GetClonedLoop()->IsInsideLoop(exit_condition->GetSingleWordInOperand(1))
+          ? 1
+          : 2;
+  exit_condition->SetInOperand(
+      1, {exit_condition->GetSingleWordInOperand(to_continue_block_idx)});
+  exit_condition->SetInOperand(2, {GetClonedLoop()->GetMergeBlock()->id()});
 
   // Update def/use manager.
   context_->get_def_use_mgr()->AnalyzeInstUse(exit_condition);
 }
 
-void LoopPeeling::PeelBefore(ir::Instruction* factor) {
-  // Clone the loop and insert the cloned one before the loop.
-  DuplicateAndConnectLoop();
+ir::BasicBlock* LoopPeeling::CreateBlockBefore(ir::BasicBlock* bb) {
+  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+  ir::CFG& cfg = *context_->cfg();
+  assert(cfg.preds(bb->id()).size() == 1 && "More than one predecessor");
 
-  // Add a canonical induction variable "canonical_induction_variable_".
-  InsertCanonicalInductionVariable(factor);
+  std::unique_ptr<ir::BasicBlock> new_bb = MakeUnique<ir::BasicBlock>(
+      std::unique_ptr<ir::Instruction>(new ir::Instruction(
+          context_, SpvOpLabel, 0, context_->TakeNextId(), {})));
+  new_bb->SetParent(loop_utils_.GetFunction());
+  // Update the loop descriptor.
+  ir::Loop* in_loop = (*loop_utils_.GetLoopDescriptor())[bb];
+  if (in_loop) {
+    in_loop->AddBasicBlock(new_bb.get());
+    loop_utils_.GetLoopDescriptor()->SetBasicBlockToLoop(new_bb->id(), in_loop);
+  }
 
-  // Change the exit condition of the cloned loop to be (exit when become
-  // false):
-  //  "canonical_induction_variable_" < "factor"
-  FixExitCondition([factor, this](ir::BasicBlock* condition_block) {
-    InstructionBuilder builder(context_, &*condition_block->tail(),
-                               ir::IRContext::kAnalysisDefUse |
-                                   ir::IRContext::kAnalysisInstrToBlockMapping);
-    return builder
-        .AddLessThan(canonical_induction_variable_->result_id(),
-                     factor->result_id())
-        ->result_id();
+  context_->set_instr_block(new_bb->GetLabelInst(), new_bb.get());
+  def_use_mgr->AnalyzeInstDefUse(new_bb->GetLabelInst());
+
+  ir::BasicBlock* bb_pred = cfg.block(cfg.preds(bb->id())[0]);
+  bb_pred->tail()->ForEachInId([bb, &new_bb](uint32_t* id) {
+    if (*id == bb->id()) {
+      *id = new_bb->id();
+    }
   });
+  cfg.RemoveEdge(bb_pred->id(), bb->id());
+  cfg.AddEdge(bb_pred->id(), new_bb->id());
+  def_use_mgr->AnalyzeInstUse(&*bb_pred->tail());
+
+  // Update the incoming branch.
+  bb->ForEachPhiInst([&new_bb, def_use_mgr](ir::Instruction* phi) {
+    phi->SetInOperand(1, {new_bb->id()});
+    def_use_mgr->AnalyzeInstUse(phi);
+  });
+  InstructionBuilder(context_, new_bb.get(),
+                     ir::IRContext::kAnalysisDefUse |
+                         ir::IRContext::kAnalysisInstrToBlockMapping)
+      .AddBranch(bb->id());
+  cfg.AddEdge(new_bb->id(), bb->id());
+
+  // Add the basic block to the function.
+  ir::Function::iterator it = loop_utils_.GetFunction()->FindBlock(bb->id());
+  assert(it != loop_utils_.GetFunction()->end() &&
+         "Basic block not found in the function.");
+  ir::BasicBlock* ret = new_bb.get();
+  loop_utils_.GetFunction()->AddBasicBlock(std::move(new_bb), it);
+  return ret;
 }
 
-void LoopPeeling::PeelAfter(ir::Instruction* factor,
-                            ir::Instruction* iteration_count) {
+ir::BasicBlock* LoopPeeling::ProtectLoop(ir::Loop* loop,
+                                         ir::Instruction* condition,
+                                         ir::BasicBlock* if_merge) {
+  ir::BasicBlock* if_block = loop->GetOrCreatePreHeaderBlock();
+  // Will no longer be a pre-header because of the if.
+  loop->SetPreHeaderBlock(nullptr);
+  // Kill the branch to the header.
+  context_->KillInst(&*if_block->tail());
+
+  InstructionBuilder builder(context_, if_block,
+                             ir::IRContext::kAnalysisDefUse |
+                                 ir::IRContext::kAnalysisInstrToBlockMapping);
+  builder.AddConditionalBranch(condition->result_id(),
+                               loop->GetHeaderBlock()->id(), if_merge->id(),
+                               if_merge->id());
+
+  return if_block;
+}
+
+void LoopPeeling::PeelBefore(uint32_t peel_factor) {
+  assert(CanPeelLoop() && "Cannot peel loop");
+  LoopUtils::LoopCloningResult clone_results;
+
   // Clone the loop and insert the cloned one before the loop.
-  DuplicateAndConnectLoop();
+  DuplicateAndConnectLoop(&clone_results);
 
   // Add a canonical induction variable "canonical_induction_variable_".
-  InsertCanonicalInductionVariable(factor);
+  InsertCanonicalInductionVariable();
+
+  InstructionBuilder builder(context_,
+                             &*cloned_loop_->GetPreHeaderBlock()->tail(),
+                             ir::IRContext::kAnalysisDefUse |
+                                 ir::IRContext::kAnalysisInstrToBlockMapping);
+  ir::Instruction* factor =
+      builder.Add32BitConstantInteger(peel_factor, int_type_->IsSigned());
+
+  ir::Instruction* has_remaining_iteration = builder.AddLessThan(
+      factor->result_id(), loop_iteration_count_->result_id());
+  ir::Instruction* max_iteration = builder.AddSelect(
+      factor->type_id(), has_remaining_iteration->result_id(),
+      factor->result_id(), loop_iteration_count_->result_id());
 
   // Change the exit condition of the cloned loop to be (exit when become
   // false):
-  //  "canonical_induction_variable_" + "factor" < "iteration_count"
-  FixExitCondition([factor, iteration_count,
-                    this](ir::BasicBlock* condition_block) {
-    InstructionBuilder builder(context_, &*condition_block->tail(),
-                               ir::IRContext::kAnalysisDefUse |
-                                   ir::IRContext::kAnalysisInstrToBlockMapping);
+  //  "canonical_induction_variable_" < min("factor", "loop_iteration_count_")
+  FixExitCondition([max_iteration, this](ir::BasicBlock* condition_block) {
+    return InstructionBuilder(context_, &*condition_block->tail(),
+                              ir::IRContext::kAnalysisDefUse |
+                                  ir::IRContext::kAnalysisInstrToBlockMapping)
+        .AddLessThan(canonical_induction_variable_->result_id(),
+                     max_iteration->result_id())
+        ->result_id();
+  });
+
+  // "Protect" the second loop: the second loop can only be executed if
+  // |has_remaining_iteration| is true (i.e. factor < loop_iteration_count_).
+  ir::BasicBlock* if_merge_block = loop_->GetMergeBlock();
+  loop_->SetMergeBlock(CreateBlockBefore(loop_->GetMergeBlock()));
+  // Prevent the second loop from being executed if we already executed all the
+  // required iterations.
+  ir::BasicBlock* if_block =
+      ProtectLoop(loop_, has_remaining_iteration, if_merge_block);
+  // Patch the phi of the merge block.
+  if_merge_block->ForEachPhiInst(
+      [&clone_results, if_block, this](ir::Instruction* phi) {
+        // if_merge_block had previously only 1 predecessor.
+        uint32_t incoming_value = phi->GetSingleWordInOperand(0);
+        auto def_in_loop = clone_results.value_map_.find(incoming_value);
+        if (def_in_loop != clone_results.value_map_.end())
+          incoming_value = def_in_loop->second;
+        phi->AddOperand(
+            {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {incoming_value}});
+        phi->AddOperand(
+            {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {if_block->id()}});
+        context_->get_def_use_mgr()->AnalyzeInstUse(phi);
+      });
+
+  context_->InvalidateAnalysesExceptFor(
+      ir::IRContext::kAnalysisDefUse |
+      ir::IRContext::kAnalysisInstrToBlockMapping |
+      ir::IRContext::kAnalysisLoopAnalysis | ir::IRContext::kAnalysisCFG);
+}
+
+void LoopPeeling::PeelAfter(uint32_t peel_factor) {
+  assert(CanPeelLoop() && "Cannot peel loop");
+  LoopUtils::LoopCloningResult clone_results;
+
+  // Clone the loop and insert the cloned one before the loop.
+  DuplicateAndConnectLoop(&clone_results);
+
+  // Add a canonical induction variable "canonical_induction_variable_".
+  InsertCanonicalInductionVariable();
+
+  InstructionBuilder builder(context_,
+                             &*cloned_loop_->GetPreHeaderBlock()->tail(),
+                             ir::IRContext::kAnalysisDefUse |
+                                 ir::IRContext::kAnalysisInstrToBlockMapping);
+  ir::Instruction* factor =
+      builder.Add32BitConstantInteger(peel_factor, int_type_->IsSigned());
+
+  ir::Instruction* has_remaining_iteration = builder.AddLessThan(
+      factor->result_id(), loop_iteration_count_->result_id());
+
+  // Change the exit condition of the cloned loop to be (exit when become
+  // false):
+  //  "canonical_induction_variable_" + "factor" < "loop_iteration_count_"
+  FixExitCondition([factor, this](ir::BasicBlock* condition_block) {
+    InstructionBuilder cond_builder(
+        context_, &*condition_block->tail(),
+        ir::IRContext::kAnalysisDefUse |
+            ir::IRContext::kAnalysisInstrToBlockMapping);
     // Build the following check: canonical_induction_variable_ + factor <
     // iteration_count
-    return builder
-        .AddLessThan(builder
+    return cond_builder
+        .AddLessThan(cond_builder
                          .AddIAdd(canonical_induction_variable_->type_id(),
                                   canonical_induction_variable_->result_id(),
                                   factor->result_id())
                          ->result_id(),
-                     iteration_count->result_id())
+                     loop_iteration_count_->result_id())
         ->result_id();
   });
+
+  // "Protect" the first loop: the first loop can only be executed if
+  // factor < loop_iteration_count_.
+
+  // The original loop's pre-header was the cloned loop merge block.
+  GetClonedLoop()->SetMergeBlock(
+      CreateBlockBefore(GetOriginalLoop()->GetPreHeaderBlock()));
+  // Use the second loop preheader as if merge block.
+
+  // Prevent the first loop if only the peeled loop needs it.
+  ir::BasicBlock* if_block =
+      ProtectLoop(cloned_loop_, has_remaining_iteration,
+                  GetOriginalLoop()->GetPreHeaderBlock());
+
+  // Patch the phi of the header block.
+  // We added an if to enclose the first loop and because the phi node are
+  // connected to the exit value of the first loop, the definition no longer
+  // dominate the preheader.
+  // We had to the preheader (our if merge block) the required phi instruction
+  // and patch the header phi.
+  GetOriginalLoop()->GetHeaderBlock()->ForEachPhiInst(
+      [&clone_results, if_block, this](ir::Instruction* phi) {
+        opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+
+        auto find_value_idx = [](ir::Instruction* phi_inst, ir::Loop* loop) {
+          uint32_t preheader_value_idx =
+              !loop->IsInsideLoop(phi_inst->GetSingleWordInOperand(1)) ? 0 : 2;
+          return preheader_value_idx;
+        };
+
+        ir::Instruction* cloned_phi =
+            def_use_mgr->GetDef(clone_results.value_map_.at(phi->result_id()));
+        uint32_t cloned_preheader_value = cloned_phi->GetSingleWordInOperand(
+            find_value_idx(cloned_phi, GetClonedLoop()));
+
+        ir::Instruction* new_phi =
+            InstructionBuilder(context_,
+                               &*GetOriginalLoop()->GetPreHeaderBlock()->tail(),
+                               ir::IRContext::kAnalysisDefUse |
+                                   ir::IRContext::kAnalysisInstrToBlockMapping)
+                .AddPhi(phi->type_id(),
+                        {phi->GetSingleWordInOperand(
+                             find_value_idx(phi, GetOriginalLoop())),
+                         GetClonedLoop()->GetMergeBlock()->id(),
+                         cloned_preheader_value, if_block->id()});
+
+        phi->SetInOperand(find_value_idx(phi, GetOriginalLoop()),
+                          {new_phi->result_id()});
+        def_use_mgr->AnalyzeInstUse(phi);
+      });
+
+  context_->InvalidateAnalysesExceptFor(
+      ir::IRContext::kAnalysisDefUse |
+      ir::IRContext::kAnalysisInstrToBlockMapping |
+      ir::IRContext::kAnalysisLoopAnalysis | ir::IRContext::kAnalysisCFG);
 }
 
 }  // namespace opt
