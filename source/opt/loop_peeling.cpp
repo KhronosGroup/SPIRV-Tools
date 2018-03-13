@@ -84,19 +84,12 @@ void LoopPeeling::DuplicateAndConnectLoop() {
   // Set the merge block of the cloned loop as the original loop's header block.
   cloned_loop_->SetMergeBlock(loop_->GetHeaderBlock());
 
-  // Patch the phi of the header.
-  loop_->GetHeaderBlock()->ForEachPhiInst(
-      [cloned_loop_exit, def_use_mgr, this](ir::Instruction* phi) {
-        for (uint32_t i = 1; i < phi->NumInOperands(); i += 2) {
-          if (!loop_->IsInsideLoop(phi->GetSingleWordInOperand(i))) {
-            phi->SetInOperand(i, {cloned_loop_exit});
-            def_use_mgr->AnalyzeInstUse(phi);
-            return;
-          }
-        }
-      });
-
-  // Patch the iterating value initializers of the original loop using the
+  // Patch the phi of the original loop header:
+  //  - Set the loop entry branch to come from the cloned loop exit block;
+  //  - Set the initial value of the phi using the corresponding cloned loop
+  //    exit values.
+  //
+  // We patch the iterating value initializers of the original loop using the
   // corresponding cloned loop exit values. Connects the cloned loop iterating
   // values to the original loop. This make sure that the initial value of the
   // second loop starts with the last value of the first loop.
@@ -121,18 +114,20 @@ void LoopPeeling::DuplicateAndConnectLoop() {
   //   if (cond)
   //     z += cst2;
   // }
-  loop_->GetHeaderBlock()->ForEachPhiInst(
-      [&clone_results, def_use_mgr, this](ir::Instruction* phi) {
-        for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
-          uint32_t pred_id = phi->GetSingleWordInOperand(i + 1);
-          if (!loop_->IsInsideLoop(pred_id)) {
-            phi->SetInOperand(
-                i, {clone_results.value_map_.at(
-                       exit_value_.at(phi->result_id())->result_id())});
-            def_use_mgr->AnalyzeInstUse(phi);
-          }
-        }
-      });
+  loop_->GetHeaderBlock()->ForEachPhiInst([cloned_loop_exit, def_use_mgr,
+                                           &clone_results,
+                                           this](ir::Instruction* phi) {
+    for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
+      if (!loop_->IsInsideLoop(phi->GetSingleWordInOperand(i + 1))) {
+        phi->SetInOperand(i,
+                          {clone_results.value_map_.at(
+                              exit_value_.at(phi->result_id())->result_id())});
+        phi->SetInOperand(i + 1, {cloned_loop_exit});
+        def_use_mgr->AnalyzeInstUse(phi);
+        return;
+      }
+    }
+  });
 }
 
 void LoopPeeling::InsertCanonicalInductionVariable(ir::Instruction* factor) {
@@ -264,6 +259,7 @@ void LoopPeeling::FixExitCondition(
   for (uint32_t id : cfg.preds(GetOriginalLoop()->GetHeaderBlock()->id())) {
     if (!GetOriginalLoop()->IsInsideLoop(id)) {
       condition_block_id = id;
+      break;
     }
   }
   assert(condition_block_id != 0 && "2nd loop in improperly connected");
