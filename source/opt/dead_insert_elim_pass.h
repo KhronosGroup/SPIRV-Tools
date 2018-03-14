@@ -73,7 +73,7 @@ class DeadInsertElimPass : public MemPass {
   std::unordered_set<uint32_t> liveInserts_;
 
   // Visited phis as insert chain is traversed; used to avoid infinite loop
-  std::unordered_set<uint32_t> visitedPhis_;
+  std::unordered_map<uint32_t, bool> visitedPhis_;
 };
 
 }  // namespace opt
