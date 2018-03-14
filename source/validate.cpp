@@ -59,15 +59,10 @@ using libspirv::ValidationState_t;
 
 spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
                             const uint64_t count,
-                            const spv_opcode_table opcodeTable,
-                            const spv_operand_table operandTable,
-                            const spv_ext_inst_table extInstTable,
                             const ValidationState_t& state,
                             spv_position position) {
   position->index = SPV_INDEX_INSTRUCTION;
-  if (auto error =
-          spvValidateInstructionIDs(pInsts, count, opcodeTable, operandTable,
-                                    extInstTable, state, position))
+  if (auto error = spvValidateInstructionIDs(pInsts, count, state, position))
     return error;
   return SPV_SUCCESS;
 }
@@ -341,9 +336,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   }
 
   position.index = SPV_INDEX_INSTRUCTION;
-  return spvValidateIDs(instructions.data(), instructions.size(),
-                        context.opcode_table, context.operand_table,
-                        context.ext_inst_table, *vstate, &position);
+  return spvValidateIDs(instructions.data(), instructions.size(), *vstate,
+                        &position);
 }
 }  // anonymous namespace
 

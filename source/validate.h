@@ -182,17 +182,12 @@ spv_result_t PrimitivesPass(ValidationState_t& _,
 ///
 /// @param[in] pInsts stream of instructions
 /// @param[in] instCount number of instructions
-/// @param[in] opcodeTable table of specified Opcodes
-/// @param[in] operandTable table of specified operands
 /// @param[in] usedefs use-def info from module parsing
 /// @param[in,out] position current position in the stream
 ///
 /// @return result code
 spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const uint64_t instCount,
-                                       const spv_opcode_table opcodeTable,
-                                       const spv_operand_table operandTable,
-                                       const spv_ext_inst_table extInstTable,
                                        const libspirv::ValidationState_t& state,
                                        spv_position position);
 
@@ -201,17 +196,12 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
 /// @param[in] pInstructions array of instructions
 /// @param[in] count number of elements in instruction array
 /// @param[in] bound the binary header
-/// @param[in] opcodeTable table of specified Opcodes
-/// @param[in] operandTable table of specified operands
 /// @param[in,out] position current word in the binary
 /// @param[in] consumer message consumer callback
 ///
 /// @return result code
 spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
                             const uint64_t count, const uint32_t bound,
-                            const spv_opcode_table opcodeTable,
-                            const spv_operand_table operandTable,
-                            const spv_ext_inst_table extInstTable,
                             spv_position position,
                             const spvtools::MessageConsumer& consumer);
 
