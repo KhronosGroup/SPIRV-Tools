@@ -98,8 +98,11 @@ void main() {
 }
 */
 TEST_F(PeelingTest, CannotPeel) {
-  auto test_cannot_peel = [](const std::string& text,
-                             uint32_t loop_count_id = 0) {
+  // Build the given SPIR-V program in |text|, take the first loop in the first
+  // function and test that it is not peelable. |loop_count_id| is the id
+  // representing the loop count, if equals to 0, then the function build a 10
+  // constant as loop count.
+  auto test_cannot_peel = [](const std::string& text, uint32_t loop_count_id) {
     std::unique_ptr<ir::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -168,7 +171,7 @@ TEST_F(PeelingTest, CannotPeel) {
                OpReturn
                OpFunctionEnd
   )";
-    test_cannot_peel(text);
+    test_cannot_peel(text, 0);
   }
 
   {
@@ -210,7 +213,7 @@ TEST_F(PeelingTest, CannotPeel) {
                OpFunctionEnd
   )";
 
-    test_cannot_peel(text);
+    test_cannot_peel(text, 0);
   }
 
   {
