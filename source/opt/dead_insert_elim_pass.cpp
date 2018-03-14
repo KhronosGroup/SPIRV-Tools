@@ -138,18 +138,31 @@ void DeadInsertElimPass::MarkInsertChain(ir::Instruction* insertChain,
   // If insert chain ended with phi, do recursive call on each operand
   if (insInst->opcode() != SpvOpPhi) return;
   // Mark phi visited to prevent potential infinite loop. If phi is already
-  // visited, return to avoid infinite loop
-  if (!visitedPhis_.insert(insInst->result_id()).second) return;
-  uint32_t icnt = 0;
-  insInst->ForEachInId([&icnt, &pExtIndices, &extOffset, this](uint32_t* idp) {
-    if (icnt % 2 == 0) {
-      ir::Instruction* pi = get_def_use_mgr()->GetDef(*idp);
-      MarkInsertChain(pi, pExtIndices, extOffset);
-    }
-    ++icnt;
-  });
-  // Unmark phi when done visiting
-  visitedPhis_.erase(insInst->result_id());
+  // visited, return to avoid infinite loop.
+  auto iter = visitedPhis_.find(insInst->result_id());
+  if (iter == visitedPhis_.end()) {
+    iter = visitedPhis_.emplace(insInst->result_id(), true).first;
+  } else if (iter->second) {
+    return;
+  } else {
+    iter->second = true;
+  }
+
+  // Phis may have duplicate inputs values for different edges, prune incoming
+  // ids lists before recursing.
+  std::vector<uint32_t> ids;
+  for (uint32_t i = 0; i < insInst->NumInOperands(); i += 2) {
+    ids.push_back(insInst->GetSingleWordInOperand(i));
+  }
+  std::sort(ids.begin(), ids.end());
+  auto new_end = std::unique(ids.begin(), ids.end());
+  for (auto id_iter = ids.begin(); id_iter != new_end; ++id_iter) {
+    ir::Instruction* pi = get_def_use_mgr()->GetDef(*id_iter);
+    MarkInsertChain(pi, pExtIndices, extOffset);
+  }
+
+  // Unmark phi when done visiting.
+  iter->second = false;
 }
 
 bool DeadInsertElimPass::EliminateDeadInserts(ir::Function* func) {
