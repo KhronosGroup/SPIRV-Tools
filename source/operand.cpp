@@ -25,64 +25,22 @@
 // TODO(dneto): Make one set of tables, but with version tags on a
 // per-item basis. https://github.com/KhronosGroup/SPIRV-Tools/issues/1195
 
-#include "operand.kinds-1.0.inc"
-#include "operand.kinds-1.1.inc"
-#include "operand.kinds-1.2.inc"
 #include "operand.kinds-unified1.inc"
 
-static const spv_operand_table_t kTable_1_0 = {
-    ARRAY_SIZE(pygen_variable_OperandInfoTable_1_0),
-    pygen_variable_OperandInfoTable_1_0};
-static const spv_operand_table_t kTable_1_1 = {
-    ARRAY_SIZE(pygen_variable_OperandInfoTable_1_1),
-    pygen_variable_OperandInfoTable_1_1};
-static const spv_operand_table_t kTable_1_2 = {
-    ARRAY_SIZE(pygen_variable_OperandInfoTable_1_2),
-    pygen_variable_OperandInfoTable_1_2};
-static const spv_operand_table_t kTable_1_3 = {
-    ARRAY_SIZE(pygen_variable_OperandInfoTable_1_3),
-    pygen_variable_OperandInfoTable_1_3};
+static const spv_operand_table_t kOperandTable = {
+    ARRAY_SIZE(pygen_variable_OperandInfoTable),
+    pygen_variable_OperandInfoTable};
 
 spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
-                                spv_target_env env) {
+                                spv_target_env) {
   if (!pOperandTable) return SPV_ERROR_INVALID_POINTER;
 
-  switch (env) {
-    case SPV_ENV_UNIVERSAL_1_0:
-    case SPV_ENV_VULKAN_1_0:
-    case SPV_ENV_OPENCL_1_2:
-    case SPV_ENV_OPENCL_EMBEDDED_1_2:
-    case SPV_ENV_OPENCL_2_0:
-    case SPV_ENV_OPENCL_EMBEDDED_2_0:
-    case SPV_ENV_OPENCL_2_1:
-    case SPV_ENV_OPENCL_EMBEDDED_2_1:
-    case SPV_ENV_OPENGL_4_0:
-    case SPV_ENV_OPENGL_4_1:
-    case SPV_ENV_OPENGL_4_2:
-    case SPV_ENV_OPENGL_4_3:
-    case SPV_ENV_OPENGL_4_5:
-      *pOperandTable = &kTable_1_0;
-      return SPV_SUCCESS;
-    case SPV_ENV_UNIVERSAL_1_1:
-      *pOperandTable = &kTable_1_1;
-      return SPV_SUCCESS;
-    case SPV_ENV_UNIVERSAL_1_2:
-    case SPV_ENV_OPENCL_2_2:
-    case SPV_ENV_OPENCL_EMBEDDED_2_2:
-      *pOperandTable = &kTable_1_2;
-      return SPV_SUCCESS;
-    case SPV_ENV_UNIVERSAL_1_3:
-    case SPV_ENV_VULKAN_1_1:
-      *pOperandTable = &kTable_1_3;
-      return SPV_SUCCESS;
-  }
-  assert(0 && "Unknown spv_target_env in spvOperandTableGet()");
-  return SPV_ERROR_INVALID_TABLE;
+  *pOperandTable = &kOperandTable;
+  return SPV_SUCCESS;
 }
 
-#undef ARRAY_SIZE
-
-spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
+spv_result_t spvOperandTableNameLookup(spv_target_env env,
+                                       const spv_operand_table table,
                                        const spv_operand_type_t type,
                                        const char* name,
                                        const size_t nameLength,
@@ -95,7 +53,17 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
     if (type != group.type) continue;
     for (uint64_t index = 0; index < group.count; ++index) {
       const auto& entry = group.entries[index];
-      if (nameLength == strlen(entry.name) &&
+      // We considers the current operand as available as long as
+      // 1. The target environment satisfies the minimal requirement of the
+      //    operand; or
+      // 2. There is at least one extension enabling this operand.
+      //
+      // Note that the second rule assumes the extension enabling this operand
+      // is indeed requested in the SPIR-V code; checking that should be
+      // validator's work.
+      if ((static_cast<uint32_t>(env) >= entry.minVersion ||
+           entry.numExtensions > 0u) &&
+          nameLength == strlen(entry.name) &&
           !strncmp(entry.name, name, nameLength)) {
         *pEntry = &entry;
         return SPV_SUCCESS;
@@ -106,20 +74,50 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
   return SPV_ERROR_INVALID_LOOKUP;
 }
 
-spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
+spv_result_t spvOperandTableValueLookup(spv_target_env env,
+                                        const spv_operand_table table,
                                         const spv_operand_type_t type,
                                         const uint32_t value,
                                         spv_operand_desc* pEntry) {
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
+  spv_operand_desc_t needle = {"", value, 0, nullptr, 0, nullptr, {}, ~0u};
+
+  auto comp = [](const spv_operand_desc_t& lhs, const spv_operand_desc_t& rhs) {
+    return lhs.value < rhs.value;
+  };
+
   for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
     const auto& group = table->types[typeIndex];
     if (type != group.type) continue;
-    for (uint64_t index = 0; index < group.count; ++index) {
-      const auto& entry = group.entries[index];
-      if (value == entry.value) {
-        *pEntry = &entry;
+
+    const auto beg = group.entries;
+    const auto end = group.entries + group.count;
+
+    // We need to loop here because there can exist multiple symbols for the
+    // same operand value, and they can be introduced in different target
+    // environments, which means they can have different minimal version
+    // requirements. For example, SubgroupEqMaskKHR can exist in any SPIR-V
+    // version as long as the SPV_KHR_shader_ballot extension is there; but
+    // starting from SPIR-V 1.3, SubgroupEqMask, which has the same numeric
+    // value as SubgroupEqMaskKHR, is available in core SPIR-V without extension
+    // requirements.
+    // Assumes the underlying table is already sorted ascendingly according to
+    // opcode value.
+    for (auto it = std::lower_bound(beg, end, needle, comp);
+         it != end && it->value == value; ++it) {
+      // We considers the current operand as available as long as
+      // 1. The target environment satisfies the minimal requirement of the
+      //    operand; or
+      // 2. There is at least one extension enabling this operand.
+      //
+      // Note that the second rule assumes the extension enabling this operand
+      // is indeed requested in the SPIR-V code; checking that should be
+      // validator's work.
+      if (static_cast<uint32_t>(env) >= it->minVersion ||
+          it->numExtensions > 0u) {
+        *pEntry = it;
         return SPV_SUCCESS;
       }
     }
@@ -251,7 +249,8 @@ void spvPushOperandTypes(const spv_operand_type_t* types,
   }
 }
 
-void spvPushOperandTypesForMask(const spv_operand_table operandTable,
+void spvPushOperandTypesForMask(spv_target_env env,
+                                const spv_operand_table operandTable,
                                 const spv_operand_type_t type,
                                 const uint32_t mask,
                                 spv_operand_pattern_t* pattern) {
@@ -261,7 +260,7 @@ void spvPushOperandTypesForMask(const spv_operand_table operandTable,
        candidate_bit >>= 1) {
     if (candidate_bit & mask) {
       spv_operand_desc entry = nullptr;
-      if (SPV_SUCCESS == spvOperandTableValueLookup(operandTable, type,
+      if (SPV_SUCCESS == spvOperandTableValueLookup(env, operandTable, type,
                                                     candidate_bit, &entry)) {
         spvPushOperandTypes(entry->operandTypes, pattern);
       }

@@ -570,20 +570,26 @@ TEST_F(ValidateData, ext_16bit_storage_caps_allow_free_fp_rounding_mode) {
   }
 }
 
-TEST_F(ValidateData, default_disallow_free_fp_rounding_mode) {
-  string str = R"(
+TEST_F(ValidateData, vulkan_disallow_free_fp_rounding_mode) {
+  for (const char* mode : {"RTE", "RTZ"}) {
+    for (const auto env : {SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1}) {
+      string str = string(R"(
         OpCapability Shader
-        OpCapability Linkage
         OpMemoryModel Logical GLSL450
-        OpDecorate %2 FPRoundingMode RTZ
+        OpDecorate %2 FPRoundingMode )") +
+                   mode + R"(
         %1 = OpTypeFloat 32
         %2 = OpConstant %1 1.25
-    )";
-  CompileSuccessfully(str.c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 2 of Decorate requires one of these "
-                        "capabilities: Kernel"));
+      )";
+      CompileSuccessfully(str.c_str());
+      ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions(env));
+      EXPECT_THAT(
+          getDiagnosticString(),
+          HasSubstr("Operand 2 of Decorate requires one of these capabilities: "
+                    "StorageBuffer16BitAccess StorageUniform16 "
+                    "StoragePushConstant16 StorageInputOutput16"));
+    }
+  }
 }
 
 }  // anonymous namespace

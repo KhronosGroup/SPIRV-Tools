@@ -38,7 +38,8 @@ using spv_operand_pattern_t = std::vector<spv_operand_type_t>;
 // Finds the named operand in the table. The type parameter specifies the
 // operand's group. A handle of the operand table entry for this operand will
 // be written into *entry.
-spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
+spv_result_t spvOperandTableNameLookup(spv_target_env,
+                                       const spv_operand_table table,
                                        const spv_operand_type_t type,
                                        const char* name,
                                        const size_t name_length,
@@ -47,7 +48,8 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
 // Finds the operand with value in the table. The type parameter specifies the
 // operand's group. A handle of the operand table entry for this operand will
 // be written into *entry.
-spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
+spv_result_t spvOperandTableValueLookup(spv_target_env,
+                                        const spv_operand_table table,
                                         const spv_operand_type_t type,
                                         const uint32_t value,
                                         spv_operand_desc* entry);
@@ -85,7 +87,8 @@ void spvPushOperandTypes(const spv_operand_type_t* types,
 // appear after operands for a more significant bit.
 //
 // If a set bit is unknown, then we assume it has no operands.
-void spvPushOperandTypesForMask(const spv_operand_table operand_table,
+void spvPushOperandTypesForMask(spv_target_env,
+                                const spv_operand_table operand_table,
                                 const spv_operand_type_t mask_type,
                                 const uint32_t mask,
                                 spv_operand_pattern_t* pattern);

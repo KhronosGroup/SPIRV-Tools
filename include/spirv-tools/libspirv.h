@@ -73,6 +73,7 @@ typedef enum spv_result_t {
   SPV_ERROR_INVALID_CAPABILITY = -13,
   SPV_ERROR_INVALID_DATA = -14,  // Indicates data rules validation failure.
   SPV_ERROR_MISSING_EXTENSION = -15,
+  SPV_ERROR_WRONG_VERSION = -16,  // Indicates wrong SPIR-V version
   SPV_FORCE_32_BIT_ENUM(spv_result_t)
 } spv_result_t;
 
