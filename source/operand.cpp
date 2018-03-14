@@ -81,7 +81,7 @@ spv_result_t spvOperandTableValueLookup(spv_target_env env,
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
-  spv_operand_desc_t needle = {/*name=*/"", value};
+  spv_operand_desc_t needle = {"", value, 0, nullptr, 0, nullptr, {}, ~0u};
 
   auto comp = [](const spv_operand_desc_t& lhs, const spv_operand_desc_t& rhs) {
     return lhs.value < rhs.value;

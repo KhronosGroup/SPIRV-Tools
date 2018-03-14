@@ -128,7 +128,8 @@ spv_result_t spvOpcodeTableValueLookup(spv_target_env env,
   const auto beg = table->entries;
   const auto end = table->entries + table->count;
 
-  spv_opcode_desc_t needle = {/*name=*/"", opcode};
+  spv_opcode_desc_t needle = {"",    opcode, 0, nullptr, 0,  {},
+                              false, false,  0, nullptr, ~0u};
 
   auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
     return lhs.opcode < rhs.opcode;
@@ -178,11 +179,12 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 const char* spvOpcodeString(const SpvOp opcode) {
   const auto beg = kOpcodeTableEntries;
   const auto end = kOpcodeTableEntries + ARRAY_SIZE(kOpcodeTableEntries);
-  spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
+  spv_opcode_desc_t needle = {"",    opcode, 0, nullptr, 0,  {},
+                              false, false,  0, nullptr, ~0u};
   auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
     return lhs.opcode < rhs.opcode;
   };
-  auto it = std::lower_bound(beg, end, value, comp);
+  auto it = std::lower_bound(beg, end, needle, comp);
   if (it != end && it->opcode == opcode) {
     return it->name;
   }
