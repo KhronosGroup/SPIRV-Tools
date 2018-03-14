@@ -24,14 +24,14 @@
 
 namespace {
 
-using ::testing::Combine;
-using ::testing::Eq;
-using ::testing::Values;
-using ::testing::ValuesIn;
 using spvtest::Concatenate;
 using spvtest::MakeInstruction;
 using spvtest::MakeVector;
 using spvtest::TextToBinaryTest;
+using ::testing::Combine;
+using ::testing::Eq;
+using ::testing::Values;
+using ::testing::ValuesIn;
 
 // Returns a generator of common Vulkan environment values to be tested.
 std::vector<spv_target_env> CommonVulkanEnvs() {
@@ -125,7 +125,8 @@ TEST_P(ExtensionRoundTripTest, Samples) {
   // Check round trip through the disassembler.
   EXPECT_THAT(EncodeAndDecodeSuccessfully(ac.input,
                                           SPV_BINARY_TO_TEXT_OPTION_NONE, env),
-              Eq(ac.input));
+              Eq(ac.input))
+      << "target env: " << spvTargetEnvDescription(env) << "\n";
 }
 
 // SPV_KHR_shader_ballot
@@ -271,11 +272,11 @@ INSTANTIATE_TEST_CASE_P(
                 {"OpCapability StorageBuffer16BitAccess\n",
                  MakeInstruction(SpvOpCapability,
                                  {SpvCapabilityStorageBuffer16BitAccess})},
-                {"OpCapability UniformAndStorageBuffer16BitAccess\n",
+                {"OpCapability StorageUniform16\n",
                  MakeInstruction(
                      SpvOpCapability,
                      {SpvCapabilityUniformAndStorageBuffer16BitAccess})},
-                {"OpCapability UniformAndStorageBuffer16BitAccess\n",
+                {"OpCapability StorageUniform16\n",
                  MakeInstruction(SpvOpCapability,
                                  {SpvCapabilityStorageUniform16})},
                 {"OpCapability StoragePushConstant16\n",
@@ -294,11 +295,10 @@ INSTANTIATE_TEST_CASE_P(
                 {"OpCapability StorageUniformBufferBlock16\n",
                  MakeInstruction(SpvOpCapability,
                                  {SpvCapabilityStorageBuffer16BitAccess})},
-                // The old name maps to the new enum.
-                {"OpCapability StorageUniform16\n",
-                 MakeInstruction(
-                     SpvOpCapability,
-                     {SpvCapabilityUniformAndStorageBuffer16BitAccess})},
+                // The new name maps to the old enum.
+                {"OpCapability UniformAndStorageBuffer16BitAccess\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityStorageUniform16})},
             })), );
 
 // SPV_KHR_device_group

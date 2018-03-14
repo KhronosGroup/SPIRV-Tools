@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 #define LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 
+#include "enum_set.h"
 #include "latest_version_spirv_header.h"
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
@@ -37,6 +38,11 @@ class AssemblyGrammar {
 
   // Returns the SPIR-V target environment.
   spv_target_env target_env() const { return target_env_; }
+
+  // Removes capabilities not available in the current target environment and
+  // returns the rest.
+  CapabilitySet filterCapsAgainstTargetEnv(const SpvCapability* cap_array,
+                                           uint32_t count) const;
 
   // Fills in the desc parameter with the information about the opcode
   // of the given name. Returns SPV_SUCCESS if the opcode was found, and

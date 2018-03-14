@@ -1035,11 +1035,6 @@ make_pair(string(kGLSL450MemoryModel) +
           KernelDependencies()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n"
-          "OpDecorate %intt FPRoundingMode RTE\n"
-          "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          KernelDependencies()),
-make_pair(string(kGLSL450MemoryModel) +
-          "OpEntryPoint Vertex %func \"shader\" \n"
           "OpDecorate %intt FPFastMathMode Fast\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
           KernelDependencies()),
@@ -1473,7 +1468,9 @@ TEST_P(ValidateCapability, Capability) {
           : SPV_ENV_UNIVERSAL_1_1;
   const string test_code = MakeAssembly(GetParam());
   CompileSuccessfully(test_code, env);
-  ASSERT_EQ(ExpectedResult(GetParam()), ValidateInstructions(env)) << test_code;
+  ASSERT_EQ(ExpectedResult(GetParam()), ValidateInstructions(env))
+      << "target env: " << spvTargetEnvDescription(env) << "\ntest code:\n"
+      << test_code;
 }
 
 TEST_P(ValidateCapabilityV11, Capability) {
