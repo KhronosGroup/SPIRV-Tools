@@ -521,6 +521,167 @@ Generated from the following GLSL + --eliminate-local-multi-store
 
 #version 330 core
 void main() {
+  int a[10];
+  int n = a[0];
+  for(int i = 0; i < n; ++i) {}
+}
+*/
+TEST_F(PeelingTest, PeelingUncountable) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginLowerLeft
+               OpSource GLSL 330
+               OpName %main "main"
+               OpName %a "a"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+       %uint = OpTypeInt 32 0
+    %uint_10 = OpConstant %uint 10
+%_arr_int_uint_10 = OpTypeArray %int %uint_10
+%_ptr_Function__arr_int_uint_10 = OpTypePointer Function %_arr_int_uint_10
+      %int_0 = OpConstant %int 0
+       %bool = OpTypeBool
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %a = OpVariable %_ptr_Function__arr_int_uint_10 Function
+         %15 = OpAccessChain %_ptr_Function_int %a %int_0
+         %16 = OpLoad %int %15
+               OpBranch %18
+         %18 = OpLabel
+         %30 = OpPhi %int %int_0 %5 %29 %21
+               OpLoopMerge %20 %21 None
+               OpBranch %22
+         %22 = OpLabel
+         %26 = OpSLessThan %bool %30 %16
+               OpBranchConditional %26 %19 %20
+         %19 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+         %29 = OpIAdd %int %30 %int_1
+               OpBranch %18
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  // Peel before.
+  {
+    SCOPED_TRACE("Peel before");
+
+    std::unique_ptr<ir::IRContext> context =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                    SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+    ir::Module* module = context->module();
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                               << text << std::endl;
+    ir::Function& f = *module->begin();
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+
+    EXPECT_EQ(ld.NumLoops(), 1u);
+
+    ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(16);
+    EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
+
+    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    EXPECT_TRUE(peel.CanPeelLoop());
+    peel.PeelBefore(1);
+
+    const std::string check = R"(
+CHECK:      OpFunction
+CHECK-NEXT: [[ENTRY:%\w+]] = OpLabel
+CHECK:      [[LOOP_COUNT:%\w+]] = OpLoad
+CHECK:      [[MIN_LOOP_COUNT:%\w+]] = OpSLessThan {{%\w+}} {{%\w+}} [[LOOP_COUNT]]
+CHECK-NEXT: [[LOOP_COUNT:%\w+]] = OpSelect {{%\w+}} [[MIN_LOOP_COUNT]] {{%\w+}} [[LOOP_COUNT]]
+CHECK:      [[BEFORE_LOOP:%\w+]] = OpLabel
+CHECK-NEXT: [[DUMMY_IT:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[DUMMY_IT_1:%\w+]] [[BE:%\w+]]
+CHECK-NEXT: [[i:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[I_1:%\w+]] [[BE]]
+CHECK-NEXT: OpLoopMerge [[AFTER_LOOP_PREHEADER:%\w+]] [[BE]] None
+CHECK:      [[COND_BLOCK:%\w+]] = OpLabel
+CHECK-NEXT: OpSLessThan
+CHECK-NEXT: [[EXIT_COND:%\w+]] = OpSLessThan {{%\w+}} [[DUMMY_IT]]
+CHECK-NEXT: OpBranchConditional [[EXIT_COND]] {{%\w+}} [[AFTER_LOOP_PREHEADER]]
+CHECK:      [[I_1]] = OpIAdd {{%\w+}} [[i]]
+CHECK-NEXT: [[DUMMY_IT_1]] = OpIAdd {{%\w+}} [[DUMMY_IT]]
+CHECK-NEXT: OpBranch [[BEFORE_LOOP]]
+
+CHECK: [[AFTER_LOOP_PREHEADER]] = OpLabel
+CHECK-NEXT: OpSelectionMerge [[IF_MERGE:%\w+]]
+CHECK-NEXT: OpBranchConditional [[MIN_LOOP_COUNT]] [[AFTER_LOOP:%\w+]] [[IF_MERGE]]
+
+CHECK:      [[AFTER_LOOP]] = OpLabel
+CHECK-NEXT: OpPhi {{%\w+}} {{%\w+}} {{%\w+}} [[i]] [[AFTER_LOOP_PREHEADER]]
+CHECK-NEXT: OpLoopMerge
+)";
+
+    Match(check, context.get());
+  }
+
+  // Peel after.
+  {
+    SCOPED_TRACE("Peel after");
+
+    std::unique_ptr<ir::IRContext> context =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                    SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+    ir::Module* module = context->module();
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                               << text << std::endl;
+    ir::Function& f = *module->begin();
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+
+    EXPECT_EQ(ld.NumLoops(), 1u);
+
+    ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(16);
+    EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
+
+    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    EXPECT_TRUE(peel.CanPeelLoop());
+    peel.PeelAfter(1);
+
+    const std::string check = R"(
+CHECK:      OpFunction
+CHECK-NEXT: [[ENTRY:%\w+]] = OpLabel
+CHECK:      [[MIN_LOOP_COUNT:%\w+]] = OpSLessThan {{%\w+}}
+CHECK-NEXT: OpSelectionMerge [[IF_MERGE:%\w+]]
+CHECK-NEXT: OpBranchConditional [[MIN_LOOP_COUNT]] [[BEFORE_LOOP:%\w+]] [[IF_MERGE]]
+CHECK:      [[BEFORE_LOOP]] = OpLabel
+CHECK-NEXT: [[DUMMY_IT:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[DUMMY_IT_1:%\w+]] [[BE:%\w+]]
+CHECK-NEXT: [[I:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[I_1:%\w+]] [[BE]]
+CHECK-NEXT: OpLoopMerge [[BEFORE_LOOP_MERGE:%\w+]] [[BE]] None
+CHECK:      [[COND_BLOCK:%\w+]] = OpLabel
+CHECK-NEXT: OpSLessThan
+CHECK-NEXT: [[TMP:%\w+]] = OpIAdd {{%\w+}} [[DUMMY_IT]] {{%\w+}}
+CHECK-NEXT: [[EXIT_COND:%\w+]] = OpSLessThan {{%\w+}} [[TMP]]
+CHECK-NEXT: OpBranchConditional [[EXIT_COND]] {{%\w+}} [[BEFORE_LOOP_MERGE]]
+CHECK:      [[I_1]] = OpIAdd {{%\w+}} [[I]]
+CHECK-NEXT: [[DUMMY_IT_1]] = OpIAdd {{%\w+}} [[DUMMY_IT]]
+CHECK-NEXT: OpBranch [[BEFORE_LOOP]]
+
+CHECK:      [[IF_MERGE]] = OpLabel
+CHECK-NEXT: [[TMP:%\w+]] = OpPhi {{%\w+}} [[I]] [[BEFORE_LOOP_MERGE]]
+CHECK-NEXT: OpBranch [[AFTER_LOOP:%\w+]]
+
+CHECK:      [[AFTER_LOOP]] = OpLabel
+CHECK-NEXT: OpPhi {{%\w+}} {{%\w+}} {{%\w+}} [[TMP]] [[IF_MERGE]]
+CHECK-NEXT: OpLoopMerge
+
+)";
+
+    Match(check, context.get());
+  }
+}
+
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 330 core
+void main() {
   int i = 0;
   do {
     i++;
