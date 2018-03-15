@@ -50,7 +50,7 @@
 // Debug logging (0: Off, 1-N: Verbosity level).  Replace this with the
 // implementation done for
 // https://github.com/KhronosGroup/SPIRV-Tools/issues/1351
-// #define SSA_REWRITE_DEBUGGING_LEVEL 1
+// #define SSA_REWRITE_DEBUGGING_LEVEL 3
 
 #ifdef SSA_REWRITE_DEBUGGING_LEVEL
 #include <ostream>
@@ -77,8 +77,11 @@ std::string SSARewriter::PhiCandidate::PrettyPrint(const ir::CFG* cfg) const {
       str << "[%" << arg_id << ", bb(%" << pred_label << ")] ";
     }
   }
-  str << ")" << ((is_trivial_) ? " [TRIVIAL]" : "")
-      << ((is_complete_) ? "  [COMPLETE]" : "  [INCOMPLETE]");
+  str << ")";
+  if (copy_of_ != 0) {
+    str << "  [COPY OF " << copy_of_ << "]";
+  }
+  str << ((is_complete_) ? "  [COMPLETE]" : "  [INCOMPLETE]");
 
   return str.str();
 }
@@ -131,6 +134,7 @@ uint32_t SSARewriter::TryRemoveTrivialPhi(PhiCandidate* phi_candidate) {
     if (same_id != 0) {
       // This Phi candidate merges at least two values.  Therefore, it is not
       // trivial.
+      phi_candidate->MarkCopyOf(0);
       return phi_candidate->result_id();
     }
     same_id = arg_id;
@@ -142,8 +146,9 @@ uint32_t SSARewriter::TryRemoveTrivialPhi(PhiCandidate* phi_candidate) {
   // all the users of |phi_candidate->phi_result| to all its users, and remove
   // |phi_candidate|.
 
-  // Mark the Phi candidate as trivial, so it won't be generated.
-  phi_candidate->MarkTrivial();
+  // Mark the Phi candidate as a trivial copy of |same_id|, so it won't be
+  // generated.
+  phi_candidate->MarkCopyOf(same_id);
 
   assert(same_id != 0 && "Completed Phis cannot have %0 in their arguments");
 
@@ -319,7 +324,7 @@ void SSARewriter::ProcessLoad(ir::Instruction* inst, ir::BasicBlock* bb) {
     // |val_id|. After all the rewriting decisions are made, every use of
     // this load will be replaced with |val_id|.
     const uint32_t load_id = inst->result_id();
-    assert(load_replacement_.find(load_id) == load_replacement_.end());
+    assert(load_replacement_.count(load_id) == 0);
     load_replacement_[load_id] = val_id;
     PhiCandidate* defining_phi = GetPhiCandidate(val_id);
     if (defining_phi) {
@@ -390,6 +395,28 @@ uint32_t SSARewriter::GetReplacement(std::pair<uint32_t, uint32_t> repl) {
   return val_id;
 }
 
+uint32_t SSARewriter::GetPhiArgument(const PhiCandidate* phi_candidate,
+                                     uint32_t ix) {
+  assert(phi_candidate->IsReady() &&
+         "Tried to get the final argument from an incomplete/trivial Phi");
+
+  uint32_t arg_id = phi_candidate->phi_args()[ix];
+  while (arg_id != 0) {
+    PhiCandidate* phi_user = GetPhiCandidate(arg_id);
+    if (phi_user == nullptr || phi_user->IsReady()) {
+      // If the argument is not a Phi or it's a Phi candidate ready to be
+      // emitted, return it.
+      return arg_id;
+    }
+    arg_id = phi_user->copy_of();
+  }
+
+  assert(false &&
+         "No Phi candidates in the copy-of chain are ready to be generated");
+
+  return 0;
+}
+
 bool SSARewriter::ApplyReplacements() {
   bool modified = false;
 
@@ -418,16 +445,7 @@ bool SSARewriter::ApplyReplacements() {
     std::vector<ir::Operand> phi_operands;
     uint32_t arg_ix = 0;
     for (uint32_t pred_label : pass_->cfg()->preds(phi_candidate->bb()->id())) {
-      uint32_t op_val_id = phi_candidate->phi_args()[arg_ix++];
-      if (op_val_id >= first_phi_id_) {
-        PhiCandidate* phi_user = GetPhiCandidate(op_val_id);
-        if (phi_user && !phi_user->is_complete()) {
-          assert(false &&
-                 "Found phi argument coming from a phi candidate that is "
-                 "trivial or incomplete");
-          op_val_id = 0;
-        }
-      }
+      uint32_t op_val_id = GetPhiArgument(phi_candidate, arg_ix++);
       phi_operands.push_back(
           {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {op_val_id}});
       phi_operands.push_back(
@@ -510,8 +528,7 @@ void SSARewriter::FinalizePhiCandidate(PhiCandidate* phi_candidate) {
   if (TryRemoveTrivialPhi(phi_candidate) == phi_candidate->result_id()) {
     // If we could not remove |phi_candidate|, it means that it is complete
     // and not trivial. Add it to the list of Phis to generate.
-    assert(!phi_candidate->is_trivial() &&
-           "A completed Phi cannot be trivial.");
+    assert(!phi_candidate->copy_of() && "A completed Phi cannot be trivial.");
     phis_to_generate_.push_back(phi_candidate);
   }
 }
