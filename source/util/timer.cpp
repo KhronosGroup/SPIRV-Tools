@@ -27,7 +27,7 @@ namespace spvutils {
 
 // A map data structure to search a CumulativeTimer object by its name. The key
 // of the map is the name and the value is the CumulativeTimer object.
-static std::map<const char*, CumulativeTimer* > CumulativeTimerMap;
+static std::map<const char*, CumulativeTimer*> CumulativeTimerMap;
 
 // Print the description of resource types measured by Timer class. If |out| is
 // NULL, it does nothing. Otherwise, it prints resource types. The second is
@@ -40,11 +40,9 @@ void PrintTimerDescription(std::ostream* out, bool measure_mem_usage) {
     *out << std::setw(30) << "PASS name" << std::setw(12) << "CPU time"
          << std::setw(12) << "WALL time" << std::setw(12) << "USR time"
          << std::setw(12) << "SYS time";
-#if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
     if (measure_mem_usage) {
       *out << std::setw(12) << "RSS" << std::setw(12) << "Pagefault";
     }
-#endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
     *out << std::endl;
   }
 }
@@ -94,16 +92,14 @@ void Timer::Report(const char* tag) {
       break;
   }
 
-  report_stream_->precision(2);
+  report_stream_->precision(3);
   *report_stream_ << std::fixed << std::setw(30) << tag << std::setw(12)
                   << CPUTime() << std::setw(12) << WallTime() << std::setw(12)
                   << UserTime() << std::setw(12) << SystemTime();
-#if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
   if (measure_mem_usage_) {
     *report_stream_ << std::fixed << std::setw(12) << RSS() << std::setw(12)
                     << PageFault();
   }
-#endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
   *report_stream_ << std::endl;
 }
 
@@ -115,7 +111,8 @@ CumulativeTimer* CumulativeTimer::GetCumulativeTimer(const char* name) {
   return elem->second;
 }
 
-void CumulativeTimer::SetCumulativeTimer(const char* name, CumulativeTimer* ctimer) {
+void CumulativeTimer::SetCumulativeTimer(const char* name,
+                                         CumulativeTimer* ctimer) {
   if (name == NULL) return;
   CumulativeTimerMap[name] = ctimer;
 }

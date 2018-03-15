@@ -25,75 +25,119 @@ using ::spvutils::PrintTimerDescription;
 using ::spvutils::ScopedTimer;
 using ::spvutils::Timer;
 
-TEST(Timer, Sleep) {
-  const unsigned int usleep_time = 71234;
-  const double epsilon = 0.001;
+// A mock class to mimic Timer class for a testing purpose. It has fixed
+// CPU/WALL/USR/SYS time, RSS, and the number of page faults.
+class MockTimer : public Timer {
+ public:
+  MockTimer(std::ostream* out, bool measure_mem_usage = false)
+      : Timer(out, measure_mem_usage) {}
+  double CPUTime() override { return 0.019123; }
+  double WallTime() override { return 0.019723; }
+  double UserTime() override { return 0.012723; }
+  double SystemTime() override { return 0.002723; }
+  long RSS() const override { return 360L; }
+  long PageFault() const override { return 3600L; }
+};
+
+// This unit test checks whether the actual output of MockTimer::Report() is the
+// same as fixed CPU/WALL/USR/SYS time, RSS, and the number of page faults that
+// are returned by MockTimer.
+TEST(MockTimer, DoNothing) {
   std::ostringstream buf;
 
   PrintTimerDescription(&buf);
-  Timer timer(&buf);
+  MockTimer timer(&buf);
   timer.Start();
 
-  usleep(usleep_time);
+  // Do nothing.
 
   timer.Stop();
   timer.Report("TimerTest");
 
-  EXPECT_GT(epsilon, timer.CPUTime());
-  EXPECT_GT(usleep_time * 0.000001 + epsilon, timer.WallTime());
-  EXPECT_GT(epsilon, timer.UserTime());
-  EXPECT_GT(epsilon, timer.SystemTime());
+  EXPECT_EQ(0.019123, timer.CPUTime());
+  EXPECT_EQ(0.019723, timer.WallTime());
+  EXPECT_EQ(0.012723, timer.UserTime());
+  EXPECT_EQ(0.002723, timer.SystemTime());
   EXPECT_EQ(
       "                     PASS name    CPU time   WALL time    USR time"
-      "    SYS time\n                     TimerTest        0.00        0.07"
-      "        0.00        0.00\n",
+      "    SYS time\n                     TimerTest       0.019       0.020"
+      "       0.013       0.003\n",
       buf.str());
 }
 
-TEST(ScopedTimer, Sleep) {
-  const unsigned int usleep_time = 71234;
+// This unit test checks whether the ScopedTimer<MockTimer> correctly reports
+// the fixed CPU/WALL/USR/SYS time, RSS, and the number of page faults that are
+// returned by MockTimer.
+TEST(MockTimer, TestScopedTimer) {
   std::ostringstream buf;
 
   {
-    ScopedTimer scopedtimer(&buf, "ScopedTimerTest");
-    usleep(usleep_time);
+    ScopedTimer<MockTimer> scopedtimer(&buf, "ScopedTimerTest");
+    // Do nothing.
   }
 
   EXPECT_EQ(
-      "               ScopedTimerTest        0.00        0.07"
-      "        0.00        0.00\n",
+      "               ScopedTimerTest       0.019       0.020       0.013"
+      "       0.003\n",
       buf.str());
 }
 
-TEST(CumulativeTimer, Sleep) {
-  const unsigned int usleep_time = 71234;
-  const double epsilon = 0.001;
-  CumulativeTimer *ctimer;
+// A mock class to mimic CumulativeTimer class for a testing purpose. It has
+// fixed CPU/WALL/USR/SYS time, RSS, and the number of page faults for each
+// measurement (i.e., a pair of Start() and Stop()). If the number of
+// measurements increases, it increases |count_stop_| by the number of calling
+// Stop() and the amount of each resource usage is proportional to
+// |count_stop_|.
+class MockCumulativeTimer : public CumulativeTimer {
+ public:
+  MockCumulativeTimer(std::ostream* out, const char* name,
+                      bool measure_mem_usage = false)
+      : CumulativeTimer(out, name, measure_mem_usage), count_stop_(0) {}
+  double CPUTime() override { return count_stop_ * 0.019123; }
+  double WallTime() override { return count_stop_ * 0.019723; }
+  double UserTime() override { return count_stop_ * 0.012723; }
+  double SystemTime() override { return count_stop_ * 0.002723; }
+  long RSS() const override { return count_stop_ * 360L; }
+  long PageFault() const override { return count_stop_ * 3600L; }
+
+  // Calling Stop() does nothing but just increases |count_stop_| by 1.
+  void Stop() override { ++count_stop_; };
+
+ private:
+  unsigned int count_stop_;
+};
+
+// This unit test checks whether the MockCumulativeTimer correctly reports the
+// cumulative CPU/WALL/USR/SYS time, RSS, and the number of page faults whose
+// values are fixed for each measurement (i.e., a pair of Start() and Stop()).
+TEST(MockCumulativeTimer, DoNothing) {
+  CumulativeTimer* ctimer;
   std::ostringstream buf;
 
   {
-    ctimer = new CumulativeTimer(&buf, "foo");
+    ctimer = new MockCumulativeTimer(&buf, "foo");
     ctimer->Start();
-    usleep(usleep_time);
+
+    // Do nothing.
+
     ctimer->Stop();
   }
 
-  CumulativeTimer *foo;
+  CumulativeTimer* foo;
   {
     foo = CumulativeTimer::GetCumulativeTimer("foo");
+    EXPECT_NE(nullptr, foo);
     foo->Start();
-    usleep(usleep_time);
+
+    // Do nothing.
+
     foo->Stop();
     foo->Report("CumulativeTimerTest");
   }
 
-  EXPECT_GT(epsilon, foo->CPUTime());
-  EXPECT_GT(2 * usleep_time * 0.000001 + epsilon, foo->WallTime());
-  EXPECT_GT(epsilon, foo->UserTime());
-  EXPECT_GT(epsilon, foo->SystemTime());
   EXPECT_EQ(
-      "           CumulativeTimerTest        0.00        0.14"
-      "        0.00        0.00\n",
+      "           CumulativeTimerTest       0.038       0.039       0.025"
+      "       0.005\n",
       buf.str());
 
   if (foo) delete foo;

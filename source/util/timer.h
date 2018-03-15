@@ -17,13 +17,10 @@
 #ifndef LIBSPIRV_UTIL_TIMER_H_
 #define LIBSPIRV_UTIL_TIMER_H_
 
-#if defined(SPIRV_ANDROID) || defined(SPIRV_LINUX)
+#if defined(SPIRV_TIMER_ENABLED)
 
 #include <sys/resource.h>
 #include <iostream>
-
-// A flag to check if Timer is supported or not.
-#define SPIRV_TIMER_ENABLED
 
 // A macro to call spvutils::PrintTimerDescription(std::ostream*, bool). The
 // first argument must be given as std::ostream*. If it is NULL, the function
@@ -50,11 +47,7 @@
 //   }   // <-- end of this scope. The destructor of ScopedTimer prints tag and
 //              the resource utilization to std::cout.
 #define SPIRV_TIMER_SCOPED(...) \
-  spvutils::ScopedTimer timer##__LINE__(__VA_ARGS__)
-
-#if defined(SPIRV_LINUX)
-#define SPIRV_MEMORY_MEASUREMENT_ENABLED
-#endif  // defined(SPIRV_LINUX)
+  spvutils::ScopedTimer<spvutils::Timer> timer##__LINE__(__VA_ARGS__)
 
 namespace spvutils {
 
@@ -70,12 +63,14 @@ enum UsageStatus { kGetrusageFailed, kClockGettimeFailed, kSucceeded };
 // number of page faults are measured only when |measure_mem_usage| given to the
 // constructor is true. This class should be used as the following example:
 //
-//   Timer timer(std::cout);
-//   timer.Start();       // <-- set |usage_before_|, |wall_before_|, |cpu_before_|
+//   spvutils::Timer timer(std::cout);
+//   timer.Start();       // <-- set |usage_before_|, |wall_before_|,
+//                               and |cpu_before_|
 //
 //   /* ... lines of code that we want to know its resource usage ... */
 //
-//   timer.Stop();       // <-- set |cpu_after_|, |wall_after_|, |usage_after_|
+//   timer.Stop();        // <-- set |cpu_after_|, |wall_after_|, and
+//                               |usage_after_|
 //   timer.Report(tag);   // <-- print tag and the resource utilization to
 //                               std::cout.
 class Timer {
@@ -108,7 +103,9 @@ class Timer {
 
   // Returns the measured Wall Time (i.e., elapsed time) for a range of code
   // execution.
-  virtual double WallTime() { return TimeDifference(wall_before_, wall_after_); }
+  virtual double WallTime() {
+    return TimeDifference(wall_before_, wall_after_);
+  }
 
   // Returns the measured USR Time for a range of code execution.
   virtual double UserTime() {
@@ -120,20 +117,21 @@ class Timer {
     return TimeDifference(usage_before_.ru_stime, usage_after_.ru_stime);
   }
 
-#if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
   // Returns the measured RSS for a range of code execution.
-  virtual long RSS() const { return usage_after_.ru_maxrss - usage_before_.ru_maxrss; }
+  virtual long RSS() const {
+    return usage_after_.ru_maxrss - usage_before_.ru_maxrss;
+  }
 
   // Returns the measured number of page faults for a range of code execution.
   virtual long PageFault() const {
     return (usage_after_.ru_minflt - usage_before_.ru_minflt) +
            (usage_after_.ru_majflt - usage_before_.ru_majflt);
   }
-#endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
 
   UsageStatus GetUsageStatus() const { return usage_status_; }
 
   virtual ~Timer() {}
+
  private:
   // Returns the time gap between |from| and |to| in seconds.
   double TimeDifference(const timeval& from, const timeval& to) {
@@ -186,38 +184,48 @@ class Timer {
   bool measure_mem_usage_;
 };
 
-// ScopedTimer is the same as Timer class, but it supports an efficient way to
+// The purpose of ScopedTimer is to
 // measure the resource utilization for a scope. Simply creating a local
-// variable of ScopedTimer will call Timer::Start() and it stops at the end of
-// the scope by calling Timer::Stop() and Timer::Report(). This class should be
-// used as the following example:
+// variable of ScopedTimer will call Timer::Start() and it calls Timer::Stop()
+// and Timer::Report() at the end of the scope by its destructor. When we use
+// this class, we must choose the proper Timer class (for class TimerType
+// template) in advance. This class should be used as the following example:
 //
 //   {   // <-- beginning of this scope
 //
 //     /* ... code out of interest ... */
 //
-//     ScopedTimer scopedtimer(std::cout, tag);
+//     spvutils::ScopedTimer<spvutils::Timer> scopedtimer(std::cout, tag);
 //
 //     /* ... lines of code that we want to know its resource usage ... */
 //
 //   }   // <-- end of this scope. The destructor of ScopedTimer prints tag and
 //              the resource utilization to std::cout.
-class ScopedTimer : Timer {
+//
+// The template<class TimerType> is used to choose a Timer class. Currently,
+// only options for the Timer class are Timer and MockTimer in the unit test.
+template <class TimerType>
+class ScopedTimer {
  public:
   ScopedTimer(std::ostream* out, const char* tag,
               bool measure_mem_usage = false)
-      : Timer(out, measure_mem_usage), tag_(tag) {
-    Start();
+      : timer(new TimerType(out, measure_mem_usage)), tag_(tag) {
+    timer->Start();
   }
 
   // At the end of the scope surrounding the instance of this class, this
   // destructor saves the last status of resource usage and reports it.
-  ~ScopedTimer() {
-    Stop();
-    Report(tag_);
+  virtual ~ScopedTimer() {
+    timer->Stop();
+    timer->Report(tag_);
+    delete timer;
   }
 
  private:
+  // Actual timer that measures the resource utilization. It must be an instance
+  // of Timer class if there is no special reason to use other class.
+  TimerType* timer;
+
   // A tag that will be printed in front of the trace reported by Timer class.
   const char* tag_;
 };
@@ -260,11 +268,9 @@ class CumulativeTimer : public Timer {
         cpu_time_(0),
         wall_time_(0),
         usr_time_(0),
-        sys_time_(0) {
-#if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
-    rss_ = 0;
-    pgfaults_ = 0;
-#endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
+        sys_time_(0),
+        rss_(0),
+        pgfaults_(0) {
     SetCumulativeTimer(name, this);
   }
 
@@ -278,10 +284,8 @@ class CumulativeTimer : public Timer {
     wall_time_ += Timer::WallTime();
     usr_time_ += Timer::UserTime();
     sys_time_ += Timer::SystemTime();
-#if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
     rss_ += Timer::RSS();
     pgfaults_ += Timer::PageFault();
-#endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
   }
 
   // Returns the cumulative CPU Time (i.e., process time) for a range of code
@@ -298,18 +302,14 @@ class CumulativeTimer : public Timer {
   // Returns the cumulative SYS Time for a range of code execution.
   double SystemTime() override { return sys_time_; }
 
-#if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
   // Returns the cumulative RSS for a range of code execution.
   long RSS() const override { return rss_; }
 
   // Returns the cumulative number of page faults for a range of code execution.
   long PageFault() const override { return pgfaults_; }
-#endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
 
   // Delete this CumulativeTimer object from |CumulativeTimerMap|.
-  ~CumulativeTimer() {
-    DeleteCumulativeTimer(name_);
-  }
+  ~CumulativeTimer() { DeleteCumulativeTimer(name_); }
 
  private:
   // Add an element pair to |CumulativeTimerMap| whose key is |name| and value
@@ -334,22 +334,20 @@ class CumulativeTimer : public Timer {
   // Variable to save the cumulative system time.
   double sys_time_;
 
-#if defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
   // Variable to save the cumulative RSS.
   long rss_;
 
   // Variable to save the cumulative numbers of page faults.
   long pgfaults_;
-#endif  // defined(SPIRV_MEMORY_MEASUREMENT_ENABLED)
 };
 
 }  // namespace spvutils
 
-#else  // defined(SPIRV_ANDROID) || defined(SPIRV_LINUX)
+#else  // defined(SPIRV_TIMER_ENABLED)
 
-#define SPIRV_TIMER_DESCRIPTION(out)
-#define SPIRV_TIMER_SCOPED(out, tag)
+#define SPIRV_TIMER_DESCRIPTION(...)
+#define SPIRV_TIMER_SCOPED(...)
 
-#endif  // defined(SPIRV_ANDROID) || defined(SPIRV_LINUX)
+#endif  // defined(SPIRV_TIMER_ENABLED)
 
 #endif  // LIBSPIRV_UTIL_TIMER_H_
