@@ -61,7 +61,8 @@ spv_result_t spvOperandTableNameLookup(spv_target_env env,
       // Note that the second rule assumes the extension enabling this operand
       // is indeed requested in the SPIR-V code; checking that should be
       // validator's work.
-      if ((env >= entry.minVersion || entry.numExtensions > 0) &&
+      if ((static_cast<uint32_t>(env) >= entry.minVersion ||
+           entry.numExtensions > 0u) &&
           nameLength == strlen(entry.name) &&
           !strncmp(entry.name, name, nameLength)) {
         *pEntry = &entry;
@@ -114,7 +115,8 @@ spv_result_t spvOperandTableValueLookup(spv_target_env env,
       // Note that the second rule assumes the extension enabling this operand
       // is indeed requested in the SPIR-V code; checking that should be
       // validator's work.
-      if (env >= it->minVersion || it->numExtensions > 0) {
+      if (static_cast<uint32_t>(env) >= it->minVersion ||
+          it->numExtensions > 0u) {
         *pEntry = it;
         return SPV_SUCCESS;
       }
