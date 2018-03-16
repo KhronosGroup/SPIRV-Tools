@@ -895,4 +895,181 @@ CHECK-NEXT: OpLoopMerge
   }
 }
 
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 330 core
+void main() {
+  int a[10];
+  int n = a[0];
+  for(int i = 0; i < n; ++i) {}
+}
+*/
+TEST_F(PeelingTest, PeelingLoopWithStore) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %o %n
+               OpExecutionMode %main OriginLowerLeft
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %o "o"
+               OpName %end "end"
+               OpName %n "n"
+               OpName %i "i"
+               OpDecorate %o Location 0
+               OpDecorate %n Flat
+               OpDecorate %n Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Output_float = OpTypePointer Output %float
+          %o = OpVariable %_ptr_Output_float Output
+    %float_0 = OpConstant %float 0
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Input_int = OpTypePointer Input %int
+          %n = OpVariable %_ptr_Input_int Input
+      %int_0 = OpConstant %int 0
+       %bool = OpTypeBool
+    %float_1 = OpConstant %float 1
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+        %end = OpVariable %_ptr_Function_int Function
+          %i = OpVariable %_ptr_Function_int Function
+               OpStore %o %float_0
+         %15 = OpLoad %int %n
+               OpStore %end %15
+               OpStore %i %int_0
+               OpBranch %18
+         %18 = OpLabel
+         %33 = OpPhi %int %int_0 %5 %32 %21
+               OpLoopMerge %20 %21 None
+               OpBranch %22
+         %22 = OpLabel
+         %26 = OpSLessThan %bool %33 %15
+               OpBranchConditional %26 %19 %20
+         %19 = OpLabel
+         %28 = OpLoad %float %o
+         %29 = OpFAdd %float %28 %float_1
+               OpStore %o %29
+               OpBranch %21
+         %21 = OpLabel
+         %32 = OpIAdd %int %33 %int_1
+               OpStore %i %32
+               OpBranch %18
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  // Peel before.
+  {
+    SCOPED_TRACE("Peel before");
+
+    std::unique_ptr<ir::IRContext> context =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                    SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+    ir::Module* module = context->module();
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                               << text << std::endl;
+    ir::Function& f = *module->begin();
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+
+    EXPECT_EQ(ld.NumLoops(), 1u);
+
+    ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(15);
+    EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
+
+    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    EXPECT_TRUE(peel.CanPeelLoop());
+    peel.PeelBefore(1);
+
+    const std::string check = R"(
+CHECK:      OpFunction
+CHECK-NEXT: [[ENTRY:%\w+]] = OpLabel
+CHECK:      [[LOOP_COUNT:%\w+]] = OpLoad
+CHECK:      [[MIN_LOOP_COUNT:%\w+]] = OpSLessThan {{%\w+}} {{%\w+}} [[LOOP_COUNT]]
+CHECK-NEXT: [[LOOP_COUNT:%\w+]] = OpSelect {{%\w+}} [[MIN_LOOP_COUNT]] {{%\w+}} [[LOOP_COUNT]]
+CHECK:      [[BEFORE_LOOP:%\w+]] = OpLabel
+CHECK-NEXT: [[DUMMY_IT:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[DUMMY_IT_1:%\w+]] [[BE:%\w+]]
+CHECK-NEXT: [[i:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[I_1:%\w+]] [[BE]]
+CHECK-NEXT: OpLoopMerge [[AFTER_LOOP_PREHEADER:%\w+]] [[BE]] None
+CHECK:      [[COND_BLOCK:%\w+]] = OpLabel
+CHECK-NEXT: OpSLessThan
+CHECK-NEXT: [[EXIT_COND:%\w+]] = OpSLessThan {{%\w+}} [[DUMMY_IT]]
+CHECK-NEXT: OpBranchConditional [[EXIT_COND]] {{%\w+}} [[AFTER_LOOP_PREHEADER]]
+CHECK:      [[I_1]] = OpIAdd {{%\w+}} [[i]]
+CHECK:      [[DUMMY_IT_1]] = OpIAdd {{%\w+}} [[DUMMY_IT]]
+CHECK-NEXT: OpBranch [[BEFORE_LOOP]]
+
+CHECK: [[AFTER_LOOP_PREHEADER]] = OpLabel
+CHECK-NEXT: OpSelectionMerge [[IF_MERGE:%\w+]]
+CHECK-NEXT: OpBranchConditional [[MIN_LOOP_COUNT]] [[AFTER_LOOP:%\w+]] [[IF_MERGE]]
+
+CHECK:      [[AFTER_LOOP]] = OpLabel
+CHECK-NEXT: OpPhi {{%\w+}} {{%\w+}} {{%\w+}} [[i]] [[AFTER_LOOP_PREHEADER]]
+CHECK-NEXT: OpLoopMerge
+)";
+
+    Match(check, context.get());
+  }
+
+  // Peel after.
+  {
+    SCOPED_TRACE("Peel after");
+
+    std::unique_ptr<ir::IRContext> context =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                    SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+    ir::Module* module = context->module();
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                               << text << std::endl;
+    ir::Function& f = *module->begin();
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+
+    EXPECT_EQ(ld.NumLoops(), 1u);
+
+    ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(15);
+    EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
+
+    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    EXPECT_TRUE(peel.CanPeelLoop());
+    peel.PeelAfter(1);
+
+    const std::string check = R"(
+CHECK:      OpFunction
+CHECK-NEXT: [[ENTRY:%\w+]] = OpLabel
+CHECK:      [[MIN_LOOP_COUNT:%\w+]] = OpSLessThan {{%\w+}}
+CHECK-NEXT: OpSelectionMerge [[IF_MERGE:%\w+]]
+CHECK-NEXT: OpBranchConditional [[MIN_LOOP_COUNT]] [[BEFORE_LOOP:%\w+]] [[IF_MERGE]]
+CHECK:      [[BEFORE_LOOP]] = OpLabel
+CHECK-NEXT: [[DUMMY_IT:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[DUMMY_IT_1:%\w+]] [[BE:%\w+]]
+CHECK-NEXT: [[I:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[I_1:%\w+]] [[BE]]
+CHECK-NEXT: OpLoopMerge [[BEFORE_LOOP_MERGE:%\w+]] [[BE]] None
+CHECK:      [[COND_BLOCK:%\w+]] = OpLabel
+CHECK-NEXT: OpSLessThan
+CHECK-NEXT: [[TMP:%\w+]] = OpIAdd {{%\w+}} [[DUMMY_IT]] {{%\w+}}
+CHECK-NEXT: [[EXIT_COND:%\w+]] = OpSLessThan {{%\w+}} [[TMP]]
+CHECK-NEXT: OpBranchConditional [[EXIT_COND]] {{%\w+}} [[BEFORE_LOOP_MERGE]]
+CHECK:      [[I_1]] = OpIAdd {{%\w+}} [[I]]
+CHECK:      [[DUMMY_IT_1]] = OpIAdd {{%\w+}} [[DUMMY_IT]]
+CHECK-NEXT: OpBranch [[BEFORE_LOOP]]
+
+CHECK:      [[IF_MERGE]] = OpLabel
+CHECK-NEXT: [[TMP:%\w+]] = OpPhi {{%\w+}} [[I]] [[BEFORE_LOOP_MERGE]]
+CHECK-NEXT: OpBranch [[AFTER_LOOP:%\w+]]
+
+CHECK:      [[AFTER_LOOP]] = OpLabel
+CHECK-NEXT: OpPhi {{%\w+}} {{%\w+}} {{%\w+}} [[TMP]] [[IF_MERGE]]
+CHECK-NEXT: OpLoopMerge
+
+)";
+
+    Match(check, context.get());
+  }
+}
+
 }  // namespace
