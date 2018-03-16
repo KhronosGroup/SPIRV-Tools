@@ -184,9 +184,10 @@ class LoopPeeling {
   // Fixes the exit condition of the before loop. The function calls
   // |condition_builder| to get the condition to use in the conditional branch
   // of the loop exit. The loop will be exited if the condition evaluate to
-  // true.
+  // true. |condition_builder| takes an ir::Instruction* that represent the
+  // insertion point.
   void FixExitCondition(
-      const std::function<uint32_t(ir::BasicBlock*)>& condition_builder);
+      const std::function<uint32_t(ir::Instruction*)>& condition_builder);
 
   // Gathers all operations involved in the update of |iterator| into
   // |operations|.
