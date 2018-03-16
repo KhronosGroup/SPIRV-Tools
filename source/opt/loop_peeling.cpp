@@ -183,6 +183,55 @@ void LoopPeeling::GetIteratorUpdateOperations(
   });
 }
 
+// Gather the set of blocks for all the path from |entry| to |root|.
+static void GetBlocksInPath(uint32_t block, uint32_t entry,
+                            std::unordered_set<uint32_t>* blocks_in_path,
+                            const ir::CFG& cfg) {
+  for (uint32_t pid : cfg.preds(block)) {
+    if (blocks_in_path->insert(pid).second) {
+      if (pid != entry) {
+        GetBlocksInPath(pid, entry, blocks_in_path, cfg);
+      }
+    }
+  }
+}
+
+bool LoopPeeling::IsConditionCheckSideEffectFree() const {
+  ir::CFG& cfg = *context_->cfg();
+
+  // The "do-while" form does not cause issues, the algorithm takes into account
+  // the first iteration.
+  if (!do_while_form_) {
+    uint32_t condition_block_id = cfg.preds(loop_->GetMergeBlock()->id())[0];
+
+    std::unordered_set<uint32_t> blocks_in_path;
+
+    blocks_in_path.insert(condition_block_id);
+    GetBlocksInPath(condition_block_id, loop_->GetHeaderBlock()->id(),
+                    &blocks_in_path, cfg);
+
+    for (uint32_t bb_id : blocks_in_path) {
+      ir::BasicBlock* bb = cfg.block(bb_id);
+      if (!bb->WhileEachInst([this](ir::Instruction* insn) {
+            if (insn->IsBranch()) return true;
+            switch (insn->opcode()) {
+              case SpvOpLabel:
+              case SpvOpSelectionMerge:
+              case SpvOpLoopMerge:
+                return true;
+              default:
+                break;
+            }
+            return context_->IsCombinatorInstruction(insn);
+          })) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 void LoopPeeling::GetIteratingExitValues() {
   ir::CFG& cfg = *context_->cfg();
 

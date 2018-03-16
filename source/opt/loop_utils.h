@@ -133,9 +133,9 @@ class LoopUtils {
   // Returns the loop descriptor owning |loop_|.
   ir::LoopDescriptor* GetLoopDescriptor() { return loop_desc_; }
   // Returns the loop on which the object operates on.
-  ir::Loop* GetLoop() { return loop_; }
+  ir::Loop* GetLoop() const { return loop_; }
   // Returns the function that |loop_| belong to.
-  ir::Function* GetFunction() { return &function_; }
+  ir::Function* GetFunction() const { return &function_; }
 
  private:
   ir::IRContext* context_;

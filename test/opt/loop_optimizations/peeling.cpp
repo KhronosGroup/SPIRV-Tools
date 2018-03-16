@@ -96,6 +96,17 @@ Fifth test:
 void main() {
   for (float i = 0; i < 10; i++) {}
 }
+
+Sixth test:
+#version 450
+layout(location = 0)out float o;
+void main() {
+  o = 0.0;
+  for( int i = 0; true; i++ ) {
+    o += 1.0;
+    if (i > 10) break;
+  }
+}
 */
 TEST_F(PeelingTest, CannotPeel) {
   // Build the given SPIR-V program in |text|, take the first loop in the first
@@ -357,6 +368,65 @@ TEST_F(PeelingTest, CannotPeel) {
   )";
     // %15 is a constant for a float. Currently rejected.
     test_cannot_peel(text, 15);
+  }
+  {
+    SCOPED_TRACE("Side effect before exit");
+
+    const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %o
+               OpExecutionMode %main OriginLowerLeft
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %o "o"
+               OpName %i "i"
+               OpDecorate %o Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Output_float = OpTypePointer Output %float
+          %o = OpVariable %_ptr_Output_float Output
+    %float_0 = OpConstant %float 0
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_0 = OpConstant %int 0
+       %bool = OpTypeBool
+       %true = OpConstantTrue %bool
+    %float_1 = OpConstant %float 1
+     %int_10 = OpConstant %int 10
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %i = OpVariable %_ptr_Function_int Function
+               OpStore %o %float_0
+               OpStore %i %int_0
+               OpBranch %14
+         %14 = OpLabel
+         %33 = OpPhi %int %int_0 %5 %32 %17
+               OpLoopMerge %16 %17 None
+               OpBranch %15
+         %15 = OpLabel
+         %22 = OpLoad %float %o
+         %23 = OpFAdd %float %22 %float_1
+               OpStore %o %23
+         %26 = OpSGreaterThan %bool %33 %int_10
+               OpSelectionMerge %28 None
+               OpBranchConditional %26 %27 %28
+         %27 = OpLabel
+               OpBranch %16
+         %28 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+         %32 = OpIAdd %int %33 %int_1
+               OpStore %i %32
+               OpBranch %14
+         %16 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+    test_cannot_peel(text, 0);
   }
 }
 
