@@ -258,7 +258,7 @@ spv_result_t VersionCheck(ValidationState_t& _,
              << spvOpcodeString(opcode) << " is reserved for future use.";
     }
 
-    if (_.grammar().target_env() < min_version) {
+    if (static_cast<uint32_t>(_.grammar().target_env()) < min_version) {
       return _.diag(SPV_ERROR_WRONG_VERSION)
              << spvOpcodeString(opcode) << " requires "
              << spvTargetEnvDescription(
@@ -275,7 +275,7 @@ spv_result_t VersionCheck(ValidationState_t& _,
              << ExtensionSetToString(exts);
     }
 
-    if (_.grammar().target_env() < min_version) {
+    if (static_cast<uint32_t>(_.grammar().target_env()) < min_version) {
       return _.diag(SPV_ERROR_WRONG_VERSION)
              << spvOpcodeString(opcode) << " requires "
              << spvTargetEnvDescription(
