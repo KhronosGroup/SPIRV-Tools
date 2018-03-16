@@ -90,9 +90,8 @@ TEST(MockTimer, TestScopedTimer) {
 // |count_stop_|.
 class MockCumulativeTimer : public CumulativeTimer {
  public:
-  MockCumulativeTimer(std::ostream* out, const char* name,
-                      bool measure_mem_usage = false)
-      : CumulativeTimer(out, name, measure_mem_usage), count_stop_(0) {}
+  MockCumulativeTimer(std::ostream* out, bool measure_mem_usage = false)
+      : CumulativeTimer(out, measure_mem_usage), count_stop_(0) {}
   double CPUTime() override { return count_stop_ * 0.019123; }
   double WallTime() override { return count_stop_ * 0.019723; }
   double UserTime() override { return count_stop_ * 0.012723; }
@@ -115,7 +114,7 @@ TEST(MockCumulativeTimer, DoNothing) {
   std::ostringstream buf;
 
   {
-    ctimer = new MockCumulativeTimer(&buf, "foo");
+    ctimer = new MockCumulativeTimer(&buf);
     ctimer->Start();
 
     // Do nothing.
@@ -123,16 +122,13 @@ TEST(MockCumulativeTimer, DoNothing) {
     ctimer->Stop();
   }
 
-  CumulativeTimer* foo;
   {
-    foo = CumulativeTimer::GetCumulativeTimer("foo");
-    EXPECT_NE(nullptr, foo);
-    foo->Start();
+    ctimer->Start();
 
     // Do nothing.
 
-    foo->Stop();
-    foo->Report("CumulativeTimerTest");
+    ctimer->Stop();
+    ctimer->Report("CumulativeTimerTest");
   }
 
   EXPECT_EQ(
@@ -140,7 +136,7 @@ TEST(MockCumulativeTimer, DoNothing) {
       "       0.005\n",
       buf.str());
 
-  if (foo) delete foo;
+  if (ctimer) delete ctimer;
 }
 
 }  // anonymous namespace

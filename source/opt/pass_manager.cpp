@@ -42,7 +42,7 @@ Pass::Status PassManager::Run(ir::IRContext* context) {
     }
   };
 
-  SPIRV_TIMER_DESCRIPTION(time_report_stream_, true);
+  SPIRV_TIMER_DESCRIPTION(time_report_stream_, /* measure_mem_usage = */ true);
   for (const auto& pass : passes_) {
     print_disassembly("; IR before pass ", pass.get());
     SPIRV_TIMER_SCOPED(time_report_stream_, (pass ? pass->name() : ""), true);

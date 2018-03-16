@@ -18,16 +18,11 @@
 #include <sys/time.h>
 #include <iomanip>
 #include <iostream>
-#include <map>
 #include <string>
 
 namespace spvutils {
 
 #if defined(SPIRV_TIMER_ENABLED)
-
-// A map data structure to search a CumulativeTimer object by its name. The key
-// of the map is the name and the value is the CumulativeTimer object.
-static std::map<const char*, CumulativeTimer*> CumulativeTimerMap;
 
 // Print the description of resource types measured by Timer class. If |out| is
 // NULL, it does nothing. Otherwise, it prints resource types. The second is
@@ -101,28 +96,6 @@ void Timer::Report(const char* tag) {
                     << PageFault();
   }
   *report_stream_ << std::endl;
-}
-
-CumulativeTimer* CumulativeTimer::GetCumulativeTimer(const char* name) {
-  if (name == NULL) return NULL;
-
-  auto elem = CumulativeTimerMap.find(name);
-  if (elem == CumulativeTimerMap.end()) return NULL;
-  return elem->second;
-}
-
-void CumulativeTimer::SetCumulativeTimer(const char* name,
-                                         CumulativeTimer* ctimer) {
-  if (name == NULL) return;
-  CumulativeTimerMap[name] = ctimer;
-}
-
-void CumulativeTimer::DeleteCumulativeTimer(const char* name) {
-  if (name == NULL) return;
-
-  auto elem = CumulativeTimerMap.find(name);
-  if (elem == CumulativeTimerMap.end()) return;
-  CumulativeTimerMap.erase(elem);
 }
 
 #endif  // defined(SPIRV_TIMER_ENABLED)

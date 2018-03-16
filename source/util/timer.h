@@ -20,6 +20,7 @@
 #if defined(SPIRV_TIMER_ENABLED)
 
 #include <sys/resource.h>
+#include <cassert>
 #include <iostream>
 
 // A macro to call spvutils::PrintTimerDescription(std::ostream*, bool). The
@@ -33,12 +34,12 @@
 #define SPIRV_TIMER_DESCRIPTION(...) \
   spvutils::PrintTimerDescription(__VA_ARGS__)
 
-// Create an object of ScopedTimer to measure the resource utilization for the
+// Creates an object of ScopedTimer to measure the resource utilization for the
 // scope surrounding it as the following example:
 //
 //   {   // <-- beginning of this scope
 //
-//     /* ... code of our interest ... */
+//     /* ... code out of interest ... */
 //
 //     SPIRV_TIMER_SCOPED(std::cout, tag);
 //
@@ -80,13 +81,13 @@ class Timer {
         usage_status_(kSucceeded),
         measure_mem_usage_(measure_mem_usage) {}
 
-  // Set |usage_before_|, |wall_before_|, and |cpu_before_| as results of
+  // Sets |usage_before_|, |wall_before_|, and |cpu_before_| as results of
   // getrusage(), clock_gettime() for the wall time, and clock_gettime() for the
   // CPU time respectively. Note that this method erases all previous state of
   // |usage_before_|, |wall_before_|, |cpu_before_|.
   virtual void Start();
 
-  // Set |cpu_after_|, |wall_after_|, and |usage_after_| as results of
+  // Sets |cpu_after_|, |wall_after_|, and |usage_after_| as results of
   // clock_gettime() for the wall time, and clock_gettime() for the CPU time,
   // getrusage() respectively. Note that this method erases all previous state
   // of |cpu_after_|, |wall_after_|, |usage_after_|.
@@ -134,18 +135,22 @@ class Timer {
 
  private:
   // Returns the time gap between |from| and |to| in seconds.
-  double TimeDifference(const timeval& from, const timeval& to) {
+  static double TimeDifference(const timeval& from, const timeval& to) {
+    assert((to.tv_sec > from.tv_sec) ||
+           (to.tv_sec == from.tv_sec && to.tv_usec >= from.tv_usec));
     return static_cast<double>(to.tv_sec - from.tv_sec) +
            static_cast<double>(to.tv_usec - from.tv_usec) * .000001;
   }
 
   // Returns the time gap between |from| and |to| in seconds.
-  double TimeDifference(const timespec& from, const timespec& to) {
+  static double TimeDifference(const timespec& from, const timespec& to) {
+    assert((to.tv_sec > from.tv_sec) ||
+           (to.tv_sec == from.tv_sec && to.tv_nsec >= from.tv_nsec));
     return static_cast<double>(to.tv_sec - from.tv_sec) +
            static_cast<double>(to.tv_nsec - from.tv_nsec) * .000000001;
   }
-  // Output stream to print out the resource utilization. If it is NULL,
 
+  // Output stream to print out the resource utilization. If it is NULL,
   // Report() does nothing.
   std::ostream* report_stream_;
 
@@ -184,12 +189,12 @@ class Timer {
   bool measure_mem_usage_;
 };
 
-// The purpose of ScopedTimer is to
-// measure the resource utilization for a scope. Simply creating a local
-// variable of ScopedTimer will call Timer::Start() and it calls Timer::Stop()
-// and Timer::Report() at the end of the scope by its destructor. When we use
-// this class, we must choose the proper Timer class (for class TimerType
-// template) in advance. This class should be used as the following example:
+// The purpose of ScopedTimer is to measure the resource utilization for a
+// scope. Simply creating a local variable of ScopedTimer will call
+// Timer::Start() and it calls Timer::Stop() and Timer::Report() at the end of
+// the scope by its destructor. When we use this class, we must choose the
+// proper Timer class (for class TimerType template) in advance. This class
+// should be used as the following example:
 //
 //   {   // <-- beginning of this scope
 //
@@ -231,13 +236,9 @@ class ScopedTimer {
 };
 
 // CumulativeTimer is the same as Timer class, but it supports a cumulative
-// measurement. You can set the name of a CumulativeTimer object when creating
-// it and find the object by calling CumulativeTimer::GetCumulativeTimer(). It
-// will remove itself from |CumulativeTimerMap| when it is destroyed. For
-// example:
+// measurement as the following example:
 //
-//   /* The next line creates CumulativeTimer object with the name "foo" */
-//   CumulativeTimer *ctimer = new CumulativeTimer(std::cout, "foo");
+//   CumulativeTimer *ctimer = new CumulativeTimer(std::cout);
 //   ctimer->Start();
 //
 //   /* ... lines of code that we want to know its resource usage ... */
@@ -246,33 +247,24 @@ class ScopedTimer {
 //
 //   /* ... code out of interest ... */
 //
-//   CumulativeTimer *foo = GetCumulativeTimer("foo");
-//   foo->Start();
+//   ctimer->Start();
 //
 //   /* ... lines of code that we want to know its resource usage ... */
 //
-//   foo->Stop();
-//   foo->Report(tag);
-//   delete foo;
+//   ctimer->Stop();
+//   ctimer->Report(tag);
+//   delete ctimer;
 //
 class CumulativeTimer : public Timer {
  public:
-  // Find CumulativeTimer object whose name is |name|.
-  static CumulativeTimer* GetCumulativeTimer(const char* name);
-
-  // Create CumulativeTimer object whose name is |name|.
-  CumulativeTimer(std::ostream* out, const char* name,
-                  bool measure_mem_usage = false)
+  CumulativeTimer(std::ostream* out, bool measure_mem_usage = false)
       : Timer(out, measure_mem_usage),
-        name_(name),
         cpu_time_(0),
         wall_time_(0),
         usr_time_(0),
         sys_time_(0),
         rss_(0),
-        pgfaults_(0) {
-    SetCumulativeTimer(name, this);
-  }
+        pgfaults_(0) {}
 
   void Start() override {
     if (GetUsageStatus() == kSucceeded) Timer::Start();
@@ -308,20 +300,7 @@ class CumulativeTimer : public Timer {
   // Returns the cumulative number of page faults for a range of code execution.
   long PageFault() const override { return pgfaults_; }
 
-  // Delete this CumulativeTimer object from |CumulativeTimerMap|.
-  ~CumulativeTimer() { DeleteCumulativeTimer(name_); }
-
  private:
-  // Add an element pair to |CumulativeTimerMap| whose key is |name| and value
-  // is |ctimer|.
-  void SetCumulativeTimer(const char* name, CumulativeTimer* ctimer);
-
-  // Delete this CumulativeTimer object from |CumulativeTimerMap|.
-  void DeleteCumulativeTimer(const char* name);
-
-  // A tag that will be printed in front of the trace reported by Timer class.
-  const char* name_;
-
   // Variable to save the cumulative CPU time (i.e., process time).
   double cpu_time_;
 
