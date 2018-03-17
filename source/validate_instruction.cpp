@@ -30,6 +30,7 @@
 #include "opcode.h"
 #include "operand.h"
 #include "spirv_definition.h"
+#include "spirv_target_env.h"
 #include "spirv_validator_options.h"
 #include "util/string_utils.h"
 #include "val/function.h"
@@ -132,18 +133,13 @@ CapabilitySet RequiredCapabilities(const ValidationState_t& state,
       if (state.features().free_fp_rounding_mode) return CapabilitySet();
 
       // Vulkan API requires more capabilities on rounding mode.
-      switch (state.context()->target_env) {
-        case SPV_ENV_VULKAN_1_0:
-        case SPV_ENV_VULKAN_1_1: {
-          CapabilitySet cap_set;
-          cap_set.Add(SpvCapabilityStorageUniformBufferBlock16);
-          cap_set.Add(SpvCapabilityStorageUniform16);
-          cap_set.Add(SpvCapabilityStoragePushConstant16);
-          cap_set.Add(SpvCapabilityStorageInputOutput16);
-          return cap_set;
-        }
-        default:
-          break;
+      if (spvIsVulkanEnv(state.context()->target_env)) {
+        CapabilitySet cap_set;
+        cap_set.Add(SpvCapabilityStorageUniformBufferBlock16);
+        cap_set.Add(SpvCapabilityStorageUniform16);
+        cap_set.Add(SpvCapabilityStoragePushConstant16);
+        cap_set.Add(SpvCapabilityStorageInputOutput16);
+        return cap_set;
       }
     }
     // Allow certain group operations if requested.
