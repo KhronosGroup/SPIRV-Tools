@@ -29,10 +29,20 @@ typedef struct spv_opcode_desc_t {
   // operandTypes[0..numTypes-1] describe logical operands for the instruction.
   // The operand types include result id and result-type id, followed by
   // the types of arguments.
-  uint16_t numTypes;
+  const uint16_t numTypes;
   spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
   const bool hasResult;  // Does the instruction have a result ID operand?
   const bool hasType;    // Does the instruction have a type ID operand?
+  // A set of extensions that enable this feature. If empty then this operand
+  // value is in core and its availability is subject to minVersion. The
+  // assembler, binary parser, and disassembler ignore this rule, so you can
+  // freely process invalid modules.
+  const uint32_t numExtensions;
+  const libspirv::Extension* extensions;
+  // Minimal core SPIR-V version required for this feature, if without
+  // extensions. ~0u means reserved for future use. ~0u and non-empty extension
+  // lists means only available in extensions.
+  const uint32_t minVersion;
 } spv_opcode_desc_t;
 
 typedef struct spv_operand_desc_t {
@@ -41,12 +51,16 @@ typedef struct spv_operand_desc_t {
   const uint32_t numCapabilities;
   const SpvCapability* capabilities;
   // A set of extensions that enable this feature. If empty then this operand
-  // value is always enabled, i.e. it's in core. The assembler, binary parser,
-  // and disassembler ignore this rule, so you can freely process invalid
-  // modules.
+  // value is in core and its availability is subject to minVersion. The
+  // assembler, binary parser, and disassembler ignore this rule, so you can
+  // freely process invalid modules.
   const uint32_t numExtensions;
   const libspirv::Extension* extensions;
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
+  // Minimal core SPIR-V version required for this feature, if without
+  // extensions. ~0u means reserved for future use. ~0u and non-empty extension
+  // lists means only available in extensions.
+  const uint32_t minVersion;
 } spv_operand_desc_t;
 
 typedef struct spv_operand_desc_group_t {

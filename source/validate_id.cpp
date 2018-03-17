@@ -47,17 +47,15 @@ namespace {
 
 class idUsage {
  public:
-  idUsage(const spv_opcode_table opcodeTableArg,
-          const spv_operand_table operandTableArg,
-          const spv_ext_inst_table extInstTableArg,
-          const spv_instruction_t* pInsts, const uint64_t instCountArg,
-          const SpvMemoryModel memoryModelArg,
+  idUsage(spv_const_context context, const spv_instruction_t* pInsts,
+          const uint64_t instCountArg, const SpvMemoryModel memoryModelArg,
           const SpvAddressingModel addressingModelArg,
           const ValidationState_t& module, const vector<uint32_t>& entry_points,
           spv_position positionArg, const spvtools::MessageConsumer& consumer)
-      : opcodeTable(opcodeTableArg),
-        operandTable(operandTableArg),
-        extInstTable(extInstTableArg),
+      : targetEnv(context->target_env),
+        opcodeTable(context->opcode_table),
+        operandTable(context->operand_table),
+        extInstTable(context->ext_inst_table),
         firstInst(pInsts),
         instCount(instCountArg),
         memoryModel(memoryModelArg),
@@ -73,6 +71,7 @@ class idUsage {
   bool isValid(const spv_instruction_t* inst, const spv_opcode_desc);
 
  private:
+  const spv_target_env targetEnv;
   const spv_opcode_table opcodeTable;
   const spv_operand_table operandTable;
   const spv_ext_inst_table extInstTable;
@@ -2297,7 +2296,8 @@ bool idUsage::isValid<OpGroupCommitWritePipe>(
 
 bool idUsage::isValid(const spv_instruction_t* inst) {
   spv_opcode_desc opcodeEntry = nullptr;
-  if (spvOpcodeTableValueLookup(opcodeTable, inst->opcode, &opcodeEntry))
+  if (spvOpcodeTableValueLookup(targetEnv, opcodeTable, inst->opcode,
+                                &opcodeEntry))
     return false;
 #define CASE(OpCode) \
   case Spv##OpCode:  \
@@ -2687,14 +2687,11 @@ spv_result_t IdPass(ValidationState_t& _,
 
 spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const uint64_t instCount,
-                                       const spv_opcode_table opcodeTable,
-                                       const spv_operand_table operandTable,
-                                       const spv_ext_inst_table extInstTable,
                                        const libspirv::ValidationState_t& state,
                                        spv_position position) {
-  idUsage idUsage(opcodeTable, operandTable, extInstTable, pInsts, instCount,
-                  state.memory_model(), state.addressing_model(), state,
-                  state.entry_points(), position, state.context()->consumer);
+  idUsage idUsage(state.context(), pInsts, instCount, state.memory_model(),
+                  state.addressing_model(), state, state.entry_points(),
+                  position, state.context()->consumer);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
     if (!idUsage.isValid(&pInsts[instIndex])) return SPV_ERROR_INVALID_ID;
     position->index += pInsts[instIndex].words.size();

@@ -32,24 +32,10 @@ struct OpcodeDescPtrLen {
   uint32_t len;
 };
 
-// For now, assume unified1 contains up to SPIR-V 1.3 and no later
-// SPIR-V version.
-// TODO(dneto): Make one set of tables, but with version tags on a
-// per-item basis. https://github.com/KhronosGroup/SPIRV-Tools/issues/1195
-
-#include "core.insts-1.0.inc"       // defines kOpcodeTableEntries_1_0
-#include "core.insts-1.1.inc"       // defines kOpcodeTableEntries_1_1
-#include "core.insts-1.2.inc"       // defines kOpcodeTableEntries_1_2
 #include "core.insts-unified1.inc"  // defines kOpcodeTableEntries_1_3
 
-static const spv_opcode_table_t kTable_1_0 = {
-    ARRAY_SIZE(kOpcodeTableEntries_1_0), kOpcodeTableEntries_1_0};
-static const spv_opcode_table_t kTable_1_1 = {
-    ARRAY_SIZE(kOpcodeTableEntries_1_1), kOpcodeTableEntries_1_1};
-static const spv_opcode_table_t kTable_1_2 = {
-    ARRAY_SIZE(kOpcodeTableEntries_1_2), kOpcodeTableEntries_1_2};
-static const spv_opcode_table_t kTable_1_3 = {
-    ARRAY_SIZE(kOpcodeTableEntries_1_3), kOpcodeTableEntries_1_3};
+static const spv_opcode_table_t kOpcodeTable = {ARRAY_SIZE(kOpcodeTableEntries),
+                                                kOpcodeTableEntries};
 
 // Represents a vendor tool entry in the SPIR-V XML Regsitry.
 struct VendorTool {
@@ -89,47 +75,18 @@ void spvOpcodeSplit(const uint32_t word, uint16_t* pWordCount,
   }
 }
 
-spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
-                               spv_target_env env) {
+spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable, spv_target_env) {
   if (!pInstTable) return SPV_ERROR_INVALID_POINTER;
 
   // Descriptions of each opcode.  Each entry describes the format of the
   // instruction that follows a particular opcode.
 
-  switch (env) {
-    case SPV_ENV_UNIVERSAL_1_0:
-    case SPV_ENV_VULKAN_1_0:
-    case SPV_ENV_OPENCL_1_2:
-    case SPV_ENV_OPENCL_EMBEDDED_1_2:
-    case SPV_ENV_OPENCL_2_0:
-    case SPV_ENV_OPENCL_EMBEDDED_2_0:
-    case SPV_ENV_OPENCL_2_1:
-    case SPV_ENV_OPENCL_EMBEDDED_2_1:
-    case SPV_ENV_OPENGL_4_0:
-    case SPV_ENV_OPENGL_4_1:
-    case SPV_ENV_OPENGL_4_2:
-    case SPV_ENV_OPENGL_4_3:
-    case SPV_ENV_OPENGL_4_5:
-      *pInstTable = &kTable_1_0;
-      return SPV_SUCCESS;
-    case SPV_ENV_UNIVERSAL_1_1:
-      *pInstTable = &kTable_1_1;
-      return SPV_SUCCESS;
-    case SPV_ENV_UNIVERSAL_1_2:
-    case SPV_ENV_OPENCL_2_2:
-    case SPV_ENV_OPENCL_EMBEDDED_2_2:
-      *pInstTable = &kTable_1_2;
-      return SPV_SUCCESS;
-    case SPV_ENV_UNIVERSAL_1_3:
-    case SPV_ENV_VULKAN_1_1:
-      *pInstTable = &kTable_1_3;
-      return SPV_SUCCESS;
-  }
-  assert(0 && "Unknown spv_target_env in spvOpcodeTableGet()");
-  return SPV_ERROR_INVALID_TABLE;
+  *pInstTable = &kOpcodeTable;
+  return SPV_SUCCESS;
 }
 
-spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
+spv_result_t spvOpcodeTableNameLookup(spv_target_env env,
+                                      const spv_opcode_table table,
                                       const char* name,
                                       spv_opcode_desc* pEntry) {
   if (!name || !pEntry) return SPV_ERROR_INVALID_POINTER;
@@ -137,14 +94,24 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
 
   // TODO: This lookup of the Opcode table is suboptimal! Binary sort would be
   // preferable but the table requires sorting on the Opcode name, but it's
-  // static
-  // const initialized and matches the order of the spec.
+  // static const initialized and matches the order of the spec.
   const size_t nameLength = strlen(name);
   for (uint64_t opcodeIndex = 0; opcodeIndex < table->count; ++opcodeIndex) {
-    if (nameLength == strlen(table->entries[opcodeIndex].name) &&
-        !strncmp(name, table->entries[opcodeIndex].name, nameLength)) {
+    const spv_opcode_desc_t& entry = table->entries[opcodeIndex];
+    // We considers the current opcode as available as long as
+    // 1. The target environment satisfies the minimal requirement of the
+    //    opcode; or
+    // 2. There is at least one extension enabling this opcode.
+    //
+    // Note that the second rule assumes the extension enabling this instruction
+    // is indeed requested in the SPIR-V code; checking that should be
+    // validator's work.
+    if ((static_cast<uint32_t>(env) >= entry.minVersion ||
+         entry.numExtensions > 0u) &&
+        nameLength == strlen(entry.name) &&
+        !strncmp(name, entry.name, nameLength)) {
       // NOTE: Found out Opcode!
-      *pEntry = &table->entries[opcodeIndex];
+      *pEntry = &entry;
       return SPV_SUCCESS;
     }
   }
@@ -152,7 +119,8 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
   return SPV_ERROR_INVALID_LOOKUP;
 }
 
-spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
+spv_result_t spvOpcodeTableValueLookup(spv_target_env env,
+                                       const spv_opcode_table table,
                                        const SpvOp opcode,
                                        spv_opcode_desc* pEntry) {
   if (!table) return SPV_ERROR_INVALID_TABLE;
@@ -160,14 +128,34 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
 
   const auto beg = table->entries;
   const auto end = table->entries + table->count;
-  spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
+
+  spv_opcode_desc_t needle = {"",    opcode, 0, nullptr, 0,  {},
+                              false, false,  0, nullptr, ~0u};
+
   auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
     return lhs.opcode < rhs.opcode;
   };
-  auto it = std::lower_bound(beg, end, value, comp);
-  if (it != end && it->opcode == opcode) {
-    *pEntry = it;
-    return SPV_SUCCESS;
+
+  // We need to loop here because there can exist multiple symbols for the same
+  // opcode value, and they can be introduced in different target environments,
+  // which means they can have different minimal version requirements.
+  // Assumes the underlying table is already sorted ascendingly according to
+  // opcode value.
+  for (auto it = std::lower_bound(beg, end, needle, comp);
+       it != end && it->opcode == opcode; ++it) {
+    // We considers the current opcode as available as long as
+    // 1. The target environment satisfies the minimal requirement of the
+    //    opcode; or
+    // 2. There is at least one extension enabling this opcode.
+    //
+    // Note that the second rule assumes the extension enabling this instruction
+    // is indeed requested in the SPIR-V code; checking that should be
+    // validator's work.
+    if (static_cast<uint32_t>(env) >= it->minVersion ||
+        it->numExtensions > 0u) {
+      *pEntry = it;
+      return SPV_SUCCESS;
+    }
   }
 
   return SPV_ERROR_INVALID_LOOKUP;
@@ -191,17 +179,14 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 }
 
 const char* spvOpcodeString(const SpvOp opcode) {
-  // Use the latest SPIR-V version, which should be backward-compatible with all
-  // previous ones.
-
-  const auto beg = kOpcodeTableEntries_1_3;
-  const auto end =
-      kOpcodeTableEntries_1_3 + ARRAY_SIZE(kOpcodeTableEntries_1_3);
-  spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
+  const auto beg = kOpcodeTableEntries;
+  const auto end = kOpcodeTableEntries + ARRAY_SIZE(kOpcodeTableEntries);
+  spv_opcode_desc_t needle = {"",    opcode, 0, nullptr, 0,  {},
+                              false, false,  0, nullptr, ~0u};
   auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
     return lhs.opcode < rhs.opcode;
   };
-  auto it = std::lower_bound(beg, end, value, comp);
+  auto it = std::lower_bound(beg, end, needle, comp);
   if (it != end && it->opcode == opcode) {
     return it->name;
   }
