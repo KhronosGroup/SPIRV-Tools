@@ -205,7 +205,7 @@ class SSARewriter {
 
   // Reads the current definition for variable |var_id| in basic block |bb|.
   // If |var_id| is not defined in block |bb| it walks up the predecessors of
-  // |bb|, creating new Phi instructions along the way, if needed.
+  // |bb|, creating new Phi candidates along the way, if needed.
   //
   // It returns the value for |var_id| from the RHS of the current reaching
   // definition for |var_id|.
@@ -256,8 +256,8 @@ class SSARewriter {
 
   // Map holding the value of every SSA-target variable at every basic block
   // where the variable is stored. defs_at_block_[block][var_id] = val_id
-  // means that there is a store instruction for variable |var_id| at basic
-  // block |block| with value |val_id|.
+  // means that there is a store or Phi instruction for variable |var_id| at
+  // basic block |block| with value |val_id|.
   BlockDefsMap defs_at_block_;
 
   // Map, indexed by Phi ID, holding all the Phi candidates created during SSA

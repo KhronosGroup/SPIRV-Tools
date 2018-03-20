@@ -91,11 +91,6 @@ SSARewriter::PhiCandidate& SSARewriter::CreatePhiCandidate(uint32_t var_id,
   uint32_t phi_result_id = pass_->context()->TakeNextId();
   auto result = phi_candidates_.emplace(
       phi_result_id, PhiCandidate(var_id, phi_result_id, bb));
-
-  // We should never try to create more than one Phi candidate for the same
-  // |var_id| on |bb|.
-  assert(result.second == true);
-
   PhiCandidate& phi_candidate = result.first->second;
   return phi_candidate;
 }
@@ -134,7 +129,8 @@ uint32_t SSARewriter::TryRemoveTrivialPhi(PhiCandidate* phi_candidate) {
     if (same_id != 0) {
       // This Phi candidate merges at least two values.  Therefore, it is not
       // trivial.
-      phi_candidate->MarkCopyOf(0);
+      assert(phi_candidate->copy_of() == 0 &&
+             "Phi candidate transitioning from copy to non-copy.");
       return phi_candidate->result_id();
     }
     same_id = arg_id;
