@@ -60,8 +60,8 @@ TEST(MockTimer, DoNothing) {
   EXPECT_EQ(0.002723, timer.SystemTime());
   EXPECT_EQ(
       "                     PASS name    CPU time   WALL time    USR time"
-      "    SYS time\n                     TimerTest       0.019       0.020"
-      "       0.013       0.003\n",
+      "    SYS time\n                     TimerTest        0.02        0.02"
+      "        0.01        0.00\n",
       buf.str());
 }
 
@@ -77,8 +77,8 @@ TEST(MockTimer, TestScopedTimer) {
   }
 
   EXPECT_EQ(
-      "               ScopedTimerTest       0.019       0.020       0.013"
-      "       0.003\n",
+      "               ScopedTimerTest        0.02        0.02        0.01"
+      "        0.00\n",
       buf.str());
 }
 
@@ -133,8 +133,8 @@ TEST(MockCumulativeTimer, DoNothing) {
   }
 
   EXPECT_EQ(
-      "           CumulativeTimerTest       0.038       0.039       0.025"
-      "       0.005\n",
+      "           CumulativeTimerTest        0.04        0.04        0.03"
+      "        0.01\n",
       buf.str());
 
   if (ctimer) delete ctimer;

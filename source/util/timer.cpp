@@ -30,8 +30,7 @@ void PrintTimerDescription(std::ostream* out, bool measure_mem_usage) {
          << std::setw(12) << "WALL time" << std::setw(12) << "USR time"
          << std::setw(12) << "SYS time";
     if (measure_mem_usage) {
-      *out << std::setw(12) << "RSS delta" << std::setw(16)
-           << "PGFault delta";
+      *out << std::setw(12) << "RSS delta" << std::setw(16) << "PGFault delta";
     }
     *out << std::endl;
   }
