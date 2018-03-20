@@ -100,6 +100,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/local_single_store_elim_pass.cpp \
 		source/opt/local_ssa_elim_pass.cpp \
 		source/opt/loop_descriptor.cpp \
+		source/opt/loop_peeling.cpp \
 		source/opt/loop_unroller.cpp \
 		source/opt/loop_unswitch_pass.cpp \
 		source/opt/loop_utils.cpp \
