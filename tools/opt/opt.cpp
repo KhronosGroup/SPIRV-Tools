@@ -248,13 +248,6 @@ Options (in lexicographical order):
   --print-all
                Print SPIR-V assembly to standard error output before each pass
                and after the last pass.
-  --time-report
-               Print the resource utilization of each pass (e.g., CPU time,
-               RSS) to standard error output. Currently it supports only Unix
-               systems. This option is the same as -ftime-report in GCC. It
-               prints CPU/WALL/USR/SYS time (and RSS if possible), but note that
-               USR/SYS time are returned by getrusage() and can have a small
-               error.
   --private-to-local
                Change the scope of private variables that are used in a single
                function to that function.
@@ -297,6 +290,13 @@ Options (in lexicographical order):
   --strip-reflect
                Remove all reflection information.  For now, this covers
                reflection information defined by SPV_GOOGLE_hlsl_functionality1.
+  --time-report
+               Print the resource utilization of each pass (e.g., CPU time,
+               RSS) to standard error output. Currently it supports only Unix
+               systems. This option is the same as -ftime-report in GCC. It
+               prints CPU/WALL/USR/SYS time (and RSS if possible), but note that
+               USR/SYS time are returned by getrusage() and can have a small
+               error.
   --workaround-1209
                Rewrites instructions for which there are known driver bugs to
                avoid triggering those bugs.

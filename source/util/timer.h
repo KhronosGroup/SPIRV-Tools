@@ -52,17 +52,31 @@
 
 namespace spvutils {
 
+// Prints the description of resource types measured by Timer class. If |out| is
+// NULL, it does nothing. Otherwise, it prints resource types. The second is
+// optional and if it is true, the function also prints resource type fields
+// related to memory. Its default is false. In usual, this must be placed before
+// calling Timer::Report() to inform what those fields printed by
+// Timer::Report() indicate.
 void PrintTimerDescription(std::ostream*, bool = false);
 
 // Status of Timer. kGetrusageFailed means it failed in calling getrusage().
-// kClockGettimeFailed means it failed in calling clock_gettime().
-enum UsageStatus { kGetrusageFailed, kClockGettimeFailed, kSucceeded };
+// kClockGettimeWalltimeFailed means it failed in getting wall time when calling
+// clock_gettime(). kClockGettimeCPUtimeFailed means it failed in getting CPU
+// time when calling clock_gettime().
+enum UsageStatus {
+  kSucceeded = 0,
+  kGetrusageFailed = 1 << 0,
+  kClockGettimeWalltimeFailed = 1 << 1,
+  kClockGettimeCPUtimeFailed = 1 << 2,
+};
 
 // Timer measures the resource utilization for a range of code. The resource
 // utilization consists of CPU time (i.e., process time), WALL time (elapsed
-// time), USR time, SYS time, RSS, and the number of page faults. RSS and the
-// number of page faults are measured only when |measure_mem_usage| given to the
-// constructor is true. This class should be used as the following example:
+// time), USR time, SYS time, RSS delta, and the delta of the number of page
+// faults. RSS delta and the delta of the number of page faults are measured
+// only when |measure_mem_usage| given to the constructor is true. This class
+// should be used as the following example:
 //
 //   spvutils::Timer timer(std::cout);
 //   timer.Start();       // <-- set |usage_before_|, |wall_before_|,
@@ -94,42 +108,60 @@ class Timer {
   virtual void Stop();
 
   // If |report_stream_| is NULL, it does nothing. Otherwise, it prints the
-  // resource utilization (i.e., CPU/WALL/USR/SYS time, RSS) from the time of
-  // calling Timer::Start() to Timer::Stop().
+  // resource utilization (i.e., CPU/WALL/USR/SYS time, RSS delta) between the
+  // time of calling Timer::Start() and the time of calling Timer::Stop(). If we
+  // cannot get a resource usage because of failures, it prints "Failed" instead
+  // for the resource.
   void Report(const char* tag);
 
   // Returns the measured CPU Time (i.e., process time) for a range of code
-  // execution.
-  virtual double CPUTime() { return TimeDifference(cpu_before_, cpu_after_); }
+  // execution. If kClockGettimeCPUtimeFailed is set by the failure of calling
+  // clock_gettime(), it returns -1.
+  virtual double CPUTime() {
+    if (usage_status_ & kClockGettimeCPUtimeFailed) return -1;
+    return TimeDifference(cpu_before_, cpu_after_);
+  }
 
   // Returns the measured Wall Time (i.e., elapsed time) for a range of code
-  // execution.
+  // execution. If kClockGettimeWalltimeFailed is set by the failure of
+  // calling clock_gettime(), it returns -1.
   virtual double WallTime() {
+    if (usage_status_ & kClockGettimeWalltimeFailed) return -1;
     return TimeDifference(wall_before_, wall_after_);
   }
 
-  // Returns the measured USR Time for a range of code execution.
+  // Returns the measured USR Time for a range of code execution. If
+  // kGetrusageFailed is set because of the failure of calling getrusage(), it
+  // returns -1.
   virtual double UserTime() {
+    if (usage_status_ & kGetrusageFailed) return -1;
     return TimeDifference(usage_before_.ru_utime, usage_after_.ru_utime);
   }
 
-  // Returns the measured SYS Time for a range of code execution.
+  // Returns the measured SYS Time for a range of code execution. If
+  // kGetrusageFailed is set because of the failure of calling getrusage(), it
+  // returns -1.
   virtual double SystemTime() {
+    if (usage_status_ & kGetrusageFailed) return -1;
     return TimeDifference(usage_before_.ru_stime, usage_after_.ru_stime);
   }
 
-  // Returns the measured RSS for a range of code execution.
+  // Returns the measured RSS delta for a range of code execution. If
+  // kGetrusageFailed is set because of the failure of calling getrusage(), it
+  // returns -1.
   virtual long RSS() const {
+    if (usage_status_ & kGetrusageFailed) return -1;
     return usage_after_.ru_maxrss - usage_before_.ru_maxrss;
   }
 
-  // Returns the measured number of page faults for a range of code execution.
+  // Returns the measured the delta of the number of page faults for a range of
+  // code execution. If kGetrusageFailed is set because of the failure of
+  // calling getrusage(), it returns -1.
   virtual long PageFault() const {
+    if (usage_status_ & kGetrusageFailed) return -1;
     return (usage_after_.ru_minflt - usage_before_.ru_minflt) +
            (usage_after_.ru_majflt - usage_before_.ru_majflt);
   }
-
-  UsageStatus GetUsageStatus() const { return usage_status_; }
 
   virtual ~Timer() {}
 
@@ -155,7 +187,7 @@ class Timer {
   std::ostream* report_stream_;
 
   // Status to stop measurement if a system call returns an error.
-  UsageStatus usage_status_;
+  unsigned usage_status_;
 
   // Variable to save the result of clock_gettime(CLOCK_PROCESS_CPUTIME_ID) when
   // Timer::Start() is called. It is used as the base status of CPU time.
@@ -266,18 +298,40 @@ class CumulativeTimer : public Timer {
         rss_(0),
         pgfaults_(0) {}
 
-  void Start() override {
-    if (GetUsageStatus() == kSucceeded) Timer::Start();
-  }
-
+  // If we cannot get a resource usage because of failures, it sets -1 for the
+  // resource usage.
   void Stop() override {
     Timer::Stop();
-    cpu_time_ += Timer::CPUTime();
-    wall_time_ += Timer::WallTime();
-    usr_time_ += Timer::UserTime();
-    sys_time_ += Timer::SystemTime();
-    rss_ += Timer::RSS();
-    pgfaults_ += Timer::PageFault();
+
+    if (cpu_time_ >= 0 && Timer::CPUTime() >= 0)
+      cpu_time_ += Timer::CPUTime();
+    else
+      cpu_time_ = -1;
+
+    if (wall_time_ >= 0 && Timer::WallTime() >= 0)
+      wall_time_ += Timer::WallTime();
+    else
+      wall_time_ = -1;
+
+    if (usr_time_ >= 0 && Timer::UserTime() >= 0)
+      usr_time_ += Timer::UserTime();
+    else
+      usr_time_ = -1;
+
+    if (sys_time_ >= 0 && Timer::SystemTime() >= 0)
+      sys_time_ += Timer::SystemTime();
+    else
+      sys_time_ = -1;
+
+    if (rss_ >= 0 && Timer::RSS() >= 0)
+      rss_ += Timer::RSS();
+    else
+      rss_ = -1;
+
+    if (pgfaults_ >= 0 && Timer::PageFault() >= 0)
+      pgfaults_ += Timer::PageFault();
+    else
+      pgfaults_ = -1;
   }
 
   // Returns the cumulative CPU Time (i.e., process time) for a range of code
@@ -294,10 +348,11 @@ class CumulativeTimer : public Timer {
   // Returns the cumulative SYS Time for a range of code execution.
   double SystemTime() override { return sys_time_; }
 
-  // Returns the cumulative RSS for a range of code execution.
+  // Returns the cumulative RSS delta for a range of code execution.
   long RSS() const override { return rss_; }
 
-  // Returns the cumulative number of page faults for a range of code execution.
+  // Returns the cumulative delta of number of page faults for a range of code
+  // execution.
   long PageFault() const override { return pgfaults_; }
 
  private:
@@ -313,10 +368,10 @@ class CumulativeTimer : public Timer {
   // Variable to save the cumulative system time.
   double sys_time_;
 
-  // Variable to save the cumulative RSS.
+  // Variable to save the cumulative RSS delta.
   long rss_;
 
-  // Variable to save the cumulative numbers of page faults.
+  // Variable to save the cumulative delta of the number of page faults.
   long pgfaults_;
 };
 

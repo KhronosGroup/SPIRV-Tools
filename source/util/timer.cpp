@@ -24,19 +24,14 @@ namespace spvutils {
 
 #if defined(SPIRV_TIMER_ENABLED)
 
-// Print the description of resource types measured by Timer class. If |out| is
-// NULL, it does nothing. Otherwise, it prints resource types. The second is
-// optional and if it is true, the function also prints resource type fields
-// related to memory. Its default is false. In usual, this must be placed before
-// calling Timer::Report() to inform what those fields printed by
-// Timer::Report() indicate.
 void PrintTimerDescription(std::ostream* out, bool measure_mem_usage) {
   if (out) {
     *out << std::setw(30) << "PASS name" << std::setw(12) << "CPU time"
          << std::setw(12) << "WALL time" << std::setw(12) << "USR time"
          << std::setw(12) << "SYS time";
     if (measure_mem_usage) {
-      *out << std::setw(12) << "RSS" << std::setw(12) << "Pagefault";
+      *out << std::setw(12) << "RSS delta" << std::setw(12)
+           << "Pagefault delta";
     }
     *out << std::endl;
   }
@@ -47,13 +42,12 @@ void PrintTimerDescription(std::ostream* out, bool measure_mem_usage) {
 // closely surround the target code of measuring.
 void Timer::Start() {
   if (report_stream_) {
-    if (getrusage(RUSAGE_SELF, &usage_before_) == -1) {
-      usage_status_ = kClockGettimeFailed;
-    } else if (clock_gettime(CLOCK_MONOTONIC, &wall_before_) == -1) {
-      usage_status_ = kClockGettimeFailed;
-    } else if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu_before_) == -1) {
-      usage_status_ = kGetrusageFailed;
-    }
+    if (getrusage(RUSAGE_SELF, &usage_before_) == -1)
+      usage_status_ |= kGetrusageFailed;
+    if (clock_gettime(CLOCK_MONOTONIC, &wall_before_) == -1)
+      usage_status_ |= kClockGettimeWalltimeFailed;
+    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu_before_) == -1)
+      usage_status_ |= kClockGettimeCPUtimeFailed;
   }
 }
 
@@ -61,39 +55,43 @@ void Timer::Start() {
 // Timer::Start().
 void Timer::Stop() {
   if (report_stream_ && usage_status_ == kSucceeded) {
-    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu_after_) == -1) {
-      usage_status_ = kClockGettimeFailed;
-    } else if (clock_gettime(CLOCK_MONOTONIC, &wall_after_) == -1) {
-      usage_status_ = kClockGettimeFailed;
-    } else if (getrusage(RUSAGE_SELF, &usage_after_) == -1) {
+    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu_after_) == -1)
+      usage_status_ |= kClockGettimeCPUtimeFailed;
+    if (clock_gettime(CLOCK_MONOTONIC, &wall_after_) == -1)
+      usage_status_ |= kClockGettimeWalltimeFailed;
+    if (getrusage(RUSAGE_SELF, &usage_after_) == -1)
       usage_status_ = kGetrusageFailed;
-    }
   }
 }
 
 void Timer::Report(const char* tag) {
   if (!report_stream_) return;
 
-  switch (usage_status_) {
-    case kGetrusageFailed:
-      *report_stream_ << std::setw(30) << tag
-                      << " ERROR: calling getrusage() fails";
-      return;
-    case kClockGettimeFailed:
-      *report_stream_ << std::setw(30) << tag
-                      << " ERROR: calling clock_gettime() fails";
-      return;
-    default:
-      break;
-  }
+  report_stream_->precision(2);
+  *report_stream_ << std::fixed << std::setw(30) << tag;
 
-  report_stream_->precision(3);
-  *report_stream_ << std::fixed << std::setw(30) << tag << std::setw(12)
-                  << CPUTime() << std::setw(12) << WallTime() << std::setw(12)
-                  << UserTime() << std::setw(12) << SystemTime();
-  if (measure_mem_usage_) {
-    *report_stream_ << std::fixed << std::setw(12) << RSS() << std::setw(12)
-                    << PageFault();
+  if (usage_status_ & kClockGettimeCPUtimeFailed)
+    *report_stream_ << std::setw(12) << "Failed";
+  else
+    *report_stream_ << std::setw(12) << CPUTime();
+
+  if (usage_status_ & kClockGettimeWalltimeFailed)
+    *report_stream_ << std::setw(12) << "Failed";
+  else
+    *report_stream_ << std::setw(12) << WallTime();
+
+  if (usage_status_ & kGetrusageFailed) {
+    *report_stream_ << std::setw(12) << "Failed" << std::setw(12) << "Failed";
+    if (measure_mem_usage_) {
+      *report_stream_ << std::setw(12) << "Failed" << std::setw(12) << "Failed";
+    }
+  } else {
+    *report_stream_ << std::setw(12) << UserTime() << std::setw(12)
+                    << SystemTime();
+    if (measure_mem_usage_) {
+      *report_stream_ << std::fixed << std::setw(12) << RSS() << std::setw(12)
+                      << PageFault();
+    }
   }
   *report_stream_ << std::endl;
 }

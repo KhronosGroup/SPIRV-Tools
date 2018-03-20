@@ -26,7 +26,7 @@ using ::spvutils::ScopedTimer;
 using ::spvutils::Timer;
 
 // A mock class to mimic Timer class for a testing purpose. It has fixed
-// CPU/WALL/USR/SYS time, RSS, and the number of page faults.
+// CPU/WALL/USR/SYS time, RSS delta, and the delta of the number of page faults.
 class MockTimer : public Timer {
  public:
   MockTimer(std::ostream* out, bool measure_mem_usage = false)
@@ -40,8 +40,8 @@ class MockTimer : public Timer {
 };
 
 // This unit test checks whether the actual output of MockTimer::Report() is the
-// same as fixed CPU/WALL/USR/SYS time, RSS, and the number of page faults that
-// are returned by MockTimer.
+// same as fixed CPU/WALL/USR/SYS time, RSS delta, and the delta of the number
+// of page faults that are returned by MockTimer.
 TEST(MockTimer, DoNothing) {
   std::ostringstream buf;
 
@@ -66,8 +66,8 @@ TEST(MockTimer, DoNothing) {
 }
 
 // This unit test checks whether the ScopedTimer<MockTimer> correctly reports
-// the fixed CPU/WALL/USR/SYS time, RSS, and the number of page faults that are
-// returned by MockTimer.
+// the fixed CPU/WALL/USR/SYS time, RSS delta, and the delta of the number of
+// page faults that are returned by MockTimer.
 TEST(MockTimer, TestScopedTimer) {
   std::ostringstream buf;
 
@@ -83,10 +83,10 @@ TEST(MockTimer, TestScopedTimer) {
 }
 
 // A mock class to mimic CumulativeTimer class for a testing purpose. It has
-// fixed CPU/WALL/USR/SYS time, RSS, and the number of page faults for each
-// measurement (i.e., a pair of Start() and Stop()). If the number of
-// measurements increases, it increases |count_stop_| by the number of calling
-// Stop() and the amount of each resource usage is proportional to
+// fixed CPU/WALL/USR/SYS time, RSS delta, and the delta of the number of page
+// faults for each measurement (i.e., a pair of Start() and Stop()). If the
+// number of measurements increases, it increases |count_stop_| by the number of
+// calling Stop() and the amount of each resource usage is proportional to
 // |count_stop_|.
 class MockCumulativeTimer : public CumulativeTimer {
  public:
@@ -107,8 +107,9 @@ class MockCumulativeTimer : public CumulativeTimer {
 };
 
 // This unit test checks whether the MockCumulativeTimer correctly reports the
-// cumulative CPU/WALL/USR/SYS time, RSS, and the number of page faults whose
-// values are fixed for each measurement (i.e., a pair of Start() and Stop()).
+// cumulative CPU/WALL/USR/SYS time, RSS delta, and the delta of the number of
+// page faults whose values are fixed for each measurement (i.e., a pair of
+// Start() and Stop()).
 TEST(MockCumulativeTimer, DoNothing) {
   CumulativeTimer* ctimer;
   std::ostringstream buf;
