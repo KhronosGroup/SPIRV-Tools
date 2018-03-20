@@ -369,7 +369,7 @@ ir::BasicBlock* LoopPeeling::CreateBlockBefore(ir::BasicBlock* bb) {
                      ir::IRContext::kAnalysisDefUse |
                          ir::IRContext::kAnalysisInstrToBlockMapping)
       .AddBranch(bb->id());
-  cfg.AddEdge(new_bb->id(), bb->id());
+  cfg.RegisterBlock(new_bb.get());
 
   // Add the basic block to the function.
   ir::Function::iterator it = loop_utils_.GetFunction()->FindBlock(bb->id());
