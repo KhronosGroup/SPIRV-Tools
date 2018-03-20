@@ -30,8 +30,8 @@ void PrintTimerDescription(std::ostream* out, bool measure_mem_usage) {
          << std::setw(12) << "WALL time" << std::setw(12) << "USR time"
          << std::setw(12) << "SYS time";
     if (measure_mem_usage) {
-      *out << std::setw(12) << "RSS delta" << std::setw(12)
-           << "Pagefault delta";
+      *out << std::setw(12) << "RSS delta" << std::setw(16)
+           << "PGFault delta";
     }
     *out << std::endl;
   }
@@ -89,7 +89,7 @@ void Timer::Report(const char* tag) {
     *report_stream_ << std::setw(12) << UserTime() << std::setw(12)
                     << SystemTime();
     if (measure_mem_usage_) {
-      *report_stream_ << std::fixed << std::setw(12) << RSS() << std::setw(12)
+      *report_stream_ << std::fixed << std::setw(12) << RSS() << std::setw(16)
                       << PageFault();
     }
   }
