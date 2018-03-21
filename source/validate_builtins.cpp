@@ -296,8 +296,8 @@ class BuiltInsValidator {
       const Instruction& referenced_from_inst);
 
   // The following section contains functions which check that the decorated
-  // variable has the type specified in the function name. |comment| would be
-  // added at the front of the error message, if validation is not successful.
+  // variable has the type specified in the function name. |diag| would be
+  // called with a corresponding error message, if validation is not successful.
   spv_result_t ValidateBool(
       const Decoration& decoration, const Instruction& inst,
       const std::function<spv_result_t(const std::string& message)>& diag);
