@@ -17,6 +17,7 @@
 #ifndef LIBSPIRV_OPT_TYPES_H_
 #define LIBSPIRV_OPT_TYPES_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -369,7 +370,8 @@ class Struct : public Type {
   bool decoration_empty() const override {
     return decorations_.empty() && element_decorations_.empty();
   }
-  const std::unordered_map<uint32_t, std::vector<std::vector<uint32_t>>>&
+
+  const std::map<uint32_t, std::vector<std::vector<uint32_t>>>&
   element_decorations() const {
     return element_decorations_;
   }
@@ -388,9 +390,10 @@ class Struct : public Type {
   std::vector<Type*> element_types_;
   // We can attach decorations to struct members and that should not affect the
   // underlying element type. So we need an extra data structure here to keep
-  // track of element type decorations.
-  std::unordered_map<uint32_t, std::vector<std::vector<uint32_t>>>
-      element_decorations_;
+  // track of element type decorations.  They must be stored in an ordered map
+  // because |GetExtraHashWords| will traverse the structure.  It must have a
+  // fixed order in order to hash to the same value every time.
+  std::map<uint32_t, std::vector<std::vector<uint32_t>>> element_decorations_;
 };
 
 class Opaque : public Type {
@@ -414,7 +417,7 @@ class Opaque : public Type {
 
 class Pointer : public Type {
  public:
-  Pointer(Type* pointee, SpvStorageClass sc);
+  Pointer(const Type* pointee, SpvStorageClass sc);
   Pointer(const Pointer&) = default;
 
   bool IsSame(const Type* that) const override;
@@ -428,7 +431,7 @@ class Pointer : public Type {
   void GetExtraHashWords(std::vector<uint32_t>* words) const override;
 
  private:
-  Type* pointee_type_;
+  const Type* pointee_type_;
   SpvStorageClass storage_class_;
 };
 
