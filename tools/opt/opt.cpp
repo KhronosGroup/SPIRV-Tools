@@ -102,6 +102,9 @@ Options (in lexicographical order):
                on function scope variables referenced only with load, store,
                and constant index access chains in entry point call tree
                functions.
+  --copy-propagate-arrays
+               Does propagation of memory references when an array is a copy of
+               another.
   --eliminate-common-uniform
                Perform load/load elimination for duplicate uniform values.
                Converts any constant index access chain uniform loads into
@@ -524,6 +527,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateSimplificationPass());
       } else if (0 == strcmp(cur_arg, "--ssa-rewrite")) {
         optimizer->RegisterPass(CreateSSARewritePass());
+      } else if (0 == strcmp(cur_arg, "--copy-propagate-arrays")) {
+        optimizer->RegisterPass(CreateCopyPropagateArraysPass());
       } else if (0 == strcmp(cur_arg, "--loop-unroll")) {
         optimizer->RegisterPass(CreateLoopUnrollPass(true));
       } else if (0 == strcmp(cur_arg, "--loop-unroll-partial")) {

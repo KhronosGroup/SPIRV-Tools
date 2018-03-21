@@ -155,7 +155,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
     // check with some invalid inputs
     EXPECT_FALSE(dom_tree.Dominates(nullptr, entry));
     EXPECT_FALSE(dom_tree.Dominates(entry, nullptr));
-    EXPECT_FALSE(dom_tree.Dominates(nullptr, nullptr));
+    EXPECT_FALSE(dom_tree.Dominates(static_cast<ir::BasicBlock*>(nullptr),
+                                    static_cast<ir::BasicBlock*>(nullptr)));
     EXPECT_FALSE(dom_tree.Dominates(10, 1));
     EXPECT_FALSE(dom_tree.Dominates(1, 10));
     EXPECT_FALSE(dom_tree.Dominates(1, 1));
@@ -216,7 +217,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
     // check with some invalid inputs
     EXPECT_FALSE(dom_tree.Dominates(nullptr, entry));
     EXPECT_FALSE(dom_tree.Dominates(entry, nullptr));
-    EXPECT_FALSE(dom_tree.Dominates(nullptr, nullptr));
+    EXPECT_FALSE(dom_tree.Dominates(static_cast<ir::BasicBlock*>(nullptr),
+                                    static_cast<ir::BasicBlock*>(nullptr)));
     EXPECT_FALSE(dom_tree.Dominates(10, 1));
     EXPECT_FALSE(dom_tree.Dominates(1, 10));
     EXPECT_FALSE(dom_tree.Dominates(1, 1));

@@ -120,6 +120,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // scalar replacement.  Also important for removing OpPhi nodes.
           .RegisterPass(CreateSimplificationPass())
           .RegisterPass(CreateInsertExtractElimPass())
+          .RegisterPass(CreateAggressiveDCEPass())
+          .RegisterPass(CreateCopyPropagateArraysPass())
           // May need loop unrolling here see
           // https://github.com/Microsoft/DirectXShaderCompiler/pull/930
           // Get rid of unused code that contain traces of illegal code
@@ -435,6 +437,11 @@ Optimizer::PassToken CreateLoopUnrollPass(bool fully_unroll, int factor) {
 Optimizer::PassToken CreateSSARewritePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::SSARewritePass>());
+}
+
+Optimizer::PassToken CreateCopyPropagateArraysPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::CopyPropagateArrays>());
 }
 
 }  // namespace spvtools

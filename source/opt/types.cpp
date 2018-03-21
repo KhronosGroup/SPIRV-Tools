@@ -486,7 +486,7 @@ void Opaque::GetExtraHashWords(std::vector<uint32_t>* words) const {
   }
 }
 
-Pointer::Pointer(Type* type, SpvStorageClass sc)
+Pointer::Pointer(const Type* type, SpvStorageClass sc)
     : Type(kPointer), pointee_type_(type), storage_class_(sc) {}
 
 bool Pointer::IsSame(const Type* that) const {

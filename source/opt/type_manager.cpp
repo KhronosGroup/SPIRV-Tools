@@ -669,6 +669,24 @@ void TypeManager::AttachDecoration(const ir::Instruction& inst, Type* type) {
   }
 }
 
+const Type* TypeManager::GetMemberType(
+    const Type* parent_type, const std::vector<uint32_t>& access_chain) {
+  for (uint32_t element_index : access_chain) {
+    if (const analysis::Struct* struct_type = parent_type->AsStruct()) {
+      parent_type = struct_type->element_types()[element_index];
+    } else if (const analysis::Array* array_type = parent_type->AsArray()) {
+      parent_type = array_type->element_type();
+    } else if (const analysis::Vector* vector_type = parent_type->AsVector()) {
+      parent_type = vector_type->element_type();
+    } else if (const analysis::Matrix* matrix_type = parent_type->AsMatrix()) {
+      parent_type = matrix_type->element_type();
+    } else {
+      assert(false && "Trying to get a member of a type without members.");
+    }
+  }
+  return parent_type;
+}
+
 }  // namespace analysis
 }  // namespace opt
 }  // namespace spvtools

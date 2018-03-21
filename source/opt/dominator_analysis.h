@@ -47,6 +47,9 @@ class DominatorAnalysisBase {
     return tree_.Dominates(a, b);
   }
 
+  // Returns true if instruction |a| dominates instruction |b|.
+  bool Dominates(ir::Instruction* a, ir::Instruction* b) const;
+
   // Returns true if BasicBlock |a| strictly dominates BasicBlock |b|.
   inline bool StrictlyDominates(const ir::BasicBlock* a,
                                 const ir::BasicBlock* b) const {
