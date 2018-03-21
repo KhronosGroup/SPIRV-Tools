@@ -16,6 +16,8 @@
 
 #include <unordered_set>
 
+#include "ir_context.h"
+
 namespace spvtools {
 namespace opt {
 
@@ -35,6 +37,36 @@ ir::BasicBlock* DominatorAnalysisBase::CommonDominator(
   }
 
   return block;
+}
+
+bool DominatorAnalysisBase::Dominates(ir::Instruction* a,
+                                      ir::Instruction* b) const {
+  if (!a || !b) {
+    return false;
+  }
+
+  if (a == b) {
+    return true;
+  }
+
+  ir::BasicBlock* bb_a = a->context()->get_instr_block(a);
+  ir::BasicBlock* bb_b = b->context()->get_instr_block(b);
+
+  if (bb_a != bb_b) {
+    return tree_.Dominates(bb_a, bb_b);
+  }
+
+  for (ir::Instruction& inst : *bb_a) {
+    if (&inst == a) {
+      return true;
+    } else if (&inst == b) {
+      return false;
+    }
+  }
+  assert(false &&
+         "We did not find the load or store in the block they are "
+         "supposed to be in.");
+  return false;
 }
 
 }  // namespace opt

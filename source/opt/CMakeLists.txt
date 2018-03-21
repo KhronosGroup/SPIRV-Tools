@@ -24,6 +24,7 @@ add_library(SPIRV-Tools-opt
   composite.h
   const_folding_rules.h
   constants.h
+  copy_prop_arrays.h
   dead_branch_elim_pass.h
   dead_insert_elim_pass.h
   dead_variable_elimination.h
@@ -102,6 +103,7 @@ add_library(SPIRV-Tools-opt
   composite.cpp
   const_folding_rules.cpp
   constants.cpp
+  copy_prop_arrays.cpp
   dead_branch_elim_pass.cpp
   dead_insert_elim_pass.cpp
   dead_variable_elimination.cpp
