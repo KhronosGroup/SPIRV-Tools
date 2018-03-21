@@ -57,10 +57,6 @@ class SSARewriter {
           is_complete_(false),
           users_() {}
 
-    PhiCandidate(const PhiCandidate&) = delete;
-    PhiCandidate(PhiCandidate&&) = default;
-    PhiCandidate& operator=(const PhiCandidate&) = delete;
-
     uint32_t var_id() const { return var_id_; }
     uint32_t result_id() const { return result_id_; }
     ir::BasicBlock* bb() const { return bb_; }
