@@ -242,7 +242,7 @@ void LocalSingleStoreElimPass::Initialize(ir::IRContext* irContext) {
 
   // Initialize extension whitelist
   InitExtensions();
-};
+}
 
 bool LocalSingleStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false

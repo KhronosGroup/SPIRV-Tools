@@ -256,7 +256,7 @@ void LocalAccessChainConvertPass::Initialize(ir::IRContext* c) {
 
   // Initialize extension whitelist
   InitExtensions();
-};
+}
 
 bool LocalAccessChainConvertPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false

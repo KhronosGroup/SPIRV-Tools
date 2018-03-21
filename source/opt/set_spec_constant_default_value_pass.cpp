@@ -188,7 +188,7 @@ ir::Instruction* GetSpecIdTargetFromDecorationGroup(
   }
   return target_inst;
 }
-};  // namespace
+}  // namespace
 
 Pass::Status SetSpecConstantDefaultValuePass::Process(
     ir::IRContext* irContext) {

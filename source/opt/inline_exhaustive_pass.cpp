@@ -59,9 +59,7 @@ bool InlineExhaustivePass::InlineExhaustive(ir::Function* func) {
   return modified;
 }
 
-void InlineExhaustivePass::Initialize(ir::IRContext* c) {
-  InitializeInline(c);
-};
+void InlineExhaustivePass::Initialize(ir::IRContext* c) { InitializeInline(c); }
 
 Pass::Status InlineExhaustivePass::ProcessImpl() {
   // Attempt exhaustive inlining on each entry point function in module

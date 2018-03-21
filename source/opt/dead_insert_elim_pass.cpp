@@ -257,7 +257,7 @@ bool DeadInsertElimPass::EliminateDeadInsertsOnePass(ir::Function* func) {
 
 void DeadInsertElimPass::Initialize(ir::IRContext* c) {
   InitializeProcessing(c);
-};
+}
 
 Pass::Status DeadInsertElimPass::ProcessImpl() {
   // Process all entry point functions.
