@@ -271,15 +271,11 @@ bool operator==(const DefUseManager& lhs, const DefUseManager& rhs) {
   if (lhs.id_to_users_ != rhs.id_to_users_) {
     for (auto p : lhs.id_to_users_) {
       if (rhs.id_to_users_.count(p) == 0) {
-        std::cerr << p.first->PrettyPrint() << std::endl;
-        std::cerr << p.second->PrettyPrint() << std::endl;
         return false;
       }
     }
     for (auto p : rhs.id_to_users_) {
       if (lhs.id_to_users_.count(p) == 0) {
-        std::cerr << p.first->PrettyPrint() << std::endl;
-        std::cerr << p.second->PrettyPrint() << std::endl;
         return false;
       }
     }

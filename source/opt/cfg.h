@@ -121,7 +121,7 @@ class CFG {
 
   // Divides |block| into two basic blocks.  The first block will have the same
   // id as |block| and will become a preheader for the loop.  The other block
-  // becomes is a new block that will be the new loop header.
+  // is a new block that will be the new loop header.
   //
   // Returns a pointer to the new loop header.
   BasicBlock* SplitLoopHeader(ir::BasicBlock* bb);

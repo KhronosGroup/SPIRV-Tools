@@ -154,22 +154,20 @@ BasicBlock* CFG::SplitLoopHeader(ir::BasicBlock* bb) {
       [bb](BasicBlock& block_in_func) { return &block_in_func == bb; });
   assert(header_it != fn->end());
 
-  const std::vector<uint32_t>& pred = label2preds_[bb->id()];
+  const std::vector<uint32_t>& pred = preds(bb->id());
   // Find the back edge
   ir::BasicBlock* latch_block = nullptr;
-  {
-    Function::iterator latch_block_iter = header_it;
-    while (++latch_block_iter != fn->end()) {
-      // If blocks are in the proper order, then the only branch that appears
-      // after the header is the latch.
-      if (std::find(pred.begin(), pred.end(), latch_block_iter->id()) !=
-          pred.end()) {
-        break;
-      }
+  Function::iterator latch_block_iter = header_it;
+  while (++latch_block_iter != fn->end()) {
+    // If blocks are in the proper order, then the only branch that appears
+    // after the header is the latch.
+    if (std::find(pred.begin(), pred.end(), latch_block_iter->id()) !=
+        pred.end()) {
+      break;
     }
-    assert(latch_block_iter != fn->end() && "Could not find the latch.");
-    latch_block = &*latch_block_iter;
   }
+  assert(latch_block_iter != fn->end() && "Could not find the latch.");
+  latch_block = &*latch_block_iter;
 
   RemoveSuccessorEdges(bb);
 
@@ -205,7 +203,7 @@ BasicBlock* CFG::SplitLoopHeader(ir::BasicBlock* bb) {
     std::vector<uint32_t> preheader_phi_ops;
     std::vector<Operand> header_phi_ops;
 
-    // Idendify where the original inputs to original OpPhi belong: header or
+    // Identify where the original inputs to original OpPhi belong: header or
     // preheader.
     for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
       uint32_t def_id = phi->GetSingleWordInOperand(i);
