@@ -31,7 +31,7 @@ spv_result_t SetSpvHeader(void* builder, spv_endianness_t, uint32_t magic,
   reinterpret_cast<ir::IrLoader*>(builder)->SetModuleHeader(
       magic, version, generator, id_bound, reserved);
   return SPV_SUCCESS;
-};
+}
 
 // Processes a parsed instruction for IrLoader. Meets the interface requirement
 // of spvBinaryParse().
@@ -40,7 +40,7 @@ spv_result_t SetSpvInst(void* builder, const spv_parsed_instruction_t* inst) {
     return SPV_SUCCESS;
   }
   return SPV_ERROR_INVALID_BINARY;
-};
+}
 
 }  // namespace
 

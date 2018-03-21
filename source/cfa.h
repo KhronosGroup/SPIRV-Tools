@@ -331,7 +331,7 @@ void CFA<BB>::ComputeAugmentedCFG(
     augmented_succ.push_back(pseudo_exit_block);
     augmented_succ.insert(augmented_succ.end(), succ->begin(), succ->end());
   }
-};
+}
 
 }  // namespace spvtools
 

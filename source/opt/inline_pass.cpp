@@ -668,7 +668,7 @@ void InlinePass::InitializeInline(ir::IRContext* c) {
     // Compute inlinability
     if (IsInlinableFunction(&fn)) inlinable_.insert(fn.result_id());
   }
-};
+}
 
 InlinePass::InlinePass() {}
 

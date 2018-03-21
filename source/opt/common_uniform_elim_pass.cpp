@@ -488,7 +488,7 @@ void CommonUniformElimPass::Initialize(ir::IRContext* c) {
 
   // Initialize extension whitelist
   InitExtensions();
-};
+}
 
 bool CommonUniformElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
