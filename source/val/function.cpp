@@ -279,7 +279,7 @@ void Function::ComputeAugmentedCFG() {
       ordered_blocks_, &pseudo_entry_block_, &pseudo_exit_block_,
       &augmented_successors_map_, &augmented_predecessors_map_, succ_func,
       pred_func);
-};
+}
 
 Construct& Function::AddConstruct(const Construct& new_construct) {
   cfg_constructs_.push_back(new_construct);

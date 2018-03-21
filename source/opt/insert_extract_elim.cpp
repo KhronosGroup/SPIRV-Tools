@@ -199,7 +199,7 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
 
 void InsertExtractElimPass::Initialize(ir::IRContext* c) {
   InitializeProcessing(c);
-};
+}
 
 Pass::Status InsertExtractElimPass::ProcessImpl() {
   // Process all entry point functions.

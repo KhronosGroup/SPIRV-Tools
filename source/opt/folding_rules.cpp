@@ -234,7 +234,7 @@ FoldingRule ReciprocalFDiv() {
 
     return false;
   };
-};
+}
 
 // Elides consecutive negate instructions.
 FoldingRule MergeNegateArithmetic() {

@@ -92,7 +92,7 @@ bool InlineOpaquePass::InlineOpaque(ir::Function* func) {
   return modified;
 }
 
-void InlineOpaquePass::Initialize(ir::IRContext* c) { InitializeInline(c); };
+void InlineOpaquePass::Initialize(ir::IRContext* c) { InitializeInline(c); }
 
 Pass::Status InlineOpaquePass::ProcessImpl() {
   // Do opaque inlining on each function in entry point call tree

@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
           spv_validator_limit limit_type;
           if (spvParseUniversalLimitsOptions(cur_arg, &limit_type)) {
             uint32_t limit = 0;
-            if (sscanf(argv[++argi], "%d", &limit)) {
+            if (sscanf(argv[++argi], "%u", &limit)) {
               options.SetUniversalLimit(limit_type, limit);
             } else {
               fprintf(stderr, "error: missing argument to %s\n", cur_arg);

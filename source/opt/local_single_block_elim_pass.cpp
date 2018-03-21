@@ -138,7 +138,7 @@ void LocalSingleBlockLoadStoreElimPass::Initialize(ir::IRContext* c) {
 
   // Initialize extensions whitelist
   InitExtensions();
-};
+}
 
 bool LocalSingleBlockLoadStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false

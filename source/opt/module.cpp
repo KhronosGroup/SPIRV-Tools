@@ -30,7 +30,7 @@ std::vector<Instruction*> Module::GetTypes() {
     if (IsTypeInst(inst.opcode())) type_insts.push_back(&inst);
   }
   return type_insts;
-};
+}
 
 std::vector<const Instruction*> Module::GetTypes() const {
   std::vector<const Instruction*> type_insts;
@@ -38,7 +38,7 @@ std::vector<const Instruction*> Module::GetTypes() const {
     if (IsTypeInst(inst.opcode())) type_insts.push_back(&inst);
   }
   return type_insts;
-};
+}
 
 std::vector<Instruction*> Module::GetConstants() {
   std::vector<Instruction*> const_insts;
@@ -46,7 +46,7 @@ std::vector<Instruction*> Module::GetConstants() {
     if (IsConstantInst(inst.opcode())) const_insts.push_back(&inst);
   }
   return const_insts;
-};
+}
 
 std::vector<const Instruction*> Module::GetConstants() const {
   std::vector<const Instruction*> const_insts;
@@ -54,7 +54,7 @@ std::vector<const Instruction*> Module::GetConstants() const {
     if (IsConstantInst(inst.opcode())) const_insts.push_back(&inst);
   }
   return const_insts;
-};
+}
 
 uint32_t Module::GetGlobalValue(SpvOp opcode) const {
   for (auto& inst : types_values_) {

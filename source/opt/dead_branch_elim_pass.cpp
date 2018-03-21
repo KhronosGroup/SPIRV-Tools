@@ -367,7 +367,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
 
 void DeadBranchElimPass::Initialize(ir::IRContext* c) {
   InitializeProcessing(c);
-};
+}
 
 Pass::Status DeadBranchElimPass::ProcessImpl() {
   // Do not process if module contains OpGroupDecorate. Additional
