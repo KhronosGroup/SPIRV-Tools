@@ -209,13 +209,6 @@ void BasicBlockSuccessorHelper<BBType>::CreateSuccessorMap(
         predecessors_[succ].push_back(&bb);
       });
     }
-    /*
-    for (BasicBlock& bb : f) {
-      if (predecessors_[&bb].empty()) {
-        predecessors_[&bb].push_back(const_cast<BasicBlock*>(dummy_start_node));
-        successors_[dummy_start_node].push_back(&bb);
-      }
-    } */
   }
 }
 
