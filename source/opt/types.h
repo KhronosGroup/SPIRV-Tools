@@ -516,16 +516,16 @@ class ForwardPointer : public Type {
     const type* As##type() const override { return this; }           \
                                                                      \
     void GetExtraHashWords(std::vector<uint32_t>*) const override {} \
-  };  // namespace analysis
-DefineParameterlessType(Void, void)
-DefineParameterlessType(Bool, bool)
-DefineParameterlessType(Sampler, sampler)
-DefineParameterlessType(Event, event)
-DefineParameterlessType(DeviceEvent, device_event)
-DefineParameterlessType(ReserveId, reserve_id)
-DefineParameterlessType(Queue, queue)
-DefineParameterlessType(PipeStorage, pipe_storage)
-DefineParameterlessType(NamedBarrier, named_barrier)
+  }
+DefineParameterlessType(Void, void);
+DefineParameterlessType(Bool, bool);
+DefineParameterlessType(Sampler, sampler);
+DefineParameterlessType(Event, event);
+DefineParameterlessType(DeviceEvent, device_event);
+DefineParameterlessType(ReserveId, reserve_id);
+DefineParameterlessType(Queue, queue);
+DefineParameterlessType(PipeStorage, pipe_storage);
+DefineParameterlessType(NamedBarrier, named_barrier);
 #undef DefineParameterlessType
 
 }  // namespace analysis
