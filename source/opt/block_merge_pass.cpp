@@ -137,7 +137,7 @@ bool BlockMergePass::IsMerge(ir::BasicBlock* block) {
   return IsMerge(block->id());
 }
 
-void BlockMergePass::Initialize(ir::IRContext* c) { InitializeProcessing(c); };
+void BlockMergePass::Initialize(ir::IRContext* c) { InitializeProcessing(c); }
 
 Pass::Status BlockMergePass::ProcessImpl() {
   // Process all entry point functions.

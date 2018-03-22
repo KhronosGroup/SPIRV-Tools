@@ -516,7 +516,7 @@ class ForwardPointer : public Type {
     const type* As##type() const override { return this; }           \
                                                                      \
     void GetExtraHashWords(std::vector<uint32_t>*) const override {} \
-  };  // namespace analysis
+  }
 DefineParameterlessType(Void, void);
 DefineParameterlessType(Bool, bool);
 DefineParameterlessType(Sampler, sampler);
