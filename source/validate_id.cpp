@@ -1788,8 +1788,7 @@ bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
 
 template <>
 bool idUsage::isValid<SpvOpPhi>(const spv_instruction_t* inst,
-                                const spv_opcode_desc opcodeEntry) {
-  (void)opcodeEntry;
+                                const spv_opcode_desc /*opcodeEntry*/) {
   auto thisInst = module_.FindDef(inst->words[2]);
   SpvOp typeOp = module_.GetIdOpcode(thisInst->type_id());
   if (!spvOpcodeGeneratesType(typeOp)) {
@@ -1806,7 +1805,7 @@ bool idUsage::isValid<SpvOpPhi>(const spv_instruction_t* inst,
     return false;
   }
 
-  // Create an uniqued vector of predecessor ids for comparison against
+  // Create a uniqued vector of predecessor ids for comparison against
   // incoming values. OpBranchConditional %cond %label %label produces two
   // predecessors in the CFG.
   std::vector<uint32_t> predIds;
@@ -1826,19 +1825,24 @@ bool idUsage::isValid<SpvOpPhi>(const spv_instruction_t* inst,
 
   for (size_t i = 3; i < inst->words.size(); ++i) {
     auto incId = inst->words[i];
-    auto incInst = module_.FindDef(incId);
     if (i % 2 == 1) {
       // Incoming value type must match the phi result type.
-      auto incType = module_.FindDef(incInst->type_id());
-      auto resType = inst->words[1];
-      if (resType != incType->id()) {
-        DIAG(i) << "OpPhi's result type <id> " << module_.getIdName(resType)
+      auto incTypeId = module_.GetTypeId(incId);
+      if (thisInst->type_id() != incTypeId) {
+        DIAG(i) << "OpPhi's result type <id> "
+                << module_.getIdName(thisInst->type_id())
                 << " does not match incoming value <id> "
                 << module_.getIdName(incId) << " type <id> "
-                << module_.getIdName(incType->id()) << ".";
+                << module_.getIdName(incTypeId) << ".";
         return false;
       }
     } else {
+      if (module_.GetIdOpcode(incId) != SpvOpLabel) {
+        DIAG(i) << "OpPhi's incoming basic block <id> "
+                << module_.getIdName(incId) << " is not an OpLabel.";
+        return false;
+      }
+
       // Incoming basic block must be an immediate predecessor of the phi's
       // block.
       if (!std::binary_search(predIds.begin(), predIds.end(), incId)) {

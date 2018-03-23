@@ -4063,6 +4063,32 @@ OpFunctionEnd
                         "value <id> 6 type <id> 5."));
 }
 
+TEST_F(ValidateIdWithMessage, OpPhiPredecessorNotABlock) {
+  string spirv = kOpenCLMemoryModel32 + R"(
+%2 = OpTypeBool
+%3 = OpConstantTrue %2
+%4 = OpTypeVoid
+%5 = OpTypeFunction %4
+%6 = OpFunction %4 None %5
+%7 = OpLabel
+OpBranchConditional %3 %8 %9
+%9 = OpLabel
+OpBranch %11
+%11 = OpLabel
+OpBranch %8
+%8 = OpLabel
+%10 = OpPhi %2 %3 %7 %3 %3
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpPhi's incoming basic block <id> 3 is not an OpLabel."));
+}
+
 TEST_F(ValidateIdWithMessage, OpPhiNotAPredecessor) {
   string spirv = kOpenCLMemoryModel32 + R"(
 %2 = OpTypeBool
