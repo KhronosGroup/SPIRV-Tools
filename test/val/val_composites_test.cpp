@@ -1416,4 +1416,82 @@ TEST_F(ValidateComposites, CompositeInsertStructIndexOutOfBoundBad) {
                 "index 3 into the structure <id> '26'. This structure "
                 "has 3 members. Largest valid index is 2."));
 }
+
+// #1403: Ensure that the default spec constant value is not used to check the
+// extract index.
+TEST_F(ValidateComposites, ExtractFromSpecConstantSizedArray) {
+  std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpDecorate %spec_const SpecId 1
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%spec_const = OpSpecConstant %uint 3
+%uint_array = OpTypeArray %uint %spec_const
+%undef = OpUndef %uint_array
+%voidf = OpTypeFunction %void
+%func = OpFunction %void None %voidf
+%1 = OpLabel
+%2 = OpCompositeExtract %uint %undef 4
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// #1403: Ensure that spec constant ops do not produce false positives.
+TEST_F(ValidateComposites, ExtractFromSpecConstantOpSizedArray) {
+  std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpDecorate %spec_const SpecId 1
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%const = OpConstant %uint 1
+%spec_const = OpSpecConstant %uint 3
+%spec_const_op = OpSpecConstantOp %uint IAdd %spec_const %const
+%uint_array = OpTypeArray %uint %spec_const_op
+%undef = OpUndef %uint_array
+%voidf = OpTypeFunction %void
+%func = OpFunction %void None %voidf
+%1 = OpLabel
+%2 = OpCompositeExtract %uint %undef 4
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// #1403: Ensure that the default spec constant value is not used to check the
+// size of the array for a composite construct. This code has limited actual
+// value as it is incorrect unless the specialization constant is assigned the
+// value of 2, but it is still a valid module.
+TEST_F(ValidateComposites, CompositeConstructSpecConstantSizedArray) {
+  std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+OpDecorate %spec_const SpecId 1
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%spec_const = OpSpecConstant %uint 3
+%uint_array = OpTypeArray %uint %spec_const
+%voidf = OpTypeFunction %void
+%func = OpFunction %void None %voidf
+%1 = OpLabel
+%2 = OpCompositeConstruct %uint_array %uint_0 %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
 }  // anonymous namespace

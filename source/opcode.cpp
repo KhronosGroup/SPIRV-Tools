@@ -206,6 +206,19 @@ int32_t spvOpcodeIsScalarType(const SpvOp opcode) {
   }
 }
 
+int32_t spvOpcodeIsSpecConstant(const SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpSpecConstantTrue:
+    case SpvOpSpecConstantFalse:
+    case SpvOpSpecConstant:
+    case SpvOpSpecConstantComposite:
+    case SpvOpSpecConstantOp:
+      return true;
+    default:
+      return false;
+  }
+}
+
 int32_t spvOpcodeIsConstant(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpConstantTrue:
