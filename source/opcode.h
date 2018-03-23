@@ -63,6 +63,10 @@ const char* spvOpcodeString(const SpvOp opcode);
 // non-zero otherwise.
 int32_t spvOpcodeIsScalarType(const SpvOp opcode);
 
+// Determines if the given opcode is a specialization constant. Returns zero if
+// false, non-zero otherwise.
+int32_t spvOpcodeIsSpecConstant(const SpvOp opcode);
+
 // Determines if the given opcode is a constant. Returns zero if false, non-zero
 // otherwise.
 int32_t spvOpcodeIsConstant(const SpvOp opcode);
