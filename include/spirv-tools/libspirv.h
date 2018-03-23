@@ -377,12 +377,12 @@ typedef const spv_validator_options_t* spv_const_validator_options;
 // Returns the SPIRV-Tools software version as a null-terminated string.
 // The contents of the underlying storage is valid for the remainder of
 // the process.
-SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionString();
+SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionString(void);
 // Returns a null-terminated string containing the name of the project,
 // the software version string, and commit details.
 // The contents of the underlying storage is valid for the remainder of
 // the process.
-SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionDetailsString();
+SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionDetailsString(void);
 
 // Certain target environments impose additional restrictions on SPIR-V, so it's
 // often necessary to specify which one applies.  SPV_ENV_UNIVERSAL means
@@ -438,7 +438,7 @@ SPIRV_TOOLS_EXPORT void spvContextDestroy(spv_context context);
 // Creates a Validator options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // spvValidatorOptionsDestroy.
-SPIRV_TOOLS_EXPORT spv_validator_options spvValidatorOptionsCreate();
+SPIRV_TOOLS_EXPORT spv_validator_options spvValidatorOptionsCreate(void);
 
 // Destroys the given Validator options object.
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsDestroy(
