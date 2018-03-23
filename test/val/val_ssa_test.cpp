@@ -611,8 +611,7 @@ TEST_F(ValidateSSA, EnqueueKernelGood) {
                kKernelDefinition + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
-                )" +
-               kKernelSetup + R"(
+                )" + kKernelSetup + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -634,8 +633,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelGood) {
                                         %palign %lsize
                          OpReturn
                          OpFunctionEnd
-                 )" +
-               kKernelDefinition;
+                 )" + kKernelDefinition;
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -645,8 +643,7 @@ TEST_F(ValidateSSA, EnqueueMissingFunctionBad) {
                kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
-                )" +
-               kKernelSetup + R"(
+                )" + kKernelSetup + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -1316,6 +1313,35 @@ TEST_F(ValidateSSA,
 
   CompileSuccessfully(str);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_F(ValidateSSA, PhiVariableUnreachableDefNotInParentBlock) {
+  string str = kHeader + "OpName %unreachable \"unreachable\"\n" + kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+               OpBranch %if_false
+
+%unreachable = OpLabel
+%copy        = OpCopyObject %boolt %false
+               OpBranch %if_tnext
+%if_tnext    = OpLabel
+               OpBranch %exit
+
+%if_false    = OpLabel
+%false_copy  = OpCopyObject %boolt %false
+               OpBranch %if_fnext
+%if_fnext    = OpLabel
+               OpBranch %exit
+
+%exit        = OpLabel
+%value       = OpPhi %boolt %copy %if_tnext %false_copy %if_fnext
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateSSA,
