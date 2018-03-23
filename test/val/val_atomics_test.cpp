@@ -74,6 +74,9 @@ OpEntryPoint Fragment %main "main"
 %u32_ptr = OpTypePointer Workgroup %u32
 %u32_var = OpVariable %u32_ptr Workgroup
 
+%u64_ptr = OpTypePointer Workgroup %u64
+%u64_var = OpVariable %u64_ptr Workgroup
+
 %f32vec4_ptr = OpTypePointer Workgroup %f32vec4
 %f32vec4_var = OpVariable %f32vec4_ptr Workgroup
 
@@ -167,7 +170,7 @@ TEST_F(ValidateAtomics, AtomicLoadShaderSuccess) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %u32 %u32_var %device %relaxed
 %val2 = OpAtomicLoad %u32 %u32_var %workgroup %acquire
-%val3 = OpAtomicLoad %u32 %u32_var %subgroup %sequentially_consistent
+%val3 = OpAtomicLoad %u64 %u64_var %subgroup %sequentially_consistent
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
@@ -258,6 +261,18 @@ TEST_F(ValidateAtomics, AtomicLoadShaderFloat) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicLoad: "
                         "expected Result Type to be int scalar type"));
+}
+
+TEST_F(ValidateAtomics, AtomicLoadVulkanInt64) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %u64 %u64_var %device %relaxed
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicLoad: according to the Vulkan spec atomic "
+                        "Result Type needs to be a 32-bit int scalar type"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadWrongResultType) {

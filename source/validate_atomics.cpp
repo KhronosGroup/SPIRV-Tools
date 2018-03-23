@@ -200,6 +200,13 @@ spv_result_t AtomicsPass(ValidationState_t& _,
                  << spvOpcodeString(opcode)
                  << ": expected Result Type to be int scalar type";
         }
+        if (spvIsVulkanEnv(_.context()->target_env) &&
+            _.GetBitWidth(result_type) != 32) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+                 << spvOpcodeString(opcode)
+                 << ": according to the Vulkan spec atomic Result Type needs "
+                    "to be a 32-bit int scalar type";
+        }
       }
 
       uint32_t operand_index =
