@@ -46,7 +46,7 @@ bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* type) {
   return true;
 }
 
-spv_validator_options spvValidatorOptionsCreate() {
+spv_validator_options spvValidatorOptionsCreate(void) {
   return new spv_validator_options_t;
 }
 

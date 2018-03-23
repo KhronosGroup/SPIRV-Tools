@@ -22,6 +22,6 @@ const char* kBuildVersions[] = {
 
 }  // anonymous namespace
 
-const char* spvSoftwareVersionString() { return kBuildVersions[0]; }
+const char* spvSoftwareVersionString(void) { return kBuildVersions[0]; }
 
-const char* spvSoftwareVersionDetailsString() { return kBuildVersions[1]; }
+const char* spvSoftwareVersionDetailsString(void) { return kBuildVersions[1]; }
