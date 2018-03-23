@@ -85,10 +85,16 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
       }
       case SpvOpTypeArray: {
         uint64_t array_size = 0;
+        auto size = _.FindDef(type_inst->word(3));
+        *member_type = type_inst->word(2);
+        if (spvOpcodeIsSpecConstant(size->opcode())) {
+          // Cannot verify against the size of this array.
+          break;
+        }
+
         if (!_.GetConstantValUint64(type_inst->word(3), &array_size)) {
           assert(0 && "Array type definition is corrupt");
         }
-        *member_type = type_inst->word(2);
         if (component_index >= array_size) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << spvOpcodeString(opcode)
@@ -287,6 +293,12 @@ spv_result_t CompositesPass(ValidationState_t& _,
           const Instruction* const array_inst = _.FindDef(result_type);
           assert(array_inst);
           assert(array_inst->opcode() == SpvOpTypeArray);
+
+          auto size = _.FindDef(array_inst->word(3));
+          if (spvOpcodeIsSpecConstant(size->opcode())) {
+            // Cannot verify against the size of this array.
+            break;
+          }
 
           uint64_t array_size = 0;
           if (!_.GetConstantValUint64(array_inst->word(3), &array_size)) {
