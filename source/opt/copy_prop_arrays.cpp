@@ -175,8 +175,8 @@ bool CopyPropagateArrays::HasValidReferencesOnly(ir::Instruction* ptr_inst,
       context()->GetDominatorAnalysis(store_block->GetParent(), *cfg());
 
   return get_def_use_mgr()->WhileEachUser(
-      ptr_inst, [this, store_inst, store_block, dominator_analysis,
-                 ptr_inst](ir::Instruction* use) {
+      ptr_inst,
+      [this, store_inst, dominator_analysis, ptr_inst](ir::Instruction* use) {
         if (use->opcode() == SpvOpLoad) {
           return dominator_analysis->Dominates(store_inst, use);
         } else if (use->opcode() == SpvOpAccessChain) {
@@ -338,8 +338,7 @@ bool CopyPropagateArrays::CanUpdateUses(ir::Instruction* original_ptr_inst,
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 
-  return def_use_mgr->WhileEachUse(original_ptr_inst, [this, original_ptr_inst,
-                                                       type_id, type_mgr,
+  return def_use_mgr->WhileEachUse(original_ptr_inst, [this, type_id, type_mgr,
                                                        const_mgr](
                                                           ir::Instruction* use,
                                                           uint32_t index) {
@@ -431,8 +430,7 @@ void CopyPropagateArrays::UpdateUses(ir::Instruction* original_ptr_inst,
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 
-  def_use_mgr->ForEachUse(original_ptr_inst, [this, original_ptr_inst,
-                                              new_ptr_inst, type_mgr,
+  def_use_mgr->ForEachUse(original_ptr_inst, [this, new_ptr_inst, type_mgr,
                                               const_mgr](ir::Instruction* use,
                                                          uint32_t index) {
     analysis::Pointer* pointer_type = nullptr;
