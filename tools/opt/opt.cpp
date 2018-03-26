@@ -104,7 +104,8 @@ Options (in lexicographical order):
                functions.
   --copy-propagate-arrays
                Does propagation of memory references when an array is a copy of
-               another.
+               another.  It will only propagate an array if the source is never
+               written to, and the only store to the target is the copy.
   --eliminate-common-uniform
                Perform load/load elimination for duplicate uniform values.
                Converts any constant index access chain uniform loads into

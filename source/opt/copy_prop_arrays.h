@@ -55,7 +55,7 @@ class CopyPropagateArrays : public MemPass {
     template <class iterator>
     MemoryObject(ir::Instruction* var_inst, iterator begin, iterator end);
 
-    // Change |this| to now point to the member identify by |access_chain|
+    // Change |this| to now point to the member identified by |access_chain|
     // (starting from the current member).  The elements in |access_chain| are
     // interpreted the same as the indicies in the |OpCompositeExtract|
     // instruction.
@@ -63,7 +63,7 @@ class CopyPropagateArrays : public MemPass {
 
     // Change |this| to now represent the first enclosing object to which it
     // belongs.  (Remove the last element off the access_chain). It is invalid
-    // to call this function if |this| does not represent a member its owner.
+    // to call this function if |this| does not represent a member of its owner.
     void GetParent() {
       assert(IsMember());
       access_chain_.pop_back();
@@ -86,7 +86,8 @@ class CopyPropagateArrays : public MemPass {
     // |OpCompositeExtract| instruction.
     const std::vector<uint32_t>& AccessChain() const { return access_chain_; }
 
-    // Returns the type id for a pointer to the memory object.
+    // Returns the type id of the pointer type that can be used to point to this
+    // memory object.
     uint32_t GetPointerTypeId() const {
       analysis::TypeManager* type_mgr =
           GetVariable()->context()->get_type_mgr();
@@ -102,6 +103,7 @@ class CopyPropagateArrays : public MemPass {
       return member_pointer_type_id;
     }
 
+    // Returns the storage class of the memory object.
     SpvStorageClass GetStorageClass() const {
       analysis::TypeManager* type_mgr =
           GetVariable()->context()->get_type_mgr();

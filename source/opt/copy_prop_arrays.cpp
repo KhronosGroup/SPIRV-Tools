@@ -103,12 +103,12 @@ CopyPropagateArrays::FindSourceObjectIfPossible(ir::Instruction* var_inst) {
     return nullptr;
   }
   return source;
-}  // namespace opt
+}
 
 void CopyPropagateArrays::PropagateObject(ir::Instruction* var_inst,
                                           MemoryObject* source) {
   assert(var_inst->opcode() == SpvOpVariable &&
-         "This funciton propagtages variables.");
+         "This function propagates variables.");
 
   ir::Instruction* insertion_point = var_inst->NextNode();
   while (insertion_point->opcode() == SpvOpVariable) {
@@ -178,6 +178,9 @@ bool CopyPropagateArrays::HasValidReferencesOnly(ir::Instruction* ptr_inst,
       ptr_inst,
       [this, store_inst, dominator_analysis, ptr_inst](ir::Instruction* use) {
         if (use->opcode() == SpvOpLoad) {
+          // TODO: If there are many load in the same BB as |store_inst| the
+          // time to do the multiple traverses can add up.  Consider collecting
+          // those loads and doing a single traversal.
           return dominator_analysis->Dominates(store_inst, use);
         } else if (use->opcode() == SpvOpAccessChain) {
           return HasValidReferencesOnly(use, store_inst);
@@ -185,7 +188,9 @@ bool CopyPropagateArrays::HasValidReferencesOnly(ir::Instruction* ptr_inst,
           return true;
         } else if (use->opcode() == SpvOpStore) {
           // If we are storing to part of the object it is not an candidate.
-          return ptr_inst->opcode() == SpvOpVariable;
+          return ptr_inst->opcode() == SpvOpVariable &&
+                 store_inst->GetSingleWordInOperand(kStorePointerInOperand) ==
+                     ptr_inst->result_id();
         }
         // Some other instruction.  Be conservative.
         return false;
@@ -221,7 +226,7 @@ CopyPropagateArrays::BuildMemoryObjectFromLoad(ir::Instruction* load_inst) {
 
   // Build the access chain for the memory object by collecting the indices used
   // in the OpAccessChain instructions.  If we find a variable index, then
-  // return |nullptr| because we cannot know for use which memory location is
+  // return |nullptr| because we cannot know for sure which memory location is
   // used.
   //
   // It is built in reverse order because the different |OpAccessChain|
@@ -241,7 +246,7 @@ CopyPropagateArrays::BuildMemoryObjectFromLoad(ir::Instruction* load_inst) {
     current_inst = def_use_mgr->GetDef(current_inst->GetSingleWordInOperand(0));
   }
 
-  // If the address in the load is not construction from an |OpVariable|
+  // If the address in the load is not constructed from an |OpVariable|
   // instruction followed by a series of |OpAccessChain| instructions, then
   // return |nullptr| because we cannot identify the owner or access chain
   // exactly.
@@ -364,7 +369,7 @@ bool CopyPropagateArrays::CanUpdateUses(ir::Instruction* original_ptr_inst,
           if (index_const) {
             access_chain.push_back(index_const->AsIntConstant()->GetU32());
           } else {
-            // Variable index means the type is an type where every element
+            // Variable index means the type is a type where every element
             // is the same type.  Use element 0 to get the type.
             access_chain.push_back(0);
           }

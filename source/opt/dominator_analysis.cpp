@@ -65,7 +65,7 @@ bool DominatorAnalysisBase::Dominates(ir::Instruction* a,
   }
   assert(false &&
          "We did not find the load or store in the block they are "
-         "suppose to be in.");
+         "supposed to be in.");
   return false;
 }
 

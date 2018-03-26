@@ -370,6 +370,7 @@ class Struct : public Type {
   bool decoration_empty() const override {
     return decorations_.empty() && element_decorations_.empty();
   }
+
   const std::map<uint32_t, std::vector<std::vector<uint32_t>>>&
   element_decorations() const {
     return element_decorations_;
@@ -389,7 +390,9 @@ class Struct : public Type {
   std::vector<Type*> element_types_;
   // We can attach decorations to struct members and that should not affect the
   // underlying element type. So we need an extra data structure here to keep
-  // track of element type decorations.
+  // track of element type decorations.  They must be stored in an ordered map
+  // because |GetExtraHashWords| will traverse the structure.  It must have a
+  // fixed order in order to hash to the same value every time.
   std::map<uint32_t, std::vector<std::vector<uint32_t>>> element_decorations_;
 };
 
