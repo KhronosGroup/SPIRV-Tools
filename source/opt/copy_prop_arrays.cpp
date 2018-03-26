@@ -343,86 +343,88 @@ bool CopyPropagateArrays::CanUpdateUses(ir::Instruction* original_ptr_inst,
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 
-  return def_use_mgr->WhileEachUse(original_ptr_inst, [this, type_id, type_mgr,
-                                                       const_mgr](
-                                                          ir::Instruction* use,
-                                                          uint32_t index) {
-    analysis::Pointer* pointer_type = nullptr;
-    switch (use->opcode()) {
-      case SpvOpLoad: {
-        pointer_type = type_mgr->GetType(type_id)->AsPointer();
-        uint32_t new_type_id = type_mgr->GetId(pointer_type->pointee_type());
+  analysis::Type* type = type_mgr->GetType(type_id);
+  if (type->AsRuntimeArray()) {
+    return false;
+  }
 
-        if (new_type_id != use->type_id()) {
-          return CanUpdateUses(use, new_type_id);
-        }
-        return true;
-      }
-      case SpvOpAccessChain: {
-        pointer_type = type_mgr->GetType(type_id)->AsPointer();
-        const analysis::Type* pointee_type = pointer_type->pointee_type();
+  if (!type->AsStruct() && !type->AsArray() && !type->AsPointer()) {
+    // If the type is not an aggregate, then the desired type must be the
+    // same as the current type.  No work to do, and we can do that.
+    return true;
+  }
 
-        std::vector<uint32_t> access_chain;
-        for (uint32_t i = 1; i < use->NumInOperands(); ++i) {
-          const analysis::Constant* index_const =
-              const_mgr->FindDeclaredConstant(use->GetSingleWordInOperand(i));
-          if (index_const) {
-            access_chain.push_back(index_const->AsIntConstant()->GetU32());
-          } else {
-            // Variable index means the type is a type where every element
-            // is the same type.  Use element 0 to get the type.
-            access_chain.push_back(0);
+  return def_use_mgr->WhileEachUse(
+      original_ptr_inst,
+      [this, type_mgr, const_mgr, type](ir::Instruction* use, uint32_t) {
+        switch (use->opcode()) {
+          case SpvOpLoad: {
+            analysis::Pointer* pointer_type = type->AsPointer();
+            uint32_t new_type_id =
+                type_mgr->GetId(pointer_type->pointee_type());
+
+            if (new_type_id != use->type_id()) {
+              return CanUpdateUses(use, new_type_id);
+            }
+            return true;
           }
-        }
+          case SpvOpAccessChain: {
+            analysis::Pointer* pointer_type = type->AsPointer();
+            const analysis::Type* pointee_type = pointer_type->pointee_type();
 
-        const analysis::Type* new_pointee_type =
-            type_mgr->GetMemberType(pointee_type, access_chain);
-        opt::analysis::Pointer pointerTy(new_pointee_type,
-                                         pointer_type->storage_class());
-        uint32_t new_pointer_type_id =
-            context()->get_type_mgr()->GetTypeInstruction(&pointerTy);
+            std::vector<uint32_t> access_chain;
+            for (uint32_t i = 1; i < use->NumInOperands(); ++i) {
+              const analysis::Constant* index_const =
+                  const_mgr->FindDeclaredConstant(
+                      use->GetSingleWordInOperand(i));
+              if (index_const) {
+                access_chain.push_back(index_const->AsIntConstant()->GetU32());
+              } else {
+                // Variable index means the type is a type where every element
+                // is the same type.  Use element 0 to get the type.
+                access_chain.push_back(0);
+              }
+            }
 
-        if (new_pointer_type_id != use->type_id()) {
-          return CanUpdateUses(use, new_pointer_type_id);
-        }
-        return true;
-      }
-      case SpvOpCompositeExtract: {
-        std::vector<uint32_t> access_chain;
-        for (uint32_t i = 1; i < use->NumInOperands(); ++i) {
-          const analysis::Constant* index_const =
-              const_mgr->FindDeclaredConstant(use->GetSingleWordInOperand(i));
-          if (index_const) {
-            access_chain.push_back(index_const->AsIntConstant()->GetU32());
-          } else {
-            // Variable index means the type is an type where every element
-            // is the same type.  Use element 0 to get the type.
-            access_chain.push_back(0);
+            const analysis::Type* new_pointee_type =
+                type_mgr->GetMemberType(pointee_type, access_chain);
+            opt::analysis::Pointer pointerTy(new_pointee_type,
+                                             pointer_type->storage_class());
+            uint32_t new_pointer_type_id =
+                context()->get_type_mgr()->GetTypeInstruction(&pointerTy);
+
+            if (new_pointer_type_id != use->type_id()) {
+              return CanUpdateUses(use, new_pointer_type_id);
+            }
+            return true;
           }
+          case SpvOpCompositeExtract: {
+            std::vector<uint32_t> access_chain;
+            for (uint32_t i = 1; i < use->NumInOperands(); ++i) {
+              access_chain.push_back(use->GetSingleWordInOperand(i));
+            }
+
+            const analysis::Type* new_type =
+                type_mgr->GetMemberType(type, access_chain);
+            uint32_t new_type_id = type_mgr->GetTypeInstruction(new_type);
+
+            if (new_type_id != use->type_id()) {
+              return CanUpdateUses(use, new_type_id);
+            }
+            return true;
+          }
+          case SpvOpStore:
+            // Can't handle changing the type of a store.  There are too many
+            // other things that might need to change as well.  Not worth the
+            // effort. Punting for now.
+
+            // TODO (s-perron): This can be handled by expanding the store into
+            // a series of extracts, composite constructs, and a store.
+            return true;
+          default:
+            return false;
         }
-
-        const analysis::Type* type = type_mgr->GetType(type_id);
-        const analysis::Type* new_type =
-            type_mgr->GetMemberType(type, access_chain);
-        uint32_t new_type_id = type_mgr->GetTypeInstruction(new_type);
-
-        if (new_type_id != use->type_id()) {
-          return CanUpdateUses(use, new_type_id);
-        }
-        return true;
-      }
-      case SpvOpStore:
-        // Can't handle changing the type of a store.  There are too many other
-        // things that might need to change as well.  Not worth the effort.
-        // Punting for now.
-
-        // TODO (s-perron): This can be handled by expanding the store into a
-        // series of extracts, composite constructs, and a store.
-        return index != 1;
-      default:
-        return false;
-    }
-  });
+      });
 }
 void CopyPropagateArrays::UpdateUses(ir::Instruction* original_ptr_inst,
                                      ir::Instruction* new_ptr_inst) {
@@ -435,13 +437,20 @@ void CopyPropagateArrays::UpdateUses(ir::Instruction* original_ptr_inst,
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 
-  def_use_mgr->ForEachUse(original_ptr_inst, [this, new_ptr_inst, type_mgr,
-                                              const_mgr](ir::Instruction* use,
-                                                         uint32_t index) {
+  std::vector<std::pair<ir::Instruction*, uint32_t> > uses;
+  def_use_mgr->ForEachUse(original_ptr_inst,
+                          [&uses](ir::Instruction* use, uint32_t index) {
+                            uses.push_back({use, index});
+                          });
+
+  for (auto pair : uses) {
+    ir::Instruction* use = pair.first;
+    uint32_t index = pair.second;
     analysis::Pointer* pointer_type = nullptr;
     switch (use->opcode()) {
       case SpvOpLoad: {
         // Replace the actual use.
+        context()->ForgetUses(use);
         use->SetOperand(index, {new_ptr_inst->result_id()});
 
         // Update the type.
@@ -449,11 +458,15 @@ void CopyPropagateArrays::UpdateUses(ir::Instruction* original_ptr_inst,
         uint32_t new_type_id = type_mgr->GetId(pointer_type->pointee_type());
         if (new_type_id != use->type_id()) {
           use->SetResultType(new_type_id);
+          context()->AnalyzeUses(use);
           UpdateUses(use, use);
+        } else {
+          context()->AnalyzeUses(use);
         }
       } break;
       case SpvOpAccessChain: {
         // Update the actual use.
+        context()->ForgetUses(use);
         use->SetOperand(index, {new_ptr_inst->result_id()});
 
         // Update the result type.
@@ -485,11 +498,15 @@ void CopyPropagateArrays::UpdateUses(ir::Instruction* original_ptr_inst,
 
         if (new_pointer_type_id != use->type_id()) {
           use->SetResultType(new_pointer_type_id);
+          context()->AnalyzeUses(use);
           UpdateUses(use, use);
+        } else {
+          context()->AnalyzeUses(use);
         }
       } break;
       case SpvOpCompositeExtract: {
         // Update the actual use.
+        context()->ForgetUses(use);
         use->SetOperand(index, {new_ptr_inst->result_id()});
 
         std::vector<uint32_t> access_chain;
@@ -504,7 +521,10 @@ void CopyPropagateArrays::UpdateUses(ir::Instruction* original_ptr_inst,
 
         if (new_type_id != use->type_id()) {
           use->SetResultType(new_type_id);
+          context()->AnalyzeUses(use);
           UpdateUses(use, use);
+        } else {
+          context()->AnalyzeUses(use);
         }
       } break;
       case SpvOpStore:
@@ -512,17 +532,99 @@ void CopyPropagateArrays::UpdateUses(ir::Instruction* original_ptr_inst,
         // variable.  We do not want to replace it.  Instead, it will become
         // dead after all of the loads are removed, and ADCE will get rid of it.
         //
-        // If the use is the object being stored, we do not know how to change
-        // the type, so we assume that |CanUpdateUse| would have returned false,
-        // and we should not have called this function.
-        assert(index != 1 && "Have to change the type of the stored object.");
+        // If the use is the object being stored, we will create a copy of the
+        // object turning it into the correct type. The copy is done by
+        // decomposing the object into the base type, which must be the same,
+        // and then rebuilding them.
+        if (index == 1) {
+          ir::Instruction* target_pointer = def_use_mgr->GetDef(
+              use->GetSingleWordInOperand(kStorePointerInOperand));
+          pointer_type =
+              type_mgr->GetType(target_pointer->type_id())->AsPointer();
+          uint32_t copy =
+              GenerateCopy(original_ptr_inst,
+                           type_mgr->GetId(pointer_type->pointee_type()), use);
+
+          context()->ForgetUses(use);
+          use->SetInOperand(index, {copy});
+          context()->AnalyzeUses(use);
+        }
         break;
 
       default:
         assert(false && "Don't know how to rewrite instruction");
         break;
     }
-  });
+  }
+}
+
+uint32_t CopyPropagateArrays::GenerateCopy(
+    ir::Instruction* object_inst, uint32_t new_type_id,
+    ir::Instruction* insertion_position) {
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+  analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
+
+  uint32_t original_type_id = object_inst->type_id();
+  if (original_type_id == new_type_id) {
+    return object_inst->result_id();
+  }
+
+  opt::InstructionBuilder ir_builder(
+      context(), insertion_position,
+      ir::IRContext::kAnalysisInstrToBlockMapping |
+          ir::IRContext::kAnalysisDefUse);
+
+  analysis::Type* original_type = type_mgr->GetType(original_type_id);
+  analysis::Type* new_type = type_mgr->GetType(new_type_id);
+
+  if (const analysis::Array* original_array_type = original_type->AsArray()) {
+    uint32_t original_element_type_id =
+        type_mgr->GetId(original_array_type->element_type());
+
+    analysis::Array* new_array_type = new_type->AsArray();
+    assert(new_array_type != nullptr && "Can't copy an array to a non-array.");
+    uint32_t new_element_type_id =
+        type_mgr->GetId(new_array_type->element_type());
+
+    std::vector<uint32_t> element_ids;
+    const analysis::Constant* length_const =
+        const_mgr->FindDeclaredConstant(original_array_type->LengthId());
+    assert(length_const->AsIntConstant());
+    uint32_t array_length = length_const->AsIntConstant()->GetU32();
+    for (uint32_t i = 0; i < array_length; i++) {
+      ir::Instruction* extract = ir_builder.AddCompositeExtract(
+          original_element_type_id, object_inst->result_id(), {i});
+      element_ids.push_back(
+          GenerateCopy(extract, new_element_type_id, insertion_position));
+    }
+
+    return ir_builder.AddCompositeConstruct(new_type_id, element_ids)
+        ->result_id();
+  } else if (const analysis::Struct* original_struct_type =
+                 original_type->AsStruct()) {
+    analysis::Struct* new_struct_type = new_type->AsStruct();
+
+    const std::vector<analysis::Type*>& original_types =
+        original_struct_type->element_types();
+    const std::vector<analysis::Type*>& new_types =
+        new_struct_type->element_types();
+    std::vector<uint32_t> element_ids;
+    for (uint32_t i = 0; i < original_types.size(); i++) {
+      ir::Instruction* extract = ir_builder.AddCompositeExtract(
+          type_mgr->GetId(original_types[i]), object_inst->result_id(), {i});
+      element_ids.push_back(GenerateCopy(extract, type_mgr->GetId(new_types[i]),
+                                         insertion_position));
+    }
+    return ir_builder.AddCompositeConstruct(new_type_id, element_ids)
+        ->result_id();
+  } else {
+    // If we do not have an aggregate type, then we have a problem.  Either we
+    // found multiple instances of the same type, or we are copying to an
+    // incompatible type.  Either way the code is illegal.
+    assert(false &&
+           "Don't know how to copy this type.  Code is likely illegal.");
+  }
+  return 0;
 }
 
 void CopyPropagateArrays::MemoryObject::GetMember(
