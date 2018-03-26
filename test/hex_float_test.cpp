@@ -554,8 +554,10 @@ TEST(HexFloatOperationTest, UnbiasedExponent) {
   EXPECT_EQ(-32, unbiased_exponent(ldexp(1.0f, -32)));
   EXPECT_EQ(42, unbiased_exponent(ldexp(1.0f, 42)));
   EXPECT_EQ(125, unbiased_exponent(ldexp(1.0f, 125)));
-  // Saturates to 128
-  EXPECT_EQ(128, unbiased_exponent(ldexp(1.0f, 256)));
+
+  EXPECT_EQ(128, spvutils::HexFloat<spvutils::FloatProxy<float>>(
+                     std::numeric_limits<float>::infinity())
+                     .getUnbiasedNormalizedExponent());
 
   EXPECT_EQ(-100, unbiased_exponent(ldexp(1.0f, -100)));
   EXPECT_EQ(-127, unbiased_exponent(ldexp(1.0f, -127)));  // First denorm
