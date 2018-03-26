@@ -185,6 +185,12 @@ class CopyPropagateArrays : public MemPass {
   // Return true if |UpdateUses| is able to change all of the uses of
   // |original_ptr_inst| to |type_id| and still have valid code.
   bool CanUpdateUses(ir::Instruction* original_ptr_inst, uint32_t type_id);
+
+  // Returns the id whose value is the same as |object_to_copy| except its type
+  // is |new_type_id|.  Any instructions need to generate this value will be
+  // inserted before |insertion_position|.
+  uint32_t GenerateCopy(ir::Instruction* object_to_copy, uint32_t new_type_id,
+                        ir::Instruction* insertion_position);
 };
 
 }  // namespace opt
