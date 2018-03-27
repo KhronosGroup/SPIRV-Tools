@@ -228,4 +228,50 @@ TEST_P(ValidateAMDShaderBallotCapabilities, ExpectFailure) {
 INSTANTIATE_TEST_CASE_P(ExpectFailure, ValidateAMDShaderBallotCapabilities,
                         ValuesIn(AMDShaderBallotGroupInstructions()));
 
+struct ExtIntoCoreCase {
+  const char* cap;
+  const char* builtin;
+};
+
+using ValidateExtIntoCore1p3 = spvtest::ValidateBase<ExtIntoCoreCase>;
+
+// Make sure that we don't panic about missing extensions for using
+// functionalities that introduced in extensions but became core SPIR-V 1.3.
+
+TEST_P(ValidateExtIntoCore1p3, ExpectSuccess) {
+  const string code = string(R"(
+               OpCapability Shader
+               OpCapability )") +
+                      GetParam().cap + R"(
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %builtin
+               OpDecorate %builtin BuiltIn )" +
+                      GetParam().builtin + R"(
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+    %builtin = OpVariable %_ptr_Input_int Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %18 = OpLoad %int %builtin
+               OpReturn
+               OpFunctionEnd)";
+
+  CompileSuccessfully(code.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateExtIntoCore1p3,
+                        ValuesIn(std::vector<ExtIntoCoreCase>{
+                            // SPV_KHR_shader_draw_parameters
+                            {"DrawParameters", "BaseVertex"},
+                            {"DrawParameters", "BaseInstance"},
+                            {"DrawParameters", "DrawIndex"},
+                            // SPV_KHR_multiview
+                            {"MultiView", "ViewIndex"},
+                            // SPV_KHR_device_group
+                            {"DeviceGroup", "DeviceIndex"},
+                        }));
+
 }  // anonymous namespace

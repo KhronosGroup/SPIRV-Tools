@@ -163,10 +163,15 @@ ExtensionSet RequiredExtensions(const ValidationState_t& state,
   if (state.grammar().lookupOperand(type, operand, &operand_desc) ==
       SPV_SUCCESS) {
     assert(operand_desc);
+    // If this operand is incorporated into core SPIR-V before or in the current
+    // target environment, we don't require extensions anymore.
+    if (static_cast<uint32_t>(state.context()->target_env) >=
+        operand_desc->minVersion)
+      return {};
     return {operand_desc->numExtensions, operand_desc->extensions};
   }
 
-  return ExtensionSet();
+  return {};
 }
 
 }  // namespace
