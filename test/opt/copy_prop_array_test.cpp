@@ -74,7 +74,7 @@ OpDecorate %MyCBuffer Binding 0
 ; CHECK: OpFunction
 ; CHECK: OpLabel
 ; CHECK: OpVariable
-; CHECK: [[new_address:%\w+]] = OpAccessChain %_ptr_Uniform__arr_v4float_uint_8 %MyCBuffer %uint_0
+; CHECK: [[new_address:%\w+]] = OpAccessChain %_ptr_Uniform__arr_v4float_uint_8 %MyCBuffer %int_0
 %main = OpFunction %void None %13
 %22 = OpLabel
 %23 = OpVariable %_ptr_Function__arr_v4float_uint_8_0 Function
@@ -156,7 +156,8 @@ OpDecorate %MyCBuffer Binding 0
 ; CHECK: OpLabel
 ; CHECK: OpVariable
 ; CHECK: OpVariable
-; CHECK: [[new_address:%\w+]] = OpAccessChain %_ptr_Uniform__arr__arr_v4float_uint_2_uint_2 %MyCBuffer %uint_0
+; CHECK: OpAccessChain
+; CHECK: [[new_address:%\w+]] = OpAccessChain %_ptr_Uniform__arr__arr_v4float_uint_2_uint_2 %MyCBuffer %int_0
 %main = OpFunction %void None %14
 %25 = OpLabel
 %26 = OpVariable %_ptr_Function__arr_v4float_uint_2_0 Function
@@ -174,13 +175,14 @@ OpDecorate %MyCBuffer Binding 0
 %38 = OpCompositeConstruct %_arr_v4float_uint_2_0 %36 %37
 %39 = OpCompositeConstruct %_arr__arr_v4float_uint_2_0_uint_2 %34 %38
 ; CHECK: OpStore
-; CHECK: [[ac1:%\w+]] = OpAccessChain %_ptr_Uniform__arr_v4float_uint_2 [[new_address]] %28
-; CHECK: [[ac2:%\w+]] = OpAccessChain %_ptr_Uniform_v4float [[ac1]] %28
-; CHECK: OpLoad %v4float [[ac2]]
 OpStore %27 %39
 %40 = OpAccessChain %_ptr_Function__arr_v4float_uint_2_0 %27 %28
 %42 = OpAccessChain %_ptr_Function_v4float %40 %28
 %43 = OpLoad %v4float %42
+; CHECK: [[ac1:%\w+]] = OpAccessChain %_ptr_Uniform__arr_v4float_uint_2 [[new_address]] %28
+; CHECK: [[ac2:%\w+]] = OpAccessChain %_ptr_Uniform_v4float [[ac1]] %28
+; CHECK: [[load:%\w+]] = OpLoad %v4float [[ac2]]
+; CHECK: OpStore %out_var_SV_Target [[load]]
 OpStore %out_var_SV_Target %43
 OpReturn
 OpFunctionEnd

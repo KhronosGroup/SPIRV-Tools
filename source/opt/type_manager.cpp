@@ -676,6 +676,9 @@ const Type* TypeManager::GetMemberType(
       parent_type = struct_type->element_types()[element_index];
     } else if (const analysis::Array* array_type = parent_type->AsArray()) {
       parent_type = array_type->element_type();
+    } else if (const analysis::RuntimeArray* runtime_array_type =
+                   parent_type->AsRuntimeArray()) {
+      parent_type = runtime_array_type->element_type();
     } else if (const analysis::Vector* vector_type = parent_type->AsVector()) {
       parent_type = vector_type->element_type();
     } else if (const analysis::Matrix* matrix_type = parent_type->AsMatrix()) {
