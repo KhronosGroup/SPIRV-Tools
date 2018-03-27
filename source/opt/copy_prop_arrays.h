@@ -40,6 +40,15 @@ class CopyPropagateArrays : public MemPass {
   const char* name() const override { return "copy-propagate-arrays"; }
   Status Process(ir::IRContext*) override;
 
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse | ir::IRContext::kAnalysisCFG |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
+           ir::IRContext::kAnalysisLoopAnalysis |
+           ir::IRContext::kAnalysisDecorations |
+           ir::IRContext::kAnalysisDominatorAnalysis |
+           ir::IRContext::kAnalysisNameMap;
+  }
+
  private:
   // The class used to identify a particular memory object.  This memory object
   // will be owned by a particular variable, meaning that the memory is part of
