@@ -73,6 +73,10 @@ class ValidationState_t {
 
     // Permit group oerations Reduce, InclusiveScan, ExclusiveScan
     bool group_ops_reduce_and_scans = false;
+
+    // Prior to SPIR-V 1.3, OpControlBarrier is only usable in Kernel,
+    // GLCompute, and TessellationControl entry points.
+    bool control_barrier_usable_in_any_execution_model = false;
   };
 
   ValidationState_t(const spv_const_context context,
@@ -109,6 +113,10 @@ class ValidationState_t {
 
   /// Mutator function for ID bound.
   void setIdBound(uint32_t bound);
+
+  /// Records the SPIR-V version from the header and updates related
+  /// state.
+  void RegisterSpirvVersion(uint32_t version);
 
   /// Like getIdName but does not display the id if the \p id has a name
   std::string getIdOrName(uint32_t id) const;
@@ -507,6 +515,8 @@ class ValidationState_t {
 
   AssemblyGrammar grammar_;
 
+  // The SPIR-V version word from the header.
+  uint32_t spirv_version_;
   SpvAddressingModel addressing_model_;
   SpvMemoryModel memory_model_;
 

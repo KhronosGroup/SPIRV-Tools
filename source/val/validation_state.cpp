@@ -447,6 +447,13 @@ uint32_t ValidationState_t::getIdBound() const { return id_bound_; }
 
 void ValidationState_t::setIdBound(const uint32_t bound) { id_bound_ = bound; }
 
+void ValidationState_t::RegisterSpirvVersion(uint32_t version) {
+  spirv_version_ = version;
+  if (spirv_version_ >= 0x10300) {
+    features_.control_barrier_usable_in_any_execution_model = true;
+  }
+}
+
 bool ValidationState_t::RegisterUniqueTypeDeclaration(
     const spv_parsed_instruction_t& inst) {
   std::vector<uint32_t> key;

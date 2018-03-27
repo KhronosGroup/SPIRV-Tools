@@ -172,20 +172,23 @@ spv_result_t BarriersPass(ValidationState_t& _,
 
   switch (opcode) {
     case SpvOpControlBarrier: {
-      _.current_function().RegisterExecutionModelLimitation(
-          [](SpvExecutionModel model, std::string* message) {
-            if (model != SpvExecutionModelTessellationControl &&
-                model != SpvExecutionModelGLCompute &&
-                model != SpvExecutionModelKernel) {
-              if (message) {
-                *message =
-                    "OpControlBarrier requires one of the following Execution "
-                    "Models: TessellationControl, GLCompute or Kernel";
+      if (!_.features().control_barrier_usable_in_any_execution_model) {
+        _.current_function().RegisterExecutionModelLimitation(
+            [](SpvExecutionModel model, std::string* message) {
+              if (model != SpvExecutionModelTessellationControl &&
+                  model != SpvExecutionModelGLCompute &&
+                  model != SpvExecutionModelKernel) {
+                if (message) {
+                  *message =
+                      "OpControlBarrier requires one of the following "
+                      "Execution "
+                      "Models: TessellationControl, GLCompute or Kernel";
+                }
+                return false;
               }
-              return false;
-            }
-            return true;
-          });
+              return true;
+            });
+      }
 
       const uint32_t execution_scope = inst->words[1];
       const uint32_t memory_scope = inst->words[2];
