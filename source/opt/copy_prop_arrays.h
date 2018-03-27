@@ -59,14 +59,14 @@ class CopyPropagateArrays : public MemPass {
     // Construction a memory object that is owned by |var_inst|.  The iterator
     // |begin| and |end| traverse a container of integers that identify which
     // member of |var_inst| this memory object will represent.  These integers
-    // are interpreted the same way they would be in an |OpCompositeExtract|
+    // are interpreted the same way they would be in an |OpAccessChain|
     // instruction.
     template <class iterator>
     MemoryObject(ir::Instruction* var_inst, iterator begin, iterator end);
 
     // Change |this| to now point to the member identified by |access_chain|
     // (starting from the current member).  The elements in |access_chain| are
-    // interpreted the same as the indicies in the |OpCompositeExtract|
+    // interpreted the same as the indices in the |OpAccessChain|
     // instruction.
     void GetMember(const std::vector<uint32_t>& access_chain);
 
@@ -91,8 +91,8 @@ class CopyPropagateArrays : public MemPass {
 
     // Returns a vector of integers that can be used to access the specific
     // member that |this| represents starting from the owning variable.  These
-    // values are to be interpreted the same way the indicies are in an
-    // |OpCompositeExtract| instruction.
+    // values are to be interpreted the same way the indices are in an
+    // |OpAccessChain| instruction.
     const std::vector<uint32_t>& AccessChain() const { return access_chain_; }
 
     // Returns the type id of the pointer type that can be used to point to this
@@ -104,7 +104,7 @@ class CopyPropagateArrays : public MemPass {
           type_mgr->GetType(GetVariable()->type_id())->AsPointer();
       const analysis::Type* var_type = pointer_type->pointee_type();
       const analysis::Type* member_type =
-          type_mgr->GetMemberType(var_type, AccessChain());
+          type_mgr->GetMemberType(var_type, GetAccessIds());
       uint32_t member_type_id = type_mgr->GetId(member_type);
       assert(member_type != 0);
       uint32_t member_pointer_type_id = type_mgr->FindPointerToType(
@@ -127,19 +127,24 @@ class CopyPropagateArrays : public MemPass {
 
     // The access chain to reach the particular member the memory object
     // represents.  It should be interpreted the same way the indices in an
-    // |OpCompositeExtract| are interpreted.
+    // |OpAccessChain| are interpreted.
     std::vector<uint32_t> access_chain_;
+    std::vector<uint32_t> GetAccessIds() const;
   };
 
-  // Returns a memory object, if one exists, that can be used in place of
+  // Returns the memory object being stored to |var_inst| in the store
+  // instruction |store_inst|, if one exists, that can be used in place of
   // |var_inst| in all of the loads of |var_inst|.  This code is conservative
   // and only identifies very simple cases.  If no such memory object can be
   // found, the return value is |nullptr|.
-  std::unique_ptr<MemoryObject> FindSourceObjectIfPossible(
-      ir::Instruction* var_inst);
+  std::unique_ptr<CopyPropagateArrays::MemoryObject> FindSourceObjectIfPossible(
+      ir::Instruction* var_inst, ir::Instruction* store_inst);
 
   // Replaces all loads of |var_inst| with a load from |source| instead.
-  void PropagateObject(ir::Instruction* var_inst, MemoryObject* source);
+  // |insertion_pos| is a position where it is possible to construct the
+  // address of |source| and also dominates all of the loads of |var_inst|.
+  void PropagateObject(ir::Instruction* var_inst, MemoryObject* source,
+                       ir::Instruction* insertion_pos);
 
   // Returns true if all of the references to |ptr_inst| can be rewritten and
   // are dominated by |store_inst|.
@@ -200,6 +205,11 @@ class CopyPropagateArrays : public MemPass {
   // inserted before |insertion_position|.
   uint32_t GenerateCopy(ir::Instruction* object_to_copy, uint32_t new_type_id,
                         ir::Instruction* insertion_position);
+
+  // Returns a store to |var_inst| that writes to the entire variable, and is
+  // the only store that does so.  Note it does not look through OpAccessChain
+  // instruction, so partial stores are not considered.
+  ir::Instruction* FindStoreInstruction(const ir::Instruction* var_inst) const;
 };
 
 }  // namespace opt
