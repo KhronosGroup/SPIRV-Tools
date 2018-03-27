@@ -344,8 +344,7 @@ class BuiltInsValidator {
   // instruction.
   void Update(const Instruction& inst);
 
-  // Traverses call tree and computes function_to_entry_points_,
-  // entry_point_to_execution_model_ and entry_point_to_execution_mode_.
+  // Traverses call tree and computes function_to_entry_points_.
   void ComputeFunctionToEntryPointMapping();
 
   const ValidationState_t& _;
@@ -366,19 +365,12 @@ class BuiltInsValidator {
   const std::vector<uint32_t> no_entry_points;
   const std::vector<uint32_t>* entry_points_ = &no_entry_points;
 
-  // Execution models with which the current function can be called.
-  std::set<SpvExecutionModel> execution_models_;
-
   // Mapping function -> array of entry points inside this
   // module which can (indirectly) call the function.
   std::unordered_map<uint32_t, std::vector<uint32_t>> function_to_entry_points_;
 
-  // Mapping entry point -> execution model.
-  std::unordered_map<uint32_t, SpvExecutionModel>
-      entry_point_to_execution_model_;
-
-  // Mapping entry point -> execution mode.
-  std::unordered_map<uint32_t, SpvExecutionMode> entry_point_to_execution_mode_;
+  // Execution models with which the current function can be called.
+  std::set<SpvExecutionModel> execution_models_;
 };
 
 void BuiltInsValidator::Update(const Instruction& inst) {
@@ -393,9 +385,12 @@ void BuiltInsValidator::Update(const Instruction& inst) {
       entry_points_ = &no_entry_points;
     } else {
       entry_points_ = &it->second;
+      // Collect execution models from all entry points from which the current
+      // function can be called.
       for (const uint32_t entry_point : *entry_points_) {
-        execution_models_.insert(
-            entry_point_to_execution_model_.at(entry_point));
+        if (const auto* models = _.GetExecutionModels(entry_point)) {
+          execution_models_.insert(models->begin(), models->end());
+        }
       }
     }
   }
@@ -410,39 +405,22 @@ void BuiltInsValidator::Update(const Instruction& inst) {
 }
 
 void BuiltInsValidator::ComputeFunctionToEntryPointMapping() {
-  for (const Instruction& inst : _.ordered_instructions()) {
-    const SpvOp opcode = inst.opcode();
-    if (opcode == SpvOpFunction) {
-      // We are looking for opcodes which can only be found at the top of
-      // the module.
-      return;
-    }
+  // TODO: Move this into validation_state.cpp.
+  for (const uint32_t entry_point : _.entry_points()) {
+    std::stack<uint32_t> call_stack;
+    std::set<uint32_t> visited;
+    call_stack.push(entry_point);
+    while (!call_stack.empty()) {
+      const uint32_t called_func_id = call_stack.top();
+      call_stack.pop();
+      if (!visited.insert(called_func_id).second) continue;
 
-    if (opcode == SpvOpExecutionMode) {
-      entry_point_to_execution_mode_[inst.word(1)] =
-          SpvExecutionMode(inst.word(2));
-    }
+      function_to_entry_points_[called_func_id].push_back(entry_point);
 
-    if (opcode == SpvOpEntryPoint) {
-      const uint32_t entry_point = inst.word(2);
-      entry_point_to_execution_model_[entry_point] =
-          SpvExecutionModel(inst.word(1));
-
-      std::stack<uint32_t> call_stack;
-      std::set<uint32_t> visited;
-      call_stack.push(entry_point);
-      while (!call_stack.empty()) {
-        const uint32_t called_func_id = call_stack.top();
-        call_stack.pop();
-        if (!visited.insert(called_func_id).second) continue;
-
-        function_to_entry_points_[called_func_id].push_back(entry_point);
-
-        const Function* called_func = _.function(called_func_id);
-        assert(called_func);
-        for (uint32_t new_call : called_func->function_call_targets()) {
-          call_stack.push(new_call);
-        }
+      const Function* called_func = _.function(called_func_id);
+      assert(called_func);
+      for (const uint32_t new_call : called_func->function_call_targets()) {
+        call_stack.push(new_call);
       }
     }
   }
@@ -946,6 +924,19 @@ spv_result_t BuiltInsValidator::ValidateFragDepthAtReference(
                   "Fragment execution model. "
                << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                    referenced_from_inst, execution_model);
+      }
+    }
+
+    for (const uint32_t entry_point : *entry_points_) {
+      // Every entry point from which this function is called needs to have
+      // Execution Mode DepthReplacing.
+      const auto* modes = _.GetExecutionModes(entry_point);
+      if (!modes || !modes->count(SpvExecutionModeDepthReplacing)) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+               << "Vulkan spec requires DepthReplacing execution mode to be "
+                  "declared when using BuiltIn FragDepth. "
+               << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
+                                   referenced_from_inst);
       }
     }
   }
