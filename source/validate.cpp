@@ -78,12 +78,11 @@ spv_result_t setHeader(void* user_data, spv_endianness_t endian, uint32_t magic,
   // Record the ID bound so that the validator can ensure no ID is out of bound.
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
   _.setIdBound(id_bound);
+  _.RegisterSpirvVersion(version);
 
   (void)endian;
   (void)magic;
-  (void)version;
   (void)generator;
-  (void)id_bound;
   (void)reserved;
   return SPV_SUCCESS;
 }
