@@ -155,10 +155,12 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
-  /// Registers the given <id> as an Entry Point.
-  void RegisterEntryPointId(const uint32_t id) {
+  /// Registers the given <id> as an Entry Point with |execution_model|.
+  void RegisterEntryPointId(const uint32_t id,
+                            SpvExecutionModel execution_model) {
     entry_points_.push_back(id);
-    entry_point_interfaces_.insert(std::make_pair(id, std::vector<uint32_t>()));
+    entry_point_interfaces_.emplace(id, std::vector<uint32_t>());
+    entry_point_to_execution_models_[id].insert(execution_model);
   }
 
   /// Returns a list of entry point function ids
@@ -170,11 +172,40 @@ class ValidationState_t {
     entry_point_interfaces_[entry_point].push_back(interface);
   }
 
+  /// Registers execution mode for the given entry point.
+  void RegisterExecutionModeForEntryPoint(uint32_t entry_point,
+                                          SpvExecutionMode execution_mode) {
+    entry_point_to_execution_modes_[entry_point].insert(execution_mode);
+  }
+
   /// Returns the interfaces of a given entry point. If the given id is not a
   /// valid Entry Point id, std::out_of_range exception is thrown.
   const std::vector<uint32_t>& entry_point_interfaces(
       uint32_t entry_point) const {
     return entry_point_interfaces_.at(entry_point);
+  }
+
+  /// Returns Execution Models for the given Entry Point.
+  /// Returns nullptr if none found (would trigger assertion).
+  const std::set<SpvExecutionModel>* GetExecutionModels(
+      uint32_t entry_point) const {
+    const auto it = entry_point_to_execution_models_.find(entry_point);
+    if (it == entry_point_to_execution_models_.end()) {
+      assert(0);
+      return nullptr;
+    }
+    return &it->second;
+  }
+
+  /// Returns Execution Modes for the given Entry Point.
+  /// Returns nullptr if none found.
+  const std::set<SpvExecutionMode>* GetExecutionModes(
+      uint32_t entry_point) const {
+    const auto it = entry_point_to_execution_modes_.find(entry_point);
+    if (it == entry_point_to_execution_modes_.end()) {
+      return nullptr;
+    }
+    return &it->second;
   }
 
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
@@ -519,6 +550,16 @@ class ValidationState_t {
 
   /// Maps function ids to function stat objects.
   std::unordered_map<uint32_t, Function*> id_to_function_;
+
+  /// Mapping entry point -> execution models. It is presumed that the same
+  /// function could theoretically be used as 'main' by multiple OpEntryPoint
+  /// instructions.
+  std::unordered_map<uint32_t, std::set<SpvExecutionModel>>
+      entry_point_to_execution_models_;
+
+  /// Mapping entry point -> execution modes.
+  std::unordered_map<uint32_t, std::set<SpvExecutionMode>>
+      entry_point_to_execution_modes_;
 };
 
 }  // namespace libspirv
