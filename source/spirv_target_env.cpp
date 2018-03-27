@@ -39,9 +39,9 @@ const char* spvTargetEnvDescription(spv_target_env env) {
     case SPV_ENV_OPENCL_EMBEDDED_2_1:
       return "SPIR-V 1.0 (under OpenCL 2.1 Embedded Profile semantics)";
     case SPV_ENV_OPENCL_2_2:
-      return "SPIR-V 1.1 (under OpenCL 2.2 Full Profile semantics)";
+      return "SPIR-V 1.2 (under OpenCL 2.2 Full Profile semantics)";
     case SPV_ENV_OPENCL_EMBEDDED_2_2:
-      return "SPIR-V 1.1 (under OpenCL 2.2 Embedded Profile semantics)";
+      return "SPIR-V 1.2 (under OpenCL 2.2 Embedded Profile semantics)";
     case SPV_ENV_OPENGL_4_0:
       return "SPIR-V 1.0 (under OpenCL 4.0 semantics)";
     case SPV_ENV_OPENGL_4_1:

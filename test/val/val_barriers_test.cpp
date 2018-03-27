@@ -202,17 +202,28 @@ OpControlBarrier %workgroup %workgroup %acquire_release_uniform_workgroup
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
-TEST_F(ValidateBarriers, OpControlBarrierExecutionModelFragment) {
+TEST_F(ValidateBarriers, OpControlBarrierExecutionModelFragmentSpirv12) {
   const std::string body = R"(
 OpControlBarrier %device %device %none
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment"));
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment"),
+                      SPV_ENV_UNIVERSAL_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_2));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpControlBarrier requires one of the following Execution "
                 "Models: TessellationControl, GLCompute or Kernel"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierExecutionModelFragmentSpirv13) {
+  const std::string body = R"(
+OpControlBarrier %device %device %none
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment"),
+                      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierFloatExecutionScope) {
