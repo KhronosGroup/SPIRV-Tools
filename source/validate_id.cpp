@@ -1786,11 +1786,76 @@ bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
   return true;
 }
 
-#if 0
 template <>
-bool idUsage::isValid<OpPhi>(const spv_instruction_t *inst,
-                             const spv_opcode_desc opcodeEntry) {}
-#endif
+bool idUsage::isValid<SpvOpPhi>(const spv_instruction_t* inst,
+                                const spv_opcode_desc /*opcodeEntry*/) {
+  auto thisInst = module_.FindDef(inst->words[2]);
+  SpvOp typeOp = module_.GetIdOpcode(thisInst->type_id());
+  if (!spvOpcodeGeneratesType(typeOp)) {
+    DIAG(0) << "OpPhi's type <id> " << module_.getIdName(thisInst->type_id())
+            << " is not a type instruction.";
+    return false;
+  }
+
+  auto block = thisInst->block();
+  size_t numInOps = inst->words.size() - 3;
+  if (numInOps % 2 != 0) {
+    DIAG(0) << "OpPhi does not have an equal number of incoming values and "
+               "basic blocks.";
+    return false;
+  }
+
+  // Create a uniqued vector of predecessor ids for comparison against
+  // incoming values. OpBranchConditional %cond %label %label produces two
+  // predecessors in the CFG.
+  std::vector<uint32_t> predIds;
+  std::transform(block->predecessors()->begin(), block->predecessors()->end(),
+                 std::back_inserter(predIds),
+                 [](const libspirv::BasicBlock* b) { return b->id(); });
+  std::sort(predIds.begin(), predIds.end());
+  predIds.erase(std::unique(predIds.begin(), predIds.end()), predIds.end());
+
+  size_t numEdges = numInOps / 2;
+  if (numEdges != predIds.size()) {
+    DIAG(0) << "OpPhi's number of incoming blocks (" << numEdges
+            << ") does not match block's predecessor count ("
+            << block->predecessors()->size() << ").";
+    return false;
+  }
+
+  for (size_t i = 3; i < inst->words.size(); ++i) {
+    auto incId = inst->words[i];
+    if (i % 2 == 1) {
+      // Incoming value type must match the phi result type.
+      auto incTypeId = module_.GetTypeId(incId);
+      if (thisInst->type_id() != incTypeId) {
+        DIAG(i) << "OpPhi's result type <id> "
+                << module_.getIdName(thisInst->type_id())
+                << " does not match incoming value <id> "
+                << module_.getIdName(incId) << " type <id> "
+                << module_.getIdName(incTypeId) << ".";
+        return false;
+      }
+    } else {
+      if (module_.GetIdOpcode(incId) != SpvOpLabel) {
+        DIAG(i) << "OpPhi's incoming basic block <id> "
+                << module_.getIdName(incId) << " is not an OpLabel.";
+        return false;
+      }
+
+      // Incoming basic block must be an immediate predecessor of the phi's
+      // block.
+      if (!std::binary_search(predIds.begin(), predIds.end(), incId)) {
+        DIAG(i) << "OpPhi's incoming basic block <id> "
+                << module_.getIdName(incId) << " is not a predecessor of <id> "
+                << module_.getIdName(block->id()) << ".";
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
 
 #if 0
 template <>
@@ -2357,7 +2422,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     // Bitwise opcodes are validated in validate_bitwise.cpp.
     // Logical opcodes are validated in validate_logicals.cpp.
     // Derivative opcodes are validated in validate_derivatives.cpp.
-    TODO(OpPhi)
+    CASE(OpPhi)
     TODO(OpLoopMerge)
     TODO(OpSelectionMerge)
     TODO(OpBranch)
@@ -2606,7 +2671,8 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
       const Instruction* variable = _.FindDef(phi->word(i));
       const BasicBlock* parent =
           phi->function()->GetBlock(phi->word(i + 1)).first;
-      if (variable->block() && !variable->block()->dominates(*parent)) {
+      if (variable->block() && parent->reachable() &&
+          !variable->block()->dominates(*parent)) {
         return _.diag(SPV_ERROR_INVALID_ID)
                << "In OpPhi instruction " << _.getIdName(phi->id()) << ", ID "
                << _.getIdName(variable->id())
