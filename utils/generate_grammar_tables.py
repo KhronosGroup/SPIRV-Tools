@@ -81,10 +81,10 @@ def convert_min_required_version(version):
     """Converts the minimal required SPIR-V version encoded in the
     grammar to the symbol in SPIRV-Tools"""
     if version is None:
-        return 'SPV_ENV_UNIVERSAL_1_0'
+        return 'SPV_SPIRV_VERSION_WORD(1, 0)'
     if version == 'None':
         return '0xffffffffu'
-    return 'SPV_ENV_UNIVERSAL_{}'.format(version.replace('.', '_'))
+    return 'SPV_SPIRV_VERSION_WORD({})'.format(version.replace('.', ','))
 
 
 def compose_capability_list(caps):

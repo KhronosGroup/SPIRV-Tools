@@ -29,6 +29,7 @@
 #include "extensions.h"
 #include "opcode.h"
 #include "operand.h"
+#include "spirv_constant.h"
 #include "spirv_definition.h"
 #include "spirv_target_env.h"
 #include "spirv_validator_options.h"
@@ -254,7 +255,7 @@ spv_result_t VersionCheck(ValidationState_t& _,
              << spvOpcodeString(opcode) << " is reserved for future use.";
     }
 
-    if (static_cast<uint32_t>(_.grammar().target_env()) < min_version) {
+    if (spvVersionForTargetEnv(_.grammar().target_env()) < min_version) {
       return _.diag(SPV_ERROR_WRONG_VERSION)
              << spvOpcodeString(opcode) << " requires "
              << spvTargetEnvDescription(
