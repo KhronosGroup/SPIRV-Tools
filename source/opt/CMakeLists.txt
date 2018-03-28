@@ -77,6 +77,8 @@ add_library(SPIRV-Tools-opt
   reflect.h
   remove_duplicates_pass.h
   replace_invalid_opc.h
+  scalar_analysis.h
+  scalar_analysis_nodes.h
   scalar_replacement_pass.h
   set_spec_constant_default_value_pass.h
   simplification_pass.h
@@ -151,6 +153,8 @@ add_library(SPIRV-Tools-opt
   redundancy_elimination.cpp
   remove_duplicates_pass.cpp
   replace_invalid_opc.cpp
+  scalar_analysis.cpp
+  scalar_analysis_simplification.cpp
   scalar_replacement_pass.cpp
   set_spec_constant_default_value_pass.cpp
   simplification_pass.cpp
