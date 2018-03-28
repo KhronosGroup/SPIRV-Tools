@@ -153,6 +153,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateSimplificationPass())
       .RegisterPass(CreateIfConversionPass())
+      .RegisterPass(CreateCopyPropagateArraysPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateRedundancyEliminationPass())
