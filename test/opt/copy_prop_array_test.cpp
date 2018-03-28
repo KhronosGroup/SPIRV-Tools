@@ -74,7 +74,11 @@ OpDecorate %MyCBuffer Binding 0
 ; CHECK: OpFunction
 ; CHECK: OpLabel
 ; CHECK: OpVariable
+; CHECK: OpAccessChain
 ; CHECK: [[new_address:%\w+]] = OpAccessChain %_ptr_Uniform__arr_v4float_uint_8 %MyCBuffer %int_0
+; CHECK: [[element_ptr:%\w+]] = OpAccessChain %_ptr_Uniform_v4float [[new_address]] %24
+; CHECK: [[load:%\w+]] = OpLoad %v4float [[element_ptr]]
+; CHECK: OpStore %out_var_SV_Target [[load]]
 %main = OpFunction %void None %13
 %22 = OpLabel
 %23 = OpVariable %_ptr_Function__arr_v4float_uint_8_0 Function
@@ -92,7 +96,6 @@ OpDecorate %MyCBuffer Binding 0
 %35 = OpCompositeConstruct %_arr_v4float_uint_8_0 %27 %28 %29 %30 %31 %32 %33 %34
 OpStore %23 %35
 %36 = OpAccessChain %_ptr_Function_v4float %23 %24
-; CHECK %37 = OpLoad %v4float [[new_address]]
 %37 = OpLoad %v4float %36
 OpStore %out_var_SV_Target %37
 OpReturn
@@ -365,6 +368,93 @@ TEST_F(CopyPropArrayPassTest, DecomposeObjectForStructStore) {
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
   SinglePassRunAndMatch<opt::CopyPropagateArrays>(text, false);
+}
+
+TEST_F(CopyPropArrayPassTest, CopyViaInserts) {
+  const std::string before =
+      R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_INDEX %out_var_SV_Target
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 600
+OpName %type_MyCBuffer "type.MyCBuffer"
+OpMemberName %type_MyCBuffer 0 "Data"
+OpName %MyCBuffer "MyCBuffer"
+OpName %main "main"
+OpName %in_var_INDEX "in.var.INDEX"
+OpName %out_var_SV_Target "out.var.SV_Target"
+OpDecorate %_arr_v4float_uint_8 ArrayStride 16
+OpMemberDecorate %type_MyCBuffer 0 Offset 0
+OpDecorate %type_MyCBuffer Block
+OpDecorate %in_var_INDEX Flat
+OpDecorate %in_var_INDEX Location 0
+OpDecorate %out_var_SV_Target Location 0
+OpDecorate %MyCBuffer DescriptorSet 0
+OpDecorate %MyCBuffer Binding 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%uint = OpTypeInt 32 0
+%uint_8 = OpConstant %uint 8
+%_arr_v4float_uint_8 = OpTypeArray %v4float %uint_8
+%type_MyCBuffer = OpTypeStruct %_arr_v4float_uint_8
+%_ptr_Uniform_type_MyCBuffer = OpTypePointer Uniform %type_MyCBuffer
+%void = OpTypeVoid
+%13 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_arr_v4float_uint_8_0 = OpTypeArray %v4float %uint_8
+%_ptr_Function__arr_v4float_uint_8_0 = OpTypePointer Function %_arr_v4float_uint_8_0
+%int_0 = OpConstant %int 0
+%_ptr_Uniform__arr_v4float_uint_8 = OpTypePointer Uniform %_arr_v4float_uint_8
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%MyCBuffer = OpVariable %_ptr_Uniform_type_MyCBuffer Uniform
+%in_var_INDEX = OpVariable %_ptr_Input_int Input
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+; CHECK: OpFunction
+; CHECK: OpLabel
+; CHECK: OpVariable
+; CHECK: OpAccessChain
+; CHECK: [[new_address:%\w+]] = OpAccessChain %_ptr_Uniform__arr_v4float_uint_8 %MyCBuffer %int_0
+; CHECK: [[element_ptr:%\w+]] = OpAccessChain %_ptr_Uniform_v4float [[new_address]] %24
+; CHECK: [[load:%\w+]] = OpLoad %v4float [[element_ptr]]
+; CHECK: OpStore %out_var_SV_Target [[load]]
+%main = OpFunction %void None %13
+%22 = OpLabel
+%23 = OpVariable %_ptr_Function__arr_v4float_uint_8_0 Function
+%undef = OpUndef %_arr_v4float_uint_8_0
+%24 = OpLoad %int %in_var_INDEX
+%25 = OpAccessChain %_ptr_Uniform__arr_v4float_uint_8 %MyCBuffer %int_0
+%26 = OpLoad %_arr_v4float_uint_8 %25
+%27 = OpCompositeExtract %v4float %26 0
+%i0 = OpCompositeInsert %_arr_v4float_uint_8_0 %27 %undef 0
+%28 = OpCompositeExtract %v4float %26 1
+%i1 = OpCompositeInsert %_arr_v4float_uint_8_0 %28 %i0 1
+%29 = OpCompositeExtract %v4float %26 2
+%i2 = OpCompositeInsert %_arr_v4float_uint_8_0 %29 %i1 2
+%30 = OpCompositeExtract %v4float %26 3
+%i3 = OpCompositeInsert %_arr_v4float_uint_8_0 %30 %i2 3
+%31 = OpCompositeExtract %v4float %26 4
+%i4 = OpCompositeInsert %_arr_v4float_uint_8_0 %31 %i3 4
+%32 = OpCompositeExtract %v4float %26 5
+%i5 = OpCompositeInsert %_arr_v4float_uint_8_0 %32 %i4 5
+%33 = OpCompositeExtract %v4float %26 6
+%i6 = OpCompositeInsert %_arr_v4float_uint_8_0 %33 %i5 6
+%34 = OpCompositeExtract %v4float %26 7
+%i7 = OpCompositeInsert %_arr_v4float_uint_8_0 %34 %i6 7
+OpStore %23 %i7
+%36 = OpAccessChain %_ptr_Function_v4float %23 %24
+%37 = OpLoad %v4float %36
+OpStore %out_var_SV_Target %37
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                        SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  SinglePassRunAndMatch<opt::CopyPropagateArrays>(before, false);
 }
 #endif  // SPIRV_EFFCEE
 
@@ -675,6 +765,250 @@ OpDecorate %MyCBuffer Binding 0
 %34 = OpCompositeExtract %v4float %26 7
 %35 = OpCompositeConstruct %_arr_v4float_uint_8_0 %27 %28 %29 %30 %31 %32 %33 %34
 OpStore %23 %35
+%36 = OpAccessChain %_ptr_Function_v4float %23 %24
+%37 = OpLoad %v4float %36
+OpStore %out_var_SV_Target %37
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                        SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  auto result = SinglePassRunAndDisassemble<opt::CopyPropagateArrays>(
+      text, /* skip_nop = */ true, /* do_validation = */ false);
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
+TEST_F(CopyPropArrayPassTest, BadCopyViaInserts1) {
+  const std::string text =
+      R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_INDEX %out_var_SV_Target
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 600
+OpName %type_MyCBuffer "type.MyCBuffer"
+OpMemberName %type_MyCBuffer 0 "Data"
+OpName %MyCBuffer "MyCBuffer"
+OpName %main "main"
+OpName %in_var_INDEX "in.var.INDEX"
+OpName %out_var_SV_Target "out.var.SV_Target"
+OpDecorate %_arr_v4float_uint_8 ArrayStride 16
+OpMemberDecorate %type_MyCBuffer 0 Offset 0
+OpDecorate %type_MyCBuffer Block
+OpDecorate %in_var_INDEX Flat
+OpDecorate %in_var_INDEX Location 0
+OpDecorate %out_var_SV_Target Location 0
+OpDecorate %MyCBuffer DescriptorSet 0
+OpDecorate %MyCBuffer Binding 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%uint = OpTypeInt 32 0
+%uint_8 = OpConstant %uint 8
+%_arr_v4float_uint_8 = OpTypeArray %v4float %uint_8
+%type_MyCBuffer = OpTypeStruct %_arr_v4float_uint_8
+%_ptr_Uniform_type_MyCBuffer = OpTypePointer Uniform %type_MyCBuffer
+%void = OpTypeVoid
+%13 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_arr_v4float_uint_8_0 = OpTypeArray %v4float %uint_8
+%_ptr_Function__arr_v4float_uint_8_0 = OpTypePointer Function %_arr_v4float_uint_8_0
+%int_0 = OpConstant %int 0
+%_ptr_Uniform__arr_v4float_uint_8 = OpTypePointer Uniform %_arr_v4float_uint_8
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%MyCBuffer = OpVariable %_ptr_Uniform_type_MyCBuffer Uniform
+%in_var_INDEX = OpVariable %_ptr_Input_int Input
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %13
+%22 = OpLabel
+%23 = OpVariable %_ptr_Function__arr_v4float_uint_8_0 Function
+%undef = OpUndef %_arr_v4float_uint_8_0
+%24 = OpLoad %int %in_var_INDEX
+%25 = OpAccessChain %_ptr_Uniform__arr_v4float_uint_8 %MyCBuffer %int_0
+%26 = OpLoad %_arr_v4float_uint_8 %25
+%27 = OpCompositeExtract %v4float %26 0
+%i0 = OpCompositeInsert %_arr_v4float_uint_8_0 %27 %undef 0
+%28 = OpCompositeExtract %v4float %26 1
+%i1 = OpCompositeInsert %_arr_v4float_uint_8_0 %28 %i0 1
+%29 = OpCompositeExtract %v4float %26 2
+%i2 = OpCompositeInsert %_arr_v4float_uint_8_0 %29 %i1 3
+%30 = OpCompositeExtract %v4float %26 3
+%i3 = OpCompositeInsert %_arr_v4float_uint_8_0 %30 %i2 3
+%31 = OpCompositeExtract %v4float %26 4
+%i4 = OpCompositeInsert %_arr_v4float_uint_8_0 %31 %i3 4
+%32 = OpCompositeExtract %v4float %26 5
+%i5 = OpCompositeInsert %_arr_v4float_uint_8_0 %32 %i4 5
+%33 = OpCompositeExtract %v4float %26 6
+%i6 = OpCompositeInsert %_arr_v4float_uint_8_0 %33 %i5 6
+%34 = OpCompositeExtract %v4float %26 7
+%i7 = OpCompositeInsert %_arr_v4float_uint_8_0 %34 %i6 7
+OpStore %23 %i7
+%36 = OpAccessChain %_ptr_Function_v4float %23 %24
+%37 = OpLoad %v4float %36
+OpStore %out_var_SV_Target %37
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                        SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  auto result = SinglePassRunAndDisassemble<opt::CopyPropagateArrays>(
+      text, /* skip_nop = */ true, /* do_validation = */ false);
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
+TEST_F(CopyPropArrayPassTest, BadCopyViaInserts2) {
+  const std::string text =
+      R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_INDEX %out_var_SV_Target
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 600
+OpName %type_MyCBuffer "type.MyCBuffer"
+OpMemberName %type_MyCBuffer 0 "Data"
+OpName %MyCBuffer "MyCBuffer"
+OpName %main "main"
+OpName %in_var_INDEX "in.var.INDEX"
+OpName %out_var_SV_Target "out.var.SV_Target"
+OpDecorate %_arr_v4float_uint_8 ArrayStride 16
+OpMemberDecorate %type_MyCBuffer 0 Offset 0
+OpDecorate %type_MyCBuffer Block
+OpDecorate %in_var_INDEX Flat
+OpDecorate %in_var_INDEX Location 0
+OpDecorate %out_var_SV_Target Location 0
+OpDecorate %MyCBuffer DescriptorSet 0
+OpDecorate %MyCBuffer Binding 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%uint = OpTypeInt 32 0
+%uint_8 = OpConstant %uint 8
+%_arr_v4float_uint_8 = OpTypeArray %v4float %uint_8
+%type_MyCBuffer = OpTypeStruct %_arr_v4float_uint_8
+%_ptr_Uniform_type_MyCBuffer = OpTypePointer Uniform %type_MyCBuffer
+%void = OpTypeVoid
+%13 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_arr_v4float_uint_8_0 = OpTypeArray %v4float %uint_8
+%_ptr_Function__arr_v4float_uint_8_0 = OpTypePointer Function %_arr_v4float_uint_8_0
+%int_0 = OpConstant %int 0
+%_ptr_Uniform__arr_v4float_uint_8 = OpTypePointer Uniform %_arr_v4float_uint_8
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%MyCBuffer = OpVariable %_ptr_Uniform_type_MyCBuffer Uniform
+%in_var_INDEX = OpVariable %_ptr_Input_int Input
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %13
+%22 = OpLabel
+%23 = OpVariable %_ptr_Function__arr_v4float_uint_8_0 Function
+%undef = OpUndef %_arr_v4float_uint_8_0
+%24 = OpLoad %int %in_var_INDEX
+%25 = OpAccessChain %_ptr_Uniform__arr_v4float_uint_8 %MyCBuffer %int_0
+%26 = OpLoad %_arr_v4float_uint_8 %25
+%27 = OpCompositeExtract %v4float %26 0
+%i0 = OpCompositeInsert %_arr_v4float_uint_8_0 %27 %undef 0
+%28 = OpCompositeExtract %v4float %26 1
+%i1 = OpCompositeInsert %_arr_v4float_uint_8_0 %28 %i0 1
+%29 = OpCompositeExtract %v4float %26 3
+%i2 = OpCompositeInsert %_arr_v4float_uint_8_0 %29 %i1 2
+%30 = OpCompositeExtract %v4float %26 3
+%i3 = OpCompositeInsert %_arr_v4float_uint_8_0 %30 %i2 3
+%31 = OpCompositeExtract %v4float %26 4
+%i4 = OpCompositeInsert %_arr_v4float_uint_8_0 %31 %i3 4
+%32 = OpCompositeExtract %v4float %26 5
+%i5 = OpCompositeInsert %_arr_v4float_uint_8_0 %32 %i4 5
+%33 = OpCompositeExtract %v4float %26 6
+%i6 = OpCompositeInsert %_arr_v4float_uint_8_0 %33 %i5 6
+%34 = OpCompositeExtract %v4float %26 7
+%i7 = OpCompositeInsert %_arr_v4float_uint_8_0 %34 %i6 7
+OpStore %23 %i7
+%36 = OpAccessChain %_ptr_Function_v4float %23 %24
+%37 = OpLoad %v4float %36
+OpStore %out_var_SV_Target %37
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                        SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  auto result = SinglePassRunAndDisassemble<opt::CopyPropagateArrays>(
+      text, /* skip_nop = */ true, /* do_validation = */ false);
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
+TEST_F(CopyPropArrayPassTest, BadCopyViaInserts3) {
+  const std::string text =
+      R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_INDEX %out_var_SV_Target
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 600
+OpName %type_MyCBuffer "type.MyCBuffer"
+OpMemberName %type_MyCBuffer 0 "Data"
+OpName %MyCBuffer "MyCBuffer"
+OpName %main "main"
+OpName %in_var_INDEX "in.var.INDEX"
+OpName %out_var_SV_Target "out.var.SV_Target"
+OpDecorate %_arr_v4float_uint_8 ArrayStride 16
+OpMemberDecorate %type_MyCBuffer 0 Offset 0
+OpDecorate %type_MyCBuffer Block
+OpDecorate %in_var_INDEX Flat
+OpDecorate %in_var_INDEX Location 0
+OpDecorate %out_var_SV_Target Location 0
+OpDecorate %MyCBuffer DescriptorSet 0
+OpDecorate %MyCBuffer Binding 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%uint = OpTypeInt 32 0
+%uint_8 = OpConstant %uint 8
+%_arr_v4float_uint_8 = OpTypeArray %v4float %uint_8
+%type_MyCBuffer = OpTypeStruct %_arr_v4float_uint_8
+%_ptr_Uniform_type_MyCBuffer = OpTypePointer Uniform %type_MyCBuffer
+%void = OpTypeVoid
+%13 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_arr_v4float_uint_8_0 = OpTypeArray %v4float %uint_8
+%_ptr_Function__arr_v4float_uint_8_0 = OpTypePointer Function %_arr_v4float_uint_8_0
+%int_0 = OpConstant %int 0
+%_ptr_Uniform__arr_v4float_uint_8 = OpTypePointer Uniform %_arr_v4float_uint_8
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%MyCBuffer = OpVariable %_ptr_Uniform_type_MyCBuffer Uniform
+%in_var_INDEX = OpVariable %_ptr_Input_int Input
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %13
+%22 = OpLabel
+%23 = OpVariable %_ptr_Function__arr_v4float_uint_8_0 Function
+%undef = OpUndef %_arr_v4float_uint_8_0
+%24 = OpLoad %int %in_var_INDEX
+%25 = OpAccessChain %_ptr_Uniform__arr_v4float_uint_8 %MyCBuffer %int_0
+%26 = OpLoad %_arr_v4float_uint_8 %25
+%28 = OpCompositeExtract %v4float %26 1
+%i1 = OpCompositeInsert %_arr_v4float_uint_8_0 %28 %undef 1
+%29 = OpCompositeExtract %v4float %26 2
+%i2 = OpCompositeInsert %_arr_v4float_uint_8_0 %29 %i1 2
+%30 = OpCompositeExtract %v4float %26 3
+%i3 = OpCompositeInsert %_arr_v4float_uint_8_0 %30 %i2 3
+%31 = OpCompositeExtract %v4float %26 4
+%i4 = OpCompositeInsert %_arr_v4float_uint_8_0 %31 %i3 4
+%32 = OpCompositeExtract %v4float %26 5
+%i5 = OpCompositeInsert %_arr_v4float_uint_8_0 %32 %i4 5
+%33 = OpCompositeExtract %v4float %26 6
+%i6 = OpCompositeInsert %_arr_v4float_uint_8_0 %33 %i5 6
+%34 = OpCompositeExtract %v4float %26 7
+%i7 = OpCompositeInsert %_arr_v4float_uint_8_0 %34 %i6 7
+OpStore %23 %i7
 %36 = OpAccessChain %_ptr_Function_v4float %23 %24
 %37 = OpLoad %v4float %36
 OpStore %out_var_SV_Target %37

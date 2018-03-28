@@ -121,6 +121,10 @@ class CopyPropagateArrays : public MemPass {
       return pointer_type->storage_class();
     }
 
+    // Returns true if |other| represents memory that is contains inside of the
+    // memory represented by |this|.
+    bool Contains(MemoryObject* other);
+
    private:
     // The variable that owns this memory object.
     ir::Instruction* variable_inst_;
@@ -170,10 +174,19 @@ class CopyPropagateArrays : public MemPass {
 
   // Returns the memory object that at some point was equivalent to the result
   // of |construct_inst|.  If a memory object cannot be identified, the return
-  // value is |nullptr|.  The opcode of |extract_inst| must be
+  // value is |nullptr|.  The opcode of |constuct_inst| must be
   // |OpCompositeConstruct|.
   std::unique_ptr<MemoryObject> BuildMemoryObjectFromCompositeConstruct(
       ir::Instruction* conststruct_inst);
+
+  // Returns the memory object that at some point was equivalent to the result
+  // of |insert_inst|.  If a memory object cannot be identified, the return
+  // value is |nullptr\.  The opcode of |insert_inst| must be
+  // |OpCompositeInsert|.  This function looks for a series of
+  // |OpCompositeInsert| instructions that insert the elements one at a time in
+  // order from beginning to end.
+  std::unique_ptr<MemoryObject> BuildMemoryObjectFromInsert(
+      ir::Instruction* insert_inst);
 
   // Return true if |type_id| is a pointer type whose pointee type is an array.
   bool IsPointerToArrayType(uint32_t type_id);

@@ -198,6 +198,8 @@ CopyPropagateArrays::GetSourceObjectIfAny(uint32_t result) {
       return BuildMemoryObjectFromCompositeConstruct(result_inst);
     case SpvOpCopyObject:
       return GetSourceObjectIfAny(result_inst->GetSingleWordInOperand(0));
+    case SpvOpCompositeInsert:
+      return BuildMemoryObjectFromInsert(result_inst);
     default:
       return nullptr;
   }
@@ -316,11 +318,11 @@ CopyPropagateArrays::BuildMemoryObjectFromCompositeConstruct(
     std::unique_ptr<MemoryObject> member_object =
         GetSourceObjectIfAny(conststruct_inst->GetSingleWordInOperand(i));
 
-    if (member_object->GetVariable() != memory_object->GetVariable()) {
+    if (!member_object->IsMember()) {
       return nullptr;
     }
 
-    if (!member_object->IsMember()) {
+    if (!memory_object->Contains(member_object.get())) {
       return nullptr;
     }
 
@@ -334,6 +336,118 @@ CopyPropagateArrays::BuildMemoryObjectFromCompositeConstruct(
       return nullptr;
     }
   }
+  return memory_object;
+}
+
+std::unique_ptr<CopyPropagateArrays::MemoryObject>
+CopyPropagateArrays::BuildMemoryObjectFromInsert(ir::Instruction* insert_inst) {
+  assert(insert_inst->opcode() == SpvOpCompositeInsert &&
+         "Expecting an OpCompositeInsert instruction.");
+
+  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+  analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
+  const analysis::Type* result_type = type_mgr->GetType(insert_inst->type_id());
+
+  uint32_t number_of_elements = 0;
+  if (const analysis::Struct* struct_type = result_type->AsStruct()) {
+    number_of_elements =
+        static_cast<uint32_t>(struct_type->element_types().size());
+  } else if (const analysis::Array* array_type = result_type->AsArray()) {
+    const analysis::Constant* length_const =
+        const_mgr->FindDeclaredConstant(array_type->LengthId());
+    assert(length_const->AsIntConstant());
+    number_of_elements = length_const->AsIntConstant()->GetU32();
+  } else if (const analysis::Vector* vector_type = result_type->AsVector()) {
+    number_of_elements = vector_type->element_count();
+  } else if (const analysis::Matrix* matrix_type = result_type->AsMatrix()) {
+    number_of_elements = matrix_type->element_count();
+  }
+
+  if (number_of_elements == 0) {
+    return nullptr;
+  }
+
+  if (insert_inst->NumInOperands() != 3) {
+    return nullptr;
+  }
+
+  if (insert_inst->GetSingleWordInOperand(2) != number_of_elements - 1) {
+    return nullptr;
+  }
+
+  std::unique_ptr<MemoryObject> memory_object =
+      GetSourceObjectIfAny(insert_inst->GetSingleWordInOperand(0));
+
+  if (!memory_object) {
+    return nullptr;
+  }
+
+  if (!memory_object->IsMember()) {
+    return nullptr;
+  }
+
+  const analysis::Constant* last_access =
+      const_mgr->FindDeclaredConstant(memory_object->AccessChain().back());
+  if (!last_access || !last_access->AsIntConstant()) {
+    return nullptr;
+  }
+
+  if (last_access->GetU32() != number_of_elements - 1) {
+    return nullptr;
+  }
+
+  memory_object->GetParent();
+
+  ir::Instruction* current_insert =
+      def_use_mgr->GetDef(insert_inst->GetSingleWordInOperand(1));
+  for (uint32_t i = number_of_elements - 1; i > 0; --i) {
+    if (current_insert->opcode() != SpvOpCompositeInsert) {
+      return nullptr;
+    }
+
+    if (current_insert->NumInOperands() != 3) {
+      return nullptr;
+    }
+
+    if (current_insert->GetSingleWordInOperand(2) != i - 1) {
+      return nullptr;
+    }
+
+    std::unique_ptr<MemoryObject> current_memory_object =
+        GetSourceObjectIfAny(current_insert->GetSingleWordInOperand(0));
+
+    if (!current_memory_object) {
+      return nullptr;
+    }
+
+    if (!current_memory_object->IsMember()) {
+      return nullptr;
+    }
+
+    if (memory_object->AccessChain().size() + 1 !=
+        current_memory_object->AccessChain().size()) {
+      return nullptr;
+    }
+
+    if (!memory_object->Contains(current_memory_object.get())) {
+      return nullptr;
+    }
+
+    const analysis::Constant* current_last_access =
+        const_mgr->FindDeclaredConstant(
+            current_memory_object->AccessChain().back());
+    if (!current_last_access || !current_last_access->AsIntConstant()) {
+      return nullptr;
+    }
+
+    if (current_last_access->GetU32() != i - 1) {
+      return nullptr;
+    }
+    current_insert =
+        def_use_mgr->GetDef(current_insert->GetSingleWordInOperand(1));
+  }
+
   return memory_object;
 }
 
@@ -690,6 +804,24 @@ std::vector<uint32_t> CopyPropagateArrays::MemoryObject::GetAccessIds() const {
     }
   }
   return access_indices;
+}
+
+bool CopyPropagateArrays::MemoryObject::Contains(
+    CopyPropagateArrays::MemoryObject* other) {
+  if (this->GetVariable() != other->GetVariable()) {
+    return false;
+  }
+
+  if (AccessChain().size() > other->AccessChain().size()) {
+    return false;
+  }
+
+  for (uint32_t i = 0; i < AccessChain().size(); i++) {
+    if (AccessChain()[i] != other->AccessChain()[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace opt
