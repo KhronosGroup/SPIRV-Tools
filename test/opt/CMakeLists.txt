@@ -301,6 +301,7 @@ add_spvtools_unittest(TARGET simplification
   SRCS simplification_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
+
 add_spvtools_unittest(TARGET copy_prop_array
   SRCS copy_prop_array_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt

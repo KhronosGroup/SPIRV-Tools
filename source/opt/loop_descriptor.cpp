@@ -142,6 +142,25 @@ int64_t Loop::GetResidualConditionValue(SpvOp condition, int64_t initial_value,
   return remainder;
 }
 
+ir::Instruction* Loop::GetConditionInst() const {
+  ir::BasicBlock* condition_block = FindConditionBlock();
+  if (!condition_block) {
+    return nullptr;
+  }
+  ir::Instruction* branch_conditional = &*condition_block->tail();
+  if (!branch_conditional ||
+      branch_conditional->opcode() != SpvOpBranchConditional) {
+    return nullptr;
+  }
+  ir::Instruction* condition_inst = context_->get_def_use_mgr()->GetDef(
+      branch_conditional->GetSingleWordInOperand(0));
+  if (IsSupportedCondition(condition_inst->opcode())) {
+    return condition_inst;
+  }
+
+  return nullptr;
+}
+
 // Extract the initial value from the |induction| OpPhi instruction and store it
 // in |value|. If the function couldn't find the initial value of |induction|
 // return false.
