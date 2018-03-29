@@ -166,7 +166,7 @@ ExtensionSet RequiredExtensions(const ValidationState_t& state,
     assert(operand_desc);
     // If this operand is incorporated into core SPIR-V before or in the current
     // target environment, we don't require extensions anymore.
-    if (static_cast<uint32_t>(state.context()->target_env) >=
+    if (spvVersionForTargetEnv(state.grammar().target_env()) >=
         operand_desc->minVersion)
       return {};
     return {operand_desc->numExtensions, operand_desc->extensions};
