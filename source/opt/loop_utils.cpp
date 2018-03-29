@@ -476,7 +476,6 @@ void LoopUtils::MakeLoopClosedSSA() {
   }
 
   context_->InvalidateAnalysesExceptFor(
-      ir::IRContext::Analysis::kAnalysisDefUse |
       ir::IRContext::Analysis::kAnalysisCFG |
       ir::IRContext::Analysis::kAnalysisDominatorAnalysis |
       ir::IRContext::Analysis::kAnalysisLoopAnalysis);
@@ -488,7 +487,6 @@ ir::Loop* LoopUtils::CloneLoop(
   analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
   std::unique_ptr<ir::Loop> new_loop = MakeUnique<ir::Loop>(context_);
-  if (loop_->HasParent()) new_loop->SetParent(loop_->GetParent());
 
   ir::CFG& cfg = *context_->cfg();
 
@@ -595,6 +593,27 @@ void LoopUtils::PopulateLoopDesc(
     if (it != cloning_result.old_to_new_bb_.end()) {
       new_loop->SetPreHeaderBlock(it->second);
     }
+  }
+}
+
+// Class to gather some metrics about a region of interest.
+void CodeMetrics::Analyze(const ir::Loop& loop) {
+  ir::CFG& cfg = *loop.GetContext()->cfg();
+
+  roi_size_ = 0;
+  block_sizes_.clear();
+
+  for (uint32_t id : loop.GetBlocks()) {
+    const ir::BasicBlock* bb = cfg.block(id);
+    size_t bb_size = 0;
+    bb->ForEachInst([&bb_size](const ir::Instruction* insn) {
+      if (insn->opcode() == SpvOpLabel) return;
+      if (insn->IsNop()) return;
+      if (insn->opcode() == SpvOpPhi) return;
+      bb_size++;
+    });
+    block_sizes_[bb->id()] = bb_size;
+    roi_size_ += bb_size;
   }
 }
 

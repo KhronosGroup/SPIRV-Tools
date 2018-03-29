@@ -338,6 +338,9 @@ class Loop {
   // Returns nullptr if it can't be found.
   ir::Instruction* GetConditionInst() const;
 
+  // Returns the context associated this loop.
+  IRContext* GetContext() const { return context_; }
+
  private:
   IRContext* context_;
   // The block which marks the start of the loop.

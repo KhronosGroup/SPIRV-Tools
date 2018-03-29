@@ -22,6 +22,7 @@
 #include <sstream>
 #include <vector>
 
+#include "opt/loop_peeling.h"
 #include "opt/set_spec_constant_default_value_pass.h"
 #include "spirv-tools/optimizer.hpp"
 
@@ -181,6 +182,14 @@ Options (in lexicographical order):
                Partially unrolls loops marked with the Unroll flag. Takes an
                additional non-0 integer argument to set the unroll factor, or
                how many times a loop body should be duplicated
+  --loop-peeling
+               Execute few first (respectively last) iterations before
+               (respectively after) the loop if it can elide some branches.
+  --loop-peeling-threshold
+               Takes a non-0 integer argument to set the loop peeling code size
+               growth threshold. The threshold prevents the loop peeling
+               from happening if the code size increase created by
+               the optimization is above the threshold.
   --merge-blocks
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
@@ -405,6 +414,20 @@ OptStatus ParseLoopUnrollPartialArg(int argc, const char** argv, int argi,
   return {OPT_STOP, 1};
 }
 
+OptStatus ParseLoopPeelingThresholdArg(int argc, const char** argv, int argi) {
+  if (argi < argc) {
+    int factor = atoi(argv[argi]);
+    if (factor > 0) {
+      opt::LoopPeelingPass::SetLoopPeelingThreshold(factor);
+      return {OPT_CONTINUE, 0};
+    }
+  }
+  fprintf(
+      stderr,
+      "error: --loop-peeling-threshold must be followed by a non-0 integer\n");
+  return {OPT_STOP, 1};
+}
+
 // Parses command-line flags. |argc| contains the number of command-line flags.
 // |argv| points to an array of strings holding the flags. |optimizer| is the
 // Optimizer instance used to optimize the program.
@@ -535,6 +558,13 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
       } else if (0 == strcmp(cur_arg, "--loop-unroll-partial")) {
         OptStatus status =
             ParseLoopUnrollPartialArg(argc, argv, ++argi, optimizer);
+        if (status.action != OPT_CONTINUE) {
+          return status;
+        }
+      } else if (0 == strcmp(cur_arg, "--loop-peeling")) {
+        optimizer->RegisterPass(CreateLoopPeelingPass());
+      } else if (0 == strcmp(cur_arg, "--loop-peeling-threshold")) {
+        OptStatus status = ParseLoopPeelingThresholdArg(argc, argv, ++argi);
         if (status.action != OPT_CONTINUE) {
           return status;
         }

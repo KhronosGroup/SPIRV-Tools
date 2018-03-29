@@ -95,6 +95,15 @@ class ScalarEvolutionAnalysis {
   // Checks that the graph starting from |node| is invariant to the |loop|.
   bool IsLoopInvariant(const ir::Loop* loop, const SENode* node) const;
 
+  // Sets |is_gt_zero| to true if |node| represent a value always strictly
+  // greater than 0. The result of |is_gt_zero| is valid only if the function
+  // returns true.
+  bool IsAlwaysGreaterThanZero(SENode* node, bool* is_gt_zero) const;
+
+  // Sets |is_ge_zero| to true if |node| represent a value greater or equals to
+  // 0. The result of |is_ge_zero| is valid only if the function returns true.
+  bool IsAlwaysGreaterOrEqualToZero(SENode* node, bool* is_ge_zero) const;
+
   // Find the recurrent term belonging to |loop| in the graph starting from
   // |node| and return the coefficient of that recurrent term. Constant zero
   // will be returned if no recurrent could be found. |node| should be in
@@ -150,6 +159,140 @@ class ScalarEvolutionAnalysis {
   std::unordered_set<std::unique_ptr<SENode>, SENodeHash, NodePointersEquality>
       node_cache_;
 };
+
+// Wrapping class to manipulate SENode pointer using + - * / operators.
+class SExpression {
+ public:
+  // Implicit on purpose !
+  SExpression(SENode* node)
+      : node_(node->GetParentAnalysis()->SimplifyExpression(node)),
+        scev_(node->GetParentAnalysis()) {}
+
+  inline operator SENode*() const { return node_; }
+  inline SENode* operator->() const { return node_; }
+  const SENode& operator*() const { return *node_; }
+
+  inline ScalarEvolutionAnalysis* GetScalarEvolutionAnalysis() const {
+    return scev_;
+  }
+
+  inline SExpression operator+(SENode* rhs) const;
+  template <typename T,
+            typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+  inline SExpression operator+(T integer) const;
+  inline SExpression operator+(SExpression rhs) const;
+
+  inline SExpression operator-() const;
+  inline SExpression operator-(SENode* rhs) const;
+  template <typename T,
+            typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+  inline SExpression operator-(T integer) const;
+  inline SExpression operator-(SExpression rhs) const;
+
+  inline SExpression operator*(SENode* rhs) const;
+  template <typename T,
+            typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+  inline SExpression operator*(T integer) const;
+  inline SExpression operator*(SExpression rhs) const;
+
+  template <typename T,
+            typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+  inline std::pair<SExpression, int64_t> operator/(T integer) const;
+  // Try to perform a division. Returns the pair <this.node_ / rhs, division
+  // remainder>. If it fails to simplify it, the function returns a
+  // CanNotCompute node.
+  std::pair<SExpression, int64_t> operator/(SExpression rhs) const;
+
+ private:
+  SENode* node_;
+  ScalarEvolutionAnalysis* scev_;
+};
+
+inline SExpression SExpression::operator+(SENode* rhs) const {
+  return scev_->CreateAddNode(node_, rhs);
+}
+
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value, int>::type>
+inline SExpression SExpression::operator+(T integer) const {
+  return *this + scev_->CreateConstant(integer);
+}
+
+inline SExpression SExpression::operator+(SExpression rhs) const {
+  return *this + rhs.node_;
+}
+
+inline SExpression SExpression::operator-() const {
+  return scev_->CreateNegation(node_);
+}
+
+inline SExpression SExpression::operator-(SENode* rhs) const {
+  return *this + scev_->CreateNegation(rhs);
+}
+
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value, int>::type>
+inline SExpression SExpression::operator-(T integer) const {
+  return *this - scev_->CreateConstant(integer);
+}
+
+inline SExpression SExpression::operator-(SExpression rhs) const {
+  return *this - rhs.node_;
+}
+
+inline SExpression SExpression::operator*(SENode* rhs) const {
+  return scev_->CreateMultiplyNode(node_, rhs);
+}
+
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value, int>::type>
+inline SExpression SExpression::operator*(T integer) const {
+  return *this * scev_->CreateConstant(integer);
+}
+
+inline SExpression SExpression::operator*(SExpression rhs) const {
+  return *this * rhs.node_;
+}
+
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value, int>::type>
+inline std::pair<SExpression, int64_t> SExpression::operator/(T integer) const {
+  return *this / scev_->CreateConstant(integer);
+}
+
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value, int>::type>
+inline SExpression operator+(T lhs, SExpression rhs) {
+  return rhs + lhs;
+}
+inline SExpression operator+(SENode* lhs, SExpression rhs) { return rhs + lhs; }
+
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value, int>::type>
+inline SExpression operator-(T lhs, SExpression rhs) {
+  return SExpression{rhs.GetScalarEvolutionAnalysis()->CreateConstant(lhs)} -
+         rhs;
+}
+inline SExpression operator-(SENode* lhs, SExpression rhs) {
+  return SExpression{lhs} - rhs;
+}
+
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value, int>::type>
+inline SExpression operator*(T lhs, SExpression rhs) {
+  return rhs * lhs;
+}
+inline SExpression operator*(SENode* lhs, SExpression rhs) { return rhs * lhs; }
+
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value, int>::type>
+inline std::pair<SExpression, int64_t> operator/(T lhs, SExpression rhs) {
+  return SExpression{rhs.GetScalarEvolutionAnalysis()->CreateConstant(lhs)} /
+         rhs;
+}
+inline std::pair<SExpression, int64_t> operator/(SENode* lhs, SExpression rhs) {
+  return SExpression{lhs} / rhs;
+}
 
 }  // namespace opt
 }  // namespace spvtools

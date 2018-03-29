@@ -381,6 +381,11 @@ Optimizer::PassToken CreateLoopInvariantCodeMotionPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::LICMPass>());
 }
 
+Optimizer::PassToken CreateLoopPeelingPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LoopPeelingPass>());
+}
+
 Optimizer::PassToken CreateLoopUnswitchPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::LoopUnswitchPass>());

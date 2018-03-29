@@ -134,7 +134,7 @@ TEST_F(PeelingTest, CannotPeel) {
       loop_count = builder.Add32BitSignedIntegerConstant(10);
     }
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    opt::LoopPeeling peel(&*ld.begin(), loop_count);
     EXPECT_FALSE(peel.CanPeelLoop());
   };
   {
@@ -495,7 +495,7 @@ TEST_F(PeelingTest, SimplePeeling) {
     // Exit condition.
     ir::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), ten_cst);
+    opt::LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
     peel.PeelBefore(2);
 
@@ -549,7 +549,7 @@ CHECK-NEXT: OpLoopMerge
     // Exit condition.
     ir::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), ten_cst);
+    opt::LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
     peel.PeelAfter(2);
 
@@ -570,6 +570,114 @@ CHECK-NEXT: [[EXIT_COND:%\w+]] = OpSLessThan {{%\w+}} [[TMP]]
 CHECK-NEXT: OpBranchConditional [[EXIT_COND]] {{%\w+}} [[BEFORE_LOOP_MERGE]]
 CHECK:      [[I_1]] = OpIAdd {{%\w+}} [[I]]
 CHECK-NEXT: [[DUMMY_IT_1]] = OpIAdd {{%\w+}} [[DUMMY_IT]]
+CHECK-NEXT: OpBranch [[BEFORE_LOOP]]
+
+CHECK:      [[IF_MERGE]] = OpLabel
+CHECK-NEXT: [[TMP:%\w+]] = OpPhi {{%\w+}} [[I]] [[BEFORE_LOOP_MERGE]]
+CHECK-NEXT: OpBranch [[AFTER_LOOP:%\w+]]
+
+CHECK:      [[AFTER_LOOP]] = OpLabel
+CHECK-NEXT: OpPhi {{%\w+}} {{%\w+}} {{%\w+}} [[TMP]] [[IF_MERGE]]
+CHECK-NEXT: OpLoopMerge
+
+)";
+
+    Match(check, context.get());
+  }
+
+  // Same as above, but reuse the induction variable.
+  // Peel before.
+  {
+    SCOPED_TRACE("Peel before with IV reuse");
+
+    std::unique_ptr<ir::IRContext> context =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                    SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+    ir::Module* module = context->module();
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                               << text << std::endl;
+    ir::Function& f = *module->begin();
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+
+    EXPECT_EQ(ld.NumLoops(), 1u);
+
+    opt::InstructionBuilder builder(context.get(), &*f.begin());
+    // Exit condition.
+    ir::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+
+    opt::LoopPeeling peel(&*ld.begin(), ten_cst,
+                          context->get_def_use_mgr()->GetDef(22));
+    EXPECT_TRUE(peel.CanPeelLoop());
+    peel.PeelBefore(2);
+
+    const std::string check = R"(
+CHECK: [[CST_TEN:%\w+]] = OpConstant {{%\w+}} 10
+CHECK: [[CST_TWO:%\w+]] = OpConstant {{%\w+}} 2
+CHECK:      OpFunction
+CHECK-NEXT: [[ENTRY:%\w+]] = OpLabel
+CHECK: [[MIN_LOOP_COUNT:%\w+]] = OpSLessThan {{%\w+}} [[CST_TWO]] [[CST_TEN]]
+CHECK-NEXT: [[LOOP_COUNT:%\w+]] = OpSelect {{%\w+}} [[MIN_LOOP_COUNT]] [[CST_TWO]] [[CST_TEN]]
+CHECK:      [[BEFORE_LOOP:%\w+]] = OpLabel
+CHECK-NEXT: [[i:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[I_1:%\w+]] [[BE:%\w+]]
+CHECK-NEXT: OpLoopMerge [[AFTER_LOOP_PREHEADER:%\w+]] [[BE]] None
+CHECK:      [[COND_BLOCK:%\w+]] = OpLabel
+CHECK-NEXT: OpSLessThan
+CHECK-NEXT: [[EXIT_COND:%\w+]] = OpSLessThan {{%\w+}} [[i]]
+CHECK-NEXT: OpBranchConditional [[EXIT_COND]] {{%\w+}} [[AFTER_LOOP_PREHEADER]]
+CHECK:      [[I_1]] = OpIAdd {{%\w+}} [[i]]
+CHECK-NEXT: OpBranch [[BEFORE_LOOP]]
+
+CHECK: [[AFTER_LOOP_PREHEADER]] = OpLabel
+CHECK-NEXT: OpSelectionMerge [[IF_MERGE:%\w+]]
+CHECK-NEXT: OpBranchConditional [[MIN_LOOP_COUNT]] [[AFTER_LOOP:%\w+]] [[IF_MERGE]]
+
+CHECK:      [[AFTER_LOOP]] = OpLabel
+CHECK-NEXT: OpPhi {{%\w+}} {{%\w+}} {{%\w+}} [[i]] [[AFTER_LOOP_PREHEADER]]
+CHECK-NEXT: OpLoopMerge
+)";
+
+    Match(check, context.get());
+  }
+
+  // Peel after.
+  {
+    SCOPED_TRACE("Peel after IV reuse");
+
+    std::unique_ptr<ir::IRContext> context =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                    SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+    ir::Module* module = context->module();
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                               << text << std::endl;
+    ir::Function& f = *module->begin();
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+
+    EXPECT_EQ(ld.NumLoops(), 1u);
+
+    opt::InstructionBuilder builder(context.get(), &*f.begin());
+    // Exit condition.
+    ir::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+
+    opt::LoopPeeling peel(&*ld.begin(), ten_cst,
+                          context->get_def_use_mgr()->GetDef(22));
+    EXPECT_TRUE(peel.CanPeelLoop());
+    peel.PeelAfter(2);
+
+    const std::string check = R"(
+CHECK:      OpFunction
+CHECK-NEXT: [[ENTRY:%\w+]] = OpLabel
+CHECK:      [[MIN_LOOP_COUNT:%\w+]] = OpSLessThan {{%\w+}}
+CHECK-NEXT: OpSelectionMerge [[IF_MERGE:%\w+]]
+CHECK-NEXT: OpBranchConditional [[MIN_LOOP_COUNT]] [[BEFORE_LOOP:%\w+]] [[IF_MERGE]]
+CHECK:      [[BEFORE_LOOP]] = OpLabel
+CHECK-NEXT: [[I:%\w+]] = OpPhi {{%\w+}} {{%\w+}} [[ENTRY]] [[I_1:%\w+]] [[BE:%\w+]]
+CHECK-NEXT: OpLoopMerge [[BEFORE_LOOP_MERGE:%\w+]] [[BE]] None
+CHECK:      [[COND_BLOCK:%\w+]] = OpLabel
+CHECK-NEXT: OpSLessThan
+CHECK-NEXT: [[TMP:%\w+]] = OpIAdd {{%\w+}} [[I]] {{%\w+}}
+CHECK-NEXT: [[EXIT_COND:%\w+]] = OpSLessThan {{%\w+}} [[TMP]]
+CHECK-NEXT: OpBranchConditional [[EXIT_COND]] {{%\w+}} [[BEFORE_LOOP_MERGE]]
+CHECK:      [[I_1]] = OpIAdd {{%\w+}} [[I]]
 CHECK-NEXT: OpBranch [[BEFORE_LOOP]]
 
 CHECK:      [[IF_MERGE]] = OpLabel
@@ -658,7 +766,7 @@ TEST_F(PeelingTest, PeelingUncountable) {
     ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(16);
     EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    opt::LoopPeeling peel(&*ld.begin(), loop_count);
     EXPECT_TRUE(peel.CanPeelLoop());
     peel.PeelBefore(1);
 
@@ -710,7 +818,7 @@ CHECK-NEXT: OpLoopMerge
     ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(16);
     EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    opt::LoopPeeling peel(&*ld.begin(), loop_count);
     EXPECT_TRUE(peel.CanPeelLoop());
     peel.PeelAfter(1);
 
@@ -811,7 +919,7 @@ TEST_F(PeelingTest, DoWhilePeeling) {
     // Exit condition.
     ir::Instruction* ten_cst = builder.Add32BitUnsignedIntegerConstant(10);
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), ten_cst);
+    opt::LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
     peel.PeelBefore(2);
 
@@ -861,7 +969,7 @@ CHECK-NEXT: OpLoopMerge
     // Exit condition.
     ir::Instruction* ten_cst = builder.Add32BitUnsignedIntegerConstant(10);
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), ten_cst);
+    opt::LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
     peel.PeelAfter(2);
 
@@ -983,7 +1091,7 @@ TEST_F(PeelingTest, PeelingLoopWithStore) {
     ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(15);
     EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    opt::LoopPeeling peel(&*ld.begin(), loop_count);
     EXPECT_TRUE(peel.CanPeelLoop());
     peel.PeelBefore(1);
 
@@ -1035,7 +1143,7 @@ CHECK-NEXT: OpLoopMerge
     ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(15);
     EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
 
-    opt::LoopPeeling peel(context.get(), &*ld.begin(), loop_count);
+    opt::LoopPeeling peel(&*ld.begin(), loop_count);
     EXPECT_TRUE(peel.CanPeelLoop());
     peel.PeelAfter(1);
 
