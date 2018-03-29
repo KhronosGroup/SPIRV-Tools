@@ -483,6 +483,14 @@ Optimizer::PassToken CreateLocalRedundancyEliminationPass();
 // the loops preheader.
 Optimizer::PassToken CreateLoopInvariantCodeMotionPass();
 
+// Creates a loop peeling pass.
+// This pass will look for conditions inside a loop that are true or false only
+// for the N first or last iteration. For loop with such condition, those N
+// iterations of the loop will be executed outside of the main loop.
+// To limit code size explosion, the loop peeling can only happen if the code
+// size growth for each loop is under |code_growth_threshold|.
+Optimizer::PassToken CreateLoopPeelingPass();
+
 // Creates a loop unswitch pass.
 // This pass will look for loop independent branch conditions and move the
 // condition out of the loop and version the loop based on the taken branch.

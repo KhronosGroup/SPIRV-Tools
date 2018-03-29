@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
@@ -23,9 +24,12 @@
 #include "loop_descriptor.h"
 #include "loop_peeling.h"
 #include "loop_utils.h"
+#include "scalar_analysis.h"
+#include "scalar_analysis_nodes.h"
 
 namespace spvtools {
 namespace opt {
+size_t LoopPeelingPass::code_grow_threshold_ = 1000;
 
 void LoopPeeling::DuplicateAndConnectLoop(
     LoopUtils::LoopCloningResult* clone_results) {
@@ -130,7 +134,15 @@ void LoopPeeling::DuplicateAndConnectLoop(
   cloned_loop_->SetMergeBlock(loop_->GetOrCreatePreHeaderBlock());
 }
 
-void LoopPeeling::InsertCanonicalInductionVariable() {
+void LoopPeeling::InsertCanonicalInductionVariable(
+    LoopUtils::LoopCloningResult* clone_results) {
+  if (original_loop_canonical_induction_variable_) {
+    canonical_induction_variable_ =
+        context_->get_def_use_mgr()->GetDef(clone_results->value_map_.at(
+            original_loop_canonical_induction_variable_->result_id()));
+    return;
+  }
+
   ir::BasicBlock::iterator insert_point =
       GetClonedLoop()->GetLatchBlock()->tail();
   if (GetClonedLoop()->GetLatchBlock()->GetMergeInst()) {
@@ -369,7 +381,7 @@ ir::BasicBlock* LoopPeeling::CreateBlockBefore(ir::BasicBlock* bb) {
                      ir::IRContext::kAnalysisDefUse |
                          ir::IRContext::kAnalysisInstrToBlockMapping)
       .AddBranch(bb->id());
-  cfg.AddEdge(new_bb->id(), bb->id());
+  cfg.RegisterBlock(new_bb.get());
 
   // Add the basic block to the function.
   ir::Function::iterator it = loop_utils_.GetFunction()->FindBlock(bb->id());
@@ -407,7 +419,7 @@ void LoopPeeling::PeelBefore(uint32_t peel_factor) {
   DuplicateAndConnectLoop(&clone_results);
 
   // Add a canonical induction variable "canonical_induction_variable_".
-  InsertCanonicalInductionVariable();
+  InsertCanonicalInductionVariable(&clone_results);
 
   InstructionBuilder builder(context_,
                              &*cloned_loop_->GetPreHeaderBlock()->tail(),
@@ -471,7 +483,7 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
   DuplicateAndConnectLoop(&clone_results);
 
   // Add a canonical induction variable "canonical_induction_variable_".
-  InsertCanonicalInductionVariable();
+  InsertCanonicalInductionVariable(&clone_results);
 
   InstructionBuilder builder(context_,
                              &*cloned_loop_->GetPreHeaderBlock()->tail(),
@@ -557,6 +569,526 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
       ir::IRContext::kAnalysisDefUse |
       ir::IRContext::kAnalysisInstrToBlockMapping |
       ir::IRContext::kAnalysisLoopAnalysis | ir::IRContext::kAnalysisCFG);
+}
+
+Pass::Status LoopPeelingPass::Process(ir::IRContext* c) {
+  InitializeProcessing(c);
+
+  bool modified = false;
+  ir::Module* module = c->module();
+
+  // Process each function in the module
+  for (ir::Function& f : *module) {
+    modified |= ProcessFunction(&f);
+  }
+
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+bool LoopPeelingPass::ProcessFunction(ir::Function* f) {
+  bool modified = false;
+  ir::LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(f);
+
+  std::vector<ir::Loop*> to_process_loop;
+  to_process_loop.reserve(loop_descriptor.NumLoops());
+  for (ir::Loop& l : loop_descriptor) {
+    to_process_loop.push_back(&l);
+  }
+
+  opt::ScalarEvolutionAnalysis scev_analysis(context());
+
+  for (ir::Loop* loop : to_process_loop) {
+    CodeMetrics loop_size;
+    loop_size.Analyze(*loop);
+
+    auto try_peel = [&loop_size, &modified,
+                     this](ir::Loop* loop_to_peel) -> ir::Loop* {
+      if (!loop_to_peel->IsLCSSA()) {
+        LoopUtils(context(), loop_to_peel).MakeLoopClosedSSA();
+      }
+
+      bool peeled_loop;
+      ir::Loop* still_peelable_loop;
+      std::tie(peeled_loop, still_peelable_loop) =
+          ProcessLoop(loop_to_peel, &loop_size);
+
+      if (peeled_loop) {
+        modified = true;
+      }
+
+      return still_peelable_loop;
+    };
+
+    ir::Loop* still_peelable_loop = try_peel(loop);
+    // The pass is working out the maximum factor by which a loop can be peeled.
+    // If the loop can potentially be peeled again, then there is only one
+    // possible direction, so only one call is still needed.
+    if (still_peelable_loop) {
+      try_peel(loop);
+    }
+  }
+
+  return modified;
+}
+
+std::pair<bool, ir::Loop*> LoopPeelingPass::ProcessLoop(
+    ir::Loop* loop, CodeMetrics* loop_size) {
+  opt::ScalarEvolutionAnalysis* scev_analysis =
+      context()->GetScalarEvolutionAnalysis();
+  // Default values for bailing out.
+  std::pair<bool, ir::Loop*> bail_out{false, nullptr};
+
+  ir::BasicBlock* exit_block = loop->FindConditionBlock();
+  if (!exit_block) {
+    return bail_out;
+  }
+
+  ir::Instruction* exiting_iv = loop->FindConditionVariable(exit_block);
+  if (!exiting_iv) {
+    return bail_out;
+  }
+  size_t iterations = 0;
+  if (!loop->FindNumberOfIterations(exiting_iv, &*exit_block->tail(),
+                                    &iterations)) {
+    return bail_out;
+  }
+  if (!iterations) {
+    return bail_out;
+  }
+
+  ir::Instruction* canonical_induction_variable = nullptr;
+
+  loop->GetHeaderBlock()->WhileEachPhiInst([&canonical_induction_variable,
+                                            scev_analysis,
+                                            this](ir::Instruction* insn) {
+    if (const SERecurrentNode* iv =
+            scev_analysis->AnalyzeInstruction(insn)->AsSERecurrentNode()) {
+      const SEConstantNode* offset = iv->GetOffset()->AsSEConstantNode();
+      const SEConstantNode* coeff = iv->GetCoefficient()->AsSEConstantNode();
+      if (offset && coeff && offset->FoldToSingleValue() == 0 &&
+          coeff->FoldToSingleValue() == 1) {
+        if (context()->get_type_mgr()->GetType(insn->type_id())->AsInteger()) {
+          canonical_induction_variable = insn;
+          return false;
+        }
+      }
+    }
+    return true;
+  });
+
+  bool is_signed = canonical_induction_variable
+                       ? context()
+                             ->get_type_mgr()
+                             ->GetType(canonical_induction_variable->type_id())
+                             ->AsInteger()
+                             ->IsSigned()
+                       : false;
+
+  LoopPeeling peeler(
+      loop,
+      InstructionBuilder(context(), loop->GetHeaderBlock(),
+                         ir::IRContext::kAnalysisDefUse |
+                             ir::IRContext::kAnalysisInstrToBlockMapping)
+          .Add32BitConstantInteger<uint32_t>(static_cast<uint32_t>(iterations),
+                                             is_signed),
+      canonical_induction_variable);
+
+  if (!peeler.CanPeelLoop()) {
+    return bail_out;
+  }
+
+  // For each basic block in the loop, check if it can be peeled. If it
+  // can, get the direction (before/after) and by which factor.
+  LoopPeelingInfo peel_info(loop, iterations, scev_analysis);
+
+  uint32_t peel_before_factor = 0;
+  uint32_t peel_after_factor = 0;
+
+  for (uint32_t block : loop->GetBlocks()) {
+    if (block == exit_block->id()) {
+      continue;
+    }
+    ir::BasicBlock* bb = cfg()->block(block);
+    PeelDirection direction;
+    uint32_t factor;
+    std::tie(direction, factor) = peel_info.GetPeelingInfo(bb);
+
+    if (direction == PeelDirection::kNone) {
+      continue;
+    }
+    if (direction == PeelDirection::kBefore) {
+      peel_before_factor = std::max(peel_before_factor, factor);
+    } else {
+      assert(direction == PeelDirection::kAfter);
+      peel_after_factor = std::max(peel_after_factor, factor);
+    }
+  }
+  PeelDirection direction = PeelDirection::kNone;
+  uint32_t factor = 0;
+
+  // Find which direction we should peel.
+  if (peel_before_factor) {
+    factor = peel_before_factor;
+    direction = PeelDirection::kBefore;
+  }
+  if (peel_after_factor) {
+    if (peel_before_factor < peel_after_factor) {
+      // Favor a peel after here and give the peel before another shot later.
+      factor = peel_after_factor;
+      direction = PeelDirection::kAfter;
+    }
+  }
+
+  // Do the peel if we can.
+  if (direction == PeelDirection::kNone) return bail_out;
+
+  // This does not take into account branch elimination opportunities and
+  // the unrolling. It assumes the peeled loop will be unrolled as well.
+  if (factor * loop_size->roi_size_ > code_grow_threshold_) {
+    return bail_out;
+  }
+  loop_size->roi_size_ *= factor;
+
+  // Find if a loop should be peeled again.
+  ir::Loop* extra_opportunity = nullptr;
+
+  if (direction == PeelDirection::kBefore) {
+    peeler.PeelBefore(factor);
+    if (stats_) {
+      stats_->peeled_loops_.emplace_back(loop, PeelDirection::kBefore, factor);
+    }
+    if (peel_after_factor) {
+      // We could have peeled after, give it another try.
+      extra_opportunity = peeler.GetOriginalLoop();
+    }
+  } else {
+    peeler.PeelAfter(factor);
+    if (stats_) {
+      stats_->peeled_loops_.emplace_back(loop, PeelDirection::kAfter, factor);
+    }
+    if (peel_before_factor) {
+      // We could have peeled before, give it another try.
+      extra_opportunity = peeler.GetClonedLoop();
+    }
+  }
+
+  return {true, extra_opportunity};
+}
+
+uint32_t LoopPeelingPass::LoopPeelingInfo::GetFirstLoopInvariantOperand(
+    ir::Instruction* condition) const {
+  for (uint32_t i = 0; i < condition->NumInOperands(); i++) {
+    ir::BasicBlock* bb =
+        context_->get_instr_block(condition->GetSingleWordInOperand(i));
+    if (bb && loop_->IsInsideLoop(bb)) {
+      return condition->GetSingleWordInOperand(i);
+    }
+  }
+
+  return 0;
+}
+
+uint32_t LoopPeelingPass::LoopPeelingInfo::GetFirstNonLoopInvariantOperand(
+    ir::Instruction* condition) const {
+  for (uint32_t i = 0; i < condition->NumInOperands(); i++) {
+    ir::BasicBlock* bb =
+        context_->get_instr_block(condition->GetSingleWordInOperand(i));
+    if (!bb || !loop_->IsInsideLoop(bb)) {
+      return condition->GetSingleWordInOperand(i);
+    }
+  }
+
+  return 0;
+}
+
+static bool IsHandledCondition(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpIEqual:
+    case SpvOpINotEqual:
+    case SpvOpUGreaterThan:
+    case SpvOpSGreaterThan:
+    case SpvOpUGreaterThanEqual:
+    case SpvOpSGreaterThanEqual:
+    case SpvOpULessThan:
+    case SpvOpSLessThan:
+    case SpvOpULessThanEqual:
+    case SpvOpSLessThanEqual:
+      return true;
+    default:
+      return false;
+  }
+}
+
+LoopPeelingPass::LoopPeelingInfo::Direction
+LoopPeelingPass::LoopPeelingInfo::GetPeelingInfo(ir::BasicBlock* bb) const {
+  if (bb->terminator()->opcode() != SpvOpBranchConditional) {
+    return GetNoneDirection();
+  }
+
+  opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+
+  ir::Instruction* condition =
+      def_use_mgr->GetDef(bb->terminator()->GetSingleWordInOperand(0));
+
+  if (!IsHandledCondition(condition->opcode())) {
+    return GetNoneDirection();
+  }
+
+  if (!GetFirstLoopInvariantOperand(condition)) {
+    // No loop invariant, it cannot be peeled by this pass.
+    return GetNoneDirection();
+  }
+  if (!GetFirstNonLoopInvariantOperand(condition)) {
+    // Seems to be a job for the unswitch pass.
+    return GetNoneDirection();
+  }
+
+  // Left hand-side.
+  SExpression lhs = scev_analysis_->AnalyzeInstruction(
+      def_use_mgr->GetDef(condition->GetSingleWordInOperand(0)));
+  if (lhs->GetType() == SENode::CanNotCompute) {
+    // Can't make any conclusion.
+    return GetNoneDirection();
+  }
+
+  // Right hand-side.
+  SExpression rhs = scev_analysis_->AnalyzeInstruction(
+      def_use_mgr->GetDef(condition->GetSingleWordInOperand(1)));
+  if (rhs->GetType() == SENode::CanNotCompute) {
+    // Can't make any conclusion.
+    return GetNoneDirection();
+  }
+
+  // Only take into account recurrent expression over the current loop.
+  bool is_lhs_rec = !scev_analysis_->IsLoopInvariant(loop_, lhs);
+  bool is_rhs_rec = !scev_analysis_->IsLoopInvariant(loop_, rhs);
+
+  if ((is_lhs_rec && is_rhs_rec) || (!is_lhs_rec && !is_rhs_rec)) {
+    return GetNoneDirection();
+  }
+
+  if (is_lhs_rec) {
+    if (!lhs->AsSERecurrentNode() ||
+        lhs->AsSERecurrentNode()->GetLoop() != loop_) {
+      return GetNoneDirection();
+    }
+  }
+  if (is_rhs_rec) {
+    if (!rhs->AsSERecurrentNode() ||
+        rhs->AsSERecurrentNode()->GetLoop() != loop_) {
+      return GetNoneDirection();
+    }
+  }
+
+  // If the op code is ==, then we try a peel before or after.
+  // If opcode is not <, >, <= or >=, we bail out.
+  //
+  // For the remaining cases, we canonicalize the expression so that the
+  // constant expression is on the left hand side and the recurring expression
+  // is on the right hand side. If we swap hand side, then < becomes >, <=
+  // becomes >= etc.
+  // If the opcode is <=, then we add 1 to the right hand side and do the peel
+  // check on <.
+  // If the opcode is >=, then we add 1 to the left hand side and do the peel
+  // check on >.
+
+  CmpOperator cmp_operator;
+  switch (condition->opcode()) {
+    default:
+      return GetNoneDirection();
+    case SpvOpIEqual:
+    case SpvOpINotEqual:
+      return HandleEquality(lhs, rhs);
+    case SpvOpUGreaterThan:
+    case SpvOpSGreaterThan: {
+      cmp_operator = CmpOperator::kGT;
+      break;
+    }
+    case SpvOpULessThan:
+    case SpvOpSLessThan: {
+      cmp_operator = CmpOperator::kLT;
+      break;
+    }
+    // We add one to transform >= into > and <= into <.
+    case SpvOpUGreaterThanEqual:
+    case SpvOpSGreaterThanEqual: {
+      cmp_operator = CmpOperator::kGE;
+      break;
+    }
+    case SpvOpULessThanEqual:
+    case SpvOpSLessThanEqual: {
+      cmp_operator = CmpOperator::kLE;
+      break;
+    }
+  }
+
+  // Force the left hand side to be the non recurring expression.
+  if (is_lhs_rec) {
+    std::swap(lhs, rhs);
+    switch (cmp_operator) {
+      case CmpOperator::kLT: {
+        cmp_operator = CmpOperator::kGT;
+        break;
+      }
+      case CmpOperator::kGT: {
+        cmp_operator = CmpOperator::kLT;
+        break;
+      }
+      case CmpOperator::kLE: {
+        cmp_operator = CmpOperator::kGE;
+        break;
+      }
+      case CmpOperator::kGE: {
+        cmp_operator = CmpOperator::kLE;
+        break;
+      }
+    }
+  }
+  return HandleInequality(cmp_operator, lhs, rhs->AsSERecurrentNode());
+}
+
+SExpression LoopPeelingPass::LoopPeelingInfo::GetValueAtFirstIteration(
+    SERecurrentNode* rec) const {
+  return rec->GetOffset();
+}
+
+SExpression LoopPeelingPass::LoopPeelingInfo::GetValueAtIteration(
+    SERecurrentNode* rec, int64_t iteration) const {
+  SExpression coeff = rec->GetCoefficient();
+  SExpression offset = rec->GetOffset();
+
+  return (coeff * iteration) + offset;
+}
+
+SExpression LoopPeelingPass::LoopPeelingInfo::GetValueAtLastIteration(
+    SERecurrentNode* rec) const {
+  return GetValueAtIteration(rec, loop_max_iterations_ - 1);
+}
+
+bool LoopPeelingPass::LoopPeelingInfo::EvalOperator(CmpOperator cmp_op,
+                                                    SExpression lhs,
+                                                    SExpression rhs,
+                                                    bool* result) const {
+  assert(scev_analysis_->IsLoopInvariant(loop_, lhs));
+  assert(scev_analysis_->IsLoopInvariant(loop_, rhs));
+  // We perform the test: 0 cmp_op rhs - lhs
+  // What is left is then to determine the sign of the expression.
+  switch (cmp_op) {
+    case CmpOperator::kLT: {
+      return scev_analysis_->IsAlwaysGreaterThanZero(rhs - lhs, result);
+    }
+    case CmpOperator::kGT: {
+      return scev_analysis_->IsAlwaysGreaterThanZero(lhs - rhs, result);
+    }
+    case CmpOperator::kLE: {
+      return scev_analysis_->IsAlwaysGreaterOrEqualToZero(rhs - lhs, result);
+    }
+    case CmpOperator::kGE: {
+      return scev_analysis_->IsAlwaysGreaterOrEqualToZero(lhs - rhs, result);
+    }
+  }
+  return false;
+}
+
+LoopPeelingPass::LoopPeelingInfo::Direction
+LoopPeelingPass::LoopPeelingInfo::HandleEquality(SExpression lhs,
+                                                 SExpression rhs) const {
+  {
+    // Try peel before opportunity.
+    SExpression lhs_cst = lhs;
+    if (SERecurrentNode* rec_node = lhs->AsSERecurrentNode()) {
+      lhs_cst = rec_node->GetOffset();
+    }
+    SExpression rhs_cst = rhs;
+    if (SERecurrentNode* rec_node = rhs->AsSERecurrentNode()) {
+      rhs_cst = rec_node->GetOffset();
+    }
+
+    if (lhs_cst == rhs_cst) {
+      return Direction{LoopPeelingPass::PeelDirection::kBefore, 1};
+    }
+  }
+
+  {
+    // Try peel after opportunity.
+    SExpression lhs_cst = lhs;
+    if (SERecurrentNode* rec_node = lhs->AsSERecurrentNode()) {
+      // rec_node(x) = a * x + b
+      // assign to lhs: a * (loop_max_iterations_ - 1) + b
+      lhs_cst = GetValueAtLastIteration(rec_node);
+    }
+    SExpression rhs_cst = rhs;
+    if (SERecurrentNode* rec_node = rhs->AsSERecurrentNode()) {
+      // rec_node(x) = a * x + b
+      // assign to lhs: a * (loop_max_iterations_ - 1) + b
+      rhs_cst = GetValueAtLastIteration(rec_node);
+    }
+
+    if (lhs_cst == rhs_cst) {
+      return Direction{LoopPeelingPass::PeelDirection::kAfter, 1};
+    }
+  }
+
+  return GetNoneDirection();
+}
+
+LoopPeelingPass::LoopPeelingInfo::Direction
+LoopPeelingPass::LoopPeelingInfo::HandleInequality(CmpOperator cmp_op,
+                                                   SExpression lhs,
+                                                   SERecurrentNode* rhs) const {
+  SExpression offset = rhs->GetOffset();
+  SExpression coefficient = rhs->GetCoefficient();
+  // Compute (cst - B) / A.
+  std::pair<SExpression, int64_t> flip_iteration = (lhs - offset) / coefficient;
+  if (!flip_iteration.first->AsSEConstantNode()) {
+    return GetNoneDirection();
+  }
+  // note: !!flip_iteration.second normalize to 0/1 (via bool cast).
+  int64_t iteration =
+      flip_iteration.first->AsSEConstantNode()->FoldToSingleValue() +
+      !!flip_iteration.second;
+  if (iteration <= 0 ||
+      loop_max_iterations_ <= static_cast<uint64_t>(iteration)) {
+    // Always true or false within the loop bounds.
+    return GetNoneDirection();
+  }
+  // If this is a <= or >= operator and the iteration, make sure |iteration| is
+  // the one flipping the condition.
+  // If (cst - B) and A are not divisible, this equivalent to a < or > check, so
+  // we skip this test.
+  if (!flip_iteration.second &&
+      (cmp_op == CmpOperator::kLE || cmp_op == CmpOperator::kGE)) {
+    bool first_iteration;
+    bool current_iteration;
+    if (!EvalOperator(cmp_op, lhs, offset, &first_iteration) ||
+        !EvalOperator(cmp_op, lhs, GetValueAtIteration(rhs, iteration),
+                      &current_iteration)) {
+      return GetNoneDirection();
+    }
+    // If the condition did not flip the next will.
+    if (first_iteration == current_iteration) {
+      iteration++;
+    }
+  }
+
+  uint32_t cast_iteration = 0;
+  // sanity check: can we fit |iteration| in a uint32_t ?
+  if (static_cast<uint64_t>(iteration) < std::numeric_limits<uint32_t>::max()) {
+    cast_iteration = static_cast<uint32_t>(iteration);
+  }
+
+  if (cast_iteration) {
+    // Peel before if we are closer to the start, after if closer to the end.
+    if (loop_max_iterations_ / 2 > cast_iteration) {
+      return Direction{LoopPeelingPass::PeelDirection::kBefore, cast_iteration};
+    } else {
+      return Direction{
+          LoopPeelingPass::PeelDirection::kAfter,
+          static_cast<uint32_t>(loop_max_iterations_ - cast_iteration)};
+    }
+  }
+
+  return GetNoneDirection();
 }
 
 }  // namespace opt

@@ -24,6 +24,19 @@ namespace spvtools {
 
 namespace opt {
 
+// Class to gather some metrics about a Region Of Interest (ROI).
+// So far it counts the number of instructions in a ROI (excluding debug
+// and label instructions) per basic block and in total.
+struct CodeMetrics {
+  void Analyze(const ir::Loop& loop);
+
+  // The number of instructions per basic block in the ROI.
+  std::unordered_map<uint32_t, size_t> block_sizes_;
+
+  // Number of instruction in the ROI.
+  size_t roi_size_;
+};
+
 // LoopUtils is used to encapsulte loop optimizations and from the passes which
 // use them. Any pass which needs a loop optimization should do it through this
 // or through a pass which is using this.
