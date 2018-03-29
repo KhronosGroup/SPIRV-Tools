@@ -19,6 +19,7 @@
 #include "enum_string_mapping.h"
 #include "extensions.h"
 #include "gmock/gmock.h"
+#include "spirv_target_env.h"
 #include "test_fixture.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
@@ -229,16 +230,19 @@ INSTANTIATE_TEST_CASE_P(ExpectFailure, ValidateAMDShaderBallotCapabilities,
                         ValuesIn(AMDShaderBallotGroupInstructions()));
 
 struct ExtIntoCoreCase {
+  const char* ext;
   const char* cap;
   const char* builtin;
+  spv_target_env env;
+  bool success;
 };
 
-using ValidateExtIntoCore1p3 = spvtest::ValidateBase<ExtIntoCoreCase>;
+using ValidateExtIntoCore = spvtest::ValidateBase<ExtIntoCoreCase>;
 
 // Make sure that we don't panic about missing extensions for using
-// functionalities that introduced in extensions but became core SPIR-V 1.3.
+// functionalities that introduced in extensions but became core SPIR-V later.
 
-TEST_P(ValidateExtIntoCore1p3, ExpectSuccess) {
+TEST_P(ValidateExtIntoCore, DoNotAskForExtensionInLaterVersion) {
   const string code = string(R"(
                OpCapability Shader
                OpCapability )") +
@@ -258,20 +262,58 @@ TEST_P(ValidateExtIntoCore1p3, ExpectSuccess) {
                OpReturn
                OpFunctionEnd)";
 
-  CompileSuccessfully(code.c_str(), SPV_ENV_UNIVERSAL_1_3);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  CompileSuccessfully(code.c_str(), GetParam().env);
+  if (GetParam().success) {
+    ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(GetParam().env));
+  } else {
+    ASSERT_NE(SPV_SUCCESS, ValidateInstructions(GetParam().env));
+    const string message = getDiagnosticString();
+    if (spvIsVulkanEnv(GetParam().env)) {
+      EXPECT_THAT(message, HasSubstr(string(GetParam().cap) +
+                                     " is not allowed by Vulkan"));
+      EXPECT_THAT(message, HasSubstr(string("or requires extension")));
+    } else {
+      EXPECT_THAT(message,
+                  HasSubstr(string("requires one of these extensions: ") +
+                            GetParam().ext));
+    }
+  }
 }
 
-INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateExtIntoCore1p3,
-                        ValuesIn(std::vector<ExtIntoCoreCase>{
-                            // SPV_KHR_shader_draw_parameters
-                            {"DrawParameters", "BaseVertex"},
-                            {"DrawParameters", "BaseInstance"},
-                            {"DrawParameters", "DrawIndex"},
-                            // SPV_KHR_multiview
-                            {"MultiView", "ViewIndex"},
-                            // SPV_KHR_device_group
-                            {"DeviceGroup", "DeviceIndex"},
-                        }));
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    KHR_extensions, ValidateExtIntoCore,
+    ValuesIn(std::vector<ExtIntoCoreCase>{
+        // SPV_KHR_shader_draw_parameters became core SPIR-V 1.3
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "BaseVertex", SPV_ENV_UNIVERSAL_1_3, true},
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "BaseVertex", SPV_ENV_UNIVERSAL_1_2, false},
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "BaseVertex", SPV_ENV_UNIVERSAL_1_1, false},
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "BaseVertex", SPV_ENV_UNIVERSAL_1_0, false},
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "BaseVertex", SPV_ENV_VULKAN_1_1, true},
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "BaseVertex", SPV_ENV_VULKAN_1_0, false},
+
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "BaseInstance", SPV_ENV_UNIVERSAL_1_3, true},
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "BaseInstance", SPV_ENV_VULKAN_1_0, false},
+
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "DrawIndex", SPV_ENV_UNIVERSAL_1_3, true},
+        {"SPV_KHR_shader_draw_parameters", "DrawParameters", "DrawIndex", SPV_ENV_UNIVERSAL_1_1, false},
+
+        // SPV_KHR_multiview became core SPIR-V 1.3
+        {"SPV_KHR_multiview", "MultiView", "ViewIndex", SPV_ENV_UNIVERSAL_1_3, true},
+        {"SPV_KHR_multiview", "MultiView", "ViewIndex", SPV_ENV_UNIVERSAL_1_2, false},
+        {"SPV_KHR_multiview", "MultiView", "ViewIndex", SPV_ENV_UNIVERSAL_1_1, false},
+        {"SPV_KHR_multiview", "MultiView", "ViewIndex", SPV_ENV_UNIVERSAL_1_0, false},
+        {"SPV_KHR_multiview", "MultiView", "ViewIndex", SPV_ENV_VULKAN_1_1, true},
+        {"SPV_KHR_multiview", "MultiView", "ViewIndex", SPV_ENV_VULKAN_1_0, false},
+
+        // SPV_KHR_device_group became core SPIR-V 1.3
+        {"SPV_KHR_device_group", "DeviceGroup", "DeviceIndex", SPV_ENV_UNIVERSAL_1_3, true},
+        {"SPV_KHR_device_group", "DeviceGroup", "DeviceIndex", SPV_ENV_UNIVERSAL_1_2, false},
+        {"SPV_KHR_device_group", "DeviceGroup", "DeviceIndex", SPV_ENV_UNIVERSAL_1_1, false},
+        {"SPV_KHR_device_group", "DeviceGroup", "DeviceIndex", SPV_ENV_UNIVERSAL_1_0, false},
+        {"SPV_KHR_device_group", "DeviceGroup", "DeviceIndex", SPV_ENV_VULKAN_1_1, true},
+        {"SPV_KHR_device_group", "DeviceGroup", "DeviceIndex", SPV_ENV_VULKAN_1_0, false},
+    }));
+// clang-format on
 
 }  // anonymous namespace
