@@ -142,6 +142,25 @@ int64_t Loop::GetResidualConditionValue(SpvOp condition, int64_t initial_value,
   return remainder;
 }
 
+ir::Instruction* Loop::GetConditionInst() const {
+  ir::BasicBlock* condition_block = FindConditionBlock();
+  if (!condition_block) {
+    return nullptr;
+  }
+  ir::Instruction* branch_conditional = &*condition_block->tail();
+  if (!branch_conditional ||
+      branch_conditional->opcode() != SpvOpBranchConditional) {
+    return nullptr;
+  }
+  ir::Instruction* condition_inst = context_->get_def_use_mgr()->GetDef(
+      branch_conditional->GetSingleWordInOperand(0));
+  if (IsSupportedCondition(condition_inst->opcode())) {
+    return condition_inst;
+  }
+
+  return nullptr;
+}
+
 // Extract the initial value from the |induction| OpPhi instruction and store it
 // in |value|. If the function couldn't find the initial value of |induction|
 // return false.
@@ -388,15 +407,14 @@ bool Loop::IsLCSSA() const {
       // All uses must be either:
       //  - In the loop;
       //  - In an exit block and in a phi instruction.
-      if (!def_use_mgr->WhileEachUser(
-              &insn,
-              [&exit_blocks, ir_context, this](ir::Instruction* use) -> bool {
-                BasicBlock* parent = ir_context->get_instr_block(use);
-                assert(parent && "Invalid analysis");
-                if (IsInsideLoop(parent)) return true;
-                if (use->opcode() != SpvOpPhi) return false;
-                return exit_blocks.count(parent->id());
-              }))
+      if (!def_use_mgr->WhileEachUser(&insn, [&exit_blocks, ir_context, this](
+                                                 ir::Instruction* use) -> bool {
+            BasicBlock* parent = ir_context->get_instr_block(use);
+            assert(parent && "Invalid analysis");
+            if (IsInsideLoop(parent)) return true;
+            if (use->opcode() != SpvOpPhi) return false;
+            return exit_blocks.count(parent->id());
+          }))
         return false;
     }
   }
