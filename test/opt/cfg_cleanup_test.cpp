@@ -307,7 +307,7 @@ TEST_F(CFGCleanupTest, RemovePhiArgsFromFarBlocks) {
                OpStore %outparm %int_15
                OpBranch %16
          %16 = OpLabel
-         %30 = OpPhi %int %11 %41 %int_42 %13 %11 %14 %11 %15
+         %30 = OpPhi %int %11 %40 %int_42 %13 %11 %14 %11 %15
          %28 = OpIAdd %int %30 %int_5
                OpStore %outparm %28
                OpReturn
@@ -352,7 +352,7 @@ OpBranch %20
 OpStore %outparm %int_15
 OpBranch %20
 %20 = OpLabel
-%24 = OpPhi %int %int_42 %21 %26 %22 %26 %23
+%24 = OpPhi %int %26 %16 %int_42 %21 %26 %22 %26 %23
 %25 = OpIAdd %int %24 %int_5
 OpStore %outparm %25
 OpReturn

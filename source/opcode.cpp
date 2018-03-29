@@ -106,7 +106,7 @@ spv_result_t spvOpcodeTableNameLookup(spv_target_env env,
     // Note that the second rule assumes the extension enabling this instruction
     // is indeed requested in the SPIR-V code; checking that should be
     // validator's work.
-    if ((static_cast<uint32_t>(env) >= entry.minVersion ||
+    if ((spvVersionForTargetEnv(env) >= entry.minVersion ||
          entry.numExtensions > 0u) &&
         nameLength == strlen(entry.name) &&
         !strncmp(name, entry.name, nameLength)) {
@@ -151,7 +151,7 @@ spv_result_t spvOpcodeTableValueLookup(spv_target_env env,
     // Note that the second rule assumes the extension enabling this instruction
     // is indeed requested in the SPIR-V code; checking that should be
     // validator's work.
-    if (static_cast<uint32_t>(env) >= it->minVersion ||
+    if (spvVersionForTargetEnv(env) >= it->minVersion ||
         it->numExtensions > 0u) {
       *pEntry = it;
       return SPV_SUCCESS;
@@ -200,6 +200,19 @@ int32_t spvOpcodeIsScalarType(const SpvOp opcode) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
     case SpvOpTypeBool:
+      return true;
+    default:
+      return false;
+  }
+}
+
+int32_t spvOpcodeIsSpecConstant(const SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpSpecConstantTrue:
+    case SpvOpSpecConstantFalse:
+    case SpvOpSpecConstant:
+    case SpvOpSpecConstantComposite:
+    case SpvOpSpecConstantOp:
       return true;
     default:
       return false;
