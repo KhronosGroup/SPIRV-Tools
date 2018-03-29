@@ -334,6 +334,10 @@ class Loop {
                                            size_t number_of_iterations,
                                            size_t unroll_factor);
 
+  // Returns the condition instruction for entry into the loop
+  // Returns nullptr if it can't be found.
+  ir::Instruction* GetConditionInst() const;
+
  private:
   IRContext* context_;
   // The block which marks the start of the loop.

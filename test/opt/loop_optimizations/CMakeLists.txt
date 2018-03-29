@@ -90,3 +90,15 @@ add_spvtools_unittest(TARGET peeling_test
         peeling.cpp
     LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET loop_dependence_analysis
+    SRCS ../function_utils.h
+        dependence_analysis.cpp
+    LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET loop_dependence_analysis_helpers
+    SRCS ../function_utils.h
+        dependence_analysis_helpers.cpp
+    LIBS SPIRV-Tools-opt
+)
