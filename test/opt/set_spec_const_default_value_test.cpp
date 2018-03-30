@@ -236,7 +236,7 @@ INSTANTIATE_TEST_CASE_P(
             "OpDecorate %2 SpecId 202\n"
             "%double = OpTypeFloat 64\n"
             "%1 = OpSpecConstant %double 3.14159265358979\n"
-            "%2 = OpSpecConstant %double 0.142857\n",
+            "%2 = OpSpecConstant %double 0.14285\n",
             // default values
             SpecIdToValueStrMap{{201, "0x1.fffffffffffffp+1024"},
                                 {202, "-32.5"}},
@@ -413,17 +413,17 @@ INSTANTIATE_TEST_CASE_P(
             "OpDecorate %2 SpecId 202\n"
             "%float = OpTypeFloat 32\n"
             "%double = OpTypeFloat 64\n"
-            "%1 = OpSpecConstant %float 3.14159\n"
-            "%2 = OpSpecConstant %double 0.142857\n",
+            "%1 = OpSpecConstant %float 3.1415\n"
+            "%2 = OpSpecConstant %double 0.14285\n",
             // default values
-            SpecIdToValueStrMap{{201, "3.14159"}, {202, "0.142857"}},
+            SpecIdToValueStrMap{{201, "3.1415"}, {202, "0.14285"}},
             // expected
             "OpDecorate %1 SpecId 201\n"
             "OpDecorate %2 SpecId 202\n"
             "%float = OpTypeFloat 32\n"
             "%double = OpTypeFloat 64\n"
-            "%1 = OpSpecConstant %float 3.14159\n"
-            "%2 = OpSpecConstant %double 0.142857\n",
+            "%1 = OpSpecConstant %float 3.1415\n"
+            "%2 = OpSpecConstant %double 0.14285\n",
         },
         // 17. OpGroupDecorate may have multiple target ids defined by the same
         // eligible spec constant
@@ -700,7 +700,7 @@ INSTANTIATE_TEST_CASE_P(
             "OpDecorate %2 SpecId 202\n"
             "%double = OpTypeFloat 64\n"
             "%1 = OpSpecConstant %double 3.14159265358979\n"
-            "%2 = OpSpecConstant %double 0.142857\n",
+            "%2 = OpSpecConstant %double 0.14285\n",
             // default values
             SpecIdToValueBitPatternMap{{201, {0xffffffff, 0x7fffffff}},
                                        {202, {0x00000000, 0xc0404000}}},
@@ -1055,7 +1055,7 @@ INSTANTIATE_TEST_CASE_P(
             "%double = OpTypeFloat 64\n"
             "%1 = OpSpecConstant %int 100\n"
             "%2 = OpSpecConstant %ulong 200\n"
-            "%3 = OpSpecConstant %double 3.1415926\n",
+            "%3 = OpSpecConstant %double 3.141592653\n",
             // default values
             SpecIdToValueBitPatternMap{
                 {100, {10, 0}}, {101, {11}}, {102, {0xffffffff}}},
@@ -1068,7 +1068,7 @@ INSTANTIATE_TEST_CASE_P(
             "%double = OpTypeFloat 64\n"
             "%1 = OpSpecConstant %int 100\n"
             "%2 = OpSpecConstant %ulong 200\n"
-            "%3 = OpSpecConstant %double 3.1415926\n",
+            "%3 = OpSpecConstant %double 3.141592653\n",
         },
     }));
 

@@ -518,8 +518,8 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -12.5\n",
         // 64-bit float
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0\n",
-        "%1 = OpTypeFloat 64\n%2 = OpConstant %1 1.79769e+308\n",
-        "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -1.79769e+308\n",
+        "%1 = OpTypeFloat 64\n%2 = OpConstant %1 1.79767e+308\n",
+        "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -1.79767e+308\n",
     }), );
 
 INSTANTIATE_TEST_CASE_P(
@@ -628,8 +628,8 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 32\n%2 = OpSpecConstant %1 -12.5\n",
         // 64-bit float
         "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 0\n",
-        "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 1.79769e+308\n",
-        "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 -1.79769e+308\n",
+        "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 1.79767e+308\n",
+        "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 -1.79767e+308\n",
     }), );
 
 // Test OpSpecConstantOp
