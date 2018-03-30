@@ -43,6 +43,8 @@ using HexDoubleTest =
     ::testing::TestWithParam<std::pair<FloatProxy<double>, std::string>>;
 using DecodeHexDoubleTest =
     ::testing::TestWithParam<std::pair<std::string, FloatProxy<double>>>;
+using RoundTripFloatTest = ::testing::TestWithParam<float>;
+using RoundTripDoubleTest = ::testing::TestWithParam<double>;
 
 // Hex-encodes a float value.
 template <typename T>
@@ -240,6 +242,40 @@ INSTANTIATE_TEST_CASE_P(
         {uint64_t(0x7FF0000300000000LL), "0x1.00003p+1024"},           // -nan
         {uint64_t(0x7FFFFFFFFFFFFFFFLL), "0x1.fffffffffffffp+1024"},   // -nan
     })), );
+
+// Tests that encoding a value and decoding it again restores
+// the same value.
+TEST_P(RoundTripFloatTest, CanStoreAccurately) {
+  std::stringstream ss;
+  ss << FloatProxy<float>(GetParam());
+  ss.seekg(0);
+  FloatProxy<float> res;
+  ss >> res;
+  EXPECT_THAT(GetParam(), Eq(res.getAsFloat()));
+}
+
+TEST_P(RoundTripDoubleTest, CanStoreAccurately) {
+  std::stringstream ss;
+  ss << FloatProxy<double>(GetParam());
+  ss.seekg(0);
+  FloatProxy<double> res;
+  ss >> res;
+  EXPECT_THAT(GetParam(), Eq(res.getAsFloat()));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Float32StoreTests, RoundTripFloatTest,
+    ::testing::ValuesIn(std::vector<float>(
+        {// Value requiring more than 6 digits of precision to be
+         // represented accurately.
+         3.0000002f})));
+
+INSTANTIATE_TEST_CASE_P(
+    Float64StoreTests, RoundTripDoubleTest,
+    ::testing::ValuesIn(std::vector<double>(
+        {// Value requiring more than 15 digits of precision to be
+         // represented accurately.
+         1.5000000000000002})));
 
 TEST(HexFloatStreamTest, OperatorLeftShiftPreservesFloatAndFill) {
   std::stringstream s;
@@ -478,8 +514,8 @@ INSTANTIATE_TEST_CASE_P(
         {1000.0f, "1000"},
 
         // Still normal numbers, but with large magnitude exponents.
-        {float(ldexp(1.f, 126)), "8.50706e+37"},
-        {float(ldexp(-1.f, -126)), "-1.17549e-38"},
+        {float(ldexp(1.f, 126)), "8.50705917e+37"},
+        {float(ldexp(-1.f, -126)), "-1.17549435e-38"},
 
         // denormalized values are printed as hex floats.
         {float(ldexp(1.0f, -127)), "0x1p-127"},
@@ -509,18 +545,18 @@ INSTANTIATE_TEST_CASE_P(
             {1000.0, "1000"},
 
             // Large outside the range of normal floats
-            {ldexp(1.0, 128), "3.40282366920938e+38"},
-            {ldexp(1.5, 129), "1.02084710076282e+39"},
-            {ldexp(-1.0, 128), "-3.40282366920938e+38"},
-            {ldexp(-1.5, 129), "-1.02084710076282e+39"},
+            {ldexp(1.0, 128), "3.4028236692093846e+38"},
+            {ldexp(1.5, 129), "1.0208471007628154e+39"},
+            {ldexp(-1.0, 128), "-3.4028236692093846e+38"},
+            {ldexp(-1.5, 129), "-1.0208471007628154e+39"},
 
             // Small outside the range of normal floats
-            {ldexp(1.5, -129), "2.20405190779179e-39"},
-            {ldexp(-1.5, -129), "-2.20405190779179e-39"},
+            {ldexp(1.5, -129), "2.2040519077917891e-39"},
+            {ldexp(-1.5, -129), "-2.2040519077917891e-39"},
 
             // lowest non-denorm
-            {ldexp(1.0, -1022), "2.2250738585072e-308"},
-            {ldexp(-1.0, -1022), "-2.2250738585072e-308"},
+            {ldexp(1.0, -1022), "2.2250738585072014e-308"},
+            {ldexp(-1.0, -1022), "-2.2250738585072014e-308"},
 
             // Denormalized values
             {ldexp(1.125, -1023), "0x1.2p-1023"},

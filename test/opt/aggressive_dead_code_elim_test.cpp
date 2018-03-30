@@ -4006,7 +4006,7 @@ TEST_F(AggressiveDCETest, BasicAllDeadConstants) {
        %uint = OpTypeInt 32 0
          %11 = OpConstant %uint 2
       %float = OpTypeFloat 32
-         %13 = OpConstant %float 3.14
+         %13 = OpConstant %float 3.1415
      %double = OpTypeFloat 64
          %15 = OpConstant %double 3.14159265358979
        %main = OpFunction %void None %4
@@ -4048,7 +4048,7 @@ TEST_F(AggressiveDCETest, BasicNoneDeadConstants) {
       "%uint_2 = OpConstant %uint 2",
        "%float = OpTypeFloat 32",
  "%_ptr_Output_float = OpTypePointer Output %float",
-  "%float_3_14 = OpConstant %float 3.14",
+  "%float_3_1415 = OpConstant %float 3.1415",
       "%double = OpTypeFloat 64",
  "%_ptr_Output_double = OpTypePointer Output %double",
  "%double_3_14159265358979 = OpConstant %double 3.14159265358979",
@@ -4064,7 +4064,7 @@ TEST_F(AggressiveDCETest, BasicNoneDeadConstants) {
                 "OpStore %bfv %false",
                 "OpStore %iv %int_1",
                 "OpStore %uv %uint_2",
-                "OpStore %fv %float_3_14",
+                "OpStore %fv %float_3_1415",
                 "OpStore %dv %double_3_14159265358979",
                 "OpReturn",
                 "OpFunctionEnd",
@@ -4194,7 +4194,7 @@ INSTANTIATE_TEST_CASE_P(
         {
             /* .used_consts = */
             {
-              "%used_const_float = OpConstant %float 3.14",
+              "%used_const_float = OpConstant %float 3.1415",
             },
             /* .main_insts = */
             {
@@ -4203,11 +4203,11 @@ INSTANTIATE_TEST_CASE_P(
             },
             /* .dead_consts = */
             {
-              "%dead_const_float = OpConstant %float 3.14",
+              "%dead_const_float = OpConstant %float 3.1415",
             },
             /* .checks = */
             {
-              "; CHECK: [[const:%\\w+]] = OpConstant %float 3.14",
+              "; CHECK: [[const:%\\w+]] = OpConstant %float 3.1415",
               "; CHECK-NOT: OpConstant",
               "; CHECK: OpStore {{%\\w+}} [[const]]",
             },
@@ -4306,7 +4306,7 @@ INSTANTIATE_TEST_CASE_P(
         {
             /* .used_consts = */
             {
-              "%used_float_x = OpConstant %float 3.14",
+              "%used_float_x = OpConstant %float 3.1415",
               "%used_float_y = OpConstant %float 4.13",
               "%used_v2float = OpConstantComposite %v2float %used_float_x %used_float_y",
             },
@@ -4317,13 +4317,13 @@ INSTANTIATE_TEST_CASE_P(
             },
             /* .dead_consts = */
             {
-              "%dead_float_x = OpConstant %float 3.14",
+              "%dead_float_x = OpConstant %float 3.1415",
               "%dead_float_y = OpConstant %float 4.13",
               "%dead_v2float = OpConstantComposite %v2float %dead_float_x %dead_float_y",
             },
             /* .checks = */
             {
-              "; CHECK: [[constx:%\\w+]] = OpConstant %float 3.14",
+              "; CHECK: [[constx:%\\w+]] = OpConstant %float 3.1415",
               "; CHECK: [[consty:%\\w+]] = OpConstant %float 4.13",
               "; CHECK: [[const:%\\w+]] = OpConstantComposite %v2float [[constx]] [[consty]]",
               "; CHECK-NOT: OpConstant",
@@ -4336,9 +4336,9 @@ INSTANTIATE_TEST_CASE_P(
         {
             /* .used_consts = */
             {
-              "%used_float_x = OpConstant %float 3.14",
-              "%used_float_y = OpConstant %float 4.13",
-              "%used_float_z = OpConstant %float 4.31",
+              "%used_float_x = OpConstant %float 3.1415",
+              "%used_float_y = OpConstant %float 4.25",
+              "%used_float_z = OpConstant %float 4.75",
               "%used_v3float = OpConstantComposite %v3float %used_float_x %used_float_y %used_float_z",
             },
             /* .main_insts = */
@@ -4352,9 +4352,9 @@ INSTANTIATE_TEST_CASE_P(
             },
             /* .checks = */
             {
-              "; CHECK: [[constx:%\\w+]] = OpConstant %float 3.14",
-              "; CHECK: [[consty:%\\w+]] = OpConstant %float 4.13",
-              "; CHECK: [[constz:%\\w+]] = OpConstant %float 4.31",
+              "; CHECK: [[constx:%\\w+]] = OpConstant %float 3.1415",
+              "; CHECK: [[consty:%\\w+]] = OpConstant %float 4.25",
+              "; CHECK: [[constz:%\\w+]] = OpConstant %float 4.75",
               "; CHECK: [[const:%\\w+]] = OpConstantComposite %v3float [[constx]] [[consty]]",
               "; CHECK-NOT: OpConstant",
               "; CHECK: OpStore {{%\\w+}} [[const]]",

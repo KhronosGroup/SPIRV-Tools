@@ -47,7 +47,7 @@ TEST_F(EliminateDeadConstantBasicTest, BasicAllDeadConstants) {
        "%uint = OpTypeInt 32 0",
          "%11 = OpConstant %uint 2",
       "%float = OpTypeFloat 32",
-         "%13 = OpConstant %float 3.14",
+         "%13 = OpConstant %float 3.1415",
      "%double = OpTypeFloat 64",
          "%15 = OpConstant %double 3.14159265358979",
        "%main = OpFunction %void None %4",
@@ -106,7 +106,7 @@ TEST_F(EliminateDeadConstantBasicTest, BasicNoneDeadConstants) {
       "%uint_2 = OpConstant %uint 2",
        "%float = OpTypeFloat 32",
  "%_ptr_Function_float = OpTypePointer Function %float",
-  "%float_3_14 = OpConstant %float 3.14",
+  "%float_3_1415 = OpConstant %float 3.1415",
       "%double = OpTypeFloat 64",
  "%_ptr_Function_double = OpTypePointer Function %double",
  "%double_3_14159265358979 = OpConstant %double 3.14159265358979",
@@ -122,7 +122,7 @@ TEST_F(EliminateDeadConstantBasicTest, BasicNoneDeadConstants) {
                 "OpStore %bfv %false",
                 "OpStore %iv %int_1",
                 "OpStore %uv %uint_2",
-                "OpStore %fv %float_3_14",
+                "OpStore %fv %float_3_1415",
                 "OpStore %dv %double_3_14159265358979",
                 "OpReturn",
                 "OpFunctionEnd",
@@ -233,7 +233,7 @@ INSTANTIATE_TEST_CASE_P(
         {
             /* .used_consts = */
             {
-                "%used_const_float = OpConstant %float 3.14",
+                "%used_const_float = OpConstant %float 3.1415",
             },
             /* .main_insts = */
             {
@@ -242,13 +242,13 @@ INSTANTIATE_TEST_CASE_P(
             },
             /* .dead_consts = */
             {
-                "%dead_const_float = OpConstant %float 3.14",
+                "%dead_const_float = OpConstant %float 3.1415",
             },
         },
         {
             /* .used_consts = */
             {
-                "%used_const_double = OpConstant %double 3.14",
+                "%used_const_double = OpConstant %double 3.141592653",
             },
             /* .main_insts = */
             {
@@ -257,7 +257,7 @@ INSTANTIATE_TEST_CASE_P(
             },
             /* .dead_consts = */
             {
-                "%dead_const_double = OpConstant %double 3.14",
+                "%dead_const_double = OpConstant %double 3.141592653",
             },
         },
         // clang-format on
@@ -316,8 +316,8 @@ INSTANTIATE_TEST_CASE_P(
         {
             /* .used_consts = */
             {
-                "%used_float_x = OpConstant %float 3.14",
-                "%used_float_y = OpConstant %float 4.13",
+                "%used_float_x = OpConstant %float 3.1415",
+                "%used_float_y = OpConstant %float 4.25",
                 "%used_v2float = OpConstantComposite %v2float %used_float_x %used_float_y",
             },
             /* .main_insts = */
@@ -327,8 +327,8 @@ INSTANTIATE_TEST_CASE_P(
             },
             /* .dead_consts = */
             {
-                "%dead_float_x = OpConstant %float 3.14",
-                "%dead_float_y = OpConstant %float 4.13",
+                "%dead_float_x = OpConstant %float 3.1415",
+                "%dead_float_y = OpConstant %float 4.25",
                 "%dead_v2float = OpConstantComposite %v2float %dead_float_x %dead_float_y",
             },
         },
@@ -338,9 +338,9 @@ INSTANTIATE_TEST_CASE_P(
         {
             /* .used_consts = */
             {
-                "%used_float_x = OpConstant %float 3.14",
-                "%used_float_y = OpConstant %float 4.13",
-                "%used_float_z = OpConstant %float 4.31",
+                "%used_float_x = OpConstant %float 3.1415",
+                "%used_float_y = OpConstant %float 4.25",
+                "%used_float_z = OpConstant %float 4.75",
                 "%used_v3float = OpConstantComposite %v3float %used_float_x %used_float_y %used_float_z",
             },
             /* .main_insts = */
@@ -444,8 +444,8 @@ INSTANTIATE_TEST_CASE_P(
           {
             "%used_bool = OpConstantTrue %bool",
             "%used_int = OpConstant %int 1",
-            "%used_float = OpConstant %float 1.23",
-            "%used_double = OpConstant %double 1.2345678901234",
+            "%used_float = OpConstant %float 1.25",
+            "%used_double = OpConstant %double 1.23456789012345",
             "%used_inner_struct = OpConstantComposite %inner_struct %used_bool %used_int %used_float %used_double",
           },
           /* .main_insts = */
@@ -467,8 +467,8 @@ INSTANTIATE_TEST_CASE_P(
           {
             "%used_bool = OpConstantTrue %bool",
             "%used_int = OpConstant %int 1",
-            "%used_float = OpConstant %float 1.23",
-            "%used_double = OpConstant %double 1.2345678901234",
+            "%used_float = OpConstant %float 1.25",
+            "%used_double = OpConstant %double 1.23456789012345",
             "%used_inner_struct = OpConstantComposite %inner_struct %used_bool %used_int %used_float %used_double",
             "%used_outer_struct = OpConstantComposite %outer_struct %used_inner_struct %used_int %used_double"
           },
@@ -495,7 +495,7 @@ INSTANTIATE_TEST_CASE_P(
                 "%used_uint = OpSpecConstant %uint 2",
                 "%used_int = OpSpecConstant %int 2",
                 "%used_float = OpSpecConstant %float 2.5",
-                "%used_double = OpSpecConstant %double 1.428571428514",
+                "%used_double = OpSpecConstant %double 1.42857142851",
             },
             /* .main_insts = */
             {
@@ -514,7 +514,7 @@ INSTANTIATE_TEST_CASE_P(
                 "%dead_uint = OpSpecConstant %uint 2",
                 "%dead_int = OpSpecConstant %int 2",
                 "%dead_float = OpSpecConstant %float 2.5",
-                "%dead_double = OpSpecConstant %double 1.428571428514",
+                "%dead_double = OpSpecConstant %double 1.42857142851",
             },
         },
         // clang-format on

@@ -908,13 +908,13 @@ TEST_F(LocalSSAElimTest, Switch) {
   //     int i = int(f);
   //     switch (i) {
   //       case 0:
-  //         v = v * 0.1;
+  //         v = v * 0.25;
   //         break;
   //       case 1:
-  //         v = v * 0.3;
+  //         v = v * 0.625;
   //         break;
   //       case 2:
-  //         v = v * 0.7;
+  //         v = v * 0.75;
   //         break;
   //       default:
   //         break;
@@ -946,9 +946,9 @@ OpName %gl_FragColor "gl_FragColor"
 %_ptr_Function_int = OpTypePointer Function %int
 %_ptr_Input_float = OpTypePointer Input %float
 %f = OpVariable %_ptr_Input_float Input
-%float_0_1 = OpConstant %float 0.1
-%float_0_3 = OpConstant %float 0.3
-%float_0_7 = OpConstant %float 0.7
+%float_0_25 = OpConstant %float 0.25
+%float_0_625 = OpConstant %float 0.625
+%float_0_75 = OpConstant %float 0.75
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
 )";
@@ -970,17 +970,17 @@ OpSwitch %25 %27 0 %28 1 %29 2 %30
 OpBranch %26
 %28 = OpLabel
 %31 = OpLoad %v4float %v
-%32 = OpVectorTimesScalar %v4float %31 %float_0_1
+%32 = OpVectorTimesScalar %v4float %31 %float_0_25
 OpStore %v %32
 OpBranch %26
 %29 = OpLabel
 %33 = OpLoad %v4float %v
-%34 = OpVectorTimesScalar %v4float %33 %float_0_3
+%34 = OpVectorTimesScalar %v4float %33 %float_0_625
 OpStore %v %34
 OpBranch %26
 %30 = OpLabel
 %35 = OpLoad %v4float %v
-%36 = OpVectorTimesScalar %v4float %35 %float_0_7
+%36 = OpVectorTimesScalar %v4float %35 %float_0_75
 OpStore %v %36
 OpBranch %26
 %26 = OpLabel
@@ -1005,15 +1005,15 @@ OpSwitch %24 %27 0 %28 1 %29 2 %30
 %27 = OpLabel
 OpBranch %26
 %28 = OpLabel
-%32 = OpVectorTimesScalar %v4float %22 %float_0_1
+%32 = OpVectorTimesScalar %v4float %22 %float_0_25
 OpStore %v %32
 OpBranch %26
 %29 = OpLabel
-%34 = OpVectorTimesScalar %v4float %22 %float_0_3
+%34 = OpVectorTimesScalar %v4float %22 %float_0_625
 OpStore %v %34
 OpBranch %26
 %30 = OpLabel
-%36 = OpVectorTimesScalar %v4float %22 %float_0_7
+%36 = OpVectorTimesScalar %v4float %22 %float_0_75
 OpStore %v %36
 OpBranch %26
 %26 = OpLabel
@@ -1039,12 +1039,12 @@ TEST_F(LocalSSAElimTest, SwitchWithFallThrough) {
   //     int i = int(f);
   //     switch (i) {
   //       case 0:
-  //         v = v * 0.1;
+  //         v = v * 0.25;
   //         break;
   //       case 1:
-  //         v = v + 0.1;
+  //         v = v + 0.25;
   //       case 2:
-  //         v = v * 0.7;
+  //         v = v * 0.75;
   //         break;
   //       default:
   //         break;
@@ -1076,8 +1076,8 @@ OpName %gl_FragColor "gl_FragColor"
 %_ptr_Function_int = OpTypePointer Function %int
 %_ptr_Input_float = OpTypePointer Input %float
 %f = OpVariable %_ptr_Input_float Input
-%float_0_1 = OpConstant %float 0.1
-%float_0_7 = OpConstant %float 0.7
+%float_0_25 = OpConstant %float 0.25
+%float_0_75 = OpConstant %float 0.75
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
 )";
@@ -1099,18 +1099,18 @@ OpSwitch %24 %26 0 %27 1 %28 2 %29
 OpBranch %25
 %27 = OpLabel
 %30 = OpLoad %v4float %v
-%31 = OpVectorTimesScalar %v4float %30 %float_0_1
+%31 = OpVectorTimesScalar %v4float %30 %float_0_25
 OpStore %v %31
 OpBranch %25
 %28 = OpLabel
 %32 = OpLoad %v4float %v
-%33 = OpCompositeConstruct %v4float %float_0_1 %float_0_1 %float_0_1 %float_0_1
+%33 = OpCompositeConstruct %v4float %float_0_25 %float_0_25 %float_0_25 %float_0_25
 %34 = OpFAdd %v4float %32 %33
 OpStore %v %34
 OpBranch %29
 %29 = OpLabel
 %35 = OpLoad %v4float %v
-%36 = OpVectorTimesScalar %v4float %35 %float_0_7
+%36 = OpVectorTimesScalar %v4float %35 %float_0_75
 OpStore %v %36
 OpBranch %25
 %25 = OpLabel
@@ -1135,17 +1135,17 @@ OpSwitch %23 %26 0 %27 1 %28 2 %29
 %26 = OpLabel
 OpBranch %25
 %27 = OpLabel
-%31 = OpVectorTimesScalar %v4float %21 %float_0_1
+%31 = OpVectorTimesScalar %v4float %21 %float_0_25
 OpStore %v %31
 OpBranch %25
 %28 = OpLabel
-%33 = OpCompositeConstruct %v4float %float_0_1 %float_0_1 %float_0_1 %float_0_1
+%33 = OpCompositeConstruct %v4float %float_0_25 %float_0_25 %float_0_25 %float_0_25
 %34 = OpFAdd %v4float %21 %33
 OpStore %v %34
 OpBranch %29
 %29 = OpLabel
 %38 = OpPhi %v4float %21 %20 %34 %28
-%36 = OpVectorTimesScalar %v4float %38 %float_0_7
+%36 = OpVectorTimesScalar %v4float %38 %float_0_75
 OpStore %v %36
 OpBranch %25
 %25 = OpLabel

@@ -311,7 +311,7 @@ INSTANTIATE_TEST_CASE_P(
         {"%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.d2cp-10", 2,
          "half_n0x1_d2cpn10"},
         // 32-bit floats
-        {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 -3.275", 2, "float_n3_275"},
+        {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 -3.125", 2, "float_n3_125"},
         {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.8p+128", 2,
          "float_0x1_8p_128"},  // NaN
         {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.0002p+128", 2,
@@ -321,7 +321,7 @@ INSTANTIATE_TEST_CASE_P(
         {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1p+128", 2,
          "float_n0x1p_128"},  // -Inf
                               // 64-bit floats
-        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 -3.275", 2, "double_n3_275"},
+        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 -3.125", 2, "double_n3_125"},
         {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.ffffffffffffap-1023", 2,
          "double_0x1_ffffffffffffapn1023"},  // small normal
         {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.ffffffffffffap-1023", 2,
