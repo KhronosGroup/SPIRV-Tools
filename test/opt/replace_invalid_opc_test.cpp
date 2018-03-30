@@ -27,7 +27,7 @@ using ReplaceInvalidOpcodeTest = PassTest<::testing::Test>;
 #ifdef SPIRV_EFFCEE
 TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstruction) {
   const std::string text = R"(
-; CHECK: [[special_const:%\w+]] = OpConstant %float -6.25985e+18
+; CHECK: [[special_const:%\w+]] = OpConstant %float -6.2598534e+18
 ; CHECK: [[constant:%\w+]] = OpConstantComposite %v4float [[special_const]] [[special_const]] [[special_const]] [[special_const]]
 ; CHECK-NOT: OpImageSampleImplicitLod
 ; CHECK: OpStore [[:%\w+]] [[constant]]
@@ -82,7 +82,7 @@ TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstruction) {
 
 TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstructionInNonEntryPoint) {
   const std::string text = R"(
-; CHECK: [[special_const:%\w+]] = OpConstant %float -6.25985e+18
+; CHECK: [[special_const:%\w+]] = OpConstant %float -6.2598534e+18
 ; CHECK: [[constant:%\w+]] = OpConstantComposite %v4float [[special_const]] [[special_const]] [[special_const]] [[special_const]]
 ; CHECK-NOT: OpImageSampleImplicitLod
 ; CHECK: OpStore [[:%\w+]] [[constant]]
@@ -142,7 +142,7 @@ TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstructionInNonEntryPoint) {
 
 TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstructionMultipleEntryPoints) {
   const std::string text = R"(
-; CHECK: [[special_const:%\w+]] = OpConstant %float -6.25985e+18
+; CHECK: [[special_const:%\w+]] = OpConstant %float -6.2598534e+18
 ; CHECK: [[constant:%\w+]] = OpConstantComposite %v4float [[special_const]] [[special_const]] [[special_const]] [[special_const]]
 ; CHECK-NOT: OpImageSampleImplicitLod
 ; CHECK: OpStore [[:%\w+]] [[constant]]

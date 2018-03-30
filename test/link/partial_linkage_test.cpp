@@ -33,7 +33,7 @@ OpDecorate %2 LinkageAttributes "bar" Import
 OpCapability Linkage
 OpDecorate %1 LinkageAttributes "bar" Export
 %2 = OpTypeFloat 32
-%3 = OpConstant %2 3.14159
+%3 = OpConstant %2 3.1415
 %1 = OpVariable %2 Uniform %3
 )";
 
@@ -48,7 +48,7 @@ OpModuleProcessed "Linked by SPIR-V Tools Linker"
 OpDecorate %1 LinkageAttributes "foo" Import
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
-%3 = OpConstant %2 3.14159
+%3 = OpConstant %2 3.1415
 %4 = OpVariable %2 Uniform %3
 )";
   std::string res_body;
@@ -71,7 +71,7 @@ OpDecorate %2 LinkageAttributes "bar" Import
 OpCapability Linkage
 OpDecorate %1 LinkageAttributes "bar" Export
 %2 = OpTypeFloat 32
-%3 = OpConstant %2 3.14159
+%3 = OpConstant %2 3.1415
 %1 = OpVariable %2 Uniform %3
 )";
 

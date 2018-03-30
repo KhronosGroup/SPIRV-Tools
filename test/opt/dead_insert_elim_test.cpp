@@ -633,7 +633,7 @@ OpDecorate %In2 Location 2
 %_ = OpVariable %_ptr_Uniform__Globals_ Uniform
 %_ptr_Uniform_int = OpTypePointer Uniform %int
 %bool = OpTypeBool
-%float_0_9 = OpConstant %float 0.9
+%float_0_75 = OpConstant %float 0.75
 %int_1 = OpConstant %int 1
 %v4float = OpTypeVector %float 4
 %_ptr_Output_v4float = OpTypePointer Output %v4float
@@ -661,7 +661,7 @@ OpBranchConditional %40 %41 %36
 %43 = OpFAdd %float %42 %float_1
 %44 = OpCompositeInsert %v2float %43 %31 0
 %45 = OpCompositeExtract %float %44 1
-%46 = OpFMul %float %45 %float_0_9
+%46 = OpFMul %float %45 %float_0_75
 %32 = OpCompositeInsert %v2float %46 %44 1
 OpBranch %33
 %33 = OpLabel

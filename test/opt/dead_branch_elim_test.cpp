@@ -1070,10 +1070,10 @@ TEST_F(DeadBranchElimTest, SwitchLiveCase) {
   //         OutColor = vec4(0.0,0.0,0.0,0.0);
   //         break;
   //       case 1:
-  //         OutColor = vec4(0.1,0.1,0.1,0.1);
+  //         OutColor = vec4(0.125,0.125,0.125,0.125);
   //         break;
   //       case 2:
-  //         OutColor = vec4(0.2,0.2,0.2,0.2);
+  //         OutColor = vec4(0.25,0.25,0.25,0.25);
   //         break;
   //       default:
   //         OutColor = vec4(1.0,1.0,1.0,1.0);
@@ -1102,10 +1102,10 @@ OpDecorate %BaseColor Location 0
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %float_0 = OpConstant %float 0
 %13 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
-%float_0_1 = OpConstant %float 0.1
-%15 = OpConstantComposite %v4float %float_0_1 %float_0_1 %float_0_1 %float_0_1
-%float_0_2 = OpConstant %float 0.2
-%17 = OpConstantComposite %v4float %float_0_2 %float_0_2 %float_0_2 %float_0_2
+%float_0_125 = OpConstant %float 0.125
+%15 = OpConstantComposite %v4float %float_0_125 %float_0_125 %float_0_125 %float_0_125
+%float_0_25 = OpConstant %float 0.25
+%17 = OpConstantComposite %v4float %float_0_25 %float_0_25 %float_0_25 %float_0_25
 %float_1 = OpConstant %float 1
 %19 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
 %_ptr_Input_v4float = OpTypePointer Input %v4float
@@ -1163,10 +1163,10 @@ TEST_F(DeadBranchElimTest, SwitchLiveDefault) {
   //         OutColor = vec4(0.0,0.0,0.0,0.0);
   //         break;
   //       case 1:
-  //         OutColor = vec4(0.1,0.1,0.1,0.1);
+  //         OutColor = vec4(0.125,0.125,0.125,0.125);
   //         break;
   //       case 2:
-  //         OutColor = vec4(0.2,0.2,0.2,0.2);
+  //         OutColor = vec4(0.25,0.25,0.25,0.25);
   //         break;
   //       default:
   //         OutColor = vec4(1.0,1.0,1.0,1.0);
@@ -1195,10 +1195,10 @@ OpDecorate %BaseColor Location 0
 %OutColor = OpVariable %_ptr_Output_v4float Output
 %float_0 = OpConstant %float 0
 %13 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
-%float_0_1 = OpConstant %float 0.1
-%15 = OpConstantComposite %v4float %float_0_1 %float_0_1 %float_0_1 %float_0_1
-%float_0_2 = OpConstant %float 0.2
-%17 = OpConstantComposite %v4float %float_0_2 %float_0_2 %float_0_2 %float_0_2
+%float_0_125 = OpConstant %float 0.125
+%15 = OpConstantComposite %v4float %float_0_125 %float_0_125 %float_0_125 %float_0_125
+%float_0_25 = OpConstant %float 0.25
+%17 = OpConstantComposite %v4float %float_0_25 %float_0_25 %float_0_25 %float_0_25
 %float_1 = OpConstant %float 1
 %19 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
 %_ptr_Input_v4float = OpTypePointer Input %v4float
@@ -1276,10 +1276,10 @@ OpDecorate %BaseColor Location 0
 %_ptr_Function_v4float = OpTypePointer Function %v4float
 %float_0 = OpConstant %float 0
 %17 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
-%float_0_1 = OpConstant %float 0.1
-%19 = OpConstantComposite %v4float %float_0_1 %float_0_1 %float_0_1 %float_0_1
-%float_0_2 = OpConstant %float 0.2
-%21 = OpConstantComposite %v4float %float_0_2 %float_0_2 %float_0_2 %float_0_2
+%float_0_125 = OpConstant %float 0.125
+%19 = OpConstantComposite %v4float %float_0_125 %float_0_125 %float_0_125 %float_0_125
+%float_0_25 = OpConstant %float 0.25
+%21 = OpConstantComposite %v4float %float_0_25 %float_0_25 %float_0_25 %float_0_25
 %float_1 = OpConstant %float 1
 %23 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
 %_ptr_Output_v4float = OpTypePointer Output %v4float

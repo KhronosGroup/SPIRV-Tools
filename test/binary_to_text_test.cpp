@@ -255,13 +255,13 @@ INSTANTIATE_TEST_CASE_P(
                 "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ff4p+16\n",
                 "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.d2cp-10\n",
                 // 32-bit floats
-                "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -3.275\n",
+                "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -3.125\n",
                 "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.8p+128\n", // NaN
                 "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.0002p+128\n", // NaN
                 "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1p+128\n", // Inf
                 "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1p+128\n", // -Inf
                 // 64-bit floats
-                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -3.275\n",
+                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -3.125\n",
                 "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.ffffffffffffap-1023\n", // small normal
                 "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.ffffffffffffap-1023\n",
                 "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.8p+1024\n", // NaN
