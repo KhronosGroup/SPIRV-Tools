@@ -16,6 +16,7 @@
 #define LIBSPIRV_TEST_OPT_PASS_UTILS_H_
 
 #include <functional>
+#include <iterator>
 #include <string>
 #include <vector>
 
