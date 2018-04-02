@@ -158,8 +158,8 @@ bool Instruction::IsReadOnlyLoad() const {
 
 Instruction* Instruction::GetBaseAddress() const {
   assert((IsLoad() || opcode() == SpvOpStore || opcode() == SpvOpAccessChain ||
-          opcode() == SpvOpInBoundsAccessChain ||
-          opcode() == SpvOpCopyObject) &&
+          opcode() == SpvOpInBoundsAccessChain || opcode() == SpvOpCopyObject ||
+          opcode() == SpvOpImageTexelPointer) &&
          "GetBaseAddress should only be called on instructions that take a "
          "pointer or image.");
   uint32_t base = GetSingleWordInOperand(kLoadBaseIndex);

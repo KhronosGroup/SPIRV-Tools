@@ -433,6 +433,15 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     else if (liveInst->opcode() == SpvOpFunctionParameter) {
       ProcessLoad(liveInst->result_id());
     }
+    // We treat an OpImageTexelPointer as a load of the pointer, and
+    // that value is manipulated to get the result.
+    else if (liveInst->opcode() == SpvOpImageTexelPointer) {
+      uint32_t varId;
+      (void)GetPtr(liveInst, &varId);
+      if (varId != 0) {
+        ProcessLoad(varId);
+      }
+    }
     worklist_.pop();
   }
 

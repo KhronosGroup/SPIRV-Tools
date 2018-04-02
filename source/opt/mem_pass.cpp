@@ -28,9 +28,7 @@ namespace opt {
 namespace {
 
 const uint32_t kCopyObjectOperandInIdx = 0;
-const uint32_t kLoadPtrIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
-const uint32_t kStorePtrIdInIdx = 0;
 const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kTypePointerTypeIdInIdx = 1;
@@ -119,10 +117,11 @@ ir::Instruction* MemPass::GetPtr(uint32_t ptrId, uint32_t* varId) {
 }
 
 ir::Instruction* MemPass::GetPtr(ir::Instruction* ip, uint32_t* varId) {
-  const SpvOp op = ip->opcode();
-  assert(op == SpvOpStore || op == SpvOpLoad);
-  const uint32_t ptrId = ip->GetSingleWordInOperand(
-      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
+  assert(ip->opcode() == SpvOpStore || ip->opcode() == SpvOpLoad ||
+         ip->opcode() == SpvOpImageTexelPointer);
+
+  // All of these opcode place the pointer in position 0.
+  const uint32_t ptrId = ip->GetSingleWordInOperand(0);
   return GetPtr(ptrId, varId);
 }
 
