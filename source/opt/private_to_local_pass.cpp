@@ -125,6 +125,7 @@ bool PrivateToLocalPass::IsValidUse(const ir::Instruction* inst) const {
   switch (inst->opcode()) {
     case SpvOpLoad:
     case SpvOpStore:
+    case SpvOpImageTexelPointer:  // Treat like a load
       return true;
     case SpvOpAccessChain:
       return context()->get_def_use_mgr()->WhileEachUser(
@@ -146,6 +147,7 @@ void PrivateToLocalPass::UpdateUse(ir::Instruction* inst) {
   switch (inst->opcode()) {
     case SpvOpLoad:
     case SpvOpStore:
+    case SpvOpImageTexelPointer:  // Treat like a load
       // The type is fine because it is the type pointed to, and that does not
       // change.
       break;
