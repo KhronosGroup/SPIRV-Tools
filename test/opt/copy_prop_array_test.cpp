@@ -22,8 +22,8 @@
 namespace {
 
 using namespace spvtools;
-using ir::IRContext;
 using ir::Instruction;
+using ir::IRContext;
 using opt::PassManager;
 
 using CopyPropArrayPassTest = PassTest<::testing::Test>;
@@ -1025,4 +1025,80 @@ OpFunctionEnd
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
+TEST_F(CopyPropArrayPassTest, AtomicAdd) {
+  const std::string before = R"(OpCapability SampledBuffer
+OpCapability StorageImageExtendedFormats
+OpCapability ImageBuffer
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "min" %gl_GlobalInvocationID
+OpExecutionMode %2 LocalSize 64 1 1
+OpSource HLSL 600
+OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+OpDecorate %4 DescriptorSet 4
+OpDecorate %4 Binding 70
+%uint = OpTypeInt 32 0
+%6 = OpTypeImage %uint Buffer 0 0 0 2 R32ui
+%_ptr_UniformConstant_6 = OpTypePointer UniformConstant %6
+%_ptr_Function_6 = OpTypePointer Function %6
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%_ptr_Image_uint = OpTypePointer Image %uint
+%4 = OpVariable %_ptr_UniformConstant_6 UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+%2 = OpFunction %void None %10
+%17 = OpLabel
+%16 = OpVariable %_ptr_Function_6 Function
+%18 = OpLoad %6 %4
+OpStore %16 %18
+%19 = OpImageTexelPointer %_ptr_Image_uint %16 %uint_0 %uint_0
+%20 = OpAtomicIAdd %uint %19 %uint_1 %uint_0 %uint_1
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after = R"(OpCapability SampledBuffer
+OpCapability StorageImageExtendedFormats
+OpCapability ImageBuffer
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "min" %gl_GlobalInvocationID
+OpExecutionMode %2 LocalSize 64 1 1
+OpSource HLSL 600
+OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+OpDecorate %4 DescriptorSet 4
+OpDecorate %4 Binding 70
+%uint = OpTypeInt 32 0
+%6 = OpTypeImage %uint Buffer 0 0 0 2 R32ui
+%_ptr_UniformConstant_6 = OpTypePointer UniformConstant %6
+%_ptr_Function_6 = OpTypePointer Function %6
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%_ptr_Image_uint = OpTypePointer Image %uint
+%4 = OpVariable %_ptr_UniformConstant_6 UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+%2 = OpFunction %void None %10
+%17 = OpLabel
+%16 = OpVariable %_ptr_Function_6 Function
+%18 = OpLoad %6 %4
+OpStore %16 %18
+%19 = OpImageTexelPointer %_ptr_Image_uint %4 %uint_0 %uint_0
+%20 = OpAtomicIAdd %uint %19 %uint_1 %uint_0 %uint_1
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::CopyPropagateArrays>(before, after, true, true);
+}
 }  // namespace
