@@ -134,6 +134,10 @@ ir::Instruction* CopyPropagateArrays::BuildNewAccessChain(
                              ir::IRContext::kAnalysisDefUse |
                                  ir::IRContext::kAnalysisInstrToBlockMapping);
 
+  if (source->AccessChain().size() == 0) {
+    return source->GetVariable();
+  }
+
   return builder.AddAccessChain(source->GetPointerTypeId(),
                                 source->GetVariable()->result_id(),
                                 source->AccessChain());
@@ -150,6 +154,8 @@ bool CopyPropagateArrays::HasNoStores(ir::Instruction* ptr_inst) {
           return true;
         } else if (use->opcode() == SpvOpStore) {
           return false;
+        } else if (use->opcode() == SpvOpImageTexelPointer) {
+          return true;
         }
         // Some other instruction.  Be conservative.
         return false;
@@ -165,7 +171,8 @@ bool CopyPropagateArrays::HasValidReferencesOnly(ir::Instruction* ptr_inst,
   return get_def_use_mgr()->WhileEachUser(
       ptr_inst,
       [this, store_inst, dominator_analysis, ptr_inst](ir::Instruction* use) {
-        if (use->opcode() == SpvOpLoad) {
+        if (use->opcode() == SpvOpLoad ||
+            use->opcode() == SpvOpImageTexelPointer) {
           // TODO: If there are many load in the same BB as |store_inst| the
           // time to do the multiple traverses can add up.  Consider collecting
           // those loads and doing a single traversal.
@@ -455,7 +462,8 @@ bool CopyPropagateArrays::IsPointerToArrayType(uint32_t type_id) {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   analysis::Pointer* pointer_type = type_mgr->GetType(type_id)->AsPointer();
   if (pointer_type) {
-    return pointer_type->pointee_type()->AsArray() != nullptr;
+    return pointer_type->pointee_type()->kind() == analysis::Type::kArray ||
+           pointer_type->pointee_type()->kind() == analysis::Type::kImage;
   }
   return false;
 }
@@ -543,6 +551,8 @@ bool CopyPropagateArrays::CanUpdateUses(ir::Instruction* original_ptr_inst,
 
             // TODO (s-perron): This can be handled by expanding the store into
             // a series of extracts, composite constructs, and a store.
+            return true;
+          case SpvOpImageTexelPointer:
             return true;
           default:
             return false;
@@ -673,7 +683,16 @@ void CopyPropagateArrays::UpdateUses(ir::Instruction* original_ptr_inst,
           context()->AnalyzeUses(use);
         }
         break;
+      case SpvOpImageTexelPointer:
+        // We treat an OpImageTexelPointer as a load.  The result type should
+        // always have the Image storage class, and should not need to be
+        // updated.
 
+        // Replace the actual use.
+        context()->ForgetUses(use);
+        use->SetOperand(index, {new_ptr_inst->result_id()});
+        context()->AnalyzeUses(use);
+        break;
       default:
         assert(false && "Don't know how to rewrite instruction");
         break;
