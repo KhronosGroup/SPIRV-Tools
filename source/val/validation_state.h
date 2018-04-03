@@ -275,8 +275,7 @@ class ValidationState_t {
   }
 
   // Returns const pointer to the internal decoration container.
-  const std::unordered_map<uint32_t, std::vector<Decoration>>& id_decorations()
-      const {
+  const std::map<uint32_t, std::vector<Decoration>>& id_decorations() const {
     return id_decorations_;
   }
 
@@ -497,7 +496,7 @@ class ValidationState_t {
   std::unordered_map<uint32_t, uint32_t> struct_nesting_depth_;
 
   /// Stores the list of decorations for a given <id>
-  std::unordered_map<uint32_t, std::vector<Decoration>> id_decorations_;
+  std::map<uint32_t, std::vector<Decoration>> id_decorations_;
 
   /// Stores type declarations which need to be unique (i.e. non-aggregates),
   /// in the form [opcode, operand words], result_id is not stored.

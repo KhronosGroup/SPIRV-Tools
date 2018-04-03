@@ -1607,6 +1607,80 @@ OpStore %output_pos %pos
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
+TEST_F(ValidateBuiltIns, TwoBuiltInsFirstFails) {
+  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+
+  generator.before_types_ = R"(
+OpMemberDecorate %input_type 0 BuiltIn FragCoord
+OpMemberDecorate %output_type 0 BuiltIn Position
+)";
+
+  generator.after_types_ = R"(
+%input_type = OpTypeStruct %f32vec4
+%input_ptr = OpTypePointer Input %input_type
+%input = OpVariable %input_ptr Input
+%input_f32vec4_ptr = OpTypePointer Input %f32vec4
+%output_type = OpTypeStruct %f32vec4
+%output_ptr = OpTypePointer Output %output_type
+%output = OpVariable %output_ptr Output
+%output_f32vec4_ptr = OpTypePointer Output %f32vec4
+)";
+
+  EntryPoint entry_point;
+  entry_point.name = "main";
+  entry_point.execution_model = "Geometry";
+  entry_point.body = R"(
+%input_pos = OpAccessChain %input_f32vec4_ptr %input %u32_0
+%output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0
+%pos = OpLoad %f32vec4 %input_pos
+OpStore %output_pos %pos
+)";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Vulkan spec allows BuiltIn FragCoord to be used only "
+                        "with Fragment execution model"));
+}
+
+TEST_F(ValidateBuiltIns, TwoBuiltInsSecondFails) {
+  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+
+  generator.before_types_ = R"(
+OpMemberDecorate %input_type 0 BuiltIn Position
+OpMemberDecorate %output_type 0 BuiltIn FragCoord
+)";
+
+  generator.after_types_ = R"(
+%input_type = OpTypeStruct %f32vec4
+%input_ptr = OpTypePointer Input %input_type
+%input = OpVariable %input_ptr Input
+%input_f32vec4_ptr = OpTypePointer Input %f32vec4
+%output_type = OpTypeStruct %f32vec4
+%output_ptr = OpTypePointer Output %output_type
+%output = OpVariable %output_ptr Output
+%output_f32vec4_ptr = OpTypePointer Output %f32vec4
+)";
+
+  EntryPoint entry_point;
+  entry_point.name = "main";
+  entry_point.execution_model = "Geometry";
+  entry_point.body = R"(
+%input_pos = OpAccessChain %input_f32vec4_ptr %input %u32_0
+%output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0
+%pos = OpLoad %f32vec4 %input_pos
+OpStore %output_pos %pos
+)";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Vulkan spec allows BuiltIn FragCoord to be only used "
+                        "for variables with Input storage class"));
+}
+
 TEST_F(ValidateBuiltIns, VertexPositionVariableSuccess) {
   CodeGenerator generator = GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
