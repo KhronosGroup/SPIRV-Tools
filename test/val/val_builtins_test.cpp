@@ -311,6 +311,57 @@ OpFunctionEnd
   }
 }
 
+TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, Variable) {
+  const char* const built_in = std::get<0>(GetParam());
+  const char* const execution_model = std::get<1>(GetParam());
+  const char* const storage_class = std::get<2>(GetParam());
+  const char* const data_type = std::get<3>(GetParam());
+  const TestResult& test_result = std::get<4>(GetParam());
+
+  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  generator.before_types_ = "OpDecorate %built_in_var BuiltIn ";
+  generator.before_types_ += built_in;
+  generator.before_types_ += "\n";
+
+  std::ostringstream after_types;
+  after_types << "%built_in_ptr = OpTypePointer " << storage_class << " "
+              << data_type << "\n";
+  after_types << "%built_in_var = OpVariable %built_in_ptr " << storage_class
+              << "\n";
+  generator.after_types_ = after_types.str();
+
+  EntryPoint entry_point;
+  entry_point.name = "main";
+  entry_point.execution_model = execution_model;
+  // Any kind of reference would do.
+  entry_point.body = R"(
+%val = OpBitcast %u64 %built_in_var
+)";
+
+  std::ostringstream execution_modes;
+  if (0 == std::strcmp(execution_model, "Fragment")) {
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " OriginUpperLeft\n";
+  }
+  if (0 == std::strcmp(built_in, "FragDepth")) {
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " DepthReplacing\n";
+  }
+  entry_point.execution_modes = execution_modes.str();
+
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(test_result.validation_result,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  if (test_result.error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
+  }
+  if (test_result.error_str2) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
+  }
+}
+
 INSTANTIATE_TEST_CASE_P(
     ClipAndCullDistanceOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
