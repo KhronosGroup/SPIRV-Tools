@@ -1126,7 +1126,7 @@ std::ostream& operator<<(std::ostream& os, const FloatProxy<T>& value) {
     case FP_ZERO:
     case FP_NORMAL: {
       auto saved_precision = os.precision();
-      os.precision(std::numeric_limits<T>::digits10);
+      os.precision(std::numeric_limits<T>::max_digits10);
       os << float_val;
       os.precision(saved_precision);
     } break;
