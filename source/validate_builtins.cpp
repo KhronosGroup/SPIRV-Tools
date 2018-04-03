@@ -385,8 +385,8 @@ void BuiltInsValidator::Update(const Instruction& inst) {
       entry_points_ = &no_entry_points;
     } else {
       entry_points_ = &it->second;
-      // Collect execution models and execution modes from all entry points from
-      // which the current function can be called.
+      // Collect execution models from all entry points from which the current
+      // function can be called.
       for (const uint32_t entry_point : *entry_points_) {
         if (const auto* models = _.GetExecutionModels(entry_point)) {
           execution_models_.insert(models->begin(), models->end());
