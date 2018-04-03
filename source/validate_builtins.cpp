@@ -112,9 +112,14 @@ class BuiltInsValidator {
 
  private:
   // Goes through all decorations in the module, if decoration is BuiltIn
-  // validates the instruction defining the decorated id. Also seeds
-  // id_to_at_reference_checks_ with decorated ids.
+  // calls ValidateSingleBuiltInAtDefinition().
   spv_result_t ValidateBuiltInsAtDefinition();
+
+  // Validates the instruction defining an id with built-in decoration.
+  // Can be called multiple times for the same id, if multiple built-ins are
+  // specified. Seeds id_to_at_reference_checks_ with decorated ids if needed.
+  spv_result_t ValidateSingleBuiltInAtDefinition(const Decoration& decoration,
+                                                 const Instruction& inst);
 
   // The following section contains functions which are called when id defined
   // by |inst| is decorated with BuiltIn |decoration|.
@@ -2245,139 +2250,149 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtReference(
   return SPV_SUCCESS;
 }
 
+spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
+    const Decoration& decoration, const Instruction& inst) {
+  const SpvBuiltIn label = SpvBuiltIn(decoration.params()[0]);
+  // If you are adding a new BuiltIn enum, please register it here.
+  // If the newly added enum has validation rules associated with it
+  // consider leaving a TODO and/or creating an issue.
+  switch (label) {
+    case SpvBuiltInClipDistance:
+    case SpvBuiltInCullDistance: {
+      return ValidateClipOrCullDistanceAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInFragCoord: {
+      return ValidateFragCoordAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInFragDepth: {
+      return ValidateFragDepthAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInFrontFacing: {
+      return ValidateFrontFacingAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInGlobalInvocationId:
+    case SpvBuiltInLocalInvocationId:
+    case SpvBuiltInNumWorkgroups:
+    case SpvBuiltInWorkgroupId: {
+      return ValidateComputeShaderI32Vec3InputAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInHelperInvocation: {
+      return ValidateHelperInvocationAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInInvocationId: {
+      return ValidateInvocationIdAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInInstanceIndex: {
+      return ValidateInstanceIndexAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInLayer:
+    case SpvBuiltInViewportIndex: {
+      return ValidateLayerOrViewportIndexAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInPatchVertices: {
+      return ValidatePatchVerticesAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInPointCoord: {
+      return ValidatePointCoordAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInPointSize: {
+      return ValidatePointSizeAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInPosition: {
+      return ValidatePositionAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInPrimitiveId: {
+      return ValidatePrimitiveIdAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInSampleId: {
+      return ValidateSampleIdAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInSampleMask: {
+      return ValidateSampleMaskAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInSamplePosition: {
+      return ValidateSamplePositionAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInTessCoord: {
+      return ValidateTessCoordAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInTessLevelOuter: {
+      return ValidateTessLevelOuterAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInTessLevelInner: {
+      return ValidateTessLevelInnerAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInVertexIndex: {
+      return ValidateVertexIndexAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInWorkgroupSize: {
+      return ValidateWorkgroupSizeAtDefinition(decoration, inst);
+    }
+    case SpvBuiltInVertexId:
+    case SpvBuiltInInstanceId:
+    case SpvBuiltInLocalInvocationIndex:
+    case SpvBuiltInWorkDim:
+    case SpvBuiltInGlobalSize:
+    case SpvBuiltInEnqueuedWorkgroupSize:
+    case SpvBuiltInGlobalOffset:
+    case SpvBuiltInGlobalLinearId:
+    case SpvBuiltInSubgroupSize:
+    case SpvBuiltInSubgroupMaxSize:
+    case SpvBuiltInNumSubgroups:
+    case SpvBuiltInNumEnqueuedSubgroups:
+    case SpvBuiltInSubgroupId:
+    case SpvBuiltInSubgroupLocalInvocationId:
+    case SpvBuiltInSubgroupEqMaskKHR:
+    case SpvBuiltInSubgroupGeMaskKHR:
+    case SpvBuiltInSubgroupGtMaskKHR:
+    case SpvBuiltInSubgroupLeMaskKHR:
+    case SpvBuiltInSubgroupLtMaskKHR:
+    case SpvBuiltInBaseVertex:
+    case SpvBuiltInBaseInstance:
+    case SpvBuiltInDrawIndex:
+    case SpvBuiltInDeviceIndex:
+    case SpvBuiltInViewIndex:
+    case SpvBuiltInBaryCoordNoPerspAMD:
+    case SpvBuiltInBaryCoordNoPerspCentroidAMD:
+    case SpvBuiltInBaryCoordNoPerspSampleAMD:
+    case SpvBuiltInBaryCoordSmoothAMD:
+    case SpvBuiltInBaryCoordSmoothCentroidAMD:
+    case SpvBuiltInBaryCoordSmoothSampleAMD:
+    case SpvBuiltInBaryCoordPullModelAMD:
+    case SpvBuiltInFragStencilRefEXT:
+    case SpvBuiltInViewportMaskNV:
+    case SpvBuiltInSecondaryPositionNV:
+    case SpvBuiltInSecondaryViewportMaskNV:
+    case SpvBuiltInPositionPerViewNV:
+    case SpvBuiltInViewportMaskPerViewNV:
+    case SpvBuiltInFullyCoveredEXT:
+    case SpvBuiltInMax: {
+      // No validation rules (for the moment).
+      break;
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t BuiltInsValidator::ValidateBuiltInsAtDefinition() {
   for (const auto& kv : _.id_decorations()) {
     const uint32_t id = kv.first;
-    const Instruction* inst = nullptr;
+    const auto& decorations = kv.second;
+    if (decorations.empty()) {
+      continue;
+    }
+
+    const Instruction* inst = _.FindDef(id);
+    assert(inst);
+
     for (const auto& decoration : kv.second) {
       if (decoration.dec_type() != SpvDecorationBuiltIn) {
         continue;
       }
 
-      if (!inst) {
-        inst = _.FindDef(id);
-        assert(inst);
-      }
-
-      const SpvBuiltIn label = SpvBuiltIn(decoration.params()[0]);
-      // If you are adding a new BuiltIn enum, please register it here.
-      // If the newly added enum has validation rules associated with it
-      // consider leaving a TODO and/or creating an issue.
-      switch (label) {
-        case SpvBuiltInClipDistance:
-        case SpvBuiltInCullDistance: {
-          return ValidateClipOrCullDistanceAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInFragCoord: {
-          return ValidateFragCoordAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInFragDepth: {
-          return ValidateFragDepthAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInFrontFacing: {
-          return ValidateFrontFacingAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInGlobalInvocationId:
-        case SpvBuiltInLocalInvocationId:
-        case SpvBuiltInNumWorkgroups:
-        case SpvBuiltInWorkgroupId: {
-          return ValidateComputeShaderI32Vec3InputAtDefinition(decoration,
-                                                               *inst);
-        }
-        case SpvBuiltInHelperInvocation: {
-          return ValidateHelperInvocationAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInInvocationId: {
-          return ValidateInvocationIdAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInInstanceIndex: {
-          return ValidateInstanceIndexAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInLayer:
-        case SpvBuiltInViewportIndex: {
-          return ValidateLayerOrViewportIndexAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInPatchVertices: {
-          return ValidatePatchVerticesAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInPointCoord: {
-          return ValidatePointCoordAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInPointSize: {
-          return ValidatePointSizeAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInPosition: {
-          return ValidatePositionAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInPrimitiveId: {
-          return ValidatePrimitiveIdAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInSampleId: {
-          return ValidateSampleIdAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInSampleMask: {
-          return ValidateSampleMaskAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInSamplePosition: {
-          return ValidateSamplePositionAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInTessCoord: {
-          return ValidateTessCoordAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInTessLevelOuter: {
-          return ValidateTessLevelOuterAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInTessLevelInner: {
-          return ValidateTessLevelInnerAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInVertexIndex: {
-          return ValidateVertexIndexAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInWorkgroupSize: {
-          return ValidateWorkgroupSizeAtDefinition(decoration, *inst);
-        }
-        case SpvBuiltInVertexId:
-        case SpvBuiltInInstanceId:
-        case SpvBuiltInLocalInvocationIndex:
-        case SpvBuiltInWorkDim:
-        case SpvBuiltInGlobalSize:
-        case SpvBuiltInEnqueuedWorkgroupSize:
-        case SpvBuiltInGlobalOffset:
-        case SpvBuiltInGlobalLinearId:
-        case SpvBuiltInSubgroupSize:
-        case SpvBuiltInSubgroupMaxSize:
-        case SpvBuiltInNumSubgroups:
-        case SpvBuiltInNumEnqueuedSubgroups:
-        case SpvBuiltInSubgroupId:
-        case SpvBuiltInSubgroupLocalInvocationId:
-        case SpvBuiltInSubgroupEqMaskKHR:
-        case SpvBuiltInSubgroupGeMaskKHR:
-        case SpvBuiltInSubgroupGtMaskKHR:
-        case SpvBuiltInSubgroupLeMaskKHR:
-        case SpvBuiltInSubgroupLtMaskKHR:
-        case SpvBuiltInBaseVertex:
-        case SpvBuiltInBaseInstance:
-        case SpvBuiltInDrawIndex:
-        case SpvBuiltInDeviceIndex:
-        case SpvBuiltInViewIndex:
-        case SpvBuiltInBaryCoordNoPerspAMD:
-        case SpvBuiltInBaryCoordNoPerspCentroidAMD:
-        case SpvBuiltInBaryCoordNoPerspSampleAMD:
-        case SpvBuiltInBaryCoordSmoothAMD:
-        case SpvBuiltInBaryCoordSmoothCentroidAMD:
-        case SpvBuiltInBaryCoordSmoothSampleAMD:
-        case SpvBuiltInBaryCoordPullModelAMD:
-        case SpvBuiltInFragStencilRefEXT:
-        case SpvBuiltInViewportMaskNV:
-        case SpvBuiltInSecondaryPositionNV:
-        case SpvBuiltInSecondaryViewportMaskNV:
-        case SpvBuiltInPositionPerViewNV:
-        case SpvBuiltInViewportMaskPerViewNV:
-        case SpvBuiltInFullyCoveredEXT:
-        case SpvBuiltInMax: {
-          // No validation rules (for the moment).
-          break;
-        }
+      if (spv_result_t error =
+              ValidateSingleBuiltInAtDefinition(decoration, *inst)) {
+        return error;
       }
     }
   }
