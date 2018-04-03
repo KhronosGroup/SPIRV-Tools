@@ -753,11 +753,7 @@ spv_result_t BuiltInsValidator::ValidateClipOrCullDistanceAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateClipOrCullDistanceAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateClipOrCullDistanceAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateClipOrCullDistanceAtReference(
@@ -856,11 +852,7 @@ spv_result_t BuiltInsValidator::ValidateFragCoordAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateFragCoordAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateFragCoordAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateFragCoordAtReference(
@@ -916,11 +908,7 @@ spv_result_t BuiltInsValidator::ValidateFragDepthAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateFragDepthAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateFragDepthAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateFragDepthAtReference(
@@ -976,11 +964,7 @@ spv_result_t BuiltInsValidator::ValidateFrontFacingAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateFrontFacingAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateFrontFacingAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateFrontFacingAtReference(
@@ -1036,11 +1020,7 @@ spv_result_t BuiltInsValidator::ValidateHelperInvocationAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateHelperInvocationAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateHelperInvocationAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateHelperInvocationAtReference(
@@ -1097,11 +1077,7 @@ spv_result_t BuiltInsValidator::ValidateInvocationIdAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateInvocationIdAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateInvocationIdAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateInvocationIdAtReference(
@@ -1158,11 +1134,7 @@ spv_result_t BuiltInsValidator::ValidateInstanceIndexAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateInstanceIndexAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateInstanceIndexAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateInstanceIndexAtReference(
@@ -1218,11 +1190,7 @@ spv_result_t BuiltInsValidator::ValidatePatchVerticesAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidatePatchVerticesAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidatePatchVerticesAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidatePatchVerticesAtReference(
@@ -1281,11 +1249,7 @@ spv_result_t BuiltInsValidator::ValidatePointCoordAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidatePointCoordAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidatePointCoordAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidatePointCoordAtReference(
@@ -1341,11 +1305,7 @@ spv_result_t BuiltInsValidator::ValidatePointSizeAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidatePointSizeAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidatePointSizeAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidatePointSizeAtReference(
@@ -1424,11 +1384,7 @@ spv_result_t BuiltInsValidator::ValidatePositionAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidatePositionAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidatePositionAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidatePositionAtReference(
@@ -1506,11 +1462,7 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidatePrimitiveIdAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidatePrimitiveIdAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
@@ -1606,11 +1558,7 @@ spv_result_t BuiltInsValidator::ValidateSampleIdAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateSampleIdAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateSampleIdAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateSampleIdAtReference(
@@ -1666,11 +1614,7 @@ spv_result_t BuiltInsValidator::ValidateSampleMaskAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateSampleMaskAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateSampleMaskAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateSampleMaskAtReference(
@@ -1728,11 +1672,7 @@ spv_result_t BuiltInsValidator::ValidateSamplePositionAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateSamplePositionAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateSamplePositionAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateSamplePositionAtReference(
@@ -1790,11 +1730,7 @@ spv_result_t BuiltInsValidator::ValidateTessCoordAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateTessCoordAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateTessCoordAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateTessCoordAtReference(
@@ -1851,11 +1787,7 @@ spv_result_t BuiltInsValidator::ValidateTessLevelOuterAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateTessLevelAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateTessLevelAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateTessLevelInnerAtDefinition(
@@ -1875,11 +1807,7 @@ spv_result_t BuiltInsValidator::ValidateTessLevelInnerAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateTessLevelAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateTessLevelAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateTessLevelAtReference(
@@ -1972,11 +1900,7 @@ spv_result_t BuiltInsValidator::ValidateVertexIndexAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateVertexIndexAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateVertexIndexAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateVertexIndexAtReference(
@@ -2033,11 +1957,7 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateLayerOrViewportIndexAtReference,
-                this, decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateLayerOrViewportIndexAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
@@ -2134,11 +2054,8 @@ spv_result_t BuiltInsValidator::ValidateComputeShaderI32Vec3InputAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(std::bind(
-      &BuiltInsValidator::ValidateComputeShaderI32Vec3InputAtReference, this,
-      decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateComputeShaderI32Vec3InputAtReference(decoration, inst, inst,
+                                                      inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateComputeShaderI32Vec3InputAtReference(
@@ -2206,11 +2123,7 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
   }
 
   // Seed at reference checks with this built-in.
-  id_to_at_reference_checks_[inst.id()].push_back(
-      std::bind(&BuiltInsValidator::ValidateWorkgroupSizeAtReference, this,
-                decoration, inst, inst, std::placeholders::_1));
-
-  return SPV_SUCCESS;
+  return ValidateWorkgroupSizeAtReference(decoration, inst, inst, inst);
 }
 
 spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtReference(
