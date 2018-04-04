@@ -37,8 +37,8 @@
 
 namespace spvtools {
 
-using ir::IRContext;
 using ir::Instruction;
+using ir::IRContext;
 using ir::Module;
 using ir::Operand;
 using opt::PassManager;
@@ -672,19 +672,13 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   for (const auto& linking_entry : linkings_to_do) {
     for (const auto parameter_id :
          linking_entry.imported_symbol.parameter_ids) {
-      for (ir::Instruction* decoration :
-           decoration_manager->GetDecorationsFor(parameter_id, false)) {
-        switch (decoration->opcode()) {
-          case SpvOpDecorate:
-          case SpvOpMemberDecorate:
-            if (decoration->GetSingleWordInOperand(1u) ==
-                SpvDecorationFuncParamAttr)
-              linked_context->KillInst(decoration);
-            break;
-          default:
-            break;
-        }
-      }
+      decoration_manager->RemoveDecorationsFrom(
+          parameter_id, [](const Instruction& inst) {
+            return (inst.opcode() == SpvOpDecorate ||
+                    inst.opcode() == SpvOpMemberDecorate) &&
+                   inst.GetSingleWordInOperand(1u) ==
+                       SpvDecorationFuncParamAttr;
+          });
     }
   }
 

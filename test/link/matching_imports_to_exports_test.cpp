@@ -334,4 +334,66 @@ OpFunctionEnd
   EXPECT_EQ(expected_res, res_body);
 }
 
+TEST_F(MatchingImportsToExports, UseExportedFuncParamAttr) {
+  const std::string body1 = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpDecorate %1 LinkageAttributes "foo" Import
+OpDecorate %2 FuncParamAttr Zext
+%2 = OpDecorationGroup
+OpGroupDecorate %2 %3 %4
+%5 = OpTypeVoid
+%6 = OpTypeInt 32 0
+%7 = OpTypeFunction %5 %6
+%1 = OpFunction %5 None %7
+%3 = OpFunctionParameter %6
+OpFunctionEnd
+%8 = OpFunction %5 None %7
+%4 = OpFunctionParameter %6
+OpFunctionEnd
+)";
+  const std::string body2 = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpDecorate %1 LinkageAttributes "foo" Export
+OpDecorate %2 FuncParamAttr Sext
+%3 = OpTypeVoid
+%4 = OpTypeInt 32 0
+%5 = OpTypeFunction %3 %4
+%1 = OpFunction %3 None %5
+%2 = OpFunctionParameter %4
+%6 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  spvtest::Binary linked_binary;
+  EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
+      << GetErrorMessage();
+
+  const std::string expected_res = R"(OpCapability Kernel
+OpModuleProcessed "Linked by SPIR-V Tools Linker"
+OpDecorate %1 FuncParamAttr Zext
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %2
+OpDecorate %3 FuncParamAttr Sext
+%4 = OpTypeVoid
+%5 = OpTypeInt 32 0
+%6 = OpTypeFunction %4 %5
+%7 = OpFunction %4 None %6
+%2 = OpFunctionParameter %5
+OpFunctionEnd
+%8 = OpFunction %4 None %6
+%3 = OpFunctionParameter %5
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  std::string res_body;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  EXPECT_EQ(SPV_SUCCESS, Disassemble(linked_binary, &res_body))
+      << GetErrorMessage();
+  EXPECT_EQ(expected_res, res_body);
+}
+
 }  // anonymous namespace
