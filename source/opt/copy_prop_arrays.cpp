@@ -553,9 +553,10 @@ bool CopyPropagateArrays::CanUpdateUses(ir::Instruction* original_ptr_inst,
             // a series of extracts, composite constructs, and a store.
             return true;
           case SpvOpImageTexelPointer:
+          case SpvOpName:
             return true;
           default:
-            return false;
+            return use->IsDecoration();
         }
       });
 }
