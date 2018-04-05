@@ -247,13 +247,7 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
   // Otherwise, look up the value for |var_id| in |bb|'s predecessors.
   uint32_t val_id = 0;
   auto& predecessors = pass_->cfg()->preds(bb->id());
-  if (!IsBlockSealed(bb)) {
-    // We should only be reaching unsealed blocks trying to populate Phi
-    // arguments. This is already handled by AddPhiOperands.
-    assert(false &&
-           "Trying to get a reaching definition in an unsealed block.");
-    return 0;
-  } else if (predecessors.size() == 1) {
+  if (predecessors.size() == 1) {
     // If |bb| has exactly one predecessor, we look for |var_id|'s definition
     // there.
     val_id = GetReachingDef(var_id, pass_->cfg()->block(predecessors[0]));
@@ -359,12 +353,6 @@ void SSARewriter::GenerateSSAReplacements(ir::BasicBlock* bb) {
             << "\n";
 #endif
 
-  // Seal |bb|. This means that all the stores in it have been scanned and it's
-  // ready to feed them into its successors. Note that we seal the block before
-  // we scan its instructions, this way loads reading from stores within |bb| do
-  // not create unnecessary trivial Phi candidates.
-  SealBlock(bb);
-
   for (auto& inst : *bb) {
     auto opcode = inst.opcode();
     if (opcode == SpvOpStore || opcode == SpvOpVariable) {
@@ -373,6 +361,10 @@ void SSARewriter::GenerateSSAReplacements(ir::BasicBlock* bb) {
       ProcessLoad(&inst, bb);
     }
   }
+
+  // Seal |bb|. This means that all the stores in it have been scanned and it's
+  // ready to feed them into its successors.
+  SealBlock(bb);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
   PrintPhiCandidates();
