@@ -523,4 +523,46 @@ INSTANTIATE_TEST_CASE_P(
                              {1, SpvDecorationHlslCounterBufferGOOGLE, 2})},
         })), );
 
+// SPV_NV_shader_subgroup_partitioned
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_NV_shader_subgroup_partitioned, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_VULKAN_1_1),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_NV_shader_subgroup_partitioned\"\n",
+             MakeInstruction(SpvOpExtension,
+                             MakeVector("SPV_NV_shader_subgroup_partitioned"))},
+            {"OpCapability GroupNonUniformPartitionedNV\n",
+             MakeInstruction(SpvOpCapability,
+                             {SpvCapabilityGroupNonUniformPartitionedNV})},
+            // Check the new capability's token number
+            {"OpCapability GroupNonUniformPartitionedNV\n",
+             MakeInstruction(SpvOpCapability, {5297})},
+            {"%2 = OpGroupNonUniformPartitionNV %1 %3\n",
+             MakeInstruction(SpvOpGroupNonUniformPartitionNV, {1, 2, 3})},
+            // Check the new instruction's token number
+            {"%2 = OpGroupNonUniformPartitionNV %1 %3\n",
+             MakeInstruction(static_cast<SpvOp>(5296), {1, 2, 3})},
+            // Check the new group operations
+            {"%2 = OpGroupIAdd %1 %3 PartitionedReduceNV %4\n",
+             MakeInstruction(SpvOpGroupIAdd,
+                             {1, 2, 3, SpvGroupOperationPartitionedReduceNV,
+                              4})},
+            {"%2 = OpGroupIAdd %1 %3 PartitionedReduceNV %4\n",
+             MakeInstruction(SpvOpGroupIAdd, {1, 2, 3, 6, 4})},
+            {"%2 = OpGroupIAdd %1 %3 PartitionedInclusiveScanNV %4\n",
+             MakeInstruction(SpvOpGroupIAdd,
+                             {1, 2, 3,
+                              SpvGroupOperationPartitionedInclusiveScanNV, 4})},
+            {"%2 = OpGroupIAdd %1 %3 PartitionedInclusiveScanNV %4\n",
+             MakeInstruction(SpvOpGroupIAdd, {1, 2, 3, 7, 4})},
+            {"%2 = OpGroupIAdd %1 %3 PartitionedExclusiveScanNV %4\n",
+             MakeInstruction(SpvOpGroupIAdd,
+                             {1, 2, 3,
+                              SpvGroupOperationPartitionedExclusiveScanNV, 4})},
+            {"%2 = OpGroupIAdd %1 %3 PartitionedExclusiveScanNV %4\n",
+             MakeInstruction(SpvOpGroupIAdd, {1, 2, 3, 8, 4})},
+        })), );
+
 }  // anonymous namespace
