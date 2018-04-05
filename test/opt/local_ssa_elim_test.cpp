@@ -139,6 +139,148 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
+TEST_F(LocalSSAElimTest, NestedForLoop) {
+  // #version 450
+  //
+  // layout (location=0) in mat4 BC;
+  // layout (location=0) out float fo;
+  //
+  // void main()
+  // {
+  //     float f = 0.0;
+  //     for (int i=0; i<4; i++)
+  //       for (int j=0; j<4; j++)
+  //         f = f + BC[i][j];
+  //     fo = f;
+  // }
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BC %fo
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %f "f"
+OpName %i "i"
+OpName %j "j"
+OpName %BC "BC"
+OpName %fo "fo"
+OpDecorate %BC Location 0
+OpDecorate %fo Location 0
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%bool = OpTypeBool
+%v4float = OpTypeVector %float 4
+%mat4v4float = OpTypeMatrix %v4float 4
+%_ptr_Input_mat4v4float = OpTypePointer Input %mat4v4float
+%BC = OpVariable %_ptr_Input_mat4v4float Input
+%_ptr_Input_float = OpTypePointer Input %float
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%fo = OpVariable %_ptr_Output_float Output
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %9
+%24 = OpLabel
+%f = OpVariable %_ptr_Function_float Function
+%i = OpVariable %_ptr_Function_int Function
+%j = OpVariable %_ptr_Function_int Function
+OpStore %f %float_0
+OpStore %i %int_0
+OpBranch %25
+%25 = OpLabel
+%26 = OpLoad %int %i
+%27 = OpSLessThan %bool %26 %int_4
+OpLoopMerge %28 %29 None
+OpBranchConditional %27 %30 %28
+%30 = OpLabel
+OpStore %j %int_0
+OpBranch %31
+%31 = OpLabel
+%32 = OpLoad %int %j
+%33 = OpSLessThan %bool %32 %int_4
+OpLoopMerge %29 %34 None
+OpBranchConditional %33 %34 %29
+%34 = OpLabel
+%35 = OpLoad %float %f
+%36 = OpLoad %int %i
+%37 = OpLoad %int %j
+%38 = OpAccessChain %_ptr_Input_float %BC %36 %37
+%39 = OpLoad %float %38
+%40 = OpFAdd %float %35 %39
+OpStore %f %40
+%41 = OpLoad %int %j
+%42 = OpIAdd %int %41 %int_1
+OpStore %j %42
+OpBranch %31
+%29 = OpLabel
+%43 = OpLoad %int %i
+%44 = OpIAdd %int %43 %int_1
+OpStore %i %44
+OpBranch %25
+%28 = OpLabel
+%45 = OpLoad %float %f
+OpStore %fo %45
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %9
+%24 = OpLabel
+%f = OpVariable %_ptr_Function_float Function
+%i = OpVariable %_ptr_Function_int Function
+%j = OpVariable %_ptr_Function_int Function
+OpStore %f %float_0
+OpStore %i %int_0
+OpBranch %25
+%25 = OpLabel
+%47 = OpPhi %float %float_0 %24 %50 %29
+%46 = OpPhi %int %int_0 %24 %44 %29
+%27 = OpSLessThan %bool %46 %int_4
+OpLoopMerge %28 %29 None
+OpBranchConditional %27 %30 %28
+%30 = OpLabel
+OpStore %j %int_0
+OpBranch %31
+%31 = OpLabel
+%50 = OpPhi %float %47 %30 %40 %34
+%48 = OpPhi %int %int_0 %30 %42 %34
+%33 = OpSLessThan %bool %48 %int_4
+OpLoopMerge %29 %34 None
+OpBranchConditional %33 %34 %29
+%34 = OpLabel
+%38 = OpAccessChain %_ptr_Input_float %BC %46 %48
+%39 = OpLoad %float %38
+%40 = OpFAdd %float %50 %39
+OpStore %f %40
+%42 = OpIAdd %int %48 %int_1
+OpStore %j %42
+OpBranch %31
+%29 = OpLabel
+%44 = OpIAdd %int %46 %int_1
+OpStore %i %44
+OpBranch %25
+%28 = OpLabel
+OpStore %fo %47
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+      predefs + before, predefs + after, true, true);
+}
+
 TEST_F(LocalSSAElimTest, ForLoopWithContinue) {
   // #version 140
   //
