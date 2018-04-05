@@ -143,6 +143,7 @@ OpName %main "main"
 %v4float = OpTypeVector %float 4
 %v4double = OpTypeVector %double 4
 %v2float = OpTypeVector %float 2
+%v2double = OpTypeVector %double 2
 %v2bool = OpTypeVector %bool 2
 %struct_v2int_int_int = OpTypeStruct %v2int %int %int
 %_ptr_int = OpTypePointer Function %int
@@ -158,6 +159,7 @@ OpName %main "main"
 %_ptr_v4double = OpTypePointer Function %v4double
 %_ptr_struct_v2int_int_int = OpTypePointer Function %struct_v2int_int_int
 %_ptr_v2float = OpTypePointer Function %v2float
+%_ptr_v2double = OpTypePointer Function %v2double
 %short_0 = OpConstant %short 0
 %short_3 = OpConstant %short 3
 %100 = OpConstant %int 0 ; Need a def with an numerical id to define id maps.
@@ -196,6 +198,7 @@ OpName %main "main"
 %float16_2 = OpConstant %float16 2
 %float_n1 = OpConstant %float -1
 %104 = OpConstant %float 0 ; Need a def with an numerical id to define id maps.
+%float_null = OpConstantNull %float
 %float_0 = OpConstant %float 0
 %float_half = OpConstant %float 0.5
 %float_1 = OpConstant %float 1
@@ -203,6 +206,7 @@ OpName %main "main"
 %float_3 = OpConstant %float 3
 %float_4 = OpConstant %float 4
 %float_0p5 = OpConstant %float 0.5
+%v2float_0_0 = OpConstantComposite %v2float %float_0 %float_0
 %v2float_2_2 = OpConstantComposite %v2float %float_2 %float_2
 %v2float_2_3 = OpConstantComposite %v2float %float_2 %float_3
 %v2float_3_2 = OpConstantComposite %v2float %float_3 %float_2
@@ -211,10 +215,20 @@ OpName %main "main"
 %v2float_null = OpConstantNull %v2float
 %double_n1 = OpConstant %double -1
 %105 = OpConstant %double 0 ; Need a def with an numerical id to define id maps.
+%double_null = OpConstantNull %double
 %double_0 = OpConstant %double 0
 %double_1 = OpConstant %double 1
 %double_2 = OpConstant %double 2
 %double_3 = OpConstant %double 3
+%double_4 = OpConstant %double 4
+%double_0p5 = OpConstant %double 0.5
+%v2double_0_0 = OpConstantComposite %v2double %double_0 %double_0
+%v2double_2_2 = OpConstantComposite %v2double %double_2 %double_2
+%v2double_2_3 = OpConstantComposite %v2double %double_2 %double_3
+%v2double_3_2 = OpConstantComposite %v2double %double_3 %double_2
+%v2double_4_4 = OpConstantComposite %v2double %double_4 %double_4
+%v2double_2_0p5 = OpConstantComposite %v2double %double_2 %double_0p5
+%v2double_null = OpConstantNull %v2double
 %float_nan = OpConstant %float -0x1.8p+128
 %double_nan = OpConstant %double -0x1.8p+1024
 %108 = OpConstant %half 0
@@ -222,10 +236,12 @@ OpName %main "main"
 %106 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %v4float_0_0_0_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %v4float_0_0_0_1 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_1
+%v4float_0_1_0_0 = OpConstantComposite %v4float %float_0 %float_1 %float_null %float_0
 %v4float_1_1_1_1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
 %107 = OpConstantComposite %v4double %double_0 %double_0 %double_0 %double_0
 %v4double_0_0_0_0 = OpConstantComposite %v4double %double_0 %double_0 %double_0 %double_0
 %v4double_0_0_0_1 = OpConstantComposite %v4double %double_0 %double_0 %double_0 %double_1
+%v4double_0_1_0_0 = OpConstantComposite %v4double %double_0 %double_1 %double_null %double_0
 %v4double_1_1_1_1 = OpConstantComposite %v4double %double_1 %double_1 %double_1 %double_1
 )";
 
@@ -799,7 +815,55 @@ INSTANTIATE_TEST_CASE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
             "%2 = OpFDiv %float %float_n1 %float_0\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, -std::numeric_limits<float>::infinity())
+        2, -std::numeric_limits<float>::infinity()),
+    // Test case 6: Fold (2.0, 3.0) dot (2.0, 0.5)
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpDot %float %v2float_2_3 %v2float_2_0p5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 5.5f),
+    // Test case 7: Fold (0.0, 0.0) dot v
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%v = OpVariable %_ptr_v2float Function\n" +
+            "%2 = OpLoad %v2float %v\n" +
+            "%3 = OpDot %float %v2float_0_0 %2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 0.0f),
+    // Test case 8: Fold v dot (0.0, 0.0)
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%v = OpVariable %_ptr_v2float Function\n" +
+            "%2 = OpLoad %v2float %v\n" +
+            "%3 = OpDot %float %2 %v2float_0_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 0.0f),
+    // Test case 9: Fold Null dot v
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%v = OpVariable %_ptr_v2float Function\n" +
+            "%2 = OpLoad %v2float %v\n" +
+            "%3 = OpDot %float %v2float_null %2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 0.0f),
+    // Test case 10: Fold v dot Null
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%v = OpVariable %_ptr_v2float Function\n" +
+            "%2 = OpLoad %v2float %v\n" +
+            "%3 = OpDot %float %2 %v2float_null\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 0.0f)
 ));
 // clang-format on
 
@@ -886,7 +950,55 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
                 "%2 = OpFDiv %double %double_n1 %double_0\n" +
                 "OpReturn\n" +
                 "OpFunctionEnd",
-            2, -std::numeric_limits<double>::infinity())
+            2, -std::numeric_limits<double>::infinity()),
+        // Test case 5: Fold (2.0, 3.0) dot (2.0, 0.5)
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpDot %double %v2double_2_3 %v2double_2_0p5\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 5.5f),
+        // Test case 6: Fold (0.0, 0.0) dot v
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%v = OpVariable %_ptr_v2double Function\n" +
+                "%2 = OpLoad %v2double %v\n" +
+                "%3 = OpDot %double %v2double_0_0 %2\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            3, 0.0f),
+        // Test case 7: Fold v dot (0.0, 0.0)
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%v = OpVariable %_ptr_v2double Function\n" +
+                "%2 = OpLoad %v2double %v\n" +
+                "%3 = OpDot %double %2 %v2double_0_0\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            3, 0.0f),
+        // Test case 8: Fold Null dot v
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%v = OpVariable %_ptr_v2double Function\n" +
+                "%2 = OpLoad %v2double %v\n" +
+                "%3 = OpDot %double %v2double_null %2\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            3, 0.0f),
+        // Test case 9: Fold v dot Null
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%v = OpVariable %_ptr_v2double Function\n" +
+                "%2 = OpLoad %v2double %v\n" +
+                "%3 = OpDot %double %2 %v2double_null\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            3, 0.0f)
 ));
 // clang-format on
 
@@ -4465,6 +4577,88 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractMatchingTest, MatchingInstructionFolding
             "OpReturn\n" +
             "OpFunctionEnd",
         4, true)
+));
+
+INSTANTIATE_TEST_CASE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: Using OpDot to extract last element.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+            "; CHECK: %3 = OpCompositeExtract [[float]] %2 3\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4float Function\n" +
+            "%2 = OpLoad %v4float %n\n" +
+            "%3 = OpDot %float %2 %v4float_0_0_0_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, true),
+    // Test case 1: Using OpDot to extract last element.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+            "; CHECK: %3 = OpCompositeExtract [[float]] %2 3\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4float Function\n" +
+            "%2 = OpLoad %v4float %n\n" +
+            "%3 = OpDot %float %v4float_0_0_0_1 %2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, true),
+    // Test case 2: Using OpDot to extract second element.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+            "; CHECK: %3 = OpCompositeExtract [[float]] %2 1\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4float Function\n" +
+            "%2 = OpLoad %v4float %n\n" +
+            "%3 = OpDot %float %v4float_0_1_0_0 %2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, true),
+    // Test case 3: Using OpDot to extract last element.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: %3 = OpCompositeExtract [[double]] %2 3\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4double Function\n" +
+            "%2 = OpLoad %v4double %n\n" +
+            "%3 = OpDot %double %2 %v4double_0_0_0_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, true),
+    // Test case 4: Using OpDot to extract last element.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: %3 = OpCompositeExtract [[double]] %2 3\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4double Function\n" +
+            "%2 = OpLoad %v4double %n\n" +
+            "%3 = OpDot %double %v4double_0_0_0_1 %2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, true),
+    // Test case 5: Using OpDot to extract second element.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: %3 = OpCompositeExtract [[double]] %2 1\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4double Function\n" +
+            "%2 = OpLoad %v4double %n\n" +
+            "%3 = OpDot %double %v4double_0_1_0_0 %2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, true)
 ));
 #endif
 }  // anonymous namespace

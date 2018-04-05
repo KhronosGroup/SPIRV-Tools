@@ -142,29 +142,6 @@ using BinaryScalarFoldingRule = std::function<const analysis::Constant*(
     const analysis::Type* result_type, const analysis::Constant* a,
     const analysis::Constant* b, analysis::ConstantManager*)>;
 
-// Returns an std::vector containing the elements of |constant|.  The type of
-// |constant| must be |Vector|.
-std::vector<const analysis::Constant*> GetVectorComponents(
-    const analysis::Constant* constant, analysis::ConstantManager* const_mgr) {
-  std::vector<const analysis::Constant*> components;
-  const analysis::VectorConstant* a = constant->AsVectorConstant();
-  const analysis::Vector* vector_type = constant->type()->AsVector();
-  assert(vector_type != nullptr);
-  if (a != nullptr) {
-    for (uint32_t i = 0; i < vector_type->element_count(); ++i) {
-      components.push_back(a->GetComponents()[i]);
-    }
-  } else {
-    const analysis::Type* element_type = vector_type->element_type();
-    const analysis::Constant* element_null_const =
-        const_mgr->GetConstant(element_type, {});
-    for (uint32_t i = 0; i < vector_type->element_count(); ++i) {
-      components.push_back(element_null_const);
-    }
-  }
-  return components;
-}
-
 // Returns a |ConstantFoldingRule| that folds unary floating point scalar ops
 // using |scalar_rule| and unary float point vectors ops by applying
 // |scalar_rule| to the elements of the vector.  The |ConstantFoldingRule|
@@ -193,7 +170,7 @@ ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
       std::vector<const analysis::Constant*> a_components;
       std::vector<const analysis::Constant*> results_components;
 
-      a_components = GetVectorComponents(constants[0], const_mgr);
+      a_components = constants[0]->GetVectorComponents(const_mgr);
 
       // Fold each component of the vector.
       for (uint32_t i = 0; i < a_components.size(); ++i) {
@@ -244,8 +221,8 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
       std::vector<const analysis::Constant*> b_components;
       std::vector<const analysis::Constant*> results_components;
 
-      a_components = GetVectorComponents(constants[0], const_mgr);
-      b_components = GetVectorComponents(constants[1], const_mgr);
+      a_components = constants[0]->GetVectorComponents(const_mgr);
+      b_components = constants[1]->GetVectorComponents(const_mgr);
 
       // Fold each component of the vector.
       for (uint32_t i = 0; i < a_components.size(); ++i) {
@@ -334,28 +311,29 @@ UnaryScalarFoldingRule FoldIToFOp() {
 
 // This macro defines a |BinaryScalarFoldingRule| that applies |op|.  The
 // operator |op| must work for both float and double, and use syntax "f1 op f2".
-#define FOLD_FPARITH_OP(op)                                               \
-  [](const analysis::Type* result_type, const analysis::Constant* a,      \
-     const analysis::Constant* b,                                         \
-     analysis::ConstantManager* const_mgr) -> const analysis::Constant* { \
-    assert(result_type != nullptr && a != nullptr && b != nullptr);       \
-    assert(result_type == a->type() && result_type == b->type());         \
-    const analysis::Float* float_type = result_type->AsFloat();           \
-    assert(float_type != nullptr);                                        \
-    if (float_type->width() == 32) {                                      \
-      float fa = a->GetFloat();                                           \
-      float fb = b->GetFloat();                                           \
-      spvutils::FloatProxy<float> result(fa op fb);                       \
-      std::vector<uint32_t> words = result.GetWords();                    \
-      return const_mgr->GetConstant(result_type, words);                  \
-    } else if (float_type->width() == 64) {                               \
-      double fa = a->GetDouble();                                         \
-      double fb = b->GetDouble();                                         \
-      spvutils::FloatProxy<double> result(fa op fb);                      \
-      std::vector<uint32_t> words = result.GetWords();                    \
-      return const_mgr->GetConstant(result_type, words);                  \
-    }                                                                     \
-    return nullptr;                                                       \
+#define FOLD_FPARITH_OP(op)                                                \
+  [](const analysis::Type* result_type, const analysis::Constant* a,       \
+     const analysis::Constant* b,                                          \
+     analysis::ConstantManager* const_mgr_in_macro)                        \
+      -> const analysis::Constant* {                                       \
+    assert(result_type != nullptr && a != nullptr && b != nullptr);        \
+    assert(result_type == a->type() && result_type == b->type());          \
+    const analysis::Float* float_type_in_macro = result_type->AsFloat();   \
+    assert(float_type_in_macro != nullptr);                                \
+    if (float_type_in_macro->width() == 32) {                              \
+      float fa = a->GetFloat();                                            \
+      float fb = b->GetFloat();                                            \
+      spvutils::FloatProxy<float> result_in_macro(fa op fb);               \
+      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();   \
+      return const_mgr_in_macro->GetConstant(result_type, words_in_macro); \
+    } else if (float_type_in_macro->width() == 64) {                       \
+      double fa = a->GetDouble();                                          \
+      double fb = b->GetDouble();                                          \
+      spvutils::FloatProxy<double> result_in_macro(fa op fb);              \
+      std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();   \
+      return const_mgr_in_macro->GetConstant(result_type, words_in_macro); \
+    }                                                                      \
+    return nullptr;                                                        \
   }
 
 // Define the folding rule for conversion between floating point and integer
@@ -447,6 +425,79 @@ ConstantFoldingRule FoldFOrdGreaterThanEqual() {
 ConstantFoldingRule FoldFUnordGreaterThanEqual() {
   return FoldFPBinaryOp(FOLD_FPCMP_OP(>=, false));
 }
+
+// Folds an OpDot where all of the inputs are constants to a
+// constant.  A new constant is created if necessary.
+ConstantFoldingRule FoldOpDotWithConstants() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    analysis::TypeManager* type_mgr = context->get_type_mgr();
+    const analysis::Type* new_type = type_mgr->GetType(inst->type_id());
+    assert(new_type->AsFloat() && "OpDot should have a float return type.");
+    const analysis::Float* float_type = new_type->AsFloat();
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return nullptr;
+    }
+
+    // If one of the operands is 0, then the result is 0.
+    bool has_zero_operand = false;
+
+    for (int i = 0; i < 2; ++i) {
+      if (constants[i]) {
+        if (constants[i]->AsNullConstant() ||
+            constants[i]->AsVectorConstant()->IsZero()) {
+          has_zero_operand = true;
+          break;
+        }
+      }
+    }
+
+    if (has_zero_operand) {
+      if (float_type->width() == 32) {
+        spvutils::FloatProxy<float> result(0.0f);
+        std::vector<uint32_t> words = result.GetWords();
+        return const_mgr->GetConstant(float_type, words);
+      }
+      if (float_type->width() == 64) {
+        spvutils::FloatProxy<double> result(0.0);
+        std::vector<uint32_t> words = result.GetWords();
+        return const_mgr->GetConstant(float_type, words);
+      }
+      return nullptr;
+    }
+
+    if (constants[0] == nullptr || constants[1] == nullptr) {
+      return nullptr;
+    }
+
+    std::vector<const analysis::Constant*> a_components;
+    std::vector<const analysis::Constant*> b_components;
+
+    a_components = constants[0]->GetVectorComponents(const_mgr);
+    b_components = constants[1]->GetVectorComponents(const_mgr);
+
+    spvutils::FloatProxy<double> result(0.0);
+    std::vector<uint32_t> words = result.GetWords();
+    const analysis::Constant* result_const =
+        const_mgr->GetConstant(float_type, words);
+    for (uint32_t i = 0; i < a_components.size(); ++i) {
+      if (a_components[i] == nullptr || b_components[i] == nullptr) {
+        return nullptr;
+      }
+
+      const analysis::Constant* component = FOLD_FPARITH_OP(*)(
+          new_type, a_components[i], b_components[i], const_mgr);
+      result_const =
+          FOLD_FPARITH_OP(+)(new_type, result_const, component, const_mgr);
+    }
+    return result_const;
+  };
+}
+
 }  // namespace
 
 spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
@@ -464,6 +515,7 @@ spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
   rules_[SpvOpConvertSToF].push_back(FoldIToF());
   rules_[SpvOpConvertUToF].push_back(FoldIToF());
 
+  rules_[SpvOpDot].push_back(FoldOpDotWithConstants());
   rules_[SpvOpFAdd].push_back(FoldFAdd());
   rules_[SpvOpFDiv].push_back(FoldFDiv());
   rules_[SpvOpFMul].push_back(FoldFMul());

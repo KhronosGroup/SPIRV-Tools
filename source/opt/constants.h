@@ -47,6 +47,7 @@ class VectorConstant;
 class MatrixConstant;
 class ArrayConstant;
 class NullConstant;
+class ConstantManager;
 
 // Abstract class for a SPIR-V constant. It has a bunch of As<subclass> methods,
 // which is used as a way to probe the actual <subclass>
@@ -108,6 +109,11 @@ class Constant {
   int64_t GetS64() const;
 
   const Type* type() const { return type_; }
+
+  // Returns an std::vector containing the elements of |constant|.  The type of
+  // |constant| must be |Vector|.
+  std::vector<const Constant*> GetVectorComponents(
+      ConstantManager* const_mgr) const;
 
  protected:
   Constant(const Type* ty) : type_(ty) {}
@@ -333,6 +339,9 @@ class VectorConstant : public CompositeConstant {
   }
 
   const Type* component_type() const { return component_type_; }
+
+  // Returns true if the vector is all zeros.
+  bool IsZero() const;
 
  private:
   const Type* component_type_;
