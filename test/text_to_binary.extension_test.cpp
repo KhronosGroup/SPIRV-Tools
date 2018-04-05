@@ -565,4 +565,95 @@ INSTANTIATE_TEST_CASE_P(
              MakeInstruction(SpvOpGroupIAdd, {1, 2, 3, 8, 4})},
         })), );
 
+// SPV_EXT_descriptor_indexing
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_EXT_descriptor_indexing, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+               SPV_ENV_UNIVERSAL_1_2, SPV_ENV_VULKAN_1_0),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_EXT_descriptor_indexing\"\n",
+             MakeInstruction(SpvOpExtension,
+                             MakeVector("SPV_EXT_descriptor_indexing"))},
+            // Check capabilities, by name
+            {"OpCapability ShaderNonUniformEXT\n",
+             MakeInstruction(SpvOpCapability,
+                             {SpvCapabilityShaderNonUniformEXT})},
+            {"OpCapability RuntimeDescriptorArrayEXT\n",
+             MakeInstruction(SpvOpCapability,
+                             {SpvCapabilityRuntimeDescriptorArrayEXT})},
+            {"OpCapability InputAttachmentArrayDynamicIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityInputAttachmentArrayDynamicIndexingEXT})},
+            {"OpCapability UniformTexelBufferArrayDynamicIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityUniformTexelBufferArrayDynamicIndexingEXT})},
+            {"OpCapability StorageTexelBufferArrayDynamicIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityStorageTexelBufferArrayDynamicIndexingEXT})},
+            {"OpCapability UniformBufferArrayNonUniformIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityUniformBufferArrayNonUniformIndexingEXT})},
+            {"OpCapability SampledImageArrayNonUniformIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilitySampledImageArrayNonUniformIndexingEXT})},
+            {"OpCapability StorageBufferArrayNonUniformIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityStorageBufferArrayNonUniformIndexingEXT})},
+            {"OpCapability StorageImageArrayNonUniformIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityStorageImageArrayNonUniformIndexingEXT})},
+            {"OpCapability InputAttachmentArrayNonUniformIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityInputAttachmentArrayNonUniformIndexingEXT})},
+            {"OpCapability UniformTexelBufferArrayNonUniformIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityUniformTexelBufferArrayNonUniformIndexingEXT})},
+            {"OpCapability StorageTexelBufferArrayNonUniformIndexingEXT\n",
+             MakeInstruction(
+                 SpvOpCapability,
+                 {SpvCapabilityStorageTexelBufferArrayNonUniformIndexingEXT})},
+            // Check capabilities, by number
+            {"OpCapability ShaderNonUniformEXT\n",
+             MakeInstruction(SpvOpCapability, {5301})},
+            {"OpCapability RuntimeDescriptorArrayEXT\n",
+             MakeInstruction(SpvOpCapability, {5302})},
+            {"OpCapability InputAttachmentArrayDynamicIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5303})},
+            {"OpCapability UniformTexelBufferArrayDynamicIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5304})},
+            {"OpCapability StorageTexelBufferArrayDynamicIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5305})},
+            {"OpCapability UniformBufferArrayNonUniformIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5306})},
+            {"OpCapability SampledImageArrayNonUniformIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5307})},
+            {"OpCapability StorageBufferArrayNonUniformIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5308})},
+            {"OpCapability StorageImageArrayNonUniformIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5309})},
+            {"OpCapability InputAttachmentArrayNonUniformIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5310})},
+            {"OpCapability UniformTexelBufferArrayNonUniformIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5311})},
+            {"OpCapability StorageTexelBufferArrayNonUniformIndexingEXT\n",
+             MakeInstruction(SpvOpCapability, {5312})},
+
+            // Check the decoration token
+            {"OpDecorate %1 NonUniformEXT\n",
+             MakeInstruction(SpvOpDecorate, {1, SpvDecorationNonUniformEXT})},
+            {"OpDecorate %1 NonUniformEXT\n",
+             MakeInstruction(SpvOpDecorate, {1, 5300})},
+        })), );
+
 }  // anonymous namespace
