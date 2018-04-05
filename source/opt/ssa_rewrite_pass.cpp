@@ -363,7 +363,7 @@ void SSARewriter::GenerateSSAReplacements(ir::BasicBlock* bb) {
   }
 
   // Seal |bb|. This means that all the stores in it have been scanned and it's
-  // ready to feed them into its successors. 
+  // ready to feed them into its successors.
   SealBlock(bb);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
