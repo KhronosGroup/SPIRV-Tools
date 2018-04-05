@@ -334,8 +334,7 @@ OpFunctionEnd
   EXPECT_EQ(expected_res, res_body);
 }
 
-TEST_F(MatchingImportsToExports,
-       UseExportedFuncParamAttr) {
+TEST_F(MatchingImportsToExports, UseExportedFuncParamAttr) {
   const std::string body1 = R"(
 OpCapability Kernel
 OpCapability Linkage
