@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "folding_rules.h"
+
+#include <limits>
+
 #include "latest_version_glsl_std_450_header.h"
 
 namespace spvtools {
@@ -1812,6 +1815,79 @@ FoldingRule RedundantFMix() {
   };
 }
 
+// This rule look for a dot with a constant vector containing a single 1 and
+// the rest 0s.  This is the same as doing an extract.
+FoldingRule DotProductDoingExtract() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpDot && "Wrong opcode.  Should be OpDot.");
+
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return false;
+    }
+
+    for (int i = 0; i < 2; ++i) {
+      if (!constants[i]) {
+        continue;
+      }
+
+      const analysis::Vector* vector_type = constants[i]->type()->AsVector();
+      assert(vector_type && "Inputs to OpDot must be vectors.");
+      const analysis::Float* element_type =
+          vector_type->element_type()->AsFloat();
+      assert(element_type && "Inputs to OpDot must be vectors of floats.");
+      uint32_t element_width = element_type->width();
+      if (element_width != 32 && element_width != 64) {
+        return false;
+      }
+
+      std::vector<const analysis::Constant*> components;
+      components = constants[i]->GetVectorComponents(const_mgr);
+
+      const uint32_t kNotFound = std::numeric_limits<uint32_t>::max();
+
+      uint32_t component_with_one = kNotFound;
+      bool all_others_zero = true;
+      for (uint32_t j = 0; j < components.size(); ++j) {
+        const analysis::Constant* element = components[j];
+        double value =
+            (element_width == 32 ? element->GetFloat() : element->GetDouble());
+        if (value == 0.0) {
+          continue;
+        } else if (value == 1.0) {
+          if (component_with_one == kNotFound) {
+            component_with_one = j;
+          } else {
+            component_with_one = kNotFound;
+            break;
+          }
+        } else {
+          all_others_zero = false;
+          break;
+        }
+      }
+
+      if (!all_others_zero || component_with_one == kNotFound) {
+        continue;
+      }
+
+      std::vector<ir::Operand> operands;
+      operands.push_back(
+          {SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(1u - i)}});
+      operands.push_back(
+          {SPV_OPERAND_TYPE_LITERAL_INTEGER, {component_with_one}});
+
+      inst->SetOpcode(SpvOpCompositeExtract);
+      inst->SetInOperands(std::move(operands));
+      return true;
+    }
+    return false;
+  };
+}
+
 }  // namespace
 
 spvtools::opt::FoldingRules::FoldingRules() {
@@ -1825,6 +1901,8 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
   rules_[SpvOpCompositeExtract].push_back(CompositeConstructFeedingExtract());
   rules_[SpvOpCompositeExtract].push_back(VectorShuffleFeedingExtract());
+
+  rules_[SpvOpDot].push_back(DotProductDoingExtract());
 
   rules_[SpvOpExtInst].push_back(RedundantFMix());
 

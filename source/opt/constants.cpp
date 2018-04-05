@@ -306,6 +306,37 @@ const Constant* ConstantManager::GetConstant(
   return cst ? RegisterConstant(cst) : nullptr;
 }
 
+bool VectorConstant::IsZero() const {
+  for (const Constant* component : GetComponents()) {
+    if (!component->AsNullConstant() &&
+        !component->AsScalarConstant()->IsZero()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::vector<const analysis::Constant*> Constant::GetVectorComponents(
+    analysis::ConstantManager* const_mgr) const {
+  std::vector<const analysis::Constant*> components;
+  const analysis::VectorConstant* a = this->AsVectorConstant();
+  const analysis::Vector* vector_type = this->type()->AsVector();
+  assert(vector_type != nullptr);
+  if (a != nullptr) {
+    for (uint32_t i = 0; i < vector_type->element_count(); ++i) {
+      components.push_back(a->GetComponents()[i]);
+    }
+  } else {
+    const analysis::Type* element_type = vector_type->element_type();
+    const analysis::Constant* element_null_const =
+        const_mgr->GetConstant(element_type, {});
+    for (uint32_t i = 0; i < vector_type->element_count(); ++i) {
+      components.push_back(element_null_const);
+    }
+  }
+  return components;
+}
+
 }  // namespace analysis
 }  // namespace opt
 }  // namespace spvtools
