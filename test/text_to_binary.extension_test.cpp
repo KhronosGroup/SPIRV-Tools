@@ -571,7 +571,8 @@ INSTANTIATE_TEST_CASE_P(
     SPV_EXT_descriptor_indexing, ExtensionRoundTripTest,
     Combine(
         Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-               SPV_ENV_UNIVERSAL_1_2, SPV_ENV_VULKAN_1_0),
+               SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1),
         ValuesIn(std::vector<AssemblyCase>{
             {"OpExtension \"SPV_EXT_descriptor_indexing\"\n",
              MakeInstruction(SpvOpExtension,
