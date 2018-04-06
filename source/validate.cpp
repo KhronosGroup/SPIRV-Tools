@@ -234,81 +234,6 @@ UNUSED(void PrintDotGraph(ValidationState_t& _, libspirv::Function func)) {
   }
 }
 
-// Returns the major version number from |version|.
-uint32_t parseMajorVersion(uint32_t version) {
-  // 2.3 Table 1: Version bytes are 0 | major | minor | 0.
-  return version >> 16;
-}
-
-// Returns the minor version number from |version|.
-uint32_t parseMinorVersion(uint32_t version) {
-  // 2.3 Table 1: Version bytes are 0 | major | minor | 0.
-  return (version & 0xff00) >> 8;
-}
-
-// Returns true if SPIR-V version |version| supports the target environment
-// |env|.
-bool validateVersion(uint32_t version, const spv_target_env& env) {
-  uint32_t major = parseMajorVersion(version);
-  uint32_t minor = parseMinorVersion(version);
-  switch (env) {
-    case SPV_ENV_VULKAN_1_0:
-      // Vulkan 1.0 accept SPIR-V 1.0.
-      if (major > 1) return false;
-      if (minor > 0) return false;
-      break;
-    case SPV_ENV_VULKAN_1_1:
-      // Vulkan 1.1 accepts SPIR-V 1.3 and lower.
-      if (major > 1) return false;
-      if (minor > 3) return false;
-      break;
-    case SPV_ENV_OPENCL_2_2:
-    case SPV_ENV_OPENCL_EMBEDDED_2_2:
-      // OpenCL 2.2 accepts SPIR-V 1.2 and lower.
-      if (major > 1) return false;
-      if (minor > 2) return false;
-      break;
-    case SPV_ENV_OPENCL_2_1:
-    case SPV_ENV_OPENCL_EMBEDDED_2_1:
-      // OpenCL 2.1 accept SPIR-V 1.0.
-      if (major > 1) return false;
-      if (minor > 0) return false;
-      break;
-    case SPV_ENV_OPENCL_2_0:
-    case SPV_ENV_OPENCL_EMBEDDED_2_0:
-      // OpenCL 2.1 accept SPIR-V 1.0.
-      if (major > 1) return false;
-      if (minor > 0) return false;
-      break;
-    case SPV_ENV_OPENGL_4_0:
-    case SPV_ENV_OPENGL_4_1:
-    case SPV_ENV_OPENGL_4_2:
-    case SPV_ENV_OPENGL_4_3:
-    case SPV_ENV_OPENGL_4_5:
-      // Through GL_ARB_gl_spirv extension, SPIR-V 1.0 is supported.
-      if (major > 1) return false;
-      if (minor > 0) return false;
-      break;
-    case SPV_ENV_UNIVERSAL_1_0:
-      if (major > 1) return false;
-      if (minor > 0) return false;
-    case SPV_ENV_UNIVERSAL_1_1:
-      if (major > 1) return false;
-      if (minor > 1) return false;
-    case SPV_ENV_UNIVERSAL_1_2:
-      if (major > 1) return false;
-      if (minor > 2) return false;
-    case SPV_ENV_UNIVERSAL_1_3:
-      if (major > 1) return false;
-      if (minor > 3) return false;
-      break;
-    default:
-      break;
-  }
-
-  return true;
-}
-
 spv_result_t ValidateBinaryUsingContextAndValidationState(
     const spv_context_t& context, const uint32_t* words, const size_t num_words,
     spv_diagnostic* pDiagnostic, ValidationState_t* vstate) {
@@ -330,12 +255,13 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
            << "Invalid SPIR-V header.";
   }
 
-  if (!validateVersion(header.version, context.target_env)) {
+  if (header.version > spvVersionForTargetEnv(context.target_env)) {
     return libspirv::DiagnosticStream(position, context.consumer,
                                       SPV_ERROR_WRONG_VERSION)
            << "Invalid SPIR-V binary version "
-           << parseMajorVersion(header.version) << "."
-           << parseMinorVersion(header.version) << " for target environment "
+           << SPV_SPIRV_VERSION_MAJOR_PART(header.version) << "."
+           << SPV_SPIRV_VERSION_MINOR_PART(header.version)
+           << " for target environment "
            << spvTargetEnvDescription(context.target_env) << ".";
   }
 
