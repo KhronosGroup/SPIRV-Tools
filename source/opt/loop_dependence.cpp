@@ -313,8 +313,8 @@ bool LoopDependenceAnalysis::StrongSIVTest(SENode* source, SENode* destination,
         "StrongSIVTest found delta value and coefficient value as constants "
         "with values:\n"
         "\tdelta value: " +
-        ToString(delta_value) + "\n\tcoefficient value: " +
-        ToString(coefficient_value) + "\n");
+        ToString(delta_value) +
+        "\n\tcoefficient value: " + ToString(coefficient_value) + "\n");
     // Check if the distance is not integral to try to prove independence.
     if (delta_value % coefficient_value != 0) {
       PrintDebug(
@@ -477,9 +477,9 @@ bool LoopDependenceAnalysis::WeakZeroSourceSIVTest(
           "WeakZeroSourceSIVTest calculated distance with the following "
           "values\n"
           "\tdelta value: " +
-          ToString(delta_value) + "\n\tcoefficient value: " +
-          ToString(coefficient_value) + "\n\tdistance: " + ToString(distance) +
-          "\n");
+          ToString(delta_value) +
+          "\n\tcoefficient value: " + ToString(coefficient_value) +
+          "\n\tdistance: " + ToString(distance) + "\n");
     }
   } else {
     PrintDebug(
@@ -504,9 +504,9 @@ bool LoopDependenceAnalysis::WeakZeroSourceSIVTest(
       PrintDebug(
           "Bound values were as follow\n"
           "\tlower bound value: " +
-          ToString(lower_bound_value) + "\n\tupper bound value: " +
-          ToString(upper_bound_value) + "\n\tdistance value: " +
-          ToString(distance) + "\n");
+          ToString(lower_bound_value) +
+          "\n\tupper bound value: " + ToString(upper_bound_value) +
+          "\n\tdistance value: " + ToString(distance) + "\n");
       distance_entry->dependence_information =
           DistanceEntry::DependenceInformation::DISTANCE;
       distance_entry->direction = DistanceEntry::Directions::NONE;
@@ -630,9 +630,9 @@ bool LoopDependenceAnalysis::WeakZeroDestinationSIVTest(
           "WeakZeroDestinationSIVTest calculated distance with the following "
           "values\n"
           "\tdelta value: " +
-          ToString(delta_value) + "\n\tcoefficient value: " +
-          ToString(coefficient_value) + "\n\tdistance: " + ToString(distance) +
-          "\n");
+          ToString(delta_value) +
+          "\n\tcoefficient value: " + ToString(coefficient_value) +
+          "\n\tdistance: " + ToString(distance) + "\n");
     }
   } else {
     PrintDebug(
@@ -657,9 +657,9 @@ bool LoopDependenceAnalysis::WeakZeroDestinationSIVTest(
       PrintDebug(
           "Bound values were as follows\n"
           "\tlower bound value: " +
-          ToString(lower_bound_value) + "\n\tupper bound value: " +
-          ToString(upper_bound_value) + "\n\tdistance value: " +
-          ToString(distance));
+          ToString(lower_bound_value) +
+          "\n\tupper bound value: " + ToString(upper_bound_value) +
+          "\n\tdistance value: " + ToString(distance));
       distance_entry->dependence_information =
           DistanceEntry::DependenceInformation::DISTANCE;
       distance_entry->direction = DistanceEntry::Directions::NONE;

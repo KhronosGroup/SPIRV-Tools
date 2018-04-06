@@ -407,14 +407,15 @@ bool Loop::IsLCSSA() const {
       // All uses must be either:
       //  - In the loop;
       //  - In an exit block and in a phi instruction.
-      if (!def_use_mgr->WhileEachUser(&insn, [&exit_blocks, ir_context, this](
-                                                 ir::Instruction* use) -> bool {
-            BasicBlock* parent = ir_context->get_instr_block(use);
-            assert(parent && "Invalid analysis");
-            if (IsInsideLoop(parent)) return true;
-            if (use->opcode() != SpvOpPhi) return false;
-            return exit_blocks.count(parent->id());
-          }))
+      if (!def_use_mgr->WhileEachUser(
+              &insn,
+              [&exit_blocks, ir_context, this](ir::Instruction* use) -> bool {
+                BasicBlock* parent = ir_context->get_instr_block(use);
+                assert(parent && "Invalid analysis");
+                if (IsInsideLoop(parent)) return true;
+                if (use->opcode() != SpvOpPhi) return false;
+                return exit_blocks.count(parent->id());
+              }))
         return false;
     }
   }
