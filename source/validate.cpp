@@ -35,6 +35,7 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
+#include "spirv_target_env.h"
 #include "spirv_validator_options.h"
 #include "val/construct.h"
 #include "val/function.h"

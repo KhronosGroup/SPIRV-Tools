@@ -29,9 +29,6 @@
 // Returns the minor version extracted from a version header word.
 #define SPV_SPIRV_VERSION_MINOR_PART(WORD) ((uint32_t(WORD) >> 8) & 0xff)
 
-// Returns the version number for the given SPIR-V target environment.
-uint32_t spvVersionForTargetEnv(spv_target_env env);
-
 // Header indices
 
 #define SPV_INDEX_MAGIC_NUMBER 0u
