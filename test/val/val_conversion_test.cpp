@@ -412,8 +412,6 @@ TEST_F(ValidateConversion, UConvertSuccess) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-#if 0
-// TODO(atgoo@github.com) Reenable the test once the check is reenabled.
 TEST_F(ValidateConversion, UConvertWrongResultType) {
   const std::string body = R"(
 %val = OpUConvert %s32 %s32_1
@@ -421,8 +419,9 @@ TEST_F(ValidateConversion, UConvertWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected unsigned int scalar or vector type as Result Type: UConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected unsigned int scalar or vector type as Result "
+                        "Type: UConvert"));
 }
 
 TEST_F(ValidateConversion, UConvertWrongInputType) {
@@ -432,8 +431,8 @@ TEST_F(ValidateConversion, UConvertWrongInputType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be int scalar or vector: UConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to be int scalar or vector: UConvert"));
 }
 
 TEST_F(ValidateConversion, UConvertDifferentDimension) {
@@ -443,8 +442,9 @@ TEST_F(ValidateConversion, UConvertDifferentDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have the same dimension as Result Type: UConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have the same dimension as Result "
+                        "Type: UConvert"));
 }
 
 TEST_F(ValidateConversion, UConvertSameBitWidth) {
@@ -454,10 +454,10 @@ TEST_F(ValidateConversion, UConvertSameBitWidth) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have different bit width from Result Type: UConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have different bit width from "
+                        "Result Type: UConvert"));
 }
-#endif
 
 TEST_F(ValidateConversion, SConvertSuccess) {
   const std::string body = R"(
