@@ -96,34 +96,32 @@ spv_result_t ConversionPass(ValidationState_t& _,
       break;
     }
 
-#if 0
-    // TODO(atgoo@github.com) Reenable this once VulkanCTS can pass this test.
     case SpvOpUConvert: {
       if (!_.IsUnsignedIntScalarType(result_type) &&
           !_.IsUnsignedIntVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected unsigned int scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected unsigned int scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
-      if (!input_type || (!_.IsIntScalarType(input_type) &&
-                          !_.IsIntVectorType(input_type)))
+      if (!input_type ||
+          (!_.IsIntScalarType(input_type) && !_.IsIntVectorType(input_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be int scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be int scalar or vector: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have the same dimension as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have the same dimension as Result Type: "
+               << spvOpcodeString(opcode);
 
       if (_.GetBitWidth(result_type) == _.GetBitWidth(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have different bit width from Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have different bit width from Result "
+                  "Type: "
+               << spvOpcodeString(opcode);
       break;
     }
-#endif
 
     case SpvOpSConvert: {
       if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type))
