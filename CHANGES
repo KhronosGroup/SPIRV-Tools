@@ -1,7 +1,42 @@
 Revision history for SPIRV-Tools
 
-v2018.3-dev 2018-03-07
- - Start v2018.3 development
+v2018.3-dev 2018-04-06
+ - General:
+   - Support SPV_EXT_descriptor_indexing
+   - Support SPV_GOOGLE_decorate_string
+   - Support SPV_GOOGLE_hlsl_functionality1
+   - Support SPV_NV_shader_subgroup_partitioned
+   - Use "unified1" grammar from SPIRV-Headers
+   - Simplify support for new extensions. Assembler, disassembler, and simple validation
+     support is automatic if new tokens are introduced with appropriate extension
+     attributes in the "unified1" SPIR-V core grammar.
+   - Disassembler: Emit more digits on floating point, to reliably reproduce all
+     significand bits.  (Use std::max_digits10 instead of std::digits10)
+ - Optimizer:
+   - Add --strip-reflect
+   - Add --time-report
+   - Merge-return now works with structured control flow.
+   - New (faster) SSA rewriter to convert local loads and stores to SSA IDs and phis.
+     Can replace load/store elimination passes.
+   - Fix instruction folding case: insertion that feeds and extract, when the extract
+     remains.
+   - Copy propagate arrays, in simple cases.
+   - Better handling of OpImageTexelPointer
+   - Add loop peeling internal utility.
+   - Initial utilities for scalar evolution.
+ - Validator:
+   - Check Vulkan built-in variables
+   - Check Vulkan-specific atomic result type rule.
+   - Relax control barrier check for SPIR-V 1.3.  Fixes #1427
+   - Check OpPhi.
+   - Stop checking sizes derived from spec-constants.
+   - Re-enable checks for OpUConvert.
+ - Fixes:
+   #898: Linker properly removes FuncParamAttr from imported symbols.
+   #924, #1174: Fix handling of decoration groups in optimizer, linker.
+   #1404: Don't optimize away the compute compute workgroup size constant.
+   #1407: Remove a bad assertion
+   #1456: Fix bug in SSA rewriter related to variables updated in loops.
 
 v2018.2 2018-03-07
  - General:
