@@ -28,6 +28,10 @@ namespace opt {
 bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
                                            const ir::Instruction* destination,
                                            DistanceVector* distance_vector) {
+  // Start off by finding and marking all the loops in |loops_| that are
+  // irrelevant to the dependence analysis.
+  MarkUnsusedDistanceEntriesAsIrrelevant(source, destination, distance_vector);
+
   ir::Instruction* source_access_chain = GetOperandDefinition(source, 0);
   ir::Instruction* destination_access_chain =
       GetOperandDefinition(destination, 0);
@@ -777,7 +781,8 @@ bool LoopDependenceAnalysis::WeakCrossingSIVTest(
     // equal to 1/2.
     if (delta_value % (2 * coefficient_value) != 0 &&
         static_cast<float>(delta_value % (2 * coefficient_value)) /
-             static_cast<float>(2 * coefficient_value) != 0.5) {
+                static_cast<float>(2 * coefficient_value) !=
+            0.5) {
       PrintDebug(
           "WeakCrossingSIVTest proved independence through distance escaping "
           "the loop bounds.");

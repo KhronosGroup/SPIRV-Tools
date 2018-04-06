@@ -2277,4 +2277,229 @@ TEST(DependencyAnalysis, MultipleSubscriptZIVSIV) {
   }
 }
 
+/*
+  Generated from the following GLSL fragment shader
+  with --eliminate-local-multi-store
+#version 440 core
+void a(){
+  int[10] arr;
+  for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 10; j++) {
+      arr[j] = arr[j];
+    }
+  }
+}
+void b(){
+  int[10] arr;
+  for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 10; j++) {
+      arr[i] = arr[i];
+    }
+  }
+}
+void main() {
+  a();
+  b();
+}
+*/
+TEST(DependencyAnalysis, IrrelevantSubscripts) {
+  const std::string text = R"(               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 440
+               OpName %4 "main"
+               OpName %6 "a("
+               OpName %8 "b("
+               OpName %12 "i"
+               OpName %23 "j"
+               OpName %35 "arr"
+               OpName %46 "i"
+               OpName %54 "j"
+               OpName %62 "arr"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeInt 32 1
+         %11 = OpTypePointer Function %10
+         %13 = OpConstant %10 0
+         %20 = OpConstant %10 10
+         %21 = OpTypeBool
+         %31 = OpTypeInt 32 0
+         %32 = OpConstant %31 10
+         %33 = OpTypeArray %10 %32
+         %34 = OpTypePointer Function %33
+         %42 = OpConstant %10 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %72 = OpFunctionCall %2 %6
+         %73 = OpFunctionCall %2 %8
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %12 = OpVariable %11 Function
+         %23 = OpVariable %11 Function
+         %35 = OpVariable %34 Function
+               OpStore %12 %13
+               OpBranch %14
+         %14 = OpLabel
+         %74 = OpPhi %10 %13 %7 %45 %17
+               OpLoopMerge %16 %17 None
+               OpBranch %18
+         %18 = OpLabel
+         %22 = OpSLessThan %21 %74 %20
+               OpBranchConditional %22 %15 %16
+         %15 = OpLabel
+               OpStore %23 %13
+               OpBranch %24
+         %24 = OpLabel
+         %75 = OpPhi %10 %13 %15 %43 %27
+               OpLoopMerge %26 %27 None
+               OpBranch %28
+         %28 = OpLabel
+         %30 = OpSLessThan %21 %75 %20
+               OpBranchConditional %30 %25 %26
+         %25 = OpLabel
+         %38 = OpAccessChain %11 %35 %75
+         %39 = OpLoad %10 %38
+         %40 = OpAccessChain %11 %35 %75
+               OpStore %40 %39
+               OpBranch %27
+         %27 = OpLabel
+         %43 = OpIAdd %10 %75 %42
+               OpStore %23 %43
+               OpBranch %24
+         %26 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+         %45 = OpIAdd %10 %74 %42
+               OpStore %12 %45
+               OpBranch %14
+         %16 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %8 = OpFunction %2 None %3
+          %9 = OpLabel
+         %46 = OpVariable %11 Function
+         %54 = OpVariable %11 Function
+         %62 = OpVariable %34 Function
+               OpStore %46 %13
+               OpBranch %47
+         %47 = OpLabel
+         %77 = OpPhi %10 %13 %9 %71 %50
+               OpLoopMerge %49 %50 None
+               OpBranch %51
+         %51 = OpLabel
+         %53 = OpSLessThan %21 %77 %20
+               OpBranchConditional %53 %48 %49
+         %48 = OpLabel
+               OpStore %54 %13
+               OpBranch %55
+         %55 = OpLabel
+         %78 = OpPhi %10 %13 %48 %69 %58
+               OpLoopMerge %57 %58 None
+               OpBranch %59
+         %59 = OpLabel
+         %61 = OpSLessThan %21 %78 %20
+               OpBranchConditional %61 %56 %57
+         %56 = OpLabel
+         %65 = OpAccessChain %11 %62 %77
+         %66 = OpLoad %10 %65
+         %67 = OpAccessChain %11 %62 %77
+               OpStore %67 %66
+               OpBranch %58
+         %58 = OpLabel
+         %69 = OpIAdd %10 %78 %42
+               OpStore %54 %69
+               OpBranch %55
+         %57 = OpLabel
+               OpBranch %50
+         %50 = OpLabel
+         %71 = OpIAdd %10 %77 %42
+               OpStore %46 %71
+               OpBranch %47
+         %49 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  // For the loop in function a
+  {
+    const ir::Function* f = spvtest::GetFunction(module, 6);
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+    std::vector<const ir::Loop*> loops{&ld.GetLoopByIndex(1),
+                                       &ld.GetLoopByIndex(0)};
+    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+
+    const ir::Instruction* store[1];
+    int stores_found = 0;
+    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 25)) {
+      if (inst.opcode() == SpvOp::SpvOpStore) {
+        store[stores_found] = &inst;
+        ++stores_found;
+      }
+    }
+
+    for (int i = 0; i < 1; ++i) {
+      EXPECT_TRUE(store[i]);
+    }
+
+    // 39 -> 40
+    {
+      opt::DistanceVector distance_vector{loops.size()};
+      analysis.SetDebugStream(std::cout);
+      EXPECT_FALSE(analysis.GetDependence(
+          context->get_def_use_mgr()->GetDef(39), store[0], &distance_vector));
+      EXPECT_EQ(distance_vector.entries[0].dependence_information,
+                opt::DistanceEntry::DependenceInformation::IRRELEVANT);
+      EXPECT_EQ(distance_vector.entries[1].dependence_information,
+                opt::DistanceEntry::DependenceInformation::DISTANCE);
+      EXPECT_EQ(distance_vector.entries[1].distance, 0);
+    }
+  }
+
+  // For the loop in function b
+  {
+    const ir::Function* f = spvtest::GetFunction(module, 8);
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+    std::vector<const ir::Loop*> loops{&ld.GetLoopByIndex(1),
+                                       &ld.GetLoopByIndex(0)};
+    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+
+    const ir::Instruction* store[1];
+    int stores_found = 0;
+    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 56)) {
+      if (inst.opcode() == SpvOp::SpvOpStore) {
+        store[stores_found] = &inst;
+        ++stores_found;
+      }
+    }
+
+    for (int i = 0; i < 1; ++i) {
+      EXPECT_TRUE(store[i]);
+    }
+
+    // 66 -> 67
+    {
+      opt::DistanceVector distance_vector{loops.size()};
+      EXPECT_FALSE(analysis.GetDependence(
+          context->get_def_use_mgr()->GetDef(66), store[0], &distance_vector));
+      EXPECT_EQ(distance_vector.entries[0].dependence_information,
+                opt::DistanceEntry::DependenceInformation::DISTANCE);
+      EXPECT_EQ(distance_vector.entries[0].distance, 0);
+      EXPECT_EQ(distance_vector.entries[1].dependence_information,
+                opt::DistanceEntry::DependenceInformation::IRRELEVANT);
+    }
+  }
+}
+
 }  // namespace

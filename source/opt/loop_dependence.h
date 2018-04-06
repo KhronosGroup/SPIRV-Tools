@@ -38,7 +38,8 @@ class DistanceEntry {
     UNKNOWN = 0,
     DIRECTION = 1,
     DISTANCE = 2,
-    PEEL = 3
+    PEEL = 3,
+    IRRELEVANT = 4
   };
   enum Directions {
     NONE = 0,
@@ -279,6 +280,13 @@ class LoopDependenceAnalysis {
   // from it to get the constant term added to the induction.
   // Returns the resuting constant term, or nullptr if it could not be produced.
   SENode* GetConstantTerm(const ir::Loop* loop, SERecurrentNode* induction);
+
+  // Marks all the distance entries in |distance_vector| that were relate to
+  // loops in |loops_| but were not used in any subscripts as irrelevant to the
+  // to the dependence test.
+  void MarkUnsusedDistanceEntriesAsIrrelevant(
+      const ir::Instruction* source, const ir::Instruction* destination,
+      DistanceVector* distance_vector);
 
   // Converts |value| to a std::string and returns the result.
   // This is required because Android does not compile std::to_string.

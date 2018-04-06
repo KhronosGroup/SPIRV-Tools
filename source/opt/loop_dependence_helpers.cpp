@@ -422,6 +422,43 @@ bool LoopDependenceAnalysis::CheckSupportedLoops(
   return true;
 }
 
+void LoopDependenceAnalysis::MarkUnsusedDistanceEntriesAsIrrelevant(
+    const ir::Instruction* source, const ir::Instruction* destination,
+    DistanceVector* distance_vector) {
+  std::vector<ir::Instruction*> source_subscripts = GetSubscripts(source);
+  std::vector<ir::Instruction*> destination_subscripts =
+      GetSubscripts(destination);
+
+  std::set<const ir::Loop*> used_loops{};
+
+  for (ir::Instruction* source_inst : source_subscripts) {
+    SENode* source_node = scalar_evolution_.SimplifyExpression(
+        scalar_evolution_.AnalyzeInstruction(source_inst));
+    std::vector<SERecurrentNode*> recurrent_nodes =
+        source_node->CollectRecurrentNodes();
+    for (SERecurrentNode* recurrent_node : recurrent_nodes) {
+      used_loops.insert(recurrent_node->GetLoop());
+    }
+  }
+
+  for (ir::Instruction* destination_inst : destination_subscripts) {
+    SENode* destination_node = scalar_evolution_.SimplifyExpression(
+        scalar_evolution_.AnalyzeInstruction(destination_inst));
+    std::vector<SERecurrentNode*> recurrent_nodes =
+        destination_node->CollectRecurrentNodes();
+    for (SERecurrentNode* recurrent_node : recurrent_nodes) {
+      used_loops.insert(recurrent_node->GetLoop());
+    }
+  }
+
+  for (size_t i = 0; i < loops_.size(); ++i) {
+    if (used_loops.find(loops_[i]) == used_loops.end()) {
+      distance_vector->entries[i].dependence_information =
+          DistanceEntry::DependenceInformation::IRRELEVANT;
+    }
+  }
+}
+
 bool LoopDependenceAnalysis::IsSupportedLoop(const ir::Loop* loop) {
   std::vector<ir::Instruction*> inductions{};
   loop->GetInductionVariables(inductions);
