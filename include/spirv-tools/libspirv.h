@@ -411,7 +411,7 @@ typedef enum {
   SPV_ENV_OPENCL_EMBEDDED_2_1,  // OpenCL Embedded Profile 2.1 latest revision.
   SPV_ENV_OPENCL_EMBEDDED_2_2,  // OpenCL Embedded Profile 2.2 latest revision.
   SPV_ENV_UNIVERSAL_1_3,  // SPIR-V 1.3 latest revision, no other restrictions.
-  SPV_ENV_VULKAN_1_1,     // Vulkan 1.0 latest revision.
+  SPV_ENV_VULKAN_1_1,     // Vulkan 1.1 latest revision.
 } spv_target_env;
 
 // SPIR-V Validator can be parameterized with the following Universal Limits.

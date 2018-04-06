@@ -36,6 +36,7 @@
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
+#include "spirv_target_env.h"
 #include "table.h"
 #include "text_handler.h"
 #include "util/bitutils.h"

@@ -504,11 +504,12 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidIn10) {
 )";
 
   CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(SPV_ERROR_INVALID_BINARY,
+  ASSERT_EQ(SPV_ERROR_WRONG_VERSION,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
-  // In a 1.0 environment the binary parse fails before we even get to
-  // validation.  This occurs no matter where the OpModuleProcessed is placed.
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Invalid opcode: 330"));
+  // In a 1.0 environment the version check fails.
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid SPIR-V binary version 1.1 for target "
+                        "environment SPIR-V 1.0."));
 }
 
 TEST_F(ValidateLayout, ModuleProcessedValidIn11) {

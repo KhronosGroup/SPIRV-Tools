@@ -35,6 +35,7 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
+#include "spirv_target_env.h"
 #include "spirv_validator_options.h"
 #include "val/construct.h"
 #include "val/function.h"
@@ -253,6 +254,16 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     return libspirv::DiagnosticStream(position, context.consumer,
                                       SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V header.";
+  }
+
+  if (header.version > spvVersionForTargetEnv(context.target_env)) {
+    return libspirv::DiagnosticStream(position, context.consumer,
+                                      SPV_ERROR_WRONG_VERSION)
+           << "Invalid SPIR-V binary version "
+           << SPV_SPIRV_VERSION_MAJOR_PART(header.version) << "."
+           << SPV_SPIRV_VERSION_MINOR_PART(header.version)
+           << " for target environment "
+           << spvTargetEnvDescription(context.target_env) << ".";
   }
 
   // Look for OpExtension instructions and register extensions.
