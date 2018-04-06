@@ -864,6 +864,14 @@ INSTANTIATE_TEST_CASE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
             "OpReturn\n" +
             "OpFunctionEnd",
         3, 0.0f)
+    // Test case 11: Fold -2.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFNegate %float %float_2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, -2)
 ));
 // clang-format on
 
