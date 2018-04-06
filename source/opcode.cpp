@@ -25,6 +25,7 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
+#include "spirv_target_env.h"
 
 namespace {
 struct OpcodeDescPtrLen {

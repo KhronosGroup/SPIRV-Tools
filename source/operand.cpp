@@ -20,6 +20,7 @@
 
 #include "macro.h"
 #include "spirv_constant.h"
+#include "spirv_target_env.h"
 
 // For now, assume unified1 contains up to SPIR-V 1.3 and no later
 // SPIR-V version.

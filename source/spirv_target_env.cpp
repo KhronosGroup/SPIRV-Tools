@@ -43,15 +43,15 @@ const char* spvTargetEnvDescription(spv_target_env env) {
     case SPV_ENV_OPENCL_EMBEDDED_2_2:
       return "SPIR-V 1.2 (under OpenCL 2.2 Embedded Profile semantics)";
     case SPV_ENV_OPENGL_4_0:
-      return "SPIR-V 1.0 (under OpenCL 4.0 semantics)";
+      return "SPIR-V 1.0 (under OpenGL 4.0 semantics)";
     case SPV_ENV_OPENGL_4_1:
-      return "SPIR-V 1.0 (under OpenCL 4.1 semantics)";
+      return "SPIR-V 1.0 (under OpenGL 4.1 semantics)";
     case SPV_ENV_OPENGL_4_2:
-      return "SPIR-V 1.0 (under OpenCL 4.2 semantics)";
+      return "SPIR-V 1.0 (under OpenGL 4.2 semantics)";
     case SPV_ENV_OPENGL_4_3:
-      return "SPIR-V 1.0 (under OpenCL 4.3 semantics)";
+      return "SPIR-V 1.0 (under OpenGL 4.3 semantics)";
     case SPV_ENV_OPENGL_4_5:
-      return "SPIR-V 1.0 (under OpenCL 4.5 semantics)";
+      return "SPIR-V 1.0 (under OpenGL 4.5 semantics)";
     case SPV_ENV_UNIVERSAL_1_2:
       return "SPIR-V 1.2";
     case SPV_ENV_UNIVERSAL_1_3:
