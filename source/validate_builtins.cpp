@@ -1478,26 +1478,22 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
              << " " << GetStorageClassDesc(referenced_from_inst);
     }
 
-    if (storage_class == SpvStorageClassInput) {
+    if (storage_class == SpvStorageClassOutput) {
       assert(function_id_ == 0);
       id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
           &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this,
           "Vulkan spec doesn't allow BuiltIn PrimitiveId to be used for "
-          "variables with Input storage class if execution model is "
+          "variables with Output storage class if execution model is "
           "TessellationControl.",
           SpvExecutionModelTessellationControl, decoration, built_in_inst,
           referenced_from_inst, std::placeholders::_1));
       id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
           &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this,
           "Vulkan spec doesn't allow BuiltIn PrimitiveId to be used for "
-          "variables with Input storage class if execution model is "
+          "variables with Output storage class if execution model is "
           "TessellationEvaluation.",
           SpvExecutionModelTessellationEvaluation, decoration, built_in_inst,
           referenced_from_inst, std::placeholders::_1));
-    }
-
-    if (storage_class == SpvStorageClassOutput) {
-      assert(function_id_ == 0);
       id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
           &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this,
           "Vulkan spec doesn't allow BuiltIn PrimitiveId to be used for "
