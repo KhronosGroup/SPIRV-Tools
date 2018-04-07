@@ -1007,15 +1007,16 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     PrimitiveIdInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("PrimitiveId"), Values("Fragment", "Geometry"),
+    Combine(Values("PrimitiveId"),
+            Values("Fragment", "TessellationControl", "TessellationEvaluation",
+                   "Geometry"),
             Values("Input"), Values("%u32"), Values(TestResult())), );
 
 INSTANTIATE_TEST_CASE_P(
     PrimitiveIdOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("PrimitiveId"),
-            Values("Geometry", "TessellationControl", "TessellationEvaluation"),
-            Values("Output"), Values("%u32"), Values(TestResult())), );
+    Combine(Values("PrimitiveId"), Values("Geometry"), Values("Output"),
+            Values("%u32"), Values(TestResult())), );
 
 INSTANTIATE_TEST_CASE_P(
     PrimitiveIdInvalidExecutionModel,
@@ -1028,7 +1029,7 @@ INSTANTIATE_TEST_CASE_P(
                 "TessellationEvaluation or Geometry execution models"))), );
 
 INSTANTIATE_TEST_CASE_P(
-    PrimitiveIdNotInput,
+    PrimitiveIdFragmentNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
         Values("PrimitiveId"), Values("Fragment"), Values("Output"),
@@ -1038,14 +1039,14 @@ INSTANTIATE_TEST_CASE_P(
                           "which is called with execution model Fragment"))), );
 
 INSTANTIATE_TEST_CASE_P(
-    PrimitiveIdGeometryNotOutput,
+    PrimitiveIdGeometryNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PrimitiveId"),
             Values("TessellationControl", "TessellationEvaluation"),
-            Values("Input"), Values("%u32"),
+            Values("Output"), Values("%u32"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
-                "Input storage class if execution model is Tessellation",
+                "Output storage class if execution model is Tessellation",
                 "which is called with execution model Tessellation"))), );
 
 INSTANTIATE_TEST_CASE_P(
