@@ -262,24 +262,13 @@ SENode* LoopDependenceAnalysis::GetTripCount(const ir::Loop* loop) {
   size_t iteration_count = 0;
 
   // We have to check the instruction type here. If the condition instruction
-  // isn't of one of the below types we can't calculate the trip count.
-  switch (cond_instr->opcode()) {
-    case SpvOpULessThan:
-    case SpvOpSLessThan:
-    case SpvOpULessThanEqual:
-    case SpvOpSLessThanEqual:
-    case SpvOpUGreaterThan:
-    case SpvOpSGreaterThan:
-    case SpvOpUGreaterThanEqual:
-    case SpvOpSGreaterThanEqual:
-      if (loop->FindNumberOfIterations(
-              induction_instr, &*condition_block->tail(), &iteration_count)) {
-        return scalar_evolution_.CreateConstant(
-            static_cast<int64_t>(iteration_count));
-      }
-      break;
-    default:
-      return nullptr;
+  // isn't a supported type we can't calculate the trip count.
+  if (loop->IsSupportedCondition(cond_instr->opcode())) {
+    if (loop->FindNumberOfIterations(induction_instr, &*condition_block->tail(),
+                                     &iteration_count)) {
+      return scalar_evolution_.CreateConstant(
+          static_cast<int64_t>(iteration_count));
+    }
   }
 
   return nullptr;
