@@ -49,6 +49,7 @@ std::string version(spv_target_env env) {
     case SPV_ENV_OPENGL_4_2:
     case SPV_ENV_OPENGL_4_3:
     case SPV_ENV_OPENGL_4_5:
+    case SPV_ENV_OPENCL_1_2:
     case SPV_ENV_OPENCL_2_0:
     case SPV_ENV_OPENCL_EMBEDDED_2_0:
       return "1.0";
@@ -180,6 +181,7 @@ INSTANTIATE_TEST_CASE_P(OpenCL, ValidateVersion,
     make_tuple(SPV_ENV_OPENCL_2_0, SPV_ENV_OPENCL_EMBEDDED_2_0, opencl_spirv, true),
     make_tuple(SPV_ENV_OPENCL_2_0, SPV_ENV_OPENCL_EMBEDDED_2_1, opencl_spirv, true),
     make_tuple(SPV_ENV_OPENCL_2_0, SPV_ENV_OPENCL_EMBEDDED_2_2, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_2_0, SPV_ENV_OPENCL_1_2,          opencl_spirv, true),
 
     make_tuple(SPV_ENV_OPENCL_2_1, SPV_ENV_UNIVERSAL_1_0,       opencl_spirv, true),
     make_tuple(SPV_ENV_OPENCL_2_1, SPV_ENV_UNIVERSAL_1_1,       opencl_spirv, true),
@@ -191,6 +193,7 @@ INSTANTIATE_TEST_CASE_P(OpenCL, ValidateVersion,
     make_tuple(SPV_ENV_OPENCL_2_1, SPV_ENV_OPENCL_EMBEDDED_2_0, opencl_spirv, true),
     make_tuple(SPV_ENV_OPENCL_2_1, SPV_ENV_OPENCL_EMBEDDED_2_1, opencl_spirv, true),
     make_tuple(SPV_ENV_OPENCL_2_1, SPV_ENV_OPENCL_EMBEDDED_2_2, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_2_1, SPV_ENV_OPENCL_1_2,          opencl_spirv, true),
 
     make_tuple(SPV_ENV_OPENCL_2_2, SPV_ENV_UNIVERSAL_1_0,       opencl_spirv, false),
     make_tuple(SPV_ENV_OPENCL_2_2, SPV_ENV_UNIVERSAL_1_1,       opencl_spirv, false),
@@ -201,7 +204,61 @@ INSTANTIATE_TEST_CASE_P(OpenCL, ValidateVersion,
     make_tuple(SPV_ENV_OPENCL_2_2, SPV_ENV_OPENCL_2_2,          opencl_spirv, true),
     make_tuple(SPV_ENV_OPENCL_2_2, SPV_ENV_OPENCL_EMBEDDED_2_0, opencl_spirv, false),
     make_tuple(SPV_ENV_OPENCL_2_2, SPV_ENV_OPENCL_EMBEDDED_2_1, opencl_spirv, false),
-    make_tuple(SPV_ENV_OPENCL_2_2, SPV_ENV_OPENCL_EMBEDDED_2_2, opencl_spirv, true)
+    make_tuple(SPV_ENV_OPENCL_2_2, SPV_ENV_OPENCL_EMBEDDED_2_2, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_2_2, SPV_ENV_OPENCL_1_2,          opencl_spirv, false),
+
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_UNIVERSAL_1_0,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_UNIVERSAL_1_1,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_UNIVERSAL_1_2,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_UNIVERSAL_1_3,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_OPENCL_2_0,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_OPENCL_2_1,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_OPENCL_2_2,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_OPENCL_EMBEDDED_2_0, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_OPENCL_EMBEDDED_2_1, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_OPENCL_EMBEDDED_2_2, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_1_2, SPV_ENV_OPENCL_1_2,          opencl_spirv, true)
+  )
+);
+
+INSTANTIATE_TEST_CASE_P(OpenCLEmbedded, ValidateVersion,
+  ::testing::Values(
+    //         Binary version,              Target environment
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_UNIVERSAL_1_0,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_UNIVERSAL_1_1,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_UNIVERSAL_1_2,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_UNIVERSAL_1_3,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_OPENCL_2_0,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_OPENCL_2_1,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_OPENCL_2_2,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_OPENCL_EMBEDDED_2_0, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_OPENCL_EMBEDDED_2_1, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_OPENCL_EMBEDDED_2_2, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_0, SPV_ENV_OPENCL_1_2,          opencl_spirv, true),
+
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_UNIVERSAL_1_0,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_UNIVERSAL_1_1,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_UNIVERSAL_1_2,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_UNIVERSAL_1_3,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_OPENCL_2_0,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_OPENCL_2_1,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_OPENCL_2_2,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_OPENCL_EMBEDDED_2_0, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_OPENCL_EMBEDDED_2_1, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_OPENCL_EMBEDDED_2_2, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_OPENCL_1_2,          opencl_spirv, true),
+
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_UNIVERSAL_1_0,       opencl_spirv, false),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_UNIVERSAL_1_1,       opencl_spirv, false),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_UNIVERSAL_1_2,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_UNIVERSAL_1_3,       opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_OPENCL_2_0,          opencl_spirv, false),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_OPENCL_2_1,          opencl_spirv, false),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_OPENCL_2_2,          opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_OPENCL_EMBEDDED_2_0, opencl_spirv, false),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_OPENCL_EMBEDDED_2_1, opencl_spirv, false),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_OPENCL_EMBEDDED_2_2, opencl_spirv, true),
+    make_tuple(SPV_ENV_OPENCL_EMBEDDED_2_2, SPV_ENV_OPENCL_1_2,          opencl_spirv, false)
   )
 );
 // clang-format on
