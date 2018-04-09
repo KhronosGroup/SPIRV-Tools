@@ -134,14 +134,13 @@ bool LoopDependenceAnalysis::IsWithinBounds(int64_t value, int64_t bound_one,
   }
 }
 
-bool LoopDependenceAnalysis::IsProvablyOutwithLoopBounds(const ir::Loop* loop,
-                                                         SENode* distance,
-                                                         SENode* coefficient) {
+bool LoopDependenceAnalysis::IsProvablyOutsideOfLoopBounds(
+    const ir::Loop* loop, SENode* distance, SENode* coefficient) {
   // We test to see if we can reduce the coefficient to an integral constant.
   SEConstantNode* coefficient_constant = coefficient->AsSEConstantNode();
   if (!coefficient_constant) {
     PrintDebug(
-        "IsProvablyOutwithLoopBounds could not reduce coefficient to a "
+        "IsProvablyOutsideOfLoopBounds could not reduce coefficient to a "
         "SEConstantNode so must exit.");
     return false;
   }
@@ -150,7 +149,7 @@ bool LoopDependenceAnalysis::IsProvablyOutwithLoopBounds(const ir::Loop* loop,
   SENode* upper_bound = GetUpperBound(loop);
   if (!lower_bound || !upper_bound) {
     PrintDebug(
-        "IsProvablyOutwithLoopBounds could not get both the lower and upper "
+        "IsProvablyOutsideOfLoopBounds could not get both the lower and upper "
         "bounds so must exit.");
     return false;
   }
@@ -159,13 +158,13 @@ bool LoopDependenceAnalysis::IsProvablyOutwithLoopBounds(const ir::Loop* loop,
   SENode* bounds = nullptr;
   if (coefficient_constant->FoldToSingleValue() >= 0) {
     PrintDebug(
-        "IsProvablyOutwithLoopBounds found coefficient >= 0.\n"
+        "IsProvablyOutsideOfLoopBounds found coefficient >= 0.\n"
         "Using bounds as upper - lower.");
     bounds = scalar_evolution_.SimplifyExpression(
         scalar_evolution_.CreateSubtraction(upper_bound, lower_bound));
   } else {
     PrintDebug(
-        "IsProvablyOutwithLoopBounds found coefficient < 0.\n"
+        "IsProvablyOutsideOfLoopBounds found coefficient < 0.\n"
         "Using bounds as lower - upper.");
     bounds = scalar_evolution_.SimplifyExpression(
         scalar_evolution_.CreateSubtraction(lower_bound, upper_bound));
@@ -181,14 +180,14 @@ bool LoopDependenceAnalysis::IsProvablyOutwithLoopBounds(const ir::Loop* loop,
           ->AsSEConstantNode();
   if (distance_minus_bounds) {
     PrintDebug(
-        "IsProvablyOutwithLoopBounds found distance - bounds as a "
+        "IsProvablyOutsideOfLoopBounds found distance - bounds as a "
         "SEConstantNode with value " +
         ToString(distance_minus_bounds->FoldToSingleValue()));
     // If distance - bounds > 0 we prove the distance is outwith the loop
     // bounds.
     if (distance_minus_bounds->FoldToSingleValue() > 0) {
       PrintDebug(
-          "IsProvablyOutwithLoopBounds found distance escaped the loop "
+          "IsProvablyOutsideOfLoopBounds found distance escaped the loop "
           "bounds.");
       return true;
     }
@@ -237,7 +236,7 @@ DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForSubscriptPair(
   DistanceEntry* distance_entry = nullptr;
   for (size_t loop_index = 0; loop_index < loops_.size(); ++loop_index) {
     if (loop == loops_[loop_index]) {
-      distance_entry = &distance_vector->entries[loop_index];
+      distance_entry = &(distance_vector->GetEntries()[loop_index]);
       break;
     }
   }
@@ -453,7 +452,7 @@ void LoopDependenceAnalysis::MarkUnsusedDistanceEntriesAsIrrelevant(
 
   for (size_t i = 0; i < loops_.size(); ++i) {
     if (used_loops.find(loops_[i]) == used_loops.end()) {
-      distance_vector->entries[i].dependence_information =
+      distance_vector->GetEntries()[i].dependence_information =
           DistanceEntry::DependenceInformation::IRRELEVANT;
     }
   }

@@ -421,8 +421,8 @@ bool LoopDependenceAnalysis::SymbolicStrongSIVTest(
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
   const ir::Loop* subscript_loop = GetLoopForSubscriptPair(&subscript_pair);
-  if (IsProvablyOutwithLoopBounds(subscript_loop, source_destination_delta,
-                                  coefficient)) {
+  if (IsProvablyOutsideOfLoopBounds(subscript_loop, source_destination_delta,
+                                    coefficient)) {
     PrintDebug(
         "SymbolicStrongSIVTest proved independence through loop bounds.");
     distance_entry->dependence_information =
@@ -817,12 +817,12 @@ bool LoopDependenceAnalysis::WeakCrossingSIVTest(
   return false;
 }
 
-std::vector<std::set<std::pair<ir::Instruction*, ir::Instruction*>>>
-LoopDependenceAnalysis::PartitionSubscripts(
+using PartitionedSubscripts =
+    std::vector<std::set<std::pair<ir::Instruction*, ir::Instruction*>>>;
+PartitionedSubscripts LoopDependenceAnalysis::PartitionSubscripts(
     const std::vector<ir::Instruction*>& source_subscripts,
     const std::vector<ir::Instruction*>& destination_subscripts) {
-  std::vector<std::set<std::pair<ir::Instruction*, ir::Instruction*>>>
-      partitions{};
+  PartitionedSubscripts partitions{};
 
   auto num_subscripts = source_subscripts.size();
 

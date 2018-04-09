@@ -91,14 +91,14 @@ add_spvtools_unittest(TARGET peeling_test
     LIBS SPIRV-Tools-opt
 )
 
-add_spvtools_unittest(TARGET loop_dependency_analysis
+add_spvtools_unittest(TARGET loop_dependence_analysis
     SRCS ../function_utils.h
-        dependency_analysis.cpp
+        dependence_analysis.cpp
     LIBS SPIRV-Tools-opt
 )
 
-add_spvtools_unittest(TARGET loop_dependency_analysis_helpers
+add_spvtools_unittest(TARGET loop_dependence_analysis_helpers
     SRCS ../function_utils.h
-        dependency_analysis_helpers.cpp
+        dependence_analysis_helpers.cpp
     LIBS SPIRV-Tools-opt
 )

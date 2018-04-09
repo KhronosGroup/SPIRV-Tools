@@ -32,6 +32,24 @@
 namespace spvtools {
 namespace opt {
 
+// Stores information about dependence between a load and a store wrt a single
+// loop in a loop nest.
+// DependenceInformation
+// * UNKNOWN if no dependence information can be gathered or is gathered
+//   for it.
+// * DIRECTION if a dependence direction could be found, but not a
+//   distance.
+// * DISTANCE if a dependence distance could be found.
+// * PEEL if peeling either the first or last iteration will break
+//   dependence between the given load and store.
+// * IRRELEVANT if it has no effect on the dependence between the given
+//   load and store.
+//
+// If peel_first == true, the analysis has found that peeling the first
+// iteration of this loop will break dependence.
+//
+// If peel_last == true, the analysis has found that peeling the last iteration
+// of this loop will break dependence.
 class DistanceEntry {
  public:
   enum DependenceInformation {
@@ -70,10 +88,19 @@ class DistanceEntry {
   bool operator!=(const DistanceEntry& rhs) { return !(*this == rhs); }
 };
 
+// Stores a vector of DistanceEntrys, one per loop in the analysis.
+// A DistanceVector holds all of the information gathered in a dependence
+// analysis wrt the loops stored in the LoopDependenceAnalysis performing the
+// analysis.
 class DistanceVector {
  public:
   explicit DistanceVector(size_t size) : entries(size, DistanceEntry{}) {}
-  std::vector<DistanceEntry> entries;
+
+  DistanceEntry& GetEntry(size_t index) { return entries[index]; }
+  const DistanceEntry& GetEntry(size_t index) const { return entries[index]; }
+
+  std::vector<DistanceEntry>& GetEntries() { return entries; }
+  const std::vector<DistanceEntry>& GetEntries() const { return entries; }
 
   bool operator==(const DistanceVector& rhs) {
     if (entries.size() != rhs.entries.size()) {
@@ -87,8 +114,36 @@ class DistanceVector {
     return true;
   }
   bool operator!=(const DistanceVector& rhs) { return !(*this == rhs); }
+
+ private:
+  std::vector<DistanceEntry> entries;
 };
 
+// Provides dependence information between a store instruction and a load
+// instruction inside the same loop in a loop nest.
+//
+// The analysis can only check dependence between stores and loads with regard
+// to the loop nest it is created with.
+//
+// The analysis can output debugging information to a stream. The output
+// describes the control flow of the analysis and what information it can deduce
+// at each step.
+// SetDebugStream and ClearDebugStream are provided for this functionality.
+//
+// The dependency algorithm is based on the 1990 Paper
+//   Practical Dependence Testing
+//   Gina Goff, Ken Kennedy, Chau-Wen Tseng
+//
+// The algorithm first identifies subscript pairs between the load and store.
+// Each pair is tested until all have been tested or independence is found.
+// The number of induction variables in a pair determines which test to perform
+// on it;
+// Zero Index Variable (ZIV) is used when no induction variables are present
+// in the pair.
+// Single Index Variable (SIV) is used when only one induction variable is
+// present, but may occur multiple times in the pair.
+// Multiple Index Variable (MIV) is used when more than one induction variable
+// is present in the pair.
 class LoopDependenceAnalysis {
  public:
   LoopDependenceAnalysis(ir::IRContext* context,
@@ -108,13 +163,16 @@ class LoopDependenceAnalysis {
                      const ir::Instruction* destination,
                      DistanceVector* distance_vector);
 
-  // Returns true if |subscript_pair| represents a ZIV pair
+  // Returns true if |subscript_pair| represents a Zero Index Variable pair
+  // (ZIV)
   bool IsZIV(const std::pair<SENode*, SENode*>& subscript_pair);
 
-  // Returns true if |subscript_pair| represents a SIV pair
+  // Returns true if |subscript_pair| represents a Single Index Variable
+  // (SIV) pair
   bool IsSIV(const std::pair<SENode*, SENode*>& subscript_pair);
 
-  // Returns true if |subscript_pair| represents a MIV pair
+  // Returns true if |subscript_pair| represents a Multiple Index Variable
+  // (MIV) pair
   bool IsMIV(const std::pair<SENode*, SENode*>& subscript_pair);
 
   // Finds the lower bound of |loop| as an SENode* and returns the result.
@@ -147,11 +205,13 @@ class LoopDependenceAnalysis {
   std::set<const ir::Loop*> CollectLoops(
       const std::vector<SERecurrentNode*>& nodes);
 
-  // Returns true if |distance| is provably within the loop bounds.
+  // Returns true if |distance| is provably outside the loop bounds.
+  // |coefficient| must be an SENode representing the coefficient of the
+  // induction variable of |loop|.
   // This method is able to handle some symbolic cases which IsWithinBounds
   // can't handle.
-  bool IsProvablyOutwithLoopBounds(const ir::Loop* loop, SENode* distance,
-                                   SENode* coefficient);
+  bool IsProvablyOutsideOfLoopBounds(const ir::Loop* loop, SENode* distance,
+                                     SENode* coefficient);
 
   // Sets the ostream for debug information for the analysis.
   void SetDebugStream(std::ostream& debug_stream) {
@@ -168,8 +228,9 @@ class LoopDependenceAnalysis {
   // sets of subscripts.
   // Returns the partitioning of subscript pairs. Sets of size 1 indicates an
   // independent subscript-pair and others indicate coupled sets.
-  std::vector<std::set<std::pair<ir::Instruction*, ir::Instruction*>>>
-  PartitionSubscripts(
+  using PartitionedSubscripts =
+      std::vector<std::set<std::pair<ir::Instruction*, ir::Instruction*>>>;
+  PartitionedSubscripts PartitionSubscripts(
       const std::vector<ir::Instruction*>& source_subscripts,
       const std::vector<ir::Instruction*>& destination_subscripts);
 
@@ -190,7 +251,7 @@ class LoopDependenceAnalysis {
   // induction variable has a step of +1 or -1 per loop iteration.
   bool CheckSupportedLoops(std::vector<const ir::Loop*> loops);
 
-  // Returns true if |loop| is in a form support by this analysis.
+  // Returns true if |loop| is in a form supported by this analysis.
   // A loop is supported if it has a single induction variable and that
   // induction variable has a step of +1 or -1 per loop iteration.
   bool IsSupportedLoop(const ir::Loop* loop);
@@ -198,7 +259,6 @@ class LoopDependenceAnalysis {
  private:
   ir::IRContext* context_;
 
-  // The loop we are analysing the dependence of.
   // The loop nest we are analysing the dependence of.
   std::vector<const ir::Loop*> loops_;
 
@@ -213,7 +273,7 @@ class LoopDependenceAnalysis {
   bool ZIVTest(SENode* source, SENode* destination);
 
   // Analyzes the subscript pair to find an applicable SIV test.
-  // Returns true if independence and be proven and false if it can't be proven.
+  // Returns true if independence can be proven and false if it can't be proven.
   bool SIVTest(std::pair<SENode*, SENode*>* subscript_pair,
                DistanceVector* distance_vector);
 

@@ -183,9 +183,9 @@ TEST(DependencyAnalysisHelpers, UnsupportedLoops) {
     EXPECT_FALSE(analysis.IsSupportedLoop(loops[0]));
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(38),
                                         store[0], &distance_vector));
-    EXPECT_EQ(distance_vector.entries[0].dependence_information,
+    EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
               opt::DistanceEntry::DependenceInformation::UNKNOWN);
-    EXPECT_EQ(distance_vector.entries[0].direction,
+    EXPECT_EQ(distance_vector.GetEntries()[0].direction,
               opt::DistanceEntry::Directions::ALL);
   }
   {
@@ -210,9 +210,9 @@ TEST(DependencyAnalysisHelpers, UnsupportedLoops) {
     EXPECT_FALSE(analysis.IsSupportedLoop(loops[0]));
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(58),
                                         store[0], &distance_vector));
-    EXPECT_EQ(distance_vector.entries[0].dependence_information,
+    EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
               opt::DistanceEntry::DependenceInformation::UNKNOWN);
-    EXPECT_EQ(distance_vector.entries[0].direction,
+    EXPECT_EQ(distance_vector.GetEntries()[0].direction,
               opt::DistanceEntry::Directions::ALL);
   }
 }
@@ -1532,7 +1532,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent and supported.
-      EXPECT_TRUE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_TRUE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -1562,7 +1562,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -1612,7 +1612,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -1641,7 +1641,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -1691,7 +1691,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -1720,7 +1720,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -1770,7 +1770,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -1799,7 +1799,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -2104,7 +2104,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -2134,7 +2134,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -2185,7 +2185,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -2215,7 +2215,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -2266,7 +2266,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent and supported.
-      EXPECT_TRUE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_TRUE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -2296,7 +2296,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -2347,7 +2347,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -2377,7 +2377,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -2741,7 +2741,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
       opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -2770,7 +2770,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
       opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -2820,7 +2820,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
       opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -2849,7 +2849,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
       opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -2899,7 +2899,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
       opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -2928,7 +2928,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
       opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
@@ -2978,7 +2978,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
       opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
 
@@ -3007,7 +3007,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
       opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
-      EXPECT_FALSE(analysis.IsProvablyOutwithLoopBounds(
+      EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
           loop, delta, store->AsSERecurrentNode()->GetCoefficient()));
     }
   }
