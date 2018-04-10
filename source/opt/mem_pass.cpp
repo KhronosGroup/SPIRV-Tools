@@ -28,11 +28,8 @@ namespace opt {
 namespace {
 
 const uint32_t kCopyObjectOperandInIdx = 0;
-const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
-const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kTypePointerTypeIdInIdx = 1;
-const uint32_t kVariableInitIdInIdx = 1;
 
 }  // namespace
 
@@ -170,18 +167,6 @@ bool MemPass::IsLiveVar(uint32_t varId) const {
   return HasLoads(varId);
 }
 
-bool MemPass::IsLiveStore(ir::Instruction* storeInst) {
-  // get store's variable
-  uint32_t varId;
-  (void)GetPtr(storeInst, &varId);
-  if (varId == 0) {
-    // If we do not know which variable we are accessing, assume the store is
-    // live.
-    return true;
-  }
-  return IsLiveVar(varId);
-}
-
 void MemPass::AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
   get_def_use_mgr()->ForEachUser(ptr_id, [this, insts](ir::Instruction* user) {
     SpvOp op = user->opcode();
@@ -231,7 +216,6 @@ void MemPass::DCEInst(ir::Instruction* inst,
 MemPass::MemPass() {}
 
 bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
-  if (supported_ref_vars_.find(varId) != supported_ref_vars_.end()) return true;
   return get_def_use_mgr()->WhileEachUser(varId, [this](ir::Instruction* user) {
     SpvOp op = user->opcode();
     if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
@@ -240,25 +224,6 @@ bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
     }
     return true;
   });
-}
-
-void MemPass::InitSSARewrite(ir::Function* func) {
-  // Clear collections.
-  visitedBlocks_.clear();
-  block_defs_map_.clear();
-  phis_to_patch_.clear();
-  dominator_ = context()->GetDominatorAnalysis(func, *cfg());
-  CollectTargetVars(func);
-}
-
-bool MemPass::IsLiveAfter(uint32_t var_id, uint32_t label) const {
-  // For now, return very conservative result: true. This will result in
-  // correct, but possibly usused, phi code to be generated. A subsequent
-  // DCE pass should eliminate this code.
-  // TODO(greg-lunarg): Return more accurate information
-  (void)var_id;
-  (void)label;
-  return true;
 }
 
 uint32_t MemPass::Type2Undef(uint32_t type_id) {
@@ -271,233 +236,6 @@ uint32_t MemPass::Type2Undef(uint32_t type_id) {
   get_module()->AddGlobalValue(std::move(undef_inst));
   type2undefs_[type_id] = undefId;
   return undefId;
-}
-
-void MemPass::CollectLiveVars(uint32_t block_label,
-                              std::map<uint32_t, uint32_t>* live_vars) {
-  // Walk up the dominator chain starting at |block_label| looking for variables
-  // defined at each block in the chain.  Since we are only interested for the
-  // most recent value for each live variable, we only add a <variable, value>
-  // pair to |live_vars| if this is the first time we find the variable in the
-  // chain.
-  for (ir::BasicBlock* block = cfg()->block(block_label); block != nullptr;
-       block = dominator_->ImmediateDominator(block)) {
-    for (const auto& var_val : block_defs_map_[block->id()]) {
-      auto live_vars_it = live_vars->find(var_val.first);
-      if (live_vars_it == live_vars->end()) live_vars->insert(var_val);
-    }
-  }
-}
-
-uint32_t MemPass::GetCurrentValue(uint32_t var_id, uint32_t block_label) {
-  // Walk up the dominator chain starting at |block_label| looking for the
-  // current value of variable |var_id|.  The first block we find containing a
-  // definition for |var_id| is the one we are interested in.
-  for (ir::BasicBlock* block = cfg()->block(block_label); block != nullptr;
-       block = dominator_->ImmediateDominator(block)) {
-    const auto& block_defs = block_defs_map_[block->id()];
-    const auto& var_val_it = block_defs.find(var_id);
-    if (var_val_it != block_defs.end()) return var_val_it->second;
-  }
-  return 0;
-}
-
-bool MemPass::SSABlockInitLoopHeader(
-    std::list<ir::BasicBlock*>::iterator block_itr) {
-  bool modified = false;
-  const uint32_t label = (*block_itr)->id();
-
-  // Determine the back-edge label.
-  uint32_t backLabel = 0;
-  for (uint32_t predLabel : cfg()->preds(label))
-    if (visitedBlocks_.find(predLabel) == visitedBlocks_.end()) {
-      assert(backLabel == 0);
-      backLabel = predLabel;
-      break;
-    }
-  assert(backLabel != 0);
-
-  // Determine merge block.
-  auto mergeInst = (*block_itr)->end();
-  --mergeInst;
-  --mergeInst;
-  uint32_t mergeLabel =
-      mergeInst->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
-
-  // Collect all live variables and a default value for each across all
-  // non-backedge predecesors. Must be ordered map because phis are
-  // generated based on order and test results will otherwise vary across
-  // platforms.
-  std::map<uint32_t, uint32_t> liveVars;
-  for (uint32_t predLabel : cfg()->preds(label)) {
-    CollectLiveVars(predLabel, &liveVars);
-  }
-
-  // Add all stored variables in loop. Set their default value id to zero.
-  for (auto bi = block_itr; (*bi)->id() != mergeLabel; ++bi) {
-    ir::BasicBlock* bp = *bi;
-    for (auto ii = bp->begin(); ii != bp->end(); ++ii) {
-      if (ii->opcode() != SpvOpStore) {
-        continue;
-      }
-      uint32_t varId;
-      (void)GetPtr(&*ii, &varId);
-      if (!IsTargetVar(varId)) {
-        continue;
-      }
-      liveVars[varId] = 0;
-    }
-  }
-  // Insert phi for all live variables that require them. All variables
-  // defined in loop require a phi. Otherwise all variables
-  // with differing predecessor values require a phi.
-  auto insertItr = (*block_itr)->begin();
-  for (auto var_val : liveVars) {
-    const uint32_t varId = var_val.first;
-    if (!IsLiveAfter(varId, label)) {
-      continue;
-    }
-    const uint32_t val0Id = var_val.second;
-    bool needsPhi = false;
-    if (val0Id != 0) {
-      for (uint32_t predLabel : cfg()->preds(label)) {
-        // Skip back edge predecessor.
-        if (predLabel == backLabel) continue;
-        uint32_t current_value = GetCurrentValue(varId, predLabel);
-        // Missing (undef) values always cause difference with (defined) value
-        if (current_value == 0) {
-          needsPhi = true;
-          break;
-        }
-        if (current_value != val0Id) {
-          needsPhi = true;
-          break;
-        }
-      }
-    } else {
-      needsPhi = true;
-    }
-
-    // If val is the same for all predecessors, enter it in map
-    if (!needsPhi) {
-      block_defs_map_[label].insert(var_val);
-      continue;
-    }
-
-    // Val differs across predecessors. Add phi op to block and
-    // add its result id to the map. For back edge predecessor,
-    // use the variable id. We will patch this after visiting back
-    // edge predecessor. For predecessors that do not define a value,
-    // use undef.
-    modified = true;
-    std::vector<ir::Operand> phi_in_operands;
-    uint32_t typeId = GetPointeeTypeId(get_def_use_mgr()->GetDef(varId));
-    for (uint32_t predLabel : cfg()->preds(label)) {
-      uint32_t valId;
-      if (predLabel == backLabel) {
-        valId = varId;
-      } else {
-        uint32_t current_value = GetCurrentValue(varId, predLabel);
-        if (current_value == 0)
-          valId = Type2Undef(typeId);
-        else
-          valId = current_value;
-      }
-      phi_in_operands.push_back(
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {valId}});
-      phi_in_operands.push_back(
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {predLabel}});
-    }
-    const uint32_t phiId = TakeNextId();
-    std::unique_ptr<ir::Instruction> newPhi(new ir::Instruction(
-        context(), SpvOpPhi, typeId, phiId, phi_in_operands));
-    // The only phis requiring patching are the ones we create.
-    phis_to_patch_.insert(phiId);
-    // Only analyze the phi define now; analyze the phi uses after the
-    // phi backedge predecessor value is patched.
-    get_def_use_mgr()->AnalyzeInstDef(&*newPhi);
-    context()->set_instr_block(&*newPhi, *block_itr);
-    insertItr = insertItr.InsertBefore(std::move(newPhi));
-    ++insertItr;
-    block_defs_map_[label].insert({varId, phiId});
-  }
-  return modified;
-}
-
-bool MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
-  bool modified = false;
-  const uint32_t label = block_ptr->id();
-  // Collect all live variables and a default value for each across all
-  // predecesors. Must be ordered map because phis are generated based on
-  // order and test results will otherwise vary across platforms.
-  std::map<uint32_t, uint32_t> liveVars;
-  for (uint32_t predLabel : cfg()->preds(label)) {
-    assert(visitedBlocks_.find(predLabel) != visitedBlocks_.end());
-    CollectLiveVars(predLabel, &liveVars);
-  }
-
-  // For each live variable, look for a difference in values across
-  // predecessors that would require a phi and insert one.
-  auto insertItr = block_ptr->begin();
-  for (auto var_val : liveVars) {
-    const uint32_t varId = var_val.first;
-    if (!IsLiveAfter(varId, label)) continue;
-    const uint32_t val0Id = var_val.second;
-    bool differs = false;
-    for (uint32_t predLabel : cfg()->preds(label)) {
-      uint32_t current_value = GetCurrentValue(varId, predLabel);
-      // Missing values cause a difference because we'll need to create an
-      // undef for that predecessor.
-      if (current_value == 0) {
-        differs = true;
-        break;
-      }
-      if (current_value != val0Id) {
-        differs = true;
-        break;
-      }
-    }
-    // If val is the same for all predecessors, enter it in map
-    if (!differs) {
-      block_defs_map_[label].insert(var_val);
-      continue;
-    }
-
-    modified = true;
-
-    // Val differs across predecessors. Add phi op to block and add its result
-    // id to the map.
-    std::vector<ir::Operand> phi_in_operands;
-    const uint32_t typeId = GetPointeeTypeId(get_def_use_mgr()->GetDef(varId));
-    for (uint32_t predLabel : cfg()->preds(label)) {
-      uint32_t current_value = GetCurrentValue(varId, predLabel);
-      // If variable not defined on this path, use undef
-      const uint32_t valId =
-          (current_value > 0) ? current_value : Type2Undef(typeId);
-      phi_in_operands.push_back(
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {valId}});
-      phi_in_operands.push_back(
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {predLabel}});
-    }
-    const uint32_t phiId = TakeNextId();
-    std::unique_ptr<ir::Instruction> newPhi(new ir::Instruction(
-        context(), SpvOpPhi, typeId, phiId, phi_in_operands));
-    get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
-    context()->set_instr_block(&*newPhi, block_ptr);
-    insertItr = insertItr.InsertBefore(std::move(newPhi));
-    ++insertItr;
-    block_defs_map_[label].insert({varId, phiId});
-  }
-  return modified;
-}
-
-bool MemPass::SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr) {
-  const size_t numPreds = cfg()->preds((*block_itr)->id()).size();
-  if (numPreds == 0) return false;
-  if ((*block_itr)->IsLoopHeader())
-    return SSABlockInitLoopHeader(block_itr);
-  else
-    return SSABlockInitMultiPred(*block_itr);
 }
 
 bool MemPass::IsTargetVar(uint32_t varId) {
@@ -526,130 +264,6 @@ bool MemPass::IsTargetVar(uint32_t varId) {
   }
   seen_target_vars_.insert(varId);
   return true;
-}
-
-void MemPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
-  ir::BasicBlock* header = cfg()->block(header_id);
-  auto phiItr = header->begin();
-  for (; phiItr->opcode() == SpvOpPhi; ++phiItr) {
-    // Only patch phis that we created in a loop header.
-    // There might be other phis unrelated to our optimizations.
-    if (0 == phis_to_patch_.count(phiItr->result_id())) continue;
-
-    // Find phi operand index for back edge
-    uint32_t cnt = 0;
-    uint32_t idx = phiItr->NumInOperands();
-    phiItr->ForEachInId([&cnt, &back_id, &idx](uint32_t* iid) {
-      if (cnt % 2 == 1 && *iid == back_id) idx = cnt - 1;
-      ++cnt;
-    });
-    assert(idx != phiItr->NumInOperands());
-
-    // Replace temporary phi operand with variable's value in backedge block
-    // map. Use undef if variable not in map.
-    const uint32_t varId = phiItr->GetSingleWordInOperand(idx);
-    uint32_t current_value = GetCurrentValue(varId, back_id);
-    uint32_t valId =
-        (current_value > 0)
-            ? current_value
-            : Type2Undef(GetPointeeTypeId(get_def_use_mgr()->GetDef(varId)));
-    phiItr->SetInOperand(idx, {valId});
-    // Analyze uses now that they are complete
-    get_def_use_mgr()->AnalyzeInstUse(&*phiItr);
-  }
-}
-
-bool MemPass::InsertPhiInstructions(ir::Function* func) {
-  // TODO(dnovillo) the current Phi placement mechanism assumes structured
-  // control-flow. This should be generalized
-  // (https://github.com/KhronosGroup/SPIRV-Tools/issues/893).
-  assert(context()->get_feature_mgr()->HasCapability(SpvCapabilityShader) &&
-         "This only works on structured control flow");
-
-  bool modified = false;
-
-  // Initialize the data structures used to insert Phi instructions.
-  InitSSARewrite(func);
-
-  // Process all blocks in structured order. This is just one way (the
-  // simplest?) to make sure all predecessors blocks are processed before
-  // a block itself.
-  std::list<ir::BasicBlock*> structuredOrder;
-  cfg()->ComputeStructuredOrder(func, cfg()->pseudo_entry_block(),
-                                &structuredOrder);
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
-    // Skip pseudo entry block
-    if (cfg()->IsPseudoEntryBlock(*bi)) {
-      continue;
-    }
-
-    // Process all stores and loads of targeted variables.
-    if (SSABlockInit(bi)) {
-      modified = true;
-    }
-
-    ir::BasicBlock* bp = *bi;
-    const uint32_t label = bp->id();
-    ir::Instruction* inst = &*bp->begin();
-    while (inst) {
-      ir::Instruction* next_instruction = inst->NextNode();
-      switch (inst->opcode()) {
-        case SpvOpStore: {
-          uint32_t varId;
-          (void)GetPtr(inst, &varId);
-          if (!IsTargetVar(varId)) break;
-          // Register new stored value for the variable
-          block_defs_map_[label][varId] =
-              inst->GetSingleWordInOperand(kStoreValIdInIdx);
-        } break;
-        case SpvOpVariable: {
-          // Treat initialized OpVariable like an OpStore
-          if (inst->NumInOperands() < 2) break;
-          uint32_t varId = inst->result_id();
-          if (!IsTargetVar(varId)) break;
-          // Register new stored value for the variable
-          block_defs_map_[label][varId] =
-              inst->GetSingleWordInOperand(kVariableInitIdInIdx);
-        } break;
-        case SpvOpLoad: {
-          uint32_t varId;
-          (void)GetPtr(inst, &varId);
-          if (!IsTargetVar(varId)) break;
-          modified = true;
-          uint32_t replId = GetCurrentValue(varId, label);
-          // If the variable is not defined, use undef.
-          if (replId == 0) {
-            replId =
-                Type2Undef(GetPointeeTypeId(get_def_use_mgr()->GetDef(varId)));
-          }
-
-          // Replace load's id with the last stored value id for variable
-          // and delete load. Kill any names or decorates using id before
-          // replacing to prevent incorrect replacement in those instructions.
-          const uint32_t loadId = inst->result_id();
-          context()->KillNamesAndDecorates(loadId);
-          (void)context()->ReplaceAllUsesWith(loadId, replId);
-          context()->KillInst(inst);
-        } break;
-        default:
-          break;
-      }
-      inst = next_instruction;
-    }
-    visitedBlocks_.insert(label);
-    // Look for successor backedge and patch phis in loop header
-    // if found.
-    uint32_t header = 0;
-    const auto* const_bp = bp;
-    const_bp->ForEachSuccessorLabel([&header, this](uint32_t succ) {
-      if (visitedBlocks_.find(succ) == visitedBlocks_.end()) return;
-      assert(header == 0);
-      header = succ;
-    });
-    if (header != 0) PatchPhis(header, label);
-  }
-
-  return modified;
 }
 
 // Remove all |phi| operands coming from unreachable blocks (i.e., blocks not in
@@ -852,7 +466,6 @@ bool MemPass::CFGCleanup(ir::Function* func) {
 void MemPass::CollectTargetVars(ir::Function* func) {
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
-  supported_ref_vars_.clear();
   type2undefs_.clear();
 
   // Collect target (and non-) variable sets. Remove variables with
