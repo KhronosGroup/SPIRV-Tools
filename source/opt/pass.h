@@ -118,11 +118,13 @@ class Pass {
       std::queue<uint32_t>* roots);
 
   // Run the pass on the given |module|. Returns Status::Failure if errors occur
-  // when
-  // processing. Returns the corresponding Status::Success if processing is
+  // when processing. Returns the corresponding Status::Success if processing is
   // successful to indicate whether changes are made to the module.  If there
   // were any changes it will also invalidate the analyses in the IRContext
   // that are not preserved.
+  //
+  // It is an error if |Run| is called twice with the same instance of the pass.
+  // If this happens the return value will be |Failure|.
   virtual Status Run(ir::IRContext* ctx) final;
 
   // Returns the set of analyses that the pass is guaranteed to preserve.
@@ -151,6 +153,11 @@ class Pass {
 
   // The context that this pass belongs to.
   ir::IRContext* context_;
+
+  // An instance of a pass can only be run once because it is too hard to
+  // enforce proper resetting of internal state for each instance.  This member
+  // is used to check that we do not run the same instance twice.
+  bool already_run_;
 };
 
 }  // namespace opt
