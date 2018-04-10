@@ -43,12 +43,15 @@ Pass::Status PassManager::Run(ir::IRContext* context) {
   };
 
   SPIRV_TIMER_DESCRIPTION(time_report_stream_, /* measure_mem_usage = */ true);
-  for (const auto& pass : passes_) {
+  for (auto& pass : passes_) {
     print_disassembly("; IR before pass ", pass.get());
     SPIRV_TIMER_SCOPED(time_report_stream_, (pass ? pass->name() : ""), true);
     const auto one_status = pass->Run(context);
     if (one_status == Pass::Status::Failure) return one_status;
     if (one_status == Pass::Status::SuccessWithChange) status = one_status;
+
+    // Reset the pass to free any memory used by the pass.
+    pass.reset(nullptr);
   }
   print_disassembly("; IR after last pass", nullptr);
 

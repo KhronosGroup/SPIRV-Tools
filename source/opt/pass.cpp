@@ -28,7 +28,7 @@ const uint32_t kTypePointerTypeIdInIdx = 1;
 
 }  // namespace
 
-Pass::Pass() : consumer_(nullptr), context_(nullptr) {}
+Pass::Pass() : consumer_(nullptr), context_(nullptr), already_run_(false) {}
 
 void Pass::AddCalls(ir::Function* func, std::queue<uint32_t>* todo) {
   for (auto bi = func->begin(); bi != func->end(); ++bi)
@@ -103,6 +103,11 @@ bool Pass::ProcessCallTreeFromRoots(
 }
 
 Pass::Status Pass::Run(ir::IRContext* ctx) {
+  if (already_run_) {
+    return Status::Failure;
+  }
+  already_run_ = true;
+
   Pass::Status status = Process(ctx);
   if (status == Status::SuccessWithChange) {
     ctx->InvalidateAnalysesExceptFor(GetPreservedAnalyses());
