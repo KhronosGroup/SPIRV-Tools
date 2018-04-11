@@ -348,11 +348,18 @@ spv_result_t ExtInstPass(ValidationState_t& _,
         }
 
         if (!_.IsIntScalarOrVectorType(exp_data_type) ||
-            _.GetBitWidth(exp_data_type) != 32) {
+            (!_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16) &&
+             _.GetBitWidth(exp_data_type) != 32) ||
+            (_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16) &&
+             _.GetBitWidth(exp_data_type) != 16 &&
+             _.GetBitWidth(exp_data_type) != 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected operand Exp data type to be a 32-bit int scalar "
-                 << "or vector type";
+                 << "expected operand Exp data type to be a "
+                 << (_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16)
+                         ? "16-bit or 32-bit "
+                         : "32-bit ")
+                 << "int scalar or vector type";
         }
 
         if (_.GetDimension(result_type) != _.GetDimension(exp_data_type)) {
@@ -404,14 +411,21 @@ spv_result_t ExtInstPass(ValidationState_t& _,
             result_types.size() != 2 ||
             !_.IsFloatScalarOrVectorType(result_types[0]) ||
             !_.IsIntScalarOrVectorType(result_types[1]) ||
-            _.GetBitWidth(result_types[1]) != 32 ||
+            (!_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16) &&
+             _.GetBitWidth(result_types[1]) != 32) ||
+            (_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16) &&
+             _.GetBitWidth(result_types[1]) != 16 &&
+             _.GetBitWidth(result_types[1]) != 32) ||
             _.GetDimension(result_types[0]) !=
                 _.GetDimension(result_types[1])) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a struct with two members, "
-                 << "first member a float scalar or vector, second member "
-                 << "a 32-bit int scalar or vector with the same number of "
+                 << "first member a float scalar or vector, second member a "
+                 << (_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16)
+                         ? "16-bit or 32-bit "
+                         : "32-bit ")
+                 << "int scalar or vector with the same number of "
                  << "components as the first member";
         }
 
