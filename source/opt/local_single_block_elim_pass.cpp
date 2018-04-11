@@ -51,10 +51,10 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
     ir::Function* func) {
   // Perform local store/load and load/load elimination on each block
   bool modified = false;
+  std::vector<ir::Instruction*> instructions_to_kill;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     var2store_.clear();
     var2load_.clear();
-    pinned_vars_.clear();
     auto next = bi->begin();
     for (auto ii = next; ii != bi->end(); ii = next) {
       ++next;
@@ -67,18 +67,11 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
           if (!HasOnlySupportedRefs(varId)) continue;
           // Register the store
           if (ptrInst->opcode() == SpvOpVariable) {
-            // if not pinned, look for WAW
-            if (pinned_vars_.find(varId) == pinned_vars_.end()) {
-              auto si = var2store_.find(varId);
-              if (si != var2store_.end()) {
-              }
-            }
             var2store_[varId] = &*ii;
           } else {
             assert(IsNonPtrAccessChain(ptrInst->opcode()));
             var2store_.erase(varId);
           }
-          pinned_vars_.erase(varId);
           var2load_.erase(varId);
         } break;
         case SpvOpLoad: {
@@ -104,11 +97,11 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
             // replace load's result id and delete load
             context()->KillNamesAndDecorates(&*ii);
             context()->ReplaceAllUsesWith(ii->result_id(), replId);
+            instructions_to_kill.push_back(&*ii);
             modified = true;
           } else {
             if (ptrInst->opcode() == SpvOpVariable)
               var2load_[varId] = &*ii;  // register load
-            pinned_vars_.insert(varId);
           }
         } break;
         case SpvOpFunctionCall: {
@@ -116,13 +109,17 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
           // TODO(): Handle more optimally
           var2store_.clear();
           var2load_.clear();
-          pinned_vars_.clear();
         } break;
         default:
           break;
       }
     }
   }
+
+  for (ir::Instruction* inst : instructions_to_kill) {
+    context()->KillInst(inst);
+  }
+
   return modified;
 }
 
@@ -167,6 +164,7 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return LocalSingleBlockLoadStoreElim(fp);
   };
+
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
