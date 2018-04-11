@@ -56,16 +56,12 @@ bool DominatorAnalysisBase::Dominates(ir::Instruction* a,
     return tree_.Dominates(bb_a, bb_b);
   }
 
-  for (ir::Instruction& inst : *bb_a) {
-    if (&inst == a) {
+  ir::Instruction* current_inst = a;
+  while ((current_inst = current_inst->NextNode())) {
+    if (current_inst == b) {
       return true;
-    } else if (&inst == b) {
-      return false;
     }
   }
-  assert(false &&
-         "We did not find the load or store in the block they are "
-         "supposed to be in.");
   return false;
 }
 

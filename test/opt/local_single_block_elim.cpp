@@ -73,7 +73,6 @@ OpFunctionEnd
 %v = OpVariable %_ptr_Function_v4float Function
 %14 = OpLoad %v4float %BaseColor
 OpStore %v %14
-%15 = OpLoad %v4float %v
 OpStore %gl_FragColor %14
 OpReturn
 OpFunctionEnd
@@ -174,7 +173,6 @@ OpBranch %29
 %31 = OpLoad %v4float %v
 %32 = OpAccessChain %_ptr_Output_v4float %gl_FragData %int_0
 OpStore %32 %31
-%33 = OpLoad %v4float %v
 %34 = OpAccessChain %_ptr_Output_v4float %gl_FragData %int_1
 OpStore %34 %31
 OpReturn
@@ -263,8 +261,6 @@ OpStore %v %19
 %21 = OpAccessChain %_ptr_Function_float %v %20
 %22 = OpLoad %float %21
 OpStore %f %22
-%23 = OpLoad %v4float %v
-%24 = OpLoad %float %f
 %25 = OpCompositeConstruct %v4float %22 %22 %22 %22
 %26 = OpFDiv %v4float %19 %25
 OpStore %gl_FragColor %26
@@ -464,14 +460,12 @@ OpFunctionEnd
 %v2 = OpVariable %_ptr_Function_v4float Function
 %23 = OpLoad %v4float %BaseColor
 OpStore %v1 %23
-%24 = OpLoad %v4float %v1
 %25 = OpAccessChain %_ptr_Output_v4float %gl_FragData %int_0
 OpStore %25 %23
 %26 = OpLoad %v4float %BaseColor
 %27 = OpVectorTimesScalar %v4float %26 %float_0_5
 %28 = OpCopyObject %_ptr_Function_v4float %v2
 OpStore %28 %27
-%29 = OpLoad %v4float %28
 %30 = OpAccessChain %_ptr_Output_v4float %gl_FragData %int_1
 OpStore %30 %27
 OpReturn
@@ -562,14 +556,10 @@ OpFunctionEnd
 %31 = OpCompositeInsert %S_t %29 %30 0
 OpStore %s0 %31
 %32 = OpLoad %18 %sampler15
-%33 = OpLoad %S_t %s0
 %34 = OpCompositeInsert %S_t %32 %31 2
 OpStore %s0 %34
-%35 = OpLoad %S_t %s0
 OpStore %param %34
-%36 = OpLoad %S_t %param
 %37 = OpCompositeExtract %18 %34 2
-%38 = OpLoad %S_t %param
 %39 = OpCompositeExtract %v2float %34 0
 %40 = OpImageSampleImplicitLod %v4float %37 %39
 OpStore %outColor %40
@@ -681,7 +671,6 @@ OpFunctionEnd
 %t_0 = OpVariable %_ptr_Function_v4float Function
 %27 = OpLoad %v4float %v1_0
 OpStore %t_0 %27
-%28 = OpLoad %v4float %t_0
 OpReturnValue %27
 OpFunctionEnd
 )";
@@ -778,7 +767,6 @@ OpDecorate %7 Binding 0
 %23 = OpLabel
 %24 = OpVariable %_ptr_Function__ptr_Uniform__struct_5 Function
 OpStore %24 %7
-%26 = OpLoad %_ptr_Uniform__struct_5 %24
 %27 = OpAccessChain %_ptr_Uniform_v4float %7 %int_0 %uint_0 %int_0
 %28 = OpLoad %v4float %27
 %29 = OpCopyObject %v4float %28
