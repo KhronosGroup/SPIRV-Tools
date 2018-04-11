@@ -17,7 +17,9 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <list>
 #include <map>
+#include <memory>
 #include <ostream>
 #include <set>
 #include <string>
@@ -57,7 +59,8 @@ class DistanceEntry {
     DIRECTION = 1,
     DISTANCE = 2,
     PEEL = 3,
-    IRRELEVANT = 4
+    IRRELEVANT = 4,
+    POINT = 5
   };
   enum Directions {
     NONE = 0,
@@ -74,18 +77,52 @@ class DistanceEntry {
   int64_t distance;
   bool peel_first;
   bool peel_last;
+  int64_t point_x;
+  int64_t point_y;
+
   DistanceEntry()
       : dependence_information(DependenceInformation::UNKNOWN),
         direction(Directions::ALL),
         distance(0),
         peel_first(false),
-        peel_last(false) {}
+        peel_last(false),
+        point_x(0),
+        point_y(0) {}
 
-  bool operator==(const DistanceEntry& rhs) {
+  explicit DistanceEntry(Directions direction_)
+      : dependence_information(DependenceInformation::DIRECTION),
+        direction(direction_),
+        distance(0),
+        peel_first(false),
+        peel_last(false),
+        point_x(0),
+        point_y(0) {}
+
+  DistanceEntry(Directions direction_, int64_t distance_)
+      : dependence_information(DependenceInformation::DISTANCE),
+        direction(direction_),
+        distance(distance_),
+        peel_first(false),
+        peel_last(false),
+        point_x(0),
+        point_y(0) {}
+
+  DistanceEntry(int64_t x, int64_t y)
+      : dependence_information(DependenceInformation::POINT),
+        direction(Directions::ALL),
+        distance(0),
+        peel_first(false),
+        peel_last(false),
+        point_x(x),
+        point_y(y) {}
+
+  bool operator==(const DistanceEntry& rhs) const {
     return direction == rhs.direction && peel_first == rhs.peel_first &&
-           peel_last == rhs.peel_last && distance == rhs.distance;
+           peel_last == rhs.peel_last && distance == rhs.distance &&
+           point_x == rhs.point_x && point_y == rhs.point_y;
   }
-  bool operator!=(const DistanceEntry& rhs) { return !(*this == rhs); }
+
+  bool operator!=(const DistanceEntry& rhs) const { return !(*this == rhs); }
 };
 
 // Stores a vector of DistanceEntrys, one per loop in the analysis.
@@ -96,13 +133,16 @@ class DistanceVector {
  public:
   explicit DistanceVector(size_t size) : entries(size, DistanceEntry{}) {}
 
+  explicit DistanceVector(std::vector<DistanceEntry> entries_)
+      : entries(entries_) {}
+
   DistanceEntry& GetEntry(size_t index) { return entries[index]; }
   const DistanceEntry& GetEntry(size_t index) const { return entries[index]; }
 
   std::vector<DistanceEntry>& GetEntries() { return entries; }
   const std::vector<DistanceEntry>& GetEntries() const { return entries; }
 
-  bool operator==(const DistanceVector& rhs) {
+  bool operator==(const DistanceVector& rhs) const {
     if (entries.size() != rhs.entries.size()) {
       return false;
     }
@@ -113,10 +153,118 @@ class DistanceVector {
     }
     return true;
   }
-  bool operator!=(const DistanceVector& rhs) { return !(*this == rhs); }
+  bool operator!=(const DistanceVector& rhs) const { return !(*this == rhs); }
 
  private:
   std::vector<DistanceEntry> entries;
+};
+
+class DependenceLine;
+class DependenceDistance;
+class DependencePoint;
+class DependenceNone;
+class DependenceEmpty;
+
+class Constraint {
+ public:
+  explicit Constraint(const ir::Loop* loop) : loop_(loop) {}
+  enum ConstraintType { Line, Distance, Point, None, Empty };
+
+  virtual ConstraintType GetType() const = 0;
+
+  virtual ~Constraint() {}
+
+  // Get the loop this constraint belongs to.
+  const ir::Loop* GetLoop() const { return loop_; }
+
+  bool operator==(const Constraint& other) const;
+
+  bool operator!=(const Constraint& other) const;
+
+#define DeclareCastMethod(target)                  \
+  virtual target* As##target() { return nullptr; } \
+  virtual const target* As##target() const { return nullptr; }
+  DeclareCastMethod(DependenceLine);
+  DeclareCastMethod(DependenceDistance);
+  DeclareCastMethod(DependencePoint);
+  DeclareCastMethod(DependenceNone);
+  DeclareCastMethod(DependenceEmpty);
+#undef DeclareCastMethod
+
+ protected:
+  const ir::Loop* loop_;
+};
+
+class DependenceLine : public Constraint {
+ public:
+  DependenceLine(SENode* a, SENode* b, SENode* c, const ir::Loop* loop)
+      : Constraint(loop), a_(a), b_(b), c_(c) {}
+
+  ConstraintType GetType() const final { return Line; }
+
+  DependenceLine* AsDependenceLine() final { return this; }
+  const DependenceLine* AsDependenceLine() const final { return this; }
+
+  SENode* GetA() const { return a_; }
+  SENode* GetB() const { return b_; }
+  SENode* GetC() const { return c_; }
+
+ private:
+  SENode* a_;
+  SENode* b_;
+  SENode* c_;
+};
+
+class DependenceDistance : public Constraint {
+ public:
+  DependenceDistance(SENode* distance, const ir::Loop* loop)
+      : Constraint(loop), distance_(distance) {}
+
+  ConstraintType GetType() const final { return Distance; }
+
+  DependenceDistance* AsDependenceDistance() final { return this; }
+  const DependenceDistance* AsDependenceDistance() const final { return this; }
+
+  SENode* GetDistance() const { return distance_; }
+
+ private:
+  SENode* distance_;
+};
+
+class DependencePoint : public Constraint {
+ public:
+  DependencePoint(SENode* source, SENode* destination, const ir::Loop* loop)
+      : Constraint(loop), source_(source), destination_(destination) {}
+
+  ConstraintType GetType() const final { return Point; }
+
+  DependencePoint* AsDependencePoint() final { return this; }
+  const DependencePoint* AsDependencePoint() const final { return this; }
+
+  SENode* GetSource() const { return source_; }
+  SENode* GetDestination() const { return destination_; }
+
+ private:
+  SENode* source_;
+  SENode* destination_;
+};
+
+class DependenceNone : public Constraint {
+ public:
+  DependenceNone() : Constraint(nullptr) {}
+  ConstraintType GetType() const final { return None; }
+
+  DependenceNone* AsDependenceNone() final { return this; }
+  const DependenceNone* AsDependenceNone() const final { return this; }
+};
+
+class DependenceEmpty : public Constraint {
+ public:
+  DependenceEmpty() : Constraint(nullptr) {}
+  ConstraintType GetType() const final { return Empty; }
+
+  DependenceEmpty* AsDependenceEmpty() final { return this; }
+  const DependenceEmpty* AsDependenceEmpty() const final { return this; }
 };
 
 // Provides dependence information between a store instruction and a load
@@ -151,7 +299,8 @@ class LoopDependenceAnalysis {
       : context_(context),
         loops_(loops),
         scalar_evolution_(context),
-        debug_stream_(nullptr) {}
+        debug_stream_(nullptr),
+        constraints_{} {}
 
   // Finds the dependence between |source| and |destination|.
   // |source| should be an OpLoad.
@@ -202,8 +351,12 @@ class LoopDependenceAnalysis {
   SENode* GetFinalTripInductionNode(const ir::Loop* loop,
                                     SENode* induction_coefficient);
 
+  // Returns all the distinct loops that appear in |nodes|.
   std::set<const ir::Loop*> CollectLoops(
       const std::vector<SERecurrentNode*>& nodes);
+
+  // Returns all the distinct loops that appear in |source| and |destination|.
+  std::set<const ir::Loop*> CollectLoops(SENode* source, SENode* destination);
 
   // Returns true if |distance| is provably outside the loop bounds.
   // |coefficient| must be an SENode representing the coefficient of the
@@ -224,6 +377,17 @@ class LoopDependenceAnalysis {
   // Returns the ScalarEvolutionAnalysis used by this analysis.
   ScalarEvolutionAnalysis* GetScalarEvolution() { return &scalar_evolution_; }
 
+  // Creates a new constraint of type |T| and returns the pointer to it.
+  template <typename T, typename... Args>
+  Constraint* make_constraint(Args&&... args) {
+    constraints_.push_back(
+        std::unique_ptr<Constraint>(new T(std::forward<Args>(args)...)));
+
+    return constraints_.back().get();
+  }
+
+  // Subscript partitioning as described in Figure 1 of 'Practical Dependence
+  // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
   // Partitions the subscripts into independent subscripts and minimally coupled
   // sets of subscripts.
   // Returns the partitioning of subscript pairs. Sets of size 1 indicates an
@@ -237,13 +401,41 @@ class LoopDependenceAnalysis {
   // Returns the ir::Loop* matching the loop for |subscript_pair|.
   // |subscript_pair| must be an SIV pair.
   const ir::Loop* GetLoopForSubscriptPair(
-      std::pair<SENode*, SENode*>* subscript_pair);
+      const std::pair<SENode*, SENode*>& subscript_pair);
 
   // Returns the DistanceEntry matching the loop for |subscript_pair|.
   // |subscript_pair| must be an SIV pair.
   DistanceEntry* GetDistanceEntryForSubscriptPair(
-      std::pair<SENode*, SENode*>* subscript_pair,
+      const std::pair<SENode*, SENode*>& subscript_pair,
       DistanceVector* distance_vector);
+
+  // Returns the DistanceEntry matching |loop|.
+  DistanceEntry* GetDistanceEntryForLoop(const ir::Loop* loop,
+                                         DistanceVector* distance_vector);
+
+  // Returns a vector of Instruction* which form the subscripts of the array
+  // access defined by the access chain |instruction|.
+  std::vector<ir::Instruction*> GetSubscripts(
+      const ir::Instruction* instruction);
+
+  // Delta test as described in Figure 3 of 'Practical Dependence
+  // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
+  bool DeltaTest(
+      const std::vector<std::pair<SENode*, SENode*>>& coupled_subscripts,
+      DistanceVector* dv_entry);
+
+  // Constraint propagation as described in Figure 5 of 'Practical Dependence
+  // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
+  std::pair<SENode*, SENode*> PropagateConstraints(
+      const std::pair<SENode*, SENode*>& subscript_pair,
+      const std::vector<Constraint*>& constraints);
+
+  // Constraint intersection as described in Figure 4 of 'Practical Dependence
+  // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
+  Constraint* IntersectConstraints(Constraint* constraint_0,
+                                   Constraint* constraint_1,
+                                   const SENode* lower_bound,
+                                   const SENode* upper_bound);
 
   // Returns true if each loop in |loops| is in a form supported by this
   // analysis.
@@ -269,12 +461,15 @@ class LoopDependenceAnalysis {
   // The ostream debug information for the analysis to print to.
   std::ostream* debug_stream_;
 
+  // Stores all the constraints created by the analysis.
+  std::list<std::unique_ptr<Constraint>> constraints_;
+
   // Returns true if independence can be proven and false if it can't be proven.
-  bool ZIVTest(SENode* source, SENode* destination);
+  bool ZIVTest(const std::pair<SENode*, SENode*>& subscript_pair);
 
   // Analyzes the subscript pair to find an applicable SIV test.
   // Returns true if independence can be proven and false if it can't be proven.
-  bool SIVTest(std::pair<SENode*, SENode*>* subscript_pair,
+  bool SIVTest(const std::pair<SENode*, SENode*>& subscript_pair,
                DistanceVector* distance_vector);
 
   // Takes the form a*i + c1, a*i + c2
@@ -322,10 +517,9 @@ class LoopDependenceAnalysis {
   ir::Instruction* GetOperandDefinition(const ir::Instruction* instruction,
                                         int id);
 
-  // Returns a vector of Instruction* which form the subscripts of the array
-  // access defined by the access chain |instruction|.
-  std::vector<ir::Instruction*> GetSubscripts(
-      const ir::Instruction* instruction);
+  // Perform the GCD test if both, the source and the destination nodes, are in
+  // the form a0*i0 + a1*i1 + ... an*in + c.
+  bool GCDMIVTest(const std::pair<SENode*, SENode*>& subscript_pair);
 
   // Finds the number of induction variables in |node|.
   // Returns -1 on failure.

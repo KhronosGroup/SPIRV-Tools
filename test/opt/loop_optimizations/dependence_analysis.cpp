@@ -15,8 +15,10 @@
 #include <gmock/gmock.h>
 
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "../assembly_builder.h"
@@ -2499,6 +2501,1722 @@ TEST(DependencyAnalysis, IrrelevantSubscripts) {
       EXPECT_EQ(distance_vector.GetEntries()[1].dependence_information,
                 opt::DistanceEntry::DependenceInformation::IRRELEVANT);
     }
+  }
+}
+
+void CheckDependenceAndDirection(const ir::Instruction* source,
+                                 const ir::Instruction* destination,
+                                 bool expected_dependence,
+                                 opt::DistanceVector expected_distance,
+                                 opt::LoopDependenceAnalysis* analysis) {
+  opt::DistanceVector dv_entry(2);
+  EXPECT_EQ(expected_dependence,
+            analysis->GetDependence(source, destination, &dv_entry));
+  EXPECT_EQ(expected_distance, dv_entry);
+}
+
+/*
+  Generated from the following GLSL fragment shader
+  with --eliminate-local-multi-store
+#version 440 core
+layout(location = 0) in vec4 c;
+void main(){
+  int[10] arr;
+  int a = 2;
+  int b = 3;
+  int N = int(c.x);
+  for (int i = 0; i < 10; i++) {
+    for (int j = 2; j < 10; j++) {
+      arr[i] = arr[j]; // 0
+      arr[j] = arr[i]; // 1
+      arr[j-2] = arr[i+3]; // 2
+      arr[j-a] = arr[i+b]; // 3
+      arr[2*i] = arr[4*j+3]; // 4, independent
+      arr[2*i] = arr[4*j]; // 5
+      arr[i+j] = arr[i+j]; // 6
+      arr[10*i+j] = arr[10*i+j]; // 7
+      arr[10*i+10*j] = arr[10*i+10*j+3]; // 8, independent
+      arr[10*i+10*j] = arr[10*i+N*j+3]; // 9, bail out because of N coefficient
+      arr[10*i+10*j] = arr[10*i+10*j+N]; // 10, bail out because of N constant
+                                         // term
+      arr[10*i+N*j] = arr[10*i+10*j+3]; // 11, bail out because of N coefficient
+      arr[10*i+10*j+N] = arr[10*i+10*j]; // 12, bail out because of N constant
+                                         // term
+      arr[10*i] = arr[5*j]; // 13, independent
+      arr[5*i] = arr[10*j]; // 14, independent
+      arr[9*i] = arr[3*j]; // 15, independent
+      arr[3*i] = arr[9*j]; // 16, independent
+    }
+  }
+}
+*/
+TEST(DependencyAnalysis, MIV) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %16
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 440
+               OpName %4 "main"
+               OpName %8 "a"
+               OpName %10 "b"
+               OpName %12 "N"
+               OpName %16 "c"
+               OpName %23 "i"
+               OpName %34 "j"
+               OpName %45 "arr"
+               OpDecorate %16 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 3
+         %13 = OpTypeFloat 32
+         %14 = OpTypeVector %13 4
+         %15 = OpTypePointer Input %14
+         %16 = OpVariable %15 Input
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 0
+         %19 = OpTypePointer Input %13
+         %24 = OpConstant %6 0
+         %31 = OpConstant %6 10
+         %32 = OpTypeBool
+         %42 = OpConstant %17 10
+         %43 = OpTypeArray %6 %42
+         %44 = OpTypePointer Function %43
+         %74 = OpConstant %6 4
+        %184 = OpConstant %6 5
+        %197 = OpConstant %6 9
+        %213 = OpConstant %6 1
+        %218 = OpUndef %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %12 = OpVariable %7 Function
+         %23 = OpVariable %7 Function
+         %34 = OpVariable %7 Function
+         %45 = OpVariable %44 Function
+               OpStore %8 %9
+               OpStore %10 %11
+         %20 = OpAccessChain %19 %16 %18
+         %21 = OpLoad %13 %20
+         %22 = OpConvertFToS %6 %21
+               OpStore %12 %22
+               OpStore %23 %24
+               OpBranch %25
+         %25 = OpLabel
+        %217 = OpPhi %6 %24 %5 %216 %28
+        %219 = OpPhi %6 %218 %5 %220 %28
+               OpLoopMerge %27 %28 None
+               OpBranch %29
+         %29 = OpLabel
+         %33 = OpSLessThan %32 %217 %31
+               OpBranchConditional %33 %26 %27
+         %26 = OpLabel
+               OpStore %34 %9
+               OpBranch %35
+         %35 = OpLabel
+        %220 = OpPhi %6 %9 %26 %214 %38
+               OpLoopMerge %37 %38 None
+               OpBranch %39
+         %39 = OpLabel
+         %41 = OpSLessThan %32 %220 %31
+               OpBranchConditional %41 %36 %37
+         %36 = OpLabel
+         %48 = OpAccessChain %7 %45 %220
+         %49 = OpLoad %6 %48
+         %50 = OpAccessChain %7 %45 %217
+               OpStore %50 %49
+         %53 = OpAccessChain %7 %45 %217
+         %54 = OpLoad %6 %53
+         %55 = OpAccessChain %7 %45 %220
+               OpStore %55 %54
+         %57 = OpISub %6 %220 %9
+         %59 = OpIAdd %6 %217 %11
+         %60 = OpAccessChain %7 %45 %59
+         %61 = OpLoad %6 %60
+         %62 = OpAccessChain %7 %45 %57
+               OpStore %62 %61
+         %65 = OpISub %6 %220 %9
+         %68 = OpIAdd %6 %217 %11
+         %69 = OpAccessChain %7 %45 %68
+         %70 = OpLoad %6 %69
+         %71 = OpAccessChain %7 %45 %65
+               OpStore %71 %70
+         %73 = OpIMul %6 %9 %217
+         %76 = OpIMul %6 %74 %220
+         %77 = OpIAdd %6 %76 %11
+         %78 = OpAccessChain %7 %45 %77
+         %79 = OpLoad %6 %78
+         %80 = OpAccessChain %7 %45 %73
+               OpStore %80 %79
+         %82 = OpIMul %6 %9 %217
+         %84 = OpIMul %6 %74 %220
+         %85 = OpAccessChain %7 %45 %84
+         %86 = OpLoad %6 %85
+         %87 = OpAccessChain %7 %45 %82
+               OpStore %87 %86
+         %90 = OpIAdd %6 %217 %220
+         %93 = OpIAdd %6 %217 %220
+         %94 = OpAccessChain %7 %45 %93
+         %95 = OpLoad %6 %94
+         %96 = OpAccessChain %7 %45 %90
+               OpStore %96 %95
+         %98 = OpIMul %6 %31 %217
+        %100 = OpIAdd %6 %98 %220
+        %102 = OpIMul %6 %31 %217
+        %104 = OpIAdd %6 %102 %220
+        %105 = OpAccessChain %7 %45 %104
+        %106 = OpLoad %6 %105
+        %107 = OpAccessChain %7 %45 %100
+               OpStore %107 %106
+        %109 = OpIMul %6 %31 %217
+        %111 = OpIMul %6 %31 %220
+        %112 = OpIAdd %6 %109 %111
+        %114 = OpIMul %6 %31 %217
+        %116 = OpIMul %6 %31 %220
+        %117 = OpIAdd %6 %114 %116
+        %118 = OpIAdd %6 %117 %11
+        %119 = OpAccessChain %7 %45 %118
+        %120 = OpLoad %6 %119
+        %121 = OpAccessChain %7 %45 %112
+               OpStore %121 %120
+        %123 = OpIMul %6 %31 %217
+        %125 = OpIMul %6 %31 %220
+        %126 = OpIAdd %6 %123 %125
+        %128 = OpIMul %6 %31 %217
+        %131 = OpIMul %6 %22 %220
+        %132 = OpIAdd %6 %128 %131
+        %133 = OpIAdd %6 %132 %11
+        %134 = OpAccessChain %7 %45 %133
+        %135 = OpLoad %6 %134
+        %136 = OpAccessChain %7 %45 %126
+               OpStore %136 %135
+        %138 = OpIMul %6 %31 %217
+        %140 = OpIMul %6 %31 %220
+        %141 = OpIAdd %6 %138 %140
+        %143 = OpIMul %6 %31 %217
+        %145 = OpIMul %6 %31 %220
+        %146 = OpIAdd %6 %143 %145
+        %148 = OpIAdd %6 %146 %22
+        %149 = OpAccessChain %7 %45 %148
+        %150 = OpLoad %6 %149
+        %151 = OpAccessChain %7 %45 %141
+               OpStore %151 %150
+        %153 = OpIMul %6 %31 %217
+        %156 = OpIMul %6 %22 %220
+        %157 = OpIAdd %6 %153 %156
+        %159 = OpIMul %6 %31 %217
+        %161 = OpIMul %6 %31 %220
+        %162 = OpIAdd %6 %159 %161
+        %163 = OpIAdd %6 %162 %11
+        %164 = OpAccessChain %7 %45 %163
+        %165 = OpLoad %6 %164
+        %166 = OpAccessChain %7 %45 %157
+               OpStore %166 %165
+        %168 = OpIMul %6 %31 %217
+        %170 = OpIMul %6 %31 %220
+        %171 = OpIAdd %6 %168 %170
+        %173 = OpIAdd %6 %171 %22
+        %175 = OpIMul %6 %31 %217
+        %177 = OpIMul %6 %31 %220
+        %178 = OpIAdd %6 %175 %177
+        %179 = OpAccessChain %7 %45 %178
+        %180 = OpLoad %6 %179
+        %181 = OpAccessChain %7 %45 %173
+               OpStore %181 %180
+        %183 = OpIMul %6 %31 %217
+        %186 = OpIMul %6 %184 %220
+        %187 = OpAccessChain %7 %45 %186
+        %188 = OpLoad %6 %187
+        %189 = OpAccessChain %7 %45 %183
+               OpStore %189 %188
+        %191 = OpIMul %6 %184 %217
+        %193 = OpIMul %6 %31 %220
+        %194 = OpAccessChain %7 %45 %193
+        %195 = OpLoad %6 %194
+        %196 = OpAccessChain %7 %45 %191
+               OpStore %196 %195
+        %199 = OpIMul %6 %197 %217
+        %201 = OpIMul %6 %11 %220
+        %202 = OpAccessChain %7 %45 %201
+        %203 = OpLoad %6 %202
+        %204 = OpAccessChain %7 %45 %199
+               OpStore %204 %203
+        %206 = OpIMul %6 %11 %217
+        %208 = OpIMul %6 %197 %220
+        %209 = OpAccessChain %7 %45 %208
+        %210 = OpLoad %6 %209
+        %211 = OpAccessChain %7 %45 %206
+               OpStore %211 %210
+               OpBranch %38
+         %38 = OpLabel
+        %214 = OpIAdd %6 %220 %213
+               OpStore %34 %214
+               OpBranch %35
+         %37 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+        %216 = OpIAdd %6 %217 %213
+               OpStore %23 %216
+               OpBranch %25
+         %27 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 4);
+  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+  std::vector<const ir::Loop*> loops{&ld.GetLoopByIndex(0),
+                                     &ld.GetLoopByIndex(1)};
+
+  opt::LoopDependenceAnalysis analysis{context.get(), loops};
+
+  const int instructions_expected = 17;
+  const ir::Instruction* store[instructions_expected];
+  const ir::Instruction* load[instructions_expected];
+  int stores_found = 0;
+  int loads_found = 0;
+
+  int block_id = 36;
+  ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
+
+  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    if (inst.opcode() == SpvOp::SpvOpStore) {
+      store[stores_found] = &inst;
+      ++stores_found;
+    }
+
+    if (inst.opcode() == SpvOp::SpvOpLoad) {
+      load[loads_found] = &inst;
+      ++loads_found;
+    }
+  }
+
+  EXPECT_EQ(instructions_expected, stores_found);
+  EXPECT_EQ(instructions_expected, loads_found);
+
+  auto directions_all = opt::DistanceEntry(opt::DistanceEntry::Directions::ALL);
+  auto directions_none =
+      opt::DistanceEntry(opt::DistanceEntry::Directions::NONE);
+
+  auto dependent = opt::DistanceVector({directions_all, directions_all});
+  auto independent = opt::DistanceVector({directions_none, directions_none});
+
+  CheckDependenceAndDirection(load[0], store[0], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[1], store[1], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[2], store[2], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[3], store[3], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[4], store[4], true, independent, &analysis);
+  CheckDependenceAndDirection(load[5], store[5], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[6], store[6], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[7], store[7], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[8], store[8], true, independent, &analysis);
+  CheckDependenceAndDirection(load[9], store[9], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[10], store[10], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[11], store[11], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[12], store[12], false, dependent, &analysis);
+  CheckDependenceAndDirection(load[13], store[13], true, independent,
+                              &analysis);
+  CheckDependenceAndDirection(load[14], store[14], true, independent,
+                              &analysis);
+  CheckDependenceAndDirection(load[15], store[15], true, independent,
+                              &analysis);
+  CheckDependenceAndDirection(load[16], store[16], true, independent,
+                              &analysis);
+}
+
+void PartitionSubscripts(const ir::Instruction* instruction_0,
+                         const ir::Instruction* instruction_1,
+                         opt::LoopDependenceAnalysis* analysis,
+                         std::vector<std::vector<int>> expected_ids) {
+  auto subscripts_0 = analysis->GetSubscripts(instruction_0);
+  auto subscripts_1 = analysis->GetSubscripts(instruction_1);
+
+  std::vector<std::set<std::pair<ir::Instruction*, ir::Instruction*>>>
+      expected_partition{};
+
+  for (const auto& partition : expected_ids) {
+    expected_partition.push_back({});
+    for (auto id : partition) {
+      expected_partition.back().insert({subscripts_0[id], subscripts_1[id]});
+    }
+  }
+
+  EXPECT_EQ(expected_partition,
+            analysis->PartitionSubscripts(subscripts_0, subscripts_1));
+}
+
+/*
+  Generated from the following GLSL fragment shader
+  with --eliminate-local-multi-store
+#version 440 core
+void main(){
+  int[10][10][10][10] arr;
+  for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 10; j++) {
+      for (int k = 0; k < 10; k++) {
+        for (int l = 0; l < 10; l++) {
+          arr[i][j][k][l] = arr[i][j][k][l]; // 0, all independent
+          arr[i][j][k][l] = arr[i][j][l][0]; // 1, last 2 coupled
+          arr[i][j][k][l] = arr[j][i][k][l]; // 2, first 2 coupled
+          arr[i][j][k][l] = arr[l][j][k][i]; // 3, first & last coupled
+          arr[i][j][k][l] = arr[i][k][j][l]; // 4, middle 2 coupled
+          arr[i+j][j][k][l] = arr[i][j][k][l]; // 5, first 2 coupled
+          arr[i+j+k][j][k][l] = arr[i][j][k][l]; // 6, first 3 coupled
+          arr[i+j+k+l][j][k][l] = arr[i][j][k][l]; // 7, all 4 coupled
+          arr[i][j][k][l] = arr[i][l][j][k]; // 8, last 3 coupled
+          arr[i][j-k][k][l] = arr[i][j][l][k]; // 9, last 3 coupled
+          arr[i][j][k][l] = arr[l][i][j][k]; // 10, all 4 coupled
+          arr[i][j][k][l] = arr[j][i][l][k]; // 11, 2 coupled partitions (i,j) &
+(l&k)
+          arr[i][j][k][l] = arr[k][l][i][j]; // 12, 2 coupled partitions (i,k) &
+(j&l)
+        }
+      }
+    }
+  }
+}
+*/
+TEST(DependencyAnalysis, SubscriptPartitioning) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 440
+               OpName %4 "main"
+               OpName %8 "i"
+               OpName %19 "j"
+               OpName %27 "k"
+               OpName %35 "l"
+               OpName %50 "arr"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 10
+         %17 = OpTypeBool
+         %43 = OpTypeInt 32 0
+         %44 = OpConstant %43 10
+         %45 = OpTypeArray %6 %44
+         %46 = OpTypeArray %45 %44
+         %47 = OpTypeArray %46 %44
+         %48 = OpTypeArray %47 %44
+         %49 = OpTypePointer Function %48
+        %208 = OpConstant %6 1
+        %217 = OpUndef %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %19 = OpVariable %7 Function
+         %27 = OpVariable %7 Function
+         %35 = OpVariable %7 Function
+         %50 = OpVariable %49 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+        %216 = OpPhi %6 %9 %5 %215 %13
+        %218 = OpPhi %6 %217 %5 %221 %13
+        %219 = OpPhi %6 %217 %5 %222 %13
+        %220 = OpPhi %6 %217 %5 %223 %13
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %18 = OpSLessThan %17 %216 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+               OpStore %19 %9
+               OpBranch %20
+         %20 = OpLabel
+        %221 = OpPhi %6 %9 %11 %213 %23
+        %222 = OpPhi %6 %219 %11 %224 %23
+        %223 = OpPhi %6 %220 %11 %225 %23
+               OpLoopMerge %22 %23 None
+               OpBranch %24
+         %24 = OpLabel
+         %26 = OpSLessThan %17 %221 %16
+               OpBranchConditional %26 %21 %22
+         %21 = OpLabel
+               OpStore %27 %9
+               OpBranch %28
+         %28 = OpLabel
+        %224 = OpPhi %6 %9 %21 %211 %31
+        %225 = OpPhi %6 %223 %21 %226 %31
+               OpLoopMerge %30 %31 None
+               OpBranch %32
+         %32 = OpLabel
+         %34 = OpSLessThan %17 %224 %16
+               OpBranchConditional %34 %29 %30
+         %29 = OpLabel
+               OpStore %35 %9
+               OpBranch %36
+         %36 = OpLabel
+        %226 = OpPhi %6 %9 %29 %209 %39
+               OpLoopMerge %38 %39 None
+               OpBranch %40
+         %40 = OpLabel
+         %42 = OpSLessThan %17 %226 %16
+               OpBranchConditional %42 %37 %38
+         %37 = OpLabel
+         %59 = OpAccessChain %7 %50 %216 %221 %224 %226
+         %60 = OpLoad %6 %59
+         %61 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %61 %60
+         %69 = OpAccessChain %7 %50 %216 %221 %226 %9
+         %70 = OpLoad %6 %69
+         %71 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %71 %70
+         %80 = OpAccessChain %7 %50 %221 %216 %224 %226
+         %81 = OpLoad %6 %80
+         %82 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %82 %81
+         %91 = OpAccessChain %7 %50 %226 %221 %224 %216
+         %92 = OpLoad %6 %91
+         %93 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %93 %92
+        %102 = OpAccessChain %7 %50 %216 %224 %221 %226
+        %103 = OpLoad %6 %102
+        %104 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %104 %103
+        %107 = OpIAdd %6 %216 %221
+        %115 = OpAccessChain %7 %50 %216 %221 %224 %226
+        %116 = OpLoad %6 %115
+        %117 = OpAccessChain %7 %50 %107 %221 %224 %226
+               OpStore %117 %116
+        %120 = OpIAdd %6 %216 %221
+        %122 = OpIAdd %6 %120 %224
+        %130 = OpAccessChain %7 %50 %216 %221 %224 %226
+        %131 = OpLoad %6 %130
+        %132 = OpAccessChain %7 %50 %122 %221 %224 %226
+               OpStore %132 %131
+        %135 = OpIAdd %6 %216 %221
+        %137 = OpIAdd %6 %135 %224
+        %139 = OpIAdd %6 %137 %226
+        %147 = OpAccessChain %7 %50 %216 %221 %224 %226
+        %148 = OpLoad %6 %147
+        %149 = OpAccessChain %7 %50 %139 %221 %224 %226
+               OpStore %149 %148
+        %158 = OpAccessChain %7 %50 %216 %226 %221 %224
+        %159 = OpLoad %6 %158
+        %160 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %160 %159
+        %164 = OpISub %6 %221 %224
+        %171 = OpAccessChain %7 %50 %216 %221 %226 %224
+        %172 = OpLoad %6 %171
+        %173 = OpAccessChain %7 %50 %216 %164 %224 %226
+               OpStore %173 %172
+        %182 = OpAccessChain %7 %50 %226 %216 %221 %224
+        %183 = OpLoad %6 %182
+        %184 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %184 %183
+        %193 = OpAccessChain %7 %50 %221 %216 %226 %224
+        %194 = OpLoad %6 %193
+        %195 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %195 %194
+        %204 = OpAccessChain %7 %50 %224 %226 %216 %221
+        %205 = OpLoad %6 %204
+        %206 = OpAccessChain %7 %50 %216 %221 %224 %226
+               OpStore %206 %205
+               OpBranch %39
+         %39 = OpLabel
+        %209 = OpIAdd %6 %226 %208
+               OpStore %35 %209
+               OpBranch %36
+         %38 = OpLabel
+               OpBranch %31
+         %31 = OpLabel
+        %211 = OpIAdd %6 %224 %208
+               OpStore %27 %211
+               OpBranch %28
+         %30 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+        %213 = OpIAdd %6 %221 %208
+               OpStore %19 %213
+               OpBranch %20
+         %22 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+        %215 = OpIAdd %6 %216 %208
+               OpStore %8 %215
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 4);
+  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+  std::vector<const ir::Loop*> loop_nest{
+      &ld.GetLoopByIndex(0), &ld.GetLoopByIndex(1), &ld.GetLoopByIndex(2),
+      &ld.GetLoopByIndex(3)};
+  opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+
+  const int instructions_expected = 13;
+  const ir::Instruction* store[instructions_expected];
+  const ir::Instruction* load[instructions_expected];
+  int stores_found = 0;
+  int loads_found = 0;
+
+  int block_id = 37;
+  ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
+
+  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    if (inst.opcode() == SpvOp::SpvOpStore) {
+      store[stores_found] = &inst;
+      ++stores_found;
+    }
+
+    if (inst.opcode() == SpvOp::SpvOpLoad) {
+      load[loads_found] = &inst;
+      ++loads_found;
+    }
+  }
+
+  EXPECT_EQ(instructions_expected, stores_found);
+  EXPECT_EQ(instructions_expected, loads_found);
+
+  PartitionSubscripts(load[0], store[0], &analysis, {{0}, {1}, {2}, {3}});
+  PartitionSubscripts(load[1], store[1], &analysis, {{0}, {1}, {2, 3}});
+  PartitionSubscripts(load[2], store[2], &analysis, {{0, 1}, {2}, {3}});
+  PartitionSubscripts(load[3], store[3], &analysis, {{0, 3}, {1}, {2}});
+  PartitionSubscripts(load[4], store[4], &analysis, {{0}, {1, 2}, {3}});
+  PartitionSubscripts(load[5], store[5], &analysis, {{0, 1}, {2}, {3}});
+  PartitionSubscripts(load[6], store[6], &analysis, {{0, 1, 2}, {3}});
+  PartitionSubscripts(load[7], store[7], &analysis, {{0, 1, 2, 3}});
+  PartitionSubscripts(load[8], store[8], &analysis, {{0}, {1, 2, 3}});
+  PartitionSubscripts(load[9], store[9], &analysis, {{0}, {1, 2, 3}});
+  PartitionSubscripts(load[10], store[10], &analysis, {{0, 1, 2, 3}});
+  PartitionSubscripts(load[11], store[11], &analysis, {{0, 1}, {2, 3}});
+  PartitionSubscripts(load[12], store[12], &analysis, {{0, 2}, {1, 3}});
+}
+
+/*
+  Generated from the following GLSL fragment shader
+  with --eliminate-local-multi-store
+
+#version 440 core
+void a() {
+  int[10][10] arr;
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      // Dependent, distance vector (1, -1)
+      arr[i+1][i+j] = arr[i][i+j];
+    }
+  }
+}
+
+void b() {
+  int[10][10] arr;
+  for (int i = 0; i < 10; ++i) {
+    // Independent
+    arr[i+1][i+2] = arr[i][i] + 2;
+  }
+}
+
+void c() {
+  int[10][10] arr;
+  for (int i = 0; i < 10; ++i) {
+    // Dependence point (1,2)
+    arr[i][i] = arr[1][i-1] + 2;
+  }
+}
+
+void d() {
+  int[10][10][10] arr;
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      for (int k = 0; k < 10; ++k) {
+        // Dependent, distance vector (1,1,-1)
+        arr[j-i][i+1][j+k] = arr[j-i][i][j+k];
+      }
+    }
+  }
+}
+
+void e() {
+  int[10][10] arr;
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      // Independent with GCD after propagation
+      arr[i][2*j+i] = arr[i][2*j-i+5];
+    }
+  }
+}
+
+void main(){
+  a();
+  b();
+  c();
+  d();
+  e();
+}
+*/
+TEST(DependencyAnalysis, Delta) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 440
+               OpName %4 "main"
+               OpName %6 "a("
+               OpName %8 "b("
+               OpName %10 "c("
+               OpName %12 "d("
+               OpName %14 "e("
+               OpName %18 "i"
+               OpName %29 "j"
+               OpName %42 "arr"
+               OpName %60 "i"
+               OpName %68 "arr"
+               OpName %82 "i"
+               OpName %90 "arr"
+               OpName %101 "i"
+               OpName %109 "j"
+               OpName %117 "k"
+               OpName %127 "arr"
+               OpName %152 "i"
+               OpName %160 "j"
+               OpName %168 "arr"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %16 = OpTypeInt 32 1
+         %17 = OpTypePointer Function %16
+         %19 = OpConstant %16 0
+         %26 = OpConstant %16 10
+         %27 = OpTypeBool
+         %37 = OpTypeInt 32 0
+         %38 = OpConstant %37 10
+         %39 = OpTypeArray %16 %38
+         %40 = OpTypeArray %39 %38
+         %41 = OpTypePointer Function %40
+         %44 = OpConstant %16 1
+         %72 = OpConstant %16 2
+        %125 = OpTypeArray %40 %38
+        %126 = OpTypePointer Function %125
+        %179 = OpConstant %16 5
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %188 = OpFunctionCall %2 %6
+        %189 = OpFunctionCall %2 %8
+        %190 = OpFunctionCall %2 %10
+        %191 = OpFunctionCall %2 %12
+        %192 = OpFunctionCall %2 %14
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %18 = OpVariable %17 Function
+         %29 = OpVariable %17 Function
+         %42 = OpVariable %41 Function
+               OpStore %18 %19
+               OpBranch %20
+         %20 = OpLabel
+        %193 = OpPhi %16 %19 %7 %59 %23
+               OpLoopMerge %22 %23 None
+               OpBranch %24
+         %24 = OpLabel
+         %28 = OpSLessThan %27 %193 %26
+               OpBranchConditional %28 %21 %22
+         %21 = OpLabel
+               OpStore %29 %19
+               OpBranch %30
+         %30 = OpLabel
+        %194 = OpPhi %16 %19 %21 %57 %33
+               OpLoopMerge %32 %33 None
+               OpBranch %34
+         %34 = OpLabel
+         %36 = OpSLessThan %27 %194 %26
+               OpBranchConditional %36 %31 %32
+         %31 = OpLabel
+         %45 = OpIAdd %16 %193 %44
+         %48 = OpIAdd %16 %193 %194
+         %52 = OpIAdd %16 %193 %194
+         %53 = OpAccessChain %17 %42 %193 %52
+         %54 = OpLoad %16 %53
+         %55 = OpAccessChain %17 %42 %45 %48
+               OpStore %55 %54
+               OpBranch %33
+         %33 = OpLabel
+         %57 = OpIAdd %16 %194 %44
+               OpStore %29 %57
+               OpBranch %30
+         %32 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+         %59 = OpIAdd %16 %193 %44
+               OpStore %18 %59
+               OpBranch %20
+         %22 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %8 = OpFunction %2 None %3
+          %9 = OpLabel
+         %60 = OpVariable %17 Function
+         %68 = OpVariable %41 Function
+               OpStore %60 %19
+               OpBranch %61
+         %61 = OpLabel
+        %196 = OpPhi %16 %19 %9 %81 %64
+               OpLoopMerge %63 %64 None
+               OpBranch %65
+         %65 = OpLabel
+         %67 = OpSLessThan %27 %196 %26
+               OpBranchConditional %67 %62 %63
+         %62 = OpLabel
+         %70 = OpIAdd %16 %196 %44
+         %73 = OpIAdd %16 %196 %72
+         %76 = OpAccessChain %17 %68 %196 %196
+         %77 = OpLoad %16 %76
+         %78 = OpIAdd %16 %77 %72
+         %79 = OpAccessChain %17 %68 %70 %73
+               OpStore %79 %78
+               OpBranch %64
+         %64 = OpLabel
+         %81 = OpIAdd %16 %196 %44
+               OpStore %60 %81
+               OpBranch %61
+         %63 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %2 None %3
+         %11 = OpLabel
+         %82 = OpVariable %17 Function
+         %90 = OpVariable %41 Function
+               OpStore %82 %19
+               OpBranch %83
+         %83 = OpLabel
+        %197 = OpPhi %16 %19 %11 %100 %86
+               OpLoopMerge %85 %86 None
+               OpBranch %87
+         %87 = OpLabel
+         %89 = OpSLessThan %27 %197 %26
+               OpBranchConditional %89 %84 %85
+         %84 = OpLabel
+         %94 = OpISub %16 %197 %44
+         %95 = OpAccessChain %17 %90 %44 %94
+         %96 = OpLoad %16 %95
+         %97 = OpIAdd %16 %96 %72
+         %98 = OpAccessChain %17 %90 %197 %197
+               OpStore %98 %97
+               OpBranch %86
+         %86 = OpLabel
+        %100 = OpIAdd %16 %197 %44
+               OpStore %82 %100
+               OpBranch %83
+         %85 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+        %101 = OpVariable %17 Function
+        %109 = OpVariable %17 Function
+        %117 = OpVariable %17 Function
+        %127 = OpVariable %126 Function
+               OpStore %101 %19
+               OpBranch %102
+        %102 = OpLabel
+        %198 = OpPhi %16 %19 %13 %151 %105
+               OpLoopMerge %104 %105 None
+               OpBranch %106
+        %106 = OpLabel
+        %108 = OpSLessThan %27 %198 %26
+               OpBranchConditional %108 %103 %104
+        %103 = OpLabel
+               OpStore %109 %19
+               OpBranch %110
+        %110 = OpLabel
+        %199 = OpPhi %16 %19 %103 %149 %113
+               OpLoopMerge %112 %113 None
+               OpBranch %114
+        %114 = OpLabel
+        %116 = OpSLessThan %27 %199 %26
+               OpBranchConditional %116 %111 %112
+        %111 = OpLabel
+               OpStore %117 %19
+               OpBranch %118
+        %118 = OpLabel
+        %201 = OpPhi %16 %19 %111 %147 %121
+               OpLoopMerge %120 %121 None
+               OpBranch %122
+        %122 = OpLabel
+        %124 = OpSLessThan %27 %201 %26
+               OpBranchConditional %124 %119 %120
+        %119 = OpLabel
+        %130 = OpISub %16 %199 %198
+        %132 = OpIAdd %16 %198 %44
+        %135 = OpIAdd %16 %199 %201
+        %138 = OpISub %16 %199 %198
+        %142 = OpIAdd %16 %199 %201
+        %143 = OpAccessChain %17 %127 %138 %198 %142
+        %144 = OpLoad %16 %143
+        %145 = OpAccessChain %17 %127 %130 %132 %135
+               OpStore %145 %144
+               OpBranch %121
+        %121 = OpLabel
+        %147 = OpIAdd %16 %201 %44
+               OpStore %117 %147
+               OpBranch %118
+        %120 = OpLabel
+               OpBranch %113
+        %113 = OpLabel
+        %149 = OpIAdd %16 %199 %44
+               OpStore %109 %149
+               OpBranch %110
+        %112 = OpLabel
+               OpBranch %105
+        %105 = OpLabel
+        %151 = OpIAdd %16 %198 %44
+               OpStore %101 %151
+               OpBranch %102
+        %104 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %14 = OpFunction %2 None %3
+         %15 = OpLabel
+        %152 = OpVariable %17 Function
+        %160 = OpVariable %17 Function
+        %168 = OpVariable %41 Function
+               OpStore %152 %19
+               OpBranch %153
+        %153 = OpLabel
+        %204 = OpPhi %16 %19 %15 %187 %156
+               OpLoopMerge %155 %156 None
+               OpBranch %157
+        %157 = OpLabel
+        %159 = OpSLessThan %27 %204 %26
+               OpBranchConditional %159 %154 %155
+        %154 = OpLabel
+               OpStore %160 %19
+               OpBranch %161
+        %161 = OpLabel
+        %205 = OpPhi %16 %19 %154 %185 %164
+               OpLoopMerge %163 %164 None
+               OpBranch %165
+        %165 = OpLabel
+        %167 = OpSLessThan %27 %205 %26
+               OpBranchConditional %167 %162 %163
+        %162 = OpLabel
+        %171 = OpIMul %16 %72 %205
+        %173 = OpIAdd %16 %171 %204
+        %176 = OpIMul %16 %72 %205
+        %178 = OpISub %16 %176 %204
+        %180 = OpIAdd %16 %178 %179
+        %181 = OpAccessChain %17 %168 %204 %180
+        %182 = OpLoad %16 %181
+        %183 = OpAccessChain %17 %168 %204 %173
+               OpStore %183 %182
+               OpBranch %164
+        %164 = OpLabel
+        %185 = OpIAdd %16 %205 %44
+               OpStore %160 %185
+               OpBranch %161
+        %163 = OpLabel
+               OpBranch %156
+        %156 = OpLabel
+        %187 = OpIAdd %16 %204 %44
+               OpStore %152 %187
+               OpBranch %153
+        %155 = OpLabel
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+
+  {
+    const ir::Function* f = spvtest::GetFunction(module, 6);
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+    const ir::Instruction* store = nullptr;
+    const ir::Instruction* load = nullptr;
+
+    int block_id = 31;
+    ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
+
+    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+      if (inst.opcode() == SpvOp::SpvOpStore) {
+        store = &inst;
+      }
+
+      if (inst.opcode() == SpvOp::SpvOpLoad) {
+        load = &inst;
+      }
+    }
+
+    EXPECT_NE(nullptr, store);
+    EXPECT_NE(nullptr, load);
+
+    std::vector<const ir::Loop*> loop_nest{&ld.GetLoopByIndex(0),
+                                           &ld.GetLoopByIndex(1)};
+    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+
+    opt::DistanceVector dv_entry(loop_nest.size());
+
+    std::vector<opt::DistanceEntry> expected_entries{
+        opt::DistanceEntry(opt::DistanceEntry::Directions::LT, 1),
+        opt::DistanceEntry(opt::DistanceEntry::Directions::LT, 1)};
+
+    opt::DistanceVector expected_distance_vector(expected_entries);
+
+    auto is_independent = analysis.GetDependence(load, store, &dv_entry);
+
+    EXPECT_FALSE(is_independent);
+    EXPECT_EQ(expected_distance_vector, dv_entry);
+  }
+
+  {
+    const ir::Function* f = spvtest::GetFunction(module, 8);
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+    const ir::Instruction* store = nullptr;
+    const ir::Instruction* load = nullptr;
+
+    int block_id = 62;
+    ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
+
+    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+      if (inst.opcode() == SpvOp::SpvOpStore) {
+        store = &inst;
+      }
+
+      if (inst.opcode() == SpvOp::SpvOpLoad) {
+        load = &inst;
+      }
+    }
+
+    EXPECT_NE(nullptr, store);
+    EXPECT_NE(nullptr, load);
+
+    std::vector<const ir::Loop*> loop_nest{&ld.GetLoopByIndex(0)};
+    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+
+    opt::DistanceVector dv_entry(loop_nest.size());
+    auto is_independent = analysis.GetDependence(load, store, &dv_entry);
+
+    EXPECT_TRUE(is_independent);
+  }
+
+  {
+    const ir::Function* f = spvtest::GetFunction(module, 10);
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+    const ir::Instruction* store = nullptr;
+    const ir::Instruction* load = nullptr;
+
+    int block_id = 84;
+    ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
+
+    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+      if (inst.opcode() == SpvOp::SpvOpStore) {
+        store = &inst;
+      }
+
+      if (inst.opcode() == SpvOp::SpvOpLoad) {
+        load = &inst;
+      }
+    }
+
+    EXPECT_NE(nullptr, store);
+    EXPECT_NE(nullptr, load);
+
+    std::vector<const ir::Loop*> loop_nest{&ld.GetLoopByIndex(0)};
+    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+
+    opt::DistanceVector dv_entry(loop_nest.size());
+    auto is_independent = analysis.GetDependence(load, store, &dv_entry);
+
+    opt::DistanceVector expected_distance_vector({opt::DistanceEntry(1, 2)});
+
+    EXPECT_FALSE(is_independent);
+    EXPECT_EQ(expected_distance_vector, dv_entry);
+  }
+
+  {
+    const ir::Function* f = spvtest::GetFunction(module, 12);
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+    const ir::Instruction* store = nullptr;
+    const ir::Instruction* load = nullptr;
+
+    int block_id = 119;
+    ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
+
+    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+      if (inst.opcode() == SpvOp::SpvOpStore) {
+        store = &inst;
+      }
+
+      if (inst.opcode() == SpvOp::SpvOpLoad) {
+        load = &inst;
+      }
+    }
+
+    EXPECT_NE(nullptr, store);
+    EXPECT_NE(nullptr, load);
+
+    std::vector<const ir::Loop*> loop_nest{
+        &ld.GetLoopByIndex(0), &ld.GetLoopByIndex(1), &ld.GetLoopByIndex(2)};
+    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+
+    opt::DistanceVector dv_entry(loop_nest.size());
+
+    std::vector<opt::DistanceEntry> expected_entries{
+        opt::DistanceEntry(opt::DistanceEntry::Directions::LT, 1),
+        opt::DistanceEntry(opt::DistanceEntry::Directions::LT, 1),
+        opt::DistanceEntry(opt::DistanceEntry::Directions::GT, -1)};
+
+    opt::DistanceVector expected_distance_vector(expected_entries);
+
+    auto is_independent = analysis.GetDependence(store, load, &dv_entry);
+
+    EXPECT_FALSE(is_independent);
+    EXPECT_EQ(expected_distance_vector, dv_entry);
+  }
+
+  {
+    const ir::Function* f = spvtest::GetFunction(module, 14);
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+
+    const ir::Instruction* store = nullptr;
+    const ir::Instruction* load = nullptr;
+
+    int block_id = 162;
+    ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
+
+    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+      if (inst.opcode() == SpvOp::SpvOpStore) {
+        store = &inst;
+      }
+
+      if (inst.opcode() == SpvOp::SpvOpLoad) {
+        load = &inst;
+      }
+    }
+
+    EXPECT_NE(nullptr, store);
+    EXPECT_NE(nullptr, load);
+
+    std::vector<const ir::Loop*> loop_nest{&ld.GetLoopByIndex(0),
+                                           &ld.GetLoopByIndex(1)};
+    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+
+    opt::DistanceVector dv_entry(loop_nest.size());
+    auto is_independent = analysis.GetDependence(load, store, &dv_entry);
+
+    EXPECT_TRUE(is_independent);
+  }
+}
+
+TEST(DependencyAnalysis, ConstraintIntersection) {
+  opt::LoopDependenceAnalysis analysis{nullptr, {}};
+  auto scalar_evolution = analysis.GetScalarEvolution();
+  {
+    // One is none. Other should be returned
+    auto none = analysis.make_constraint<opt::DependenceNone>();
+    auto x = scalar_evolution->CreateConstant(1);
+    auto y = scalar_evolution->CreateConstant(10);
+    auto point = analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
+
+    auto ret_0 = analysis.IntersectConstraints(none, point, nullptr, nullptr);
+
+    auto ret_point_0 = ret_0->AsDependencePoint();
+    ASSERT_NE(nullptr, ret_point_0);
+    EXPECT_EQ(*x, *ret_point_0->GetSource());
+    EXPECT_EQ(*y, *ret_point_0->GetDestination());
+
+    auto ret_1 = analysis.IntersectConstraints(point, none, nullptr, nullptr);
+
+    auto ret_point_1 = ret_1->AsDependencePoint();
+    ASSERT_NE(nullptr, ret_point_1);
+    EXPECT_EQ(*x, *ret_point_1->GetSource());
+    EXPECT_EQ(*y, *ret_point_1->GetDestination());
+  }
+
+  {
+    // Both distances
+    auto x = scalar_evolution->CreateConstant(1);
+    auto y = scalar_evolution->CreateConstant(10);
+
+    auto distance_0 =
+        analysis.make_constraint<opt::DependenceDistance>(x, nullptr);
+    auto distance_1 =
+        analysis.make_constraint<opt::DependenceDistance>(y, nullptr);
+
+    // Equal distances
+    auto ret_0 =
+        analysis.IntersectConstraints(distance_1, distance_1, nullptr, nullptr);
+
+    auto ret_distance = ret_0->AsDependenceDistance();
+    ASSERT_NE(nullptr, ret_distance);
+    EXPECT_EQ(*y, *ret_distance->GetDistance());
+
+    // Non-equal distances
+    auto ret_1 =
+        analysis.IntersectConstraints(distance_0, distance_1, nullptr, nullptr);
+    EXPECT_NE(nullptr, ret_1->AsDependenceEmpty());
+  }
+
+  {
+    // Both points
+    auto x = scalar_evolution->CreateConstant(1);
+    auto y = scalar_evolution->CreateConstant(10);
+
+    auto point_0 =
+        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
+    auto point_1 =
+        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
+    auto point_2 =
+        analysis.make_constraint<opt::DependencePoint>(y, y, nullptr);
+
+    // Equal points
+    auto ret_0 =
+        analysis.IntersectConstraints(point_0, point_1, nullptr, nullptr);
+    auto ret_point_0 = ret_0->AsDependencePoint();
+    ASSERT_NE(nullptr, ret_point_0);
+    EXPECT_EQ(*x, *ret_point_0->GetSource());
+    EXPECT_EQ(*y, *ret_point_0->GetDestination());
+
+    // Non-equal points
+    auto ret_1 =
+        analysis.IntersectConstraints(point_0, point_2, nullptr, nullptr);
+    EXPECT_NE(nullptr, ret_1->AsDependenceEmpty());
+  }
+
+  {
+    // Both lines, parallel
+    auto a0 = scalar_evolution->CreateConstant(3);
+    auto b0 = scalar_evolution->CreateConstant(6);
+    auto c0 = scalar_evolution->CreateConstant(9);
+
+    auto a1 = scalar_evolution->CreateConstant(6);
+    auto b1 = scalar_evolution->CreateConstant(12);
+    auto c1 = scalar_evolution->CreateConstant(18);
+
+    auto line_0 =
+        analysis.make_constraint<opt::DependenceLine>(a0, b0, c0, nullptr);
+    auto line_1 =
+        analysis.make_constraint<opt::DependenceLine>(a1, b1, c1, nullptr);
+
+    // Same line, both ways
+    auto ret_0 =
+        analysis.IntersectConstraints(line_0, line_1, nullptr, nullptr);
+    auto ret_1 =
+        analysis.IntersectConstraints(line_1, line_0, nullptr, nullptr);
+
+    auto ret_line_0 = ret_0->AsDependenceLine();
+    auto ret_line_1 = ret_1->AsDependenceLine();
+
+    EXPECT_NE(nullptr, ret_line_0);
+    EXPECT_NE(nullptr, ret_line_1);
+
+    // Non-intersecting parallel lines
+    auto c2 = scalar_evolution->CreateConstant(12);
+    auto line_2 =
+        analysis.make_constraint<opt::DependenceLine>(a1, b1, c2, nullptr);
+
+    auto ret_2 =
+        analysis.IntersectConstraints(line_0, line_2, nullptr, nullptr);
+    auto ret_3 =
+        analysis.IntersectConstraints(line_2, line_0, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_2->AsDependenceEmpty());
+    EXPECT_NE(nullptr, ret_3->AsDependenceEmpty());
+
+    auto c3 = scalar_evolution->CreateConstant(20);
+    auto line_3 =
+        analysis.make_constraint<opt::DependenceLine>(a1, b1, c3, nullptr);
+
+    auto ret_4 =
+        analysis.IntersectConstraints(line_0, line_3, nullptr, nullptr);
+    auto ret_5 =
+        analysis.IntersectConstraints(line_3, line_0, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_4->AsDependenceEmpty());
+    EXPECT_NE(nullptr, ret_5->AsDependenceEmpty());
+  }
+
+  {
+    // Non-constant line
+    auto unknown = scalar_evolution->CreateCantComputeNode();
+    auto constant = scalar_evolution->CreateConstant(10);
+
+    auto line_0 = analysis.make_constraint<opt::DependenceLine>(
+        constant, constant, constant, nullptr);
+    auto line_1 = analysis.make_constraint<opt::DependenceLine>(
+        unknown, unknown, unknown, nullptr);
+
+    auto ret_0 =
+        analysis.IntersectConstraints(line_0, line_1, nullptr, nullptr);
+    auto ret_1 =
+        analysis.IntersectConstraints(line_1, line_0, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_0->AsDependenceNone());
+    EXPECT_NE(nullptr, ret_1->AsDependenceNone());
+  }
+
+  {
+    auto bound_0 = scalar_evolution->CreateConstant(0);
+    auto bound_1 = scalar_evolution->CreateConstant(20);
+
+    auto a0 = scalar_evolution->CreateConstant(1);
+    auto b0 = scalar_evolution->CreateConstant(2);
+    auto c0 = scalar_evolution->CreateConstant(6);
+
+    auto a1 = scalar_evolution->CreateConstant(-1);
+    auto b1 = scalar_evolution->CreateConstant(2);
+    auto c1 = scalar_evolution->CreateConstant(2);
+
+    auto line_0 =
+        analysis.make_constraint<opt::DependenceLine>(a0, b0, c0, nullptr);
+    auto line_1 =
+        analysis.make_constraint<opt::DependenceLine>(a1, b1, c1, nullptr);
+
+    // Intersecting lines, has integer solution, in bounds
+    auto ret_0 =
+        analysis.IntersectConstraints(line_0, line_1, bound_0, bound_1);
+    auto ret_1 =
+        analysis.IntersectConstraints(line_1, line_0, bound_0, bound_1);
+
+    auto ret_point_0 = ret_0->AsDependencePoint();
+    auto ret_point_1 = ret_1->AsDependencePoint();
+
+    EXPECT_NE(nullptr, ret_point_0);
+    EXPECT_NE(nullptr, ret_point_1);
+
+    auto const_2 = scalar_evolution->CreateConstant(2);
+
+    EXPECT_EQ(*const_2, *ret_point_0->GetSource());
+    EXPECT_EQ(*const_2, *ret_point_0->GetDestination());
+
+    EXPECT_EQ(*const_2, *ret_point_1->GetSource());
+    EXPECT_EQ(*const_2, *ret_point_1->GetDestination());
+
+    // Intersecting lines, has integer solution, out of bounds
+    auto ret_2 =
+        analysis.IntersectConstraints(line_0, line_1, bound_0, bound_0);
+    auto ret_3 =
+        analysis.IntersectConstraints(line_1, line_0, bound_0, bound_0);
+
+    EXPECT_NE(nullptr, ret_2->AsDependenceEmpty());
+    EXPECT_NE(nullptr, ret_3->AsDependenceEmpty());
+
+    auto a2 = scalar_evolution->CreateConstant(-4);
+    auto b2 = scalar_evolution->CreateConstant(1);
+    auto c2 = scalar_evolution->CreateConstant(0);
+
+    auto a3 = scalar_evolution->CreateConstant(4);
+    auto b3 = scalar_evolution->CreateConstant(1);
+    auto c3 = scalar_evolution->CreateConstant(4);
+
+    auto line_2 =
+        analysis.make_constraint<opt::DependenceLine>(a2, b2, c2, nullptr);
+    auto line_3 =
+        analysis.make_constraint<opt::DependenceLine>(a3, b3, c3, nullptr);
+
+    // Intersecting, no integer solution
+    auto ret_4 =
+        analysis.IntersectConstraints(line_2, line_3, bound_0, bound_1);
+    auto ret_5 =
+        analysis.IntersectConstraints(line_3, line_2, bound_0, bound_1);
+
+    EXPECT_NE(nullptr, ret_4->AsDependenceEmpty());
+    EXPECT_NE(nullptr, ret_5->AsDependenceEmpty());
+
+    auto unknown = scalar_evolution->CreateCantComputeNode();
+
+    // Non-constant bound
+    auto ret_6 =
+        analysis.IntersectConstraints(line_0, line_1, unknown, bound_1);
+    auto ret_7 =
+        analysis.IntersectConstraints(line_1, line_0, bound_0, unknown);
+
+    EXPECT_NE(nullptr, ret_6->AsDependenceNone());
+    EXPECT_NE(nullptr, ret_7->AsDependenceNone());
+  }
+
+  {
+    auto constant_0 = scalar_evolution->CreateConstant(0);
+    auto constant_1 = scalar_evolution->CreateConstant(1);
+    auto constant_neg_1 = scalar_evolution->CreateConstant(-1);
+    auto constant_2 = scalar_evolution->CreateConstant(2);
+    auto constant_neg_2 = scalar_evolution->CreateConstant(-2);
+
+    auto point_0_0 = analysis.make_constraint<opt::DependencePoint>(
+        constant_0, constant_0, nullptr);
+    auto point_0_1 = analysis.make_constraint<opt::DependencePoint>(
+        constant_0, constant_1, nullptr);
+    auto point_1_0 = analysis.make_constraint<opt::DependencePoint>(
+        constant_1, constant_0, nullptr);
+    auto point_1_1 = analysis.make_constraint<opt::DependencePoint>(
+        constant_1, constant_1, nullptr);
+    auto point_1_2 = analysis.make_constraint<opt::DependencePoint>(
+        constant_1, constant_2, nullptr);
+    auto point_1_neg_1 = analysis.make_constraint<opt::DependencePoint>(
+        constant_1, constant_neg_1, nullptr);
+    auto point_neg_1_1 = analysis.make_constraint<opt::DependencePoint>(
+        constant_neg_1, constant_1, nullptr);
+
+    auto line_y_0 = analysis.make_constraint<opt::DependenceLine>(
+        constant_0, constant_1, constant_0, nullptr);
+    auto line_y_1 = analysis.make_constraint<opt::DependenceLine>(
+        constant_0, constant_1, constant_1, nullptr);
+    auto line_y_2 = analysis.make_constraint<opt::DependenceLine>(
+        constant_0, constant_1, constant_2, nullptr);
+
+    // Parallel horizontal lines, y = 0 & y = 1, should return no intersection
+    auto ret =
+        analysis.IntersectConstraints(line_y_0, line_y_1, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret->AsDependenceEmpty());
+
+    // Parallel horizontal lines, y = 1 & y = 2, should return no intersection
+    auto ret_y_12 =
+        analysis.IntersectConstraints(line_y_1, line_y_2, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_y_12->AsDependenceEmpty());
+
+    // Same horizontal lines, y = 0 & y = 0, should return the line
+    auto ret_y_same_0 =
+        analysis.IntersectConstraints(line_y_0, line_y_0, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_y_same_0->AsDependenceLine());
+
+    // Same horizontal lines, y = 1 & y = 1, should return the line
+    auto ret_y_same_1 =
+        analysis.IntersectConstraints(line_y_1, line_y_1, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_y_same_1->AsDependenceLine());
+
+    auto line_x_0 = analysis.make_constraint<opt::DependenceLine>(
+        constant_1, constant_0, constant_0, nullptr);
+    auto line_x_1 = analysis.make_constraint<opt::DependenceLine>(
+        constant_1, constant_0, constant_1, nullptr);
+    auto line_x_2 = analysis.make_constraint<opt::DependenceLine>(
+        constant_1, constant_0, constant_2, nullptr);
+    auto line_2x_1 = analysis.make_constraint<opt::DependenceLine>(
+        constant_2, constant_0, constant_1, nullptr);
+    auto line_2x_2 = analysis.make_constraint<opt::DependenceLine>(
+        constant_2, constant_0, constant_2, nullptr);
+
+    // Parallel vertical lines, x = 0 & x = 1, should return no intersection
+    auto ret_x =
+        analysis.IntersectConstraints(line_x_0, line_x_1, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_x->AsDependenceEmpty());
+
+    // Parallel vertical lines, x = 1 & x = 2, should return no intersection
+    auto ret_x_12 =
+        analysis.IntersectConstraints(line_x_1, line_x_2, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_x_12->AsDependenceEmpty());
+
+    // Parallel vertical lines, 2x = 1 & 2x = 2, should return no intersection
+    auto ret_2x_2_2x_1 =
+        analysis.IntersectConstraints(line_2x_2, line_2x_1, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_2x_2_2x_1->AsDependenceEmpty());
+
+    // same line, 2x=2 & x = 1
+    auto ret_2x_2_x_1 =
+        analysis.IntersectConstraints(line_2x_2, line_x_1, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_2x_2_x_1->AsDependenceLine());
+
+    // Same vertical lines, x = 0 & x = 0, should return the line
+    auto ret_x_same_0 =
+        analysis.IntersectConstraints(line_x_0, line_x_0, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_x_same_0->AsDependenceLine());
+    // EXPECT_EQ(*line_x_0, *ret_x_same_0->AsDependenceLine());
+
+    // Same vertical lines, x = 1 & x = 1, should return the line
+    auto ret_x_same_1 =
+        analysis.IntersectConstraints(line_x_1, line_x_1, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_x_same_1->AsDependenceLine());
+    EXPECT_EQ(*line_x_1, *ret_x_same_1->AsDependenceLine());
+
+    // x=1 & y = 0, intersect at (1, 0)
+    auto ret_1_0 = analysis.IntersectConstraints(line_x_1, line_y_0,
+                                                 constant_neg_1, constant_2);
+
+    auto ret_point_1_0 = ret_1_0->AsDependencePoint();
+    EXPECT_NE(nullptr, ret_point_1_0);
+    EXPECT_EQ(*point_1_0, *ret_point_1_0);
+
+    // x=1 & y = 1, intersect at (1, 1)
+    auto ret_1_1 = analysis.IntersectConstraints(line_x_1, line_y_1,
+                                                 constant_neg_1, constant_2);
+
+    auto ret_point_1_1 = ret_1_1->AsDependencePoint();
+    EXPECT_NE(nullptr, ret_point_1_1);
+    EXPECT_EQ(*point_1_1, *ret_point_1_1);
+
+    // x=0 & y = 0, intersect at (0, 0)
+    auto ret_0_0 = analysis.IntersectConstraints(line_x_0, line_y_0,
+                                                 constant_neg_1, constant_2);
+
+    auto ret_point_0_0 = ret_0_0->AsDependencePoint();
+    EXPECT_NE(nullptr, ret_point_0_0);
+    EXPECT_EQ(*point_0_0, *ret_point_0_0);
+
+    // x=0 & y = 1, intersect at (0, 1)
+    auto ret_0_1 = analysis.IntersectConstraints(line_x_0, line_y_1,
+                                                 constant_neg_1, constant_2);
+    auto ret_point_0_1 = ret_0_1->AsDependencePoint();
+    EXPECT_NE(nullptr, ret_point_0_1);
+    EXPECT_EQ(*point_0_1, *ret_point_0_1);
+
+    // x = 1 & y = 2
+    auto ret_1_2 = analysis.IntersectConstraints(line_x_1, line_y_2,
+                                                 constant_neg_1, constant_2);
+    auto ret_point_1_2 = ret_1_2->AsDependencePoint();
+    EXPECT_NE(nullptr, ret_point_1_2);
+    EXPECT_EQ(*point_1_2, *ret_point_1_2);
+
+    auto line_x_y_0 = analysis.make_constraint<opt::DependenceLine>(
+        constant_1, constant_1, constant_0, nullptr);
+    auto line_x_y_1 = analysis.make_constraint<opt::DependenceLine>(
+        constant_1, constant_1, constant_1, nullptr);
+
+    // x+y=0 & x=0, intersect (0, 0)
+    auto ret_xy_0_x_0 = analysis.IntersectConstraints(
+        line_x_y_0, line_x_0, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_xy_0_x_0->AsDependencePoint());
+    EXPECT_EQ(*point_0_0, *ret_xy_0_x_0);
+
+    // x+y=0 & y=0, intersect (0, 0)
+    auto ret_xy_0_y_0 = analysis.IntersectConstraints(
+        line_x_y_0, line_y_0, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_xy_0_y_0->AsDependencePoint());
+    EXPECT_EQ(*point_0_0, *ret_xy_0_y_0);
+
+    // x+y=0 & x=1, intersect (1, -1)
+    auto ret_xy_0_x_1 = analysis.IntersectConstraints(
+        line_x_y_0, line_x_1, constant_neg_2, constant_2);
+
+    EXPECT_NE(nullptr, ret_xy_0_x_1->AsDependencePoint());
+    EXPECT_EQ(*point_1_neg_1, *ret_xy_0_x_1);
+
+    // x+y=0 & y=1, intersect (-1, 1)
+    auto ret_xy_0_y_1 = analysis.IntersectConstraints(
+        line_x_y_0, line_y_1, constant_neg_2, constant_2);
+
+    EXPECT_NE(nullptr, ret_xy_0_y_1->AsDependencePoint());
+    EXPECT_EQ(*point_neg_1_1, *ret_xy_0_y_1);
+
+    // x=0 & x+y=0, intersect (0, 0)
+    auto ret_x_0_xy_0 = analysis.IntersectConstraints(
+        line_x_0, line_x_y_0, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_x_0_xy_0->AsDependencePoint());
+    EXPECT_EQ(*point_0_0, *ret_x_0_xy_0);
+
+    // y=0 & x+y=0, intersect (0, 0)
+    auto ret_y_0_xy_0 = analysis.IntersectConstraints(
+        line_y_0, line_x_y_0, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_y_0_xy_0->AsDependencePoint());
+    EXPECT_EQ(*point_0_0, *ret_y_0_xy_0);
+
+    // x=1 & x+y=0, intersect (1, -1)
+    auto ret_x_1_xy_0 = analysis.IntersectConstraints(
+        line_x_1, line_x_y_0, constant_neg_2, constant_2);
+
+    EXPECT_NE(nullptr, ret_x_1_xy_0->AsDependencePoint());
+    EXPECT_EQ(*point_1_neg_1, *ret_x_1_xy_0);
+
+    // y=1 & x+y=0, intersect (-1, 1)
+    auto ret_y_1_xy_0 = analysis.IntersectConstraints(
+        line_y_1, line_x_y_0, constant_neg_2, constant_2);
+
+    EXPECT_NE(nullptr, ret_y_1_xy_0->AsDependencePoint());
+    EXPECT_EQ(*point_neg_1_1, *ret_y_1_xy_0);
+
+    // x+y=1 & x=0, intersect (0, 1)
+    auto ret_xy_1_x_0 = analysis.IntersectConstraints(
+        line_x_y_1, line_x_0, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_xy_1_x_0->AsDependencePoint());
+    EXPECT_EQ(*point_0_1, *ret_xy_1_x_0);
+
+    // x+y=1 & y=0, intersect (1, 0)
+    auto ret_xy_1_y_0 = analysis.IntersectConstraints(
+        line_x_y_1, line_y_0, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_xy_1_y_0->AsDependencePoint());
+    EXPECT_EQ(*point_1_0, *ret_xy_1_y_0);
+
+    // x+y=1 & x=1, intersect (1, 0)
+    auto ret_xy_1_x_1 = analysis.IntersectConstraints(
+        line_x_y_1, line_x_1, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_xy_1_x_1->AsDependencePoint());
+    EXPECT_EQ(*point_1_0, *ret_xy_1_x_1);
+
+    // x+y=1 & y=1, intersect (0, 1)
+    auto ret_xy_1_y_1 = analysis.IntersectConstraints(
+        line_x_y_1, line_y_1, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_xy_1_y_1->AsDependencePoint());
+    EXPECT_EQ(*point_0_1, *ret_xy_1_y_1);
+
+    // x=0 & x+y=1, intersect (0, 1)
+    auto ret_x_0_xy_1 = analysis.IntersectConstraints(
+        line_x_0, line_x_y_1, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_x_0_xy_1->AsDependencePoint());
+    EXPECT_EQ(*point_0_1, *ret_x_0_xy_1);
+
+    // y=0 & x+y=1, intersect (1, 0)
+    auto ret_y_0_xy_1 = analysis.IntersectConstraints(
+        line_y_0, line_x_y_1, constant_neg_1, constant_2);
+
+    EXPECT_NE(nullptr, ret_y_0_xy_1->AsDependencePoint());
+    EXPECT_EQ(*point_1_0, *ret_y_0_xy_1);
+
+    // x=1 & x+y=1, intersect (1, 0)
+    auto ret_x_1_xy_1 = analysis.IntersectConstraints(
+        line_x_1, line_x_y_1, constant_neg_2, constant_2);
+
+    EXPECT_NE(nullptr, ret_x_1_xy_1->AsDependencePoint());
+    EXPECT_EQ(*point_1_0, *ret_x_1_xy_1);
+
+    // y=1 & x+y=1, intersect (0, 1)
+    auto ret_y_1_xy_1 = analysis.IntersectConstraints(
+        line_y_1, line_x_y_1, constant_neg_2, constant_2);
+
+    EXPECT_NE(nullptr, ret_y_1_xy_1->AsDependencePoint());
+    EXPECT_EQ(*point_0_1, *ret_y_1_xy_1);
+  }
+
+  {
+    // Line and point
+    auto a = scalar_evolution->CreateConstant(3);
+    auto b = scalar_evolution->CreateConstant(10);
+    auto c = scalar_evolution->CreateConstant(16);
+
+    auto line = analysis.make_constraint<opt::DependenceLine>(a, b, c, nullptr);
+
+    // Point on line
+    auto x = scalar_evolution->CreateConstant(2);
+    auto y = scalar_evolution->CreateConstant(1);
+    auto point_0 =
+        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
+
+    auto ret_0 = analysis.IntersectConstraints(line, point_0, nullptr, nullptr);
+    auto ret_1 = analysis.IntersectConstraints(point_0, line, nullptr, nullptr);
+
+    auto ret_point_0 = ret_0->AsDependencePoint();
+    auto ret_point_1 = ret_1->AsDependencePoint();
+    ASSERT_NE(nullptr, ret_point_0);
+    ASSERT_NE(nullptr, ret_point_1);
+
+    EXPECT_EQ(*x, *ret_point_0->GetSource());
+    EXPECT_EQ(*y, *ret_point_0->GetDestination());
+
+    EXPECT_EQ(*x, *ret_point_1->GetSource());
+    EXPECT_EQ(*y, *ret_point_1->GetDestination());
+
+    // Point not on line
+    auto point_1 =
+        analysis.make_constraint<opt::DependencePoint>(a, a, nullptr);
+
+    auto ret_2 = analysis.IntersectConstraints(line, point_1, nullptr, nullptr);
+    auto ret_3 = analysis.IntersectConstraints(point_1, line, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_2->AsDependenceEmpty());
+    EXPECT_NE(nullptr, ret_3->AsDependenceEmpty());
+
+    // Non-constant
+    auto unknown = scalar_evolution->CreateCantComputeNode();
+
+    auto point_2 =
+        analysis.make_constraint<opt::DependencePoint>(unknown, x, nullptr);
+
+    auto ret_4 = analysis.IntersectConstraints(line, point_2, nullptr, nullptr);
+    auto ret_5 = analysis.IntersectConstraints(point_2, line, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_4->AsDependenceNone());
+    EXPECT_NE(nullptr, ret_5->AsDependenceNone());
+  }
+
+  {
+    // Distance and point
+    auto d = scalar_evolution->CreateConstant(5);
+    auto distance =
+        analysis.make_constraint<opt::DependenceDistance>(d, nullptr);
+
+    // Point on line
+    auto x = scalar_evolution->CreateConstant(10);
+    auto point_0 =
+        analysis.make_constraint<opt::DependencePoint>(d, x, nullptr);
+
+    auto ret_0 =
+        analysis.IntersectConstraints(distance, point_0, nullptr, nullptr);
+    auto ret_1 =
+        analysis.IntersectConstraints(point_0, distance, nullptr, nullptr);
+
+    auto ret_point_0 = ret_0->AsDependencePoint();
+    auto ret_point_1 = ret_1->AsDependencePoint();
+    ASSERT_NE(nullptr, ret_point_0);
+    ASSERT_NE(nullptr, ret_point_1);
+
+    // Point not on line
+    auto point_1 =
+        analysis.make_constraint<opt::DependencePoint>(x, x, nullptr);
+
+    auto ret_2 =
+        analysis.IntersectConstraints(distance, point_1, nullptr, nullptr);
+    auto ret_3 =
+        analysis.IntersectConstraints(point_1, distance, nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_2->AsDependenceEmpty());
+    EXPECT_NE(nullptr, ret_3->AsDependenceEmpty());
+
+    // Non-constant
+    auto unknown = scalar_evolution->CreateCantComputeNode();
+    auto unknown_distance =
+        analysis.make_constraint<opt::DependenceDistance>(unknown, nullptr);
+
+    auto ret_4 = analysis.IntersectConstraints(unknown_distance, point_1,
+                                               nullptr, nullptr);
+    auto ret_5 = analysis.IntersectConstraints(point_1, unknown_distance,
+                                               nullptr, nullptr);
+
+    EXPECT_NE(nullptr, ret_4->AsDependenceNone());
+    EXPECT_NE(nullptr, ret_5->AsDependenceNone());
   }
 }
 
