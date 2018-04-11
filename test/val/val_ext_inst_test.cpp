@@ -148,6 +148,7 @@ OpCapability Int64
 
 %f16_0 = OpConstant %f16 0
 %f16_1 = OpConstant %f16 1
+%f16_h = OpConstant %f16 0.5
 
 %u32_0 = OpConstant %u32 0
 %u32_1 = OpConstant %u32 1
@@ -216,6 +217,7 @@ OpCapability Int64
 
 %u64_input = OpVariable %u64_ptr_input Input
 
+%struct_f16_u16 = OpTypeStruct %f16 %u16
 %struct_f32_f32 = OpTypeStruct %f32 %f32
 %struct_f32_f32_f32 = OpTypeStruct %f32 %f32 %f32
 %struct_f32_u32 = OpTypeStruct %f32 %u32
@@ -1597,6 +1599,36 @@ TEST_F(ValidateExtInst, GlslStd450FrexpStructXWrongType) {
               HasSubstr("GLSL.std.450 FrexpStruct: "
                         "expected operand X type to be equal to the first "
                         "member of Result Type struct"));
+}
+
+TEST_F(ValidateExtInst,
+       GlslStd450FrexpStructResultTypeStructRightInt16Member2) {
+  const std::string body = R"(
+%val1 = OpExtInst %struct_f16_u16 %extinst FrexpStruct %f16_h
+)";
+
+  const std::string extension = R"(
+OpExtension  "SPV_AMD_gpu_shader_int16"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extension));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateExtInst,
+       GlslStd450FrexpStructResultTypeStructWrongInt16Member2) {
+  const std::string body = R"(
+%val1 = OpExtInst %struct_f16_u16 %extinst FrexpStruct %f16_h
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("GLSL.std.450 FrexpStruct: "
+                        "expected Result Type to be a struct with two members, "
+                        "first member a float scalar or vector, second member "
+                        "a 32-bit int scalar or vector with the same number of "
+                        "components as the first member"));
 }
 
 TEST_P(ValidateGlslStd450Pack, Success) {
