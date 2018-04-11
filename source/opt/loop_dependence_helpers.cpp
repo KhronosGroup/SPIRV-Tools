@@ -225,10 +225,8 @@ const ir::Loop* LoopDependenceAnalysis::GetLoopForSubscriptPair(
   return *loops.begin();
 }
 
-DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForSubscriptPair(
-    std::pair<SENode*, SENode*>* subscript_pair,
-    DistanceVector* distance_vector) {
-  const ir::Loop* loop = GetLoopForSubscriptPair(subscript_pair);
+DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForLoop(
+    const ir::Loop* loop, DistanceVector* distance_vector) {
   if (!loop) {
     return nullptr;
   }
@@ -242,6 +240,14 @@ DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForSubscriptPair(
   }
 
   return distance_entry;
+}
+
+DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForSubscriptPair(
+    std::pair<SENode*, SENode*>* subscript_pair,
+    DistanceVector* distance_vector) {
+  const ir::Loop* loop = GetLoopForSubscriptPair(subscript_pair);
+
+  return GetDistanceEntryForLoop(loop, distance_vector);
 }
 
 SENode* LoopDependenceAnalysis::GetTripCount(const ir::Loop* loop) {
@@ -342,29 +348,31 @@ int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* node) {
   return static_cast<int64_t>(loops.size());
 }
 
-int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* source,
-                                                        SENode* destination) {
+std::set<const ir::Loop*> LoopDependenceAnalysis::CollectLoops(
+    SENode* source, SENode* destination) {
   if (!source || !destination) {
-    return -1;
+    return {};
   }
 
   std::vector<SERecurrentNode*> source_nodes = source->CollectRecurrentNodes();
   std::vector<SERecurrentNode*> destination_nodes =
       destination->CollectRecurrentNodes();
 
-  // We don't handle loops with more than one induction variable. Therefore we
-  // can identify the number of induction variables by collecting all of the
-  // loops the collected recurrent nodes belong to.
-  std::unordered_set<const ir::Loop*> loops{};
-  for (auto source_nodes_it = source_nodes.begin();
-       source_nodes_it != source_nodes.end(); ++source_nodes_it) {
-    loops.insert((*source_nodes_it)->GetLoop());
+  std::set<const ir::Loop*> loops = CollectLoops(source_nodes);
+  std::set<const ir::Loop*> destination_loops = CollectLoops(destination_nodes);
+
+  loops.insert(std::begin(destination_loops), std::end(destination_loops));
+
+  return loops;
+}
+
+int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* source,
+                                                        SENode* destination) {
+  if (!source || !destination) {
+    return -1;
   }
-  for (auto destination_nodes_it = destination_nodes.begin();
-       destination_nodes_it != destination_nodes.end();
-       ++destination_nodes_it) {
-    loops.insert((*destination_nodes_it)->GetLoop());
-  }
+
+  std::set<const ir::Loop*> loops = CollectLoops(source, destination);
 
   return static_cast<int64_t>(loops.size());
 }
@@ -475,6 +483,62 @@ void LoopDependenceAnalysis::PrintDebug(std::string debug_msg) {
   if (debug_stream_) {
     (*debug_stream_) << debug_msg << "\n";
   }
+}
+
+bool Constraint::operator==(const Constraint& other) const {
+  // A distance of |d| is equivalent to a line |x - y = -d|
+  if ((GetType() == ConstraintType::Distance &&
+       other.GetType() == ConstraintType::Line) ||
+      (GetType() == ConstraintType::Line &&
+       other.GetType() == ConstraintType::Distance)) {
+    auto is_distance = AsDependenceLine() != nullptr;
+
+    auto as_distance =
+        is_distance ? AsDependenceDistance() : other.AsDependenceDistance();
+    auto distance = as_distance->GetDistance();
+
+    auto line = other.AsDependenceLine();
+
+    auto scalar_evolution = distance->GetParentAnalysis();
+
+    auto neg_distance = scalar_evolution->SimplifyExpression(
+        scalar_evolution->CreateNegation(distance));
+
+    return *scalar_evolution->CreateConstant(1) == *line->GetA() &&
+           *scalar_evolution->CreateConstant(-1) == *line->GetB() &&
+           *neg_distance == *line->GetC();
+  }
+
+  if (GetType() != other.GetType()) {
+    return false;
+  }
+
+  if (AsDependenceDistance()) {
+    return *AsDependenceDistance()->GetDistance() ==
+           *other.AsDependenceDistance()->GetDistance();
+  }
+
+  if (AsDependenceLine()) {
+    auto this_line = AsDependenceLine();
+    auto other_line = other.AsDependenceLine();
+    return *this_line->GetA() == *other_line->GetA() &&
+           *this_line->GetB() == *other_line->GetB() &&
+           *this_line->GetC() == *other_line->GetC();
+  }
+
+  if (AsDependencePoint()) {
+    auto this_point = AsDependencePoint();
+    auto other_point = other.AsDependencePoint();
+
+    return *this_point->GetSource() == *other_point->GetSource() &&
+           *this_point->GetDestination() == *other_point->GetDestination();
+  }
+
+  return true;
+}
+
+bool Constraint::operator!=(const Constraint& other) const {
+  return !(*this == other);
 }
 
 }  // namespace opt
