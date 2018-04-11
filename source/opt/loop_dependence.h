@@ -133,7 +133,8 @@ class DistanceVector {
  public:
   explicit DistanceVector(size_t size) : entries(size, DistanceEntry{}) {}
 
-  explicit DistanceVector(std::vector<DistanceEntry> entries_) : entries(entries_) {}
+  explicit DistanceVector(std::vector<DistanceEntry> entries_)
+      : entries(entries_) {}
 
   DistanceEntry& GetEntry(size_t index) { return entries[index]; }
   const DistanceEntry& GetEntry(size_t index) const { return entries[index]; }
