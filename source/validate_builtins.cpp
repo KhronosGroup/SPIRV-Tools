@@ -2123,19 +2123,6 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtReference(
     const Instruction& referenced_inst,
     const Instruction& referenced_from_inst) {
   if (spvIsVulkanEnv(_.context()->target_env)) {
-    const SpvStorageClass storage_class = GetStorageClass(referenced_from_inst);
-    if (storage_class != SpvStorageClassMax &&
-        storage_class != SpvStorageClassInput) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
-             << "Vulkan spec allows BuiltIn "
-             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
-                                              decoration.params()[0])
-             << " to be only used for variables with Input storage class. "
-             << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
-                                 referenced_from_inst)
-             << " " << GetStorageClassDesc(referenced_from_inst);
-    }
-
     for (const SpvExecutionModel execution_model : execution_models_) {
       if (execution_model != SpvExecutionModelGLCompute) {
         return _.diag(SPV_ERROR_INVALID_DATA)
