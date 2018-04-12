@@ -43,15 +43,17 @@ Options:
   --max-switch-branches            <maximum number of branches allowed in switch statements>
   --max-function-args              <maximum number arguments allowed per function>
   --max-control-flow-nesting-depth <maximum Control Flow nesting depth allowed>
-  --max-access-chain-indexes       <maximum number of indexes allowed to use for Access Chain instructions>
+  --max-access-chain-indexes       <maximum number of indexes allowed to use for Access Chain
+                                   instructions>
   --relax-logcial-pointer          Allow allocating an object of a pointer type and returning
                                    a pointer value from a function in logical addressing mode
   --relax-struct-store             Allow store from one struct type to a
                                    different type with compatible layout and
                                    members.
   --version                        Display validator version information.
-  --target-env                     {vulkan1.0|spv1.0|spv1.1|spv1.2}
-                                   Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1/SPIR-V1.2 validation rules.
+  --target-env                     {vulkan1.0|vulkan1.1|spv1.0|spv1.1|spv1.2|spv1.3}
+                                   Use Vulkan 1.0, Vulkan 1.1, SPIR-V 1.0, SPIR-V 1.1,
+                                   SPIR-V 1.2, SPIR-V 1.3, validation rules.
 )",
       argv0, argv0);
 }
