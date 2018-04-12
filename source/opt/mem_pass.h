@@ -149,8 +149,9 @@ class MemPass : public Pass {
 
   // Remove Phi operands in |phi| that are coming from blocks not in
   // |reachable_blocks|.
-  void RemovePhiOperands(ir::Instruction* phi,
-                         std::unordered_set<ir::BasicBlock*> reachable_blocks);
+  void RemovePhiOperands(
+      ir::Instruction* phi,
+      const std::unordered_set<ir::BasicBlock*>& reachable_blocks);
 
   // Map from type to undef
   std::unordered_map<uint32_t, uint32_t> type2undefs_;
