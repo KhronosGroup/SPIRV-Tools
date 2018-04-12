@@ -453,7 +453,7 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   }
 }
 
-TEST_P(ValidateCFG, BranchTargetFirstBlockBad) {
+TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceEntryBlock) {
   Block entry("entry");
   Block bad("bad");
   Block end("end", SpvOpReturn);
@@ -471,6 +471,30 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBad) {
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
                            "is targeted by block .\\[bad\\]"));
+}
+
+TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceValue) {
+  Block entry("entry");
+  Block bad("bad");
+  Block end("end", SpvOpReturn);
+  Block badvalue("func");  // This referenes the function name.
+  string str = header(GetParam()) +
+               nameOps("entry", "bad", make_pair("func", "Main")) +
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> bad;
+  str +=
+      bad >> badvalue;  // Check branch to a function value (it's not a block!)
+  str += end;
+  str += "OpFunctionEnd\n";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("Block\\(s\\) \\{.\\[Main\\]\\} are referenced but not "
+                   "defined in function .\\[Main\\]"))
+      << str;
 }
 
 TEST_P(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
@@ -589,7 +613,7 @@ TEST_P(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex("Block\\(s\\) \\{.\\[middle2\\] .\\} are referenced but not "
+      MatchesRegex("Block\\(s\\) \\{.\\[middle2\\]\\} are referenced but not "
                    "defined in function .\\[Main\\]"));
 }
 
