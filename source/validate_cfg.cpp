@@ -261,11 +261,16 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     // Check all referenced blocks are defined within a function
     if (function.undefined_block_count() != 0) {
       string undef_blocks("{");
+      bool first = true;
       for (auto undefined_block : function.undefined_blocks()) {
-        undef_blocks += _.getIdName(undefined_block) + " ";
+        undef_blocks += _.getIdName(undefined_block);
+        if (!first) {
+          undef_blocks += " ";
+        }
+        first = false;
       }
       return _.diag(SPV_ERROR_INVALID_CFG)
-             << "Block(s) " << undef_blocks << "\b}"
+             << "Block(s) " << undef_blocks << "}"
              << " are referenced but not defined in function "
              << _.getIdName(function.id());
     }
