@@ -319,9 +319,31 @@ OpControlBarrier %subgroup %subgroup %none
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ControlBarrier: in Vulkan 1.0 environment Memory Scope is "
+                "limited to Device, Workgroup and Invocation"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierVulkan1p1MemoryScopeSubgroup) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %subgroup %none
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierVulkan1p1MemoryScopeCrossDevice) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %cross_device %none
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ControlBarrier: in Vulkan environment Memory Scope is "
-                        "limited to Device, Workgroup and Invocation"));
+              HasSubstr("ControlBarrier: in Vulkan environment, Memory Scope "
+                        "cannot be CrossDevice"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierAcquireAndRelease) {
@@ -437,9 +459,19 @@ OpMemoryBarrier %subgroup %acquire_release_uniform_workgroup
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("MemoryBarrier: in Vulkan environment Memory Scope is "
-                        "limited to Device, Workgroup and Invocation"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("MemoryBarrier: in Vulkan 1.0 environment Memory Scope is "
+                "limited to Device, Workgroup and Invocation"));
+}
+
+TEST_F(ValidateBarriers, OpMemoryBarrierVulkan1p1MemoryScopeSubgroup) {
+  const std::string body = R"(
+OpMemoryBarrier %subgroup %acquire_release_uniform_workgroup
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
 TEST_F(ValidateBarriers, OpMemoryBarrierAcquireAndRelease) {

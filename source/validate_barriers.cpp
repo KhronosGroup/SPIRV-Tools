@@ -81,11 +81,18 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _,
   }
 
   if (spvIsVulkanEnv(_.context()->target_env)) {
-    if (value != SpvScopeDevice && value != SpvScopeWorkgroup &&
+    if (value == SpvScopeCrossDevice) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << spvOpcodeString(opcode)
+             << ": in Vulkan environment, Memory Scope cannot be CrossDevice";
+    }
+    if (_.context()->target_env == SPV_ENV_VULKAN_1_0 &&
+        value != SpvScopeDevice && value != SpvScopeWorkgroup &&
         value != SpvScopeInvocation) {
       return _.diag(SPV_ERROR_INVALID_DATA)
              << spvOpcodeString(opcode)
-             << ": in Vulkan environment Memory Scope is limited to Device, "
+             << ": in Vulkan 1.0 environment Memory Scope is limited to "
+                "Device, "
                 "Workgroup and Invocation";
     }
   }
