@@ -15,11 +15,9 @@
 #ifndef LIBSPIRV_UTILS_BIT_VECTOR_H_
 #define LIBSPIRV_UTILS_BIT_VECTOR_H_
 
-#include <cassert>
-#include <iostream>
+#include <cstdint>
+#include <iosfwd>
 #include <vector>
-
-#include "ilist_node.h"
 
 namespace spvtools {
 namespace utils {
@@ -30,63 +28,49 @@ namespace utils {
 class BitVector {
  public:
   // Creates a bit vector contianing 0s.
-  BitVector() : bits(1024 / sizeof(BitContainer), 0) {}
+  BitVector() : bits(1024 / kBitContainerSize, 0) {}
 
   // Sets the |i|th bit to 1.
   void Set(uint32_t i) {
-    uint32_t element_index = i / sizeof(BitContainer);
-    uint32_t bit_in_element = i % sizeof(BitContainer);
+    uint32_t element_index = i / kBitContainerSize;
+    uint32_t bit_in_element = i % kBitContainerSize;
 
     if (element_index >= bits.size()) {
       bits.resize(element_index + 1, 0);
     }
 
-    bits[element_index] |= (1 << bit_in_element);
+    bits[element_index] |= (static_cast<BitContainer>(1) << bit_in_element);
   }
 
   // Sets the |i|th bit to 0.
   void Clear(uint32_t i) {
-    uint32_t element_index = i / sizeof(BitContainer);
-    uint32_t bit_in_element = i % sizeof(BitContainer);
+    uint32_t element_index = i / kBitContainerSize;
+    uint32_t bit_in_element = i % kBitContainerSize;
 
     if (element_index >= bits.size()) {
       return;
     }
-    bits[element_index] &= ~(1 << bit_in_element);
+    bits[element_index] &= ~(static_cast<BitContainer>(1) << bit_in_element);
   }
 
   // Returns the |i|th bit.
   bool Get(uint32_t i) const {
-    uint32_t element_index = i / sizeof(BitContainer);
-    uint32_t bit_in_element = i % sizeof(BitContainer);
+    uint32_t element_index = i / kBitContainerSize;
+    uint32_t bit_in_element = i % kBitContainerSize;
 
     if (element_index >= bits.size()) {
       return false;
     }
 
-    return (bits[element_index] & (1 << bit_in_element)) != 0;
+    return (bits[element_index] &
+            (static_cast<BitContainer>(1) << bit_in_element)) != 0;
   }
 
-  void ReportDensity(std::ostream& out) {
-    uint32_t count = 0;
-
-    for (BitContainer e : bits) {
-      while (e != 0) {
-        if ((e & 1) != 0) {
-          ++count;
-        }
-        e = e >> 1;
-      }
-    }
-
-    out << "count=" << count
-        << ", total size (bytes)=" << bits.size() * sizeof(BitContainer)
-        << ", bytes per element="
-        << (double)(bits.size() * sizeof(BitContainer)) / (double)(count);
-  }
+  void ReportDensity(std::ostream& out);
 
  private:
   using BitContainer = uint64_t;
+  static const uint32_t kBitContainerSize = 64;
   std::vector<BitContainer> bits;
 };
 
