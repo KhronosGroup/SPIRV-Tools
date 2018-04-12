@@ -51,7 +51,7 @@ Options:
                                    members.
   --version                        Display validator version information.
   --target-env                     {vulkan1.0|vulkan1.1|opencl2.2|spv1.0|spv1.1|spv1.2|spv1.3}
-                                   Use Vulkan 1.0, Vulkan 1.1, SPIR-V 1.0, OpenCL 2.2,
+                                   Use Vulkan 1.0, Vulkan 1.1, OpenCL 2.2, SPIR-V 1.0,
                                    SPIR-V 1.1, SPIR-V 1.2 or SPIR-V 1.3 validation rules.
 )",
       argv0, argv0);
