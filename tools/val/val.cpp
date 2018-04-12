@@ -50,8 +50,8 @@ Options:
                                    different type with compatible layout and
                                    members.
   --version                        Display validator version information.
-  --target-env                     {vulkan1.0|spv1.0|spv1.1|spv1.2}
-                                   Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1/SPIR-V1.2 validation rules.
+  --target-env                     {vulkan1.0|vulkan1.1|opencl2.2|spv1.0|spv1.1|spv1.2}
+                                   Use Vulkan1.0/Vulkan1.1/SPIR-V1.0/OpenCL2.2/SPIR-V1.1/SPIR-V1.2 validation rules.
 )",
       argv0, argv0);
 }
