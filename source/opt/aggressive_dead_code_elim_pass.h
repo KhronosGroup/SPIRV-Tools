@@ -17,6 +17,7 @@
 #ifndef LIBSPIRV_OPT_AGGRESSIVE_DCE_PASS_H_
 #define LIBSPIRV_OPT_AGGRESSIVE_DCE_PASS_H_
 
+#include <util/bit_vector.h>
 #include <algorithm>
 #include <map>
 #include <queue>
@@ -60,7 +61,7 @@ class AggressiveDCEPass : public MemPass {
 
   // Return true if |inst| is marked live.
   bool IsLive(const ir::Instruction* inst) const {
-    return live_insts_.find(inst) != live_insts_.end();
+    return live_insts_.Get(inst->unique_id());
   }
 
   // Returns true if |inst| is dead.
@@ -72,7 +73,9 @@ class AggressiveDCEPass : public MemPass {
 
   // Add |inst| to worklist_ and live_insts_.
   void AddToWorklist(ir::Instruction* inst) {
-    if (live_insts_.insert(inst).second) worklist_.push(inst);
+    if (!live_insts_.Set(inst->unique_id())) {
+      worklist_.push(inst);
+    }
   }
 
   // Add all store instruction which use |ptrId|, directly or indirectly,
@@ -168,7 +171,7 @@ class AggressiveDCEPass : public MemPass {
   std::vector<ir::Instruction*> private_stores_;
 
   // Live Instructions
-  std::unordered_set<const ir::Instruction*> live_insts_;
+  utils::BitVector live_insts_;
 
   // Live Local Variables
   std::unordered_set<uint32_t> live_local_vars_;
