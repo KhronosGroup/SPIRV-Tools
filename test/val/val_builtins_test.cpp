@@ -1656,6 +1656,29 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
                 "(OpConstantComposite) has components with bit width 64."));
 }
 
+TEST_F(ValidateBuiltIns, WorkgroupSizePrivateVar) {
+  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  generator.before_types_ = R"(
+OpDecorate %workgroup_size BuiltIn WorkgroupSize
+)";
+
+  generator.after_types_ = R"(
+%workgroup_size = OpConstantComposite %u32vec3 %u32_1 %u32_1 %u32_1
+%private_ptr_u32vec3 = OpTypePointer Private %u32vec3
+%var = OpVariable %private_ptr_u32vec3 Private %workgroup_size
+)";
+
+  EntryPoint entry_point;
+  entry_point.name = "main";
+  entry_point.execution_model = "GLCompute";
+  entry_point.body = R"(
+)";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 TEST_F(ValidateBuiltIns, GeometryPositionInOutSuccess) {
   CodeGenerator generator = GetDefaultShaderCodeGenerator();
 
