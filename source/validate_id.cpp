@@ -1870,12 +1870,6 @@ bool idUsage::isValid<OpSelectionMerge>(
     const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
 #endif
 
-#if 0
-template <>
-bool idUsage::isValid<OpBranch>(const spv_instruction_t *inst,
-                                const spv_opcode_desc opcodeEntry) {}
-#endif
-
 template <>
 bool idUsage::isValid<SpvOpBranchConditional>(const spv_instruction_t* inst,
                                               const spv_opcode_desc) {
@@ -2426,7 +2420,8 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpPhi)
     TODO(OpLoopMerge)
     TODO(OpSelectionMerge)
-    TODO(OpBranch)
+    // OpBranch is validated in validate_cfg.cpp.
+    // See tests in test/val/val_cfg_test.cpp.
     CASE(OpBranchConditional)
     TODO(OpSwitch)
     CASE(OpReturnValue)
