@@ -197,12 +197,12 @@ bool LoopDependenceAnalysis::IsProvablyOutsideOfLoopBounds(
 }
 
 const ir::Loop* LoopDependenceAnalysis::GetLoopForSubscriptPair(
-    std::pair<SENode*, SENode*>* subscript_pair) {
+    const std::pair<SENode*, SENode*>& subscript_pair) {
   // Collect all the SERecurrentNodes.
   std::vector<SERecurrentNode*> source_nodes =
-      std::get<0>(*subscript_pair)->CollectRecurrentNodes();
+      std::get<0>(subscript_pair)->CollectRecurrentNodes();
   std::vector<SERecurrentNode*> destination_nodes =
-      std::get<1>(*subscript_pair)->CollectRecurrentNodes();
+      std::get<1>(subscript_pair)->CollectRecurrentNodes();
 
   // Collect all the loops stored by the SERecurrentNodes.
   std::unordered_set<const ir::Loop*> loops{};
@@ -243,7 +243,7 @@ DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForLoop(
 }
 
 DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForSubscriptPair(
-    std::pair<SENode*, SENode*>* subscript_pair,
+    const std::pair<SENode*, SENode*>& subscript_pair,
     DistanceVector* distance_vector) {
   const ir::Loop* loop = GetLoopForSubscriptPair(subscript_pair);
 

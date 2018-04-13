@@ -391,12 +391,12 @@ class LoopDependenceAnalysis {
   // Returns the ir::Loop* matching the loop for |subscript_pair|.
   // |subscript_pair| must be an SIV pair.
   const ir::Loop* GetLoopForSubscriptPair(
-      std::pair<SENode*, SENode*>* subscript_pair);
+      const std::pair<SENode*, SENode*>& subscript_pair);
 
   // Returns the DistanceEntry matching the loop for |subscript_pair|.
   // |subscript_pair| must be an SIV pair.
   DistanceEntry* GetDistanceEntryForSubscriptPair(
-      std::pair<SENode*, SENode*>* subscript_pair,
+      const std::pair<SENode*, SENode*>& subscript_pair,
       DistanceVector* distance_vector);
 
   // Returns the DistanceEntry matching |loop|.
@@ -451,11 +451,11 @@ class LoopDependenceAnalysis {
   std::ostream* debug_stream_;
 
   // Returns true if independence can be proven and false if it can't be proven.
-  bool ZIVTest(std::pair<SENode*, SENode*>* subscript_pair);
+  bool ZIVTest(const std::pair<SENode*, SENode*>& subscript_pair);
 
   // Analyzes the subscript pair to find an applicable SIV test.
   // Returns true if independence can be proven and false if it can't be proven.
-  bool SIVTest(std::pair<SENode*, SENode*>* subscript_pair,
+  bool SIVTest(const std::pair<SENode*, SENode*>& subscript_pair,
                DistanceVector* distance_vector);
 
   // Takes the form a*i + c1, a*i + c2

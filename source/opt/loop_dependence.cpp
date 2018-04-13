@@ -30,6 +30,157 @@ namespace opt {
 
 using SubscriptPair = std::pair<SENode*, SENode*>;
 
+namespace {
+
+// Calculate the greatest common divisor of a & b using Stein's algorithm.
+// https://en.wikipedia.org/wiki/Binary_GCD_algorithm
+int64_t GreatestCommonDivisor(int64_t a, int64_t b) {
+  // Simple cases
+  if (a == b) {
+    return a;
+  } else if (a == 0) {
+    return b;
+  } else if (b == 0) {
+    return a;
+  }
+
+  // Both even
+  if (a % 2 == 0 && b % 2 == 0) {
+    return 2 * GreatestCommonDivisor(a / 2, b / 2);
+  }
+
+  // Even a, odd b
+  if (a % 2 == 0 && b % 2 == 1) {
+    return GreatestCommonDivisor(a / 2, b);
+  }
+
+  // Odd a, even b
+  if (a % 2 == 1 && b % 2 == 0) {
+    return GreatestCommonDivisor(a, b / 2);
+  }
+
+  // Both odd, reduce the larger argument
+  if (a > b) {
+    return GreatestCommonDivisor((a - b) / 2, b);
+  } else {
+    return GreatestCommonDivisor((b - a) / 2, a);
+  }
+}
+
+// Check if node is affine, ie in the form: a0*i0 + a1*i1 + ... an*in + c
+// and contains only the following types of nodes: SERecurrentNode, SEAddNode
+// and SEConstantNode
+bool IsInCorrectFormForGCDTest(SENode* node) {
+  bool children_ok = true;
+
+  if (auto add_node = node->AsSEAddNode()) {
+    for (auto child : add_node->GetChildren()) {
+      children_ok &= IsInCorrectFormForGCDTest(child);
+    }
+  }
+
+  bool this_ok = node->AsSERecurrentNode() || node->AsSEAddNode() ||
+                 node->AsSEConstantNode();
+
+  return children_ok && this_ok;
+}
+
+// If |node| is an SERecurrentNode then returns |node| or if |node| is an
+// SEAddNode returns a vector of SERecurrentNode that are its children.
+std::vector<SERecurrentNode*> GetAllTopLevelRecurrences(SENode* node) {
+  auto nodes = std::vector<SERecurrentNode*>{};
+  if (auto recurrent_node = node->AsSERecurrentNode()) {
+    nodes.push_back(recurrent_node);
+  }
+
+  if (auto add_node = node->AsSEAddNode()) {
+    for (auto child : add_node->GetChildren()) {
+      auto child_nodes = GetAllTopLevelRecurrences(child);
+      nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
+    }
+  }
+
+  return nodes;
+}
+
+// If |node| is an SEConstantNode then returns |node| or if |node| is an
+// SEAddNode returns a vector of SEConstantNode that are its children.
+std::vector<SEConstantNode*> GetAllTopLevelConstants(SENode* node) {
+  auto nodes = std::vector<SEConstantNode*>{};
+  if (auto recurrent_node = node->AsSEConstantNode()) {
+    nodes.push_back(recurrent_node);
+  }
+
+  if (auto add_node = node->AsSEAddNode()) {
+    for (auto child : add_node->GetChildren()) {
+      auto child_nodes = GetAllTopLevelConstants(child);
+      nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
+    }
+  }
+
+  return nodes;
+}
+
+bool AreOffsetsAndCoefficientsConstant(
+    const std::vector<SERecurrentNode*>& nodes) {
+  for (auto node : nodes) {
+    if (!node->GetOffset()->AsSEConstantNode() ||
+        !node->GetOffset()->AsSEConstantNode()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Fold all SEConstantNode that appear in |recurrences| and |constants| into a
+// single integer value.
+int64_t CalculateConstantTerm(const std::vector<SERecurrentNode*>& recurrences,
+                              const std::vector<SEConstantNode*>& constants) {
+  int64_t constant_term = 0;
+  for (auto recurrence : recurrences) {
+    constant_term +=
+        recurrence->GetOffset()->AsSEConstantNode()->FoldToSingleValue();
+  }
+
+  for (auto constant : constants) {
+    constant_term += constant->FoldToSingleValue();
+  }
+
+  return constant_term;
+}
+
+int64_t CalculateGCDFromCoefficients(
+    const std::vector<SERecurrentNode*>& recurrences, int64_t running_gcd) {
+  for (SERecurrentNode* recurrence : recurrences) {
+    auto coefficient = recurrence->GetCoefficient()->AsSEConstantNode();
+
+    running_gcd = GreatestCommonDivisor(
+        running_gcd, std::abs(coefficient->FoldToSingleValue()));
+  }
+
+  return running_gcd;
+}
+
+// Compare 2 fractions while first normalizing them, e.g. 2/4 and 4/8 will both
+// be simplified to 1/2 and then determined to be equal.
+bool NormalizeAndCompareFractions(int64_t numerator_0, int64_t denominator_0,
+                                  int64_t numerator_1, int64_t denominator_1) {
+  auto gcd_0 =
+      GreatestCommonDivisor(std::abs(numerator_0), std::abs(denominator_0));
+  auto gcd_1 =
+      GreatestCommonDivisor(std::abs(numerator_1), std::abs(denominator_1));
+
+  auto normalized_numerator_0 = numerator_0 / gcd_0;
+  auto normalized_denominator_0 = denominator_0 / gcd_0;
+  auto normalized_numerator_1 = numerator_1 / gcd_1;
+  auto normalized_denominator_1 = denominator_1 / gcd_1;
+
+  return normalized_numerator_0 == normalized_numerator_1 &&
+         normalized_denominator_0 == normalized_denominator_1;
+}
+
+}  // namespace
+
 bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
                                            const ir::Instruction* destination,
                                            DistanceVector* distance_vector) {
@@ -83,14 +234,14 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
     // Check the loops are in a form we support.
     auto subscript_pair = std::make_pair(source_node, destination_node);
 
-    const ir::Loop* loop = GetLoopForSubscriptPair(&subscript_pair);
+    const ir::Loop* loop = GetLoopForSubscriptPair(subscript_pair);
     if (loop) {
       if (!IsSupportedLoop(loop)) {
         PrintDebug(
             "GetDependence found an unsupported loop form. Assuming <=> for "
             "loop.");
         DistanceEntry* distance_entry =
-            GetDistanceEntryForSubscriptPair(&subscript_pair, distance_vector);
+            GetDistanceEntryForSubscriptPair(subscript_pair, distance_vector);
         if (distance_entry) {
           distance_entry->direction = DistanceEntry::Directions::ALL;
         }
@@ -107,7 +258,7 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
           "GetDependence found source_node || destination_node as "
           "CanNotCompute. Abandoning evaluation for this subscript.");
       DistanceEntry* distance_entry =
-          GetDistanceEntryForSubscriptPair(&subscript_pair, distance_vector);
+          GetDistanceEntryForSubscriptPair(subscript_pair, distance_vector);
       if (distance_entry) {
         distance_entry->direction = DistanceEntry::Directions::ALL;
       }
@@ -117,7 +268,7 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
     // We have no induction variables so can apply a ZIV test.
     if (IsZIV(subscript_pair)) {
       PrintDebug("Found a ZIV subscript pair");
-      if (ZIVTest(&subscript_pair)) {
+      if (ZIVTest(subscript_pair)) {
         PrintDebug("Proved independence with ZIVTest.");
         return true;
       }
@@ -126,7 +277,7 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
     // We have only one induction variable so should attempt an SIV test.
     if (IsSIV(subscript_pair)) {
       PrintDebug("Found a SIV subscript pair.");
-      if (SIVTest(&subscript_pair, distance_vector)) {
+      if (SIVTest(subscript_pair, distance_vector)) {
         PrintDebug("Proved independence with SIVTest.");
         return true;
       }
@@ -193,9 +344,9 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
 }
 
 bool LoopDependenceAnalysis::ZIVTest(
-    std::pair<SENode*, SENode*>* subscript_pair) {
-  auto source = std::get<0>(*subscript_pair);
-  auto destination = std::get<1>(*subscript_pair);
+    const std::pair<SENode*, SENode*>& subscript_pair) {
+  auto source = std::get<0>(subscript_pair);
+  auto destination = std::get<1>(subscript_pair);
 
   PrintDebug("Performing ZIVTest");
   // If source == destination, dependence with direction = and distance 0.
@@ -210,7 +361,7 @@ bool LoopDependenceAnalysis::ZIVTest(
 }
 
 bool LoopDependenceAnalysis::SIVTest(
-    std::pair<SENode*, SENode*>* subscript_pair,
+    const std::pair<SENode*, SENode*>& subscript_pair,
     DistanceVector* distance_vector) {
   DistanceEntry* distance_entry =
       GetDistanceEntryForSubscriptPair(subscript_pair, distance_vector);
@@ -219,8 +370,8 @@ bool LoopDependenceAnalysis::SIVTest(
         "SIVTest could not find a DistanceEntry for subscript_pair. Exiting");
   }
 
-  SENode* source_node = std::get<0>(*subscript_pair);
-  SENode* destination_node = std::get<1>(*subscript_pair);
+  SENode* source_node = std::get<0>(subscript_pair);
+  SENode* destination_node = std::get<1>(subscript_pair);
 
   int64_t source_induction_count = CountInductionVariables(source_node);
   int64_t destination_induction_count =
@@ -340,7 +491,7 @@ bool LoopDependenceAnalysis::StrongSIVTest(SENode* source, SENode* destination,
   // Build an SENode for distance.
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
-  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(&subscript_pair);
+  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
   SENode* source_constant_term =
       GetConstantTerm(subscript_loop, source->AsSERecurrentNode());
   SENode* destination_constant_term =
@@ -475,7 +626,7 @@ bool LoopDependenceAnalysis::SymbolicStrongSIVTest(
   // outwith the bounds.
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
-  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(&subscript_pair);
+  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
   if (IsProvablyOutsideOfLoopBounds(subscript_loop, source_destination_delta,
                                     coefficient)) {
     PrintDebug(
@@ -500,7 +651,7 @@ bool LoopDependenceAnalysis::WeakZeroSourceSIVTest(
   PrintDebug("Performing WeakZeroSourceSIVTest.");
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
-  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(&subscript_pair);
+  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
   // Build an SENode for distance.
   SENode* destination_constant_term =
       GetConstantTerm(subscript_loop, destination);
@@ -654,7 +805,7 @@ bool LoopDependenceAnalysis::WeakZeroDestinationSIVTest(
   // Build an SENode for distance.
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
-  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(&subscript_pair);
+  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
   SENode* source_constant_term = GetConstantTerm(subscript_loop, source);
   SENode* delta = scalar_evolution_.SimplifyExpression(
       scalar_evolution_.CreateSubtraction(destination, source_constant_term));
@@ -872,135 +1023,6 @@ bool LoopDependenceAnalysis::WeakCrossingSIVTest(
   return false;
 }
 
-// Calculate the greatest common divisor of a & b using Stein's algorithm.
-// https://en.wikipedia.org/wiki/Binary_GCD_algorithm
-int64_t GreatestCommonDivisor(int64_t a, int64_t b) {
-  // Simple cases
-  if (a == b) {
-    return a;
-  } else if (a == 0) {
-    return b;
-  } else if (b == 0) {
-    return a;
-  }
-
-  // Both even
-  if (a % 2 == 0 && b % 2 == 0) {
-    return 2 * GreatestCommonDivisor(a / 2, b / 2);
-  }
-
-  // Even a, odd b
-  if (a % 2 == 0 && b % 2 == 1) {
-    return GreatestCommonDivisor(a / 2, b);
-  }
-
-  // Odd a, even b
-  if (a % 2 == 1 && b % 2 == 0) {
-    return GreatestCommonDivisor(a, b / 2);
-  }
-
-  // Both odd, reduce the larger argument
-  if (a > b) {
-    return GreatestCommonDivisor((a - b) / 2, b);
-  } else {
-    return GreatestCommonDivisor((b - a) / 2, a);
-  }
-}
-
-// Check if node is affine, ie in the form: a0*i0 + a1*i1 + ... an*in + c
-// and contains only the following types of nodes: SERecurrentNode, SEAddNode
-// and SEConstantNode
-bool IsInCorrectFormForGCD(SENode* node) {
-  bool children_ok = true;
-
-  if (auto add_node = node->AsSEAddNode()) {
-    for (auto child : add_node->GetChildren()) {
-      children_ok = children_ok && IsInCorrectFormForGCD(child);
-    }
-  }
-
-  bool this_ok = node->AsSERecurrentNode() || node->AsSEAddNode() ||
-                 node->AsSEConstantNode();
-
-  return children_ok && this_ok;
-}
-
-// If |node| is an SERecurrentNode then returns |node| or if |node| is an
-// SEAddNode returns a vector of SERecurrentNode that are its children.
-std::vector<SERecurrentNode*> GetAllTopLevelRecurrences(SENode* node) {
-  auto nodes = std::vector<SERecurrentNode*>{};
-  if (auto recurrent_node = node->AsSERecurrentNode()) {
-    nodes.push_back(recurrent_node);
-  }
-
-  if (auto add_node = node->AsSEAddNode()) {
-    for (auto child : add_node->GetChildren()) {
-      auto child_nodes = GetAllTopLevelRecurrences(child);
-      nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
-    }
-  }
-
-  return nodes;
-}
-
-// If |node| is an SEConstantNode then returns |node| or if |node| is an
-// SEAddNode returns a vector of SEConstantNode that are its children.
-std::vector<SEConstantNode*> GetAllTopLevelConstants(SENode* node) {
-  auto nodes = std::vector<SEConstantNode*>{};
-  if (auto recurrent_node = node->AsSEConstantNode()) {
-    nodes.push_back(recurrent_node);
-  }
-
-  if (auto add_node = node->AsSEAddNode()) {
-    for (auto child : add_node->GetChildren()) {
-      auto child_nodes = GetAllTopLevelConstants(child);
-      nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
-    }
-  }
-
-  return nodes;
-}
-
-bool AreOffsetsAndCoefficientsConstant(
-    const std::vector<SERecurrentNode*>& nodes) {
-  for (auto node : nodes) {
-    if (!node->GetOffset()->AsSEConstantNode() ||
-        !node->GetOffset()->AsSEConstantNode()) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// Fold all SEConstantNode that appear in |recurrences| and |constants| into a
-// single integer value.
-int64_t CalculateConstantTerm(const std::vector<SERecurrentNode*>& recurrences,
-                              const std::vector<SEConstantNode*>& constants) {
-  int64_t constant_term = 0;
-  for (auto recurrence : recurrences) {
-    constant_term +=
-        recurrence->GetOffset()->AsSEConstantNode()->FoldToSingleValue();
-  }
-
-  for (auto constant : constants) {
-    constant_term += constant->FoldToSingleValue();
-  }
-
-  return constant_term;
-}
-
-int64_t CalculateGCDFromCoefficients(
-    const std::vector<SERecurrentNode*>& recurrences, int64_t running_gcd) {
-  for (SERecurrentNode* recurrence : recurrences) {
-    auto coefficient = recurrence->GetCoefficient()->AsSEConstantNode();
-
-    running_gcd = GreatestCommonDivisor(
-        running_gcd, std::abs(coefficient->FoldToSingleValue()));
-  }
-
-  return running_gcd;
-}
-
 // Perform the GCD test if both, the source and the destination nodes, are in
 // the form a0*i0 + a1*i1 + ... an*in + c.
 bool LoopDependenceAnalysis::GCDMIVTest(
@@ -1009,7 +1031,8 @@ bool LoopDependenceAnalysis::GCDMIVTest(
   auto destination = std::get<1>(subscript_pair);
 
   // Bail out if source/destination is in an unexpected form.
-  if (!IsInCorrectFormForGCD(source) || !IsInCorrectFormForGCD(destination)) {
+  if (!IsInCorrectFormForGCDTest(source) ||
+      !IsInCorrectFormForGCDTest(destination)) {
     return false;
   }
 
@@ -1111,28 +1134,6 @@ PartitionedSubscripts LoopDependenceAnalysis::PartitionSubscripts(
   return partitions;
 }
 
-bool IsConstant(const SENode* node) {
-  return node->AsSEConstantNode() != nullptr;
-}
-
-// Compare 2 fractions while first normalizing them, e.g. 2/4 and 4/8 will both
-// be simplified to 1/2 and then determined to be equal.
-bool NormalizeAndCompareFractions(int64_t numerator_0, int64_t denominator_0,
-                                  int64_t numerator_1, int64_t denominator_1) {
-  auto gcd_0 =
-      GreatestCommonDivisor(std::abs(numerator_0), std::abs(denominator_0));
-  auto gcd_1 =
-      GreatestCommonDivisor(std::abs(numerator_1), std::abs(denominator_1));
-
-  auto normalized_numerator_0 = numerator_0 / gcd_0;
-  auto normalized_denominator_0 = denominator_0 / gcd_0;
-  auto normalized_numerator_1 = numerator_1 / gcd_1;
-  auto normalized_denominator_1 = denominator_1 / gcd_1;
-
-  return normalized_numerator_0 == normalized_numerator_1 &&
-         normalized_denominator_0 == normalized_denominator_1;
-}
-
 std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
     std::shared_ptr<Constraint> constraint_0,
     std::shared_ptr<Constraint> constraint_1, const SENode* lower_bound,
@@ -1199,8 +1200,9 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
                       constraint_1->AsDependenceDistance()->GetDistance()))
             : constraint_1->AsDependenceLine()->GetC();
 
-    if (IsConstant(a0) && IsConstant(b0) && IsConstant(c0) && IsConstant(a1) &&
-        IsConstant(b1) && IsConstant(c1)) {
+    if (a0->AsSEConstantNode() && b0->AsSEConstantNode() &&
+        c0->AsSEConstantNode() && a1->AsSEConstantNode() &&
+        b1->AsSEConstantNode() && c1->AsSEConstantNode()) {
       auto constant_a0 = a0->AsSEConstantNode()->FoldToSingleValue();
       auto constant_b0 = b0->AsSEConstantNode()->FoldToSingleValue();
       auto constant_c0 = c0->AsSEConstantNode()->FoldToSingleValue();
@@ -1234,7 +1236,8 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
         // Lines are not parallel, therefore, they must intersect.
 
         // Calculate intersection.
-        if (IsConstant(upper_bound) && IsConstant(lower_bound)) {
+        if (upper_bound->AsSEConstantNode() &&
+            lower_bound->AsSEConstantNode()) {
           auto constant_lower_bound =
               lower_bound->AsSEConstantNode()->FoldToSingleValue();
           auto constant_upper_bound =
@@ -1321,8 +1324,9 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
     auto x = point->GetSource();
     auto y = point->GetDestination();
 
-    if (IsConstant(a) && IsConstant(b) && IsConstant(c) && IsConstant(x) &&
-        IsConstant(y)) {
+    if (a->AsSEConstantNode() && b->AsSEConstantNode() &&
+        c->AsSEConstantNode() && x->AsSEConstantNode() &&
+        y->AsSEConstantNode()) {
       auto constant_a = a->AsSEConstantNode()->FoldToSingleValue();
       auto constant_b = b->AsSEConstantNode()->FoldToSingleValue();
       auto constant_c = c->AsSEConstantNode()->FoldToSingleValue();
@@ -1444,11 +1448,10 @@ bool LoopDependenceAnalysis::DeltaTest(
 
     // Apply SIV test to all SIV subscripts, report independence if any of them
     // is independent
-    std::transform(std::begin(siv_subscripts), std::end(siv_subscripts),
-                   std::begin(current_distances), std::begin(results),
-                   [this](SubscriptPair& p, DistanceVector& d) {
-                     return SIVTest(&p, &d);
-                   });
+    std::transform(
+        std::begin(siv_subscripts), std::end(siv_subscripts),
+        std::begin(current_distances), std::begin(results),
+        [this](SubscriptPair& p, DistanceVector& d) { return SIVTest(p, &d); });
 
     if (std::accumulate(std::begin(results), std::end(results), false,
                         std::logical_or<bool>{})) {
@@ -1460,7 +1463,7 @@ bool LoopDependenceAnalysis::DeltaTest(
         all_new_constrants{};
 
     for (size_t i = 0; i < siv_subscripts.size(); ++i) {
-      auto loop = GetLoopForSubscriptPair(&siv_subscripts[i]);
+      auto loop = GetLoopForSubscriptPair(siv_subscripts[i]);
 
       auto loop_id =
           std::distance(std::begin(loops_),
@@ -1564,7 +1567,7 @@ bool LoopDependenceAnalysis::DeltaTest(
       // If a ZIV subscript is returned, apply test, otherwise, update untested
       // subscripts.
       for (auto& subscript : new_subscripts) {
-        if (IsZIV(subscript) && ZIVTest(&subscript)) {
+        if (IsZIV(subscript) && ZIVTest(subscript)) {
           return true;
         } else if (IsSIV(subscript)) {
           new_siv_subscripts.push_back(subscript);
