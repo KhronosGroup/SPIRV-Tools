@@ -73,8 +73,7 @@ class AggressiveDCEPass : public MemPass {
 
   // Add |inst| to worklist_ and live_insts_.
   void AddToWorklist(ir::Instruction* inst) {
-    if (!IsLive(inst)) {
-      live_insts_.Set(inst->unique_id());
+    if (!live_insts_.Set(inst->unique_id())) {
       worklist_.push(inst);
     }
   }

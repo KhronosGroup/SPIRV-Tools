@@ -53,6 +53,20 @@ TEST(BitVectorTest, Set) {
   }
 }
 
+TEST(BitVectorTest, SetReturnValue) {
+  BitVector bvec;
+
+  // Make sure |Set| returns false when the bit was not set.
+  for (int i = 3; i < 10000; i *= 2) {
+    EXPECT_FALSE(bvec.Set(i));
+  }
+
+  // Make sure |Set| returns true when the bit was already set.
+  for (int i = 3; i < 10000; i *= 2) {
+    EXPECT_TRUE(bvec.Set(i));
+  }
+}
+
 TEST(BitVectorTest, Clear) {
   BitVector bvec;
   for (int i = 3; i < 10000; i *= 2) {
@@ -75,6 +89,23 @@ TEST(BitVectorTest, Clear) {
   // Make sure all of the other bits that were set have been cleared.
   for (int i = 6; i < 10000; i *= 2) {
     EXPECT_FALSE(bvec.Get(i));
+  }
+}
+
+TEST(BitVectorTest, ClearReturnValue) {
+  BitVector bvec;
+  for (int i = 3; i < 10000; i *= 2) {
+    bvec.Set(i);
+  }
+
+  // Make sure |Clear| returns true if the bit was set.
+  for (int i = 3; i < 10000; i *= 2) {
+    EXPECT_TRUE(bvec.Clear(i));
+  }
+
+  // Make sure |Clear| returns false if the bit was not set.
+  for (int i = 3; i < 10000; i *= 2) {
+    EXPECT_FALSE(bvec.Clear(i));
   }
 }
 

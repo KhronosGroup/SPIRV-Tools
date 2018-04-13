@@ -35,8 +35,8 @@ class BitVector {
   // Creates a bit vector contianing 0s.
   BitVector() : bits_(kInitialNumBits / kBitContainerSize, 0) {}
 
-  // Sets the |i|th bit to 1.
-  void Set(uint32_t i) {
+  // Sets the |i|th bit to 1.  Returns the |i|th bit before it was set.
+  bool Set(uint32_t i) {
     uint32_t element_index = i / kBitContainerSize;
     uint32_t bit_in_element = i % kBitContainerSize;
 
@@ -44,18 +44,35 @@ class BitVector {
       bits_.resize(element_index + 1, 0);
     }
 
-    bits_[element_index] |= (static_cast<BitContainer>(1) << bit_in_element);
+    BitContainer original = bits_[element_index];
+    BitContainer ith_bit = static_cast<BitContainer>(1) << bit_in_element;
+
+    if ((original & ith_bit) != 0) {
+      return true;
+    } else {
+      bits_[element_index] = original | ith_bit;
+      return false;
+    }
   }
 
-  // Sets the |i|th bit to 0.
-  void Clear(uint32_t i) {
+  // Sets the |i|th bit to 0.  Return the |i|th bit before it was cleared.
+  bool Clear(uint32_t i) {
     uint32_t element_index = i / kBitContainerSize;
     uint32_t bit_in_element = i % kBitContainerSize;
 
     if (element_index >= bits_.size()) {
-      return;
+      return false;
     }
-    bits_[element_index] &= ~(static_cast<BitContainer>(1) << bit_in_element);
+
+    BitContainer original = bits_[element_index];
+    BitContainer ith_bit = static_cast<BitContainer>(1) << bit_in_element;
+
+    if ((original & ith_bit) == 0) {
+      return false;
+    } else {
+      bits_[element_index] = original & (~ith_bit);
+      return true;
+    }
   }
 
   // Returns the |i|th bit.
