@@ -492,7 +492,7 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceValue) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex("Block\\(s\\) \\{.\\[Main\\]} are referenced but not "
+      MatchesRegex("Block\\(s\\) \\{.\\[Main\\]\\} are referenced but not "
                    "defined in function .\\[Main\\]"))
       << str;
 }
@@ -613,7 +613,7 @@ TEST_P(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex("Block\\(s\\) \\{.\\[middle2\\]} are referenced but not "
+      MatchesRegex("Block\\(s\\) \\{.\\[middle2\\]\\} are referenced but not "
                    "defined in function .\\[Main\\]"));
 }
 
