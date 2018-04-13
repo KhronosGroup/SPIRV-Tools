@@ -26,20 +26,25 @@ namespace utils {
 //
 // All bits default to zero, and the upper bound is 2^32-1.
 class BitVector {
+ private:
+  using BitContainer = uint64_t;
+  enum { kBitContainerSize = 64 };
+  enum { kInitialNumBits = 1024 };
+
  public:
   // Creates a bit vector contianing 0s.
-  BitVector() : bits(1024 / kBitContainerSize, 0) {}
+  BitVector() : bits_(kInitialNumBits / kBitContainerSize, 0) {}
 
   // Sets the |i|th bit to 1.
   void Set(uint32_t i) {
     uint32_t element_index = i / kBitContainerSize;
     uint32_t bit_in_element = i % kBitContainerSize;
 
-    if (element_index >= bits.size()) {
-      bits.resize(element_index + 1, 0);
+    if (element_index >= bits_.size()) {
+      bits_.resize(element_index + 1, 0);
     }
 
-    bits[element_index] |= (static_cast<BitContainer>(1) << bit_in_element);
+    bits_[element_index] |= (static_cast<BitContainer>(1) << bit_in_element);
   }
 
   // Sets the |i|th bit to 0.
@@ -47,10 +52,10 @@ class BitVector {
     uint32_t element_index = i / kBitContainerSize;
     uint32_t bit_in_element = i % kBitContainerSize;
 
-    if (element_index >= bits.size()) {
+    if (element_index >= bits_.size()) {
       return;
     }
-    bits[element_index] &= ~(static_cast<BitContainer>(1) << bit_in_element);
+    bits_[element_index] &= ~(static_cast<BitContainer>(1) << bit_in_element);
   }
 
   // Returns the |i|th bit.
@@ -58,20 +63,20 @@ class BitVector {
     uint32_t element_index = i / kBitContainerSize;
     uint32_t bit_in_element = i % kBitContainerSize;
 
-    if (element_index >= bits.size()) {
+    if (element_index >= bits_.size()) {
       return false;
     }
 
-    return (bits[element_index] &
+    return (bits_[element_index] &
             (static_cast<BitContainer>(1) << bit_in_element)) != 0;
   }
 
+  // Print a report on the densicy of the bit vector, number of 1 bits, number
+  // of bytes, and average bytes for 1 bit, to |out|.
   void ReportDensity(std::ostream& out);
 
  private:
-  using BitContainer = uint64_t;
-  static const uint32_t kBitContainerSize = 64;
-  std::vector<BitContainer> bits;
+  std::vector<BitContainer> bits_;
 };
 
 }  // namespace utils

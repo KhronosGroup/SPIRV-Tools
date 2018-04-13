@@ -22,7 +22,7 @@ namespace utils {
 void BitVector::ReportDensity(std::ostream& out) {
   uint32_t count = 0;
 
-  for (BitContainer e : bits) {
+  for (BitContainer e : bits_) {
     while (e != 0) {
       if ((e & 1) != 0) {
         ++count;
@@ -32,9 +32,9 @@ void BitVector::ReportDensity(std::ostream& out) {
   }
 
   out << "count=" << count
-      << ", total size (bytes)=" << bits.size() * sizeof(BitContainer)
+      << ", total size (bytes)=" << bits_.size() * sizeof(BitContainer)
       << ", bytes per element="
-      << (double)(bits.size() * sizeof(BitContainer)) / (double)(count);
+      << (double)(bits_.size() * sizeof(BitContainer)) / (double)(count);
 }
 }  // namespace utils
 }  // namespace spvtools
