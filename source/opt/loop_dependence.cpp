@@ -1355,7 +1355,7 @@ Constraint* LoopDependenceAnalysis::IntersectConstraints(
 // Propagate constraints function as described in section 5 of Practical
 // Dependence Testing, Goff, Kennedy, Tseng, 1991.
 SubscriptPair LoopDependenceAnalysis::PropagateConstraints(
-    SubscriptPair& subscript_pair,
+    const SubscriptPair& subscript_pair,
     const std::vector<Constraint*>& constraints) {
   SENode* new_first = subscript_pair.first;
   SENode* new_second = subscript_pair.second;
@@ -1424,19 +1424,15 @@ bool LoopDependenceAnalysis::DeltaTest(
                 [this]() { return make_constraint<DependenceNone>(); });
 
   // Separate SIV and MIV subscripts
-  auto first_MIV = std::partition(
-      std::begin(coupled_subscripts), std::end(coupled_subscripts),
-      [this](const SubscriptPair& p) { return IsSIV(p); });
-
   std::vector<SubscriptPair> siv_subscripts{};
   std::vector<SubscriptPair> miv_subscripts{};
 
-  for (auto it = std::begin(coupled_subscripts); it < first_MIV; ++it) {
-    siv_subscripts.push_back(*it);
-  }
-
-  for (auto it = first_MIV; it < std::end(coupled_subscripts); ++it) {
-    miv_subscripts.push_back(*it);
+  for (const auto& subscript_pair : coupled_subscripts) {
+    if (IsSIV(subscript_pair)) {
+      siv_subscripts.push_back(subscript_pair);
+    } else {
+      miv_subscripts.push_back(subscript_pair);
+    }
   }
 
   // Delta Test
