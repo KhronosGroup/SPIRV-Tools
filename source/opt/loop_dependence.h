@@ -299,7 +299,8 @@ class LoopDependenceAnalysis {
       : context_(context),
         loops_(loops),
         scalar_evolution_(context),
-        debug_stream_(nullptr) {}
+        debug_stream_(nullptr),
+        constraints_{} {}
 
   // Finds the dependence between |source| and |destination|.
   // |source| should be an OpLoad.
@@ -376,6 +377,15 @@ class LoopDependenceAnalysis {
   // Returns the ScalarEvolutionAnalysis used by this analysis.
   ScalarEvolutionAnalysis* GetScalarEvolution() { return &scalar_evolution_; }
 
+  // Creates a new constraint of type |T| and returns the pointer to it.
+  template <typename T, typename... Args>
+  Constraint* make_constraint(Args&&... args) {
+    constraints_.push_back(
+        std::unique_ptr<Constraint>(new T(std::forward<Args>(args)...)));
+
+    return constraints_.back().get();
+  }
+
   // Subscript partitioning as described in Figure 1 of 'Practical Dependence
   // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
   // Partitions the subscripts into independent subscripts and minimally coupled
@@ -410,21 +420,22 @@ class LoopDependenceAnalysis {
 
   // Delta test as described in Figure 3 of 'Practical Dependence
   // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
-  bool DeltaTest(std::vector<std::pair<SENode*, SENode*>>& coupled_subscripts,
-                 DistanceVector* dv_entry);
+  bool DeltaTest(
+      const std::vector<std::pair<SENode*, SENode*>>& coupled_subscripts,
+      DistanceVector* dv_entry);
 
   // Constraint propagation as described in Figure 5 of 'Practical Dependence
   // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
   std::pair<SENode*, SENode*> PropagateConstraints(
-      std::pair<SENode*, SENode*>& subscript_pair,
-      const std::list<std::shared_ptr<Constraint>>& constraints);
+      const std::pair<SENode*, SENode*>& subscript_pair,
+      const std::vector<Constraint*>& constraints);
 
   // Constraint intersection as described in Figure 4 of 'Practical Dependence
   // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
-  std::shared_ptr<Constraint> IntersectConstraints(
-      std::shared_ptr<Constraint> constraint_0,
-      std::shared_ptr<Constraint> constraint_1, const SENode* lower_bound,
-      const SENode* upper_bound);
+  Constraint* IntersectConstraints(Constraint* constraint_0,
+                                   Constraint* constraint_1,
+                                   const SENode* lower_bound,
+                                   const SENode* upper_bound);
 
   // Returns true if each loop in |loops| is in a form supported by this
   // analysis.
@@ -449,6 +460,9 @@ class LoopDependenceAnalysis {
 
   // The ostream debug information for the analysis to print to.
   std::ostream* debug_stream_;
+
+  // Stores all the constraints created by the analysis.
+  std::list<std::unique_ptr<Constraint>> constraints_;
 
   // Returns true if independence can be proven and false if it can't be proven.
   bool ZIVTest(const std::pair<SENode*, SENode*>& subscript_pair);

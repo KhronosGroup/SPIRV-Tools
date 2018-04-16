@@ -3641,10 +3641,10 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
   auto scalar_evolution = analysis.GetScalarEvolution();
   {
     // One is none. Other should be returned
-    auto none = std::make_shared<opt::DependenceNone>();
+    auto none = analysis.make_constraint<opt::DependenceNone>();
     auto x = scalar_evolution->CreateConstant(1);
     auto y = scalar_evolution->CreateConstant(10);
-    auto point = std::make_shared<opt::DependencePoint>(x, y, nullptr);
+    auto point = analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
 
     auto ret_0 = analysis.IntersectConstraints(none, point, nullptr, nullptr);
 
@@ -3666,8 +3666,10 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto x = scalar_evolution->CreateConstant(1);
     auto y = scalar_evolution->CreateConstant(10);
 
-    auto distance_0 = std::make_shared<opt::DependenceDistance>(x, nullptr);
-    auto distance_1 = std::make_shared<opt::DependenceDistance>(y, nullptr);
+    auto distance_0 =
+        analysis.make_constraint<opt::DependenceDistance>(x, nullptr);
+    auto distance_1 =
+        analysis.make_constraint<opt::DependenceDistance>(y, nullptr);
 
     // Equal distances
     auto ret_0 =
@@ -3688,9 +3690,12 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto x = scalar_evolution->CreateConstant(1);
     auto y = scalar_evolution->CreateConstant(10);
 
-    auto point_0 = std::make_shared<opt::DependencePoint>(x, y, nullptr);
-    auto point_1 = std::make_shared<opt::DependencePoint>(x, y, nullptr);
-    auto point_2 = std::make_shared<opt::DependencePoint>(y, y, nullptr);
+    auto point_0 =
+        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
+    auto point_1 =
+        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
+    auto point_2 =
+        analysis.make_constraint<opt::DependencePoint>(y, y, nullptr);
 
     // Equal points
     auto ret_0 =
@@ -3716,8 +3721,10 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto b1 = scalar_evolution->CreateConstant(12);
     auto c1 = scalar_evolution->CreateConstant(18);
 
-    auto line_0 = std::make_shared<opt::DependenceLine>(a0, b0, c0, nullptr);
-    auto line_1 = std::make_shared<opt::DependenceLine>(a1, b1, c1, nullptr);
+    auto line_0 =
+        analysis.make_constraint<opt::DependenceLine>(a0, b0, c0, nullptr);
+    auto line_1 =
+        analysis.make_constraint<opt::DependenceLine>(a1, b1, c1, nullptr);
 
     // Same line, both ways
     auto ret_0 =
@@ -3733,7 +3740,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
 
     // Non-intersecting parallel lines
     auto c2 = scalar_evolution->CreateConstant(12);
-    auto line_2 = std::make_shared<opt::DependenceLine>(a1, b1, c2, nullptr);
+    auto line_2 =
+        analysis.make_constraint<opt::DependenceLine>(a1, b1, c2, nullptr);
 
     auto ret_2 =
         analysis.IntersectConstraints(line_0, line_2, nullptr, nullptr);
@@ -3744,7 +3752,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     EXPECT_NE(nullptr, ret_3->AsDependenceEmpty());
 
     auto c3 = scalar_evolution->CreateConstant(20);
-    auto line_3 = std::make_shared<opt::DependenceLine>(a1, b1, c3, nullptr);
+    auto line_3 =
+        analysis.make_constraint<opt::DependenceLine>(a1, b1, c3, nullptr);
 
     auto ret_4 =
         analysis.IntersectConstraints(line_0, line_3, nullptr, nullptr);
@@ -3760,10 +3769,10 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto unknown = scalar_evolution->CreateCantComputeNode();
     auto constant = scalar_evolution->CreateConstant(10);
 
-    auto line_0 = std::make_shared<opt::DependenceLine>(constant, constant,
-                                                        constant, nullptr);
-    auto line_1 = std::make_shared<opt::DependenceLine>(unknown, unknown,
-                                                        unknown, nullptr);
+    auto line_0 = analysis.make_constraint<opt::DependenceLine>(
+        constant, constant, constant, nullptr);
+    auto line_1 = analysis.make_constraint<opt::DependenceLine>(
+        unknown, unknown, unknown, nullptr);
 
     auto ret_0 =
         analysis.IntersectConstraints(line_0, line_1, nullptr, nullptr);
@@ -3786,8 +3795,10 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto b1 = scalar_evolution->CreateConstant(2);
     auto c1 = scalar_evolution->CreateConstant(2);
 
-    auto line_0 = std::make_shared<opt::DependenceLine>(a0, b0, c0, nullptr);
-    auto line_1 = std::make_shared<opt::DependenceLine>(a1, b1, c1, nullptr);
+    auto line_0 =
+        analysis.make_constraint<opt::DependenceLine>(a0, b0, c0, nullptr);
+    auto line_1 =
+        analysis.make_constraint<opt::DependenceLine>(a1, b1, c1, nullptr);
 
     // Intersecting lines, has integer solution, in bounds
     auto ret_0 =
@@ -3826,8 +3837,10 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto b3 = scalar_evolution->CreateConstant(1);
     auto c3 = scalar_evolution->CreateConstant(4);
 
-    auto line_2 = std::make_shared<opt::DependenceLine>(a2, b2, c2, nullptr);
-    auto line_3 = std::make_shared<opt::DependenceLine>(a3, b3, c3, nullptr);
+    auto line_2 =
+        analysis.make_constraint<opt::DependenceLine>(a2, b2, c2, nullptr);
+    auto line_3 =
+        analysis.make_constraint<opt::DependenceLine>(a3, b3, c3, nullptr);
 
     // Intersecting, no integer solution
     auto ret_4 =
@@ -3857,29 +3870,27 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto constant_2 = scalar_evolution->CreateConstant(2);
     auto constant_neg_2 = scalar_evolution->CreateConstant(-2);
 
-    auto point_0_0 =
-        std::make_shared<opt::DependencePoint>(constant_0, constant_0, nullptr);
-    auto point_0_1 =
-        std::make_shared<opt::DependencePoint>(constant_0, constant_1, nullptr);
-    auto point_1_0 =
-        std::make_shared<opt::DependencePoint>(constant_1, constant_0, nullptr);
-    auto point_1_1 =
-        std::make_shared<opt::DependencePoint>(constant_1, constant_1, nullptr);
-    auto point_1_2 =
-        std::make_shared<opt::DependencePoint>(constant_1, constant_2, nullptr);
-    auto point_1_neg_1 = std::make_shared<opt::DependencePoint>(
+    auto point_0_0 = analysis.make_constraint<opt::DependencePoint>(
+        constant_0, constant_0, nullptr);
+    auto point_0_1 = analysis.make_constraint<opt::DependencePoint>(
+        constant_0, constant_1, nullptr);
+    auto point_1_0 = analysis.make_constraint<opt::DependencePoint>(
+        constant_1, constant_0, nullptr);
+    auto point_1_1 = analysis.make_constraint<opt::DependencePoint>(
+        constant_1, constant_1, nullptr);
+    auto point_1_2 = analysis.make_constraint<opt::DependencePoint>(
+        constant_1, constant_2, nullptr);
+    auto point_1_neg_1 = analysis.make_constraint<opt::DependencePoint>(
         constant_1, constant_neg_1, nullptr);
-    auto point_neg_1_1 = std::make_shared<opt::DependencePoint>(
+    auto point_neg_1_1 = analysis.make_constraint<opt::DependencePoint>(
         constant_neg_1, constant_1, nullptr);
 
-    auto line_y_0 = std::make_shared<opt::DependenceLine>(
+    auto line_y_0 = analysis.make_constraint<opt::DependenceLine>(
         constant_0, constant_1, constant_0, nullptr);
-    auto line_y_1 = std::make_shared<opt::DependenceLine>(
+    auto line_y_1 = analysis.make_constraint<opt::DependenceLine>(
         constant_0, constant_1, constant_1, nullptr);
-    auto line_y_2 = std::make_shared<opt::DependenceLine>(
+    auto line_y_2 = analysis.make_constraint<opt::DependenceLine>(
         constant_0, constant_1, constant_2, nullptr);
-    auto line_2y_2 = std::make_shared<opt::DependenceLine>(
-        constant_2, constant_1, constant_2, nullptr);
 
     // Parallel horizontal lines, y = 0 & y = 1, should return no intersection
     auto ret =
@@ -3905,15 +3916,15 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
 
     EXPECT_NE(nullptr, ret_y_same_1->AsDependenceLine());
 
-    auto line_x_0 = std::make_shared<opt::DependenceLine>(
+    auto line_x_0 = analysis.make_constraint<opt::DependenceLine>(
         constant_1, constant_0, constant_0, nullptr);
-    auto line_x_1 = std::make_shared<opt::DependenceLine>(
+    auto line_x_1 = analysis.make_constraint<opt::DependenceLine>(
         constant_1, constant_0, constant_1, nullptr);
-    auto line_x_2 = std::make_shared<opt::DependenceLine>(
+    auto line_x_2 = analysis.make_constraint<opt::DependenceLine>(
         constant_1, constant_0, constant_2, nullptr);
-    auto line_2x_1 = std::make_shared<opt::DependenceLine>(
+    auto line_2x_1 = analysis.make_constraint<opt::DependenceLine>(
         constant_2, constant_0, constant_1, nullptr);
-    auto line_2x_2 = std::make_shared<opt::DependenceLine>(
+    auto line_2x_2 = analysis.make_constraint<opt::DependenceLine>(
         constant_2, constant_0, constant_2, nullptr);
 
     // Parallel vertical lines, x = 0 & x = 1, should return no intersection
@@ -3992,9 +4003,9 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     EXPECT_NE(nullptr, ret_point_1_2);
     EXPECT_EQ(*point_1_2, *ret_point_1_2);
 
-    auto line_x_y_0 = std::make_shared<opt::DependenceLine>(
+    auto line_x_y_0 = analysis.make_constraint<opt::DependenceLine>(
         constant_1, constant_1, constant_0, nullptr);
-    auto line_x_y_1 = std::make_shared<opt::DependenceLine>(
+    auto line_x_y_1 = analysis.make_constraint<opt::DependenceLine>(
         constant_1, constant_1, constant_1, nullptr);
 
     // x+y=0 & x=0, intersect (0, 0)
@@ -4116,12 +4127,13 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto b = scalar_evolution->CreateConstant(10);
     auto c = scalar_evolution->CreateConstant(16);
 
-    auto line = std::make_shared<opt::DependenceLine>(a, b, c, nullptr);
+    auto line = analysis.make_constraint<opt::DependenceLine>(a, b, c, nullptr);
 
     // Point on line
     auto x = scalar_evolution->CreateConstant(2);
     auto y = scalar_evolution->CreateConstant(1);
-    auto point_0 = std::make_shared<opt::DependencePoint>(x, y, nullptr);
+    auto point_0 =
+        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
 
     auto ret_0 = analysis.IntersectConstraints(line, point_0, nullptr, nullptr);
     auto ret_1 = analysis.IntersectConstraints(point_0, line, nullptr, nullptr);
@@ -4138,7 +4150,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     EXPECT_EQ(*y, *ret_point_1->GetDestination());
 
     // Point not on line
-    auto point_1 = std::make_shared<opt::DependencePoint>(a, a, nullptr);
+    auto point_1 =
+        analysis.make_constraint<opt::DependencePoint>(a, a, nullptr);
 
     auto ret_2 = analysis.IntersectConstraints(line, point_1, nullptr, nullptr);
     auto ret_3 = analysis.IntersectConstraints(point_1, line, nullptr, nullptr);
@@ -4149,7 +4162,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     // Non-constant
     auto unknown = scalar_evolution->CreateCantComputeNode();
 
-    auto point_2 = std::make_shared<opt::DependencePoint>(unknown, x, nullptr);
+    auto point_2 =
+        analysis.make_constraint<opt::DependencePoint>(unknown, x, nullptr);
 
     auto ret_4 = analysis.IntersectConstraints(line, point_2, nullptr, nullptr);
     auto ret_5 = analysis.IntersectConstraints(point_2, line, nullptr, nullptr);
@@ -4161,11 +4175,13 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
   {
     // Distance and point
     auto d = scalar_evolution->CreateConstant(5);
-    auto distance = std::make_shared<opt::DependenceDistance>(d, nullptr);
+    auto distance =
+        analysis.make_constraint<opt::DependenceDistance>(d, nullptr);
 
     // Point on line
     auto x = scalar_evolution->CreateConstant(10);
-    auto point_0 = std::make_shared<opt::DependencePoint>(d, x, nullptr);
+    auto point_0 =
+        analysis.make_constraint<opt::DependencePoint>(d, x, nullptr);
 
     auto ret_0 =
         analysis.IntersectConstraints(distance, point_0, nullptr, nullptr);
@@ -4178,7 +4194,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     ASSERT_NE(nullptr, ret_point_1);
 
     // Point not on line
-    auto point_1 = std::make_shared<opt::DependencePoint>(x, x, nullptr);
+    auto point_1 =
+        analysis.make_constraint<opt::DependencePoint>(x, x, nullptr);
 
     auto ret_2 =
         analysis.IntersectConstraints(distance, point_1, nullptr, nullptr);
@@ -4191,7 +4208,7 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     // Non-constant
     auto unknown = scalar_evolution->CreateCantComputeNode();
     auto unknown_distance =
-        std::make_shared<opt::DependenceDistance>(unknown, nullptr);
+        analysis.make_constraint<opt::DependenceDistance>(unknown, nullptr);
 
     auto ret_4 = analysis.IntersectConstraints(unknown_distance, point_1,
                                                nullptr, nullptr);

@@ -14,7 +14,7 @@
 
 #include "opt/loop_dependence.h"
 
-#include <list>
+#include <functional>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -1134,10 +1134,9 @@ PartitionedSubscripts LoopDependenceAnalysis::PartitionSubscripts(
   return partitions;
 }
 
-std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
-    std::shared_ptr<Constraint> constraint_0,
-    std::shared_ptr<Constraint> constraint_1, const SENode* lower_bound,
-    const SENode* upper_bound) {
+Constraint* LoopDependenceAnalysis::IntersectConstraints(
+    Constraint* constraint_0, Constraint* constraint_1,
+    const SENode* lower_bound, const SENode* upper_bound) {
   if (constraint_0->AsDependenceNone()) {
     return constraint_1;
   } else if (constraint_1->AsDependenceNone()) {
@@ -1153,7 +1152,7 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
     if (*dist_0->GetDistance() == *dist_1->GetDistance()) {
       return constraint_0;
     } else {
-      return std::make_shared<DependenceEmpty>();
+      return make_constraint<DependenceEmpty>();
     }
   }
 
@@ -1166,7 +1165,7 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
         *point_0->GetDestination() == *point_1->GetDestination()) {
       return constraint_0;
     } else {
-      return std::make_shared<DependenceEmpty>();
+      return make_constraint<DependenceEmpty>();
     }
   }
 
@@ -1222,14 +1221,14 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
             return constraint_0;
           }
 
-          return std::make_shared<DependenceEmpty>();
+          return make_constraint<DependenceEmpty>();
         } else if (NormalizeAndCompareFractions(constant_c0, constant_b0,
                                                 constant_c1, constant_b1)) {
           // Same line.
           return constraint_0;
         } else {
           // Parallel lines can't intersect, report independence.
-          return std::make_shared<DependenceEmpty>();
+          return make_constraint<DependenceEmpty>();
         }
 
       } else {
@@ -1273,24 +1272,24 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
                   y_coord &&  // y_coord is within loop bounds.
               y_coord <= constant_upper_bound) {
             // Lines intersect at integer coordinates.
-            return std::make_shared<DependencePoint>(
+            return make_constraint<DependencePoint>(
                 scalar_evolution_.CreateConstant(x_coord),
                 scalar_evolution_.CreateConstant(y_coord),
                 constraint_0->GetLoop());
 
           } else {
-            return std::make_shared<DependenceEmpty>();
+            return make_constraint<DependenceEmpty>();
           }
 
         } else {
           // Not constants, bail out.
-          return std::make_shared<DependenceNone>();
+          return make_constraint<DependenceNone>();
         }
       }
 
     } else {
       // Not constants, bail out.
-      return std::make_shared<DependenceNone>();
+      return make_constraint<DependenceNone>();
     }
   }
 
@@ -1341,12 +1340,12 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
         return point_0 ? constraint_0 : constraint_1;
       } else {
         // Point not on line, report independence (empty constraint).
-        return std::make_shared<DependenceEmpty>();
+        return make_constraint<DependenceEmpty>();
       }
 
     } else {
       // Not constants, bail out.
-      return std::make_shared<DependenceNone>();
+      return make_constraint<DependenceNone>();
     }
   }
 
@@ -1357,7 +1356,7 @@ std::shared_ptr<Constraint> LoopDependenceAnalysis::IntersectConstraints(
 // Dependence Testing, Goff, Kennedy, Tseng, 1991.
 SubscriptPair LoopDependenceAnalysis::PropagateConstraints(
     SubscriptPair& subscript_pair,
-    const std::list<std::shared_ptr<Constraint>>& constraints) {
+    const std::vector<Constraint*>& constraints) {
   SENode* new_first = subscript_pair.first;
   SENode* new_second = subscript_pair.second;
 
@@ -1415,13 +1414,14 @@ SubscriptPair LoopDependenceAnalysis::PropagateConstraints(
 }
 
 bool LoopDependenceAnalysis::DeltaTest(
-    std::vector<SubscriptPair>& coupled_subscripts, DistanceVector* dv_entry) {
-  std::list<std::shared_ptr<Constraint>> constraints(loops_.size());
+    const std::vector<SubscriptPair>& coupled_subscripts,
+    DistanceVector* dv_entry) {
+  std::vector<Constraint*> constraints(loops_.size());
 
   std::vector<bool> loop_appeared(loops_.size());
 
   std::generate(std::begin(constraints), std::end(constraints),
-                []() { return std::make_shared<DependenceNone>(); });
+                [this]() { return make_constraint<DependenceNone>(); });
 
   // Separate SIV and MIV subscripts
   auto first_MIV = std::partition(
@@ -1459,8 +1459,7 @@ bool LoopDependenceAnalysis::DeltaTest(
     }
 
     // Derive new constraint vector.
-    std::list<std::pair<std::shared_ptr<Constraint>, size_t>>
-        all_new_constrants{};
+    std::vector<std::pair<Constraint*, size_t>> all_new_constrants{};
 
     for (size_t i = 0; i < siv_subscripts.size(); ++i) {
       auto loop = GetLoopForSubscriptPair(siv_subscripts[i]);
@@ -1478,7 +1477,7 @@ bool LoopDependenceAnalysis::DeltaTest(
         auto node = scalar_evolution_.CreateConstant(distance_entry.distance);
 
         all_new_constrants.push_back(
-            {std::make_shared<DependenceDistance>(node, loop), loop_id});
+            {make_constraint<DependenceDistance>(node, loop), loop_id});
       } else {
         // Construct a DependenceLine.
         const auto& subscript_pair = siv_subscripts[i];
@@ -1517,26 +1516,24 @@ bool LoopDependenceAnalysis::DeltaTest(
         c = scalar_evolution_.SimplifyExpression(c);
 
         all_new_constrants.push_back(
-            {std::make_shared<DependenceLine>(a, b, c, loop), loop_id});
+            {make_constraint<DependenceLine>(a, b, c, loop), loop_id});
       }
     }
 
     // Calculate the intersection between the new and existing constraints.
-    std::list<std::shared_ptr<Constraint>> intersection = constraints;
+    std::vector<Constraint*> intersection = constraints;
     for (const auto& constraint_to_intersect : all_new_constrants) {
       auto loop_id = std::get<1>(constraint_to_intersect);
       auto loop = loops_[loop_id];
-      auto inters = std::begin(intersection);
-      std::advance(inters, loop_id);
-      *inters =
-          IntersectConstraints(*inters, std::get<0>(constraint_to_intersect),
-                               GetLowerBound(loop), GetUpperBound(loop));
+      intersection[loop_id] = IntersectConstraints(
+          intersection[loop_id], std::get<0>(constraint_to_intersect),
+          GetLowerBound(loop), GetUpperBound(loop));
     }
 
     // Report independence if an empty constraint (DependenceEmpty) is found.
     auto first_empty =
         std::find_if(std::begin(intersection), std::end(intersection),
-                     [](std::shared_ptr<Constraint> constraint) {
+                     [](Constraint* constraint) {
                        return constraint->AsDependenceEmpty() != nullptr;
                      });
     if (first_empty != std::end(intersection)) {
@@ -1548,8 +1545,7 @@ bool LoopDependenceAnalysis::DeltaTest(
     auto equal =
         std::equal(std::begin(constraints), std::end(constraints),
                    std::begin(intersection),
-                   [](std::shared_ptr<Constraint> a,
-                      std::shared_ptr<Constraint> b) { return *a == *b; });
+                   [](Constraint* a, Constraint* b) { return *a == *b; });
 
     // If any constraints have changed, propagate them into the rest of the
     // subscripts possibly creating new ZIV/SIV subscripts.
@@ -1587,9 +1583,7 @@ bool LoopDependenceAnalysis::DeltaTest(
   for (size_t i = 0; i < loops_.size(); ++i) {
     // Don't touch entries for loops that weren't tested.
     if (loop_appeared[i]) {
-      auto iter = std::begin(constraints);
-      std::advance(iter, i);
-      auto current_constraint = *iter;
+      auto current_constraint = constraints[i];
       auto& current_distance_entry = (*dv_entry).GetEntries()[i];
 
       if (auto dependence_distance =
