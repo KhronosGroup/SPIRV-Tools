@@ -1042,6 +1042,167 @@ OpFunctionEnd
   EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
 }
 
+TEST_F(CommonUniformElimTest, IteratorDanglingPointer) {
+  // Note: This test exemplifies the following:
+  // - Existing common uniform (%_) load kept in place and shared
+  //
+  // #version 140
+  // in vec4 BaseColor;
+  // in float fi;
+  //
+  // layout(std140) uniform U_t
+  // {
+  //     bool g_B;
+  //     float g_F;
+  // } ;
+  //
+  // uniform float alpha;
+  // uniform bool alpha_B;
+  //
+  // void main()
+  // {
+  //     vec4 v = BaseColor;
+  //     if (g_B) {
+  //       v = v * g_F;
+  //       if (alpha_B)
+  //         v = v * alpha;
+  //       else
+  //         v = v * fi;
+  //     }
+  //     gl_FragColor = v;
+  // }
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor %fi
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %U_t "U_t"
+OpMemberName %U_t 0 "g_B"
+OpMemberName %U_t 1 "g_F"
+OpName %alpha "alpha"
+OpName %alpha_B "alpha_B"
+OpName %_ ""
+OpName %gl_FragColor "gl_FragColor"
+OpName %fi "fi"
+OpMemberDecorate %U_t 0 Offset 0
+OpMemberDecorate %U_t 1 Offset 4
+OpDecorate %U_t Block
+OpDecorate %_ DescriptorSet 0
+%void = OpTypeVoid
+%12 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%uint = OpTypeInt 32 0
+%U_t = OpTypeStruct %uint %float
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+%_ = OpVariable %_ptr_Uniform_U_t Uniform
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%bool = OpTypeBool
+%uint_0 = OpConstant %uint 0
+%int_1 = OpConstant %int 1
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_float = OpTypePointer Input %float
+%fi = OpVariable %_ptr_Input_float Input
+%alpha = OpVariable %_ptr_Uniform_float Uniform
+%alpha_B = OpVariable %_ptr_Uniform_uint Uniform
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %12
+%26 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%27 = OpLoad %v4float %BaseColor
+OpStore %v %27
+%28 = OpAccessChain %_ptr_Uniform_uint %_ %int_0
+%29 = OpLoad %uint %28
+%30 = OpINotEqual %bool %29 %uint_0
+OpSelectionMerge %31 None
+OpBranchConditional %30 %31 %32
+%31 = OpLabel
+%33 = OpAccessChain %_ptr_Uniform_float %_ %int_1
+%34 = OpLoad %float %33
+%35 = OpLoad %v4float %v
+%36 = OpVectorTimesScalar %v4float %35 %34
+OpStore %v %36
+%37 = OpLoad %uint %alpha_B
+%38 = OpIEqual %bool %37 %uint_0
+OpSelectionMerge %43 None
+OpBranchConditional %38 %43 %39
+%39 = OpLabel
+%40 = OpLoad %float %alpha
+%41 = OpLoad %v4float %v
+%42 = OpVectorTimesScalar %v4float %41 %40
+OpStore %v %42
+OpBranch %32
+%43 = OpLabel
+%44 = OpLoad %float %fi
+%45 = OpLoad %v4float %v
+%46 = OpVectorTimesScalar %v4float %45 %44
+OpStore %v %46
+OpBranch %32
+%32 = OpLabel
+%47 = OpLoad %v4float %v
+OpStore %gl_FragColor %47
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %12
+%28 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%29 = OpLoad %v4float %BaseColor
+OpStore %v %29
+%50 = OpLoad %U_t %_
+%51 = OpCompositeExtract %uint %50 0
+%32 = OpINotEqual %bool %51 %uint_0
+OpSelectionMerge %33 None
+OpBranchConditional %32 %33 %34
+%33 = OpLabel
+%54 = OpLoad %float %alpha
+%53 = OpCompositeExtract %float %50 1
+%37 = OpLoad %v4float %v
+%38 = OpVectorTimesScalar %v4float %37 %53
+OpStore %v %38
+%39 = OpLoad %uint %alpha_B
+%40 = OpIEqual %bool %39 %uint_0
+OpSelectionMerge %41 None
+OpBranchConditional %40 %41 %42
+%42 = OpLabel
+%44 = OpLoad %v4float %v
+%45 = OpVectorTimesScalar %v4float %44 %54
+OpStore %v %45
+OpBranch %34
+%41 = OpLabel
+%46 = OpLoad %float %fi
+%47 = OpLoad %v4float %v
+%48 = OpVectorTimesScalar %v4float %47 %46
+OpStore %v %48
+OpBranch %34
+%34 = OpLabel
+%49 = OpLoad %v4float %v
+OpStore %gl_FragColor %49
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
+      predefs + before, predefs + after, true, true);
+}
+
 #ifdef SPIRV_EFFCEE
 TEST_F(CommonUniformElimTest, MixedConstantAndNonConstantIndexes) {
   const std::string text = R"(
