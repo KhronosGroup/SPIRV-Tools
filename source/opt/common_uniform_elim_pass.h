@@ -170,6 +170,20 @@ class CommonUniformElimPass : public Pass {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
 
+  // Return true if |inst| is an instruction that loads uniform variable and
+  // can be replaced with other uniform load instruction.
+  bool IsUniformLoadToBeRemoved(ir::Instruction* inst) {
+    if (inst->opcode() == SpvOpLoad) {
+      uint32_t varId;
+      ir::Instruction* ptrInst = GetPtr(inst, &varId);
+      if (ptrInst->opcode() == SpvOpVariable && IsUniformVar(varId) &&
+          !IsSamplerOrImageVar(varId) &&
+          !HasUnsupportedDecorates(inst->result_id()) && !IsVolatileLoad(*inst))
+        return true;
+    }
+    return false;
+  }
+
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
