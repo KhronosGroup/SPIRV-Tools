@@ -363,8 +363,10 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
       if (inst->opcode() == SpvOpLoad) {
         uint32_t varId;
         ir::Instruction* ptrInst = GetPtr(inst, &varId);
-        if (ptrInst->opcode() != SpvOpVariable || !IsUniformVar(varId) || IsSamplerOrImageVar(varId) || HasUnsupportedDecorates(inst->result_id()) || IsVolatileLoad(*inst))
-        insertItr = inst;
+        if (ptrInst->opcode() != SpvOpVariable || !IsUniformVar(varId) ||
+            IsSamplerOrImageVar(varId) ||
+            HasUnsupportedDecorates(inst->result_id()) || IsVolatileLoad(*inst))
+          insertItr = inst;
       } else {
         insertItr = inst;
       }
