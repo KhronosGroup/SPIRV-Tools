@@ -374,9 +374,6 @@ class BuiltInsValidator {
   // instruction.
   void Update(const Instruction& inst);
 
-  // Traverses call tree and computes function_to_entry_points_.
-  void ComputeFunctionToEntryPointMapping();
-
   const ValidationState_t& _;
 
   // Mapping id -> list of rules which validate instruction referencing the
@@ -395,10 +392,6 @@ class BuiltInsValidator {
   const std::vector<uint32_t> no_entry_points;
   const std::vector<uint32_t>* entry_points_ = &no_entry_points;
 
-  // Mapping function -> array of entry points inside this
-  // module which can (indirectly) call the function.
-  std::unordered_map<uint32_t, std::vector<uint32_t>> function_to_entry_points_;
-
   // Execution models with which the current function can be called.
   std::set<SpvExecutionModel> execution_models_;
 };
@@ -410,17 +403,12 @@ void BuiltInsValidator::Update(const Instruction& inst) {
     assert(function_id_ == 0);
     function_id_ = inst.id();
     execution_models_.clear();
-    const auto it = function_to_entry_points_.find(function_id_);
-    if (it == function_to_entry_points_.end()) {
-      entry_points_ = &no_entry_points;
-    } else {
-      entry_points_ = &it->second;
-      // Collect execution models from all entry points from which the current
-      // function can be called.
-      for (const uint32_t entry_point : *entry_points_) {
-        if (const auto* models = _.GetExecutionModels(entry_point)) {
-          execution_models_.insert(models->begin(), models->end());
-        }
+    entry_points_ = &_.FunctionEntryPoints(function_id_);
+    // Collect execution models from all entry points from which the current
+    // function can be called.
+    for (const uint32_t entry_point : *entry_points_) {
+      if (const auto* models = _.GetExecutionModels(entry_point)) {
+        execution_models_.insert(models->begin(), models->end());
       }
     }
   }
@@ -431,28 +419,6 @@ void BuiltInsValidator::Update(const Instruction& inst) {
     function_id_ = 0;
     entry_points_ = &no_entry_points;
     execution_models_.clear();
-  }
-}
-
-void BuiltInsValidator::ComputeFunctionToEntryPointMapping() {
-  // TODO: Move this into validation_state.cpp.
-  for (const uint32_t entry_point : _.entry_points()) {
-    std::stack<uint32_t> call_stack;
-    std::set<uint32_t> visited;
-    call_stack.push(entry_point);
-    while (!call_stack.empty()) {
-      const uint32_t called_func_id = call_stack.top();
-      call_stack.pop();
-      if (!visited.insert(called_func_id).second) continue;
-
-      function_to_entry_points_[called_func_id].push_back(entry_point);
-
-      const Function* called_func = _.function(called_func_id);
-      assert(called_func);
-      for (const uint32_t new_call : called_func->function_call_targets()) {
-        call_stack.push(new_call);
-      }
-    }
   }
 }
 
@@ -2513,8 +2479,6 @@ spv_result_t BuiltInsValidator::Run() {
     // No validation tasks were seeded. Nothing else to do.
     return SPV_SUCCESS;
   }
-
-  ComputeFunctionToEntryPointMapping();
 
   // Second pass: validate every id reference in the module using
   // rules in id_to_at_reference_checks_.

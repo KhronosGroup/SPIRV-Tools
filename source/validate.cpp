@@ -298,6 +298,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
            << id_str.substr(0, id_str.size() - 1);
   }
 
+  vstate->ComputeFunctionToEntryPointMapping();
+
   // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
   // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
   if (auto error = ValidateAdjacency(*vstate)) return error;
