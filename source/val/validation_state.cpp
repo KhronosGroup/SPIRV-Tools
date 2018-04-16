@@ -15,6 +15,7 @@
 #include "val/validation_state.h"
 
 #include <cassert>
+#include <stack>
 
 #include "opcode.h"
 #include "val/basic_block.h"
@@ -790,6 +791,39 @@ std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
 
   assert(inst->words().size() == 4);
   return std::make_tuple(true, true, inst->word(3));
+}
+
+void ValidationState_t::ComputeFunctionToEntryPointMapping() {
+  for (const uint32_t entry_point : entry_points()) {
+    std::stack<uint32_t> call_stack;
+    std::set<uint32_t> visited;
+    call_stack.push(entry_point);
+    while (!call_stack.empty()) {
+      const uint32_t called_func_id = call_stack.top();
+      call_stack.pop();
+      if (!visited.insert(called_func_id).second) continue;
+
+      function_to_entry_points_[called_func_id].push_back(entry_point);
+
+      const Function* called_func = function(called_func_id);
+      if (called_func) {
+        // Other checks should error out on this invalid SPIR-V.
+        for (const uint32_t new_call : called_func->function_call_targets()) {
+          call_stack.push(new_call);
+        }
+      }
+    }
+  }
+}
+
+const std::vector<uint32_t>& ValidationState_t::FunctionEntryPoints(
+    uint32_t func) const {
+  auto iter = function_to_entry_points_.find(func);
+  if (iter == function_to_entry_points_.end()) {
+    return empty_ids_;
+  } else {
+    return iter->second;
+  }
 }
 
 }  // namespace libspirv

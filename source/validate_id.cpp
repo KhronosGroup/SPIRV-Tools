@@ -303,32 +303,6 @@ bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
     }
   }
 
-  std::stack<uint32_t> call_stack;
-  std::set<uint32_t> visited;
-  call_stack.push(entryPoint->id());
-  while (!call_stack.empty()) {
-    const uint32_t called_func_id = call_stack.top();
-    call_stack.pop();
-    if (!visited.insert(called_func_id).second) continue;
-
-    const Function* called_func = module_.function(called_func_id);
-    assert(called_func);
-
-    std::string reason;
-    if (!called_func->IsCompatibleWithExecutionModel(executionModel, &reason)) {
-      DIAG(entryPointIndex)
-          << "OpEntryPoint Entry Point <id> '" << inst->words[entryPointIndex]
-          << "'s callgraph contains function <id> " << called_func_id
-          << ", which cannot be used with the current execution model:\n"
-          << reason;
-      return false;
-    }
-
-    for (uint32_t new_call : called_func->function_call_targets()) {
-      call_stack.push(new_call);
-    }
-  }
-
   auto returnType = module_.FindDef(entryPoint->type_id());
   if (!returnType || SpvOpTypeVoid != returnType->opcode()) {
     DIAG(entryPointIndex) << "OpEntryPoint Entry Point <id> '"
@@ -1594,6 +1568,29 @@ bool idUsage::isValid<SpvOpGenericPtrMemSemantics>(
 template <>
 bool idUsage::isValid<SpvOpFunction>(const spv_instruction_t* inst,
                                      const spv_opcode_desc) {
+  const auto* thisInst = module_.FindDef(inst->words[2u]);
+  if (!thisInst) return false;
+
+  for (uint32_t entryId : module_.FunctionEntryPoints(thisInst->id())) {
+    const Function* thisFunc = module_.function(thisInst->id());
+    assert(thisFunc);
+    const auto* models = module_.GetExecutionModels(entryId);
+    if (models) {
+      assert(models->size());
+      for (auto model : *models) {
+        std::string reason;
+        if (!thisFunc->IsCompatibleWithExecutionModel(model, &reason)) {
+          DIAG(2)
+              << "OpEntryPoint Entry Point <id> '" << entryId
+              << "'s callgraph contains function <id> " << thisInst->id()
+              << ", which cannot be used with the current execution model:\n"
+              << reason;
+          return false;
+        }
+      }
+    }
+  }
+
   auto resultTypeIndex = 1;
   auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
   if (!resultType) return false;

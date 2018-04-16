@@ -208,6 +208,13 @@ class ValidationState_t {
     return &it->second;
   }
 
+  /// Traverses call tree and computes function_to_entry_points_.
+  /// Note: called after fully parsing the binary.
+  void ComputeFunctionToEntryPointMapping();
+
+  /// Returns all the entry points that can call |func|.
+  const std::vector<uint32_t>& FunctionEntryPoints(uint32_t func) const;
+
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
   void AddFunctionCallTarget(const uint32_t id) {
     function_call_targets_.insert(id);
@@ -559,6 +566,11 @@ class ValidationState_t {
   /// Mapping entry point -> execution modes.
   std::unordered_map<uint32_t, std::set<SpvExecutionMode>>
       entry_point_to_execution_modes_;
+
+  /// Mapping function -> array of entry points inside this
+  /// module which can (indirectly) call the function.
+  std::unordered_map<uint32_t, std::vector<uint32_t>> function_to_entry_points_;
+  const std::vector<uint32_t> empty_ids_;
 };
 
 }  // namespace libspirv

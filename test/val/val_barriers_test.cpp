@@ -375,6 +375,167 @@ OpControlBarrier %workgroup %device %acquire_release_subgroup
           "Vulkan-supported storage class if Memory Semantics is not None"));
 }
 
+TEST_F(ValidateBarriers, OpControlBarrierSubgroupExecutionFragment1p1) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %subgroup %acquire_release_subgroup
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment"),
+                      SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierWorkgroupExecutionFragment1p1) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %workgroup %acquire_release
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment"),
+                      SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpControlBarrier execution scope must be Subgroup for "
+                        "Fragment, Vertex, Geometry and TessellationEvaluation "
+                        "execution models"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierSubgroupExecutionFragment1p0) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %workgroup %acquire_release
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment"),
+                      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpControlBarrier requires one of the following Execution "
+                "Models: TessellationControl, GLCompute or Kernel"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierSubgroupExecutionVertex1p1) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %subgroup %acquire_release_subgroup
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Vertex"),
+                      SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierWorkgroupExecutionVertex1p1) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %workgroup %acquire_release
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Vertex"),
+                      SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpControlBarrier execution scope must be Subgroup for "
+                        "Fragment, Vertex, Geometry and TessellationEvaluation "
+                        "execution models"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierSubgroupExecutionVertex1p0) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %workgroup %acquire_release
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Vertex"),
+                      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpControlBarrier requires one of the following Execution "
+                "Models: TessellationControl, GLCompute or Kernel"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierSubgroupExecutionGeometry1p1) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %subgroup %acquire_release_subgroup
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, "OpCapability Geometry\n", "Geometry"),
+      SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierWorkgroupExecutionGeometry1p1) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %workgroup %acquire_release
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, "OpCapability Geometry\n", "Geometry"),
+      SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpControlBarrier execution scope must be Subgroup for "
+                        "Fragment, Vertex, Geometry and TessellationEvaluation "
+                        "execution models"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierSubgroupExecutionGeometry1p0) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %workgroup %acquire_release
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, "OpCapability Geometry\n", "Geometry"),
+      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpControlBarrier requires one of the following Execution "
+                "Models: TessellationControl, GLCompute or Kernel"));
+}
+
+TEST_F(ValidateBarriers,
+       OpControlBarrierSubgroupExecutionTessellationEvaluation1p1) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %subgroup %acquire_release_subgroup
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "OpCapability Tessellation\n",
+                                         "TessellationEvaluation"),
+                      SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBarriers,
+       OpControlBarrierWorkgroupExecutionTessellationEvaluation1p1) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %workgroup %acquire_release
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "OpCapability Tessellation\n",
+                                         "TessellationEvaluation"),
+                      SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpControlBarrier execution scope must be Subgroup for "
+                        "Fragment, Vertex, Geometry and TessellationEvaluation "
+                        "execution models"));
+}
+
+TEST_F(ValidateBarriers,
+       OpControlBarrierSubgroupExecutionTessellationEvaluation1p0) {
+  const std::string body = R"(
+OpControlBarrier %subgroup %workgroup %acquire_release
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "OpCapability Tessellation\n",
+                                         "TessellationEvaluation"),
+                      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpControlBarrier requires one of the following Execution "
+                "Models: TessellationControl, GLCompute or Kernel"));
+}
+
 TEST_F(ValidateBarriers, OpMemoryBarrierSuccess) {
   const std::string body = R"(
 OpMemoryBarrier %cross_device %acquire_release_uniform_workgroup
