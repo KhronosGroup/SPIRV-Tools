@@ -603,7 +603,11 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
       case SpvOpDecorate:
       case SpvOpMemberDecorate:
       case SpvOpDecorateId:
-        if (IsTargetDead(annotation)) context()->KillInst(annotation);
+      case SpvOpDecorateStringGOOGLE:
+        if (IsTargetDead(annotation)) {
+          context()->KillInst(annotation);
+          modified = true;
+        }
         break;
       case SpvOpGroupDecorate: {
         // Go through the targets of this group decorate. Remove each dead
@@ -615,12 +619,16 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
           if (IsDead(opInst)) {
             // Don't increment |i|.
             annotation->RemoveOperand(i);
+            modified = true;
           } else {
             i++;
             dead = false;
           }
         }
-        if (dead) context()->KillInst(annotation);
+        if (dead) {
+          context()->KillInst(annotation);
+          modified = true;
+        }
         break;
       }
       case SpvOpGroupMemberDecorate: {
@@ -635,19 +643,25 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
             // Don't increment |i|.
             annotation->RemoveOperand(i + 1);
             annotation->RemoveOperand(i);
+            modified = true;
           } else {
             i += 2;
             dead = false;
           }
         }
-        if (dead) context()->KillInst(annotation);
+        if (dead) {
+          context()->KillInst(annotation);
+          modified = true;
+        }
         break;
       }
       case SpvOpDecorationGroup:
         // By the time we hit decoration groups we've checked everything that
         // can target them. So if they have no uses they must be dead.
-        if (get_def_use_mgr()->NumUsers(annotation) == 0)
+        if (get_def_use_mgr()->NumUsers(annotation) == 0) {
           context()->KillInst(annotation);
+          modified = true;
+        }
         break;
       default:
         assert(false);
