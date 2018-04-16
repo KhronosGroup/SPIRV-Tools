@@ -347,6 +347,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     index += wordCount;
   }
 
+  vstate->ComputeFunctionToEntryPointMapping();
+
   position.index = SPV_INDEX_INSTRUCTION;
   if (auto error = spvValidateIDs(instructions.data(), instructions.size(),
                                   *vstate, &position))

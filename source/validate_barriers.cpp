@@ -54,6 +54,9 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
              << ": in Vulkan environment Execution Scope is limited to "
                 "Workgroup and Subgroup";
     }
+
+    if (_.context()->target_env != SPV_ENV_VULKAN_1_0) {
+    }
   }
 
   // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
