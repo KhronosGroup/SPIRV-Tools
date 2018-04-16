@@ -515,8 +515,10 @@ Optimizer::PassToken CreateRedundancyEliminationPass();
 
 // Create scalar replacement pass.
 // This pass replaces composite function scope variables with variables for each
-// element if those elements are accessed individually.
-Optimizer::PassToken CreateScalarReplacementPass();
+// element if those elements are accessed individually.  The parameter is a
+// limit on the number of members in the composite variable that the pass will
+// consider replacing.
+Optimizer::PassToken CreateScalarReplacementPass(uint32_t size_limit = 100);
 
 // Create a private to local pass.
 // This pass looks for variables delcared in the private storage class that are
