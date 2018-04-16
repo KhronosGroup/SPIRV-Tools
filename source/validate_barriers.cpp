@@ -55,7 +55,24 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
                 "Workgroup and Subgroup";
     }
 
-    if (_.context()->target_env != SPV_ENV_VULKAN_1_0) {
+    if (_.context()->target_env != SPV_ENV_VULKAN_1_0 &&
+        value != SpvScopeSubgroup) {
+      _.current_function().RegisterExecutionModelLimitation(
+          [](SpvExecutionModel model, std::string* message) {
+            if (model == SpvExecutionModelFragment ||
+                model == SpvExecutionModelVertex ||
+                model == SpvExecutionModelGeometry ||
+                model == SpvExecutionModelTessellationEvaluation) {
+              if (message) {
+                *message =
+                    "in Vulkan evironment, OpControlBarrier execution scope "
+                    "must be Subgroup for Fragment, Vertex, Geometry and "
+                    "TessellationEvaluation execution models";
+              }
+              return false;
+            }
+            return true;
+          });
     }
   }
 

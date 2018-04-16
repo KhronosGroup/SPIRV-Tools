@@ -806,9 +806,11 @@ void ValidationState_t::ComputeFunctionToEntryPointMapping() {
       function_to_entry_points_[called_func_id].push_back(entry_point);
 
       const Function* called_func = function(called_func_id);
-      assert(called_func);
-      for (const uint32_t new_call : called_func->function_call_targets()) {
-        call_stack.push(new_call);
+      if (called_func) {
+        // Other checks should error out on this invalid SPIR-V.
+        for (const uint32_t new_call : called_func->function_call_targets()) {
+          call_stack.push(new_call);
+        }
       }
     }
   }
