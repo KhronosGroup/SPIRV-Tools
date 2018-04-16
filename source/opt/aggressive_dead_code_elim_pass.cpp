@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Khronos Group Inc.
 // Copyright (c) 2017 Valve Corporation
 // Copyright (c) 2017 LunarG Inc.
+// Copyright (c) 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,6 +45,7 @@ const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 // SpvOpDecorate
 // SpvOpMemberDecorate
 // SpvOpDecorateId
+// SpvOpDecorateStringGOOGLE
 // SpvOpDecorationGroup
 struct DecorationLess {
   bool operator()(const ir::Instruction* lhs,
@@ -52,32 +54,21 @@ struct DecorationLess {
     SpvOp lhsOp = lhs->opcode();
     SpvOp rhsOp = rhs->opcode();
     if (lhsOp != rhsOp) {
+#define PRIORITY_CASE(opcode)                          \
+  if (lhsOp == opcode && rhsOp != opcode) return true; \
+  if (rhsOp == opcode && lhsOp != opcode) return false;
       // OpGroupDecorate and OpGroupMember decorate are highest priority to
       // eliminate dead targets early and simplify subsequent checks.
-      if (lhsOp == SpvOpGroupDecorate && rhsOp != SpvOpGroupDecorate)
-        return true;
-      if (rhsOp == SpvOpGroupDecorate && lhsOp != SpvOpGroupDecorate)
-        return false;
-      if (lhsOp == SpvOpGroupMemberDecorate &&
-          rhsOp != SpvOpGroupMemberDecorate)
-        return true;
-      if (rhsOp == SpvOpGroupMemberDecorate &&
-          lhsOp != SpvOpGroupMemberDecorate)
-        return false;
-      if (lhsOp == SpvOpDecorate && rhsOp != SpvOpDecorate) return true;
-      if (rhsOp == SpvOpDecorate && lhsOp != SpvOpDecorate) return false;
-      if (lhsOp == SpvOpMemberDecorate && rhsOp != SpvOpMemberDecorate)
-        return true;
-      if (rhsOp == SpvOpMemberDecorate && lhsOp != SpvOpMemberDecorate)
-        return false;
-      if (lhsOp == SpvOpDecorateId && rhsOp != SpvOpDecorateId) return true;
-      if (rhsOp == SpvOpDecorateId && lhsOp != SpvOpDecorateId) return false;
+      PRIORITY_CASE(SpvOpGroupDecorate)
+      PRIORITY_CASE(SpvOpGroupMemberDecorate)
+      PRIORITY_CASE(SpvOpDecorate)
+      PRIORITY_CASE(SpvOpMemberDecorate)
+      PRIORITY_CASE(SpvOpDecorateId)
+      PRIORITY_CASE(SpvOpDecorateStringGOOGLE)
       // OpDecorationGroup is lowest priority to ensure use/def chains remain
       // usable for instructions that target this group.
-      if (lhsOp == SpvOpDecorationGroup && rhsOp != SpvOpDecorationGroup)
-        return true;
-      if (rhsOp == SpvOpDecorationGroup && lhsOp != SpvOpDecorationGroup)
-        return false;
+      PRIORITY_CASE(SpvOpDecorationGroup)
+#undef PRIORITY_CASE
     }
 
     // Fall back to maintain total ordering (compare unique ids).
@@ -603,7 +594,11 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
       case SpvOpDecorate:
       case SpvOpMemberDecorate:
       case SpvOpDecorateId:
-        if (IsTargetDead(annotation)) context()->KillInst(annotation);
+      case SpvOpDecorateStringGOOGLE:
+        if (IsTargetDead(annotation)) {
+          context()->KillInst(annotation);
+          modified = true;
+        }
         break;
       case SpvOpGroupDecorate: {
         // Go through the targets of this group decorate. Remove each dead
@@ -615,12 +610,16 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
           if (IsDead(opInst)) {
             // Don't increment |i|.
             annotation->RemoveOperand(i);
+            modified = true;
           } else {
             i++;
             dead = false;
           }
         }
-        if (dead) context()->KillInst(annotation);
+        if (dead) {
+          context()->KillInst(annotation);
+          modified = true;
+        }
         break;
       }
       case SpvOpGroupMemberDecorate: {
@@ -635,19 +634,25 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
             // Don't increment |i|.
             annotation->RemoveOperand(i + 1);
             annotation->RemoveOperand(i);
+            modified = true;
           } else {
             i += 2;
             dead = false;
           }
         }
-        if (dead) context()->KillInst(annotation);
+        if (dead) {
+          context()->KillInst(annotation);
+          modified = true;
+        }
         break;
       }
       case SpvOpDecorationGroup:
         // By the time we hit decoration groups we've checked everything that
         // can target them. So if they have no uses they must be dead.
-        if (get_def_use_mgr()->NumUsers(annotation) == 0)
+        if (get_def_use_mgr()->NumUsers(annotation) == 0) {
           context()->KillInst(annotation);
+          modified = true;
+        }
         break;
       default:
         assert(false);
