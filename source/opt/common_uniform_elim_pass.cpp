@@ -356,7 +356,18 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
     // new load insertion point. Trying to keep register pressure down.
     if (mergeBlockId == bp->id()) {
       mergeBlockId = 0;
-      insertItr = bp->begin();
+
+      // Update insertItr as |bp->begin()| only when it will not be removed.
+      // Without this check, it can set |insertItr| as a dangling pointer.
+      ir::Instruction* inst = &*bp->begin();
+      if (inst->opcode() == SpvOpLoad) {
+        uint32_t varId;
+        ir::Instruction* ptrInst = GetPtr(inst, &varId);
+        if (ptrInst->opcode() != SpvOpVariable || !IsUniformVar(varId) || IsSamplerOrImageVar(varId) || HasUnsupportedDecorates(inst->result_id()) || IsVolatileLoad(*inst))
+        insertItr = inst;
+      } else {
+        insertItr = inst;
+      }
     }
     for (ir::Instruction* inst = &*bp->begin(); inst; inst = inst->NextNode()) {
       if (inst->opcode() != SpvOpLoad) continue;
