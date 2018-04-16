@@ -5417,7 +5417,8 @@ OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %1 "main"
 )";
 
-  const std::string body_before = R"(OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "FOOBAR"
+  const std::string body_before =
+      R"(OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "FOOBAR"
 %void = OpTypeVoid
 %4 = OpTypeFunction %void
 %uint = OpTypeInt 32 0
