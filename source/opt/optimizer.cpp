@@ -105,7 +105,7 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           .RegisterPass(CreateLocalSingleStoreElimPass())
           .RegisterPass(CreateAggressiveDCEPass())
           // Split up aggragates so they are easier to deal with.
-          .RegisterPass(CreateScalarReplacementPass())
+          .RegisterPass(CreateScalarReplacementPass(0))
           // Remove loads and stores so everything is in intermediate values.
           // Takes care of copy propagation of non-members.
           .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
@@ -416,9 +416,9 @@ Optimizer::PassToken CreateRemoveDuplicatesPass() {
       MakeUnique<opt::RemoveDuplicatesPass>());
 }
 
-Optimizer::PassToken CreateScalarReplacementPass() {
+Optimizer::PassToken CreateScalarReplacementPass(uint32_t size_limit) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::ScalarReplacementPass>());
+      MakeUnique<opt::ScalarReplacementPass>(size_limit));
 }
 
 Optimizer::PassToken CreatePrivateToLocalPass() {

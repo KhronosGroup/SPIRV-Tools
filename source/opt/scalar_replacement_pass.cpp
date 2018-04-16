@@ -26,9 +26,6 @@
 namespace spvtools {
 namespace opt {
 
-// Heuristic aggregate element limit.
-const uint32_t MAX_NUM_ELEMENTS = 100u;
-
 Pass::Status ScalarReplacementPass::Process(ir::IRContext* c) {
   InitializeProcessing(c);
 
@@ -540,20 +537,20 @@ bool ScalarReplacementPass::CheckType(const ir::Instruction* typeInst) const {
     case SpvOpTypeStruct:
       // Don't bother with empty structs or very large structs.
       if (typeInst->NumInOperands() == 0 ||
-          typeInst->NumInOperands() > MAX_NUM_ELEMENTS)
+          IsLargerThanSizeLimit(typeInst->NumInOperands()))
         return false;
       return true;
     case SpvOpTypeArray:
-      if (GetArrayLength(typeInst) > MAX_NUM_ELEMENTS) return false;
+      if (IsLargerThanSizeLimit(GetArrayLength(typeInst))) return false;
       return true;
-    // TODO(alanbaker): Develop some heuristics for when this should be
-    // re-enabled.
-    //// Specifically including matrix and vector in an attempt to reduce the
-    //// number of vector registers required.
-    // case SpvOpTypeMatrix:
-    // case SpvOpTypeVector:
-    //  if (GetNumElements(typeInst) > MAX_NUM_ELEMENTS) return false;
-    //  return true;
+      // TODO(alanbaker): Develop some heuristics for when this should be
+      // re-enabled.
+      //// Specifically including matrix and vector in an attempt to reduce the
+      //// number of vector registers required.
+      // case SpvOpTypeMatrix:
+      // case SpvOpTypeVector:
+      //  if (IsLargerThanSizeLimit(GetNumElements(typeInst))) return false;
+      //  return true;
 
     case SpvOpTypeRuntimeArray:
     default:
@@ -715,6 +712,12 @@ bool ScalarReplacementPass::CheckStore(const ir::Instruction* inst,
       inst->GetSingleWordInOperand(2u) & SpvMemoryAccessVolatileMask)
     return false;
   return true;
+}
+bool ScalarReplacementPass::IsLargerThanSizeLimit(size_t length) const {
+  if (max_num_elements_ == 0) {
+    return false;
+  }
+  return length > max_num_elements_;
 }
 
 std::unique_ptr<std::unordered_set<uint64_t>>

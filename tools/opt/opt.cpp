@@ -292,10 +292,12 @@ Options (in lexicographical order):
   --ssa-rewrite
                Replace loads and stores to function local variables with
                operations on SSA IDs.
-  --scalar-replacement
+  --scalar-replacement[=<n>]
                Replace aggregate function scope variables that are only accessed
                via their elements with new function variables representing each
-               element.
+               element.  <n> is a limit on the size of the aggragates that will
+               be replaced.  0 means there is no limit.  The default value is
+               100.
   --set-spec-const-default-value "<spec id>:<default value> ..."
                Set the default values of the specialization constants with
                <spec id>:<default value> pairs specified in a double-quoted
@@ -569,6 +571,9 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateLoopUnswitchPass());
       } else if (0 == strcmp(cur_arg, "--scalar-replacement")) {
         optimizer->RegisterPass(CreateScalarReplacementPass());
+      } else if (0 == strncmp(cur_arg, "--scalar-replacement=", 21)) {
+        uint32_t limit = atoi(cur_arg + 21);
+        optimizer->RegisterPass(CreateScalarReplacementPass(limit));
       } else if (0 == strcmp(cur_arg, "--strength-reduction")) {
         optimizer->RegisterPass(CreateStrengthReductionPass());
       } else if (0 == strcmp(cur_arg, "--unify-const")) {

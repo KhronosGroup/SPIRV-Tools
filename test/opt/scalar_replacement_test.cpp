@@ -1358,4 +1358,76 @@ OpFunctionEnd
 }
 #endif  // SPIRV_EFFCEE
 
+// Test that a struct of size 4 is not replaced when there is a limit of 2.
+TEST_F(ScalarReplacementTest, TestLimit) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %6 "simple_struct"
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeStruct %2 %2 %2 %2
+%4 = OpTypePointer Function %3
+%5 = OpTypePointer Function %2
+%6 = OpTypeFunction %2
+%7 = OpConstantNull %3
+%8 = OpConstant %2 0
+%9 = OpConstant %2 1
+%10 = OpConstant %2 2
+%11 = OpConstant %2 3
+%12 = OpFunction %2 None %6
+%13 = OpLabel
+%14 = OpVariable %4 Function %7
+%15 = OpInBoundsAccessChain %5 %14 %8
+%16 = OpLoad %2 %15
+%17 = OpAccessChain %5 %14 %10
+%18 = OpLoad %2 %17
+%19 = OpIAdd %2 %16 %18
+OpReturnValue %19
+OpFunctionEnd
+  )";
+
+  auto result = SinglePassRunAndDisassemble<opt::ScalarReplacementPass>(
+      text, true, false, 2);
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
+// Test that a struct of size 4 is replaced when there is a limit of 0 (no
+// limit).  This is the same spir-v as a test above, so we do not check that it
+// is correctly transformed.  We leave that to the test above.
+TEST_F(ScalarReplacementTest, TestUnimited) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %6 "simple_struct"
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeStruct %2 %2 %2 %2
+%4 = OpTypePointer Function %3
+%5 = OpTypePointer Function %2
+%6 = OpTypeFunction %2
+%7 = OpConstantNull %3
+%8 = OpConstant %2 0
+%9 = OpConstant %2 1
+%10 = OpConstant %2 2
+%11 = OpConstant %2 3
+%12 = OpFunction %2 None %6
+%13 = OpLabel
+%14 = OpVariable %4 Function %7
+%15 = OpInBoundsAccessChain %5 %14 %8
+%16 = OpLoad %2 %15
+%17 = OpAccessChain %5 %14 %10
+%18 = OpLoad %2 %17
+%19 = OpIAdd %2 %16 %18
+OpReturnValue %19
+OpFunctionEnd
+  )";
+
+  auto result = SinglePassRunAndDisassemble<opt::ScalarReplacementPass>(
+      text, true, false, 0);
+  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+}
+
 }  // namespace
