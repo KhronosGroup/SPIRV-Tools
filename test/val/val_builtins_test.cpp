@@ -49,6 +49,8 @@ using ValidateBuiltIns = spvtest::ValidateBase<bool>;
 using ValidateVulkanCombineBuiltInExecutionModelDataTypeResult =
     spvtest::ValidateBase<std::tuple<const char*, const char*, const char*,
                                      const char*, TestResult>>;
+using ValidateVulkanCombineBuiltInArrayedVariable = spvtest::ValidateBase<
+    std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
 
 struct EntryPoint {
   std::string name;
@@ -186,6 +188,10 @@ std::string GetDefaultShaderTypes() {
 %f64arr2 = OpTypeArray %f64 %u32_2
 %f64arr3 = OpTypeArray %f64 %u32_3
 %f64arr4 = OpTypeArray %f64 %u32_4
+
+%f32vec3arr3 = OpTypeArray %f32vec3 %u32_3
+%f32vec4arr3 = OpTypeArray %f32vec4 %u32_3
+%f64vec4arr3 = OpTypeArray %f64vec4 %u32_3
 )";
 }
 
@@ -1474,6 +1480,128 @@ INSTANTIATE_TEST_CASE_P(
                               "needs to be a 32-bit int scalar",
                               "has bit width 64"))), );
 
+TEST_P(ValidateVulkanCombineBuiltInArrayedVariable, Variable) {
+  const char* const built_in = std::get<0>(GetParam());
+  const char* const execution_model = std::get<1>(GetParam());
+  const char* const storage_class = std::get<2>(GetParam());
+  const char* const data_type = std::get<3>(GetParam());
+  const TestResult& test_result = std::get<4>(GetParam());
+
+  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  generator.before_types_ = "OpDecorate %built_in_var BuiltIn ";
+  generator.before_types_ += built_in;
+  generator.before_types_ += "\n";
+
+  std::ostringstream after_types;
+  after_types << "%built_in_array = OpTypeArray " << data_type << " %u32_3\n";
+  after_types << "%built_in_ptr = OpTypePointer " << storage_class
+              << " %built_in_array\n";
+  after_types << "%built_in_var = OpVariable %built_in_ptr " << storage_class
+              << "\n";
+  generator.after_types_ = after_types.str();
+
+  EntryPoint entry_point;
+  entry_point.name = "main";
+  entry_point.execution_model = execution_model;
+  // Any kind of reference would do.
+  entry_point.body = R"(
+%val = OpBitcast %u64 %built_in_var
+)";
+
+  std::ostringstream execution_modes;
+  if (0 == std::strcmp(execution_model, "Fragment")) {
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " OriginUpperLeft\n";
+  }
+  if (0 == std::strcmp(built_in, "FragDepth")) {
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " DepthReplacing\n";
+  }
+  entry_point.execution_modes = execution_modes.str();
+
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(test_result.validation_result,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  if (test_result.error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
+  }
+  if (test_result.error_str2) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(PointSizeArrayedF32TessControl,
+                        ValidateVulkanCombineBuiltInArrayedVariable,
+                        Combine(Values("PointSize"),
+                                Values("TessellationControl"), Values("Input"),
+                                Values("%f32"), Values(TestResult())), );
+
+INSTANTIATE_TEST_CASE_P(
+    PointSizeArrayedF64TessControl, ValidateVulkanCombineBuiltInArrayedVariable,
+    Combine(Values("PointSize"), Values("TessellationControl"), Values("Input"),
+            Values("%f64"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit float scalar",
+                              "has bit width 64"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    PointSizeArrayedF32Vertex, ValidateVulkanCombineBuiltInArrayedVariable,
+    Combine(Values("PointSize"), Values("Vertex"), Values("Output"),
+            Values("%f32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit float scalar",
+                              "is not a float scalar"))), );
+
+INSTANTIATE_TEST_CASE_P(PositionArrayedF32Vec4TessControl,
+                        ValidateVulkanCombineBuiltInArrayedVariable,
+                        Combine(Values("Position"),
+                                Values("TessellationControl"), Values("Input"),
+                                Values("%f32vec4"), Values(TestResult())), );
+
+INSTANTIATE_TEST_CASE_P(
+    PositionArrayedF32Vec3TessControl,
+    ValidateVulkanCombineBuiltInArrayedVariable,
+    Combine(Values("Position"), Values("TessellationControl"), Values("Input"),
+            Values("%f32vec3"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 4-component 32-bit float vector",
+                              "has 3 components"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    PositionArrayedF32Vec4Vertex, ValidateVulkanCombineBuiltInArrayedVariable,
+    Combine(Values("Position"), Values("Vertex"), Values("Output"),
+            Values("%f32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 4-component 32-bit float vector",
+                              "is not a float vector"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    ClipAndCullDistanceOutputSuccess,
+    ValidateVulkanCombineBuiltInArrayedVariable,
+    Combine(Values("ClipDistance", "CullDistance"),
+            Values("Geometry", "TessellationControl", "TessellationEvaluation"),
+            Values("Output"), Values("%f32arr2", "%f32arr4"),
+            Values(TestResult())), );
+
+INSTANTIATE_TEST_CASE_P(
+    ClipAndCullDistanceVertexInput, ValidateVulkanCombineBuiltInArrayedVariable,
+    Combine(Values("ClipDistance", "CullDistance"), Values("Fragment"),
+            Values("Input"), Values("%f32arr4"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit float array",
+                              "components are not float scalar"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    ClipAndCullDistanceNotArray, ValidateVulkanCombineBuiltInArrayedVariable,
+    Combine(Values("ClipDistance", "CullDistance"),
+            Values("Geometry", "TessellationControl", "TessellationEvaluation"),
+            Values("Input"), Values("%f32vec2", "%f32vec4"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit float array",
+                              "components are not float scalar"))), );
+
 TEST_F(ValidateBuiltIns, WorkgroupSizeSuccess) {
   CodeGenerator generator = GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
@@ -1689,11 +1817,13 @@ OpMemberDecorate %output_type 0 BuiltIn Position
 
   generator.after_types_ = R"(
 %input_type = OpTypeStruct %f32vec4
-%input_ptr = OpTypePointer Input %input_type
+%arrayed_input_type = OpTypeArray %input_type %u32_3
+%input_ptr = OpTypePointer Input %arrayed_input_type
 %input = OpVariable %input_ptr Input
 %input_f32vec4_ptr = OpTypePointer Input %f32vec4
 %output_type = OpTypeStruct %f32vec4
-%output_ptr = OpTypePointer Output %output_type
+%arrayed_output_type = OpTypeArray %output_type %u32_3
+%output_ptr = OpTypePointer Output %arrayed_output_type
 %output = OpVariable %output_ptr Output
 %output_f32vec4_ptr = OpTypePointer Output %f32vec4
 )";
@@ -1702,8 +1832,8 @@ OpMemberDecorate %output_type 0 BuiltIn Position
   entry_point.name = "main";
   entry_point.execution_model = "Geometry";
   entry_point.body = R"(
-%input_pos = OpAccessChain %input_f32vec4_ptr %input %u32_0
-%output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0
+%input_pos = OpAccessChain %input_f32vec4_ptr %input %u32_0 %u32_0
+%output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0 %u32_0
 %pos = OpLoad %f32vec4 %input_pos
 OpStore %output_pos %pos
 )";
