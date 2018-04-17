@@ -513,8 +513,8 @@ UnaryScalarFoldingRule FoldFNegateOp() {
       std::vector<uint32_t> words = result.GetWords();
       return const_mgr->GetConstant(result_type, words);
     } else if (float_type->width() == 64) {
-      double fa = a->GetDouble();
-      spvutils::FloatProxy<double> result(-fa);
+      double da = a->GetDouble();
+      spvutils::FloatProxy<double> result(-da);
       std::vector<uint32_t> words = result.GetWords();
       return const_mgr->GetConstant(result_type, words);
     }
