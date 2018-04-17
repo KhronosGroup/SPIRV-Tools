@@ -71,6 +71,12 @@ class CFG {
   void ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
                               std::list<ir::BasicBlock*>* order);
 
+  // Applies |f| to the basic block in post order starting with |bb|.
+  // Note that basic blocks that cannot be reached from |bb| node will not be
+  // processed.
+  void ForEachBlockInPostOrder(BasicBlock* bb,
+                               const std::function<void(BasicBlock*)>& f);
+
   // Applies |f| to the basic block in reverse post order starting with |bb|.
   // Note that basic blocks that cannot be reached from |bb| node will not be
   // processed.

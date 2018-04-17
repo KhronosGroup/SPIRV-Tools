@@ -19,6 +19,7 @@
 #define LIBSPIRV_OPT_BASIC_BLOCK_H_
 
 #include <functional>
+#include <iterator>
 #include <memory>
 #include <ostream>
 #include <utility>
@@ -39,6 +40,9 @@ class BasicBlock {
  public:
   using iterator = InstructionList::iterator;
   using const_iterator = InstructionList::const_iterator;
+  using reverse_iterator = std::reverse_iterator<InstructionList::iterator>;
+  using const_reverse_iterator =
+      std::reverse_iterator<InstructionList::const_iterator>;
 
   // Creates a basic block with the given starting |label|.
   inline explicit BasicBlock(std::unique_ptr<Instruction> label);
@@ -86,6 +90,21 @@ class BasicBlock {
   const_iterator end() const { return insts_.cend(); }
   const_iterator cbegin() const { return insts_.cbegin(); }
   const_iterator cend() const { return insts_.cend(); }
+
+  reverse_iterator rbegin() { return reverse_iterator(end()); }
+  reverse_iterator rend() { return reverse_iterator(begin()); }
+  const_reverse_iterator rbegin() const {
+    return const_reverse_iterator(cend());
+  }
+  const_reverse_iterator rend() const {
+    return const_reverse_iterator(cbegin());
+  }
+  const_reverse_iterator crbegin() const {
+    return const_reverse_iterator(cend());
+  }
+  const_reverse_iterator crend() const {
+    return const_reverse_iterator(cbegin());
+  }
 
   // Returns an iterator pointing to the last instruction.  This may only
   // be used if this block has an instruction other than the OpLabel

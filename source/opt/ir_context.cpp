@@ -48,6 +48,9 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisScalarEvolution) {
     BuildScalarEvolutionAnalysis();
   }
+  if (set & kAnalysisRegisterPressure) {
+    BuildRegPressureAnalysis();
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
