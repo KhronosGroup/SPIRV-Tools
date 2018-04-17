@@ -259,7 +259,7 @@ const std::string& HeaderWithNaN() {
 %double_nan = OpConstant %double -0x1.8p+1024
 )";
 
-  return headerWithNan;
+  return headerWithNaN;
 }
 
 // clang-format off
