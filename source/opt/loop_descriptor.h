@@ -59,8 +59,6 @@ class Loop {
   Loop(IRContext* context, opt::DominatorAnalysis* analysis, BasicBlock* header,
        BasicBlock* continue_target, BasicBlock* merge_target);
 
-  ~Loop() {}
-
   // Iterators over the immediate sub-loops.
   inline iterator begin() { return nested_loops_.begin(); }
   inline iterator end() { return nested_loops_.end(); }
@@ -405,6 +403,9 @@ class LoopDescriptor {
   using iterator = opt::PostOrderTreeDFIterator<Loop>;
   using const_iterator = opt::PostOrderTreeDFIterator<const Loop>;
 
+  using pre_iterator = opt::TreeDFIterator<Loop>;
+  using const_pre_iterator = opt::TreeDFIterator<const Loop>;
+
   // Creates a loop object for all loops found in |f|.
   explicit LoopDescriptor(const Function* f);
 
@@ -457,6 +458,17 @@ class LoopDescriptor {
   inline const_iterator cend() const {
     return const_iterator::end(&dummy_top_loop_);
   }
+
+  // Iterators for pre-order depth first traversal of the loops.
+  // Inner most loops will be visited first.
+  inline pre_iterator pre_begin() { return ++pre_iterator(&dummy_top_loop_); }
+  inline pre_iterator pre_end() { return pre_iterator(); }
+  inline const_pre_iterator pre_begin() const { return pre_cbegin(); }
+  inline const_pre_iterator pre_end() const { return pre_cend(); }
+  inline const_pre_iterator pre_cbegin() const {
+    return ++const_pre_iterator(&dummy_top_loop_);
+  }
+  inline const_pre_iterator pre_cend() const { return const_pre_iterator(); }
 
   // Returns the inner most loop that contains the basic block |bb|.
   inline void SetBasicBlockToLoop(uint32_t bb_id, Loop* loop) {
