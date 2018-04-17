@@ -186,3 +186,9 @@ add_spvtools_unittest(TARGET val_version
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET val_non_uniform
+        SRCS val_non_uniform_test.cpp
+        ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
