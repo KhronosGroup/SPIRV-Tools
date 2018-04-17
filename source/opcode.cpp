@@ -454,3 +454,45 @@ bool spvOpcodeIsBaseOpaqueType(SpvOp opcode) {
       return false;
   }
 }
+
+bool spvOpcodeIsNonUniformGroupOperation(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpGroupNonUniformElect:
+    case SpvOpGroupNonUniformAll:
+    case SpvOpGroupNonUniformAny:
+    case SpvOpGroupNonUniformAllEqual:
+    case SpvOpGroupNonUniformBroadcast:
+    case SpvOpGroupNonUniformBroadcastFirst:
+    case SpvOpGroupNonUniformBallot:
+    case SpvOpGroupNonUniformInverseBallot:
+    case SpvOpGroupNonUniformBallotBitExtract:
+    case SpvOpGroupNonUniformBallotBitCount:
+    case SpvOpGroupNonUniformBallotFindLSB:
+    case SpvOpGroupNonUniformBallotFindMSB:
+    case SpvOpGroupNonUniformShuffle:
+    case SpvOpGroupNonUniformShuffleXor:
+    case SpvOpGroupNonUniformShuffleUp:
+    case SpvOpGroupNonUniformShuffleDown:
+    case SpvOpGroupNonUniformIAdd:
+    case SpvOpGroupNonUniformFAdd:
+    case SpvOpGroupNonUniformIMul:
+    case SpvOpGroupNonUniformFMul:
+    case SpvOpGroupNonUniformSMin:
+    case SpvOpGroupNonUniformUMin:
+    case SpvOpGroupNonUniformFMin:
+    case SpvOpGroupNonUniformSMax:
+    case SpvOpGroupNonUniformUMax:
+    case SpvOpGroupNonUniformFMax:
+    case SpvOpGroupNonUniformBitwiseAnd:
+    case SpvOpGroupNonUniformBitwiseOr:
+    case SpvOpGroupNonUniformBitwiseXor:
+    case SpvOpGroupNonUniformLogicalAnd:
+    case SpvOpGroupNonUniformLogicalOr:
+    case SpvOpGroupNonUniformLogicalXor:
+    case SpvOpGroupNonUniformQuadBroadcast:
+    case SpvOpGroupNonUniformQuadSwap:
+      return true;
+    default:
+      return false;
+  }
+}

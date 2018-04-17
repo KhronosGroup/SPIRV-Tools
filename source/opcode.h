@@ -118,4 +118,7 @@ bool spvOpcodeIsBlockTerminator(SpvOp opcode);
 
 // Returns true if the given opcode always defines an opaque type.
 bool spvOpcodeIsBaseOpaqueType(SpvOp opcode);
+
+// Returns true if the given opcode is a non-uniform group operation.
+bool spvOpcodeIsNonUniformGroupOperation(SpvOp opcode);
 #endif  // LIBSPIRV_OPCODE_H_
