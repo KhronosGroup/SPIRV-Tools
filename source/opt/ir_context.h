@@ -24,6 +24,7 @@
 #include "feature_manager.h"
 #include "loop_descriptor.h"
 #include "module.h"
+#include "register_pressure.h"
 #include "scalar_analysis.h"
 #include "type_manager.h"
 
@@ -60,7 +61,8 @@ class IRContext {
     kAnalysisLoopAnalysis = 1 << 6,
     kAnalysisNameMap = 1 << 7,
     kAnalysisScalarEvolution = 1 << 8,
-    kAnalysisEnd = 1 << 9
+    kAnalysisRegisterPressure = 1 << 9,
+    kAnalysisEnd = 1 << 10
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
@@ -204,6 +206,15 @@ class IRContext {
       BuildDefUseManager();
     }
     return def_use_mgr_.get();
+  }
+
+  // Returns a pointer to a liveness analysis.  If the liveness analysis is
+  // invalid, it is rebuilt first.
+  opt::LivenessAnalysis* GetLivenessAnalysis() {
+    if (!AreAnalysesValid(kAnalysisRegisterPressure)) {
+      BuildRegPressureAnalysis();
+    }
+    return reg_pressure_.get();
   }
 
   // Returns the basic block for instruction |instr|. Re-builds the instruction
@@ -394,9 +405,19 @@ class IRContext {
   opt::DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f,
                                                const ir::CFG&);
 
+  // Gets the dominator analysis for function |f|.
+  opt::DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f) {
+    return GetDominatorAnalysis(f, *cfg());
+  }
+
   // Gets the postdominator analysis for function |f|.
   opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* f,
                                                        const ir::CFG&);
+
+  // Gets the postdominator analysis for function |f|.
+  opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* f) {
+    return GetPostDominatorAnalysis(f, *cfg());
+  }
 
   // Remove the dominator tree of |f| from the cache.
   inline void RemoveDominatorAnalysis(const ir::Function* f) {
@@ -458,6 +479,12 @@ class IRContext {
   void BuildScalarEvolutionAnalysis() {
     scalar_evolution_analysis_.reset(new opt::ScalarEvolutionAnalysis(this));
     valid_analyses_ = valid_analyses_ | kAnalysisScalarEvolution;
+  }
+
+  // Builds the liveness analysis from scratch, even if it was already valid.
+  void BuildRegPressureAnalysis() {
+    reg_pressure_.reset(new opt::LivenessAnalysis(this));
+    valid_analyses_ = valid_analyses_ | kAnalysisRegisterPressure;
   }
 
   // Removes all computed dominator and post-dominator trees. This will force
@@ -563,6 +590,9 @@ class IRContext {
 
   // The cache scalar evolution analysis node.
   std::unique_ptr<opt::ScalarEvolutionAnalysis> scalar_evolution_analysis_;
+
+  // The liveness analysis |module_|.
+  std::unique_ptr<opt::LivenessAnalysis> reg_pressure_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,

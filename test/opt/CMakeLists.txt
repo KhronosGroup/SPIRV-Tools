@@ -297,6 +297,11 @@ add_spvtools_unittest(TARGET replace_invalid_opc
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET register_liveness
+  SRCS register_liveness.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET simplification
   SRCS simplification_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt

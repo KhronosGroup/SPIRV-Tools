@@ -214,4 +214,53 @@ TEST(IteratorRange, Interface) {
   EXPECT_EQ(count, range.size());
 }
 
+TEST(Iterator, FilterIterator) {
+  struct Placeholder {
+    int val;
+  };
+  std::vector<Placeholder> data = {{1}, {2}, {3}, {4}, {5},
+                                   {6}, {7}, {8}, {9}, {10}};
+
+  // Predicate to only consider odd values.
+  struct Predicate {
+    bool operator()(const Placeholder& data) { return data.val % 2; }
+  };
+  Predicate pred;
+
+  auto filter_range =
+      ir::MakeFilterIteratorRange(data.begin(), data.end(), pred);
+
+  EXPECT_EQ(filter_range.begin().Get(), data.begin());
+  EXPECT_EQ(filter_range.end(), filter_range.begin().GetEnd());
+
+  for (Placeholder& data : filter_range) {
+    EXPECT_EQ(data.val % 2, 1);
+  }
+
+  for (auto it = filter_range.begin(); it != filter_range.end(); it++) {
+    EXPECT_EQ(it->val % 2, 1);
+    EXPECT_EQ((*it).val % 2, 1);
+  }
+
+  for (auto it = filter_range.begin(); it != filter_range.end(); ++it) {
+    EXPECT_EQ(it->val % 2, 1);
+    EXPECT_EQ((*it).val % 2, 1);
+  }
+
+  EXPECT_EQ(ir::MakeFilterIterator(data.begin(), data.end(), pred).Get(),
+            data.begin());
+  EXPECT_EQ(ir::MakeFilterIterator(data.end(), data.end(), pred).Get(),
+            data.end());
+  EXPECT_EQ(ir::MakeFilterIterator(data.begin(), data.end(), pred).GetEnd(),
+            ir::MakeFilterIterator(data.end(), data.end(), pred));
+  EXPECT_NE(ir::MakeFilterIterator(data.begin(), data.end(), pred),
+            ir::MakeFilterIterator(data.end(), data.end(), pred));
+
+  // Empty range: no values satisfies the predicate.
+  auto empty_range = ir::MakeFilterIteratorRange(
+      data.begin(), data.end(),
+      [](const Placeholder& data) { return data.val > 10; });
+  EXPECT_EQ(empty_range.begin(), empty_range.end());
+}
+
 }  // anonymous namespace
