@@ -253,7 +253,8 @@ OpName %main "main"
 // %double_n0 = OpConstant %double -0,
 // we separates those definitions from Header().
 const std::string& HeaderWithNaN() {
-  static const std::string headerWithNaN = Header() +
+  static const std::string headerWithNaN =
+      Header() +
       R"(%float_nan = OpConstant %float -0x1.8p+128
 %double_nan = OpConstant %double -0x1.8p+1024
 )";
