@@ -301,6 +301,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_literals.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_logicals.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_non_uniform.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_primitives.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_type_unique.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/decoration.h
