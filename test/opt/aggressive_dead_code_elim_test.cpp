@@ -5410,6 +5410,39 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(text, text, true, true);
 }
 
+TEST_F(AggressiveDCETest, SafelyRemoveDecorateString) {
+  const std::string preamble = R"(OpCapability Shader
+OpExtension "SPV_GOOGLE_hlsl_functionality1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+)";
+
+  const std::string body_before =
+      R"(OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "FOOBAR"
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%2 = OpVariable %_ptr_StorageBuffer_uint StorageBuffer
+%1 = OpFunction %void None %4
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string body_after = R"(%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%1 = OpFunction %void None %4
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      preamble + body_before, preamble + body_after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
