@@ -212,8 +212,8 @@ class ValidationState_t {
   /// Note: called after fully parsing the binary.
   void ComputeFunctionToEntryPointMapping();
 
-  /// Returns all the entry points that can call |function|.
-  const std::vector<uint32_t>& FunctionEntryPoints(uint32_t function) const;
+  /// Returns all the entry points that can call |func|.
+  const std::vector<uint32_t>& FunctionEntryPoints(uint32_t func) const;
 
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
   void AddFunctionCallTarget(const uint32_t id) {

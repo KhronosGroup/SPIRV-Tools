@@ -817,8 +817,8 @@ void ValidationState_t::ComputeFunctionToEntryPointMapping() {
 }
 
 const std::vector<uint32_t>& ValidationState_t::FunctionEntryPoints(
-    uint32_t function) const {
-  auto iter = function_to_entry_points_.find(function);
+    uint32_t func) const {
+  auto iter = function_to_entry_points_.find(func);
   if (iter == function_to_entry_points_.end()) {
     return empty_ids_;
   } else {
