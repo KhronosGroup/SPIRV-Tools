@@ -35,6 +35,7 @@ std::string GenerateShaderCode(
 OpCapability Shader
 OpCapability GroupNonUniform
 OpCapability GroupNonUniformVote
+OpCapability GroupNonUniformBallot
 )";
 
   ss << capabilities_and_extensions;
@@ -46,9 +47,14 @@ OpCapability GroupNonUniformVote
 %func = OpTypeFunction %void
 %bool = OpTypeBool
 %u32 = OpTypeInt 32 0
+%u32vec4 = OpTypeVector %u32 4
 
 %true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
+
+%u32_0 = OpConstant %u32 0
+
+%u32vec4_null = OpConstantComposite %u32vec4 %u32_0 %u32_0 %u32_0 %u32_0
 
 %cross_device = OpConstant %u32 0
 %device = OpConstant %u32 1
@@ -74,24 +80,45 @@ OpFunctionEnd)";
   return ss.str();
 }
 
-using VulkanGroupNonUniformScope = spvtest::ValidateBase<
-    std::tuple<std::string, std::string, std::string, std::string>>;
+std::vector<SpvScope> scopes({SpvScopeCrossDevice, SpvScopeDevice,
+                              SpvScopeWorkgroup, SpvScopeSubgroup,
+                              SpvScopeInvocation});
 
-TEST_P(VulkanGroupNonUniformScope, Scopes) {
+using GroupNonUniformScope = spvtest::ValidateBase<
+    std::tuple<std::string, std::string, SpvScope, std::string>>;
+
+std::string ConvertScope(SpvScope scope) {
+  switch (scope) {
+    case SpvScopeCrossDevice:
+      return "%cross_device";
+    case SpvScopeDevice:
+      return "%device";
+    case SpvScopeWorkgroup:
+      return "%workgroup";
+    case SpvScopeSubgroup:
+      return "%subgroup";
+    case SpvScopeInvocation:
+      return "%invocation";
+    default:
+      return "";
+  }
+}
+
+TEST_P(GroupNonUniformScope, Vulkan1p1) {
   std::string opcode = std::get<0>(GetParam());
   std::string type = std::get<1>(GetParam());
-  std::string execution_scope = std::get<2>(GetParam());
+  SpvScope execution_scope = std::get<2>(GetParam());
   std::string args = std::get<3>(GetParam());
 
   std::ostringstream sstr;
   sstr << "%result = " << opcode << " ";
   sstr << type << " ";
-  sstr << execution_scope << " ";
+  sstr << ConvertScope(execution_scope) << " ";
   sstr << args << "\n";
 
   CompileSuccessfully(GenerateShaderCode(sstr.str()), SPV_ENV_VULKAN_1_1);
   spv_result_t result = ValidateInstructions(SPV_ENV_VULKAN_1_1);
-  if (execution_scope == "%subgroup") {
+  if (execution_scope == SpvScopeSubgroup) {
     ASSERT_EQ(SPV_SUCCESS, result);
   } else {
     ASSERT_EQ(SPV_ERROR_INVALID_DATA, result);
@@ -102,20 +129,60 @@ TEST_P(VulkanGroupNonUniformScope, Scopes) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(GroupNonUniformElect, VulkanGroupNonUniformScope,
-                        Combine(Values("OpGroupNonUniformElect"),
-                                Values("%bool"),
-                                Values("%cross_device", "%device", "%workgroup",
-                                       "%subgroup", "%invocation"),
-                                Values("")));
+TEST_P(GroupNonUniformScope, Spirv1p3) {
+  std::string opcode = std::get<0>(GetParam());
+  std::string type = std::get<1>(GetParam());
+  SpvScope execution_scope = std::get<2>(GetParam());
+  std::string args = std::get<3>(GetParam());
 
-INSTANTIATE_TEST_CASE_P(GroupNonUniformVote, VulkanGroupNonUniformScope,
+  std::ostringstream sstr;
+  sstr << "%result = " << opcode << " ";
+  sstr << type << " ";
+  sstr << ConvertScope(execution_scope) << " ";
+  sstr << args << "\n";
+
+  CompileSuccessfully(GenerateShaderCode(sstr.str()), SPV_ENV_UNIVERSAL_1_3);
+  spv_result_t result = ValidateInstructions(SPV_ENV_UNIVERSAL_1_3);
+  if (execution_scope == SpvScopeSubgroup ||
+      execution_scope == SpvScopeWorkgroup) {
+    ASSERT_EQ(SPV_SUCCESS, result);
+  } else {
+    ASSERT_EQ(SPV_ERROR_INVALID_DATA, result);
+    EXPECT_THAT(
+        getDiagnosticString(),
+        HasSubstr("Execution scope is limited to Subgroup or Workgroup"));
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformElect, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformElect"),
+                                Values("%bool"), ValuesIn(scopes), Values("")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformVote, GroupNonUniformScope,
                         Combine(Values("OpGroupNonUniformAll",
                                        "OpGroupNonUniformAny",
                                        "OpGroupNonUniformAllEqual"),
-                                Values("%bool"),
-                                Values("%cross_device", "%device", "%workgroup",
-                                       "%subgroup", "%invocation"),
+                                Values("%bool"), ValuesIn(scopes),
                                 Values("%true")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformBroadcast, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformBroadcast"),
+                                Values("%bool"), ValuesIn(scopes),
+                                Values("%true %u32_0")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformBroadcastFirst, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformBroadcastFirst"),
+                                Values("%bool"), ValuesIn(scopes),
+                                Values("%true")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformBallot, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformBallot"),
+                                Values("%u32vec4"), ValuesIn(scopes),
+                                Values("%true")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformInverseBallot, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformInverseBallot"),
+                                Values("%bool"), ValuesIn(scopes),
+                                Values("%u32vec4_null")));
 
 }  // anonymous namespace

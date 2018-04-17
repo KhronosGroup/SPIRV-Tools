@@ -47,13 +47,18 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   }
 
   if (spvIsVulkanEnv(_.context()->target_env) &&
-      _.context()->target_env != SPV_ENV_VULKAN_1_0) {
-    if (value != SpvScopeSubgroup) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
-             << spvOpcodeString(opcode)
-             << ": in Vulkan environment Execution scope is limited to "
-                "Subgroup";
-    }
+      _.context()->target_env != SPV_ENV_VULKAN_1_0 &&
+      value != SpvScopeSubgroup) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": in Vulkan environment Execution scope is limited to "
+              "Subgroup";
+  }
+
+  if (value != SpvScopeSubgroup && value != SpvScopeWorkgroup) {
+    return _.diag(SPV_ERROR_INVALID_DATA) << spvOpcodeString(opcode)
+                                          << ": Execution scope is limited to "
+                                             "Subgroup or Workgroup";
   }
 
   return SPV_SUCCESS;
