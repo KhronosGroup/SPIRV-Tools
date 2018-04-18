@@ -1419,7 +1419,7 @@ TEST(DependencyAnalysis, Crossing) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store;
+    const ir::Instruction* store = nullptr;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
@@ -1440,7 +1440,7 @@ TEST(DependencyAnalysis, Crossing) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store;
+    const ir::Instruction* store = nullptr;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
@@ -1462,7 +1462,7 @@ TEST(DependencyAnalysis, Crossing) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store;
+    const ir::Instruction* store = nullptr;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 75)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
@@ -1483,7 +1483,7 @@ TEST(DependencyAnalysis, Crossing) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store;
+    const ir::Instruction* store = nullptr;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 99)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
@@ -1505,7 +1505,7 @@ TEST(DependencyAnalysis, Crossing) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store;
+    const ir::Instruction* store = nullptr;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 121)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
@@ -1526,7 +1526,7 @@ TEST(DependencyAnalysis, Crossing) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store;
+    const ir::Instruction* store = nullptr;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 142)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
@@ -1548,7 +1548,7 @@ TEST(DependencyAnalysis, Crossing) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store;
+    const ir::Instruction* store = nullptr;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 162)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
@@ -1569,7 +1569,7 @@ TEST(DependencyAnalysis, Crossing) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store;
+    const ir::Instruction* store = nullptr;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 183)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
