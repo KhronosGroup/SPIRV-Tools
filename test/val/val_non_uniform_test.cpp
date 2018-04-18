@@ -36,6 +36,11 @@ OpCapability Shader
 OpCapability GroupNonUniform
 OpCapability GroupNonUniformVote
 OpCapability GroupNonUniformBallot
+OpCapability GroupNonUniformShuffle
+OpCapability GroupNonUniformShuffleRelative
+OpCapability GroupNonUniformArithmetic
+OpCapability GroupNonUniformClustered
+OpCapability GroupNonUniformQuad
 )";
 
   ss << capabilities_and_extensions;
@@ -47,12 +52,15 @@ OpCapability GroupNonUniformBallot
 %func = OpTypeFunction %void
 %bool = OpTypeBool
 %u32 = OpTypeInt 32 0
+%float = OpTypeFloat 32
 %u32vec4 = OpTypeVector %u32 4
 
 %true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
 
 %u32_0 = OpConstant %u32 0
+
+%float_0 = OpConstant %float 0
 
 %u32vec4_null = OpConstantComposite %u32vec4 %u32_0 %u32_0 %u32_0 %u32_0
 
@@ -184,5 +192,57 @@ INSTANTIATE_TEST_CASE_P(GroupNonUniformInverseBallot, GroupNonUniformScope,
                         Combine(Values("OpGroupNonUniformInverseBallot"),
                                 Values("%bool"), ValuesIn(scopes),
                                 Values("%u32vec4_null")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformBallotBitExtract, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformBallotBitExtract"),
+                                Values("%bool"), ValuesIn(scopes),
+                                Values("%u32vec4_null %u32_0")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformBallotBitCount, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformBallotBitCount"),
+                                Values("%u32"), ValuesIn(scopes),
+                                Values("Reduce %u32vec4_null")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformBallotFind, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformBallotFindLSB",
+                                       "OpGroupNonUniformBallotFindMSB"),
+                                Values("%u32"), ValuesIn(scopes),
+                                Values("%u32vec4_null")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformShuffle, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformShuffle",
+                                       "OpGroupNonUniformShuffleXor",
+                                       "OpGroupNonUniformShuffleUp",
+                                       "OpGroupNonUniformShuffleDown"),
+                                Values("%u32"), ValuesIn(scopes),
+                                Values("%u32_0 %u32_0")));
+
+INSTANTIATE_TEST_CASE_P(
+    GroupNonUniformIntegerArithmetic, GroupNonUniformScope,
+    Combine(Values("OpGroupNonUniformIAdd", "OpGroupNonUniformIMul",
+                   "OpGroupNonUniformSMin", "OpGroupNonUniformUMin",
+                   "OpGroupNonUniformSMax", "OpGroupNonUniformUMax",
+                   "OpGroupNonUniformBitwiseAnd", "OpGroupNonUniformBitwiseOr",
+                   "OpGroupNonUniformBitwiseXor"),
+            Values("%u32"), ValuesIn(scopes), Values("Reduce %u32_0")));
+
+INSTANTIATE_TEST_CASE_P(
+    GroupNonUniformFloatArithmetic, GroupNonUniformScope,
+    Combine(Values("OpGroupNonUniformFAdd", "OpGroupNonUniformFMul",
+                   "OpGroupNonUniformFMin", "OpGroupNonUniformFMax"),
+            Values("%float"), ValuesIn(scopes), Values("Reduce %float_0")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformLogicalArithmetic, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformLogicalAnd",
+                                       "OpGroupNonUniformLogicalOr",
+                                       "OpGroupNonUniformLogicalXor"),
+                                Values("%bool"), ValuesIn(scopes),
+                                Values("Reduce %true")));
+
+INSTANTIATE_TEST_CASE_P(GroupNonUniformQuad, GroupNonUniformScope,
+                        Combine(Values("OpGroupNonUniformQuadBroadcast",
+                                       "OpGroupNonUniformQuadSwap"),
+                                Values("%u32"), ValuesIn(scopes),
+                                Values("%u32_0 %u32_0")));
 
 }  // anonymous namespace
