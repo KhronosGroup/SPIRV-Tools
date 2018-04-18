@@ -21,8 +21,8 @@
 
 namespace {
 
-using ::testing::HasSubstr;
 using ::testing::Combine;
+using ::testing::HasSubstr;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
