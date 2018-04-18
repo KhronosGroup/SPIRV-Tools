@@ -170,7 +170,7 @@ TEST(DependencyAnalysisHelpers, UnsupportedLoops) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[1];
+    const ir::Instruction* store[1] = {nullptr};
     int stores_found = 0;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 16)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
@@ -197,7 +197,7 @@ TEST(DependencyAnalysisHelpers, UnsupportedLoops) {
     std::vector<const ir::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[1];
+    const ir::Instruction* store[1] = {nullptr};
     int stores_found = 0;
     for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 47)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
