@@ -277,7 +277,7 @@ UnaryScalarFoldingRule FoldFToIOp() {
   };
 }
 
-// This macro defines a |UnaryScalarFoldingRule| that performs integer to
+// This function defines a |UnaryScalarFoldingRule| that performs integer to
 // float conversion.
 // TODO(greg-lunarg): Support for 64-bit integer types.
 UnaryScalarFoldingRule FoldIToFOp() {
@@ -498,6 +498,31 @@ ConstantFoldingRule FoldOpDotWithConstants() {
   };
 }
 
+// This function defines a |UnaryScalarFoldingRule| that subtracts the constant
+// from zero.
+UnaryScalarFoldingRule FoldFNegateOp() {
+  return [](const analysis::Type* result_type, const analysis::Constant* a,
+            analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
+    assert(result_type != nullptr && a != nullptr);
+    assert(result_type == a->type());
+    const analysis::Float* float_type = result_type->AsFloat();
+    assert(float_type != nullptr);
+    if (float_type->width() == 32) {
+      float fa = a->GetFloat();
+      spvutils::FloatProxy<float> result(-fa);
+      std::vector<uint32_t> words = result.GetWords();
+      return const_mgr->GetConstant(result_type, words);
+    } else if (float_type->width() == 64) {
+      double da = a->GetDouble();
+      spvutils::FloatProxy<double> result(-da);
+      std::vector<uint32_t> words = result.GetWords();
+      return const_mgr->GetConstant(result_type, words);
+    }
+    return nullptr;
+  };
+}
+
+ConstantFoldingRule FoldFNegate() { return FoldFPUnaryOp(FoldFNegateOp()); }
 }  // namespace
 
 spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
@@ -535,6 +560,8 @@ spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
   rules_[SpvOpFUnordGreaterThanEqual].push_back(FoldFUnordGreaterThanEqual());
 
   rules_[SpvOpVectorShuffle].push_back(FoldVectorShuffleWithConstants());
+
+  rules_[SpvOpFNegate].push_back(FoldFNegate());
 }
 }  // namespace opt
 }  // namespace spvtools

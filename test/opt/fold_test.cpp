@@ -229,8 +229,6 @@ OpName %main "main"
 %v2double_4_4 = OpConstantComposite %v2double %double_4 %double_4
 %v2double_2_0p5 = OpConstantComposite %v2double %double_2 %double_0p5
 %v2double_null = OpConstantNull %v2double
-%float_nan = OpConstant %float -0x1.8p+128
-%double_nan = OpConstant %double -0x1.8p+1024
 %108 = OpConstant %half 0
 %half_1 = OpConstant %half 1
 %106 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
@@ -243,9 +241,25 @@ OpName %main "main"
 %v4double_0_0_0_1 = OpConstantComposite %v4double %double_0 %double_0 %double_0 %double_1
 %v4double_0_1_0_0 = OpConstantComposite %v4double %double_0 %double_1 %double_null %double_0
 %v4double_1_1_1_1 = OpConstantComposite %v4double %double_1 %double_1 %double_1 %double_1
+%v4float_n1_2_1_3 = OpConstantComposite %v4float %float_n1 %float_2 %float_1 %float_3
 )";
 
   return header;
+}
+
+// Returns the header with definitions of float NaN and double NaN. Since FC
+// "; CHECK: [[double_n0:%\\w+]] = OpConstant [[double]] -0\n" finds
+// %double_nan = OpConstant %double -0x1.8p+1024 instead of
+// %double_n0 = OpConstant %double -0,
+// we separates those definitions from Header().
+const std::string& HeaderWithNaN() {
+  static const std::string headerWithNaN =
+      Header() +
+      R"(%float_nan = OpConstant %float -0x1.8p+128
+%double_nan = OpConstant %double -0x1.8p+1024
+)";
+
+  return headerWithNaN;
 }
 
 // clang-format off
@@ -863,7 +877,15 @@ INSTANTIATE_TEST_CASE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
             "%3 = OpDot %float %2 %v2float_null\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        3, 0.0f)
+        3, 0.0f),
+    // Test case 11: Fold -2.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFNegate %float %float_2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, -2)
 ));
 // clang-format on
 
@@ -943,7 +965,7 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
                 "OpReturn\n" +
                 "OpFunctionEnd",
             2, std::numeric_limits<double>::infinity()),
-        // Test case 4: Fold -1.0 / 0.0
+        // Test case 5: Fold -1.0 / 0.0
         InstructionFoldingCase<double>(
             Header() + "%main = OpFunction %void None %void_func\n" +
                 "%main_lab = OpLabel\n" +
@@ -951,7 +973,7 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
                 "OpReturn\n" +
                 "OpFunctionEnd",
             2, -std::numeric_limits<double>::infinity()),
-        // Test case 5: Fold (2.0, 3.0) dot (2.0, 0.5)
+        // Test case 6: Fold (2.0, 3.0) dot (2.0, 0.5)
         InstructionFoldingCase<double>(
             Header() + "%main = OpFunction %void None %void_func\n" +
                 "%main_lab = OpLabel\n" +
@@ -959,7 +981,7 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
                 "OpReturn\n" +
                 "OpFunctionEnd",
             2, 5.5f),
-        // Test case 6: Fold (0.0, 0.0) dot v
+        // Test case 7: Fold (0.0, 0.0) dot v
         InstructionFoldingCase<double>(
             Header() + "%main = OpFunction %void None %void_func\n" +
                 "%main_lab = OpLabel\n" +
@@ -969,7 +991,7 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
                 "OpReturn\n" +
                 "OpFunctionEnd",
             3, 0.0f),
-        // Test case 7: Fold v dot (0.0, 0.0)
+        // Test case 8: Fold v dot (0.0, 0.0)
         InstructionFoldingCase<double>(
             Header() + "%main = OpFunction %void None %void_func\n" +
                 "%main_lab = OpLabel\n" +
@@ -979,7 +1001,7 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
                 "OpReturn\n" +
                 "OpFunctionEnd",
             3, 0.0f),
-        // Test case 8: Fold Null dot v
+        // Test case 9: Fold Null dot v
         InstructionFoldingCase<double>(
             Header() + "%main = OpFunction %void None %void_func\n" +
                 "%main_lab = OpLabel\n" +
@@ -989,7 +1011,7 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
                 "OpReturn\n" +
                 "OpFunctionEnd",
             3, 0.0f),
-        // Test case 9: Fold v dot Null
+        // Test case 10: Fold v dot Null
         InstructionFoldingCase<double>(
             Header() + "%main = OpFunction %void None %void_func\n" +
                 "%main_lab = OpLabel\n" +
@@ -998,7 +1020,15 @@ INSTANTIATE_TEST_CASE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest,
                 "%3 = OpDot %double %2 %v2double_null\n" +
                 "OpReturn\n" +
                 "OpFunctionEnd",
-            3, 0.0f)
+            3, 0.0f),
+        // Test case 11: Fold -2.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpFNegate %double %double_2\n" +
+                "OpReturn\n" +
+                "OpFunctionEnd",
+            2, -2)
 ));
 // clang-format on
 
@@ -1535,7 +1565,7 @@ INSTANTIATE_TEST_CASE_P(DoubleNaNCompareConstantFoldingTest, BooleanInstructionF
                         ::testing::Values(
   // Test case 0: fold NaN == 0 (ord)
   InstructionFoldingCase<bool>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
+      HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFOrdEqual %bool %double_nan %double_0\n" +
           "OpReturn\n" +
@@ -1543,7 +1573,7 @@ INSTANTIATE_TEST_CASE_P(DoubleNaNCompareConstantFoldingTest, BooleanInstructionF
       2, false),
   // Test case 1: fold NaN == NaN (unord)
   InstructionFoldingCase<bool>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
+      HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFUnordEqual %bool %double_nan %double_0\n" +
           "OpReturn\n" +
@@ -1551,7 +1581,7 @@ INSTANTIATE_TEST_CASE_P(DoubleNaNCompareConstantFoldingTest, BooleanInstructionF
       2, true),
   // Test case 2: fold NaN != NaN (ord)
   InstructionFoldingCase<bool>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
+      HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFOrdNotEqual %bool %double_nan %double_0\n" +
           "OpReturn\n" +
@@ -1559,7 +1589,7 @@ INSTANTIATE_TEST_CASE_P(DoubleNaNCompareConstantFoldingTest, BooleanInstructionF
       2, false),
   // Test case 3: fold NaN != NaN (unord)
   InstructionFoldingCase<bool>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
+      HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFUnordNotEqual %bool %double_nan %double_0\n" +
           "OpReturn\n" +
@@ -1571,7 +1601,7 @@ INSTANTIATE_TEST_CASE_P(FloatNaNCompareConstantFoldingTest, BooleanInstructionFo
                         ::testing::Values(
   // Test case 0: fold NaN == 0 (ord)
   InstructionFoldingCase<bool>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
+      HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFOrdEqual %bool %float_nan %float_0\n" +
           "OpReturn\n" +
@@ -1579,7 +1609,7 @@ INSTANTIATE_TEST_CASE_P(FloatNaNCompareConstantFoldingTest, BooleanInstructionFo
       2, false),
   // Test case 1: fold NaN == NaN (unord)
   InstructionFoldingCase<bool>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
+      HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFUnordEqual %bool %float_nan %float_0\n" +
           "OpReturn\n" +
@@ -1587,7 +1617,7 @@ INSTANTIATE_TEST_CASE_P(FloatNaNCompareConstantFoldingTest, BooleanInstructionFo
       2, true),
   // Test case 2: fold NaN != NaN (ord)
   InstructionFoldingCase<bool>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
+      HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFOrdNotEqual %bool %float_nan %float_0\n" +
           "OpReturn\n" +
@@ -1595,7 +1625,7 @@ INSTANTIATE_TEST_CASE_P(FloatNaNCompareConstantFoldingTest, BooleanInstructionFo
       2, false),
   // Test case 3: fold NaN != NaN (unord)
   InstructionFoldingCase<bool>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
+      HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
           "%main_lab = OpLabel\n" +
           "%2 = OpFUnordNotEqual %bool %float_nan %float_0\n" +
           "OpReturn\n" +
@@ -3396,7 +3426,38 @@ INSTANTIATE_TEST_CASE_P(MergeNegateTest, MatchingInstructionFoldingTest,
       "%4 = OpSNegate %long %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd",
-    4, true)
+    4, true),
+    // Test case 18: fold -vec4(-1.0, 2.0, 1.0, 3.0)
+    InstructionFoldingCase<bool>(
+        Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[v4float:%\\w+]] = OpTypeVector [[float]] 4\n" +
+      "; CHECK: [[float_n1:%\\w+]] = OpConstant [[float]] -1\n" +
+      "; CHECK: [[float_1:%\\w+]] = OpConstant [[float]] 1\n" +
+      "; CHECK: [[float_n2:%\\w+]] = OpConstant [[float]] -2\n" +
+      "; CHECK: [[float_n3:%\\w+]] = OpConstant [[float]] -3\n" +
+      "; CHECK: [[v4float_1_n2_n1_n3:%\\w+]] = OpConstantComposite [[v4float]] [[float_1]] [[float_n2]] [[float_n1]] [[float_n3]]\n" +
+      "; CHECK: %2 = OpCopyObject [[v4float]] [[v4float_1_n2_n1_n3]]\n" +
+        "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFNegate %v4float %v4float_n1_2_1_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, true),
+    // Test case 19: fold vector fnegate with null
+    InstructionFoldingCase<bool>(
+        Header() +
+      "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+      "; CHECK: [[v2double:%\\w+]] = OpTypeVector [[double]] 2\n" +
+      "; CHECK: [[double_n0:%\\w+]] = OpConstant [[double]] -0\n" +
+      "; CHECK: [[v2double_0_0:%\\w+]] = OpConstantComposite [[v2double]] [[double_n0]] [[double_n0]]\n" +
+      "; CHECK: %2 = OpCopyObject [[v2double]] [[v2double_0_0]]\n" +
+        "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpFNegate %v2double %v2double_null\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, true)
 ));
 
 INSTANTIATE_TEST_CASE_P(ReciprocalFDivTest, MatchingInstructionFoldingTest,
