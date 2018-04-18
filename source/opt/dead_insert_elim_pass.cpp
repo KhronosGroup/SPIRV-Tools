@@ -65,10 +65,9 @@ uint32_t DeadInsertElimPass::NumComponents(ir::Instruction* typeInst) {
   }
 }
 
-void DeadInsertElimPass::MarkInsertChain(ir::Instruction* insertChain,
-                                         std::vector<uint32_t>* pExtIndices,
-                                         uint32_t extOffset,
-                                         std::unordered_set<uint32_t>* visited_phis) {
+void DeadInsertElimPass::MarkInsertChain(
+    ir::Instruction* insertChain, std::vector<uint32_t>* pExtIndices,
+    uint32_t extOffset, std::unordered_set<uint32_t>* visited_phis) {
   // Not currently optimizing array inserts.
   ir::Instruction* typeInst = get_def_use_mgr()->GetDef(insertChain->type_id());
   if (typeInst->opcode() == SpvOpTypeArray) return;
@@ -104,7 +103,8 @@ void DeadInsertElimPass::MarkInsertChain(ir::Instruction* insertChain,
       liveInserts_.insert(insInst->result_id());
       uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
       std::unordered_set<uint32_t> obj_visited_phis;
-      MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0, &obj_visited_phis);
+      MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0,
+                      &obj_visited_phis);
     }
     // If extract indices match insert, we are done. Mark insert and
     // inserted object.
@@ -112,7 +112,8 @@ void DeadInsertElimPass::MarkInsertChain(ir::Instruction* insertChain,
       liveInserts_.insert(insInst->result_id());
       uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
       std::unordered_set<uint32_t> obj_visited_phis;
-      MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0, &obj_visited_phis);
+      MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0,
+                      &obj_visited_phis);
       break;
     }
     // If non-matching intersection, mark insert
@@ -133,7 +134,8 @@ void DeadInsertElimPass::MarkInsertChain(ir::Instruction* insertChain,
       else {
         uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
         std::unordered_set<uint32_t> obj_visited_phis;
-        MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0, &obj_visited_phis);
+        MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0,
+                        &obj_visited_phis);
       }
     }
     // Get next insert in chain
@@ -145,8 +147,7 @@ void DeadInsertElimPass::MarkInsertChain(ir::Instruction* insertChain,
   if (insInst->opcode() != SpvOpPhi) return;
   // Mark phi visited to prevent potential infinite loop. If phi is already
   // visited, return to avoid infinite loop.
-  if (visited_phis->count(insInst->result_id()) != 0)
-    return;
+  if (visited_phis->count(insInst->result_id()) != 0) return;
   visited_phis->insert(insInst->result_id());
 
   // Phis may have duplicate inputs values for different edges, prune incoming
