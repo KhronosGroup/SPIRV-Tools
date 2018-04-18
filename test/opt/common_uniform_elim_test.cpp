@@ -1164,7 +1164,6 @@ OpFunctionEnd
       R"(%main = OpFunction %void None %12
 %28 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
-%54 = OpLoad %float %alpha
 %29 = OpLoad %v4float %BaseColor
 OpStore %v %29
 %50 = OpLoad %U_t %_
@@ -1173,6 +1172,7 @@ OpStore %v %29
 OpSelectionMerge %33 None
 OpBranchConditional %32 %33 %34
 %33 = OpLabel
+%54 = OpLoad %float %alpha
 %53 = OpCompositeExtract %float %50 1
 %37 = OpLoad %v4float %v
 %38 = OpVectorTimesScalar %v4float %37 %53
