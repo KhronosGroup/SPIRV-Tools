@@ -349,6 +349,9 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
   while (insertItr->opcode() == SpvOpVariable ||
          insertItr->opcode() == SpvOpNop)
     ++insertItr;
+  // Update insertItr until it will not be removed. Without this code,
+  // ReplaceAndDeleteLoad() can set |insertItr| as a dangling pointer.
+  while (IsUniformLoadToBeRemoved(&*insertItr)) ++insertItr;
   uint32_t mergeBlockId = 0;
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     ir::BasicBlock* bp = *bi;
@@ -357,20 +360,10 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
     if (mergeBlockId == bp->id()) {
       mergeBlockId = 0;
       insertItr = bp->begin();
+      // Update insertItr until it will not be removed. Without this code,
+      // ReplaceAndDeleteLoad() can set |insertItr| as a dangling pointer.
+      while (IsUniformLoadToBeRemoved(&*insertItr)) ++insertItr;
     }
-    // Update insertItr until it will not be removed. Without this code,
-    // ReplaceAndDeleteLoad() can set |insertItr| as a dangling pointer.
-    while (insertItr->opcode() == SpvOpLoad) {
-      uint32_t varId;
-      ir::Instruction* ptrInst = GetPtr(&*insertItr, &varId);
-      if (ptrInst->opcode() != SpvOpVariable || !IsUniformVar(varId) ||
-          IsSamplerOrImageVar(varId) ||
-          HasUnsupportedDecorates(insertItr->result_id()) ||
-          IsVolatileLoad(*insertItr))
-        break;
-      ++insertItr;
-    }
-
     for (ir::Instruction* inst = &*bp->begin(); inst; inst = inst->NextNode()) {
       if (inst->opcode() != SpvOpLoad) continue;
       uint32_t varId;
