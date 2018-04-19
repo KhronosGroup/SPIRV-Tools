@@ -183,87 +183,176 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
-TEST_F(LocalSingleBlockLoadStoreElimTest,
-       NoStoreElimIfInterveningAccessChainLoad) {
+TEST_F(LocalSingleBlockLoadStoreElimTest, StoreStoreElim) {
   //
-  // Note that even though the Load to %v is eliminated, the Store to %v
-  // is not eliminated due to the following access chain reference.
+  // Note first store to v is eliminated
   //
-  // #version 140
+  // #version 450
   //
-  // in vec4 BaseColor;
-  // flat in int Idx;
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
   //
   // void main()
   // {
   //     vec4 v = BaseColor;
+  //     v = v * 0.5;
+  //     OutColor = v;
+  // }
+
+  const std::string predefs_before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%float_0_5 = OpConstant %float 0.5
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %7
+%14 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%15 = OpLoad %v4float %BaseColor
+OpStore %v %15
+%16 = OpLoad %v4float %v
+%17 = OpVectorTimesScalar %v4float %16 %float_0_5
+OpStore %v %17
+%18 = OpLoad %v4float %v
+OpStore %OutColor %18
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %7
+%14 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%15 = OpLoad %v4float %BaseColor
+%17 = OpVectorTimesScalar %v4float %15 %float_0_5
+OpStore %v %17
+OpStore %OutColor %17
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+      predefs_before + before, predefs_before + after, true, true);
+}
+
+TEST_F(LocalSingleBlockLoadStoreElimTest,
+       NoStoreElimIfInterveningAccessChainLoad) {
+  //
+  // Note the first Store to %v is not eliminated due to the following access
+  // chain reference.
+  //
+  // #version 450
+  //
+  // layout(location = 0) in vec4 BaseColor0;
+  // layout(location = 1) in vec4 BaseColor1;
+  // layout(location = 2) flat in int Idx;
+  // layout(location = 0) out vec4 OutColor;
+  //
+  // void main()
+  // {
+  //     vec4 v = BaseColor0;
   //     float f = v[Idx];
-  //     gl_FragColor = v/f;
+  //     v = BaseColor1 + vec4(0.1);
+  //     OutColor = v/f;
   // }
 
   const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %BaseColor %Idx %gl_FragColor
+OpEntryPoint Fragment %main "main" %BaseColor0 %Idx %BaseColor1 %OutColor
 OpExecutionMode %main OriginUpperLeft
-OpSource GLSL 140
+OpSource GLSL 450
 OpName %main "main"
 OpName %v "v"
-OpName %BaseColor "BaseColor"
+OpName %BaseColor0 "BaseColor0"
 OpName %f "f"
 OpName %Idx "Idx"
-OpName %gl_FragColor "gl_FragColor"
+OpName %BaseColor1 "BaseColor1"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor0 Location 0
 OpDecorate %Idx Flat
+OpDecorate %Idx Location 2
+OpDecorate %BaseColor1 Location 1
+OpDecorate %OutColor Location 0
 %void = OpTypeVoid
-%9 = OpTypeFunction %void
+%10 = OpTypeFunction %void
 %float = OpTypeFloat 32
 %v4float = OpTypeVector %float 4
 %_ptr_Function_v4float = OpTypePointer Function %v4float
 %_ptr_Input_v4float = OpTypePointer Input %v4float
-%BaseColor = OpVariable %_ptr_Input_v4float Input
+%BaseColor0 = OpVariable %_ptr_Input_v4float Input
 %_ptr_Function_float = OpTypePointer Function %float
 %int = OpTypeInt 32 1
 %_ptr_Input_int = OpTypePointer Input %int
 %Idx = OpVariable %_ptr_Input_int Input
+%BaseColor1 = OpVariable %_ptr_Input_v4float Input
+%float_0_100000001 = OpConstant %float 0.100000001
+%19 = OpConstantComposite %v4float %float_0_100000001 %float_0_100000001 %float_0_100000001 %float_0_100000001
 %_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%OutColor = OpVariable %_ptr_Output_v4float Output
 )";
 
   const std::string before =
-      R"(%main = OpFunction %void None %9
-%18 = OpLabel
+      R"(%main = OpFunction %void None %10
+%21 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
 %f = OpVariable %_ptr_Function_float Function
-%19 = OpLoad %v4float %BaseColor
-OpStore %v %19
-%20 = OpLoad %int %Idx
-%21 = OpAccessChain %_ptr_Function_float %v %20
-%22 = OpLoad %float %21
-OpStore %f %22
-%23 = OpLoad %v4float %v
-%24 = OpLoad %float %f
-%25 = OpCompositeConstruct %v4float %24 %24 %24 %24
-%26 = OpFDiv %v4float %23 %25
-OpStore %gl_FragColor %26
+%22 = OpLoad %v4float %BaseColor0
+OpStore %v %22
+%23 = OpLoad %int %Idx
+%24 = OpAccessChain %_ptr_Function_float %v %23
+%25 = OpLoad %float %24
+OpStore %f %25
+%26 = OpLoad %v4float %BaseColor1
+%27 = OpFAdd %v4float %26 %19
+OpStore %v %27
+%28 = OpLoad %v4float %v
+%29 = OpLoad %float %f
+%30 = OpCompositeConstruct %v4float %29 %29 %29 %29
+%31 = OpFDiv %v4float %28 %30
+OpStore %OutColor %31
 OpReturn
 OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%main = OpFunction %void None %9
-%18 = OpLabel
+      R"(%main = OpFunction %void None %10
+%21 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
 %f = OpVariable %_ptr_Function_float Function
-%19 = OpLoad %v4float %BaseColor
-OpStore %v %19
-%20 = OpLoad %int %Idx
-%21 = OpAccessChain %_ptr_Function_float %v %20
-%22 = OpLoad %float %21
-OpStore %f %22
-%25 = OpCompositeConstruct %v4float %22 %22 %22 %22
-%26 = OpFDiv %v4float %19 %25
-OpStore %gl_FragColor %26
+%22 = OpLoad %v4float %BaseColor0
+OpStore %v %22
+%23 = OpLoad %int %Idx
+%24 = OpAccessChain %_ptr_Function_float %v %23
+%25 = OpLoad %float %24
+OpStore %f %25
+%26 = OpLoad %v4float %BaseColor1
+%27 = OpFAdd %v4float %26 %19
+OpStore %v %27
+%30 = OpCompositeConstruct %v4float %25 %25 %25 %25
+%31 = OpFDiv %v4float %27 %30
+OpStore %OutColor %31
 OpReturn
 OpFunctionEnd
 )";
@@ -554,7 +643,6 @@ OpFunctionEnd
 %29 = OpLoad %v2float %texCoords
 %30 = OpLoad %S_t %s0
 %31 = OpCompositeInsert %S_t %29 %30 0
-OpStore %s0 %31
 %32 = OpLoad %18 %sampler15
 %34 = OpCompositeInsert %S_t %32 %31 2
 OpStore %s0 %34
