@@ -50,7 +50,8 @@ class DeadInsertElimPass : public MemPass {
   // index at |extOffset|. Chains are composed solely of Inserts and Phis.
   // Mark all inserts in chain if |extIndices| is nullptr.
   void MarkInsertChain(ir::Instruction* insertChain,
-                       std::vector<uint32_t>* extIndices, uint32_t extOffset);
+                       std::vector<uint32_t>* extIndices, uint32_t extOffset,
+                       std::unordered_set<uint32_t>* visited_phis);
 
   // Perform EliminateDeadInsertsOnePass(|func|) until no modification is
   // made. Return true if modified.
