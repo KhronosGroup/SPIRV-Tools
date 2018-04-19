@@ -88,9 +88,8 @@ OpFunctionEnd)";
   return ss.str();
 }
 
-std::vector<SpvScope> scopes({SpvScopeCrossDevice, SpvScopeDevice,
-                              SpvScopeWorkgroup, SpvScopeSubgroup,
-                              SpvScopeInvocation});
+SpvScope scopes[] = {SpvScopeCrossDevice, SpvScopeDevice, SpvScopeWorkgroup,
+                     SpvScopeSubgroup, SpvScopeInvocation};
 
 using GroupNonUniformScope = spvtest::ValidateBase<
     std::tuple<std::string, std::string, SpvScope, std::string>>;
@@ -127,9 +126,9 @@ TEST_P(GroupNonUniformScope, Vulkan1p1) {
   CompileSuccessfully(GenerateShaderCode(sstr.str()), SPV_ENV_VULKAN_1_1);
   spv_result_t result = ValidateInstructions(SPV_ENV_VULKAN_1_1);
   if (execution_scope == SpvScopeSubgroup) {
-    ASSERT_EQ(SPV_SUCCESS, result);
+    EXPECT_EQ(SPV_SUCCESS, result);
   } else {
-    ASSERT_EQ(SPV_ERROR_INVALID_DATA, result);
+    EXPECT_EQ(SPV_ERROR_INVALID_DATA, result);
     EXPECT_THAT(
         getDiagnosticString(),
         HasSubstr(
@@ -153,9 +152,9 @@ TEST_P(GroupNonUniformScope, Spirv1p3) {
   spv_result_t result = ValidateInstructions(SPV_ENV_UNIVERSAL_1_3);
   if (execution_scope == SpvScopeSubgroup ||
       execution_scope == SpvScopeWorkgroup) {
-    ASSERT_EQ(SPV_SUCCESS, result);
+    EXPECT_EQ(SPV_SUCCESS, result);
   } else {
-    ASSERT_EQ(SPV_ERROR_INVALID_DATA, result);
+    EXPECT_EQ(SPV_ERROR_INVALID_DATA, result);
     EXPECT_THAT(
         getDiagnosticString(),
         HasSubstr("Execution scope is limited to Subgroup or Workgroup"));
