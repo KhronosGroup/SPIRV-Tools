@@ -54,6 +54,7 @@ SPVTOOLS_SRC_FILES := \
 		source/validate_layout.cpp \
 		source/validate_literals.cpp \
 		source/validate_logicals.cpp \
+		source/validate_non_uniform.cpp \
 		source/validate_primitives.cpp \
 		source/validate_type_unique.cpp
 
