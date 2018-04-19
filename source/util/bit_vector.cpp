@@ -14,6 +14,7 @@
 
 #include "bit_vector.h"
 
+#include <cassert>
 #include <iostream>
 
 namespace spvtools {
@@ -36,5 +37,46 @@ void BitVector::ReportDensity(std::ostream& out) {
       << ", bytes per element="
       << (double)(bits_.size() * sizeof(BitContainer)) / (double)(count);
 }
+
+bool BitVector::Or(const BitVector& other) {
+  auto this_it = this->bits_.begin();
+  auto other_it = other.bits_.begin();
+  bool modified = false;
+
+  while (this_it != this->bits_.end() && other_it != other.bits_.end()) {
+    auto temp = *this_it | *other_it;
+    if (temp != *this_it) {
+      modified = true;
+      *this_it = temp;
+    }
+    ++this_it;
+    ++other_it;
+  }
+
+  if (other_it != other.bits_.end()) {
+    modified = true;
+    this->bits_.insert(this->bits_.end(), other_it, other.bits_.end());
+  }
+
+  return modified;
+}
+
+std::ostream& operator<<(std::ostream& out, const BitVector& bv) {
+  out << "{";
+  for (uint32_t i = 0; i < bv.bits_.size(); ++i) {
+    BitVector::BitContainer b = bv.bits_[i];
+    uint32_t j = 0;
+    while (b != 0) {
+      if (b & 1) {
+        out << ' ' << i * BitVector::kBitContainerSize + j;
+      }
+      ++j;
+      b = b >> 1;
+    }
+  }
+  out << "}";
+  return out;
+}
+
 }  // namespace utils
 }  // namespace spvtools

@@ -25,6 +25,7 @@ SPVTOOLS_SRC_FILES := \
 		source/text.cpp \
 		source/text_handler.cpp \
 		source/util/bit_stream.cpp \
+		source/util/bit_vector.cpp \
 		source/util/parse_number.cpp \
 		source/util/string_utils.cpp \
 		source/util/timer.cpp \
@@ -135,6 +136,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/types.cpp \
 		source/opt/unify_const_pass.cpp \
 		source/opt/value_number_table.cpp \
+		source/opt/vector_dce.cpp \
 		source/opt/workaround1209.cpp
 
 # Locations of grammar files.

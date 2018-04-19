@@ -18,4 +18,5 @@ add_spvtools_unittest(TARGET util_intrusive_list
 
 add_spvtools_unittest(TARGET bit_vector
   SRCS bit_vector_test.cpp
+  LIBS SPIRV-Tools-opt
 )
