@@ -351,7 +351,7 @@ int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* node) {
 std::set<const ir::Loop*> LoopDependenceAnalysis::CollectLoops(
     SENode* source, SENode* destination) {
   if (!source || !destination) {
-    return {};
+    return std::set<const ir::Loop*>{};
   }
 
   std::vector<SERecurrentNode*> source_nodes = source->CollectRecurrentNodes();
