@@ -208,7 +208,7 @@ class FilterIterator
   inline FilterIterator operator++(int) {
     FilterIterator old = *this;
     MoveToNextPosition();
-    return *old;
+    return old;
   }
 
   reference operator*() const { return *cur_; }
