@@ -107,8 +107,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
             // If a partial load of a previously seen store, remember
             // not to delete the store.
             auto si = var2store_.find(varId);
-            if (si != var2store_.end())
-              instructions_to_save.insert(si->second);
+            if (si != var2store_.end()) instructions_to_save.insert(si->second);
           }
           if (replId != 0) {
             // replace load's result id and delete load
