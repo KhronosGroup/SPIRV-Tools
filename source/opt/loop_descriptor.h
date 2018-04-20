@@ -436,6 +436,9 @@ class LoopDescriptor {
     return *loops_[index];
   }
 
+  // Returns the loops in |this| in the order their headers appear.
+  std::vector<ir::Loop*> GetLoopsInOrderOfAppearance();
+
   // Returns the inner most loop that contains the basic block id |block_id|.
   inline Loop* operator[](uint32_t block_id) const {
     return FindLoopForBasicBlock(block_id);

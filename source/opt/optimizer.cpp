@@ -377,6 +377,11 @@ Optimizer::PassToken CreateLocalRedundancyEliminationPass() {
       MakeUnique<opt::LocalRedundancyEliminationPass>());
 }
 
+Optimizer::PassToken CreateLoopFusionPass(size_t max_registers_per_loop) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LoopFusionPass>(max_registers_per_loop));
+}
+
 Optimizer::PassToken CreateLoopInvariantCodeMotionPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::LICMPass>());
 }

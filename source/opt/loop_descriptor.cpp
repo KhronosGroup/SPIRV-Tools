@@ -551,6 +551,29 @@ void LoopDescriptor::PopulateList(const Function* f) {
   }
 }
 
+std::vector<ir::Loop*> LoopDescriptor::GetLoopsInOrderOfAppearance() {
+  std::vector<uint32_t> ids{};
+
+  for (size_t i = 0; i < NumLoops(); ++i) {
+    ids.push_back(GetLoopByIndex(i).GetHeaderBlock()->id());
+  }
+
+  std::vector<ir::Loop*> loops{};
+  if (!ids.empty()) {
+    auto function = GetLoopByIndex(0).GetHeaderBlock()->GetParent();
+    for (const auto& block : *function) {
+      auto block_id = block.id();
+
+      auto element = std::find(std::begin(ids), std::end(ids), block_id);
+      if (element != std::end(ids)) {
+        loops.push_back(&GetLoopByIndex(element - std::begin(ids)));
+      }
+    }
+  }
+
+  return loops;
+}
+
 ir::BasicBlock* Loop::FindConditionBlock() const {
   if (!loop_merge_) {
     return nullptr;

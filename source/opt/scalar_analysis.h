@@ -120,6 +120,14 @@ class ScalarEvolutionAnalysis {
 
   SENode* UpdateChildNode(SENode* parent, SENode* child, SENode* new_child);
 
+  // The loops in |loop_pair| will be considered the same when constructing
+  // SERecurrentNode objects. This enables analysing dependencies that will be
+  // created during loop fusion.
+  void AddLoopsToPretendAreTheSame(
+      const std::pair<const ir::Loop*, const ir::Loop*>& loop_pair) {
+    pretend_equal_[std::get<1>(loop_pair)] = std::get<0>(loop_pair);
+  }
+
  private:
   SENode* AnalyzeConstant(const ir::Instruction* inst);
 
@@ -158,6 +166,10 @@ class ScalarEvolutionAnalysis {
   // managed by they set.
   std::unordered_set<std::unique_ptr<SENode>, SENodeHash, NodePointersEquality>
       node_cache_;
+
+  // Loops that should be considered the same for performing analysis for loop
+  // fusion.
+  std::map<const ir::Loop*, const ir::Loop*> pretend_equal_;
 };
 
 // Wrapping class to manipulate SENode pointer using + - * / operators.

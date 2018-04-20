@@ -176,6 +176,13 @@ Options (in lexicographical order):
   --local-redundancy-elimination
                Looks for instructions in the same basic block that compute the
                same value, and deletes the redundant ones.
+  --loop-fusion
+               Identifies adjacent loops with the same lower and upper bound.
+               If this is legal, then merge the loops into a single loop.
+               Includes heuristics to ensure it does not increase number of
+               registers too much, while reducing the number of loads from
+               memory. Takes an additional positive integer argument to set
+               the maximum number of registers.
   --loop-unroll
                Fully unrolls loops marked with the Unroll flag
   --loop-unroll-partial
@@ -399,6 +406,22 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
                     in_file, out_file, nullptr, &skip_validator);
 }
 
+OptStatus ParseLoopFusionArg(int argc, const char** argv, int argi,
+                             Optimizer* optimizer) {
+  if (argi < argc) {
+    int max_registers_per_loop = atoi(argv[argi]);
+    if (max_registers_per_loop > 0) {
+      optimizer->RegisterPass(
+          CreateLoopFusionPass(static_cast<size_t>(max_registers_per_loop)));
+      return {OPT_CONTINUE, 0};
+    }
+  }
+  fprintf(stderr,
+          "error: --loop-loop-fusion must be followed by a positive "
+          "integer\n");
+  return {OPT_STOP, 1};
+}
+
 OptStatus ParseLoopUnrollPartialArg(int argc, const char** argv, int argi,
                                     Optimizer* optimizer) {
   if (argi < argc) {
@@ -553,6 +576,11 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateSSARewritePass());
       } else if (0 == strcmp(cur_arg, "--copy-propagate-arrays")) {
         optimizer->RegisterPass(CreateCopyPropagateArraysPass());
+      } else if (0 == strcmp(cur_arg, "--loop-fusion")) {
+        OptStatus status = ParseLoopFusionArg(argc, argv, ++argi, optimizer);
+        if (status.action != OPT_CONTINUE) {
+          return status;
+        }
       } else if (0 == strcmp(cur_arg, "--loop-unroll")) {
         optimizer->RegisterPass(CreateLoopUnrollPass(true));
       } else if (0 == strcmp(cur_arg, "--loop-unroll-partial")) {
