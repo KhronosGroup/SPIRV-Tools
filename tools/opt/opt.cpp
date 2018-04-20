@@ -180,6 +180,13 @@ Options (in lexicographical order):
                Splits any top level loops in which the register pressure has exceeded
                a given threshold. The threshold must follow the use of this flag and
                must be a positive integer value.
+  --loop-fusion
+               Identifies adjacent loops with the same lower and upper bound.
+               If this is legal, then merge the loops into a single loop.
+               Includes heuristics to ensure it does not increase number of
+               registers too much, while reducing the number of loads from
+               memory. Takes an additional positive integer argument to set
+               the maximum number of registers.
   --loop-unroll
                Fully unrolls loops marked with the Unroll flag
   --loop-unroll-partial
@@ -418,6 +425,21 @@ OptStatus ParseLoopFissionArg(int argc, const char** argv, int argi,
   fprintf(
       stderr,
       "error: --loop-fission must be followed by a positive integer value\n");
+}
+
+OptStatus ParseLoopFusionArg(int argc, const char** argv, int argi,
+                             Optimizer* optimizer) {
+  if (argi < argc) {
+    int max_registers_per_loop = atoi(argv[argi]);
+    if (max_registers_per_loop > 0) {
+      optimizer->RegisterPass(
+          CreateLoopFusionPass(static_cast<size_t>(max_registers_per_loop)));
+      return {OPT_CONTINUE, 0};
+    }
+  }
+  fprintf(stderr,
+          "error: --loop-loop-fusion must be followed by a positive "
+          "integer\n");
   return {OPT_STOP, 1};
 }
 
@@ -577,6 +599,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCopyPropagateArraysPass());
       } else if (0 == strcmp(cur_arg, "--loop-fission")) {
         OptStatus status = ParseLoopFissionArg(argc, argv, ++argi, optimizer);
+      } else if (0 == strcmp(cur_arg, "--loop-fusion")) {
+        OptStatus status = ParseLoopFusionArg(argc, argv, ++argi, optimizer);
         if (status.action != OPT_CONTINUE) {
           return status;
         }
