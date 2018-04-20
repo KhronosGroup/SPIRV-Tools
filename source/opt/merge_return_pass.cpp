@@ -193,7 +193,7 @@ void MergeReturnPass::CreatePhiNodesForInst(ir::BasicBlock* merge_block,
                                             uint32_t predecessor,
                                             ir::Instruction& inst) {
   opt::DominatorAnalysis* dom_tree =
-      context()->GetDominatorAnalysis(merge_block->GetParent(), *cfg());
+      context()->GetDominatorAnalysis(merge_block->GetParent());
   ir::BasicBlock* inst_bb = context()->get_instr_block(&inst);
 
   if (inst.result_id() != 0) {
@@ -625,8 +625,7 @@ void MergeReturnPass::MergeReturnBlocks(
 }
 
 void MergeReturnPass::AddNewPhiNodes() {
-  opt::DominatorAnalysis* dom_tree =
-      context()->GetDominatorAnalysis(function_, *cfg());
+  opt::DominatorAnalysis* dom_tree = context()->GetDominatorAnalysis(function_);
   std::list<ir::BasicBlock*> order;
   cfg()->ComputeStructuredOrder(function_, &*function_->begin(), &order);
 
@@ -638,8 +637,7 @@ void MergeReturnPass::AddNewPhiNodes() {
 
 void MergeReturnPass::AddNewPhiNodes(ir::BasicBlock* bb, ir::BasicBlock* pred,
                                      uint32_t header_id) {
-  opt::DominatorAnalysis* dom_tree =
-      context()->GetDominatorAnalysis(function_, *cfg());
+  opt::DominatorAnalysis* dom_tree = context()->GetDominatorAnalysis(function_);
   // Insert as a stopping point.  We do not have to add anything in the block or
   // above because the header dominates |bb|.
 

@@ -18,6 +18,7 @@
 
 #include "cfa.h"
 #include "dominator_tree.h"
+#include "ir_context.h"
 
 using namespace spvtools;
 using namespace spvtools::opt;
@@ -324,13 +325,14 @@ void DominatorTree::GetDominatorEdges(
       CFA<ir::BasicBlock>::CalculateDominators(postorder, predecessor_functor);
 }
 
-void DominatorTree::InitializeTree(const ir::Function* f, const ir::CFG& cfg) {
+void DominatorTree::InitializeTree(const ir::Function* f) {
   ClearTree();
 
   // Skip over empty functions.
   if (f->cbegin() == f->cend()) {
     return;
   }
+  const ir::CFG& cfg = *f->context()->cfg();
 
   const ir::BasicBlock* dummy_start_node =
       postdominator_ ? cfg.pseudo_exit_block() : cfg.pseudo_entry_block();

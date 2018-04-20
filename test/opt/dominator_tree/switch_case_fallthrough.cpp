@@ -138,8 +138,7 @@ TEST_F(PassClassTest, UnreachableNestedIfs) {
                              << text << std::endl;
 
   const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::CFG cfg(module);
-  opt::DominatorAnalysis* analysis = context->GetDominatorAnalysis(f, cfg);
+  opt::DominatorAnalysis* analysis = context->GetDominatorAnalysis(f);
 
   EXPECT_TRUE(analysis->Dominates(5, 5));
   EXPECT_TRUE(analysis->Dominates(5, 17));

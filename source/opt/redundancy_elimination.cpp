@@ -29,7 +29,7 @@ Pass::Status RedundancyEliminationPass::Process(ir::IRContext* c) {
     // Build the dominator tree for this function. It is how the code is
     // traversed.
     opt::DominatorTree& dom_tree =
-        context()->GetDominatorAnalysis(&func, *context()->cfg())->GetDomTree();
+        context()->GetDominatorAnalysis(&func)->GetDomTree();
 
     // Keeps track of all ids that contain a given value number. We keep
     // track of multiple values because they could have the same value, but

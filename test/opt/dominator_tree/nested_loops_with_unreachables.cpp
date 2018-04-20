@@ -287,8 +287,7 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
                              << text << std::endl;
 
   const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::CFG cfg(module);
-  opt::DominatorAnalysis* analysis = context->GetDominatorAnalysis(f, cfg);
+  opt::DominatorAnalysis* analysis = context->GetDominatorAnalysis(f);
 
   EXPECT_TRUE(analysis->Dominates(5, 10));
   EXPECT_TRUE(analysis->Dominates(5, 14));

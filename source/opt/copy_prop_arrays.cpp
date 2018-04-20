@@ -166,7 +166,7 @@ bool CopyPropagateArrays::HasValidReferencesOnly(ir::Instruction* ptr_inst,
                                                  ir::Instruction* store_inst) {
   ir::BasicBlock* store_block = context()->get_instr_block(store_inst);
   opt::DominatorAnalysis* dominator_analysis =
-      context()->GetDominatorAnalysis(store_block->GetParent(), *cfg());
+      context()->GetDominatorAnalysis(store_block->GetParent());
 
   return get_def_use_mgr()->WhileEachUser(
       ptr_inst,
