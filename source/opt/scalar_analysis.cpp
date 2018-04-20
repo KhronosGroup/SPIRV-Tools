@@ -49,7 +49,7 @@ namespace opt {
 uint32_t SENode::NumberOfNodes = 0;
 
 ScalarEvolutionAnalysis::ScalarEvolutionAnalysis(ir::IRContext* context)
-    : context_(context) {
+    : context_(context), pretend_equal_{} {
   // Create and cached the CantComputeNode.
   cached_cant_compute_ =
       GetCachedOrAdd(std::unique_ptr<SECantCompute>(new SECantCompute(this)));
@@ -80,7 +80,15 @@ SENode* ScalarEvolutionAnalysis::CreateRecurrentExpression(
   if (offset->IsCantCompute() || coefficient->IsCantCompute())
     return CreateCantComputeNode();
 
-  std::unique_ptr<SERecurrentNode> phi_node{new SERecurrentNode(this, loop)};
+  const ir::Loop* loop_to_use = nullptr;
+  if (pretend_equal_[loop]) {
+    loop_to_use = pretend_equal_[loop];
+  } else {
+    loop_to_use = loop;
+  }
+
+  std::unique_ptr<SERecurrentNode> phi_node{
+      new SERecurrentNode(this, loop_to_use)};
   phi_node->AddOffset(offset);
   phi_node->AddCoefficient(coefficient);
 
@@ -270,7 +278,14 @@ SENode* ScalarEvolutionAnalysis::AnalyzePhiInstruction(
       loop->GetHeaderBlock() != basic_block)
     return recurrent_node_map_[phi] = CreateCantComputeNode();
 
-  std::unique_ptr<SERecurrentNode> phi_node{new SERecurrentNode(this, loop)};
+  const ir::Loop* loop_to_use = nullptr;
+  if (pretend_equal_[loop]) {
+    loop_to_use = pretend_equal_[loop];
+  } else {
+    loop_to_use = loop;
+  }
+  std::unique_ptr<SERecurrentNode> phi_node{
+      new SERecurrentNode(this, loop_to_use)};
 
   // We add the node to this map to allow it to be returned before the node is
   // fully built. This is needed as the subsequent call to AnalyzeInstruction

@@ -43,6 +43,7 @@
 #include "local_single_store_elim_pass.h"
 #include "local_ssa_elim_pass.h"
 #include "loop_fission.h"
+#include "loop_fusion_pass.h"
 #include "loop_peeling.h"
 #include "loop_unroller.h"
 #include "loop_unswitch_pass.h"

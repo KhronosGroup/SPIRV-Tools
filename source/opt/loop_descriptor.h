@@ -437,6 +437,10 @@ class LoopDescriptor {
     return *loops_[index];
   }
 
+  // Returns the loops in |this| in the order their headers appear in the
+  // binary.
+  std::vector<ir::Loop*> GetLoopsInBinaryLayoutOrder();
+
   // Returns the inner most loop that contains the basic block id |block_id|.
   inline Loop* operator[](uint32_t block_id) const {
     return FindLoopForBasicBlock(block_id);
@@ -481,6 +485,10 @@ class LoopDescriptor {
   inline void AddLoop(ir::Loop* loop_to_add, ir::Loop* parent) {
     loops_to_add_.emplace_back(std::make_pair(parent, loop_to_add));
   }
+
+  // Checks all loops in |this| and will create pre-headers for all loops
+  // that don't have one. Returns |true| if any blocks were created.
+  bool CreatePreHeaderBlocksIfMissing();
 
   // Should be called to preserve the LoopAnalysis after loops have been marked
   // for addition with AddLoop or MarkLoopForRemoval.

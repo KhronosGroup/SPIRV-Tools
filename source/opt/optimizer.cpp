@@ -384,6 +384,11 @@ Optimizer::PassToken CreateLoopFissionPass(size_t threshold) {
       MakeUnique<opt::LoopFissionPass>(threshold));
 }
 
+Optimizer::PassToken CreateLoopFusionPass(size_t max_registers_per_loop) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LoopFusionPass>(max_registers_per_loop));
+}
+
 Optimizer::PassToken CreateLoopInvariantCodeMotionPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::LICMPass>());
 }
