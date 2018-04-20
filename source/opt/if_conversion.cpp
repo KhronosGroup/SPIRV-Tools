@@ -23,8 +23,7 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
   bool modified = false;
   std::vector<ir::Instruction*> to_kill;
   for (auto& func : *get_module()) {
-    DominatorAnalysis* dominators =
-        context()->GetDominatorAnalysis(&func, *cfg());
+    DominatorAnalysis* dominators = context()->GetDominatorAnalysis(&func);
     for (auto& block : func) {
       // Check if it is possible for |block| to have phis that can be
       // transformed.

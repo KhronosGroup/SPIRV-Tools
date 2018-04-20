@@ -158,7 +158,7 @@ class DominatorTree {
 
   // Build the (post-)dominator tree for the function |f|
   // Any existing data will be overwritten
-  void InitializeTree(const ir::Function* f, const ir::CFG& cfg);
+  void InitializeTree(const ir::Function* f);
 
   // Check if the basic block |a| dominates the basic block |b|.
   bool Dominates(const ir::BasicBlock* a, const ir::BasicBlock* b) const;

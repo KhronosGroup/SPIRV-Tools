@@ -264,7 +264,7 @@ bool Loop::IsInsideLoop(Instruction* inst) const {
 bool Loop::IsBasicBlockInLoopSlow(const BasicBlock* bb) {
   assert(bb->GetParent() && "The basic block does not belong to a function");
   opt::DominatorAnalysis* dom_analysis =
-      context_->GetDominatorAnalysis(bb->GetParent(), *context_->cfg());
+      context_->GetDominatorAnalysis(bb->GetParent());
   if (dom_analysis->IsReachable(bb) &&
       !dom_analysis->Dominates(GetHeaderBlock(), bb))
     return false;
@@ -472,8 +472,7 @@ LoopDescriptor::~LoopDescriptor() { ClearLoops(); }
 void LoopDescriptor::PopulateList(const Function* f) {
   IRContext* context = f->GetParent()->context();
 
-  opt::DominatorAnalysis* dom_analysis =
-      context->GetDominatorAnalysis(f, *context->cfg());
+  opt::DominatorAnalysis* dom_analysis = context->GetDominatorAnalysis(f);
 
   ClearLoops();
 

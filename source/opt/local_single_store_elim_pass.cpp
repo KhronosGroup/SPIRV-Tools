@@ -219,7 +219,7 @@ bool LocalSingleStoreElimPass::RewriteLoads(
     ir::Instruction* store_inst, const std::vector<ir::Instruction*>& uses) {
   ir::BasicBlock* store_block = context()->get_instr_block(store_inst);
   opt::DominatorAnalysis* dominator_analysis =
-      context()->GetDominatorAnalysis(store_block->GetParent(), *cfg());
+      context()->GetDominatorAnalysis(store_block->GetParent());
 
   uint32_t stored_id;
   if (store_inst->opcode() == SpvOpStore)

@@ -564,14 +564,13 @@ ir::LoopDescriptor* IRContext::GetLoopDescriptor(const ir::Function* f) {
 }
 
 // Gets the dominator analysis for function |f|.
-opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(const ir::Function* f,
-                                                        const ir::CFG& in_cfg) {
+opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(const ir::Function* f) {
   if (!AreAnalysesValid(kAnalysisDominatorAnalysis)) {
     ResetDominatorAnalysis();
   }
 
   if (dominator_trees_.find(f) == dominator_trees_.end()) {
-    dominator_trees_[f].InitializeTree(f, in_cfg);
+    dominator_trees_[f].InitializeTree(f);
   }
 
   return &dominator_trees_[f];
@@ -579,13 +578,13 @@ opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(const ir::Function* f,
 
 // Gets the postdominator analysis for function |f|.
 opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
-    const ir::Function* f, const ir::CFG& in_cfg) {
+    const ir::Function* f) {
   if (!AreAnalysesValid(kAnalysisDominatorAnalysis)) {
     ResetDominatorAnalysis();
   }
 
   if (post_dominator_trees_.find(f) == post_dominator_trees_.end()) {
-    post_dominator_trees_[f].InitializeTree(f, in_cfg);
+    post_dominator_trees_[f].InitializeTree(f);
   }
 
   return &post_dominator_trees_[f];
