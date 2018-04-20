@@ -280,7 +280,7 @@ inline void MakeSetClosedSSA(ir::IRContext* context, ir::Function* function,
                              LCSSARewriter* lcssa_rewriter) {
   ir::CFG& cfg = *context->cfg();
   opt::DominatorTree& dom_tree =
-      context->GetDominatorAnalysis(function, cfg)->GetDomTree();
+      context->GetDominatorAnalysis(function)->GetDomTree();
   opt::analysis::DefUseManager* def_use_manager = context->get_def_use_mgr();
 
   for (uint32_t bb_id : blocks) {
@@ -444,7 +444,7 @@ void LoopUtils::MakeLoopClosedSSA() {
   ir::Function* function = loop_->GetHeaderBlock()->GetParent();
   ir::CFG& cfg = *context_->cfg();
   opt::DominatorTree& dom_tree =
-      context_->GetDominatorAnalysis(function, cfg)->GetDomTree();
+      context_->GetDominatorAnalysis(function)->GetDomTree();
 
   std::unordered_set<ir::BasicBlock*> exit_bb;
   {

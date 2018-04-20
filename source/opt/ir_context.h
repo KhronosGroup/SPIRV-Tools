@@ -402,22 +402,10 @@ class IRContext {
   ir::LoopDescriptor* GetLoopDescriptor(const ir::Function* f);
 
   // Gets the dominator analysis for function |f|.
-  opt::DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f,
-                                               const ir::CFG&);
-
-  // Gets the dominator analysis for function |f|.
-  opt::DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f) {
-    return GetDominatorAnalysis(f, *cfg());
-  }
+  opt::DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f);
 
   // Gets the postdominator analysis for function |f|.
-  opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* f,
-                                                       const ir::CFG&);
-
-  // Gets the postdominator analysis for function |f|.
-  opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* f) {
-    return GetPostDominatorAnalysis(f, *cfg());
-  }
+  opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* f);
 
   // Remove the dominator tree of |f| from the cache.
   inline void RemoveDominatorAnalysis(const ir::Function* f) {

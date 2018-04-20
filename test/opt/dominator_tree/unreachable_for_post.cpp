@@ -90,9 +90,7 @@ TEST_F(PassClassTest, UnreachableNestedIfs) {
 
   const ir::Function* f = spvtest::GetFunction(module, 4);
 
-  ir::CFG cfg(module);
-  opt::PostDominatorAnalysis* analysis =
-      context->GetPostDominatorAnalysis(f, cfg);
+  opt::PostDominatorAnalysis* analysis = context->GetPostDominatorAnalysis(f);
 
   EXPECT_TRUE(analysis->Dominates(12, 12));
   EXPECT_TRUE(analysis->Dominates(12, 14));

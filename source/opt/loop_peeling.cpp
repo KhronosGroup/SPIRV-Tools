@@ -282,7 +282,7 @@ void LoopPeeling::GetIteratingExitValues() {
         });
   } else {
     DominatorTree* dom_tree =
-        &context_->GetDominatorAnalysis(loop_utils_.GetFunction(), cfg)
+        &context_->GetDominatorAnalysis(loop_utils_.GetFunction())
              ->GetDomTree();
     ir::BasicBlock* condition_block = cfg.block(condition_block_id);
 

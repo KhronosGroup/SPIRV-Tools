@@ -69,9 +69,8 @@ TEST(CommonDominatorsTest, SameBlock) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  ir::CFG cfg(context->module());
   opt::DominatorAnalysis* analysis =
-      context->GetDominatorAnalysis(&*context->module()->begin(), cfg);
+      context->GetDominatorAnalysis(&*context->module()->begin());
 
   for (auto& block : *context->module()->begin()) {
     EXPECT_EQ(&block, analysis->CommonDominator(&block, &block));
@@ -84,9 +83,8 @@ TEST(CommonDominatorsTest, ParentAndChild) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  ir::CFG cfg(context->module());
   opt::DominatorAnalysis* analysis =
-      context->GetDominatorAnalysis(&*context->module()->begin(), cfg);
+      context->GetDominatorAnalysis(&*context->module()->begin());
 
   EXPECT_EQ(
       GetBlock(1u, context),
@@ -105,9 +103,8 @@ TEST(CommonDominatorsTest, BranchSplit) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  ir::CFG cfg(context->module());
   opt::DominatorAnalysis* analysis =
-      context->GetDominatorAnalysis(&*context->module()->begin(), cfg);
+      context->GetDominatorAnalysis(&*context->module()->begin());
 
   EXPECT_EQ(
       GetBlock(3u, context),
@@ -123,9 +120,8 @@ TEST(CommonDominatorsTest, LoopContinueAndMerge) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  ir::CFG cfg(context->module());
   opt::DominatorAnalysis* analysis =
-      context->GetDominatorAnalysis(&*context->module()->begin(), cfg);
+      context->GetDominatorAnalysis(&*context->module()->begin());
 
   EXPECT_EQ(
       GetBlock(5u, context),
@@ -138,9 +134,8 @@ TEST(CommonDominatorsTest, NoCommonDominator) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  ir::CFG cfg(context->module());
   opt::DominatorAnalysis* analysis =
-      context->GetDominatorAnalysis(&*context->module()->begin(), cfg);
+      context->GetDominatorAnalysis(&*context->module()->begin());
 
   EXPECT_EQ(nullptr, analysis->CommonDominator(GetBlock(10u, context),
                                                GetBlock(11u, context)));

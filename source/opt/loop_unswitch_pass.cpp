@@ -118,8 +118,7 @@ class LoopUnswitch {
 
     ir::CFG& cfg = *context_->cfg();
     DominatorTree* dom_tree =
-        &context_->GetDominatorAnalysis(function_, *context_->cfg())
-             ->GetDomTree();
+        &context_->GetDominatorAnalysis(function_)->GetDomTree();
     analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
     LoopUtils loop_utils(context_, loop_);
 
@@ -849,8 +848,7 @@ class LoopUnswitch {
     return !loop_->IsInsideLoop(condition) &&
            IsDynamicallyUniform(
                condition, function_->entry().get(),
-               context_->GetPostDominatorAnalysis(function_, *context_->cfg())
-                   ->GetDomTree());
+               context_->GetPostDominatorAnalysis(function_)->GetDomTree());
   }
 };
 

@@ -95,8 +95,7 @@ bool LICMPass::AnalyseAndHoistFromBB(ir::Loop* loop, ir::Function* f,
     bb->ForEachInst(hoist_inst, false);
   }
 
-  opt::DominatorAnalysis* dom_analysis =
-      context()->GetDominatorAnalysis(f, *cfg());
+  opt::DominatorAnalysis* dom_analysis = context()->GetDominatorAnalysis(f);
   opt::DominatorTree& dom_tree = dom_analysis->GetDomTree();
 
   for (opt::DominatorTreeNode* child_dom_tree_node :
