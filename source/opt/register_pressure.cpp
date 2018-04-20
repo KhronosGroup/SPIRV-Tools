@@ -44,8 +44,9 @@ class ExcludePhiDefinedInBlock {
   const ir::BasicBlock* bb_;
 };
 
-// Returns true if |insn| requires a register.
-static bool CreatesRegisterUsage(ir::Instruction* insn) {
+// Returns true if |insn| generates a SSA register that is likely to require a
+// physical register.
+bool CreatesRegisterUsage(ir::Instruction* insn) {
   if (!insn->HasResultId()) return false;
   if (insn->opcode() == SpvOpUndef) return false;
   if (ir::IsConstantInst(insn->opcode())) return false;
@@ -73,7 +74,8 @@ class ComputeRegisterLiveness {
   // register usage. The liveness algorithm works in 2 steps:
   //   - First, compute the liveness for each basic blocks, but will ignore any
   //   back-edge;
-  //   - Second, walk loop forest to propagate iterator liveness.
+  //   - Second, walk loop forest to propagate registers crossing back-edges
+  //   (add iterative values into the liveness set).
   void Compute() {
     cfg_.ForEachBlockInPostOrder(
         &*function_->begin(),
@@ -83,14 +85,6 @@ class ComputeRegisterLiveness {
   }
 
  private:
-  RegisterLiveness* reg_pressure_;
-  ir::IRContext* context_;
-  ir::Function* function_;
-  ir::CFG& cfg_;
-  analysis::DefUseManager& def_use_manager_;
-  DominatorTree& dom_tree_;
-  ir::LoopDescriptor& loop_desc_;
-
   // Registers all SSA register used by successors of |bb| in their phi
   // instructions.
   void ComputePhiUses(const ir::BasicBlock& bb,
@@ -248,13 +242,21 @@ class ComputeRegisterLiveness {
       }
     }
   }
+
+  RegisterLiveness* reg_pressure_;
+  ir::IRContext* context_;
+  ir::Function* function_;
+  ir::CFG& cfg_;
+  analysis::DefUseManager& def_use_manager_;
+  DominatorTree& dom_tree_;
+  ir::LoopDescriptor& loop_desc_;
 };
 }  // namespace
 
-// Get the number of required registers for this each basic block.
+// Get the number of required registers for each basic block.
 void RegisterLiveness::RegionRegisterLiveness::AddRegisterClass(
     ir::Instruction* insn) {
-  assert(insn->HasResultId() && "Instruction does not use a register");
+  assert(CreatesRegisterUsage(insn) && "Instruction does not use a register");
   analysis::Type* type =
       insn->context()->get_type_mgr()->GetType(insn->type_id());
 
@@ -333,17 +335,12 @@ void RegisterLiveness::SimulateFusion(
   //   sim_result.live_in = l1.live_in U l2.live_in
   // This assumes that |l1| does not generated register that is live-out for
   // |l1|.
-  {
-    const RegionRegisterLiveness* l1_header_live_inout =
-        Get(l1.GetHeaderBlock());
-    sim_result->live_in_ = l1_header_live_inout->live_in_;
-  }
-  {
-    const RegionRegisterLiveness* l2_header_live_inout =
-        Get(l2.GetHeaderBlock());
-    sim_result->live_in_.insert(l2_header_live_inout->live_in_.begin(),
-                                l2_header_live_inout->live_in_.end());
-  }
+  const RegionRegisterLiveness* l1_header_live_inout = Get(l1.GetHeaderBlock());
+  sim_result->live_in_ = l1_header_live_inout->live_in_;
+
+  const RegionRegisterLiveness* l2_header_live_inout = Get(l2.GetHeaderBlock());
+  sim_result->live_in_.insert(l2_header_live_inout->live_in_.begin(),
+                              l2_header_live_inout->live_in_.end());
 
   // The live-out set of the fused loop is the l2 live-out set.
   std::unordered_set<uint32_t> exit_blocks;
@@ -385,59 +382,56 @@ void RegisterLiveness::SimulateFusion(
                !(insn->opcode() == SpvOpPhi &&
                  (bb == l1.GetHeaderBlock() || bb == l2.GetHeaderBlock()));
       });
-  {
-    for (uint32_t bb_id : l1.GetBlocks()) {
-      ir::BasicBlock* bb = context_->cfg()->block(bb_id);
 
-      const RegionRegisterLiveness* live_inout_info = Get(bb_id);
-      assert(live_inout_info != nullptr && "Basic block not processed");
-      RegionRegisterLiveness::LiveSet live_out = live_inout_info->live_out_;
-      live_out.insert(live_loop.begin(), live_loop.end());
-      sim_result->used_registers_ =
-          std::max(sim_result->used_registers_,
-                   live_inout_info->used_registers_ + live_out.size() -
-                       live_inout_info->live_out_.size());
+  for (uint32_t bb_id : l1.GetBlocks()) {
+    ir::BasicBlock* bb = context_->cfg()->block(bb_id);
 
-      for (ir::Instruction& insn : *bb) {
-        if (insn.opcode() == SpvOpPhi || !CreatesRegisterUsage(&insn) ||
-            seen_insn.count(insn.result_id())) {
-          continue;
-        }
-        sim_result->AddRegisterClass(&insn);
+    const RegionRegisterLiveness* live_inout_info = Get(bb_id);
+    assert(live_inout_info != nullptr && "Basic block not processed");
+    RegionRegisterLiveness::LiveSet live_out = live_inout_info->live_out_;
+    live_out.insert(live_loop.begin(), live_loop.end());
+    sim_result->used_registers_ =
+        std::max(sim_result->used_registers_,
+                 live_inout_info->used_registers_ + live_out.size() -
+                     live_inout_info->live_out_.size());
+
+    for (ir::Instruction& insn : *bb) {
+      if (insn.opcode() == SpvOpPhi || !CreatesRegisterUsage(&insn) ||
+          seen_insn.count(insn.result_id())) {
+        continue;
       }
+      sim_result->AddRegisterClass(&insn);
     }
   }
 
-  {
-    const RegionRegisterLiveness* l1_latch_live_inout_info =
-        Get(l1.GetLatchBlock()->id());
-    assert(l1_latch_live_inout_info != nullptr && "Basic block not processed");
-    RegionRegisterLiveness::LiveSet l1_latch_live_out =
-        l1_latch_live_inout_info->live_out_;
-    l1_latch_live_out.insert(live_loop.begin(), live_loop.end());
+  const RegionRegisterLiveness* l1_latch_live_inout_info =
+      Get(l1.GetLatchBlock()->id());
+  assert(l1_latch_live_inout_info != nullptr && "Basic block not processed");
+  RegionRegisterLiveness::LiveSet l1_latch_live_out =
+      l1_latch_live_inout_info->live_out_;
+  l1_latch_live_out.insert(live_loop.begin(), live_loop.end());
 
-    auto live_loop_l2 =
-        ir::make_range(l1_latch_live_out.begin(), l1_latch_live_out.end());
+  auto live_loop_l2 =
+      ir::make_range(l1_latch_live_out.begin(), l1_latch_live_out.end());
 
-    for (uint32_t bb_id : l2.GetBlocks()) {
-      ir::BasicBlock* bb = context_->cfg()->block(bb_id);
+  for (uint32_t bb_id : l2.GetBlocks()) {
+    ir::BasicBlock* bb = context_->cfg()->block(bb_id);
 
-      const RegionRegisterLiveness* live_inout_info = Get(bb_id);
-      assert(live_inout_info != nullptr && "Basic block not processed");
-      RegionRegisterLiveness::LiveSet live_out = live_inout_info->live_out_;
-      live_out.insert(live_loop_l2.begin(), live_loop_l2.end());
-      sim_result->used_registers_ =
-          std::max(sim_result->used_registers_,
-                   live_inout_info->used_registers_ + live_out.size() -
-                       live_inout_info->live_out_.size());
+    const RegionRegisterLiveness* live_inout_info = Get(bb_id);
+    assert(live_inout_info != nullptr && "Basic block not processed");
+    RegionRegisterLiveness::LiveSet live_out = live_inout_info->live_out_;
+    live_out.insert(live_loop_l2.begin(), live_loop_l2.end());
+    sim_result->used_registers_ =
+        std::max(sim_result->used_registers_,
+                 live_inout_info->used_registers_ + live_out.size() -
+                     live_inout_info->live_out_.size());
 
-      for (ir::Instruction& insn : *bb) {
-        if (insn.opcode() == SpvOpPhi || !CreatesRegisterUsage(&insn) ||
-            seen_insn.count(insn.result_id())) {
-          continue;
-        }
-        sim_result->AddRegisterClass(&insn);
+    for (ir::Instruction& insn : *bb) {
+      if (insn.opcode() == SpvOpPhi || !CreatesRegisterUsage(&insn) ||
+          seen_insn.count(insn.result_id())) {
+        continue;
       }
+      sim_result->AddRegisterClass(&insn);
     }
   }
 }

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_VIRTUAL_REGISTER_PRESSURE_H_
-#define LIBSPIRV_OPT_VIRTUAL_REGISTER_PRESSURE_H_
+#ifndef LIBSPIRV_OPT_REGISTER_PRESSURE_H_
+#define LIBSPIRV_OPT_REGISTER_PRESSURE_H_
 
 #include <unordered_map>
 #include <unordered_set>
@@ -139,24 +139,24 @@ class RegisterLiveness {
                                    RegionRegisterLiveness* reg_pressure) const;
 
   // Estimate the register pressure for the |l1| and |l2| as if they were making
-  // one unique loop. The result is stored into |simulation_resut|.
+  // one unique loop. The result is stored into |simulation_result|.
   void SimulateFusion(const ir::Loop& l1, const ir::Loop& l2,
-                      RegionRegisterLiveness* simulation_resut) const;
+                      RegionRegisterLiveness* simulation_result) const;
 
   // Estimate the register pressure of |loop| after it has been fissioned
   // according to |moved_instructions| and |copied_instructions|. The function
   // assumes that the fission creates a new loop before |loop|, moves any
   // instructions present inside |moved_instructions| and copies any
   // instructions present inside |copied_instructions| into this new loop.
-  // The set |loop1_sim_resut| store the simulation result of the loop with the
-  // moved instructions. The set |loop2_sim_resut| store the simulation result
+  // The set |loop1_sim_result| store the simulation result of the loop with the
+  // moved instructions. The set |loop2_sim_result| store the simulation result
   // of the loop with the removed instructions.
   void SimulateFission(
       const ir::Loop& loop,
       const std::unordered_set<ir::Instruction*>& moved_instructions,
       const std::unordered_set<ir::Instruction*>& copied_instructions,
-      RegionRegisterLiveness* loop1_sim_resut,
-      RegionRegisterLiveness* loop2_sim_resut) const;
+      RegionRegisterLiveness* loop1_sim_result,
+      RegionRegisterLiveness* loop2_sim_result) const;
 
  private:
   using RegionRegisterLivenessMap =
@@ -198,4 +198,4 @@ class LivenessAnalysis {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // ! LIBSPIRV_OPT_VIRTUAL_REGISTER_PRESSURE_H_
+#endif  // ! LIBSPIRV_OPT_REGISTER_PRESSURE_H_
