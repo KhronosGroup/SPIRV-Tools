@@ -2847,7 +2847,8 @@ void PartitionSubscripts(const ir::Instruction* instruction_0,
       expected_partition{};
 
   for (const auto& partition : expected_ids) {
-    expected_partition.push_back({});
+    expected_partition.push_back(
+        std::set<std::pair<ir::Instruction*, ir::Instruction*>>{});
     for (auto id : partition) {
       expected_partition.back().insert({subscripts_0[id], subscripts_1[id]});
     }
@@ -3637,7 +3638,7 @@ TEST(DependencyAnalysis, Delta) {
 }
 
 TEST(DependencyAnalysis, ConstraintIntersection) {
-  opt::LoopDependenceAnalysis analysis{nullptr, {}};
+  opt::LoopDependenceAnalysis analysis{nullptr, std::vector<const ir::Loop*>{}};
   auto scalar_evolution = analysis.GetScalarEvolution();
   {
     // One is none. Other should be returned
