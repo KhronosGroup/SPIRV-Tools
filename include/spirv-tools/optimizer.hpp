@@ -560,6 +560,13 @@ Optimizer::PassToken CreateSSARewritePass();
 // This pass looks to copy propagate memory references for arrays.  It looks
 // for specific code patterns to recognize array copies.
 Optimizer::PassToken CreateCopyPropagateArraysPass();
+
+// Create a vector dce pass.
+// This pass looks for components of vectors that are unused, and removes them
+// from the vector.  Note this would still leave around lots of dead code that
+// a pass of ADCE will be able to remove.
+Optimizer::PassToken CreateVectorDCEPass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

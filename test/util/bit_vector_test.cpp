@@ -109,4 +109,53 @@ TEST(BitVectorTest, ClearReturnValue) {
   }
 }
 
+TEST(BitVectorTest, SimpleOrTest) {
+  BitVector bvec1;
+  bvec1.Set(3);
+  bvec1.Set(4);
+
+  BitVector bvec2;
+  bvec2.Set(2);
+  bvec2.Set(4);
+
+  // Check that |bvec1| changed when doing the |Or| operation.
+  EXPECT_TRUE(bvec1.Or(bvec2));
+
+  // Check that the values are all correct.
+  EXPECT_FALSE(bvec1.Get(0));
+  EXPECT_FALSE(bvec1.Get(1));
+  EXPECT_TRUE(bvec1.Get(2));
+  EXPECT_TRUE(bvec1.Get(3));
+  EXPECT_TRUE(bvec1.Get(4));
+}
+
+TEST(BitVectorTest, ResizingOrTest) {
+  BitVector bvec1;
+  bvec1.Set(3);
+  bvec1.Set(4);
+
+  BitVector bvec2;
+  bvec2.Set(10000);
+
+  // Similar to above except with a large value to test resizing.
+  EXPECT_TRUE(bvec1.Or(bvec2));
+  EXPECT_FALSE(bvec1.Get(0));
+  EXPECT_FALSE(bvec1.Get(1));
+  EXPECT_FALSE(bvec1.Get(2));
+  EXPECT_TRUE(bvec1.Get(3));
+  EXPECT_TRUE(bvec1.Get(10000));
+}
+
+TEST(BitVectorTest, SubsetOrTest) {
+  BitVector bvec1;
+  bvec1.Set(3);
+  bvec1.Set(4);
+
+  BitVector bvec2;
+  bvec2.Set(3);
+
+  // |Or| returns false if |bvec1| does not change.
+  EXPECT_FALSE(bvec1.Or(bvec2));
+}
+
 }  // namespace

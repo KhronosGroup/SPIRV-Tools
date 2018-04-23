@@ -67,7 +67,7 @@ class IntrusiveNodeBase {
   // from that list.
   //
   // It is assumed that the given node is of type NodeType.  It is an error if
-  // |pos| is not already in a list.
+  // |pos| is not already in a list, or if |pos| is equal to |this|.
   inline void InsertAfter(NodeType* pos);
 
   // Removes the given node from the list.  It is assumed that the node is
@@ -185,6 +185,8 @@ template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::InsertAfter(NodeType* pos) {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
   assert(pos->IsInAList() && "Pos should already be in a list.");
+  assert(this != pos && "Can't insert a node after itself.");
+
   if (this->IsInAList()) {
     this->RemoveFromList();
   }
