@@ -310,6 +310,10 @@ Options (in lexicographical order):
                prints CPU/WALL/USR/SYS time (and RSS if possible), but note that
                USR/SYS time are returned by getrusage() and can have a small
                error.
+  --vector-dce
+               This pass looks for components of vectors that are unused, and
+               removes them from the vector.  Note this would still leave around
+               lots of dead code that a pass of ADCE will be able to remove.
   --workaround-1209
                Rewrites instructions for which there are known driver bugs to
                avoid triggering those bugs.
@@ -555,6 +559,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCopyPropagateArraysPass());
       } else if (0 == strcmp(cur_arg, "--loop-unroll")) {
         optimizer->RegisterPass(CreateLoopUnrollPass(true));
+      } else if (0 == strcmp(cur_arg, "--vector-dce")) {
+        optimizer->RegisterPass(CreateVectorDCEPass());
       } else if (0 == strcmp(cur_arg, "--loop-unroll-partial")) {
         OptStatus status =
             ParseLoopUnrollPartialArg(argc, argv, ++argi, optimizer);

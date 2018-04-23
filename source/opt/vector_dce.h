@@ -1,0 +1,123 @@
+// Copyright (c) 2018 Google LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef LIBSPIRV_OPT_VECTOR_DCE_H_
+#define LIBSPIRV_OPT_VECTOR_DCE_H_
+
+#include <util/bit_vector.h>
+#include "mem_pass.h"
+
+namespace spvtools {
+namespace opt {
+
+class VectorDCE : public MemPass {
+ private:
+  using LiveComponentMap = std::unordered_map<uint32_t, utils::BitVector>;
+
+  // According to the SPEC the maximum size for a vector is 16.  See the data
+  // rules in the universal validation rules (section 2.16.1).
+  enum { kMaxVectorSize = 16 };
+
+  struct WorkListItem {
+    WorkListItem() : instruction(nullptr), components(kMaxVectorSize) {}
+
+    ir::Instruction* instruction;
+    utils::BitVector components;
+  };
+
+ public:
+  const char* name() const override { return "vector-dce"; }
+  Status Process(ir::IRContext*) override;
+
+  VectorDCE() : all_components_live_(kMaxVectorSize) {
+    for (uint32_t i = 0; i < kMaxVectorSize; i++) {
+      all_components_live_.Set(i);
+    }
+  }
+
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse | ir::IRContext::kAnalysisCFG |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
+           ir::IRContext::kAnalysisLoopAnalysis |
+           ir::IRContext::kAnalysisDecorations |
+           ir::IRContext::kAnalysisDominatorAnalysis |
+           ir::IRContext::kAnalysisNameMap;
+  }
+
+ private:
+  // Runs the vector dce pass on |function|.  Returns true if |function| was
+  // modified.
+  bool VectorDCEFunction(ir::Function* function);
+
+  // Identifies the live components of the vectors that are results of
+  // instructions in |function|.  The results are stored in |live_components|.
+  void FindLiveComponents(ir::Function* function,
+                          LiveComponentMap* live_components);
+
+  // Rewrites instructions in |function| that are dead or partially dead.  If an
+  // instruction does not have an entry in |live_components|, then it is not
+  // changed.  Returns true if |function| was modified.
+  bool RewriteInstructions(ir::Function* function,
+                           const LiveComponentMap& live_components);
+
+  // Returns true if the result of |inst| is a vector.
+  bool HasVectorResult(const ir::Instruction* inst) const;
+
+  // Adds |work_item| to |work_list| if it is not already live according to
+  // |live_components|.  |live_components| is updated to indicate that
+  // |work_item| is now live.
+  void AddItemToWorkListIfNeeded(WorkListItem work_item,
+                                 LiveComponentMap* live_components,
+                                 std::vector<WorkListItem>* work_list);
+
+  // Marks the components |live_elements| of the uses in |current_inst| as live
+  // according to |live_components|. If they were not live before, then they are
+  // added to |work_list|.
+  void MarkUsesAsLive(ir::Instruction* current_inst,
+                      const utils::BitVector& live_elements,
+                      LiveComponentMap* live_components,
+                      std::vector<WorkListItem>* work_list);
+
+  // Marks the uses in the OpVectorShuffle instruction in |current_item| as live
+  // based on the live components in |current_item|. If anything becomes live
+  // they are added to |work_list| and |live_components| is updated
+  // accordingly.
+  void MarkVectorShuffleUsesAsLive(const WorkListItem& current_item,
+                                   VectorDCE::LiveComponentMap* live_components,
+                                   std::vector<WorkListItem>* work_list);
+
+  // Marks the uses in the OpCompositeInsert instruction in |current_item| as
+  // live based on the live components in |current_item|. If anything becomes
+  // live they are added to |work_list| and |live_components| is updated
+  // accordingly.
+  void MarkInsertUsesAsLive(const WorkListItem& current_item,
+                            LiveComponentMap* live_components,
+                            std::vector<WorkListItem>* work_list);
+
+  // Marks the uses in the OpCompositeExtract instruction |current_inst| as
+  // live. If anything becomes live they are added to |work_list| and
+  // |live_components| is updated accordingly.
+  void MarkExtractUseAsLive(const ir::Instruction* current_inst,
+                            LiveComponentMap* live_components,
+                            std::vector<WorkListItem>* work_list);
+
+  // A BitVector that can always be used to say that all components of a vector
+  // are live.
+  utils::BitVector all_components_live_;
+};
+
+}  // namespace opt
+}  // namespace spvtools
+
+#endif  // LIBSPIRV_OPT_VECTOR_DCE_H_

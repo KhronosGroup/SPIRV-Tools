@@ -126,7 +126,7 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // https://github.com/Microsoft/DirectXShaderCompiler/pull/930
           // Get rid of unused code that contain traces of illegal code
           // or unused references to unbound external objects
-          .RegisterPass(CreateDeadInsertElimPass())
+          .RegisterPass(CreateVectorDCEPass())
           .RegisterPass(CreateAggressiveDCEPass());
 }
 
@@ -149,7 +149,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateRedundancyEliminationPass())
       .RegisterPass(CreateInsertExtractElimPass())
-      .RegisterPass(CreateDeadInsertElimPass())
+      .RegisterPass(CreateVectorDCEPass())
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateSimplificationPass())
       .RegisterPass(CreateIfConversionPass())
@@ -448,6 +448,10 @@ Optimizer::PassToken CreateSSARewritePass() {
 Optimizer::PassToken CreateCopyPropagateArraysPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CopyPropagateArrays>());
+}
+
+Optimizer::PassToken CreateVectorDCEPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::VectorDCE>());
 }
 
 }  // namespace spvtools

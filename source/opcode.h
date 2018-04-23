@@ -121,4 +121,8 @@ bool spvOpcodeIsBaseOpaqueType(SpvOp opcode);
 
 // Returns true if the given opcode is a non-uniform group operation.
 bool spvOpcodeIsNonUniformGroupOperation(SpvOp opcode);
+
+// Returns true if the result of an instruction with this opcode are computed
+// per component.
+bool spvOpcodeIsScalarizable(SpvOp opcode);
 #endif  // LIBSPIRV_OPCODE_H_
