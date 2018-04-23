@@ -127,6 +127,7 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // Get rid of unused code that contain traces of illegal code
           // or unused references to unbound external objects
           .RegisterPass(CreateVectorDCEPass())
+          .RegisterPass(CreateDeadInsertElimPass())
           .RegisterPass(CreateAggressiveDCEPass());
 }
 
@@ -150,6 +151,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateRedundancyEliminationPass())
       .RegisterPass(CreateInsertExtractElimPass())
       .RegisterPass(CreateVectorDCEPass())
+      .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateSimplificationPass())
       .RegisterPass(CreateIfConversionPass())
