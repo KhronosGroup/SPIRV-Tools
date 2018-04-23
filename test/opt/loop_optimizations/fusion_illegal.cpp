@@ -1299,4 +1299,4 @@ TEST_F(FusionIllegalTest, Barrier) {
   }
 }
 
-} // namespace
+}  // namespace

@@ -1283,7 +1283,7 @@ TEST_F(FusionCompatibilityTest, CompatibleInitDeclaredBeforeLoops) {
 /*
 Generated from the following GLSL + --eliminate-local-multi-store
 
-// 13 TODO: regenerate!
+// 13 regenerate!
 #version 440 core
 void main() {
   int[10] a;
@@ -1292,8 +1292,7 @@ void main() {
   for (int j = 0; j < 10; j++) {
     b[i] = a[i];
   }
-  for (int i = 0, j = 0; i < 10; i++, j = j+2) { // TODO: j+2 has a different step!! and used for indexing
-    a[j] = i;
+  for (int i = 0, j = 0; i < 10; i++, j = j+2) {
   }
 }
 
@@ -1788,4 +1787,4 @@ TEST_F(FusionCompatibilityTest, IfElseInLoop) {
       opt::LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
 }
 
-} // namespace
+}  // namespace

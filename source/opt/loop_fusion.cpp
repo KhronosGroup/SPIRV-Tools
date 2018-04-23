@@ -79,7 +79,7 @@ void AddInstructionsInBlock(std::vector<ir::Instruction*>* instructions,
   instructions->push_back(block->GetLabelInst());
 }
 
-} // namespace
+}  // namespace
 
 bool LoopFusion::UsedInContinueOrConditionBlock(
     ir::Instruction* phi_instruction, ir::Loop* loop) {
@@ -616,8 +616,8 @@ void LoopFusion::Fuse() {
   // Replace LCSSA OpPhi in merge block of |loop_0_|.
   loop_0_->GetMergeBlock()->ForEachPhiInst(
       [this](ir::Instruction* instruction) {
-        context_->ReplaceAllUsesWith(
-            instruction->result_id(), instruction->GetSingleWordInOperand(0));
+        context_->ReplaceAllUsesWith(instruction->result_id(),
+                                     instruction->GetSingleWordInOperand(0));
       });
 
   // Update LCSSA OpPhi in merge block of |loop_1_|.

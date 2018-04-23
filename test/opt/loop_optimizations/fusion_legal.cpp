@@ -4411,4 +4411,4 @@ CHECK-NEXT: OpStore [[STORE_1]]
   }
 }
 
-} // namespace
+}  // namespace
