@@ -195,7 +195,6 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
   // Check if the instructions are OpLoad/OpStore to arrays.
   if (source_access_chain->opcode() != SpvOpAccessChain ||
       destination_access_chain->opcode() != SpvOpAccessChain) {
-
     if (source_access_chain != destination_access_chain) {
       // Not the same location, report independence
       return true;
