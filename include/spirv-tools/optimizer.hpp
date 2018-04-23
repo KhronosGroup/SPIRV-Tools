@@ -483,6 +483,11 @@ Optimizer::PassToken CreateLocalRedundancyEliminationPass();
 // the loops preheader.
 Optimizer::PassToken CreateLoopInvariantCodeMotionPass();
 
+// Creates a loop fission pass.
+// This pass will split all top level loops whose register pressure exceedes the
+// given |threshold|.
+Optimizer::PassToken CreateLoopFissionPass(size_t threshold);
+
 // Creates a loop peeling pass.
 // This pass will look for conditions inside a loop that are true or false only
 // for the N first or last iteration. For loop with such condition, those N

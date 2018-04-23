@@ -481,6 +481,78 @@ void LoopUtils::MakeLoopClosedSSA() {
       ir::IRContext::Analysis::kAnalysisLoopAnalysis);
 }
 
+ir::Loop* LoopUtils::CloneLoop(LoopCloningResult* cloning_result) const {
+  // Compute the structured order of the loop basic blocks and store it in the
+  // vector ordered_loop_blocks.
+  std::vector<ir::BasicBlock*> ordered_loop_blocks;
+  loop_->ComputeLoopStructuredOrder(&ordered_loop_blocks);
+
+  // Clone the loop.
+  return CloneLoop(cloning_result, ordered_loop_blocks);
+}
+
+ir::Loop* LoopUtils::CloneAndAttachLoopToHeader(
+    LoopCloningResult* cloning_result) {
+  // Clone the loop.
+  ir::Loop* new_loop = CloneLoop(cloning_result);
+
+  // Create a new exit block/label for the new loop.
+  std::unique_ptr<ir::Instruction> new_label{new ir::Instruction(
+      context_, SpvOp::SpvOpLabel, 0, context_->TakeNextId(), {})};
+  std::unique_ptr<ir::BasicBlock> new_exit_bb{
+      new ir::BasicBlock(std::move(new_label))};
+  new_exit_bb->SetParent(loop_->GetMergeBlock()->GetParent());
+
+  // Create an unconditional branch to the header block.
+  opt::InstructionBuilder builder{context_, new_exit_bb.get()};
+  builder.AddBranch(loop_->GetHeaderBlock()->id());
+
+  // Save the ids of the new and old merge block.
+  const uint32_t old_merge_block = loop_->GetMergeBlock()->id();
+  const uint32_t new_merge_block = new_exit_bb->id();
+
+  // Replace the uses of the old merge block in the new loop with the new merge
+  // block.
+  for (std::unique_ptr<ir::BasicBlock>& basic_block :
+       cloning_result->cloned_bb_) {
+    for (ir::Instruction& inst : *basic_block) {
+      // For each operand in each instruction check if it is using the old merge
+      // block and change it to be the new merge block.
+      auto replace_merge_use = [old_merge_block,
+                                new_merge_block](uint32_t* id) {
+        if (*id == old_merge_block) *id = new_merge_block;
+      };
+      inst.ForEachInOperand(replace_merge_use);
+    }
+  }
+
+  const uint32_t old_header = loop_->GetHeaderBlock()->id();
+  const uint32_t new_header = new_loop->GetHeaderBlock()->id();
+  opt::analysis::DefUseManager* def_use = context_->get_def_use_mgr();
+
+  def_use->ForEachUse(
+      old_header, [new_header, this](ir::Instruction* inst, uint32_t operand) {
+        if (!this->loop_->IsInsideLoop(inst))
+          inst->SetOperand(operand, {new_header});
+      });
+
+  def_use->ForEachUse(
+      loop_->GetOrCreatePreHeaderBlock()->id(),
+      [new_merge_block, this](ir::Instruction* inst, uint32_t operand) {
+        if (this->loop_->IsInsideLoop(inst))
+          inst->SetOperand(operand, {new_merge_block});
+
+      });
+  new_loop->SetMergeBlock(new_exit_bb.get());
+
+  new_loop->SetPreHeaderBlock(loop_->GetPreHeaderBlock());
+
+  // Add the new block into the cloned instructions.
+  cloning_result->cloned_bb_.push_back(std::move(new_exit_bb));
+
+  return new_loop;
+}
+
 ir::Loop* LoopUtils::CloneLoop(
     LoopCloningResult* cloning_result,
     const std::vector<ir::BasicBlock*>& ordered_loop_blocks) const {
@@ -507,14 +579,16 @@ ir::Loop* LoopUtils::CloneLoop(
 
     if (loop_->IsInsideLoop(old_bb)) new_loop->AddBasicBlock(new_bb);
 
-    for (auto& inst : *new_bb) {
-      if (inst.HasResultId()) {
-        uint32_t old_result_id = inst.result_id();
-        inst.SetResultId(context_->TakeNextId());
-        cloning_result->value_map_[old_result_id] = inst.result_id();
+    for (auto new_inst = new_bb->begin(), old_inst = old_bb->begin();
+         new_inst != new_bb->end(); ++new_inst, ++old_inst) {
+      cloning_result->ptr_map_[&*new_inst] = &*old_inst;
+      if (new_inst->HasResultId()) {
+        new_inst->SetResultId(context_->TakeNextId());
+        cloning_result->value_map_[old_inst->result_id()] =
+            new_inst->result_id();
 
         // Only look at the defs for now, uses are not updated yet.
-        def_use_mgr->AnalyzeInstDef(&inst);
+        def_use_mgr->AnalyzeInstDef(&*new_inst);
       }
     }
   }

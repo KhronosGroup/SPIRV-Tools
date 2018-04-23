@@ -46,6 +46,9 @@ class LoopUtils {
   struct LoopCloningResult {
     using ValueMapTy = std::unordered_map<uint32_t, uint32_t>;
     using BlockMapTy = std::unordered_map<uint32_t, ir::BasicBlock*>;
+    using PtrMap = std::unordered_map<ir::Instruction*, ir::Instruction*>;
+
+    PtrMap ptr_map_;
 
     // Mapping between the original loop ids and the new one.
     ValueMapTy value_map_;
@@ -111,6 +114,12 @@ class LoopUtils {
   ir::Loop* CloneLoop(
       LoopCloningResult* cloning_result,
       const std::vector<ir::BasicBlock*>& ordered_loop_blocks) const;
+  // Clone |loop_| and remap its instructions, as above. Overload to compute
+  // loop block ordering within method rather than taking in as parameter.
+  ir::Loop* CloneLoop(LoopCloningResult* cloning_result) const;
+
+  // Clone the |loop_| and make the new loop branch to the second loop on exit.
+  ir::Loop* CloneAndAttachLoopToHeader(LoopCloningResult* cloning_result);
 
   // Perfom a partial unroll of |loop| by given |factor|. This will copy the
   // body of the loop |factor| times. So a |factor| of one would give a new loop

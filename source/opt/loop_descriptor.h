@@ -153,6 +153,7 @@ class Loop {
 
   inline size_t NumImmediateChildren() const { return nested_loops_.size(); }
 
+  inline bool HasChildren() const { return !nested_loops_.empty(); }
   // Adds |nested| as a nested loop of this loop. Automatically register |this|
   // as the parent of |nested|.
   inline void AddNestedLoop(Loop* nested) {
