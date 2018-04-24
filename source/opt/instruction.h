@@ -24,6 +24,7 @@
 #include "operand.h"
 #include "util/ilist_node.h"
 
+#include "latest_version_glsl_std_450_header.h"
 #include "latest_version_spirv_header.h"
 #include "reflect.h"
 #include "spirv-tools/libspirv.h"
@@ -405,6 +406,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // is always added to |options|.
   std::string PrettyPrint(uint32_t options = 0u) const;
 
+  bool IsScalarizable() const;
+
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
@@ -699,6 +702,7 @@ bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode()); }
 bool Instruction::IsConstant() const {
   return IsCompileTimeConstantInst(opcode());
 }
+
 }  // namespace ir
 }  // namespace spvtools
 
