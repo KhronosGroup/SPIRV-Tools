@@ -154,7 +154,7 @@ template <size_t N>
 inline std::string PadToWord(std::string&& str) {
   const size_t tail_length = str.size() % N;
   if (tail_length != 0) str += std::string(N - tail_length, '0');
-  return str;
+  return std::move(str);
 }
 
 // Adds '0' chars at the end of the string until the size is a multiple of N.
