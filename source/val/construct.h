@@ -49,6 +49,8 @@ enum class ConstructType : int {
   kCase
 };
 
+class Function;
+
 /// @brief This class tracks the CFG constructs as defined in the SPIR-V spec
 class Construct {
  public:
@@ -103,7 +105,7 @@ class Construct {
 
   // Returns the basic blocks in this construct. This function should not
   // be called before the exit block is set.
-  ConstructBlockSet blocks() const;
+  ConstructBlockSet blocks(Function* function) const;
 
  private:
   /// The type of the construct

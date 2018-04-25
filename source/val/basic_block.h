@@ -205,7 +205,7 @@ class BasicBlock {
   std::vector<BasicBlock*> successors_;
 
   /// The type of the block
-  std::bitset<kBlockTypeCOUNT - 1> type_;
+  std::bitset<kBlockTypeCOUNT> type_;
 
   /// True if the block is reachable in the CFG
   bool reachable_;

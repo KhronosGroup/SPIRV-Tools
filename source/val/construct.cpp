@@ -13,11 +13,13 @@
 // limitations under the License.
 
 #include "val/construct.h"
+#include "val/function.h"
 
 #include <cassert>
 #include <cstddef>
 #include <unordered_set>
 
+#include <iostream>
 namespace libspirv {
 
 Construct::Construct(ConstructType construct_type, BasicBlock* entry,
@@ -66,10 +68,14 @@ BasicBlock* Construct::exit_block() { return exit_block_; }
 
 void Construct::set_exit(BasicBlock* block) { exit_block_ = block; }
 
-Construct::ConstructBlockSet Construct::blocks() const {
+Construct::ConstructBlockSet Construct::blocks(Function* function) const {
   auto header = entry_block();
   auto merge = exit_block();
+  int header_depth = function->GetBlockDepth(const_cast<BasicBlock*>(header));
   ConstructBlockSet construct_blocks;
+  std::cerr << "Construct header: " << header->id() << std::endl;
+  std::cerr << " depth: " << header_depth << std::endl;
+  std::cerr << " exit: " << merge->id() << std::endl;
   std::unordered_set<BasicBlock*> corresponding_headers;
   for (auto& other : corresponding_constructs()) {
     corresponding_headers.insert(other->entry_block());
@@ -90,7 +96,27 @@ Construct::ConstructBlockSet Construct::blocks() const {
       continue;
     }
 
+    int block_depth = function->GetBlockDepth(block);
+    if (block_depth < header_depth) {
+      // Broke to outer construct.
+      continue;
+    }
+    if (block_depth == header_depth && type() == ConstructType::kSelection &&
+        block->is_type(kBlockTypeContinue)) {
+      // Continued to outer construct
+      continue;
+    }
+
     if (!construct_blocks.insert(block).second) continue;
+    std::cerr << " Block: " << block->id() << " ";
+    if (block->is_type(kBlockTypeUndefined)) std::cerr << "undefined ";
+    if (block->is_type(kBlockTypeHeader)) std::cerr << "header ";
+    if (block->is_type(kBlockTypeLoop)) std::cerr << "loop ";
+    if (block->is_type(kBlockTypeMerge)) std::cerr << "merge ";
+    if (block->is_type(kBlockTypeBreak)) std::cerr << "break ";
+    if (block->is_type(kBlockTypeContinue)) std::cerr << "continue ";
+    if (block->is_type(kBlockTypeReturn)) std::cerr << "return ";
+    std::cerr << std::endl;
 
     if (merge != block) {
       for (auto succ : *block->successors()) {
