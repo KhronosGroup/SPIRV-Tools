@@ -3855,14 +3855,13 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "OpFunctionEnd",
     2, true),
   // Test case 19: Fold OpVectorTimesScalar
-  // {-0,-0} = OpVectorTimesScalar v2float v2float_null -1
+  // {0,0} = OpVectorTimesScalar v2float v2float_null -1
   InstructionFoldingCase<bool>(
     Header() +
       "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
       "; CHECK: [[v2float:%\\w+]] = OpTypeVector [[float]] 2\n" +
-      "; CHECK: [[float_n0:%\\w+]] = OpConstant [[float]] -0\n" +
-      "; CHECK: [[v2float_n0_n0:%\\w+]] = OpConstantComposite [[v2float]] [[float_n0]] [[float_n0]]\n" +
-      "; CHECK: %2 = OpCopyObject [[v2float]] [[v2float_n0_n0]]\n" +
+      "; CHECK: [[v2float_null:%\\w+]] = OpConstantNull [[v2float]]\n" +
+      "; CHECK: %2 = OpCopyObject [[v2float]] [[v2float_null]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%2 = OpVectorTimesScalar %v2float %v2float_null %float_n1\n" +
@@ -3883,6 +3882,40 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
       "%2 = OpVectorTimesScalar %v2double %v2double_2_2 %double_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd",
+    2, true),
+  // Test case 21: Fold OpVectorTimesScalar
+  // {0,0} = OpVectorTimesScalar v2double {0,0} n
+  InstructionFoldingCase<bool>(
+    Header() +
+        "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+        "; CHECK: [[v2double:%\\w+]] = OpTypeVector [[double]] 2\n" +
+        "; CHECK: {{%\\w+}} = OpConstant [[double]] 0\n" +
+        "; CHECK: [[double_0:%\\w+]] = OpConstant [[double]] 0\n" +
+        "; CHECK: [[v2double_0_0:%\\w+]] = OpConstantComposite [[v2double]] [[double_0]] [[double_0]]\n" +
+        "; CHECK: %2 = OpCopyObject [[v2double]] [[v2double_0_0]]\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_double Function\n" +
+        "%load = OpLoad %double %n\n" +
+        "%2 = OpVectorTimesScalar %v2double %v2double_0_0 %load\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+    2, true),
+  // Test case 22: Fold OpVectorTimesScalar
+  // {0,0} = OpVectorTimesScalar v2double n 0
+  InstructionFoldingCase<bool>(
+    Header() +
+        "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+        "; CHECK: [[v2double:%\\w+]] = OpTypeVector [[double]] 2\n" +
+        "; CHECK: [[v2double_null:%\\w+]] = OpConstantNull [[v2double]]\n" +
+        "; CHECK: %2 = OpCopyObject [[v2double]] [[v2double_null]]\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_v2double Function\n" +
+        "%load = OpLoad %v2double %n\n" +
+        "%2 = OpVectorTimesScalar %v2double %load %double_0\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
     2, true)
 ));
 

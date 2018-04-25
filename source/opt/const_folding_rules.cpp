@@ -20,6 +20,17 @@ namespace opt {
 namespace {
 const uint32_t kExtractCompositeIdInIdx = 0;
 
+// Returns true if |type| is Float or a vector of Float.
+bool HasFloatingPoint(const analysis::Type* type) {
+  if (type->AsFloat()) {
+    return true;
+  } else if (const analysis::Vector* vec_type = type->AsVector()) {
+    return vec_type->element_type()->AsFloat() != nullptr;
+  }
+
+  return false;
+}
+
 // Folds an OpcompositeExtract where input is a composite constant.
 ConstantFoldingRule FoldExtractWithConstants() {
   return [](ir::Instruction* inst,
@@ -107,15 +118,32 @@ ConstantFoldingRule FoldVectorTimesScalar() {
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     assert(inst->opcode() == SpvOpVectorTimesScalar);
-    const analysis::Constant* c1 = constants[0];
-    const analysis::Constant* c2 = constants[1];
-    if (c1 == nullptr || c2 == nullptr) {
-      return nullptr;
-    }
-
     ir::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      if (HasFloatingPoint(type_mgr->GetType(inst->type_id()))) {
+        return nullptr;
+      }
+    }
+
+    const analysis::Constant* c1 = constants[0];
+    const analysis::Constant* c2 = constants[1];
+
+    if (c1 && c1->IsZero()) {
+      return c1;
+    }
+
+    if (c2 && c2->IsZero()) {
+      // Get or create the NullConstant for this type.
+      std::vector<uint32_t> ids;
+      return const_mgr->GetConstant(type_mgr->GetType(inst->type_id()), ids);
+    }
+
+    if (c1 == nullptr || c2 == nullptr) {
+      return nullptr;
+    }
 
     // Check result type.
     const analysis::Type* result_type = type_mgr->GetType(inst->type_id());

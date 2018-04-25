@@ -1504,22 +1504,12 @@ FoldingRule RedundantPhi() {
       [](ir::Instruction* inst, const std::vector<const analysis::Constant*>&) {
         assert(inst->opcode() == SpvOpPhi && "Wrong opcode.  Should be OpPhi.");
 
-        ir::IRContext* context = inst->context();
-        analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-
         uint32_t incoming_value = 0;
 
         for (uint32_t i = 0; i < inst->NumInOperands(); i += 2) {
           uint32_t op_id = inst->GetSingleWordInOperand(i);
           if (op_id == inst->result_id()) {
             continue;
-          }
-
-          ir::Instruction* op_inst = def_use_mgr->GetDef(op_id);
-          if (op_inst->opcode() == SpvOpUndef) {
-            // TODO: We should be able to still use op_id if we know that
-            // the definition of op_id dominates |inst|.
-            return false;
           }
 
           if (incoming_value == 0) {

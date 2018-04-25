@@ -306,16 +306,6 @@ const Constant* ConstantManager::GetConstant(
   return cst ? RegisterConstant(cst) : nullptr;
 }
 
-bool VectorConstant::IsZero() const {
-  for (const Constant* component : GetComponents()) {
-    if (!component->AsNullConstant() &&
-        !component->AsScalarConstant()->IsZero()) {
-      return false;
-    }
-  }
-  return true;
-}
-
 std::vector<const analysis::Constant*> Constant::GetVectorComponents(
     analysis::ConstantManager* const_mgr) const {
   std::vector<const analysis::Constant*> components;
