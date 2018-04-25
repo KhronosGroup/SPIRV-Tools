@@ -242,6 +242,25 @@ spv_result_t StructuredControlFlowChecks(
                    _.getIdName(merge->id()), "is not post dominated by");
       }
     }
+
+    // Check that for all non-header blocks, all predecessors are within this
+    // construct.
+    Construct::ConstructBlockSet construct_blocks = construct.blocks();
+    for (auto block : construct_blocks) {
+      if (block == header) continue;
+      for (auto pred : *block->predecessors()) {
+        if (!construct_blocks.count(pred)) {
+          string construct_name, header_name, exit_name;
+          tie(construct_name, header_name, exit_name) =
+              ConstructNames(construct.type());
+          return _.diag(SPV_ERROR_INVALID_CFG)
+                 << "block <ID> " << pred->id() << " branches to the "
+                 << construct_name << " construct, but not to the "
+                 << header_name << " <ID> " << header->id();
+        }
+      }
+    }
+
     // TODO(umar):  an OpSwitch block dominates all its defined case
     // constructs
     // TODO(umar):  each case construct has at most one branch to another
