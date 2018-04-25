@@ -1423,6 +1423,139 @@ TEST_F(ValidateCFG, OpReturnInNonVoidFunc) {
           "OpReturn can only be called from a function with void return type"));
 }
 
+TEST_F(ValidateCFG, StructuredCFGBranchIntoSelectionBody) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpBranchConditional %true %then %merge
+%merge = OpLabel
+OpBranch %then
+%then = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("branches to the selection construct, but not to the "
+                        "selection header <ID>"));
+}
+
+TEST_F(ValidateCFG, StructuredCFGBranchIntoContinueBody) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpReturn
+%2 = OpLabel
+OpLoopMerge %3 %5 None
+OpBranchConditional %true %3 %4
+%4 = OpLabel
+OpBranchConditional %true %6 %5
+%5 = OpLabel
+OpBranch %6
+%6 = OpLabel
+OpBranch %2
+%3 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "branches to the loop construct, but not to the loop header <ID>"));
+}
+
+TEST_F(ValidateCFG, StructuredCFGBranchIntoLoopBody) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%7 = OpLabel
+OpReturn
+%1 = OpLabel
+OpSelectionMerge %6 None
+OpBranchConditional %true %3 %2
+%2 = OpLabel
+OpBranch %8
+%3 = OpLabel
+OpLoopMerge %5 %4 None
+OpBranch %8
+%8 = OpLabel
+OpBranch %4
+%4 = OpLabel
+OpBranchConditional %true %5 %3
+%5 = OpLabel
+OpBranch %6
+%6 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "branches to the loop construct, but not to the loop header <ID>"));
+}
+
+TEST_F(ValidateCFG, StructuredCFGBranchUnreachableIntoContinueBody) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %3 %4 None
+OpBranchConditional %true %3 %4
+%4 = OpLabel
+OpBranch %6
+%5 = OpLabel
+OpBranch %6
+%6 = OpLabel
+OpBranch %2
+%3 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("branches to the continue construct, but not to the "
+                        "continue target <ID>"));
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): Nested CFG constructs
 }  // namespace
