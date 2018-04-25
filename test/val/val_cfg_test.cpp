@@ -1423,6 +1423,33 @@ TEST_F(ValidateCFG, OpReturnInNonVoidFunc) {
           "OpReturn can only be called from a function with void return type"));
 }
 
+TEST_F(ValidateCFG, StructuredCFGBranchIntoSelectionBody) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpBranchConditional %true %then %merge
+%merge = OpLabel
+OpBranch %then
+%then = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("branches to the selection construct, but not to the "
+                        "selection header <ID>"));
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): Nested CFG constructs
 }  // namespace
