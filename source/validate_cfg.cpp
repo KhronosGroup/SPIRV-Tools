@@ -168,7 +168,7 @@ string ConstructErrorString(const Construct& construct,
 }
 
 spv_result_t StructuredControlFlowChecks(
-    const ValidationState_t& _, const Function& function,
+    const ValidationState_t& _, Function* function,
     const vector<pair<uint32_t, uint32_t>>& back_edges) {
   /// Check all backedges target only loop headers and have exactly one
   /// back-edge branching to it
@@ -179,7 +179,7 @@ spv_result_t StructuredControlFlowChecks(
     uint32_t back_edge_block;
     uint32_t header_block;
     tie(back_edge_block, header_block) = back_edge;
-    if (!function.IsBlockType(header_block, kBlockTypeLoop)) {
+    if (!function->IsBlockType(header_block, kBlockTypeLoop)) {
       return _.diag(SPV_ERROR_INVALID_CFG)
              << "Back-edges (" << _.getIdName(back_edge_block) << " -> "
              << _.getIdName(header_block)
@@ -189,7 +189,7 @@ spv_result_t StructuredControlFlowChecks(
   }
 
   // Check the loop headers have exactly one back-edge branching to it
-  for (BasicBlock* loop_header : function.ordered_blocks()) {
+  for (BasicBlock* loop_header : function->ordered_blocks()) {
     if (!loop_header->reachable()) continue;
     if (!loop_header->is_type(kBlockTypeLoop)) continue;
     auto loop_header_id = loop_header->id();
@@ -203,7 +203,7 @@ spv_result_t StructuredControlFlowChecks(
   }
 
   // Check construct rules
-  for (const Construct& construct : function.constructs()) {
+  for (const Construct& construct : function->constructs()) {
     auto header = construct.entry_block();
     auto merge = construct.exit_block();
 
@@ -242,6 +242,25 @@ spv_result_t StructuredControlFlowChecks(
                    _.getIdName(merge->id()), "is not post dominated by");
       }
     }
+
+    // Check that for all non-header blocks, all predecessors are within this
+    // construct.
+    Construct::ConstructBlockSet construct_blocks = construct.blocks(function);
+    for (auto block : construct_blocks) {
+      if (block == header) continue;
+      for (auto pred : *block->predecessors()) {
+        if (pred->reachable() && !construct_blocks.count(pred)) {
+          string construct_name, header_name, exit_name;
+          tie(construct_name, header_name, exit_name) =
+              ConstructNames(construct.type());
+          return _.diag(SPV_ERROR_INVALID_CFG)
+                 << "block <ID> " << pred->id() << " branches to the "
+                 << construct_name << " construct, but not to the "
+                 << header_name << " <ID> " << header->id();
+        }
+      }
+    }
+
     // TODO(umar):  an OpSwitch block dominates all its defined case
     // constructs
     // TODO(umar):  each case construct has at most one branch to another
@@ -352,7 +371,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
 
     /// Structured control flow checks are only required for shader capabilities
     if (_.HasCapability(SpvCapabilityShader)) {
-      if (auto error = StructuredControlFlowChecks(_, function, back_edges))
+      if (auto error = StructuredControlFlowChecks(_, &function, back_edges))
         return error;
     }
   }

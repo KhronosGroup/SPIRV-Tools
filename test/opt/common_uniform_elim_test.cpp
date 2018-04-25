@@ -1131,6 +1131,10 @@ OpStore %v %27
 %30 = OpINotEqual %bool %29 %uint_0
 OpSelectionMerge %31 None
 OpBranchConditional %30 %31 %32
+%32 = OpLabel
+%47 = OpLoad %v4float %v
+OpStore %gl_FragColor %47
+OpReturn
 %31 = OpLabel
 %33 = OpAccessChain %_ptr_Uniform_float %_ %int_1
 %34 = OpLoad %float %33
@@ -1146,16 +1150,20 @@ OpBranchConditional %38 %43 %39
 %41 = OpLoad %v4float %v
 %42 = OpVectorTimesScalar %v4float %41 %40
 OpStore %v %42
-OpBranch %32
+OpBranch %50
+%50 = OpLabel
+%51 = OpLoad %v4float %v
+OpStore %gl_FragColor %51
+OpReturn
 %43 = OpLabel
 %44 = OpLoad %float %fi
 %45 = OpLoad %v4float %v
 %46 = OpVectorTimesScalar %v4float %45 %44
 OpStore %v %46
-OpBranch %32
-%32 = OpLabel
-%47 = OpLoad %v4float %v
-OpStore %gl_FragColor %47
+OpBranch %60
+%60 = OpLabel
+%61 = OpLoad %v4float %v
+OpStore %gl_FragColor %61
 OpReturn
 OpFunctionEnd
 )";
@@ -1166,35 +1174,43 @@ OpFunctionEnd
 %v = OpVariable %_ptr_Function_v4float Function
 %29 = OpLoad %v4float %BaseColor
 OpStore %v %29
-%50 = OpLoad %U_t %_
-%51 = OpCompositeExtract %uint %50 0
-%32 = OpINotEqual %bool %51 %uint_0
+%54 = OpLoad %U_t %_
+%55 = OpCompositeExtract %uint %54 0
+%32 = OpINotEqual %bool %55 %uint_0
 OpSelectionMerge %33 None
 OpBranchConditional %32 %33 %34
-%33 = OpLabel
-%54 = OpLoad %float %alpha
-%53 = OpCompositeExtract %float %50 1
-%37 = OpLoad %v4float %v
-%38 = OpVectorTimesScalar %v4float %37 %53
-OpStore %v %38
-%39 = OpLoad %uint %alpha_B
-%40 = OpIEqual %bool %39 %uint_0
-OpSelectionMerge %41 None
-OpBranchConditional %40 %41 %42
-%42 = OpLabel
-%44 = OpLoad %v4float %v
-%45 = OpVectorTimesScalar %v4float %44 %54
-OpStore %v %45
-OpBranch %34
-%41 = OpLabel
-%46 = OpLoad %float %fi
-%47 = OpLoad %v4float %v
-%48 = OpVectorTimesScalar %v4float %47 %46
-OpStore %v %48
-OpBranch %34
 %34 = OpLabel
-%49 = OpLoad %v4float %v
-OpStore %gl_FragColor %49
+%35 = OpLoad %v4float %v
+OpStore %gl_FragColor %35
+OpReturn
+%33 = OpLabel
+%58 = OpLoad %float %alpha
+%57 = OpCompositeExtract %float %54 1
+%38 = OpLoad %v4float %v
+%39 = OpVectorTimesScalar %v4float %38 %57
+OpStore %v %39
+%40 = OpLoad %uint %alpha_B
+%41 = OpIEqual %bool %40 %uint_0
+OpSelectionMerge %42 None
+OpBranchConditional %41 %42 %43
+%43 = OpLabel
+%45 = OpLoad %v4float %v
+%46 = OpVectorTimesScalar %v4float %45 %58
+OpStore %v %46
+OpBranch %47
+%47 = OpLabel
+%48 = OpLoad %v4float %v
+OpStore %gl_FragColor %48
+OpReturn
+%42 = OpLabel
+%49 = OpLoad %float %fi
+%50 = OpLoad %v4float %v
+%51 = OpVectorTimesScalar %v4float %50 %49
+OpStore %v %51
+OpBranch %52
+%52 = OpLabel
+%53 = OpLoad %v4float %v
+OpStore %gl_FragColor %53
 OpReturn
 OpFunctionEnd
 )";
