@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <unordered_set>
 
 namespace libspirv {
 
@@ -64,4 +65,40 @@ const BasicBlock* Construct::exit_block() const { return exit_block_; }
 BasicBlock* Construct::exit_block() { return exit_block_; }
 
 void Construct::set_exit(BasicBlock* block) { exit_block_ = block; }
+
+Construct::ConstructBlockSet Construct::blocks() const {
+  auto header = entry_block();
+  auto merge = exit_block();
+  ConstructBlockSet construct_blocks;
+  std::unordered_set<BasicBlock*> corresponding_headers;
+  for (auto& other : corresponding_constructs()) {
+    corresponding_headers.insert(other->entry_block());
+  }
+  std::vector<BasicBlock*> stack;
+  stack.push_back(const_cast<BasicBlock*>(header));
+  while (!stack.empty()) {
+    BasicBlock* block = stack.back();
+    stack.pop_back();
+
+    if (merge == block && ExitBlockIsMergeBlock()) {
+      // Merge block is not part of the construct.
+      continue;
+    }
+
+    if (corresponding_headers.count(block)) {
+      // Entered another construct.
+      continue;
+    }
+
+    if (!construct_blocks.insert(block).second) continue;
+
+    if (merge != block) {
+      for (auto succ : *block->successors()) {
+        stack.push_back(succ);
+      }
+    }
+  }
+
+  return construct_blocks;
+}
 }  // namespace libspirv
