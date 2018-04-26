@@ -289,6 +289,16 @@ void InlinePass::GenInlineCode(
       case SpvOpVariable:
         // Already processed
         break;
+      case SpvOpUnreachable:
+      case SpvOpKill: {
+        // Generate a return label so that we split the block with the function
+        // call. Copy the terminator into the new block.
+        if (returnLabelId == 0) returnLabelId = this->TakeNextId();
+        std::unique_ptr<ir::Instruction> terminator(
+            new ir::Instruction(context(), cpi->opcode(), 0, 0, {}));
+        new_blk_ptr->AddInstruction(std::move(terminator));
+        break;
+      }
       case SpvOpLabel: {
         // If previous instruction was early return, insert branch
         // instruction to return block.
