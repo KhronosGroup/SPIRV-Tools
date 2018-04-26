@@ -51,6 +51,9 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisRegisterPressure) {
     BuildRegPressureAnalysis();
   }
+  if (set & kAnalysisValueNumberTable) {
+    BuildValueNumberTable();
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
@@ -81,6 +84,9 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   }
   if (analyses_to_invalidate & kAnalysisNameMap) {
     id_to_name_.reset(nullptr);
+  }
+  if (analyses_to_invalidate & kAnalysisValueNumberTable) {
+    vn_table_.reset(nullptr);
   }
 
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);

@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "cfg.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -32,6 +33,10 @@ uint32_t ValueNumberTable::GetValueNumber(
     return result_id_to_val->second;
   }
   return 0;
+}
+
+uint32_t ValueNumberTable::GetValueNumber(uint32_t id) const {
+  return GetValueNumber(context()->get_def_use_mgr()->GetDef(id));
 }
 
 uint32_t ValueNumberTable::AssignValueNumber(ir::Instruction* inst) {

@@ -523,9 +523,20 @@ std::ostream& operator<<(std::ostream& str, const ir::Instruction& inst) {
 
 bool Instruction::IsOpcodeCodeMotionSafe() const {
   switch (opcode_) {
+    case SpvOpNop:
+    case SpvOpUndef:
+    case SpvOpLoad:
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpArrayLength:
     case SpvOpVectorExtractDynamic:
     case SpvOpVectorInsertDynamic:
     case SpvOpVectorShuffle:
+    case SpvOpCompositeConstruct:
+    case SpvOpCompositeExtract:
+    case SpvOpCompositeInsert:
+    case SpvOpCopyObject:
+    case SpvOpTranspose:
     case SpvOpConvertFToU:
     case SpvOpConvertFToS:
     case SpvOpConvertSToF:
@@ -556,11 +567,22 @@ bool Instruction::IsOpcodeCodeMotionSafe() const {
     case SpvOpVectorTimesMatrix:
     case SpvOpMatrixTimesVector:
     case SpvOpMatrixTimesMatrix:
+    case SpvOpOuterProduct:
+    case SpvOpDot:
+    case SpvOpIAddCarry:
+    case SpvOpISubBorrow:
+    case SpvOpUMulExtended:
+    case SpvOpSMulExtended:
+    case SpvOpAny:
+    case SpvOpAll:
+    case SpvOpIsNan:
+    case SpvOpIsInf:
     case SpvOpLogicalEqual:
     case SpvOpLogicalNotEqual:
     case SpvOpLogicalOr:
     case SpvOpLogicalAnd:
     case SpvOpLogicalNot:
+    case SpvOpSelect:
     case SpvOpIEqual:
     case SpvOpINotEqual:
     case SpvOpUGreaterThan:
@@ -590,10 +612,12 @@ bool Instruction::IsOpcodeCodeMotionSafe() const {
     case SpvOpBitwiseXor:
     case SpvOpBitwiseAnd:
     case SpvOpNot:
-    case SpvOpAccessChain:
-    case SpvOpInBoundsAccessChain:
-    case SpvOpPtrAccessChain:
-    case SpvOpInBoundsPtrAccessChain:
+    case SpvOpBitFieldInsert:
+    case SpvOpBitFieldSExtract:
+    case SpvOpBitFieldUExtract:
+    case SpvOpBitReverse:
+    case SpvOpBitCount:
+    case SpvOpSizeOf:
       return true;
     default:
       return false;

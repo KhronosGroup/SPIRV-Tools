@@ -68,6 +68,19 @@ class IfConversion : public Pass {
   // is terminated by a conditional branch.
   bool CheckBlock(ir::BasicBlock* block, DominatorAnalysis* dominators,
                   ir::BasicBlock** common);
+
+  // Moves |inst| to |target_block| if it does not already dominate the block.
+  // Any instructions that |inst| depends on are move if necessary.  It is
+  // assumed that |inst| can be hoisted to |target_block| as defined by
+  // |CanHoistInstruction|.  |dominators| is the dominator analysis for the
+  // function that contains |target_block|.
+  void HoistInstruction(ir::Instruction* inst, ir::BasicBlock* target_block,
+                        DominatorAnalysis* dominators);
+
+  // Returns true if it is legal to move |inst| and the instructions it depends
+  // on to |target_block| if they do not already dominate |target_block|.
+  bool CanHoistInstruction(ir::Instruction* inst, ir::BasicBlock* target_block,
+                           DominatorAnalysis* dominators);
 };
 
 }  //  namespace opt

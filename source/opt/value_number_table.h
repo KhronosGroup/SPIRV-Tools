@@ -18,7 +18,12 @@
 #include <cstdint>
 #include <unordered_map>
 #include "instruction.h"
-#include "ir_context.h"
+
+namespace spvtools {
+namespace ir {
+class IRContext;
+}
+}  // namespace spvtools
 
 namespace spvtools {
 namespace opt {
@@ -60,7 +65,7 @@ class ValueNumberTable {
 
   // Returns the value number of the value contain in |id|.  Returns 0 if it
   // has not been assigned a value number.
-  inline uint32_t GetValueNumber(uint32_t id) const;
+  uint32_t GetValueNumber(uint32_t id) const;
 
   ir::IRContext* context() const { return context_; }
 
@@ -83,10 +88,6 @@ class ValueNumberTable {
   ir::IRContext* context_;
   uint32_t next_value_number_;
 };
-
-uint32_t ValueNumberTable::GetValueNumber(uint32_t id) const {
-  return GetValueNumber(context()->get_def_use_mgr()->GetDef(id));
-}
 
 }  // namespace opt
 }  // namespace spvtools
