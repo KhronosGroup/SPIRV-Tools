@@ -27,6 +27,7 @@
 #include "register_pressure.h"
 #include "scalar_analysis.h"
 #include "type_manager.h"
+#include "value_number_table.h"
 
 #include <algorithm>
 #include <iostream>
@@ -62,7 +63,8 @@ class IRContext {
     kAnalysisNameMap = 1 << 7,
     kAnalysisScalarEvolution = 1 << 8,
     kAnalysisRegisterPressure = 1 << 9,
-    kAnalysisEnd = 1 << 10
+    kAnalysisValueNumberTable = 1 << 10,
+    kAnalysisEnd = 1 << 11
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
@@ -206,6 +208,15 @@ class IRContext {
       BuildDefUseManager();
     }
     return def_use_mgr_.get();
+  }
+
+  // Returns a pointer to a value number table.  If the liveness analysis is
+  // invalid, it is rebuilt first.
+  opt::ValueNumberTable* GetValueNumberTable() {
+    if (!AreAnalysesValid(kAnalysisValueNumberTable)) {
+      BuildValueNumberTable();
+    }
+    return vn_table_.get();
   }
 
   // Returns a pointer to a liveness analysis.  If the liveness analysis is
@@ -374,7 +385,7 @@ class IRContext {
 
   // Returns true if |inst| is a combinator in the current context.
   // |combinator_ops_| is built if it has not been already.
-  inline bool IsCombinatorInstruction(ir::Instruction* inst) {
+  inline bool IsCombinatorInstruction(const Instruction* inst) {
     if (!AreAnalysesValid(kAnalysisCombinators)) {
       InitializeCombinators();
     }
@@ -473,6 +484,13 @@ class IRContext {
   void BuildRegPressureAnalysis() {
     reg_pressure_.reset(new opt::LivenessAnalysis(this));
     valid_analyses_ = valid_analyses_ | kAnalysisRegisterPressure;
+  }
+
+  // Builds the value number table analysis from scratch, even if it was already
+  // valid.
+  void BuildValueNumberTable() {
+    vn_table_.reset(new opt::ValueNumberTable(this));
+    valid_analyses_ = valid_analyses_ | kAnalysisValueNumberTable;
   }
 
   // Removes all computed dominator and post-dominator trees. This will force
@@ -581,6 +599,8 @@ class IRContext {
 
   // The liveness analysis |module_|.
   std::unique_ptr<opt::LivenessAnalysis> reg_pressure_;
+
+  std::unique_ptr<opt::ValueNumberTable> vn_table_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,

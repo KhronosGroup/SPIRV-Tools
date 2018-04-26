@@ -14,12 +14,15 @@
 
 #include "if_conversion.h"
 
+#include "value_number_table.h"
+
 namespace spvtools {
 namespace opt {
 
 Pass::Status IfConversion::Process(ir::IRContext* c) {
   InitializeProcessing(c);
 
+  const ValueNumberTable& vn_table = *context()->GetValueNumberTable();
   bool modified = false;
   std::vector<ir::Instruction*> to_kill;
   for (auto& func : *get_module()) {
@@ -41,7 +44,8 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
           ir::IRContext::kAnalysisDefUse |
               ir::IRContext::kAnalysisInstrToBlockMapping);
       block.ForEachPhiInst([this, &builder, &modified, &common, &to_kill,
-                            dominators, &block](ir::Instruction* phi) {
+                            dominators, &block,
+                            &vn_table](ir::Instruction* phi) {
         // This phi is not compatible, but subsequent phis might be.
         if (!CheckType(phi->type_id())) return;
 
@@ -71,16 +75,47 @@ Pass::Status IfConversion::Process(ir::IRContext* c) {
           false_value = GetIncomingValue(phi, 0u);
         }
 
+        ir::BasicBlock* true_def_block = context()->get_instr_block(true_value);
+        ir::BasicBlock* false_def_block =
+            context()->get_instr_block(false_value);
+
+        uint32_t true_vn = vn_table.GetValueNumber(true_value);
+        uint32_t false_vn = vn_table.GetValueNumber(false_value);
+        if (true_vn != 0 && true_vn == false_vn) {
+          ir::Instruction* inst_to_use = nullptr;
+
+          // Try to pick an instruction that is not in a side node.  If we can't
+          // pick either the true for false branch as long as they can be
+          // legally moved.
+          if (!true_def_block ||
+              dominators->Dominates(true_def_block, &block)) {
+            inst_to_use = true_value;
+          } else if (!false_def_block ||
+                     dominators->Dominates(false_def_block, &block)) {
+            inst_to_use = false_value;
+          } else if (CanHoistInstruction(true_value, common, dominators)) {
+            inst_to_use = true_value;
+          } else if (CanHoistInstruction(false_value, common, dominators)) {
+            inst_to_use = false_value;
+          }
+
+          if (inst_to_use != nullptr) {
+            modified = true;
+            HoistInstruction(inst_to_use, common, dominators);
+            context()->KillNamesAndDecorates(phi);
+            context()->ReplaceAllUsesWith(phi->result_id(),
+                                          inst_to_use->result_id());
+          }
+          return;
+        }
+
         // If either incoming value is defined in a block that does not dominate
         // this phi, then we cannot eliminate the phi with a select.
         // TODO(alan-baker): Perform code motion where it makes sense to enable
         // the transform in this case.
-        ir::BasicBlock* true_def_block = context()->get_instr_block(true_value);
         if (true_def_block && !dominators->Dominates(true_def_block, &block))
           return;
 
-        ir::BasicBlock* false_def_block =
-            context()->get_instr_block(false_value);
         if (false_def_block && !dominators->Dominates(false_def_block, &block))
           return;
 
@@ -181,6 +216,67 @@ ir::Instruction* IfConversion::GetIncomingValue(ir::Instruction* phi,
                                                 uint32_t predecessor) {
   uint32_t in_index = 2 * predecessor;
   return get_def_use_mgr()->GetDef(phi->GetSingleWordInOperand(in_index));
+}
+
+void IfConversion::HoistInstruction(ir::Instruction* inst,
+                                    ir::BasicBlock* target_block,
+                                    DominatorAnalysis* dominators) {
+  ir::BasicBlock* inst_block = context()->get_instr_block(inst);
+  if (!inst_block) {
+    // This is in the header, and dominates everything.
+    return;
+  }
+
+  if (dominators->Dominates(inst_block, target_block)) {
+    // Already in position.  No work to do.
+    return;
+  }
+
+  assert(inst->IsOpcodeCodeMotionSafe() &&
+         "Trying to move an instruction that is not safe to move.");
+
+  // First hoist all instructions it depends on.
+  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
+  inst->ForEachInId(
+      [this, target_block, def_use_mgr, dominators](uint32_t* id) {
+        ir::Instruction* operand_inst = def_use_mgr->GetDef(*id);
+        HoistInstruction(operand_inst, target_block, dominators);
+      });
+
+  ir::Instruction* insertion_pos = target_block->terminator();
+  if ((insertion_pos)->PreviousNode()->opcode() == SpvOpSelectionMerge) {
+    insertion_pos = insertion_pos->PreviousNode();
+  }
+  inst->RemoveFromList();
+  insertion_pos->InsertBefore(std::unique_ptr<ir::Instruction>(inst));
+  context()->set_instr_block(inst, target_block);
+}
+
+bool IfConversion::CanHoistInstruction(ir::Instruction* inst,
+                                       ir::BasicBlock* target_block,
+                                       DominatorAnalysis* dominators) {
+  ir::BasicBlock* inst_block = context()->get_instr_block(inst);
+  if (!inst_block) {
+    // This is in the header, and dominates everything.
+    return true;
+  }
+
+  if (dominators->Dominates(inst_block, target_block)) {
+    // Already in position.  No work to do.
+    return true;
+  }
+
+  if (!inst->IsOpcodeCodeMotionSafe()) {
+    return false;
+  }
+
+  // Check all instruction |inst| depends on.
+  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
+  return inst->WhileEachInId(
+      [this, target_block, def_use_mgr, dominators](uint32_t* id) {
+        ir::Instruction* operand_inst = def_use_mgr->GetDef(*id);
+        return CanHoistInstruction(operand_inst, target_block, dominators);
+      });
 }
 
 }  // namespace opt
