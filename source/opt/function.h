@@ -170,7 +170,7 @@ inline void Function::AddBasicBlocks(T src_begin, T src_end, iterator ip) {
 }
 
 inline void Function::MoveBasicBlockToAfter(uint32_t id, BasicBlock* ip) {
-  InsertBasicBlockAfter(std::move(*FindBlock(id).Get()), &*ip);
+  InsertBasicBlockAfter(std::move(*FindBlock(id).Get()), ip);
   blocks_.erase(std::find(std::begin(blocks_), std::end(blocks_), nullptr));
 }
 

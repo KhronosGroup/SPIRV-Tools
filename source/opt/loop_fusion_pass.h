@@ -22,14 +22,14 @@ namespace opt {
 
 // Implements a loop fusion pass.
 // This pass will look for adjacent loops that are compatible and legal to be
-// fused. The fuse all such loops as long as the register usage for the fused
+// fused. It will fuse all such loops as long as the register usage for the fused
 // loop stays under the threshold defined by |max_registers_per_loop|.
 class LoopFusionPass : public Pass {
  public:
   explicit LoopFusionPass(size_t max_registers_per_loop)
       : Pass(), max_registers_per_loop_(max_registers_per_loop) {}
 
-  const char* name() const override { return "Loop fusion"; }
+  const char* name() const override { return "loop-fusion"; }
 
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is

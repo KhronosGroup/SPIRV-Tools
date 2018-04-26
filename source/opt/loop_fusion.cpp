@@ -98,6 +98,17 @@ bool LoopFusion::UsedInContinueOrConditionBlock(
   return used;
 }
 
+void LoopFusion::RemoveIfNotUsedContinueOrConditionBlock(
+    std::vector<ir::Instruction*>* instructions, ir::Loop* loop) {
+  instructions->erase(
+      std::remove_if(std::begin(*instructions), std::end(*instructions),
+                     [this, loop](ir::Instruction* instruction) {
+                       return !UsedInContinueOrConditionBlock(instruction,
+                                                              loop);
+                     }),
+      std::end(*instructions));
+}
+
 bool LoopFusion::AreCompatible() {
   // Check that the loops are in the same function.
   if (loop_0_->GetHeaderBlock()->GetParent() !=
@@ -122,35 +133,24 @@ bool LoopFusion::AreCompatible() {
     return false;
   }
 
-  std::vector<ir::Instruction*> inductions_0{}, inductions_1{};
+  std::vector<ir::Instruction *> inductions_0{}, inductions_1{};
   loop_0_->GetInductionVariables(inductions_0);
-  loop_1_->GetInductionVariables(inductions_1);
+  RemoveIfNotUsedContinueOrConditionBlock(&inductions_0, loop_0_);
 
-  auto num_induction_0 = std::count_if(
-      std::begin(inductions_0), std::end(inductions_0),
-      [this](ir::Instruction* instruction) {
-        return UsedInContinueOrConditionBlock(instruction, loop_0_);
-      });
-  auto num_induction_1 = std::count_if(
-      std::begin(inductions_1), std::end(inductions_1),
-      [this](ir::Instruction* instruction) {
-        return UsedInContinueOrConditionBlock(instruction, loop_1_);
-      });
-
-  if (num_induction_0 != 1 || num_induction_1 != 1) {
+  if (inductions_0.size() != 1) {
     return false;
   }
 
-  induction_0_ = *std::find_if(std::begin(inductions_0), std::end(inductions_0),
-                               [this](ir::Instruction* instruction) {
-                                 return UsedInContinueOrConditionBlock(
-                                     instruction, loop_0_);
-                               });
-  induction_1_ = *std::find_if(std::begin(inductions_1), std::end(inductions_1),
-                               [this](ir::Instruction* instruction) {
-                                 return UsedInContinueOrConditionBlock(
-                                     instruction, loop_1_);
-                               });
+  induction_0_ = inductions_0.front();
+
+  loop_1_->GetInductionVariables(inductions_1);
+  RemoveIfNotUsedContinueOrConditionBlock(&inductions_1, loop_1_);
+
+  if (inductions_1.size() != 1) {
+    return false;
+  }
+
+  induction_1_ = inductions_1.front();
 
   if (!CheckInit()) {
     return false;
@@ -176,8 +176,9 @@ bool LoopFusion::AreCompatible() {
   if (loop_0_->GetMergeBlock() != loop_1_->GetPreHeaderBlock()) {
     // Follow CFG for one more block.
     auto preds = context_->cfg()->preds(pre_header_1->id());
-    if (preds.size() == 1 && &*containing_function_->FindBlock(preds.front()) ==
-                                 loop_0_->GetMergeBlock()) {
+    if (preds.size() == 1 &&
+        &*containing_function_->FindBlock(preds.front()) ==
+            loop_0_->GetMergeBlock()) {
       block_to_check.push_back(
           &*containing_function_->FindBlock(preds.front()));
     } else {

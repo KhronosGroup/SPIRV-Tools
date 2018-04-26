@@ -84,6 +84,11 @@ class LoopFusion {
   bool UsedInContinueOrConditionBlock(ir::Instruction* instruction,
                                       ir::Loop* loop);
 
+  // Remove entries in |instructions| that are not used in the continue or
+  // condition block of |loop|.
+  void RemoveIfNotUsedContinueOrConditionBlock(
+      std::vector<ir::Instruction*>* instructions, ir::Loop* loop);
+
   // Returns |true| if |instruction| is used in |loop|.
   bool IsUsedInLoop(ir::Instruction* instruction, ir::Loop* loop);
 
