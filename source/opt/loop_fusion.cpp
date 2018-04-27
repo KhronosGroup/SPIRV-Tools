@@ -343,15 +343,12 @@ LoopFusion::LocationToMemOps(const std::vector<ir::Instruction*>& mem_ops) {
     auto access_location = context_->get_def_use_mgr()->GetDef(
         instruction->GetSingleWordInOperand(0));
 
-    if (access_location->opcode() == SpvOpAccessChain) {
-      // get array
-      auto access_array = context_->get_def_use_mgr()->GetDef(
+    while (access_location->opcode() == SpvOpAccessChain) {
+      access_location = context_->get_def_use_mgr()->GetDef(
           access_location->GetSingleWordInOperand(0));
-
-      location_map[access_array].push_back(instruction);
-    } else {
-      location_map[access_location].push_back(instruction);
     }
+
+    location_map[access_location].push_back(instruction);
   }
 
   return location_map;

@@ -237,6 +237,16 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
   ir::Instruction* source_array = GetOperandDefinition(source_access_chain, 0);
   ir::Instruction* destination_array =
       GetOperandDefinition(destination_access_chain, 0);
+
+  // Nested access chains are not supported yet, bail out.
+  if (source_array->opcode() == SpvOpAccessChain ||
+      destination_array->opcode() == SpvOpAccessChain) {
+    for (auto& entry : distance_vector->GetEntries()) {
+      entry = DistanceEntry();
+    }
+    return false;
+  }
+
   if (source_array != destination_array) {
     PrintDebug("Proved independence through different arrays.");
     return true;

@@ -1416,4 +1416,176 @@ TEST_F(FusionIllegalTest, ArrayInStruct) {
   }
 }
 
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 450
+
+struct P {float x,y,z;};
+uniform G { int a; P b[2]; int c; } g;
+layout(location = 0) out float o;
+
+void main()
+{
+  P p[2];
+  for (int i = 0; i < 2; ++i) {
+    p = g.b;
+  }
+  for (int j = 0; j < 2; ++j) {
+    o = p[g.a].x;
+  }
+}
+
+*/
+TEST_F(FusionIllegalTest, NestedAccessChain) {
+  std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %64
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "i"
+               OpName %20 "P"
+               OpMemberName %20 0 "x"
+               OpMemberName %20 1 "y"
+               OpMemberName %20 2 "z"
+               OpName %25 "p"
+               OpName %26 "P"
+               OpMemberName %26 0 "x"
+               OpMemberName %26 1 "y"
+               OpMemberName %26 2 "z"
+               OpName %28 "G"
+               OpMemberName %28 0 "a"
+               OpMemberName %28 1 "b"
+               OpMemberName %28 2 "c"
+               OpName %30 "g"
+               OpName %55 "j"
+               OpName %64 "o"
+               OpMemberDecorate %26 0 Offset 0
+               OpMemberDecorate %26 1 Offset 4
+               OpMemberDecorate %26 2 Offset 8
+               OpDecorate %27 ArrayStride 16
+               OpMemberDecorate %28 0 Offset 0
+               OpMemberDecorate %28 1 Offset 16
+               OpMemberDecorate %28 2 Offset 48
+               OpDecorate %28 Block
+               OpDecorate %30 DescriptorSet 0
+               OpDecorate %64 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 2
+         %17 = OpTypeBool
+         %19 = OpTypeFloat 32
+         %20 = OpTypeStruct %19 %19 %19
+         %21 = OpTypeInt 32 0
+         %22 = OpConstant %21 2
+         %23 = OpTypeArray %20 %22
+         %24 = OpTypePointer Function %23
+         %26 = OpTypeStruct %19 %19 %19
+         %27 = OpTypeArray %26 %22
+         %28 = OpTypeStruct %6 %27 %6
+         %29 = OpTypePointer Uniform %28
+         %30 = OpVariable %29 Uniform
+         %31 = OpConstant %6 1
+         %32 = OpTypePointer Uniform %27
+         %36 = OpTypePointer Function %20
+         %39 = OpTypePointer Function %19
+         %63 = OpTypePointer Output %19
+         %64 = OpVariable %63 Output
+         %65 = OpTypePointer Uniform %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %25 = OpVariable %24 Function
+         %55 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+         %72 = OpPhi %6 %9 %5 %54 %13
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %18 = OpSLessThan %17 %72 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+         %33 = OpAccessChain %32 %30 %31
+         %34 = OpLoad %27 %33
+         %35 = OpCompositeExtract %26 %34 0
+         %37 = OpAccessChain %36 %25 %9
+         %38 = OpCompositeExtract %19 %35 0
+         %40 = OpAccessChain %39 %37 %9
+               OpStore %40 %38
+         %41 = OpCompositeExtract %19 %35 1
+         %42 = OpAccessChain %39 %37 %31
+               OpStore %42 %41
+         %43 = OpCompositeExtract %19 %35 2
+         %44 = OpAccessChain %39 %37 %16
+               OpStore %44 %43
+         %45 = OpCompositeExtract %26 %34 1
+         %46 = OpAccessChain %36 %25 %31
+         %47 = OpCompositeExtract %19 %45 0
+         %48 = OpAccessChain %39 %46 %9
+               OpStore %48 %47
+         %49 = OpCompositeExtract %19 %45 1
+         %50 = OpAccessChain %39 %46 %31
+               OpStore %50 %49
+         %51 = OpCompositeExtract %19 %45 2
+         %52 = OpAccessChain %39 %46 %16
+               OpStore %52 %51
+               OpBranch %13
+         %13 = OpLabel
+         %54 = OpIAdd %6 %72 %31
+               OpStore %8 %54
+               OpBranch %10
+         %12 = OpLabel
+               OpStore %55 %9
+               OpBranch %56
+         %56 = OpLabel
+         %73 = OpPhi %6 %9 %12 %71 %59
+               OpLoopMerge %58 %59 None
+               OpBranch %60
+         %60 = OpLabel
+         %62 = OpSLessThan %17 %73 %16
+               OpBranchConditional %62 %57 %58
+         %57 = OpLabel
+         %66 = OpAccessChain %65 %30 %9
+         %67 = OpLoad %6 %66
+         %68 = OpAccessChain %39 %25 %67 %9
+         %69 = OpLoad %19 %68
+               OpStore %64 %69
+               OpBranch %59
+         %59 = OpLabel
+         %71 = OpIAdd %6 %73 %31
+               OpStore %55 %71
+               OpBranch %56
+         %58 = OpLabel
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  ir::Function& f = *module->begin();
+
+  {
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    EXPECT_EQ(ld.NumLoops(), 2u);
+
+    auto loops = ld.GetLoopsInOrderOfAppearance();
+
+    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    EXPECT_TRUE(fusion.AreCompatible());
+    EXPECT_FALSE(fusion.IsLegal());
+  }
+}
+
 }  // namespace
