@@ -249,7 +249,7 @@ spv_result_t StructuredControlFlowChecks(
     for (auto block : construct_blocks) {
       if (block == header) continue;
       for (auto pred : *block->predecessors()) {
-        if (!construct_blocks.count(pred)) {
+        if (pred->reachable() && !construct_blocks.count(pred)) {
           string construct_name, header_name, exit_name;
           tie(construct_name, header_name, exit_name) =
               ConstructNames(construct.type());
