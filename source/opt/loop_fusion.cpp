@@ -133,7 +133,7 @@ bool LoopFusion::AreCompatible() {
     return false;
   }
 
-  std::vector<ir::Instruction *> inductions_0{}, inductions_1{};
+  std::vector<ir::Instruction*> inductions_0{}, inductions_1{};
   loop_0_->GetInductionVariables(inductions_0);
   RemoveIfNotUsedContinueOrConditionBlock(&inductions_0, loop_0_);
 
@@ -176,9 +176,8 @@ bool LoopFusion::AreCompatible() {
   if (loop_0_->GetMergeBlock() != loop_1_->GetPreHeaderBlock()) {
     // Follow CFG for one more block.
     auto preds = context_->cfg()->preds(pre_header_1->id());
-    if (preds.size() == 1 &&
-        &*containing_function_->FindBlock(preds.front()) ==
-            loop_0_->GetMergeBlock()) {
+    if (preds.size() == 1 && &*containing_function_->FindBlock(preds.front()) ==
+                                 loop_0_->GetMergeBlock()) {
       block_to_check.push_back(
           &*containing_function_->FindBlock(preds.front()));
     } else {

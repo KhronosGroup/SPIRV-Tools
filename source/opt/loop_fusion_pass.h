@@ -22,8 +22,8 @@ namespace opt {
 
 // Implements a loop fusion pass.
 // This pass will look for adjacent loops that are compatible and legal to be
-// fused. It will fuse all such loops as long as the register usage for the fused
-// loop stays under the threshold defined by |max_registers_per_loop|.
+// fused. It will fuse all such loops as long as the register usage for the
+// fused loop stays under the threshold defined by |max_registers_per_loop|.
 class LoopFusionPass : public Pass {
  public:
   explicit LoopFusionPass(size_t max_registers_per_loop)
