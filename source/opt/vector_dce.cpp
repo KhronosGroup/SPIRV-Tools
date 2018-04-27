@@ -16,6 +16,7 @@
 
 namespace {
 const uint32_t kExtractCompositeIdInIdx = 0;
+const uint32_t kInsertObjectIdInIdx = 0;
 const uint32_t kInsertCompositeIdInIdx = 1;
 }  // namespace
 
@@ -45,27 +46,15 @@ void VectorDCE::FindLiveComponents(ir::Function* function,
   // Prime the work list.  We will assume that any instruction that does
   // not result in a vector is live.
   //
-  // TODO: If we want to remove all of the dead code with the current
-  // implementation, we will have to iterate VectorDCE and ADCE.  That can be
-  // avoided if we treat scalar results as if they are vectors with 1 element.
-  //
   // Extending to structures and matrices is not as straight forward because of
   // the nesting.  We cannot simply us a bit vector to keep track of which
   // components are live because of arbitrary nesting of structs.
   function->ForEachInst(
       [&work_list, this, live_components](ir::Instruction* current_inst) {
-        bool is_vector = HasVectorResult(current_inst);
-        if (!is_vector) {
-          switch (current_inst->opcode()) {
-            case SpvOpCompositeExtract:
-              MarkExtractUseAsLive(current_inst, live_components, &work_list);
-              break;
-
-            default:
-              MarkUsesAsLive(current_inst, all_components_live_,
-                             live_components, &work_list);
-              break;
-          }
+        if (!HasVectorOrScalarResult(current_inst) ||
+            !context()->IsCombinatorInstruction(current_inst)) {
+          MarkUsesAsLive(current_inst, all_components_live_, live_components,
+                         &work_list);
         }
       });
 
@@ -75,6 +64,9 @@ void VectorDCE::FindLiveComponents(ir::Function* function,
     ir::Instruction* current_inst = current_item.instruction;
 
     switch (current_inst->opcode()) {
+      case SpvOpCompositeExtract:
+        MarkExtractUseAsLive(current_inst, live_components, &work_list);
+        break;
       case SpvOpCompositeInsert:
         MarkInsertUsesAsLive(current_item, live_components, &work_list);
         break;
@@ -82,13 +74,11 @@ void VectorDCE::FindLiveComponents(ir::Function* function,
         MarkVectorShuffleUsesAsLive(current_item, live_components, &work_list);
         break;
       case SpvOpCompositeConstruct:
-        // TODO: If we have a vector parameter, then we can determine which
-        // of its components are live.
-        MarkUsesAsLive(current_inst, all_components_live_, live_components,
-                       &work_list);
+        MarkCompositeContructUsesAsLive(current_item, live_components,
+                                        &work_list);
         break;
       default:
-        if (spvOpcodeIsScalarizable(current_inst->opcode())) {
+        if (current_inst->IsScalarizable()) {
           MarkUsesAsLive(current_inst, current_item.components, live_components,
                          &work_list);
         } else {
@@ -108,7 +98,7 @@ void VectorDCE::MarkExtractUseAsLive(const ir::Instruction* current_inst,
       current_inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
   ir::Instruction* operand_inst = def_use_mgr->GetDef(operand_id);
 
-  if (HasVectorResult(operand_inst)) {
+  if (HasVectorOrScalarResult(operand_inst)) {
     WorkListItem new_item;
     new_item.instruction = operand_inst;
     new_item.components.Set(current_inst->GetSingleWordInOperand(1));
@@ -122,6 +112,10 @@ void VectorDCE::MarkInsertUsesAsLive(
     std::vector<VectorDCE::WorkListItem>* work_list) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 
+  uint32_t insert_position =
+      current_item.instruction->GetSingleWordInOperand(2);
+
+  // Add the elements of the composite object that are used.
   uint32_t operand_id =
       current_item.instruction->GetSingleWordInOperand(kInsertCompositeIdInIdx);
   ir::Instruction* operand_inst = def_use_mgr->GetDef(operand_id);
@@ -129,10 +123,20 @@ void VectorDCE::MarkInsertUsesAsLive(
   WorkListItem new_item;
   new_item.instruction = operand_inst;
   new_item.components = current_item.components;
-  new_item.components.Clear(
-      current_item.instruction->GetSingleWordInOperand(2));
+  new_item.components.Clear(insert_position);
 
   AddItemToWorkListIfNeeded(new_item, live_components, work_list);
+
+  // Add the element being inserted if it is used.
+  if (current_item.components.Get(insert_position)) {
+    uint32_t obj_operand_id =
+        current_item.instruction->GetSingleWordInOperand(kInsertObjectIdInIdx);
+    ir::Instruction* obj_operand_inst = def_use_mgr->GetDef(obj_operand_id);
+    WorkListItem new_item_for_obj;
+    new_item_for_obj.instruction = obj_operand_inst;
+    new_item_for_obj.components.Set(0);
+    AddItemToWorkListIfNeeded(new_item_for_obj, live_components, work_list);
+  }
 }
 
 void VectorDCE::MarkVectorShuffleUsesAsLive(
@@ -169,6 +173,46 @@ void VectorDCE::MarkVectorShuffleUsesAsLive(
   AddItemToWorkListIfNeeded(second_operand, live_components, work_list);
 }
 
+void VectorDCE::MarkCompositeContructUsesAsLive(
+    VectorDCE::WorkListItem work_item,
+    VectorDCE::LiveComponentMap* live_components,
+    std::vector<VectorDCE::WorkListItem>* work_list) {
+  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+
+  uint32_t current_component = 0;
+  ir::Instruction* current_inst = work_item.instruction;
+  uint32_t num_in_operands = current_inst->NumInOperands();
+  for (uint32_t i = 0; i < num_in_operands; ++i) {
+    uint32_t id = current_inst->GetSingleWordInOperand(i);
+    ir::Instruction* op_inst = def_use_mgr->GetDef(id);
+
+    if (HasScalarResult(op_inst)) {
+      WorkListItem new_work_item;
+      new_work_item.instruction = op_inst;
+      if (work_item.components.Get(current_component)) {
+        new_work_item.components.Set(0);
+      }
+      AddItemToWorkListIfNeeded(new_work_item, live_components, work_list);
+      current_component++;
+    } else {
+      assert(HasVectorResult(op_inst));
+      WorkListItem new_work_item;
+      new_work_item.instruction = op_inst;
+      uint32_t op_vector_size =
+          type_mgr->GetType(op_inst->result_id())->AsVector()->element_count();
+
+      for (uint32_t op_vector_idx = 0; op_vector_idx < op_vector_size;
+           op_vector_idx++, current_component++) {
+        if (work_item.components.Get(current_component)) {
+          new_work_item.components.Set(op_vector_idx);
+        }
+      }
+      AddItemToWorkListIfNeeded(new_work_item, live_components, work_list);
+    }
+  }
+}
+
 void VectorDCE::MarkUsesAsLive(
     ir::Instruction* current_inst, const utils::BitVector& live_elements,
     LiveComponentMap* live_components,
@@ -184,8 +228,17 @@ void VectorDCE::MarkUsesAsLive(
       new_item.instruction = operand_inst;
       new_item.components = live_elements;
       AddItemToWorkListIfNeeded(new_item, live_components, work_list);
+    } else if (HasScalarResult(operand_inst)) {
+      WorkListItem new_item;
+      new_item.instruction = operand_inst;
+      new_item.components.Set(0);
+      AddItemToWorkListIfNeeded(new_item, live_components, work_list);
     }
   });
+}
+
+bool VectorDCE::HasVectorOrScalarResult(const ir::Instruction* inst) const {
+  return HasScalarResult(inst) || HasVectorResult(inst);
 }
 
 bool VectorDCE::HasVectorResult(const ir::Instruction* inst) const {
@@ -195,8 +248,29 @@ bool VectorDCE::HasVectorResult(const ir::Instruction* inst) const {
   }
 
   const analysis::Type* current_type = type_mgr->GetType(inst->type_id());
-  bool is_vector = current_type->AsVector() != nullptr;
-  return is_vector;
+  switch (current_type->kind()) {
+    case analysis::Type::kVector:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool VectorDCE::HasScalarResult(const ir::Instruction* inst) const {
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+  if (inst->type_id() == 0) {
+    return false;
+  }
+
+  const analysis::Type* current_type = type_mgr->GetType(inst->type_id());
+  switch (current_type->kind()) {
+    case analysis::Type::kBool:
+    case analysis::Type::kInteger:
+    case analysis::Type::kFloat:
+      return true;
+    default:
+      return false;
+  }
 }
 
 bool VectorDCE::RewriteInstructions(
@@ -229,19 +303,10 @@ bool VectorDCE::RewriteInstructions(
         }
 
         switch (current_inst->opcode()) {
-          case SpvOpCompositeInsert: {
-            // If the value being inserted is not live, then we can skip the
-            // insert.
-            uint32_t insert_index = current_inst->GetSingleWordInOperand(2);
-            if (!live_component->second.Get(insert_index)) {
-              modified = true;
-              context()->KillNamesAndDecorates(current_inst->result_id());
-              uint32_t composite_id =
-                  current_inst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
-              context()->ReplaceAllUsesWith(current_inst->result_id(),
-                                            composite_id);
-            }
-          } break;
+          case SpvOpCompositeInsert:
+            modified |=
+                RewriteInsertInstruction(current_inst, live_component->second);
+            break;
           case SpvOpCompositeConstruct:
             // TODO: The members that are not live can be replaced by an undef
             // or constant. This will remove uses of those values, and possibly
@@ -252,6 +317,33 @@ bool VectorDCE::RewriteInstructions(
             break;
         }
       });
+  return modified;
+}
+
+bool VectorDCE::RewriteInsertInstruction(
+    ir::Instruction* current_inst, const utils::BitVector& live_components) {
+  // If the value being inserted is not live, then we can skip the insert.
+  bool modified = false;
+  uint32_t insert_index = current_inst->GetSingleWordInOperand(2);
+  if (!live_components.Get(insert_index)) {
+    modified = true;
+    context()->KillNamesAndDecorates(current_inst->result_id());
+    uint32_t composite_id =
+        current_inst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
+    context()->ReplaceAllUsesWith(current_inst->result_id(), composite_id);
+  }
+
+  // If the values already in the composite are not used, then replace it with
+  // an undef.
+  utils::BitVector temp = live_components;
+  temp.Clear(insert_index);
+  if (temp.Empty()) {
+    context()->ForgetUses(current_inst);
+    uint32_t undef_id = Type2Undef(current_inst->type_id());
+    current_inst->SetInOperand(kInsertCompositeIdInIdx, {undef_id});
+    context()->AnalyzeUses(current_inst);
+  }
+
   return modified;
 }
 

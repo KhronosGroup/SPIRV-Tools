@@ -596,5 +596,82 @@ bool Instruction::IsOpcodeCodeMotionSafe() const {
   }
 }
 
+bool Instruction::IsScalarizable() const {
+  if (spvOpcodeIsScalarizable(opcode())) {
+    return true;
+  }
+
+  const uint32_t kExtInstSetIdInIdx = 0;
+  const uint32_t kExtInstInstructionInIdx = 1;
+
+  if (opcode() == SpvOpExtInst) {
+    uint32_t instSetId =
+        context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+
+    if (GetSingleWordInOperand(kExtInstSetIdInIdx) == instSetId) {
+      switch (GetSingleWordInOperand(kExtInstInstructionInIdx)) {
+        case GLSLstd450Round:
+        case GLSLstd450RoundEven:
+        case GLSLstd450Trunc:
+        case GLSLstd450FAbs:
+        case GLSLstd450SAbs:
+        case GLSLstd450FSign:
+        case GLSLstd450SSign:
+        case GLSLstd450Floor:
+        case GLSLstd450Ceil:
+        case GLSLstd450Fract:
+        case GLSLstd450Radians:
+        case GLSLstd450Degrees:
+        case GLSLstd450Sin:
+        case GLSLstd450Cos:
+        case GLSLstd450Tan:
+        case GLSLstd450Asin:
+        case GLSLstd450Acos:
+        case GLSLstd450Atan:
+        case GLSLstd450Sinh:
+        case GLSLstd450Cosh:
+        case GLSLstd450Tanh:
+        case GLSLstd450Asinh:
+        case GLSLstd450Acosh:
+        case GLSLstd450Atanh:
+        case GLSLstd450Atan2:
+        case GLSLstd450Pow:
+        case GLSLstd450Exp:
+        case GLSLstd450Log:
+        case GLSLstd450Exp2:
+        case GLSLstd450Log2:
+        case GLSLstd450Sqrt:
+        case GLSLstd450InverseSqrt:
+        case GLSLstd450Modf:
+        case GLSLstd450FMin:
+        case GLSLstd450UMin:
+        case GLSLstd450SMin:
+        case GLSLstd450FMax:
+        case GLSLstd450UMax:
+        case GLSLstd450SMax:
+        case GLSLstd450FClamp:
+        case GLSLstd450UClamp:
+        case GLSLstd450SClamp:
+        case GLSLstd450FMix:
+        case GLSLstd450Step:
+        case GLSLstd450SmoothStep:
+        case GLSLstd450Fma:
+        case GLSLstd450Frexp:
+        case GLSLstd450Ldexp:
+        case GLSLstd450FindILsb:
+        case GLSLstd450FindSMsb:
+        case GLSLstd450FindUMsb:
+        case GLSLstd450NMin:
+        case GLSLstd450NMax:
+        case GLSLstd450NClamp:
+          return true;
+        default:
+          return false;
+      }
+    }
+  }
+  return false;
+}
+
 }  // namespace ir
 }  // namespace spvtools

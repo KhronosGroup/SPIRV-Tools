@@ -71,8 +71,26 @@ class VectorDCE : public MemPass {
   bool RewriteInstructions(ir::Function* function,
                            const LiveComponentMap& live_components);
 
-  // Returns true if the result of |inst| is a vector.
+  // Rewrites the OpCompositeInsert instruction |current_inst| to avoid
+  // unnecessary computes given that the only components of the result that are
+  // live are |live_components|.
+  //
+  // If the value being inserted is not live, then the result of |current_inst|
+  // is replaced by the composite input to |current_inst|.
+  //
+  // If the composite input to |current_inst| is not live, then it is replaced
+  // by and OpUndef in |current_inst|.
+  bool RewriteInsertInstruction(ir::Instruction* current_inst,
+                                const utils::BitVector& live_components);
+
+  // Returns true if the result of |inst| is a vector or a scalar.
+  bool HasVectorOrScalarResult(const ir::Instruction* inst) const;
+
+  // Returns true if the result of |inst| is a scalar.
   bool HasVectorResult(const ir::Instruction* inst) const;
+
+  // Returns true if the result of |inst| is a vector.
+  bool HasScalarResult(const ir::Instruction* inst) const;
 
   // Adds |work_item| to |work_list| if it is not already live according to
   // |live_components|.  |live_components| is updated to indicate that
@@ -111,6 +129,13 @@ class VectorDCE : public MemPass {
   void MarkExtractUseAsLive(const ir::Instruction* current_inst,
                             LiveComponentMap* live_components,
                             std::vector<WorkListItem>* work_list);
+
+  // Marks the uses in the OpCompositeConstruct instruction |current_inst| as
+  // live. If anything becomes live they are added to |work_list| and
+  // |live_components| is updated accordingly.
+  void MarkCompositeContructUsesAsLive(WorkListItem work_item,
+                                       LiveComponentMap* live_components,
+                                       std::vector<WorkListItem>* work_list);
 
   // A BitVector that can always be used to say that all components of a vector
   // are live.
