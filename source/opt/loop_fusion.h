@@ -92,19 +92,13 @@ class LoopFusion {
   // Returns |true| if |instruction| is used in |loop|.
   bool IsUsedInLoop(ir::Instruction* instruction, ir::Loop* loop);
 
-  // Returns |true| if |loop| has at least one instruction with |opcode|.
-  bool ContainsOpcode(ir::Loop* loop, SpvOp opcode);
-
-  // Returns |true| if |loop| has at least one function call.
-  bool ContainsFunctionCalls(ir::Loop* loop);
-
-  // Returns |true| if |loop| has at least one barrier.
-  bool ContainsBarriers(ir::Loop* loop);
+  // Returns |true| if |loop| has at least one barrier or function call.
+  bool ContainsBarriersOrFunctionCalls(ir::Loop* loop);
 
   // Get all instructions in the |loop| (except in the latch block) that have
   // the opcode |opcode|.
-  std::vector<ir::Instruction*> GetInstructionsInLoopForOpcode(ir::Loop* loop,
-                                                               SpvOp opcode);
+  std::pair<std::vector<ir::Instruction*>, std::vector<ir::Instruction*>>
+  GetLoadsAndStoresInLoop(ir::Loop* loop);
 
   // Given a vector of memory operations (OpLoad/OpStore), constructs a map from
   // variables to the loads/stores that those variables.
