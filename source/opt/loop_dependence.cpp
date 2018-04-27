@@ -192,10 +192,35 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
   ir::Instruction* destination_access_chain =
       GetOperandDefinition(destination, 0);
 
-  // Check if the instructions are OpLoad/OpStore to arrays.
-  if (source_access_chain->opcode() != SpvOpAccessChain ||
-      destination_access_chain->opcode() != SpvOpAccessChain) {
+  auto num_access_chains =
+      (source_access_chain->opcode() == SpvOpAccessChain) +
+      (destination_access_chain->opcode() == SpvOpAccessChain);
+
+  // If neither is an access chain, then they are load/store to a variable.
+  if (num_access_chains == 0) {
     if (source_access_chain != destination_access_chain) {
+      // Not the same location, report independence
+      return true;
+    } else {
+      // Accessing the same variable
+      for (auto& entry : distance_vector->GetEntries()) {
+        entry = DistanceEntry();
+      }
+      return false;
+    }
+  }
+
+  // If only one is an access chain, it could be accessing a part of a struct
+  if (num_access_chains == 1) {
+    auto source_is_chain = source_access_chain->opcode() == SpvOpAccessChain;
+    auto access_chain =
+        source_is_chain ? source_access_chain : destination_access_chain;
+    auto variable =
+        source_is_chain ? destination_access_chain : source_access_chain;
+
+    auto location_in_chain = GetOperandDefinition(access_chain, 0);
+
+    if (variable != location_in_chain) {
       // Not the same location, report independence
       return true;
     } else {

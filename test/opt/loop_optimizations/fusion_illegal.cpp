@@ -1299,4 +1299,121 @@ TEST_F(FusionIllegalTest, Barrier) {
   }
 }
 
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 440 core
+struct TestStruct {
+  int[10] a;
+  int b;
+};
+
+void main() {
+  TestStruct test_0;
+  TestStruct test_1;
+
+  for (int i = 0; i < 10; i++) {
+    test_0.a[i] = i;
+  }
+  for (int j = 0; j < 10; j++) {
+    test_0 = test_1;
+  }
+}
+
+*/
+TEST_F(FusionIllegalTest, ArrayInStruct) {
+  std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 440
+               OpName %4 "main"
+               OpName %8 "i"
+               OpName %22 "TestStruct"
+               OpMemberName %22 0 "a"
+               OpMemberName %22 1 "b"
+               OpName %24 "test_0"
+               OpName %31 "j"
+               OpName %39 "test_1"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 10
+         %17 = OpTypeBool
+         %19 = OpTypeInt 32 0
+         %20 = OpConstant %19 10
+         %21 = OpTypeArray %6 %20
+         %22 = OpTypeStruct %21 %6
+         %23 = OpTypePointer Function %22
+         %29 = OpConstant %6 1
+         %47 = OpUndef %22
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %24 = OpVariable %23 Function
+         %31 = OpVariable %7 Function
+         %39 = OpVariable %23 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+         %43 = OpPhi %6 %9 %5 %30 %13
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %18 = OpSLessThan %17 %43 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+         %27 = OpAccessChain %7 %24 %9 %43
+               OpStore %27 %43
+               OpBranch %13
+         %13 = OpLabel
+         %30 = OpIAdd %6 %43 %29
+               OpStore %8 %30
+               OpBranch %10
+         %12 = OpLabel
+               OpStore %31 %9
+               OpBranch %32
+         %32 = OpLabel
+         %44 = OpPhi %6 %9 %12 %42 %35
+               OpLoopMerge %34 %35 None
+               OpBranch %36
+         %36 = OpLabel
+         %38 = OpSLessThan %17 %44 %16
+               OpBranchConditional %38 %33 %34
+         %33 = OpLabel
+               OpStore %24 %47
+               OpBranch %35
+         %35 = OpLabel
+         %42 = OpIAdd %6 %44 %29
+               OpStore %31 %42
+               OpBranch %32
+         %34 = OpLabel
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  ir::Function& f = *module->begin();
+
+  {
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    EXPECT_EQ(ld.NumLoops(), 2u);
+
+    auto loops = ld.GetLoopsInOrderOfAppearance();
+
+    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    EXPECT_TRUE(fusion.AreCompatible());
+    EXPECT_FALSE(fusion.IsLegal());
+  }
+}
+
 }  // namespace

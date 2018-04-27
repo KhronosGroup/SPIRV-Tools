@@ -4411,4 +4411,155 @@ CHECK-NEXT: OpStore [[STORE_1]]
   }
 }
 
+/*
+Generated from the following GLSL + --eliminate-local-multi-store
+
+#version 440 core
+struct TestStruct {
+  int[10] a;
+  int b;
+};
+
+void main() {
+  TestStruct test_0;
+  TestStruct test_1;
+  TestStruct test_2;
+
+  test_1.b = 2;
+
+  for (int i = 0; i < 10; i++) {
+    test_0.a[i] = i;
+  }
+  for (int j = 0; j < 10; j++) {
+    test_2 = test_1;
+  }
+}
+
+*/
+TEST_F(FusionLegalTest, ArrayInStruct) {
+  std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 440
+               OpName %4 "main"
+               OpName %10 "TestStruct"
+               OpMemberName %10 0 "a"
+               OpMemberName %10 1 "b"
+               OpName %12 "test_1"
+               OpName %17 "i"
+               OpName %28 "test_0"
+               OpName %34 "j"
+               OpName %42 "test_2"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeInt 32 0
+          %8 = OpConstant %7 10
+          %9 = OpTypeArray %6 %8
+         %10 = OpTypeStruct %9 %6
+         %11 = OpTypePointer Function %10
+         %13 = OpConstant %6 1
+         %14 = OpConstant %6 2
+         %15 = OpTypePointer Function %6
+         %18 = OpConstant %6 0
+         %25 = OpConstant %6 10
+         %26 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %12 = OpVariable %11 Function
+         %17 = OpVariable %15 Function
+         %28 = OpVariable %11 Function
+         %34 = OpVariable %15 Function
+         %42 = OpVariable %11 Function
+         %16 = OpAccessChain %15 %12 %13
+               OpStore %16 %14
+               OpStore %17 %18
+               OpBranch %19
+         %19 = OpLabel
+         %46 = OpPhi %6 %18 %5 %33 %22
+               OpLoopMerge %21 %22 None
+               OpBranch %23
+         %23 = OpLabel
+         %27 = OpSLessThan %26 %46 %25
+               OpBranchConditional %27 %20 %21
+         %20 = OpLabel
+         %31 = OpAccessChain %15 %28 %18 %46
+               OpStore %31 %46
+               OpBranch %22
+         %22 = OpLabel
+         %33 = OpIAdd %6 %46 %13
+               OpStore %17 %33
+               OpBranch %19
+         %21 = OpLabel
+               OpStore %34 %18
+               OpBranch %35
+         %35 = OpLabel
+         %47 = OpPhi %6 %18 %21 %45 %38
+               OpLoopMerge %37 %38 None
+               OpBranch %39
+         %39 = OpLabel
+         %41 = OpSLessThan %26 %47 %25
+               OpBranchConditional %41 %36 %37
+         %36 = OpLabel
+         %43 = OpLoad %10 %12
+               OpStore %42 %43
+               OpBranch %38
+         %38 = OpLabel
+         %45 = OpIAdd %6 %47 %13
+               OpStore %34 %45
+               OpBranch %35
+         %37 = OpLabel
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  ir::Function& f = *module->begin();
+
+  {
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    EXPECT_EQ(ld.NumLoops(), 2u);
+
+    auto loops = ld.GetLoopsInOrderOfAppearance();
+
+    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    EXPECT_TRUE(fusion.AreCompatible());
+    EXPECT_TRUE(fusion.IsLegal());
+
+    fusion.Fuse();
+  }
+
+  {
+    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    EXPECT_EQ(ld.NumLoops(), 1u);
+
+    // TODO: Match checks
+
+    // clang-format off
+        std::string checks = R"(
+CHECK: OpName [[TEST_1:%\w+]] "test_1"
+CHECK: OpName [[TEST_0:%\w+]] "test_0"
+CHECK: OpName [[TEST_2:%\w+]] "test_2"
+CHECK: [[PHI:%\w+]] = OpPhi
+CHECK-NEXT: OpLoopMerge
+CHECK: [[TEST_0_STORE:%\w+]] = OpAccessChain {{%\w+}} [[TEST_0]] {{%\w+}} {{%\w+}}
+CHECK-NEXT: OpStore [[TEST_0_STORE]] [[PHI]]
+CHECK-NOT: OpPhi
+CHECK: [[TEST_1_LOAD:%\w+]] = OpLoad {{%\w+}} [[TEST_1]]
+CHECK: OpStore [[TEST_2]] [[TEST_1_LOAD]]
+      )";
+    // clang-format on
+
+    Match(checks, context.get());
+  }
+}
+
 }  // namespace
