@@ -130,6 +130,8 @@ bool LoopFusion::AreCompatible() {
     return false;
   }
 
+  // Check both loops have exactly one induction variable that is used
+  // in the continue and condition blocks.
   std::vector<ir::Instruction*> inductions_0{}, inductions_1{};
   loop_0_->GetInductionVariables(inductions_0);
   RemoveIfNotUsedContinueOrConditionBlock(&inductions_0, loop_0_);

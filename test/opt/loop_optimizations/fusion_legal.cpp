@@ -4541,8 +4541,6 @@ TEST_F(FusionLegalTest, ArrayInStruct) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
-    // TODO: Match checks
-
     // clang-format off
         std::string checks = R"(
 CHECK: OpName [[TEST_1:%\w+]] "test_1"

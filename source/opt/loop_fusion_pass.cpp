@@ -38,6 +38,8 @@ bool LoopFusionPass::ProcessFunction(ir::Function* function) {
   auto c = function->context();
   ir::LoopDescriptor& ld = *c->GetLoopDescriptor(function);
 
+  // TODO(tremmelg): Could the only loop that |loop| could possibly be fused be
+  // picked out so don't have to check every loop
   for (auto& loop_0 : ld) {
     for (auto& loop_1 : ld) {
       LoopFusion fusion(c, &loop_0, &loop_1);
