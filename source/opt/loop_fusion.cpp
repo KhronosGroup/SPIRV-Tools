@@ -548,8 +548,8 @@ void LoopFusion::Fuse() {
   last_block_of_0->ForEachSuccessorLabel(
       [first_block_of_1](uint32_t* succ) { *succ = first_block_of_1->id(); });
 
-  // Update the branch for the |last_block_of_loop_1| to go to the continue block
-  // of |loop_0_|.
+  // Update the branch for the |last_block_of_loop_1| to go to the continue
+  // block of |loop_0_|.
   last_block_of_1->ForEachSuccessorLabel(
       [this](uint32_t* succ) { *succ = loop_0_->GetLatchBlock()->id(); });
 
