@@ -130,8 +130,8 @@ bool LoopFusion::AreCompatible() {
     return false;
   }
 
-  // Check both loops have exactly one induction variable that is used
-  // in the continue and condition blocks.
+  // |GetInductionVariables| returns all OpPhi in the header. Check that both
+  // loops have exactly one that is used in the continue and condition blocks.
   std::vector<ir::Instruction*> inductions_0{}, inductions_1{};
   loop_0_->GetInductionVariables(inductions_0);
   RemoveIfNotUsedContinueOrConditionBlock(&inductions_0, loop_0_);
@@ -187,9 +187,10 @@ bool LoopFusion::AreCompatible() {
     }
   }
 
-  // Check that the separating blocks are either empty or only initialise the
-  // induction variable which isn't used after '--eliminate-local-multi-store'
-  // Also allow OpPhi, since the loop could be in LCSSA form.
+  // Check that the separating blocks are either empty or only contains a store
+  // to a local variable that is never read (left behind by
+  // '--eliminate-local-multi-store'). Also allow OpPhi, since the loop could be
+  // in LCSSA form.
   for (auto block : block_to_check) {
     for (auto& inst : *block) {
       if (inst.opcode() == SpvOpStore) {
