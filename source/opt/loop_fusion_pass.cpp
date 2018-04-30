@@ -38,13 +38,9 @@ bool LoopFusionPass::ProcessFunction(ir::Function* function) {
   auto c = function->context();
   ir::LoopDescriptor& ld = *c->GetLoopDescriptor(function);
 
-  auto modified = false;
-
-  // If a loop doesn't have a preheader it will be created. Make sure to return
-  // Status::SuccessWithChange.
-  for (auto& loop : ld) {
-    modified |= loop.GetPreHeaderBlock() != nullptr;
-  }
+  // If a loop doesn't have a preheader needs then it needs to be created. Make
+  // sure to return Status::SuccessWithChange in that case.
+  auto modified = ld.CreatePreHeaderBlocksIfMissing();
 
   // TODO(tremmelg): Could the only loop that |loop| could possibly be fused be
   // picked out so don't have to check every loop

@@ -3416,11 +3416,20 @@ TEST_F(FusionLegalTest, DifferentArraysInLoopsNoPreheader) {
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
-    EXPECT_TRUE(fusion.AreCompatible());
-    EXPECT_TRUE(fusion.IsLegal());
+    {
+      opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+      EXPECT_FALSE(fusion.AreCompatible());
+    }
 
-    fusion.Fuse();
+    ld.CreatePreHeaderBlocksIfMissing();
+
+    {
+      opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+      EXPECT_TRUE(fusion.AreCompatible());
+      EXPECT_TRUE(fusion.IsLegal());
+
+      fusion.Fuse();
+    }
   }
 
   {
@@ -3580,11 +3589,20 @@ TEST_F(FusionLegalTest, AdjacentLoopsNoPreheaders) {
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
-    EXPECT_TRUE(fusion.AreCompatible());
-    EXPECT_TRUE(fusion.IsLegal());
+    {
+      opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+      EXPECT_FALSE(fusion.AreCompatible());
+    }
 
-    fusion.Fuse();
+    ld.CreatePreHeaderBlocksIfMissing();
+
+    {
+      opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+      EXPECT_TRUE(fusion.AreCompatible());
+      EXPECT_TRUE(fusion.IsLegal());
+
+      fusion.Fuse();
+    }
   }
 
   {

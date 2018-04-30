@@ -485,6 +485,10 @@ class LoopDescriptor {
     loops_to_add_.emplace_back(std::make_pair(parent, loop_to_add));
   }
 
+  // Checks all loops in |this| and will create pre-headers for all loops
+  // that don't have one. Returns |true| if any blocks were created.
+  bool CreatePreHeaderBlocksIfMissing();
+
   // Should be called to preserve the LoopAnalysis after loops have been marked
   // for addition with AddLoop or MarkLoopForRemoval.
   void PostModificationCleanup();

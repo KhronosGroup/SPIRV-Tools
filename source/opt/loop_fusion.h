@@ -44,6 +44,8 @@ class LoopFusion {
   //   * they have the same update step
   //   * they are adjacent, with |loop_0| appearing before |loop_1|
   //   * there are no break/continue in either of them
+  //   * they both have pre-header blocks (required for ScalarEvolutionAnalysis
+  //     and dependence checking).
   bool AreCompatible();
 
   // Checks if compatible |loop_0| and |loop_1| are legal to fuse.

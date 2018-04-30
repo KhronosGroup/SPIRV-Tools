@@ -113,9 +113,9 @@ bool LoopFusion::AreCompatible() {
     return false;
   }
 
-  // Make sure |loop_1_| has a preheader.
-  for (auto& loop : *context_->GetLoopDescriptor(containing_function_)) {
-    loop.GetOrCreatePreHeaderBlock();
+  // Check that both loops have pre-header blocks.
+  if (!loop_0_->GetPreHeaderBlock() || !loop_1_->GetPreHeaderBlock()) {
+    return false;
   }
 
   // Check there are no breaks.

@@ -880,6 +880,19 @@ ir::Instruction* Loop::FindConditionVariable(
   return induction;
 }
 
+bool LoopDescriptor::CreatePreHeaderBlocksIfMissing() {
+  auto modified = false;
+
+  for (auto& loop : *this) {
+    if (!loop.GetPreHeaderBlock()) {
+      modified = true;
+      loop.GetOrCreatePreHeaderBlock();
+    }
+  }
+
+  return modified;
+}
+
 // Add and remove loops which have been marked for addition and removal to
 // maintain the state of the loop descriptor class.
 void LoopDescriptor::PostModificationCleanup() {
