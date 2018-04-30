@@ -3916,7 +3916,45 @@ INSTANTIATE_TEST_CASE_P(MergeMulTest, MatchingInstructionFoldingTest,
         "%2 = OpVectorTimesScalar %v2double %load %double_0\n" +
         "OpReturn\n" +
         "OpFunctionEnd",
-    2, true)
+    2, true),
+  // Test case 23: merge fmul of fdiv
+  // x * (y / x) = y
+  InstructionFoldingCase<bool>(
+    Header() +
+        "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+        "; CHECK: [[ldx:%\\w+]] = OpLoad [[float]]\n" +
+        "; CHECK: [[ldy:%\\w+]] = OpLoad [[float]] [[y:%\\w+]]\n" +
+        "; CHECK: %5 = OpCopyObject [[float]] [[ldy]]\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%x = OpVariable %_ptr_float Function\n" +
+        "%y = OpVariable %_ptr_float Function\n" +
+        "%2 = OpLoad %float %x\n" +
+        "%3 = OpLoad %float %y\n" +
+        "%4 = OpFDiv %float %3 %2\n" +
+        "%5 = OpFMul %float %2 %4\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd\n",
+    5, true),
+  // Test case 24: merge fmul of fdiv
+  // (y / x) * x = y
+  InstructionFoldingCase<bool>(
+    Header() +
+        "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+        "; CHECK: [[ldx:%\\w+]] = OpLoad [[float]]\n" +
+        "; CHECK: [[ldy:%\\w+]] = OpLoad [[float]] [[y:%\\w+]]\n" +
+        "; CHECK: %5 = OpCopyObject [[float]] [[ldy]]\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%x = OpVariable %_ptr_float Function\n" +
+        "%y = OpVariable %_ptr_float Function\n" +
+        "%2 = OpLoad %float %x\n" +
+        "%3 = OpLoad %float %y\n" +
+        "%4 = OpFDiv %float %3 %2\n" +
+        "%5 = OpFMul %float %4 %2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd\n",
+    5, true)
 ));
 
 INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
@@ -4124,7 +4162,45 @@ INSTANTIATE_TEST_CASE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpFDiv %float %3 %v2float_null\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, false)
+    4, false),
+  // Test case 14: merge fmul of fdiv
+  // (y * x) / x = y
+  InstructionFoldingCase<bool>(
+    Header() +
+        "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+        "; CHECK: [[ldx:%\\w+]] = OpLoad [[float]]\n" +
+        "; CHECK: [[ldy:%\\w+]] = OpLoad [[float]] [[y:%\\w+]]\n" +
+        "; CHECK: %5 = OpCopyObject [[float]] [[ldy]]\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%x = OpVariable %_ptr_float Function\n" +
+        "%y = OpVariable %_ptr_float Function\n" +
+        "%2 = OpLoad %float %x\n" +
+        "%3 = OpLoad %float %y\n" +
+        "%4 = OpFMul %float %3 %2\n" +
+        "%5 = OpFDiv %float %4 %2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd\n",
+    5, true),
+  // Test case 15: merge fmul of fdiv
+  // (x * y) / x = y
+  InstructionFoldingCase<bool>(
+    Header() +
+        "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+        "; CHECK: [[ldx:%\\w+]] = OpLoad [[float]]\n" +
+        "; CHECK: [[ldy:%\\w+]] = OpLoad [[float]] [[y:%\\w+]]\n" +
+        "; CHECK: %5 = OpCopyObject [[float]] [[ldy]]\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%x = OpVariable %_ptr_float Function\n" +
+        "%y = OpVariable %_ptr_float Function\n" +
+        "%2 = OpLoad %float %x\n" +
+        "%3 = OpLoad %float %y\n" +
+        "%4 = OpFMul %float %2 %3\n" +
+        "%5 = OpFDiv %float %4 %2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd\n",
+    5, true)
 ));
 
 INSTANTIATE_TEST_CASE_P(MergeAddTest, MatchingInstructionFoldingTest,

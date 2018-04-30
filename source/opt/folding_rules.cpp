@@ -619,18 +619,36 @@ FoldingRule MergeMulMulArithmetic() {
 // 2 * (2 / x) = 4 / x
 // (x / 2) * 2 = x * 1
 // (2 / x) * 2 = 4 / x
+// (y / x) * x = y
+// x * (y / x) = y
 FoldingRule MergeMulDivArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFMul);
     ir::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
     if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
+
+    for (uint32_t i = 0; i < 2; i++) {
+      uint32_t op_id = inst->GetSingleWordInOperand(i);
+      ir::Instruction* op_inst = def_use_mgr->GetDef(op_id);
+      if (op_inst->opcode() == SpvOpFDiv) {
+        if (op_inst->GetSingleWordInOperand(1) ==
+            inst->GetSingleWordInOperand(1 - i)) {
+          inst->SetOpcode(SpvOpCopyObject);
+          inst->SetInOperands(
+              {{SPV_OPERAND_TYPE_ID, {op_inst->GetSingleWordInOperand(0)}}});
+          return true;
+        }
+      }
+    }
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
@@ -789,18 +807,37 @@ FoldingRule MergeDivDivArithmetic() {
 // 4 / (2 * x) = 2 / x
 // (x * 4) / 2 = x * 2
 // (4 * x) / 2 = x * 2
+// (x * y) / x = y
+// (y * x) / x = y
 FoldingRule MergeDivMulArithmetic() {
   return [](ir::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFDiv);
     ir::IRContext* context = inst->context();
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
     if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
+
+    uint32_t op_id = inst->GetSingleWordInOperand(0);
+    ir::Instruction* op_inst = def_use_mgr->GetDef(op_id);
+
+    if (op_inst->opcode() == SpvOpFMul) {
+      for (uint32_t i = 0; i < 2; i++) {
+        if (op_inst->GetSingleWordInOperand(i) ==
+            inst->GetSingleWordInOperand(1)) {
+          inst->SetOpcode(SpvOpCopyObject);
+          inst->SetInOperands({{SPV_OPERAND_TYPE_ID,
+                                {op_inst->GetSingleWordInOperand(1 - i)}}});
+          return true;
+        }
+      }
+    }
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1 || HasZero(const_input1)) return false;
