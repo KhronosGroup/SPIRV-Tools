@@ -84,12 +84,12 @@ void AddInstructionsInBlock(std::vector<ir::Instruction*>* instructions,
 bool LoopFusion::UsedInContinueOrConditionBlock(
     ir::Instruction* phi_instruction, ir::Loop* loop) {
   auto condition_block = loop->FindConditionBlock()->id();
-  auto latch_block = loop->GetLatchBlock()->id();
+  auto continue_block = loop->GetLatchBlock()->id();
   auto not_used = context_->get_def_use_mgr()->WhileEachUser(
       phi_instruction,
-      [this, condition_block, latch_block](ir::Instruction* instruction) {
+      [this, condition_block, continue_block](ir::Instruction* instruction) {
         auto block_id = context_->get_instr_block(instruction)->id();
-        return block_id != condition_block && block_id != latch_block;
+        return block_id != condition_block && block_id != continue_block;
       });
 
   return !not_used;
@@ -535,20 +535,20 @@ void LoopFusion::Fuse() {
   // Save the pointers/ids, won't be found in the middle of doing modifications.
   auto header_1 = loop_1_->GetHeaderBlock()->id();
   auto condition_1 = loop_1_->FindConditionBlock()->id();
-  auto latch_1 = loop_1_->GetLatchBlock()->id();
-  auto latch_0 = loop_0_->GetLatchBlock()->id();
+  auto continue_1 = loop_1_->GetLatchBlock()->id();
+  auto continue_0 = loop_0_->GetLatchBlock()->id();
   auto condition_block_of_0 = loop_0_->FindConditionBlock();
 
   // Find the blocks whose branches need updating.
   auto first_block_of_1 = &*(++containing_function_->FindBlock(condition_1));
-  auto last_block_of_1 = &*(--containing_function_->FindBlock(latch_1));
-  auto last_block_of_0 = &*(--containing_function_->FindBlock(latch_0));
+  auto last_block_of_1 = &*(--containing_function_->FindBlock(continue_1));
+  auto last_block_of_0 = &*(--containing_function_->FindBlock(continue_0));
 
   // Update the branch for |last_block_of_loop_0| to go to |first_block_of_1|.
   last_block_of_0->ForEachSuccessorLabel(
       [first_block_of_1](uint32_t* succ) { *succ = first_block_of_1->id(); });
 
-  // Update the branch for the |last_block_of_loop_1| to go to the latch block
+  // Update the branch for the |last_block_of_loop_1| to go to the continue block
   // of |loop_0_|.
   last_block_of_1->ForEachSuccessorLabel(
       [this](uint32_t* succ) { *succ = loop_0_->GetLatchBlock()->id(); });
@@ -622,11 +622,11 @@ void LoopFusion::Fuse() {
         instruction->SetInOperand(1, {condition_block_of_0->id()});
       });
 
-  // Move the latch block of |loop_0_| after the last block of |loop_1_|.
-  containing_function_->MoveBasicBlockToAfter(latch_0, last_block_of_1);
+  // Move the continue block of |loop_0_| after the last block of |loop_1_|.
+  containing_function_->MoveBasicBlockToAfter(continue_0, last_block_of_1);
 
   // Gather all instructions to be killed from |loop_1_| (induction variable
-  // initialisation, header, condition and latch blocks).
+  // initialisation, header, condition and continue blocks).
   std::vector<ir::Instruction*> instr_to_delete{};
   AddInstructionsInBlock(&instr_to_delete, loop_1_->GetPreHeaderBlock());
   AddInstructionsInBlock(&instr_to_delete, loop_1_->GetHeaderBlock());
@@ -686,7 +686,7 @@ void LoopFusion::Fuse() {
 
   for (auto block : loop_1_blocks) {
     loop_1_->RemoveBasicBlock(block);
-    if (block != header_1 && block != condition_1 && block != latch_1) {
+    if (block != header_1 && block != condition_1 && block != continue_1) {
       loop_0_->AddBasicBlock(block);
       if ((*ld)[block] == loop_1_) {
         ld->SetBasicBlockToLoop(block, loop_0_);
