@@ -551,7 +551,7 @@ void LoopDescriptor::PopulateList(const Function* f) {
   }
 }
 
-std::vector<ir::Loop*> LoopDescriptor::GetLoopsInOrderOfAppearance() {
+std::vector<ir::Loop*> LoopDescriptor::GetLoopsInBinaryLayoutOrder() {
   std::vector<uint32_t> ids{};
 
   for (size_t i = 0; i < NumLoops(); ++i) {

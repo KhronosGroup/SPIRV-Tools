@@ -140,7 +140,7 @@ TEST_F(FusionIllegalTest, PositiveDistanceCreatedRAW) {
   ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
-  auto loops = ld.GetLoopsInOrderOfAppearance();
+  auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
   opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
 
@@ -259,7 +259,7 @@ TEST_F(FusionIllegalTest, FunctionCall) {
   ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
-  auto loops = ld.GetLoopsInOrderOfAppearance();
+  auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
   opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
 
@@ -420,7 +420,7 @@ TEST_F(FusionIllegalTest, PositiveDistanceCreatedRAWOuterLoop) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 4u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     auto loop_0 = loops[0];
     auto loop_1 = loops[1];
@@ -560,7 +560,7 @@ TEST_F(FusionIllegalTest, PositiveDistanceCreatedWAR) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
@@ -681,7 +681,7 @@ TEST_F(FusionIllegalTest, PositiveDistanceCreatedWAW) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
@@ -802,7 +802,7 @@ TEST_F(FusionIllegalTest, SameReductionVariable) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
@@ -923,7 +923,7 @@ TEST_F(FusionIllegalTest, SameReductionVariableLCSSA) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopUtils utils_0(context.get(), loops[0]);
     utils_0.MakeLoopClosedSSA();
@@ -1045,7 +1045,7 @@ TEST_F(FusionIllegalTest, UnknownIndexVariable) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
@@ -1170,7 +1170,7 @@ TEST_F(FusionIllegalTest, AccumulatorIndexing) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
@@ -1291,7 +1291,7 @@ TEST_F(FusionIllegalTest, Barrier) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
@@ -1408,7 +1408,7 @@ TEST_F(FusionIllegalTest, ArrayInStruct) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
@@ -1580,7 +1580,7 @@ TEST_F(FusionIllegalTest, NestedAccessChain) {
     ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
-    auto loops = ld.GetLoopsInOrderOfAppearance();
+    auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
