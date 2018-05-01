@@ -59,19 +59,6 @@ class LoopFusion {
   void Fuse();
 
  private:
-  ir::IRContext* context_;
-
-  // The original loops to be fused.
-  ir::Loop* loop_0_;
-  ir::Loop* loop_1_;
-
-  // The function that contains |loop_0_| and |loop_1_|.
-  ir::Function* containing_function_ = nullptr;
-
-  // The induction variables for |loop_0_| and |loop_1_|.
-  ir::Instruction* induction_0_ = nullptr;
-  ir::Instruction* induction_1_ = nullptr;
-
   // Check that the initial values are the same.
   bool CheckInit();
 
@@ -106,6 +93,19 @@ class LoopFusion {
   // variables to the loads/stores that those variables.
   std::map<ir::Instruction*, std::vector<ir::Instruction*>> LocationToMemOps(
       const std::vector<ir::Instruction*>& mem_ops);
+
+  ir::IRContext* context_;
+
+  // The original loops to be fused.
+  ir::Loop* loop_0_;
+  ir::Loop* loop_1_;
+
+  // The function that contains |loop_0_| and |loop_1_|.
+  ir::Function* containing_function_ = nullptr;
+
+  // The induction variables for |loop_0_| and |loop_1_|.
+  ir::Instruction* induction_0_ = nullptr;
+  ir::Instruction* induction_1_ = nullptr;
 };
 
 }  // namespace opt

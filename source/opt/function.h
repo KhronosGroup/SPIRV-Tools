@@ -172,10 +172,11 @@ inline void Function::AddBasicBlocks(T src_begin, T src_end, iterator ip) {
 inline void Function::MoveBasicBlockToAfter(uint32_t id, BasicBlock* ip) {
   auto block_to_move = std::move(*FindBlock(id).Get());
 
-  if (block_to_move->GetParent() == ip->GetParent()) {
-    InsertBasicBlockAfter(std::move(block_to_move), ip);
-    blocks_.erase(std::find(std::begin(blocks_), std::end(blocks_), nullptr));
-  }
+  assert(block_to_move->GetParent() == ip->GetParent() &&
+         "Both blocks have to be in the same function.");
+
+  InsertBasicBlockAfter(std::move(block_to_move), ip);
+  blocks_.erase(std::find(std::begin(blocks_), std::end(blocks_), nullptr));
 }
 
 inline void Function::RemoveEmptyBlocks() {
