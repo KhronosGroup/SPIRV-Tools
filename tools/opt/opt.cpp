@@ -425,6 +425,7 @@ OptStatus ParseLoopFissionArg(int argc, const char** argv, int argi,
   fprintf(
       stderr,
       "error: --loop-fission must be followed by a positive integer value\n");
+  return {OPT_STOP, 1};
 }
 
 OptStatus ParseLoopFusionArg(int argc, const char** argv, int argi,
@@ -599,6 +600,9 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCopyPropagateArraysPass());
       } else if (0 == strcmp(cur_arg, "--loop-fission")) {
         OptStatus status = ParseLoopFissionArg(argc, argv, ++argi, optimizer);
+        if (status.action != OPT_CONTINUE) {
+          return status;
+        }
       } else if (0 == strcmp(cur_arg, "--loop-fusion")) {
         OptStatus status = ParseLoopFusionArg(argc, argv, ++argi, optimizer);
         if (status.action != OPT_CONTINUE) {
