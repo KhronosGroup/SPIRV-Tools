@@ -483,6 +483,12 @@ Optimizer::PassToken CreateLocalRedundancyEliminationPass();
 // the loops preheader.
 Optimizer::PassToken CreateLoopInvariantCodeMotionPass();
 
+// Creates a loop fusion pass.
+// This pass will look for adjacent loops that are compatible and legal to be
+// fused. The fuse all such loops as long as the register usage for the fused
+// loop stays under the threshold defined by |max_registers_per_loop|.
+Optimizer::PassToken CreateLoopFusionPass(size_t max_registers_per_loop);
+
 // Creates a loop peeling pass.
 // This pass will look for conditions inside a loop that are true or false only
 // for the N first or last iteration. For loop with such condition, those N

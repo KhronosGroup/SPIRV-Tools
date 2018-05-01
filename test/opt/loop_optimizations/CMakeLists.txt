@@ -108,3 +108,27 @@ add_spvtools_unittest(TARGET loop_dependence_analysis_helpers
         dependence_analysis_helpers.cpp
     LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET fusion_compatibility
+    SRCS ../function_utils.h
+        fusion_compatibility.cpp
+    LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET fusion_illegal
+    SRCS ../function_utils.h
+        fusion_illegal.cpp
+    LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET fusion_legal
+    SRCS ../function_utils.h
+        fusion_legal.cpp
+    LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET fusion_pass
+    SRCS ../function_utils.h
+        fusion_pass.cpp
+    LIBS SPIRV-Tools-opt
+)

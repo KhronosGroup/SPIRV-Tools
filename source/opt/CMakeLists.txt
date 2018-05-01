@@ -60,6 +60,8 @@ add_library(SPIRV-Tools-opt
   log.h
   loop_dependence.h
   loop_descriptor.h
+  loop_fusion.h
+  loop_fusion_pass.h
   loop_peeling.h
   loop_unroller.h
   loop_utils.h
@@ -143,6 +145,8 @@ add_library(SPIRV-Tools-opt
   loop_dependence.cpp
   loop_dependence_helpers.cpp
   loop_descriptor.cpp
+  loop_fusion.cpp
+  loop_fusion_pass.cpp
   loop_peeling.cpp
   loop_utils.cpp
   loop_unroller.cpp
