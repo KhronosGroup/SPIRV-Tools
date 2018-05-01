@@ -590,6 +590,10 @@ bool Instruction::IsOpcodeCodeMotionSafe() const {
     case SpvOpBitwiseXor:
     case SpvOpBitwiseAnd:
     case SpvOpNot:
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpPtrAccessChain:
+    case SpvOpInBoundsPtrAccessChain:
       return true;
     default:
       return false;

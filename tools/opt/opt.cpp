@@ -176,6 +176,10 @@ Options (in lexicographical order):
   --local-redundancy-elimination
                Looks for instructions in the same basic block that compute the
                same value, and deletes the redundant ones.
+  --loop-fission
+               Splits any top level loops in which the register pressure has exceeded
+               a given threshold. The threshold must follow the use of this flag and
+               must be a positive integer value.
   --loop-unroll
                Fully unrolls loops marked with the Unroll flag
   --loop-unroll-partial
@@ -403,6 +407,20 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
                     in_file, out_file, nullptr, &skip_validator);
 }
 
+OptStatus ParseLoopFissionArg(int argc, const char** argv, int argi,
+                              Optimizer* optimizer) {
+  if (argi < argc) {
+    int register_threshold_to_split = atoi(argv[argi]);
+    optimizer->RegisterPass(CreateLoopFissionPass(
+        static_cast<size_t>(register_threshold_to_split)));
+    return {OPT_CONTINUE, 0};
+  }
+  fprintf(
+      stderr,
+      "error: --loop-fission must be followed by a positive integer value\n");
+  return {OPT_STOP, 1};
+}
+
 OptStatus ParseLoopUnrollPartialArg(int argc, const char** argv, int argi,
                                     Optimizer* optimizer) {
   if (argi < argc) {
@@ -557,6 +575,11 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateSSARewritePass());
       } else if (0 == strcmp(cur_arg, "--copy-propagate-arrays")) {
         optimizer->RegisterPass(CreateCopyPropagateArraysPass());
+      } else if (0 == strcmp(cur_arg, "--loop-fission")) {
+        OptStatus status = ParseLoopFissionArg(argc, argv, ++argi, optimizer);
+        if (status.action != OPT_CONTINUE) {
+          return status;
+        }
       } else if (0 == strcmp(cur_arg, "--loop-unroll")) {
         optimizer->RegisterPass(CreateLoopUnrollPass(true));
       } else if (0 == strcmp(cur_arg, "--vector-dce")) {

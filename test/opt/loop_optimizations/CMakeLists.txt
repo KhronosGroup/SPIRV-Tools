@@ -108,3 +108,11 @@ add_spvtools_unittest(TARGET loop_dependence_analysis_helpers
         dependence_analysis_helpers.cpp
     LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET loop_fission
+  SRCS ../function_utils.h
+      loop_fission.cpp
+  LIBS SPIRV-Tools-opt
+)
+
+
