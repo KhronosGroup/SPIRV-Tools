@@ -653,6 +653,9 @@ void LoopUtils::PopulateLoopDesc(
   if (old_loop->GetLatchBlock())
     new_loop->SetLatchBlock(
         cloning_result.old_to_new_bb_.at(old_loop->GetLatchBlock()->id()));
+  if (old_loop->GetContinueBlock())
+    new_loop->SetContinueBlock(
+        cloning_result.old_to_new_bb_.at(old_loop->GetContinueBlock()->id()));
   if (old_loop->GetMergeBlock()) {
     auto it =
         cloning_result.old_to_new_bb_.find(old_loop->GetMergeBlock()->id());

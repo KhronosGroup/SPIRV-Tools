@@ -76,7 +76,7 @@ static const uint32_t kLoopControlIndex = 2;
 struct LoopUnrollState {
   LoopUnrollState()
       : previous_phi_(nullptr),
-        previous_continue_block_(nullptr),
+        previous_latch_block_(nullptr),
         previous_condition_block_(nullptr),
         new_phi(nullptr),
         new_continue_block(nullptr),
@@ -84,11 +84,11 @@ struct LoopUnrollState {
         new_header_block(nullptr) {}
 
   // Initialize from the loop descriptor class.
-  LoopUnrollState(ir::Instruction* induction, ir::BasicBlock* continue_block,
+  LoopUnrollState(ir::Instruction* induction, ir::BasicBlock* latch_block,
                   ir::BasicBlock* condition,
                   std::vector<ir::Instruction*>&& phis)
       : previous_phi_(induction),
-        previous_continue_block_(continue_block),
+        previous_latch_block_(latch_block),
         previous_condition_block_(condition),
         new_phi(nullptr),
         new_continue_block(nullptr),
@@ -100,7 +100,7 @@ struct LoopUnrollState {
   // Swap the state so that the new nodes are now the previous nodes.
   void NextIterationState() {
     previous_phi_ = new_phi;
-    previous_continue_block_ = new_continue_block;
+    previous_latch_block_ = new_latch_block;
     previous_condition_block_ = new_condition_block;
     previous_phis_ = std::move(new_phis_);
 
@@ -109,6 +109,7 @@ struct LoopUnrollState {
     new_continue_block = nullptr;
     new_condition_block = nullptr;
     new_header_block = nullptr;
+    new_latch_block = nullptr;
 
     // Clear new block/instruction maps.
     new_blocks.clear();
@@ -123,9 +124,10 @@ struct LoopUnrollState {
   std::vector<ir::Instruction*> previous_phis_;
 
   std::vector<ir::Instruction*> new_phis_;
-  // The previous continue block. The backedge will be removed from this and
-  // added to the new continue block.
-  ir::BasicBlock* previous_continue_block_;
+
+  // The previous latch block. The backedge will be removed from this and
+  // added to the new latch block.
+  ir::BasicBlock* previous_latch_block_;
 
   // The previous condition block. This may be folded to flatten the loop.
   ir::BasicBlock* previous_condition_block_;
@@ -141,6 +143,9 @@ struct LoopUnrollState {
 
   // The new header block.
   ir::BasicBlock* new_header_block;
+
+  // The new latch block.
+  ir::BasicBlock* new_latch_block;
 
   // A mapping of new block ids to the original blocks which they were copied
   // from.
@@ -546,7 +551,7 @@ void LoopUnrollerUtilsImpl::ReplaceInductionUseWithFinalValue(ir::Loop* loop) {
 
   for (size_t index = 0; index < inductions.size(); ++index) {
     uint32_t trip_step_id = GetPhiDefID(state_.previous_phis_[index],
-                                        state_.previous_continue_block_->id());
+                                        state_.previous_latch_block_->id());
     context_->ReplaceAllUsesWith(inductions[index]->result_id(), trip_step_id);
     invalidated_instructions_.push_back(inductions[index]);
   }
@@ -600,7 +605,7 @@ void LoopUnrollerUtilsImpl::CopyBasicBlock(ir::Loop* loop,
   AssignNewResultIds(basic_block);
 
   // If this is the continue block we are copying.
-  if (itr == loop->GetLatchBlock()) {
+  if (itr == loop->GetContinueBlock()) {
     // Make the OpLoopMerge point to this block for the continue.
     if (!preserve_instructions) {
       ir::Instruction* merge_inst = loop->GetHeaderBlock()->GetLoopMergeInst();
@@ -620,6 +625,9 @@ void LoopUnrollerUtilsImpl::CopyBasicBlock(ir::Loop* loop,
       if (merge_inst) invalidated_instructions_.push_back(merge_inst);
     }
   }
+
+  // If this is the latch block being copied, record it in the state.
+  if (itr == loop->GetLatchBlock()) state_.new_latch_block = basic_block;
 
   // If this is the condition block we are copying.
   if (itr == loop_condition_block_) {
@@ -642,16 +650,16 @@ void LoopUnrollerUtilsImpl::CopyBody(ir::Loop* loop,
     CopyBasicBlock(loop, itr, false);
   }
 
-  // Set the previous continue block to point to the new header.
-  ir::Instruction& continue_branch = *state_.previous_continue_block_->tail();
-  continue_branch.SetInOperand(0, {state_.new_header_block->id()});
+  // Set the previous latch block to point to the new header.
+  ir::Instruction& latch_branch = *state_.previous_latch_block_->tail();
+  latch_branch.SetInOperand(0, {state_.new_header_block->id()});
 
   // As the algorithm copies the original loop blocks exactly, the tail of the
   // latch block on iterations after the first one will be a branch to the new
   // header and not the actual loop header. The last continue block in the loop
   // should always be a backedge to the global header.
-  ir::Instruction& new_continue_branch = *state_.new_continue_block->tail();
-  new_continue_branch.SetInOperand(0, {loop->GetHeaderBlock()->id()});
+  ir::Instruction& new_latch_branch = *state_.new_latch_block->tail();
+  new_latch_branch.SetInOperand(0, {loop->GetHeaderBlock()->id()});
 
   std::vector<ir::Instruction*> inductions;
   loop->GetInductionVariables(inductions);
@@ -667,7 +675,7 @@ void LoopUnrollerUtilsImpl::CopyBody(ir::Loop* loop,
 
     if (!state_.previous_phis_.empty()) {
       state_.new_inst[master_copy->result_id()] = GetPhiDefID(
-          state_.previous_phis_[index], state_.previous_continue_block_->id());
+          state_.previous_phis_[index], state_.previous_latch_block_->id());
     } else {
       // Do not replace the first phi block ids.
       state_.new_inst[master_copy->result_id()] = master_copy->result_id();
@@ -724,7 +732,7 @@ void LoopUnrollerUtilsImpl::CloseUnrolledLoop(ir::Loop* loop) {
 
   // Remove the final backedge to the header and make it point instead to the
   // merge block.
-  state_.previous_continue_block_->tail()->SetInOperand(
+  state_.previous_latch_block_->tail()->SetInOperand(
       0, {loop->GetMergeBlock()->id()});
 
   // Remove all induction variables as the phis will now be invalid. Replace all
@@ -779,7 +787,8 @@ void LoopUnrollerUtilsImpl::DuplicateLoop(ir::Loop* old_loop,
   AddBlocksToLoop(new_loop);
 
   new_loop->SetHeaderBlock(state_.new_header_block);
-  new_loop->SetLatchBlock(state_.new_continue_block);
+  new_loop->SetContinueBlock(state_.new_continue_block);
+  new_loop->SetLatchBlock(state_.new_latch_block);
   new_loop->SetMergeBlock(new_merge);
 }
 
@@ -875,8 +884,8 @@ void LoopUnrollerUtilsImpl::LinkLastPhisToStart(ir::Loop* loop) const {
   for (size_t i = 0; i < inductions.size(); ++i) {
     ir::Instruction* last_phi_in_block = state_.previous_phis_[i];
 
-    uint32_t phi_index = GetPhiIndexFromLabel(state_.previous_continue_block_,
-                                              last_phi_in_block);
+    uint32_t phi_index =
+        GetPhiIndexFromLabel(state_.previous_latch_block_, last_phi_in_block);
     uint32_t phi_variable =
         last_phi_in_block->GetSingleWordInOperand(phi_index - 1);
     uint32_t phi_label = last_phi_in_block->GetSingleWordInOperand(phi_index);
@@ -927,7 +936,7 @@ bool LoopUtils::CanPerformUnroll() {
   if (!loop_->FindNumberOfIterations(induction, &*condition->ctail(), nullptr))
     return false;
 
-  // Make sure the continue block is a unconditional branch to the header
+  // Make sure the latch block is a unconditional branch to the header
   // block.
   const ir::Instruction& branch = *loop_->GetLatchBlock()->ctail();
   bool branching_assumption =
@@ -949,7 +958,7 @@ bool LoopUtils::CanPerformUnroll() {
 
   // Ban continues within the loop.
   const std::vector<uint32_t>& continue_block_preds =
-      context_->cfg()->preds(loop_->GetLatchBlock()->id());
+      context_->cfg()->preds(loop_->GetContinueBlock()->id());
   if (continue_block_preds.size() != 1) {
     return false;
   }
