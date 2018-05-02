@@ -214,6 +214,7 @@ Loop::Loop(IRContext* context, opt::DominatorAnalysis* dom_analysis,
   assert(context);
   assert(dom_analysis);
   loop_preheader_ = FindLoopPreheader(dom_analysis);
+  loop_latch_ = FindLatchBlock();
 }
 
 BasicBlock* Loop::FindLoopPreheader(opt::DominatorAnalysis* dom_analysis) {
@@ -280,6 +281,11 @@ BasicBlock* Loop::GetOrCreatePreHeaderBlock() {
   return loop_preheader_;
 }
 
+void Loop::SetContinueBlock(BasicBlock* continue_block) {
+  assert(IsInsideLoop(continue_block));
+  loop_continue_ = continue_block;
+}
+
 void Loop::SetLatchBlock(BasicBlock* latch) {
 #ifndef NDEBUG
   assert(latch->GetParent() && "The basic block does not belong to a function");
@@ -319,6 +325,26 @@ void Loop::SetPreHeaderBlock(BasicBlock* preheader) {
            "block");
   }
   loop_preheader_ = preheader;
+}
+
+ir::BasicBlock* Loop::FindLatchBlock() {
+  ir::CFG* cfg = context_->cfg();
+
+  opt::DominatorAnalysis* dominator_analysis =
+      context_->GetDominatorAnalysis(loop_header_->GetParent());
+
+  // Find the backedge to the header which should be dominated by the loop
+  // continue target as per the SPIR-V spec.
+  for (uint32_t block_id : cfg->preds(loop_header_->id())) {
+    if (dominator_analysis->Dominates(loop_continue_->id(), block_id)) {
+      return cfg->block(block_id);
+    }
+  }
+
+  assert(
+      false &&
+      "Every loop should have a latch block dominated by the continue target");
+  return nullptr;
 }
 
 void Loop::GetExitBlocks(std::unordered_set<uint32_t>* exit_blocks) const {
@@ -861,9 +887,9 @@ ir::Instruction* Loop::FindConditionVariable(
 
         // And make sure that the other is the latch block.
         if (variable_inst->GetSingleWordInOperand(operand_label_1) !=
-                loop_continue_->id() &&
+                loop_latch_->id() &&
             variable_inst->GetSingleWordInOperand(operand_label_2) !=
-                loop_continue_->id()) {
+                loop_latch_->id()) {
           return nullptr;
         }
       } else {

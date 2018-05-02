@@ -53,6 +53,7 @@ class Loop {
         loop_continue_(nullptr),
         loop_merge_(nullptr),
         loop_preheader_(nullptr),
+        loop_latch_(nullptr),
         parent_(nullptr),
         loop_is_marked_for_removal_(false) {}
 
@@ -82,16 +83,26 @@ class Loop {
     merge_inst->SetInOperand(0, {GetMergeBlock()->id()});
   }
 
+  // Returns the continue target basic block. This is the block designated as
+  // the continue target by the OpLoopMerge instruction.
+  inline BasicBlock* GetContinueBlock() { return loop_continue_; }
+  inline const BasicBlock* GetContinueBlock() const { return loop_continue_; }
+
   // Returns the latch basic block (basic block that holds the back-edge).
   // These functions return nullptr if the loop is not structured (i.e. if it
   // has more than one backedge).
-  inline BasicBlock* GetLatchBlock() { return loop_continue_; }
-  inline const BasicBlock* GetLatchBlock() const { return loop_continue_; }
+  inline BasicBlock* GetLatchBlock() { return loop_latch_; }
+  inline const BasicBlock* GetLatchBlock() const { return loop_latch_; }
+
   // Sets |latch| as the loop unique block branching back to the header.
   // A latch block must have the following properties:
   //  - |latch| must be in the loop;
   //  - must be the only block branching back to the header block.
   void SetLatchBlock(BasicBlock* latch);
+
+  // Sets |continue_block| as the continue block of the loop. This should be the
+  // continue target of the OpLoopMerge and should dominate the latch block.
+  void SetContinueBlock(BasicBlock* continue_block);
 
   // Returns the basic block which marks the end of the loop.
   // These functions return nullptr if the loop is not structured.
@@ -340,6 +351,8 @@ class Loop {
   // Returns the context associated this loop.
   IRContext* GetContext() const { return context_; }
 
+  ir::BasicBlock* FindLatchBlock();
+
  private:
   IRContext* context_;
   // The block which marks the start of the loop.
@@ -353,6 +366,9 @@ class Loop {
 
   // The block immediately before the loop header.
   BasicBlock* loop_preheader_;
+
+  // The block containing the backedge to the loop header.
+  BasicBlock* loop_latch_;
 
   // A parent of a loop is the loop which contains it as a nested child loop.
   Loop* parent_;
@@ -372,9 +388,9 @@ class Loop {
   // Returns the loop preheader if it exists, returns nullptr otherwise.
   BasicBlock* FindLoopPreheader(opt::DominatorAnalysis* dom_analysis);
 
-  // Sets |latch| as the loop unique continue block. No checks are performed
+  // Sets |latch| as the loop unique latch block. No checks are performed
   // here.
-  inline void SetLatchBlockImpl(BasicBlock* latch) { loop_continue_ = latch; }
+  inline void SetLatchBlockImpl(BasicBlock* latch) { loop_latch_ = latch; }
   // Sets |merge| as the loop merge block. No checks are performed here.
   inline void SetMergeBlockImpl(BasicBlock* merge) { loop_merge_ = merge; }
 

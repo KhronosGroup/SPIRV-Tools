@@ -84,7 +84,7 @@ void AddInstructionsInBlock(std::vector<ir::Instruction*>* instructions,
 bool LoopFusion::UsedInContinueOrConditionBlock(
     ir::Instruction* phi_instruction, ir::Loop* loop) {
   auto condition_block = loop->FindConditionBlock()->id();
-  auto continue_block = loop->GetLatchBlock()->id();
+  auto continue_block = loop->GetContinueBlock()->id();
   auto not_used = context_->get_def_use_mgr()->WhileEachUser(
       phi_instruction,
       [this, condition_block, continue_block](ir::Instruction* instruction) {
@@ -125,8 +125,8 @@ bool LoopFusion::AreCompatible() {
   }
 
   // Check there are no continues.
-  if (context_->cfg()->preds(loop_0_->GetLatchBlock()->id()).size() != 1 ||
-      context_->cfg()->preds(loop_1_->GetLatchBlock()->id()).size() != 1) {
+  if (context_->cfg()->preds(loop_0_->GetContinueBlock()->id()).size() != 1 ||
+      context_->cfg()->preds(loop_1_->GetContinueBlock()->id()).size() != 1) {
     return false;
   }
 
@@ -361,7 +361,7 @@ LoopFusion::GetLoadsAndStoresInLoop(ir::Loop* loop) {
   std::vector<ir::Instruction*> stores{};
 
   for (auto block_id : loop->GetBlocks()) {
-    if (block_id == loop->GetLatchBlock()->id()) {
+    if (block_id == loop->GetContinueBlock()->id()) {
       continue;
     }
 
@@ -535,8 +535,8 @@ void LoopFusion::Fuse() {
   // Save the pointers/ids, won't be found in the middle of doing modifications.
   auto header_1 = loop_1_->GetHeaderBlock()->id();
   auto condition_1 = loop_1_->FindConditionBlock()->id();
-  auto continue_1 = loop_1_->GetLatchBlock()->id();
-  auto continue_0 = loop_0_->GetLatchBlock()->id();
+  auto continue_1 = loop_1_->GetContinueBlock()->id();
+  auto continue_0 = loop_0_->GetContinueBlock()->id();
   auto condition_block_of_0 = loop_0_->FindConditionBlock();
 
   // Find the blocks whose branches need updating.
@@ -551,7 +551,7 @@ void LoopFusion::Fuse() {
   // Update the branch for the |last_block_of_loop_1| to go to the continue
   // block of |loop_0_|.
   last_block_of_1->ForEachSuccessorLabel(
-      [this](uint32_t* succ) { *succ = loop_0_->GetLatchBlock()->id(); });
+      [this](uint32_t* succ) { *succ = loop_0_->GetContinueBlock()->id(); });
 
   // Update merge block id in the header of |loop_0_| to the merge block of
   // |loop_1_|.
@@ -594,8 +594,8 @@ void LoopFusion::Fuse() {
     ReplacePhiParentWith(i, loop_1_->GetPreHeaderBlock()->id(),
                          loop_0_->GetPreHeaderBlock()->id());
 
-    ReplacePhiParentWith(i, loop_1_->GetLatchBlock()->id(),
-                         loop_0_->GetLatchBlock()->id());
+    ReplacePhiParentWith(i, loop_1_->GetContinueBlock()->id(),
+                         loop_0_->GetContinueBlock()->id());
   });
 
   // Update instruction to block mapping & DefUseManager.
@@ -631,7 +631,7 @@ void LoopFusion::Fuse() {
   AddInstructionsInBlock(&instr_to_delete, loop_1_->GetPreHeaderBlock());
   AddInstructionsInBlock(&instr_to_delete, loop_1_->GetHeaderBlock());
   AddInstructionsInBlock(&instr_to_delete, loop_1_->FindConditionBlock());
-  AddInstructionsInBlock(&instr_to_delete, loop_1_->GetLatchBlock());
+  AddInstructionsInBlock(&instr_to_delete, loop_1_->GetContinueBlock());
 
   // There was an additional empty block between the loops, kill that too.
   if (loop_0_->GetMergeBlock() != loop_1_->GetPreHeaderBlock()) {
@@ -644,18 +644,19 @@ void LoopFusion::Fuse() {
   cfg->ForgetBlock(loop_1_->GetPreHeaderBlock());
   cfg->ForgetBlock(loop_1_->GetHeaderBlock());
   cfg->ForgetBlock(loop_1_->FindConditionBlock());
-  cfg->ForgetBlock(loop_1_->GetLatchBlock());
+  cfg->ForgetBlock(loop_1_->GetContinueBlock());
 
   if (loop_0_->GetMergeBlock() != loop_1_->GetPreHeaderBlock()) {
     cfg->ForgetBlock(loop_0_->GetMergeBlock());
   }
 
-  cfg->RemoveEdge(last_block_of_0->id(), loop_0_->GetLatchBlock()->id());
+  cfg->RemoveEdge(last_block_of_0->id(), loop_0_->GetContinueBlock()->id());
   cfg->AddEdge(last_block_of_0->id(), first_block_of_1->id());
 
-  cfg->AddEdge(last_block_of_1->id(), loop_0_->GetLatchBlock()->id());
+  cfg->AddEdge(last_block_of_1->id(), loop_0_->GetContinueBlock()->id());
 
-  cfg->AddEdge(loop_0_->GetLatchBlock()->id(), loop_1_->GetHeaderBlock()->id());
+  cfg->AddEdge(loop_0_->GetContinueBlock()->id(),
+               loop_1_->GetHeaderBlock()->id());
 
   cfg->AddEdge(condition_block_of_0->id(), loop_1_->GetMergeBlock()->id());
 
