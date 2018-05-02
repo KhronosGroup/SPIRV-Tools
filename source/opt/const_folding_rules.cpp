@@ -611,6 +611,163 @@ UnaryScalarFoldingRule FoldFNegateOp() {
 }
 
 ConstantFoldingRule FoldFNegate() { return FoldFPUnaryOp(FoldFNegateOp()); }
+
+ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
+  return [cmp_opcode](ir::Instruction* inst,
+                      const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    ir::IRContext* context = inst->context();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return nullptr;
+    }
+
+    uint32_t non_const_idx = (constants[0] ? 1 : 0);
+    uint32_t operand_id = inst->GetSingleWordInOperand(non_const_idx);
+    ir::Instruction* operand_inst = def_use_mgr->GetDef(operand_id);
+
+    analysis::TypeManager* type_mgr = context->get_type_mgr();
+    const analysis::Type* operand_type =
+        type_mgr->GetType(operand_inst->type_id());
+
+    if (!operand_type->AsFloat()) {
+      return nullptr;
+    }
+
+    if (operand_type->AsFloat()->width() != 32 &&
+        operand_type->AsFloat()->width() != 64) {
+      return nullptr;
+    }
+
+    if (operand_inst->opcode() != SpvOpExtInst) {
+      return nullptr;
+    }
+
+    if (operand_inst->GetSingleWordInOperand(1) != GLSLstd450FClamp) {
+      return nullptr;
+    }
+
+    if (constants[1] == nullptr && constants[0] == nullptr) {
+      return nullptr;
+    }
+
+    uint32_t max_id = operand_inst->GetSingleWordInOperand(4);
+    const analysis::Constant* max_const =
+        const_mgr->FindDeclaredConstant(max_id);
+
+    uint32_t min_id = operand_inst->GetSingleWordInOperand(3);
+    const analysis::Constant* min_const =
+        const_mgr->FindDeclaredConstant(min_id);
+
+    bool found_result = false;
+    bool result = false;
+
+    switch (cmp_opcode) {
+      case SpvOpFOrdLessThan:
+      case SpvOpFUnordLessThan:
+      case SpvOpFOrdGreaterThanEqual:
+      case SpvOpFUnordGreaterThanEqual:
+        if (constants[0]) {
+          if (min_const) {
+            if (constants[0]->GetValueAsDouble() <
+                min_const->GetValueAsDouble()) {
+              found_result = true;
+              result = (cmp_opcode == SpvOpFOrdLessThan ||
+                        cmp_opcode == SpvOpFUnordLessThan);
+            }
+          }
+          if (max_const) {
+            if (constants[0]->GetValueAsDouble() >=
+                max_const->GetValueAsDouble()) {
+              found_result = true;
+              result = !(cmp_opcode == SpvOpFOrdLessThan ||
+                         cmp_opcode == SpvOpFUnordLessThan);
+            }
+          }
+        }
+
+        if (constants[1]) {
+          if (max_const) {
+            if (max_const->GetValueAsDouble() <
+                constants[1]->GetValueAsDouble()) {
+              found_result = true;
+              result = (cmp_opcode == SpvOpFOrdLessThan ||
+                        cmp_opcode == SpvOpFUnordLessThan);
+            }
+          }
+
+          if (min_const) {
+            if (min_const->GetValueAsDouble() >=
+                constants[1]->GetValueAsDouble()) {
+              found_result = true;
+              result = !(cmp_opcode == SpvOpFOrdLessThan ||
+                         cmp_opcode == SpvOpFUnordLessThan);
+            }
+          }
+        }
+        break;
+      case SpvOpFOrdGreaterThan:
+      case SpvOpFUnordGreaterThan:
+      case SpvOpFOrdLessThanEqual:
+      case SpvOpFUnordLessThanEqual:
+        if (constants[0]) {
+          if (min_const) {
+            if (constants[0]->GetValueAsDouble() <=
+                min_const->GetValueAsDouble()) {
+              found_result = true;
+              result = (cmp_opcode == SpvOpFOrdLessThanEqual ||
+                        cmp_opcode == SpvOpFUnordLessThanEqual);
+            }
+          }
+          if (max_const) {
+            if (constants[0]->GetValueAsDouble() >
+                max_const->GetValueAsDouble()) {
+              found_result = true;
+              result = !(cmp_opcode == SpvOpFOrdLessThanEqual ||
+                         cmp_opcode == SpvOpFUnordLessThanEqual);
+            }
+          }
+        }
+
+        if (constants[1]) {
+          if (max_const) {
+            if (max_const->GetValueAsDouble() <=
+                constants[1]->GetValueAsDouble()) {
+              found_result = true;
+              result = (cmp_opcode == SpvOpFOrdLessThanEqual ||
+                        cmp_opcode == SpvOpFUnordLessThanEqual);
+            }
+          }
+
+          if (min_const) {
+            if (min_const->GetValueAsDouble() >
+                constants[1]->GetValueAsDouble()) {
+              found_result = true;
+              result = !(cmp_opcode == SpvOpFOrdLessThanEqual ||
+                         cmp_opcode == SpvOpFUnordLessThanEqual);
+            }
+          }
+        }
+        break;
+      default:
+        return nullptr;
+    }
+
+    if (!found_result) {
+      return nullptr;
+    }
+
+    const analysis::Type* bool_type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    const analysis::Constant* result_const =
+        const_mgr->GetConstant(bool_type, {static_cast<uint32_t>(result)});
+    assert(result_const);
+    return result_const;
+  };
+}
+
 }  // namespace
 
 spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
@@ -635,17 +792,44 @@ spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
   rules_[SpvOpFSub].push_back(FoldFSub());
 
   rules_[SpvOpFOrdEqual].push_back(FoldFOrdEqual());
+
   rules_[SpvOpFUnordEqual].push_back(FoldFUnordEqual());
+
   rules_[SpvOpFOrdNotEqual].push_back(FoldFOrdNotEqual());
+
   rules_[SpvOpFUnordNotEqual].push_back(FoldFUnordNotEqual());
+
   rules_[SpvOpFOrdLessThan].push_back(FoldFOrdLessThan());
+  rules_[SpvOpFOrdLessThan].push_back(
+      FoldFClampFeedingCompare(SpvOpFOrdLessThan));
+
   rules_[SpvOpFUnordLessThan].push_back(FoldFUnordLessThan());
+  rules_[SpvOpFUnordLessThan].push_back(
+      FoldFClampFeedingCompare(SpvOpFUnordLessThan));
+
   rules_[SpvOpFOrdGreaterThan].push_back(FoldFOrdGreaterThan());
+  rules_[SpvOpFOrdGreaterThan].push_back(
+      FoldFClampFeedingCompare(SpvOpFOrdGreaterThan));
+
   rules_[SpvOpFUnordGreaterThan].push_back(FoldFUnordGreaterThan());
+  rules_[SpvOpFUnordGreaterThan].push_back(
+      FoldFClampFeedingCompare(SpvOpFUnordGreaterThan));
+
   rules_[SpvOpFOrdLessThanEqual].push_back(FoldFOrdLessThanEqual());
+  rules_[SpvOpFOrdLessThanEqual].push_back(
+      FoldFClampFeedingCompare(SpvOpFOrdLessThanEqual));
+
   rules_[SpvOpFUnordLessThanEqual].push_back(FoldFUnordLessThanEqual());
+  rules_[SpvOpFUnordLessThanEqual].push_back(
+      FoldFClampFeedingCompare(SpvOpFUnordLessThanEqual));
+
   rules_[SpvOpFOrdGreaterThanEqual].push_back(FoldFOrdGreaterThanEqual());
+  rules_[SpvOpFOrdGreaterThanEqual].push_back(
+      FoldFClampFeedingCompare(SpvOpFOrdGreaterThanEqual));
+
   rules_[SpvOpFUnordGreaterThanEqual].push_back(FoldFUnordGreaterThanEqual());
+  rules_[SpvOpFUnordGreaterThanEqual].push_back(
+      FoldFClampFeedingCompare(SpvOpFUnordGreaterThanEqual));
 
   rules_[SpvOpVectorShuffle].push_back(FoldVectorShuffleWithConstants());
   rules_[SpvOpVectorTimesScalar].push_back(FoldVectorTimesScalar());
