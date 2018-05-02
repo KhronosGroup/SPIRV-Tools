@@ -2796,4 +2796,203 @@ OpFunctionEnd
                                                     false);
 }
 
+/*
+Generated from following GLSL with latch block artificially inserted to be
+seperate from continue.
+#version 430
+void main(void) {
+    float x[10];
+    for (int i = 0; i < 10; ++i) {
+      x[i] = i;
+    }
+}
+*/
+TEST_F(PassClassTest, PartiallyUnrollLatchNotContinue) {
+  // clang-format off
+  const std::string text = R"(OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %2 "main"
+               OpName %3 "i"
+               OpName %4 "x"
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %7 = OpTypeInt 32 1
+          %8 = OpTypePointer Function %7
+          %9 = OpConstant %7 0
+         %10 = OpConstant %7 10
+         %11 = OpTypeBool
+         %12 = OpTypeFloat 32
+         %13 = OpTypeInt 32 0
+         %14 = OpConstant %13 10
+         %15 = OpTypeArray %12 %14
+         %16 = OpTypePointer Function %15
+         %17 = OpTypePointer Function %12
+         %18 = OpConstant %7 1
+          %2 = OpFunction %5 None %6
+         %19 = OpLabel
+          %3 = OpVariable %8 Function
+          %4 = OpVariable %16 Function
+               OpStore %3 %9
+               OpBranch %20
+         %20 = OpLabel
+         %21 = OpPhi %7 %9 %19 %22 %30
+               OpLoopMerge %24 %23 Unroll
+               OpBranch %25
+         %25 = OpLabel
+         %26 = OpSLessThan %11 %21 %10
+               OpBranchConditional %26 %27 %24
+         %27 = OpLabel
+         %28 = OpConvertSToF %12 %21
+         %29 = OpAccessChain %17 %4 %21
+               OpStore %29 %28
+               OpBranch %23
+         %23 = OpLabel
+         %22 = OpIAdd %7 %21 %18
+               OpStore %3 %22
+               OpBranch %30
+         %30 = OpLabel
+               OpBranch %20
+         %24 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const std::string expected = R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main"
+OpExecutionMode %2 OriginUpperLeft
+OpSource GLSL 430
+OpName %2 "main"
+OpName %3 "i"
+OpName %4 "x"
+%5 = OpTypeVoid
+%6 = OpTypeFunction %5
+%7 = OpTypeInt 32 1
+%8 = OpTypePointer Function %7
+%9 = OpConstant %7 0
+%10 = OpConstant %7 10
+%11 = OpTypeBool
+%12 = OpTypeFloat 32
+%13 = OpTypeInt 32 0
+%14 = OpConstant %13 10
+%15 = OpTypeArray %12 %14
+%16 = OpTypePointer Function %15
+%17 = OpTypePointer Function %12
+%18 = OpConstant %7 1
+%63 = OpConstant %13 1
+%2 = OpFunction %5 None %6
+%19 = OpLabel
+%3 = OpVariable %8 Function
+%4 = OpVariable %16 Function
+OpStore %3 %9
+OpBranch %20
+%20 = OpLabel
+%21 = OpPhi %7 %9 %19 %22 %23
+OpLoopMerge %31 %25 Unroll
+OpBranch %26
+%26 = OpLabel
+%27 = OpSLessThan %11 %21 %63
+OpBranchConditional %27 %28 %31
+%28 = OpLabel
+%29 = OpConvertSToF %12 %21
+%30 = OpAccessChain %17 %4 %21
+OpStore %30 %29
+OpBranch %25
+%25 = OpLabel
+%22 = OpIAdd %7 %21 %18
+OpStore %3 %22
+OpBranch %23
+%23 = OpLabel
+OpBranch %20
+%31 = OpLabel
+OpBranch %32
+%32 = OpLabel
+%33 = OpPhi %7 %21 %31 %61 %62
+OpLoopMerge %42 %60 DontUnroll
+OpBranch %34
+%34 = OpLabel
+%35 = OpSLessThan %11 %33 %10
+OpBranchConditional %35 %36 %42
+%36 = OpLabel
+%37 = OpConvertSToF %12 %33
+%38 = OpAccessChain %17 %4 %33
+OpStore %38 %37
+OpBranch %39
+%39 = OpLabel
+%40 = OpIAdd %7 %33 %18
+OpStore %3 %40
+OpBranch %41
+%41 = OpLabel
+OpBranch %43
+%43 = OpLabel
+OpBranch %45
+%45 = OpLabel
+%46 = OpSLessThan %11 %40 %10
+OpBranch %47
+%47 = OpLabel
+%48 = OpConvertSToF %12 %40
+%49 = OpAccessChain %17 %4 %40
+OpStore %49 %48
+OpBranch %50
+%50 = OpLabel
+%51 = OpIAdd %7 %40 %18
+OpStore %3 %51
+OpBranch %52
+%52 = OpLabel
+OpBranch %53
+%53 = OpLabel
+OpBranch %55
+%55 = OpLabel
+%56 = OpSLessThan %11 %51 %10
+OpBranch %57
+%57 = OpLabel
+%58 = OpConvertSToF %12 %51
+%59 = OpAccessChain %17 %4 %51
+OpStore %59 %58
+OpBranch %60
+%60 = OpLabel
+%61 = OpIAdd %7 %51 %18
+OpStore %3 %61
+OpBranch %62
+%62 = OpLabel
+OpBranch %32
+%42 = OpLabel
+OpReturn
+%24 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  // clang-format on
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<PartialUnrollerTestPass<3>>(text, expected, true);
+
+  // Make sure the latch block information is preserved and propagated correctly
+  // by the pass.
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  PartialUnrollerTestPass<3> unroller;
+  unroller.Process(context.get());
+
+  ir::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  const ir::Function* f = spvtest::GetFunction(module, 2);
+  ir::LoopDescriptor ld{f};
+
+  EXPECT_EQ(ld.NumLoops(), 2u);
+
+  ir::Loop& loop_1 = ld.GetLoopByIndex(0u);
+  EXPECT_NE(loop_1.GetLatchBlock(), loop_1.GetContinueBlock());
+
+  ir::Loop& loop_2 = ld.GetLoopByIndex(1u);
+  EXPECT_NE(loop_2.GetLatchBlock(), loop_2.GetContinueBlock());
+}
+
 }  // namespace
