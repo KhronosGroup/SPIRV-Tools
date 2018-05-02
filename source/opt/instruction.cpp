@@ -701,5 +701,27 @@ bool Instruction::IsScalarizable() const {
   return false;
 }
 
+bool Instruction::IsOpcodeSafeToDelete() const {
+  if (context()->IsCombinatorInstruction(this)) {
+    return true;
+  }
+
+  switch (opcode()) {
+    case SpvOpDPdx:
+    case SpvOpDPdy:
+    case SpvOpFwidth:
+    case SpvOpDPdxFine:
+    case SpvOpDPdyFine:
+    case SpvOpFwidthFine:
+    case SpvOpDPdxCoarse:
+    case SpvOpDPdyCoarse:
+    case SpvOpFwidthCoarse:
+    case SpvOpImageQueryLod:
+      return true;
+    default:
+      return false;
+  }
+}
+
 }  // namespace ir
 }  // namespace spvtools
