@@ -92,6 +92,10 @@ class Constant {
   // Float type.
   double GetDouble() const;
 
+  // Returns the double representation of the constant. Must be a 32-bit or
+  // 64-bit Float type.
+  double GetValueAsDouble() const;
+
   // Returns uint32_t representation of the constant. Must be a 32 bit
   // Integer type.
   uint32_t GetU32() const;

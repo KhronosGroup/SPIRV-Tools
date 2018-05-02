@@ -44,6 +44,16 @@ double Constant::GetDouble() const {
   }
 }
 
+double Constant::GetValueAsDouble() const {
+  assert(type()->AsFloat() != nullptr);
+  if (type()->AsFloat()->width() == 32) {
+    return GetFloat();
+  } else {
+    assert(type()->AsFloat()->width() == 64);
+    return GetDouble();
+  }
+}
+
 uint32_t Constant::GetU32() const {
   assert(type()->AsInteger() != nullptr);
   assert(type()->AsInteger()->width() == 32);
