@@ -406,7 +406,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // is always added to |options|.
   std::string PrettyPrint(uint32_t options = 0u) const;
 
+  // Returns true if the result can be a vector and the result of each component
+  // depends on the corresponding component of any vector inputs.
   bool IsScalarizable() const;
+
+  // Return true if the only effect of this instructions is the result.
+  bool IsOpcodeSafeToDelete() const;
 
  private:
   // Returns the total count of result type id and result id.

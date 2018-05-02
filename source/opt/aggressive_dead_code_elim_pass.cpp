@@ -350,7 +350,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         default: {
           // Function calls, atomics, function params, function returns, etc.
           // TODO(greg-lunarg): function calls live only if write to non-local
-          if (!context()->IsCombinatorInstruction(&*ii)) {
+          if (!ii->IsOpcodeSafeToDelete()) {
             AddToWorklist(&*ii);
           }
           // Remember function calls
