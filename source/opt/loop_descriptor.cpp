@@ -333,8 +333,10 @@ ir::BasicBlock* Loop::FindLatchBlock() {
   opt::DominatorAnalysis* dominator_analysis =
       context_->GetDominatorAnalysis(loop_header_->GetParent());
 
-  // Find the backedge to the header which should be dominated by the loop
-  // continue target as per the SPIR-V spec.
+  // Look at the predecessors of the loop header to find a predecessor block
+  // which is dominated by the loop continue target. There should only be one
+  // block which meets this criteria and this is the latch block, as per the
+  // SPIR-V spec.
   for (uint32_t block_id : cfg->preds(loop_header_->id())) {
     if (dominator_analysis->Dominates(loop_continue_->id(), block_id)) {
       return cfg->block(block_id);

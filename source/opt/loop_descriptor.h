@@ -351,6 +351,10 @@ class Loop {
   // Returns the context associated this loop.
   IRContext* GetContext() const { return context_; }
 
+  // Looks at all the blocks with a branch to the header block to find one
+  // which is also dominated by the loop continue block. This block is the latch
+  // block. The specification mandates that this block should exist, therefore
+  // this function will assert if it is not found.
   ir::BasicBlock* FindLatchBlock();
 
  private:
