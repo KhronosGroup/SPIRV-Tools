@@ -50,6 +50,7 @@
 #include "merge_return_pass.h"
 #include "null_pass.h"
 #include "private_to_local_pass.h"
+#include "reduce_load_size.h"
 #include "redundancy_elimination.h"
 #include "remove_duplicates_pass.h"
 #include "replace_invalid_opc.h"

@@ -188,7 +188,7 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::CopyPropagateArrays>(before, false);
 }
 
-// Propagate 2d array.  This test identifing a copy through multiple levels.
+// Propagate 2d array.  This test identifying a copy through multiple levels.
 // Also has to traverse multiple OpAccessChains.
 TEST_F(CopyPropArrayPassTest, Propagate2DArray) {
   const std::string text =
@@ -255,6 +255,93 @@ OpDecorate %MyCBuffer Binding 0
 %35 = OpCompositeExtract %_arr_v4float_uint_2 %30 1
 %36 = OpCompositeExtract %v4float %35 0
 %37 = OpCompositeExtract %v4float %35 1
+%38 = OpCompositeConstruct %_arr_v4float_uint_2_0 %36 %37
+%39 = OpCompositeConstruct %_arr__arr_v4float_uint_2_0_uint_2 %34 %38
+; CHECK: OpStore
+OpStore %27 %39
+%40 = OpAccessChain %_ptr_Function__arr_v4float_uint_2_0 %27 %28
+%42 = OpAccessChain %_ptr_Function_v4float %40 %28
+%43 = OpLoad %v4float %42
+; CHECK: [[ac1:%\w+]] = OpAccessChain %_ptr_Uniform__arr_v4float_uint_2 [[new_address]] %28
+; CHECK: [[ac2:%\w+]] = OpAccessChain %_ptr_Uniform_v4float [[ac1]] %28
+; CHECK: [[load:%\w+]] = OpLoad %v4float [[ac2]]
+; CHECK: OpStore %out_var_SV_Target [[load]]
+OpStore %out_var_SV_Target %43
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                        SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  SinglePassRunAndMatch<opt::CopyPropagateArrays>(text, false);
+}
+
+// Propagate 2d array.  This test identifying a copy through multiple levels.
+// Also has to traverse multiple OpAccessChains.
+TEST_F(CopyPropArrayPassTest, Propagate2DArrayWithMultiLevelExtract) {
+  const std::string text =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_INDEX %out_var_SV_Target
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 600
+OpName %type_MyCBuffer "type.MyCBuffer"
+OpMemberName %type_MyCBuffer 0 "Data"
+OpName %MyCBuffer "MyCBuffer"
+OpName %main "main"
+OpName %in_var_INDEX "in.var.INDEX"
+OpName %out_var_SV_Target "out.var.SV_Target"
+OpDecorate %_arr_v4float_uint_2 ArrayStride 16
+OpDecorate %_arr__arr_v4float_uint_2_uint_2 ArrayStride 32
+OpMemberDecorate %type_MyCBuffer 0 Offset 0
+OpDecorate %type_MyCBuffer Block
+OpDecorate %in_var_INDEX Flat
+OpDecorate %in_var_INDEX Location 0
+OpDecorate %out_var_SV_Target Location 0
+OpDecorate %MyCBuffer DescriptorSet 0
+OpDecorate %MyCBuffer Binding 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%uint = OpTypeInt 32 0
+%uint_2 = OpConstant %uint 2
+%_arr_v4float_uint_2 = OpTypeArray %v4float %uint_2
+%_arr__arr_v4float_uint_2_uint_2 = OpTypeArray %_arr_v4float_uint_2 %uint_2
+%type_MyCBuffer = OpTypeStruct %_arr__arr_v4float_uint_2_uint_2
+%_ptr_Uniform_type_MyCBuffer = OpTypePointer Uniform %type_MyCBuffer
+%void = OpTypeVoid
+%14 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_arr_v4float_uint_2_0 = OpTypeArray %v4float %uint_2
+%_arr__arr_v4float_uint_2_0_uint_2 = OpTypeArray %_arr_v4float_uint_2_0 %uint_2
+%_ptr_Function__arr__arr_v4float_uint_2_0_uint_2 = OpTypePointer Function %_arr__arr_v4float_uint_2_0_uint_2
+%int_0 = OpConstant %int 0
+%_ptr_Uniform__arr__arr_v4float_uint_2_uint_2 = OpTypePointer Uniform %_arr__arr_v4float_uint_2_uint_2
+%_ptr_Function__arr_v4float_uint_2_0 = OpTypePointer Function %_arr_v4float_uint_2_0
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%MyCBuffer = OpVariable %_ptr_Uniform_type_MyCBuffer Uniform
+%in_var_INDEX = OpVariable %_ptr_Input_int Input
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+; CHECK: OpFunction
+; CHECK: OpLabel
+; CHECK: OpVariable
+; CHECK: OpVariable
+; CHECK: OpAccessChain
+; CHECK: [[new_address:%\w+]] = OpAccessChain %_ptr_Uniform__arr__arr_v4float_uint_2_uint_2 %MyCBuffer %int_0
+%main = OpFunction %void None %14
+%25 = OpLabel
+%26 = OpVariable %_ptr_Function__arr_v4float_uint_2_0 Function
+%27 = OpVariable %_ptr_Function__arr__arr_v4float_uint_2_0_uint_2 Function
+%28 = OpLoad %int %in_var_INDEX
+%29 = OpAccessChain %_ptr_Uniform__arr__arr_v4float_uint_2_uint_2 %MyCBuffer %int_0
+%30 = OpLoad %_arr__arr_v4float_uint_2_uint_2 %29
+%32 = OpCompositeExtract %v4float %30 0 0
+%33 = OpCompositeExtract %v4float %30 0 1
+%34 = OpCompositeConstruct %_arr_v4float_uint_2_0 %32 %33
+%36 = OpCompositeExtract %v4float %30 1 0
+%37 = OpCompositeExtract %v4float %30 1 1
 %38 = OpCompositeConstruct %_arr_v4float_uint_2_0 %36 %37
 %39 = OpCompositeConstruct %_arr__arr_v4float_uint_2_0_uint_2 %34 %38
 ; CHECK: OpStore
