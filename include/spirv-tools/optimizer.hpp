@@ -578,6 +578,12 @@ Optimizer::PassToken CreateCopyPropagateArraysPass();
 // a pass of ADCE will be able to remove.
 Optimizer::PassToken CreateVectorDCEPass();
 
+// Create a pass to reduce the size of loads.
+// This pass looks for loads of structures where only a few of its members are
+// used.  It replaces the loads feeding an OpExtract with an OpAccessChain and
+// a load of the specific elements.
+Optimizer::PassToken CreateReduceLoadSizePass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

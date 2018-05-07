@@ -269,7 +269,7 @@ CopyPropagateArrays::BuildMemoryObjectFromExtract(
     // Convert the indices in the extract instruction to a series of ids that
     // can be used by the |OpAccessChain| instruction.
     for (uint32_t i = 1; i < extract_inst->NumInOperands(); ++i) {
-      uint32_t index = extract_inst->GetSingleWordInOperand(1);
+      uint32_t index = extract_inst->GetSingleWordInOperand(i);
       const analysis::Constant* index_const =
           const_mgr->GetConstant(uint32_type, {index});
       components.push_back(

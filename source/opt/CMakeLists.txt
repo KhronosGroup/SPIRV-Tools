@@ -77,6 +77,7 @@ add_library(SPIRV-Tools-opt
   pass_manager.h
   private_to_local_pass.h
   propagator.h
+  reduce_load_size.h
   redundancy_elimination.h
   reflect.h
   register_pressure.h
@@ -161,6 +162,7 @@ add_library(SPIRV-Tools-opt
   pass_manager.cpp
   private_to_local_pass.cpp
   propagator.cpp
+  reduce_load_size.cpp
   redundancy_elimination.cpp
   register_pressure.cpp
   remove_duplicates_pass.cpp

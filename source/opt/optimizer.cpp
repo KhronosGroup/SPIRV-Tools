@@ -18,6 +18,7 @@
 #include "make_unique.h"
 #include "pass_manager.h"
 #include "passes.h"
+#include "reduce_load_size.h"
 #include "simplification_pass.h"
 
 namespace spvtools {
@@ -128,6 +129,7 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // or unused references to unbound external objects
           .RegisterPass(CreateVectorDCEPass())
           .RegisterPass(CreateDeadInsertElimPass())
+          .RegisterPass(CreateReduceLoadSizePass())
           .RegisterPass(CreateAggressiveDCEPass());
 }
 
@@ -156,6 +158,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateSimplificationPass())
       .RegisterPass(CreateIfConversionPass())
       .RegisterPass(CreateCopyPropagateArraysPass())
+      .RegisterPass(CreateReduceLoadSizePass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateRedundancyEliminationPass())
@@ -466,4 +469,8 @@ Optimizer::PassToken CreateVectorDCEPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::VectorDCE>());
 }
 
+Optimizer::PassToken CreateReduceLoadSizePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ReduceLoadSize>());
+}
 }  // namespace spvtools

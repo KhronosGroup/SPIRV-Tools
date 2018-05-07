@@ -580,6 +580,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateLocalRedundancyEliminationPass());
       } else if (0 == strcmp(cur_arg, "--loop-invariant-code-motion")) {
         optimizer->RegisterPass(CreateLoopInvariantCodeMotionPass());
+      } else if (0 == strcmp(cur_arg, "--reduce-load-size")) {
+        optimizer->RegisterPass(CreateReduceLoadSizePass());
       } else if (0 == strcmp(cur_arg, "--redundancy-elimination")) {
         optimizer->RegisterPass(CreateRedundancyEliminationPass());
       } else if (0 == strcmp(cur_arg, "--private-to-local")) {

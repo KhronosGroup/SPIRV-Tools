@@ -331,6 +331,16 @@ class InstructionBuilder {
     return AddInstruction(std::move(new_inst));
   }
 
+  ir::Instruction* AddLoad(uint32_t type_id, uint32_t base_ptr_id) {
+    std::vector<ir::Operand> operands;
+    operands.push_back({SPV_OPERAND_TYPE_ID, {base_ptr_id}});
+
+    std::unique_ptr<ir::Instruction> new_inst(
+        new ir::Instruction(GetContext(), SpvOpLoad, type_id,
+                            GetContext()->TakeNextId(), operands));
+    return AddInstruction(std::move(new_inst));
+  }
+
   // Inserts the new instruction before the insertion point.
   ir::Instruction* AddInstruction(std::unique_ptr<ir::Instruction>&& insn) {
     ir::Instruction* insn_ptr = &*insert_before_.InsertBefore(std::move(insn));
