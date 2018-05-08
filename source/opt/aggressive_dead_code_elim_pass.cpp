@@ -91,8 +91,15 @@ bool AggressiveDCEPass::IsVarOfStorage(uint32_t varId, uint32_t storageClass) {
 }
 
 bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
-  return IsVarOfStorage(varId, SpvStorageClassFunction) ||
-         (IsVarOfStorage(varId, SpvStorageClassPrivate) && private_like_local_);
+  if (IsVarOfStorage(varId, SpvStorageClassFunction)) {
+    return true;
+  }
+  if (!private_like_local_) {
+    return false;
+  }
+
+  return IsVarOfStorage(varId, SpvStorageClassPrivate) ||
+         IsVarOfStorage(varId, SpvStorageClassWorkgroup);
 }
 
 void AggressiveDCEPass::AddStores(uint32_t ptrId) {
@@ -326,8 +333,10 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
           (void)GetPtr(&*ii, &varId);
           // Mark stores as live if their variable is not function scope
           // and is not private scope. Remember private stores for possible
-          // later inclusion
-          if (IsVarOfStorage(varId, SpvStorageClassPrivate))
+          // later inclusion.  We cannot call IsLocalVar at this point because
+          // private_like_local_ has not been set yet.
+          if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
+              IsVarOfStorage(varId, SpvStorageClassWorkgroup))
             private_stores_.push_back(&*ii);
           else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
             AddToWorklist(&*ii);
