@@ -409,7 +409,6 @@ const vector<string>& KernelDependencies() {
   "Pipes",
   "DeviceEnqueue",
   "LiteralSampler",
-  "Int8",
   "SubgroupDispatch",
   "NamedBarrier",
   "PipeStorage"};
