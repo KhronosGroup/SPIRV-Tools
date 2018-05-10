@@ -348,7 +348,7 @@ INSTANTIATE_TEST_CASE_P(
                 CASE0(OPTIONAL_IMAGE, ImageOperandsGradMask),
                 CASE0(OPTIONAL_IMAGE, ImageOperandsConstOffsetMask),
                 CASE1(OPTIONAL_IMAGE, ImageOperandsOffsetMask, ImageGatherExtended),
-                CASE0(OPTIONAL_IMAGE, ImageOperandsConstOffsetsMask),
+                CASE1(OPTIONAL_IMAGE, ImageOperandsConstOffsetsMask, ImageGatherExtended),
                 CASE0(OPTIONAL_IMAGE, ImageOperandsSampleMask),
                 CASE1(OPTIONAL_IMAGE, ImageOperandsMinLodMask, MinLod),
                 // clang-format on
@@ -687,7 +687,7 @@ INSTANTIATE_TEST_CASE_P(
             CASE1(CAPABILITY, CapabilityImageRect, SampledRect),
             CASE1(CAPABILITY, CapabilitySampledRect, Shader),
             CASE1(CAPABILITY, CapabilityGenericPointer, Addresses),
-            CASE1(CAPABILITY, CapabilityInt8, Kernel),
+            CASE0(CAPABILITY, CapabilityInt8),
             CASE1(CAPABILITY, CapabilityInputAttachment, Shader),
             CASE1(CAPABILITY, CapabilitySparseResidency, Shader),
             CASE1(CAPABILITY, CapabilityMinLod, Shader),
