@@ -112,16 +112,17 @@ bool ScalarReplacementPass::ReplaceVariable(
   while (!dead.empty()) {
     ir::Instruction* toKill = dead.back();
     dead.pop_back();
-
     context()->KillInst(toKill);
   }
 
   // Attempt to further scalarize.
   for (auto var : replacements) {
-    if (get_def_use_mgr()->NumUsers(var) == 0) {
-      context()->KillInst(var);
-    } else if (CanReplaceVariable(var)) {
-      worklist->push(var);
+    if (var->opcode() == SpvOpVariable) {
+      if (get_def_use_mgr()->NumUsers(var) == 0) {
+        context()->KillInst(var);
+      } else if (CanReplaceVariable(var)) {
+        worklist->push(var);
+      }
     }
   }
 
@@ -138,6 +139,11 @@ void ScalarReplacementPass::ReplaceWholeLoad(
   ir::BasicBlock::iterator where(load);
   for (auto var : replacements) {
     // Create a load of each replacement variable.
+    if (var->opcode() != SpvOpVariable) {
+      loads.push_back(var);
+      continue;
+    }
+
     ir::Instruction* type = GetStorageType(var);
     uint32_t loadId = TakeNextId();
     std::unique_ptr<ir::Instruction> newLoad(
@@ -182,6 +188,11 @@ void ScalarReplacementPass::ReplaceWholeStore(
   uint32_t elementIndex = 0;
   for (auto var : replacements) {
     // Create the extract.
+    if (var->opcode() != SpvOpVariable) {
+      elementIndex++;
+      continue;
+    }
+
     ir::Instruction* type = GetStorageType(var);
     uint32_t extractId = TakeNextId();
     std::unique_ptr<ir::Instruction> extract(new ir::Instruction(
@@ -252,16 +263,32 @@ bool ScalarReplacementPass::ReplaceAccessChain(
 void ScalarReplacementPass::CreateReplacementVariables(
     ir::Instruction* inst, std::vector<ir::Instruction*>* replacements) {
   ir::Instruction* type = GetStorageType(inst);
+
+  std::unique_ptr<std::unordered_set<uint64_t>> components_used =
+      GetUsedComponents(inst);
+
   uint32_t elem = 0;
   switch (type->opcode()) {
     case SpvOpTypeStruct:
-      type->ForEachInOperand([this, inst, &elem, replacements](uint32_t* id) {
-        CreateVariable(*id, inst, elem++, replacements);
-      });
+      type->ForEachInOperand(
+          [this, inst, &elem, replacements, &components_used](uint32_t* id) {
+            if (!components_used || components_used->count(elem)) {
+              CreateVariable(*id, inst, elem, replacements);
+            } else {
+              replacements->push_back(CreateNullConstant(*id));
+            }
+            elem++;
+          });
       break;
     case SpvOpTypeArray:
       for (uint32_t i = 0; i != GetArrayLength(type); ++i) {
-        CreateVariable(type->GetSingleWordInOperand(0u), inst, i, replacements);
+        if (!components_used || components_used->count(i)) {
+          CreateVariable(type->GetSingleWordInOperand(0u), inst, i,
+                         replacements);
+        } else {
+          replacements->push_back(
+              CreateNullConstant(type->GetSingleWordInOperand(0u)));
+        }
       }
       break;
 
@@ -688,6 +715,94 @@ bool ScalarReplacementPass::CheckStore(const ir::Instruction* inst,
       inst->GetSingleWordInOperand(2u) & SpvMemoryAccessVolatileMask)
     return false;
   return true;
+}
+
+std::unique_ptr<std::unordered_set<uint64_t>>
+ScalarReplacementPass::GetUsedComponents(ir::Instruction* inst) {
+  std::unique_ptr<std::unordered_set<uint64_t>> result(
+      new std::unordered_set<uint64_t>());
+
+  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
+
+  def_use_mgr->WhileEachUser(inst, [&result, def_use_mgr,
+                                    this](ir::Instruction* use) {
+    switch (use->opcode()) {
+      case SpvOpLoad: {
+        // Look for extract from the load.
+        std::vector<uint32_t> t;
+        if (def_use_mgr->WhileEachUser(use, [&t](ir::Instruction* use2) {
+              if (use2->opcode() != SpvOpCompositeExtract) {
+                return false;
+              }
+              t.push_back(use2->GetSingleWordInOperand(1));
+              return true;
+            })) {
+          result->insert(t.begin(), t.end());
+          return true;
+        } else {
+          result.reset(nullptr);
+          return false;
+        }
+      }
+      case SpvOpStore:
+        // No components are used.  Things are just stored to.
+        return true;
+      case SpvOpAccessChain:
+      case SpvOpInBoundsAccessChain: {
+        // Add the first index it if is a constant.
+        // TODO: Could be improved by checking if the address is used in a load.
+        analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
+        uint32_t index_id = use->GetSingleWordInOperand(1);
+        const analysis::Constant* index_const =
+            const_mgr->FindDeclaredConstant(index_id);
+        if (index_const) {
+          const analysis::Integer* index_type =
+              index_const->type()->AsInteger();
+          assert(index_type);
+          if (index_type->width() == 32) {
+            result->insert(index_const->GetU32());
+            return true;
+          } else if (index_type->width() == 64) {
+            result->insert(index_const->GetU64());
+            return true;
+          }
+          result.reset(nullptr);
+          return false;
+        } else {
+          // Could be any element.  Assuming all are used.
+          result.reset(nullptr);
+          return false;
+        }
+      }
+      case SpvOpCopyObject: {
+        // Follow the copy to see which components are used.
+        auto t = GetUsedComponents(use);
+        if (!t) {
+          result.reset(nullptr);
+          return false;
+        }
+        result->insert(t->begin(), t->end());
+        return true;
+      }
+      default:
+        // We do not know what is happening.  Have to assume the worst.
+        result.reset(nullptr);
+        return false;
+    }
+  });
+
+  return result;
+}
+
+ir::Instruction* ScalarReplacementPass::CreateNullConstant(uint32_t type_id) {
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+  analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
+
+  const analysis::Type* type = type_mgr->GetType(type_id);
+  const analysis::Constant* null_const = const_mgr->GetConstant(type, {});
+  ir::Instruction* null_inst = const_mgr->GetDefiningInstruction(null_const);
+  context()->UpdateDefUse(null_inst);
+  return null_inst;
 }
 
 }  // namespace opt

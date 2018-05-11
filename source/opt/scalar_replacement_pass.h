@@ -192,6 +192,16 @@ class ScalarReplacementPass : public Pass {
   bool ReplaceAccessChain(ir::Instruction* chain,
                           const std::vector<ir::Instruction*>& replacements);
 
+  // Returns a set containing the which components of the result of |inst| are
+  // potentially used.  If the return value is |nullptr|, then every components
+  // is possibly used.
+  std::unique_ptr<std::unordered_set<uint64_t>> GetUsedComponents(
+      ir::Instruction* inst);
+
+  // Returns an instruction defining a null constant with type |type_id|.  If
+  // one already exists, it is returned.  Otherwise a new one is created.
+  ir::Instruction* CreateNullConstant(uint32_t type_id);
+
   // Maps storage type to a pointer type enclosing that type.
   std::unordered_map<uint32_t, uint32_t> pointee_to_pointer_;
 
