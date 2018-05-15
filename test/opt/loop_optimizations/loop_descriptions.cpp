@@ -376,8 +376,8 @@ TEST_F(PassClassTest, LoopLatchNotContinue) {
 
   EXPECT_NE(loop.GetLatchBlock(), loop.GetContinueBlock());
 
-  EXPECT_EQ(loop.GetContinueBlock()->id(), 23);
-  EXPECT_EQ(loop.GetLatchBlock()->id(), 30);
+  EXPECT_EQ(loop.GetContinueBlock()->id(), 23u);
+  EXPECT_EQ(loop.GetLatchBlock()->id(), 30u);
 }
 
 }  // namespace
