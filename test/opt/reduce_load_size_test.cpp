@@ -114,7 +114,7 @@ TEST_F(ReduceLoadSizeTest, cbuffer_load_extract_vector) {
   //   };
   //
   //
-  //   cbuffer gBuffer { uint a[32]; };
+  //   cbuffer gBuffer { uint4 a; };
   //
   //   RWStructuredBuffer<S> gRWSBuffer;
   //
@@ -246,6 +246,71 @@ OpDecorate %gRWSBuffer Binding 1
 %31 = OpIAdd %uint %20 %27
 %32 = OpAccessChain %_ptr_Uniform_uint %gRWSBuffer %int_0 %uint_0 %int_0
 OpStore %32 %31
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                        SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  SinglePassRunAndCheck<opt::ReduceLoadSize>(test, test, true, false);
+}
+
+TEST_F(ReduceLoadSizeTest, cbuffer_load_fully_used) {
+  // The result of the load (%22) is used in an instruction that uses the whole
+  // load and has only 1 in operand.  This trigger issue #1559.
+  const std::string test =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpSource HLSL 600
+OpName %type_gBuffer "type.gBuffer"
+OpMemberName %type_gBuffer 0 "a"
+OpName %gBuffer "gBuffer"
+OpName %S "S"
+OpMemberName %S 0 "f"
+OpName %type_RWStructuredBuffer_S "type.RWStructuredBuffer.S"
+OpName %gRWSBuffer "gRWSBuffer"
+OpName %main "main"
+OpMemberDecorate %type_gBuffer 0 Offset 0
+OpDecorate %type_gBuffer Block
+OpMemberDecorate %S 0 Offset 0
+OpDecorate %_runtimearr_S ArrayStride 4
+OpMemberDecorate %type_RWStructuredBuffer_S 0 Offset 0
+OpDecorate %type_RWStructuredBuffer_S BufferBlock
+OpDecorate %gBuffer DescriptorSet 0
+OpDecorate %gBuffer Binding 0
+OpDecorate %gRWSBuffer DescriptorSet 0
+OpDecorate %gRWSBuffer Binding 1
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%v4uint = OpTypeVector %uint 4
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%type_gBuffer = OpTypeStruct %v4uint
+%_ptr_Uniform_type_gBuffer = OpTypePointer Uniform %type_gBuffer
+%S = OpTypeStruct %uint
+%_runtimearr_S = OpTypeRuntimeArray %S
+%type_RWStructuredBuffer_S = OpTypeStruct %_runtimearr_S
+%_ptr_Uniform_type_RWStructuredBuffer_S = OpTypePointer Uniform %type_RWStructuredBuffer_S
+%int = OpTypeInt 32 1
+%void = OpTypeVoid
+%15 = OpTypeFunction %void
+%int_0 = OpConstant %int 0
+%_ptr_Uniform_v4uint = OpTypePointer Uniform %v4uint
+%uint_0 = OpConstant %uint 0
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%gBuffer = OpVariable %_ptr_Uniform_type_gBuffer Uniform
+%gRWSBuffer = OpVariable %_ptr_Uniform_type_RWStructuredBuffer_S Uniform
+%main = OpFunction %void None %15
+%20 = OpLabel
+%21 = OpAccessChain %_ptr_Uniform_v4uint %gBuffer %int_0
+%22 = OpLoad %v4uint %21
+%23 = OpCompositeExtract %uint %22 1
+%24 = OpConvertUToF %v4float %22
+%25 = OpAccessChain %_ptr_Uniform_uint %gRWSBuffer %int_0 %uint_0 %int_0
+OpStore %25 %23
 OpReturn
 OpFunctionEnd
 )";

@@ -133,12 +133,13 @@ bool ReduceLoadSize::ShouldReplaceExtract(ir::Instruction* inst) {
   bool all_elements_used = false;
   std::set<uint32_t> elements_used;
 
-  def_use_mgr->ForEachUser(
-      op_inst, [&elements_used, &all_elements_used](ir::Instruction* use) {
+  all_elements_used = !def_use_mgr->WhileEachUser(
+      op_inst, [&elements_used](ir::Instruction* use) {
         if (use->opcode() != SpvOpCompositeExtract) {
-          all_elements_used = true;
+          return false;
         }
         elements_used.insert(use->GetSingleWordInOperand(1));
+        return true;
       });
 
   bool should_replace = false;
