@@ -744,14 +744,23 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     LayerAndViewportIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("Layer", "ViewportIndex"),
-        Values("Vertex", "GLCompute", "TessellationControl",
-               "TessellationEvaluation"),
-        Values("Input"), Values("%u32"),
-        Values(TestResult(
-            SPV_ERROR_INVALID_DATA,
-            "to be used only with Fragment or Geometry execution models"))), );
+    Combine(Values("Layer", "ViewportIndex"),
+            Values("TessellationControl", "GLCompute"), Values("Input"),
+            Values("%u32"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be used only with Vertex, TessellationEvaluation, "
+                "Geometry, or Fragment execution models"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    LayerAndViewportIndexExecutionModelEnabledByCapability,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("Layer", "ViewportIndex"),
+            Values("Vertex", "TessellationEvaluation"),
+            Values("Output"), Values("%u32"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "requires the ShaderViewportIndexLayerEXT capability"))), );
 
 INSTANTIATE_TEST_CASE_P(
     LayerAndViewportIndexFragmentNotInput,
@@ -767,11 +776,13 @@ INSTANTIATE_TEST_CASE_P(
     LayerAndViewportIndexGeometryNotOutput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
-        Values("Layer", "ViewportIndex"), Values("Geometry"), Values("Input"),
+        Values("Layer", "ViewportIndex"),
+        Values("Vertex", "TessellationEvaluation", "Geometry"), Values("Input"),
         Values("%u32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "Input storage class if execution model is Geometry",
-                          "which is called with execution model Geometry"))), );
+                          "Input storage class if execution model is Vertex, "
+                          "TessellationEvaluation, or Geometry",
+                          "which is called with execution model"))), );
 
 INSTANTIATE_TEST_CASE_P(
     LayerAndViewportIndexNotIntScalar,

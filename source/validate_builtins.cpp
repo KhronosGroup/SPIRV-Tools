@@ -2141,15 +2141,20 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
 
     if (storage_class == SpvStorageClassInput) {
       assert(function_id_ == 0);
-      id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
-          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this,
-          "Vulkan spec doesn't allow BuiltIn Layer and "
-          "ViewportIndex to be "
-          "used for variables with Input storage class if "
-          "execution model is "
-          "Geometry.",
-          SpvExecutionModelGeometry, decoration, built_in_inst,
-          referenced_from_inst, std::placeholders::_1));
+      for (const auto em :
+           {SpvExecutionModelVertex, SpvExecutionModelTessellationEvaluation,
+            SpvExecutionModelGeometry}) {
+        id_to_at_reference_checks_[referenced_from_inst.id()].push_back(
+            std::bind(&BuiltInsValidator::ValidateNotCalledWithExecutionModel,
+                      this,
+                      "Vulkan spec doesn't allow BuiltIn Layer and "
+                      "ViewportIndex to be "
+                      "used for variables with Input storage class if "
+                      "execution model is Vertex, TessellationEvaluation, or "
+                      "Geometry.",
+                      em, decoration, built_in_inst, referenced_from_inst,
+                      std::placeholders::_1));
+      }
     }
 
     if (storage_class == SpvStorageClassOutput) {
@@ -2171,15 +2176,25 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
         case SpvExecutionModelFragment: {
           // Ok.
           break;
+          case SpvExecutionModelVertex:
+          case SpvExecutionModelTessellationEvaluation:
+            if (!_.HasCapability(SpvCapabilityShaderViewportIndexLayerEXT)) {
+              return _.diag(SPV_ERROR_INVALID_DATA)
+                     << "Using BuiltIn "
+                     << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                                      decoration.params()[0])
+                     << " in Vertex or Tessellation execution model requires "
+                        "the ShaderViewportIndexLayerEXT capability.";
+            }
+            break;
         }
-
         default: {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << "Vulkan spec allows BuiltIn "
                  << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                                   decoration.params()[0])
-                 << " to be used only with Fragment or Geometry execution "
-                    "models. "
+                 << " to be used only with Vertex, TessellationEvaluation, "
+                    "Geometry, or Fragment execution models. "
                  << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                      referenced_from_inst, execution_model);
         }
