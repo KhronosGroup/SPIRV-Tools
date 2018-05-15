@@ -272,9 +272,9 @@ Options (in lexicographical order):
   --private-to-local
                Change the scope of private variables that are used in a single
                function to that function.
-  --remove-duplicates
-               Removes duplicate types, decorations, capabilities and extension
-               instructions.
+  --reduce-load-size
+               Replaces loads of composite objects where not every component is
+               used by loads of just the elements that are used.
   --redundancy-elimination
                Looks for instructions in the same function that compute the
                same value, and deletes the redundant ones.
@@ -282,6 +282,9 @@ Options (in lexicographical order):
                Allow store from one struct type to a different type with
                compatible layout and members. This option is forwarded to the
                validator.
+  --remove-duplicates
+               Removes duplicate types, decorations, capabilities and extension
+               instructions.
   --replace-invalid-opcode
                Replaces instructions whose opcode is valid for shader modules,
                but not for the current shader stage.  To have an effect, all
