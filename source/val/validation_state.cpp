@@ -42,7 +42,9 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
     case kLayoutExtInstImport: out = op == SpvOpExtInstImport; break;
     case kLayoutMemoryModel:   out = op == SpvOpMemoryModel;   break;
     case kLayoutEntryPoint:    out = op == SpvOpEntryPoint;    break;
-    case kLayoutExecutionMode: out = op == SpvOpExecutionMode; break;
+    case kLayoutExecutionMode:
+      out = op == SpvOpExecutionMode || op == SpvOpExecutionModeId;
+      break;
     case kLayoutDebug1:
       switch (op) {
         case SpvOpSourceContinued:
@@ -112,6 +114,7 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
         case SpvOpMemoryModel:
         case SpvOpEntryPoint:
         case SpvOpExecutionMode:
+        case SpvOpExecutionModeId:
         case SpvOpSourceContinued:
         case SpvOpSource:
         case SpvOpSourceExtension:

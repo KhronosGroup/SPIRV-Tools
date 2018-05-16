@@ -413,6 +413,7 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
   std::function<bool(unsigned index)> out;
   switch (opcode) {
     case SpvOpExecutionMode:
+    case SpvOpExecutionModeId:
     case SpvOpEntryPoint:
     case SpvOpName:
     case SpvOpMemberName:
