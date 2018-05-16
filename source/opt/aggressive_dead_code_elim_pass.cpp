@@ -34,6 +34,8 @@ const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
+const uint32_t kCopyMemoryTargetAddrInIdx = 0;
+const uint32_t kCopyMemorySourceAddrInIdx = 1;
 
 // Sorting functor to present annotation instructions in an easy-to-process
 // order. The functor orders by opcode first and falls back on unique id
@@ -103,7 +105,7 @@ bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
 }
 
 void AggressiveDCEPass::AddStores(uint32_t ptrId) {
-  get_def_use_mgr()->ForEachUser(ptrId, [this](ir::Instruction* user) {
+  get_def_use_mgr()->ForEachUser(ptrId, [this, ptrId](ir::Instruction* user) {
     switch (user->opcode()) {
       case SpvOpAccessChain:
       case SpvOpInBoundsAccessChain:
@@ -111,6 +113,12 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
         this->AddStores(user->result_id());
         break;
       case SpvOpLoad:
+        break;
+      case SpvOpCopyMemory:
+      case SpvOpCopyMemorySized:
+        if (user->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx) == ptrId) {
+          AddToWorklist(user);
+        }
         break;
       // If default, assume it stores e.g. frexp, modf, function call
       case SpvOpStore:
@@ -341,6 +349,17 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
           else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
             AddToWorklist(&*ii);
         } break;
+        case SpvOpCopyMemory:
+        case SpvOpCopyMemorySized: {
+          uint32_t varId;
+          (void)GetPtr(ii->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx),
+                       &varId);
+          if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
+              IsVarOfStorage(varId, SpvStorageClassWorkgroup))
+            private_stores_.push_back(&*ii);
+          else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
+            AddToWorklist(&*ii);
+        } break;
         case SpvOpLoopMerge: {
           assume_branches_live.push(false);
           currentMergeBlockId.push(
@@ -415,6 +434,14 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     if (liveInst->opcode() == SpvOpLoad) {
       uint32_t varId;
       (void)GetPtr(liveInst, &varId);
+      if (varId != 0) {
+        ProcessLoad(varId);
+      }
+    } else if (liveInst->opcode() == SpvOpCopyMemory ||
+               liveInst->opcode() == SpvOpCopyMemorySized) {
+      uint32_t varId;
+      (void)GetPtr(liveInst->GetSingleWordInOperand(kCopyMemorySourceAddrInIdx),
+                   &varId);
       if (varId != 0) {
         ProcessLoad(varId);
       }
