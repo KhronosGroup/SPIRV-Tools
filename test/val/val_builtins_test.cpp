@@ -756,8 +756,8 @@ INSTANTIATE_TEST_CASE_P(
     LayerAndViewportIndexExecutionModelEnabledByCapability,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Layer", "ViewportIndex"),
-            Values("Vertex", "TessellationEvaluation"),
-            Values("Output"), Values("%u32"),
+            Values("Vertex", "TessellationEvaluation"), Values("Output"),
+            Values("%u32"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "requires the ShaderViewportIndexLayerEXT capability"))), );
