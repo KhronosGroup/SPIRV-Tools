@@ -81,6 +81,10 @@ class ValidatorOptions {
     spvValidatorOptionsSetRelaxStoreStruct(options_, val);
   }
 
+  void SetRelaxBlockLayout(bool val) {
+    spvValidatorOptionsSetRelaxBlockLayout(options_, val);
+  }
+
   // Records whether or not the validator should relax the rules on pointer
   // usage in logical addressing mode.
   //
