@@ -191,7 +191,6 @@ bool checkStd140Or430(uint32_t struct_id, bool std140,
   const auto members = getStructMembers(struct_id, vstate);
   for (size_t memberIdx = 0; memberIdx < members.size(); memberIdx++) {
     auto id = members[memberIdx];
-    const auto baseAlignment = getBaseAlignment(id, std140, vstate);
     uint32_t decOffset = 0xffffffff;
     for (auto& decoration : vstate.id_decorations(struct_id)) {
       if (SpvDecorationOffset == decoration.dec_type() &&
@@ -201,6 +200,10 @@ bool checkStd140Or430(uint32_t struct_id, bool std140,
     }
     if (decOffset == 0xffffffff) return false;
     const auto inst = vstate.FindDef(id);
+    if (SpvOpTypeRuntimeArray == inst->opcode()) {
+      // Size of runtime array is unknown, thus we cannot continue validation.
+      return true;
+    }
     if (SpvOpTypeStruct == inst->opcode() &&
         !checkStd140Or430(id, std140, vstate)) {
       return false;
@@ -222,7 +225,7 @@ bool checkStd140Or430(uint32_t struct_id, bool std140,
         }
       }
     }
-    offset = align(offset, baseAlignment);
+    offset = align(offset, getBaseAlignment(id, std140, vstate));
     if (offset != decOffset) {
       return false;
     }
