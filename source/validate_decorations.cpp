@@ -59,6 +59,222 @@ bool hasImportLinkageAttribute(uint32_t id, ValidationState_t& vstate) {
                      });
 }
 
+// Returns a vector of all members of a structure.
+std::vector<uint32_t> getStructMembers(uint32_t struct_id,
+                                       ValidationState_t& vstate) {
+  const auto inst = vstate.FindDef(struct_id);
+  return std::vector<uint32_t>(inst->words().begin() + 2, inst->words().end());
+}
+
+// Returns a vector of all members of a structure that have specific type.
+std::vector<uint32_t> getStructMembers(uint32_t struct_id, SpvOp type,
+                                       ValidationState_t& vstate) {
+  std::vector<uint32_t> members;
+  for (auto id : getStructMembers(struct_id, vstate)) {
+    if (type == vstate.FindDef(id)->opcode()) {
+      members.push_back(id);
+    }
+  }
+  return members;
+}
+
+// Returns whether the given structure is missing Offset decoration for any
+// member. Handles also nested structures.
+bool isMissingOffsetInStruct(uint32_t struct_id, ValidationState_t& vstate) {
+  std::vector<bool> hasOffset(getStructMembers(struct_id, vstate).size(),
+                              false);
+  // Check offsets of member decorations
+  for (auto& decoration : vstate.id_decorations(struct_id)) {
+    if (SpvDecorationOffset == decoration.dec_type() &&
+        Decoration::kInvalidMember != decoration.struct_member_index()) {
+      hasOffset[decoration.struct_member_index()] = true;
+    }
+  }
+  // Check also nested structures
+  bool nestedStructsMissingOffset = false;
+  for (auto id : getStructMembers(struct_id, SpvOpTypeStruct, vstate)) {
+    if (isMissingOffsetInStruct(id, vstate)) {
+      nestedStructsMissingOffset = true;
+      break;
+    }
+  }
+  return nestedStructsMissingOffset ||
+         !std::all_of(hasOffset.begin(), hasOffset.end(),
+                      [](const bool b) { return b; });
+}
+
+// Rounds x up to the next alignment. Assumes alignment is a power of two.
+uint32_t align(uint32_t x, uint32_t alignment) {
+  return (x + alignment - 1) & ~(alignment - 1);
+}
+
+// Returns std140/430 base alignment of struct member.
+uint32_t getBaseAlignment(uint32_t member_id, bool std140,
+                          ValidationState_t& vstate) {
+  const auto inst = vstate.FindDef(member_id);
+  const auto words = inst->words();
+  uint32_t baseAlignment = 0;
+  switch (inst->opcode()) {
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+      baseAlignment = words[2] / 8;
+      break;
+    case SpvOpTypeVector: {
+      const auto componentId = words[2];
+      const auto numComponents = words[3];
+      const auto componentSize = vstate.FindDef(componentId)->words()[2] / 8;
+      baseAlignment = componentSize * (numComponents == 3 ? 4 : numComponents);
+    } break;
+    case SpvOpTypeMatrix:
+    case SpvOpTypeArray:
+      baseAlignment = getBaseAlignment(words[2], std140, vstate);
+      if (std140) baseAlignment = align(baseAlignment, 16u);
+      break;
+    case SpvOpTypeStruct:
+      for (auto id : getStructMembers(member_id, vstate)) {
+        baseAlignment =
+            std::max(baseAlignment, getBaseAlignment(id, std140, vstate));
+      }
+      if (std140) baseAlignment = align(baseAlignment, 16u);
+      break;
+    default:
+      assert(0);
+      break;
+  }
+
+  return baseAlignment;
+}
+
+// Returns std140/430 struct member size.
+uint32_t getMemberSize(uint32_t member_id, bool std140,
+                       ValidationState_t& vstate, bool insideArray = false) {
+  const auto inst = vstate.FindDef(member_id);
+  const auto words = inst->words();
+  auto baseAlignment = getBaseAlignment(member_id, std140, vstate);
+  if (insideArray && std140) baseAlignment = align(baseAlignment, 16u);
+  uint32_t size = 0;
+  switch (inst->opcode()) {
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+      return baseAlignment;
+    case SpvOpTypeVector: {
+      const auto componentId = words[2];
+      const auto numComponents = words[3];
+      const auto componentSize = vstate.FindDef(componentId)->words()[2] / 8;
+      size = componentSize * numComponents;
+      if (insideArray && std140) size = align(size, 16u);
+      return size;
+    }
+    case SpvOpTypeArray:
+      return vstate.FindDef(words[3])->words()[3] *
+             getMemberSize(vstate.FindDef(member_id)->words()[2], std140,
+                           vstate, true);
+    case SpvOpTypeMatrix:
+      return words[3] * baseAlignment;
+    case SpvOpTypeStruct:
+      for (auto id : getStructMembers(member_id, vstate)) {
+        size = align(size, getBaseAlignment(id, std140, vstate));
+        size += getMemberSize(id, std140, vstate);
+      }
+      size = align(size, baseAlignment);
+      return size;
+    default:
+      assert(0);
+      return 0;
+  }
+}
+
+// Checks if struct offsets and strides are std140 or std430 compliant.
+bool checkStd140Or430(uint32_t struct_id, bool std140,
+                      ValidationState_t& vstate) {
+  uint32_t offset = 0;
+  const auto members = getStructMembers(struct_id, vstate);
+  for (size_t memberIdx = 0; memberIdx < members.size(); memberIdx++) {
+    auto id = members[memberIdx];
+    const auto baseAlignment = getBaseAlignment(id, std140, vstate);
+    uint32_t decOffset = 0xffffffff;
+    for (auto& decoration : vstate.id_decorations(struct_id)) {
+      if (SpvDecorationOffset == decoration.dec_type() &&
+          decoration.struct_member_index() == (int)memberIdx) {
+        decOffset = decoration.params()[0];
+      }
+    }
+    if (decOffset == 0xffffffff) return false;
+    const auto inst = vstate.FindDef(id);
+    if (SpvOpTypeStruct == inst->opcode() &&
+        !checkStd140Or430(id, std140, vstate)) {
+      return false;
+    }
+    if (SpvOpTypeArray == inst->opcode()) {
+      const auto typeId = inst->words()[2];
+      const auto arrayInst = vstate.FindDef(typeId);
+      if (SpvOpTypeStruct == arrayInst->opcode() &&
+          !checkStd140Or430(typeId, std140, vstate)) {
+        return false;
+      }
+      // Check array stride
+      for (auto& decoration : vstate.id_decorations(id)) {
+        if (SpvDecorationArrayStride == decoration.dec_type() &&
+            decoration.params()[0] !=
+                getMemberSize(vstate.FindDef(id)->words()[2], std140, vstate,
+                              true)) {
+          return false;
+        }
+      }
+    }
+    offset = align(offset, baseAlignment);
+    if (offset != decOffset) {
+      return false;
+    }
+    offset += getMemberSize(id, std140, vstate);
+  }
+  return true;
+}
+
+// Returns true if structure id has given decoration. Handles also nested
+// structures.
+bool hasDecoration(uint32_t struct_id, SpvDecoration decoration,
+                   ValidationState_t& vstate) {
+  for (auto& dec : vstate.id_decorations(struct_id)) {
+    if (decoration == dec.dec_type()) return true;
+  }
+  for (auto id : getStructMembers(struct_id, SpvOpTypeStruct, vstate)) {
+    if (hasDecoration(id, decoration, vstate)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Returns true if all ids of given type have a specified decoration.
+bool checkForRequiredDecoration(uint32_t struct_id, SpvDecoration decoration,
+                                SpvOp type, ValidationState_t& vstate) {
+  const auto members = getStructMembers(struct_id, vstate);
+  for (size_t memberIdx = 0; memberIdx < members.size(); memberIdx++) {
+    const auto id = members[memberIdx];
+    if (type != vstate.FindDef(id)->opcode()) continue;
+    bool found = false;
+    for (auto& dec : vstate.id_decorations(id)) {
+      if (decoration == dec.dec_type()) found = true;
+    }
+    for (auto& dec : vstate.id_decorations(struct_id)) {
+      if (decoration == dec.dec_type() &&
+          (int)memberIdx == dec.struct_member_index()) {
+        found = true;
+      }
+    }
+    if (!found) {
+      return false;
+    }
+  }
+  for (auto id : getStructMembers(struct_id, SpvOpTypeStruct, vstate)) {
+    if (!checkForRequiredDecoration(id, decoration, type, vstate)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 spv_result_t CheckLinkageAttrOfFunctions(ValidationState_t& vstate) {
   for (const auto& function : vstate.functions()) {
     if (function.block_count() == 0u) {
@@ -225,6 +441,55 @@ spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
+spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
+  for (const auto& id_dec : vstate.id_decorations()) {
+    const uint32_t id = id_dec.first;
+    const auto& decorations = id_dec.second;
+    if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) continue;
+    for (const auto& dec : decorations) {
+      const bool isBlock = SpvDecorationBlock == dec.dec_type();
+      const bool isBufferBlock = SpvDecorationBufferBlock == dec.dec_type();
+      if (isBlock || isBufferBlock) {
+        std::string dec_str = isBlock ? "Block" : "BufferBlock";
+        if (isMissingOffsetInStruct(id, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as " << dec_str
+                 << " must be explicitly laid out with Offset decorations.";
+        } else if (isBlock && !checkStd140Or430(id, true, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as Block"
+                 << " must follow std140 alignment rules.";
+        } else if (isBufferBlock && !checkStd140Or430(id, false, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as BufferBlock"
+                 << " must follow std430 alignment rules.";
+        } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as " << dec_str
+                 << " must not use GLSLShared decoration.";
+        } else if (hasDecoration(id, SpvDecorationGLSLPacked, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as " << dec_str
+                 << " must not use GLSLPacked decoration.";
+        } else if (!checkForRequiredDecoration(id, SpvDecorationArrayStride,
+                                               SpvOpTypeArray, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as " << dec_str
+                 << " must be explicitly laid out with ArrayStride "
+                    "decorations.";
+        } else if (!checkForRequiredDecoration(id, SpvDecorationMatrixStride,
+                                               SpvOpTypeMatrix, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as " << dec_str
+                 << " must be explicitly laid out with MatrixStride "
+                    "decorations.";
+        }
+      }
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 }  // anonymous namespace
 
 namespace libspirv {
@@ -233,6 +498,7 @@ namespace libspirv {
 spv_result_t ValidateDecorations(ValidationState_t& vstate) {
   if (auto error = CheckImportedVariableInitialization(vstate)) return error;
   if (auto error = CheckDecorationsOfEntryPoints(vstate)) return error;
+  if (auto error = CheckDecorationsOfBuffers(vstate)) return error;
   if (auto error = CheckLinkageAttrOfFunctions(vstate)) return error;
   if (auto error = CheckDescriptorSetArrayOfArrays(vstate)) return error;
   return SPV_SUCCESS;
