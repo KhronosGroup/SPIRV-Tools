@@ -725,4 +725,1169 @@ TEST_F(ValidateDecorations, ArrayOfArraysOfDescriptorSetsIsDisallowed) {
                         "descriptor set variables"));
 }
 
+TEST_F(ValidateDecorations, BlockMissingOffsetBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %Output = OpTypeStruct %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be explicitly laid out with Offset decorations"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockMissingOffsetBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %Output = OpTypeStruct %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be explicitly laid out with Offset decorations"));
+}
+
+TEST_F(ValidateDecorations, BlockNestedStructMissingOffsetBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %v3float = OpTypeVector %float 3
+        %int = OpTypeInt 32 1
+          %S = OpTypeStruct %v3float %int
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be explicitly laid out with Offset decorations"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockNestedStructMissingOffsetBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %v3float = OpTypeVector %float 3
+        %int = OpTypeInt 32 1
+          %S = OpTypeStruct %v3float %int
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be explicitly laid out with Offset decorations"));
+}
+
+TEST_F(ValidateDecorations, BlockGLSLSharedBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output Block
+               OpDecorate %Output GLSLShared
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %Output = OpTypeStruct %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not use GLSLShared decoration"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockGLSLSharedBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output BufferBlock
+               OpDecorate %Output GLSLShared
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %Output = OpTypeStruct %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not use GLSLShared decoration"));
+}
+
+TEST_F(ValidateDecorations, BlockNestedStructGLSLSharedBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpDecorate %S GLSLShared
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+        %int = OpTypeInt 32 1
+          %S = OpTypeStruct %int
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not use GLSLShared decoration"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLSharedBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpDecorate %S GLSLShared
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+        %int = OpTypeInt 32 1
+          %S = OpTypeStruct %int
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not use GLSLShared decoration"));
+}
+
+TEST_F(ValidateDecorations, BlockGLSLPackedBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output Block
+               OpDecorate %Output GLSLPacked
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %Output = OpTypeStruct %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not use GLSLPacked decoration"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockGLSLPackedBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output BufferBlock
+               OpDecorate %Output GLSLPacked
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %Output = OpTypeStruct %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not use GLSLPacked decoration"));
+}
+
+TEST_F(ValidateDecorations, BlockNestedStructGLSLPackedBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpDecorate %S GLSLPacked
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+        %int = OpTypeInt 32 1
+          %S = OpTypeStruct %int
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not use GLSLPacked decoration"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLPackedBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpDecorate %S GLSLPacked
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+        %int = OpTypeInt 32 1
+          %S = OpTypeStruct %int
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not use GLSLPacked decoration"));
+}
+
+TEST_F(ValidateDecorations, BlockMissingArrayStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output Block
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+        %int = OpTypeInt 32 1
+      %int_3 = OpConstant %int 3
+      %array = OpTypeArray %float %int_3
+     %Output = OpTypeStruct %array
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with ArrayStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockMissingArrayStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output BufferBlock
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+        %int = OpTypeInt 32 1
+      %int_3 = OpConstant %int 3
+      %array = OpTypeArray %float %int_3
+     %Output = OpTypeStruct %array
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with ArrayStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BlockNestedStructMissingArrayStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+        %int = OpTypeInt 32 1
+      %int_3 = OpConstant %int 3
+      %array = OpTypeArray %float %int_3
+          %S = OpTypeStruct %array
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with ArrayStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockNestedStructMissingArrayStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+        %int = OpTypeInt 32 1
+      %int_3 = OpConstant %int 3
+      %array = OpTypeArray %float %int_3
+          %S = OpTypeStruct %array
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with ArrayStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BlockMissingMatrixStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output Block
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+     %matrix = OpTypeMatrix %v3float 4
+     %Output = OpTypeStruct %matrix
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with MatrixStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockMissingMatrixStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output BufferBlock
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+     %matrix = OpTypeMatrix %v3float 4
+     %Output = OpTypeStruct %matrix
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with MatrixStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BlockMissingMatrixStrideArrayBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output Block
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+     %matrix = OpTypeMatrix %v3float 4
+        %int = OpTypeInt 32 1
+      %int_3 = OpConstant %int 3
+      %array = OpTypeArray %matrix %int_3
+     %Output = OpTypeStruct %matrix
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with MatrixStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockMissingMatrixStrideArrayBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %Output BufferBlock
+               OpMemberDecorate %Output 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+     %matrix = OpTypeMatrix %v3float 4
+        %int = OpTypeInt 32 1
+      %int_3 = OpConstant %int 3
+      %array = OpTypeArray %matrix %int_3
+     %Output = OpTypeStruct %matrix
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with MatrixStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BlockNestedStructMissingMatrixStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %v4float = OpTypeVector %float 4
+     %matrix = OpTypeMatrix %v3float 4
+          %S = OpTypeStruct %matrix
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with MatrixStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockNestedStructMissingMatrixStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 16
+               OpMemberDecorate %Output 2 Offset 32
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %v4float = OpTypeVector %float 4
+     %matrix = OpTypeMatrix %v3float 4
+          %S = OpTypeStruct %matrix
+     %Output = OpTypeStruct %float %v4float %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("must be explicitly laid out with MatrixStride decorations"));
+}
+
+TEST_F(ValidateDecorations, BlockStandardUniformBufferLayout) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %F 0 Offset 0
+               OpMemberDecorate %F 1 Offset 8
+               OpDecorate %_arr_float_uint_2 ArrayStride 16
+               OpDecorate %_arr_mat3v3float_uint_2 ArrayStride 48
+               OpMemberDecorate %O 0 Offset 0
+               OpMemberDecorate %O 1 Offset 16
+               OpMemberDecorate %O 2 Offset 32
+               OpMemberDecorate %O 3 Offset 64
+               OpMemberDecorate %O 4 ColMajor
+               OpMemberDecorate %O 4 Offset 80
+               OpMemberDecorate %O 4 MatrixStride 16
+               OpDecorate %_arr_O_uint_2 ArrayStride 176
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 8
+               OpMemberDecorate %Output 2 Offset 16
+               OpMemberDecorate %Output 3 Offset 32
+               OpMemberDecorate %Output 4 Offset 48
+               OpMemberDecorate %Output 5 Offset 64
+               OpMemberDecorate %Output 6 ColMajor
+               OpMemberDecorate %Output 6 Offset 96
+               OpMemberDecorate %Output 6 MatrixStride 16
+               OpMemberDecorate %Output 7 Offset 128
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+    %v3float = OpTypeVector %float 3
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+          %F = OpTypeStruct %int %v2uint
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%mat2v3float = OpTypeMatrix %v3float 2
+     %v3uint = OpTypeVector %uint 3
+%mat3v3float = OpTypeMatrix %v3float 3
+%_arr_mat3v3float_uint_2 = OpTypeArray %mat3v3float %uint_2
+          %O = OpTypeStruct %v3uint %v2float %_arr_float_uint_2 %v2float %_arr_mat3v3float_uint_2
+%_arr_O_uint_2 = OpTypeArray %O %uint_2
+     %Output = OpTypeStruct %float %v2float %v3float %F %float %_arr_float_uint_2 %mat2v3float %_arr_O_uint_2
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
+  string spirv = R"(
+             OpCapability Shader
+             OpCapability StorageUniform16
+             OpExtension "SPV_KHR_16bit_storage"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %main "main"
+             OpExecutionMode %main LocalSize 1 1 1
+             OpDecorate %f32arr ArrayStride 4
+             OpDecorate %f16arr ArrayStride 2
+             OpMemberDecorate %SSBO32 0 Offset 0
+             OpMemberDecorate %SSBO16 0 Offset 0
+             OpDecorate %SSBO32 BufferBlock
+             OpDecorate %SSBO16 BufferBlock
+     %void = OpTypeVoid
+    %voidf = OpTypeFunction %void
+      %u32 = OpTypeInt 32 0
+      %i32 = OpTypeInt 32 1
+      %f32 = OpTypeFloat 32
+    %uvec3 = OpTypeVector %u32 3
+ %c_i32_32 = OpConstant %i32 32
+%c_i32_128 = OpConstant %i32 128
+   %f32arr = OpTypeArray %f32 %c_i32_128
+      %f16 = OpTypeFloat 16
+   %f16arr = OpTypeArray %f16 %c_i32_128
+   %SSBO32 = OpTypeStruct %f32arr
+   %SSBO16 = OpTypeStruct %f16arr
+%_ptr_Uniform_SSBO32 = OpTypePointer Uniform %SSBO32
+ %varSSBO32 = OpVariable %_ptr_Uniform_SSBO32 Uniform
+%_ptr_Uniform_SSBO16 = OpTypePointer Uniform %SSBO16
+ %varSSBO16 = OpVariable %_ptr_Uniform_SSBO16 Uniform
+     %main = OpFunction %void None %voidf
+    %label = OpLabel
+             OpReturn
+             OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, BufferBlockStandardStorageBufferLayout) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %F 0 Offset 0
+               OpMemberDecorate %F 1 Offset 8
+               OpDecorate %_arr_float_uint_2 ArrayStride 4
+               OpDecorate %_arr_mat3v3float_uint_2 ArrayStride 48
+               OpMemberDecorate %O 0 Offset 0
+               OpMemberDecorate %O 1 Offset 16
+               OpMemberDecorate %O 2 Offset 24
+               OpMemberDecorate %O 3 Offset 32
+               OpMemberDecorate %O 4 ColMajor
+               OpMemberDecorate %O 4 Offset 48
+               OpMemberDecorate %O 4 MatrixStride 16
+               OpDecorate %_arr_O_uint_2 ArrayStride 144
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 8
+               OpMemberDecorate %Output 2 Offset 16
+               OpMemberDecorate %Output 3 Offset 32
+               OpMemberDecorate %Output 4 Offset 48
+               OpMemberDecorate %Output 5 Offset 52
+               OpMemberDecorate %Output 6 ColMajor
+               OpMemberDecorate %Output 6 Offset 64
+               OpMemberDecorate %Output 6 MatrixStride 16
+               OpMemberDecorate %Output 7 Offset 96
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+    %v3float = OpTypeVector %float 3
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+          %F = OpTypeStruct %int %v2uint
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%mat2v3float = OpTypeMatrix %v3float 2
+     %v3uint = OpTypeVector %uint 3
+%mat3v3float = OpTypeMatrix %v3float 3
+%_arr_mat3v3float_uint_2 = OpTypeArray %mat3v3float %uint_2
+          %O = OpTypeStruct %v3uint %v2float %_arr_float_uint_2 %v2float %_arr_mat3v3float_uint_2
+%_arr_O_uint_2 = OpTypeArray %O %uint_2
+     %Output = OpTypeStruct %float %v2float %v3float %F %float %_arr_float_uint_2 %mat2v3float %_arr_O_uint_2
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations,
+       BlockStandardUniformBufferLayoutIncorrectOffset0Bad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %F 0 Offset 0
+               OpMemberDecorate %F 1 Offset 8
+               OpDecorate %_arr_float_uint_2 ArrayStride 16
+               OpDecorate %_arr_mat3v3float_uint_2 ArrayStride 48
+               OpMemberDecorate %O 0 Offset 0
+               OpMemberDecorate %O 1 Offset 16
+               OpMemberDecorate %O 2 Offset 24
+               OpMemberDecorate %O 3 Offset 33
+               OpMemberDecorate %O 4 ColMajor
+               OpMemberDecorate %O 4 Offset 80
+               OpMemberDecorate %O 4 MatrixStride 16
+               OpDecorate %_arr_O_uint_2 ArrayStride 176
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 8
+               OpMemberDecorate %Output 2 Offset 16
+               OpMemberDecorate %Output 3 Offset 32
+               OpMemberDecorate %Output 4 Offset 48
+               OpMemberDecorate %Output 5 Offset 64
+               OpMemberDecorate %Output 6 ColMajor
+               OpMemberDecorate %Output 6 Offset 96
+               OpMemberDecorate %Output 6 MatrixStride 16
+               OpMemberDecorate %Output 7 Offset 128
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+    %v3float = OpTypeVector %float 3
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+          %F = OpTypeStruct %int %v2uint
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%mat2v3float = OpTypeMatrix %v3float 2
+     %v3uint = OpTypeVector %uint 3
+%mat3v3float = OpTypeMatrix %v3float 3
+%_arr_mat3v3float_uint_2 = OpTypeArray %mat3v3float %uint_2
+          %O = OpTypeStruct %v3uint %v2float %_arr_float_uint_2 %v2float %_arr_mat3v3float_uint_2
+%_arr_O_uint_2 = OpTypeArray %O %uint_2
+     %Output = OpTypeStruct %float %v2float %v3float %F %float %_arr_float_uint_2 %mat2v3float %_arr_O_uint_2
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must follow standard uniform buffer layout rules"));
+}
+
+TEST_F(ValidateDecorations,
+       BlockStandardUniformBufferLayoutIncorrectOffset1Bad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %F 0 Offset 0
+               OpMemberDecorate %F 1 Offset 8
+               OpDecorate %_arr_float_uint_2 ArrayStride 16
+               OpDecorate %_arr_mat3v3float_uint_2 ArrayStride 48
+               OpMemberDecorate %O 0 Offset 0
+               OpMemberDecorate %O 1 Offset 16
+               OpMemberDecorate %O 2 Offset 32
+               OpMemberDecorate %O 3 Offset 64
+               OpMemberDecorate %O 4 ColMajor
+               OpMemberDecorate %O 4 Offset 80
+               OpMemberDecorate %O 4 MatrixStride 16
+               OpDecorate %_arr_O_uint_2 ArrayStride 176
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 8
+               OpMemberDecorate %Output 2 Offset 16
+               OpMemberDecorate %Output 3 Offset 32
+               OpMemberDecorate %Output 4 Offset 48
+               OpMemberDecorate %Output 5 Offset 71
+               OpMemberDecorate %Output 6 ColMajor
+               OpMemberDecorate %Output 6 Offset 96
+               OpMemberDecorate %Output 6 MatrixStride 16
+               OpMemberDecorate %Output 7 Offset 128
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+    %v3float = OpTypeVector %float 3
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+          %F = OpTypeStruct %int %v2uint
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%mat2v3float = OpTypeMatrix %v3float 2
+     %v3uint = OpTypeVector %uint 3
+%mat3v3float = OpTypeMatrix %v3float 3
+%_arr_mat3v3float_uint_2 = OpTypeArray %mat3v3float %uint_2
+          %O = OpTypeStruct %v3uint %v2float %_arr_float_uint_2 %v2float %_arr_mat3v3float_uint_2
+%_arr_O_uint_2 = OpTypeArray %O %uint_2
+     %Output = OpTypeStruct %float %v2float %v3float %F %float %_arr_float_uint_2 %mat2v3float %_arr_O_uint_2
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must follow standard uniform buffer layout rules"));
+}
+
+TEST_F(ValidateDecorations, BlockUniformBufferLayoutIncorrectArrayStrideBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %F 0 Offset 0
+               OpMemberDecorate %F 1 Offset 8
+               OpDecorate %_arr_float_uint_2 ArrayStride 16
+               OpDecorate %_arr_mat3v3float_uint_2 ArrayStride 49
+               OpMemberDecorate %O 0 Offset 0
+               OpMemberDecorate %O 1 Offset 16
+               OpMemberDecorate %O 2 Offset 32
+               OpMemberDecorate %O 3 Offset 64
+               OpMemberDecorate %O 4 ColMajor
+               OpMemberDecorate %O 4 Offset 80
+               OpMemberDecorate %O 4 MatrixStride 16
+               OpDecorate %_arr_O_uint_2 ArrayStride 176
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 8
+               OpMemberDecorate %Output 2 Offset 16
+               OpMemberDecorate %Output 3 Offset 32
+               OpMemberDecorate %Output 4 Offset 48
+               OpMemberDecorate %Output 5 Offset 64
+               OpMemberDecorate %Output 6 ColMajor
+               OpMemberDecorate %Output 6 Offset 96
+               OpMemberDecorate %Output 6 MatrixStride 16
+               OpMemberDecorate %Output 7 Offset 128
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+    %v3float = OpTypeVector %float 3
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+          %F = OpTypeStruct %int %v2uint
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%mat2v3float = OpTypeMatrix %v3float 2
+     %v3uint = OpTypeVector %uint 3
+%mat3v3float = OpTypeMatrix %v3float 3
+%_arr_mat3v3float_uint_2 = OpTypeArray %mat3v3float %uint_2
+          %O = OpTypeStruct %v3uint %v2float %_arr_float_uint_2 %v2float %_arr_mat3v3float_uint_2
+%_arr_O_uint_2 = OpTypeArray %O %uint_2
+     %Output = OpTypeStruct %float %v2float %v3float %F %float %_arr_float_uint_2 %mat2v3float %_arr_O_uint_2
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must follow standard uniform buffer layout rules"));
+}
+
+TEST_F(ValidateDecorations,
+       BufferBlockStandardStorageBufferLayoutImproperStraddleBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 8
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+     %Output = OpTypeStruct %float %v3float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must follow standard storage buffer layout rules"));
+}
+
+TEST_F(ValidateDecorations, BlockUniformBufferLayoutOffsetInsidePaddingBad) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpDecorate %_arr_float_uint_2 ArrayStride 16
+               OpMemberDecorate %Output 0 Offset 0
+               OpMemberDecorate %Output 1 Offset 20
+               OpDecorate %Output Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+     %Output = OpTypeStruct %_arr_float_uint_2 %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must follow standard uniform buffer layout rules"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockEmptyStruct) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpMemberDecorate %Output 0 Offset 0
+               OpDecorate %Output BufferBlock
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %S = OpTypeStruct
+     %Output = OpTypeStruct %S
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+ %dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
 }  // anonymous namespace

@@ -473,6 +473,12 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxStoreStruct(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxLogicalPointer(
     spv_validator_options options, bool val);
 
+// Records whether or not the validator should relax the rules on block layout.
+//
+// When relaxed, it will skip checking standard uniform/storage buffer layout.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxBlockLayout(
+    spv_validator_options options, bool val);
+
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
 // be stored into *binary. Any error will be written into *diagnostic if
