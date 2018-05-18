@@ -29,6 +29,7 @@ const uint32_t kExtInstSetIdInIdx = 0;
 const uint32_t kExtInstInstructionInIdx = 1;
 const uint32_t kFMixXIdInIdx = 2;
 const uint32_t kFMixYIdInIdx = 3;
+const uint32_t kFMixAIdInIdx = 4;
 
 // Returns the element width of |type|.
 uint32_t ElementWidth(const analysis::Type* type) {
@@ -1534,6 +1535,79 @@ FoldingRule VectorShuffleFeedingExtract() {
   };
 }
 
+// When an FMix with is feeding an Extract that extracts an element whose
+// corresponding |a| in the FMix is 0 or 1, we can extract from one of the
+// operands of the FMix.
+FoldingRule FMixFeedingExtract() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>&) {
+    assert(inst->opcode() == SpvOpCompositeExtract &&
+           "Wrong opcode.  Should be OpCompositeExtract.");
+    analysis::DefUseManager* def_use_mgr = inst->context()->get_def_use_mgr();
+    analysis::ConstantManager* const_mgr = inst->context()->get_constant_mgr();
+
+    uint32_t composite_id =
+        inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
+    ir::Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
+
+    if (composite_inst->opcode() != SpvOpExtInst) {
+      return false;
+    }
+
+    uint32_t inst_set_id =
+        inst->context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+
+    if (composite_inst->GetSingleWordInOperand(kExtInstSetIdInIdx) !=
+            inst_set_id ||
+        composite_inst->GetSingleWordInOperand(kExtInstInstructionInIdx) !=
+            GLSLstd450FMix) {
+      return false;
+    }
+
+    // Get the |a| for the FMix instruction.
+    uint32_t a_id = composite_inst->GetSingleWordInOperand(kFMixAIdInIdx);
+    const analysis::Constant* a_const = const_mgr->FindDeclaredConstant(a_id);
+
+    if (!a_const) {
+      return false;
+    }
+
+    uint32_t componenet_idx = inst->GetSingleWordInOperand(1);
+    bool use_x = false;
+
+    if (a_const->AsNullConstant()) {
+      use_x = true;
+    } else {
+      const analysis::VectorConstant* a_vec_const = a_const->AsVectorConstant();
+      assert(a_vec_const);
+
+      const analysis::Constant* element_const =
+          a_vec_const->GetComponents()[componenet_idx];
+
+      double element_value = element_const->GetValueAsDouble();
+      if (element_value == 0.0) {
+        use_x = true;
+      } else if (element_value == 1.0) {
+        use_x = false;
+      } else {
+        return false;
+      }
+    }
+
+    // Get the id of the of the vector the element comes from.
+    uint32_t new_vector = 0;
+    if (use_x) {
+      new_vector = composite_inst->GetSingleWordInOperand(kFMixXIdInIdx);
+    } else {
+      new_vector = composite_inst->GetSingleWordInOperand(kFMixYIdInIdx);
+    }
+
+    // Update the extract instruction.
+    inst->SetInOperand(kExtractCompositeIdInIdx, {new_vector});
+    return true;
+  };
+}
+
 FoldingRule RedundantPhi() {
   // An OpPhi instruction where all values are the same or the result of the phi
   // itself, can be replaced by the value itself.
@@ -1928,6 +2002,7 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
   rules_[SpvOpCompositeExtract].push_back(CompositeConstructFeedingExtract());
   rules_[SpvOpCompositeExtract].push_back(VectorShuffleFeedingExtract());
+  rules_[SpvOpCompositeExtract].push_back(FMixFeedingExtract());
 
   rules_[SpvOpDot].push_back(DotProductDoingExtract());
 
