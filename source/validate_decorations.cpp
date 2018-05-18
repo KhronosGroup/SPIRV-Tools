@@ -108,8 +108,8 @@ uint32_t align(uint32_t x, uint32_t alignment) {
   return (x + alignment - 1) & ~(alignment - 1);
 }
 
-// Returns std140/430 base alignment of struct member.
-uint32_t getBaseAlignment(uint32_t member_id, bool std140,
+// Returns base alignment of struct member.
+uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
                           ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(member_id);
   const auto words = inst->words();
@@ -119,23 +119,21 @@ uint32_t getBaseAlignment(uint32_t member_id, bool std140,
     case SpvOpTypeFloat:
       baseAlignment = words[2] / 8;
       break;
-    case SpvOpTypeVector: {
-      const auto componentId = words[2];
-      const auto numComponents = words[3];
-      const auto componentSize = vstate.FindDef(componentId)->words()[2] / 8;
-      baseAlignment = componentSize * (numComponents == 3 ? 4 : numComponents);
-    } break;
+    case SpvOpTypeVector:
+      baseAlignment = getBaseAlignment(words[2], roundUp, vstate);
+      break;
     case SpvOpTypeMatrix:
     case SpvOpTypeArray:
-      baseAlignment = getBaseAlignment(words[2], std140, vstate);
-      if (std140) baseAlignment = align(baseAlignment, 16u);
+    case SpvOpTypeRuntimeArray:
+      baseAlignment = getBaseAlignment(words[2], roundUp, vstate);
+      if (roundUp) baseAlignment = align(baseAlignment, 16u);
       break;
     case SpvOpTypeStruct:
       for (auto id : getStructMembers(member_id, vstate)) {
         baseAlignment =
-            std::max(baseAlignment, getBaseAlignment(id, std140, vstate));
+            std::max(baseAlignment, getBaseAlignment(id, roundUp, vstate));
       }
-      if (std140) baseAlignment = align(baseAlignment, 16u);
+      if (roundUp) baseAlignment = align(baseAlignment, 16u);
       break;
     default:
       assert(0);
@@ -145,91 +143,95 @@ uint32_t getBaseAlignment(uint32_t member_id, bool std140,
   return baseAlignment;
 }
 
-// Returns std140/430 struct member size.
-uint32_t getMemberSize(uint32_t member_id, bool std140,
-                       ValidationState_t& vstate, bool insideArray = false) {
-  const auto inst = vstate.FindDef(member_id);
+// A member is defined to improperly straddle if either of the following are
+// true:
+// - It is a vector with total size less than or equal to 16 bytes, and has
+// Offset decorations placing its first byte at F and its last byte at L, where
+// floor(F / 16) != floor(L / 16).
+// - It is a vector with total size greater than 16 bytes and has its Offset
+// decorations placing its first byte at a non-integer multiple of 16.
+bool hasImproperStraddle(uint32_t id, uint32_t offset,
+                         ValidationState_t& vstate) {
+  const auto inst = vstate.FindDef(id);
   const auto words = inst->words();
-  auto baseAlignment = getBaseAlignment(member_id, std140, vstate);
-  if (insideArray && std140) baseAlignment = align(baseAlignment, 16u);
-  uint32_t size = 0;
-  switch (inst->opcode()) {
-    case SpvOpTypeInt:
-    case SpvOpTypeFloat:
-      return baseAlignment;
-    case SpvOpTypeVector: {
-      const auto componentId = words[2];
-      const auto numComponents = words[3];
-      const auto componentSize = vstate.FindDef(componentId)->words()[2] / 8;
-      size = componentSize * numComponents;
-      if (insideArray && std140) size = align(size, 16u);
-      return size;
-    }
-    case SpvOpTypeArray:
-      return vstate.FindDef(words[3])->words()[3] *
-             getMemberSize(vstate.FindDef(member_id)->words()[2], std140,
-                           vstate, true);
-    case SpvOpTypeMatrix:
-      return words[3] * baseAlignment;
-    case SpvOpTypeStruct:
-      for (auto id : getStructMembers(member_id, vstate)) {
-        size = align(size, getBaseAlignment(id, std140, vstate));
-        size += getMemberSize(id, std140, vstate);
-      }
-      size = align(size, baseAlignment);
-      return size;
-    default:
-      assert(0);
-      return 0;
+  const auto componentId = words[2];
+  const auto numComponents = words[3];
+  const auto componentSize = vstate.FindDef(componentId)->words()[2] / 8;
+  const auto size = componentSize * numComponents;
+  const auto F = offset;
+  const auto L = offset + size - 1;
+  const auto floorF = floor((float)F / 16.0f);
+  const auto floorL = floor((float)L / 16.0f);
+  if (size <= 16) {
+    if (floorF != floorL) return true;
+  } else {
+    if (F % 16 != 0) return true;
   }
+  return false;
 }
 
-// Checks if struct offsets and strides are std140 or std430 compliant.
-bool checkStd140Or430(uint32_t struct_id, bool std140,
-                      ValidationState_t& vstate) {
-  uint32_t offset = 0;
+// Check alignment of x. For storage buffers the alignment can be either rounded
+// up or not.
+bool checkAlignment(uint32_t x, uint32_t alignment, uint32_t alignmentRoundedUp,
+                    bool isBlock) {
+  if (isBlock) {
+    if (x % alignmentRoundedUp != 0) return false;
+  } else {
+    if (x % alignment != 0 && x % alignmentRoundedUp != 0) return false;
+  }
+  return true;
+}
+
+// Checks for standard layout rules.
+bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
   const auto members = getStructMembers(struct_id, vstate);
   for (size_t memberIdx = 0; memberIdx < members.size(); memberIdx++) {
     auto id = members[memberIdx];
-    uint32_t decOffset = 0xffffffff;
+    const auto baseAlignment = getBaseAlignment(id, false, vstate);
+    const auto baseAlignmentRoundedUp = getBaseAlignment(id, true, vstate);
+    const auto inst = vstate.FindDef(id);
+    const auto opcode = inst->opcode();
+    uint32_t offset = 0xffffffff;
     for (auto& decoration : vstate.id_decorations(struct_id)) {
       if (SpvDecorationOffset == decoration.dec_type() &&
           decoration.struct_member_index() == (int)memberIdx) {
-        decOffset = decoration.params()[0];
+        offset = decoration.params()[0];
       }
     }
-    if (decOffset == 0xffffffff) return false;
-    const auto inst = vstate.FindDef(id);
-    if (SpvOpTypeRuntimeArray == inst->opcode()) {
-      // Size of runtime array is unknown, thus we cannot continue validation.
-      return true;
-    }
-    if (SpvOpTypeStruct == inst->opcode() &&
-        !checkStd140Or430(id, std140, vstate)) {
+    // Check offset.
+    if (offset == 0xffffffff) return false;
+    if (!checkAlignment(offset, baseAlignment, baseAlignmentRoundedUp, isBlock))
       return false;
+    // Check improper straddle of vectors.
+    if (SpvOpTypeVector == opcode && hasImproperStraddle(id, offset, vstate))
+      return false;
+    // Check struct members recursively.
+    if (SpvOpTypeStruct == opcode && !checkLayout(id, isBlock, vstate))
+      return false;
+    // Check matrix stride.
+    if (SpvOpTypeMatrix == opcode) {
+      for (auto& decoration : vstate.id_decorations(id)) {
+        if (SpvDecorationMatrixStride == decoration.dec_type() &&
+            !checkAlignment(decoration.params()[0], baseAlignment,
+                            baseAlignmentRoundedUp, isBlock))
+          return false;
+      }
     }
-    if (SpvOpTypeArray == inst->opcode()) {
+    // Check arrays.
+    if (SpvOpTypeArray == opcode) {
       const auto typeId = inst->words()[2];
       const auto arrayInst = vstate.FindDef(typeId);
       if (SpvOpTypeStruct == arrayInst->opcode() &&
-          !checkStd140Or430(typeId, std140, vstate)) {
+          !checkLayout(typeId, isBlock, vstate))
         return false;
-      }
-      // Check array stride
+      // Check array stride.
       for (auto& decoration : vstate.id_decorations(id)) {
         if (SpvDecorationArrayStride == decoration.dec_type() &&
-            decoration.params()[0] !=
-                getMemberSize(vstate.FindDef(id)->words()[2], std140, vstate,
-                              true)) {
+            !checkAlignment(decoration.params()[0], baseAlignment,
+                            baseAlignmentRoundedUp, isBlock))
           return false;
-        }
       }
     }
-    offset = align(offset, getBaseAlignment(id, std140, vstate));
-    if (offset != decOffset) {
-      return false;
-    }
-    offset += getMemberSize(id, std140, vstate);
   }
   return true;
 }
@@ -458,14 +460,6 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
           return vstate.diag(SPV_ERROR_INVALID_ID)
                  << "Structure id " << id << " decorated as " << dec_str
                  << " must be explicitly laid out with Offset decorations.";
-        } else if (isBlock && !checkStd140Or430(id, true, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as Block"
-                 << " must follow std140 alignment rules.";
-        } else if (isBufferBlock && !checkStd140Or430(id, false, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as BufferBlock"
-                 << " must follow std430 alignment rules.";
         } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
           return vstate.diag(SPV_ERROR_INVALID_ID)
                  << "Structure id " << id << " decorated as " << dec_str
@@ -486,6 +480,14 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                  << "Structure id " << id << " decorated as " << dec_str
                  << " must be explicitly laid out with MatrixStride "
                     "decorations.";
+        } else if (isBlock && !checkLayout(id, true, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as Block"
+                 << " must follow standard uniform buffer layout rules.";
+        } else if (isBufferBlock && !checkLayout(id, false, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Structure id " << id << " decorated as BufferBlock"
+                 << " must follow standard storage buffer layout rules.";
         }
       }
     }
