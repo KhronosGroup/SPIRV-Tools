@@ -240,6 +240,8 @@ OpName %main "main"
 %v4double_0_0_0_1 = OpConstantComposite %v4double %double_0 %double_0 %double_0 %double_1
 %v4double_0_1_0_0 = OpConstantComposite %v4double %double_0 %double_1 %double_null %double_0
 %v4double_1_1_1_1 = OpConstantComposite %v4double %double_1 %double_1 %double_1 %double_1
+%v4double_1_1_1_0p5 = OpConstantComposite %v4double %double_1 %double_1 %double_1 %double_0p5
+%v4double_null = OpConstantNull %v4double
 %v4float_n1_2_1_3 = OpConstantComposite %v4float %float_n1 %float_2 %float_1 %float_3
 )";
 
@@ -5433,7 +5435,85 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractMatchingTest, MatchingInstructionFolding
             "%4 = OpCompositeExtract %int %3 1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        4, true)
+        4, true),
+    // Test case 3: Using fmix feeding extract with a 1 in the a position.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: [[v4double:%\\w+]] = OpTypeVector [[double]] 4\n" +
+            "; CHECK: [[ptr_v4double:%\\w+]] = OpTypePointer Function [[v4double]]\n" +
+            "; CHECK: [[m:%\\w+]] = OpVariable [[ptr_v4double]] Function\n" +
+            "; CHECK: [[n:%\\w+]] = OpVariable [[ptr_v4double]] Function\n" +
+            "; CHECK: [[ld:%\\w+]] = OpLoad [[v4double]] [[n]]\n" +
+            "; CHECK: %5 = OpCompositeExtract [[double]] [[ld]] 1\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%m = OpVariable %_ptr_v4double Function\n" +
+            "%n = OpVariable %_ptr_v4double Function\n" +
+            "%2 = OpLoad %v4double %m\n" +
+            "%3 = OpLoad %v4double %n\n" +
+            "%4 = OpExtInst %v4double %1 FMix %2 %3 %v4double_0_1_0_0\n" +
+            "%5 = OpCompositeExtract %double %4 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, true),
+    // Test case 4: Using fmix feeding extract with a 0 in the a position.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: [[v4double:%\\w+]] = OpTypeVector [[double]] 4\n" +
+            "; CHECK: [[ptr_v4double:%\\w+]] = OpTypePointer Function [[v4double]]\n" +
+            "; CHECK: [[m:%\\w+]] = OpVariable [[ptr_v4double]] Function\n" +
+            "; CHECK: [[n:%\\w+]] = OpVariable [[ptr_v4double]] Function\n" +
+            "; CHECK: [[ld:%\\w+]] = OpLoad [[v4double]] [[m]]\n" +
+            "; CHECK: %5 = OpCompositeExtract [[double]] [[ld]] 2\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%m = OpVariable %_ptr_v4double Function\n" +
+            "%n = OpVariable %_ptr_v4double Function\n" +
+            "%2 = OpLoad %v4double %m\n" +
+            "%3 = OpLoad %v4double %n\n" +
+            "%4 = OpExtInst %v4double %1 FMix %2 %3 %v4double_0_1_0_0\n" +
+            "%5 = OpCompositeExtract %double %4 2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, true),
+    // Test case 5: Using fmix feeding extract with a null for the alpha
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: [[v4double:%\\w+]] = OpTypeVector [[double]] 4\n" +
+            "; CHECK: [[ptr_v4double:%\\w+]] = OpTypePointer Function [[v4double]]\n" +
+            "; CHECK: [[m:%\\w+]] = OpVariable [[ptr_v4double]] Function\n" +
+            "; CHECK: [[n:%\\w+]] = OpVariable [[ptr_v4double]] Function\n" +
+            "; CHECK: [[ld:%\\w+]] = OpLoad [[v4double]] [[m]]\n" +
+            "; CHECK: %5 = OpCompositeExtract [[double]] [[ld]] 0\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%m = OpVariable %_ptr_v4double Function\n" +
+            "%n = OpVariable %_ptr_v4double Function\n" +
+            "%2 = OpLoad %v4double %m\n" +
+            "%3 = OpLoad %v4double %n\n" +
+            "%4 = OpExtInst %v4double %1 FMix %2 %3 %v4double_null\n" +
+            "%5 = OpCompositeExtract %double %4 0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, true),
+    // Test case 6: Don't fold: Using fmix feeding extract with 0.5 in the a
+    // position.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%m = OpVariable %_ptr_v4double Function\n" +
+            "%n = OpVariable %_ptr_v4double Function\n" +
+            "%2 = OpLoad %v4double %m\n" +
+            "%3 = OpLoad %v4double %n\n" +
+            "%4 = OpExtInst %v4double %1 FMix %2 %3 %v4double_1_1_1_0p5\n" +
+            "%5 = OpCompositeExtract %double %4 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, false)
 ));
 
 INSTANTIATE_TEST_CASE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
