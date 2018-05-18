@@ -19,7 +19,6 @@
 #include <cstddef>
 #include <unordered_set>
 
-#include <iostream>
 namespace libspirv {
 
 Construct::Construct(ConstructType construct_type, BasicBlock* entry,
@@ -71,6 +70,7 @@ void Construct::set_exit(BasicBlock* block) { exit_block_ = block; }
 Construct::ConstructBlockSet Construct::blocks(Function* function) const {
   auto header = entry_block();
   auto merge = exit_block();
+  assert(header && merge);
   int header_depth = function->GetBlockDepth(const_cast<BasicBlock*>(header));
   ConstructBlockSet construct_blocks;
   std::unordered_set<BasicBlock*> corresponding_headers;
