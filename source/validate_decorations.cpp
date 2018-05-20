@@ -20,6 +20,7 @@
 #include "diagnostic.h"
 #include "opcode.h"
 #include "spirv_target_env.h"
+#include "spirv_validator_options.h"
 #include "val/validation_state.h"
 
 using libspirv::Decoration;
@@ -184,6 +185,7 @@ bool checkAlignment(uint32_t x, uint32_t alignment, uint32_t alignmentRoundedUp,
 
 // Checks for standard layout rules.
 bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
+  if (vstate.options()->relax_block_layout) return true;
   const auto members = getStructMembers(struct_id, vstate);
   for (size_t memberIdx = 0; memberIdx < members.size(); memberIdx++) {
     auto id = members[memberIdx];
