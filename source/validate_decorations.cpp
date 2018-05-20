@@ -144,6 +144,52 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
   return baseAlignment;
 }
 
+// Returns size of a struct member. Doesn't include padding at the end of struct
+// or array.
+uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
+  const auto inst = vstate.FindDef(member_id);
+  const auto words = inst->words();
+  const auto baseAlignment = getBaseAlignment(member_id, roundUp, vstate);
+  uint32_t size = 0;
+  switch (inst->opcode()) {
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+      return baseAlignment;
+    case SpvOpTypeVector: {
+      const auto componentId = words[2];
+      const auto numComponents = words[3];
+      const auto componentSize = getSize(componentId, roundUp, vstate);
+      size = componentSize * numComponents;
+      return size;
+    }
+    case SpvOpTypeArray:
+      return (vstate.FindDef(words[3])->words()[3] - 1) * baseAlignment +
+             getSize(vstate.FindDef(member_id)->words()[2], roundUp, vstate);
+    case SpvOpTypeMatrix:
+      return words[3] * baseAlignment;
+    case SpvOpTypeStruct: {
+      const auto members = getStructMembers(member_id, vstate);
+      const auto lastIdx = members.size() - 1;
+      const auto& lastMember = members.back();
+      uint32_t offset = 0xffffffff;
+      // Find the offset of the last element and add the size.
+      for (auto& decoration : vstate.id_decorations(member_id)) {
+        if (SpvDecorationOffset == decoration.dec_type() &&
+            decoration.struct_member_index() == (int)lastIdx) {
+          offset = decoration.params()[0];
+        }
+      }
+      assert(offset != 0xffffffff);
+      size = offset + getSize(lastMember, roundUp, vstate);
+    }
+      return size;
+    default:
+      assert(0);
+      return 0;
+  }
+  return size;
+}
+
 // A member is defined to improperly straddle if either of the following are
 // true:
 // - It is a vector with total size less than or equal to 16 bytes, and has
@@ -187,6 +233,7 @@ bool checkAlignment(uint32_t x, uint32_t alignment, uint32_t alignmentRoundedUp,
 bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
   if (vstate.options()->relax_block_layout) return true;
   const auto members = getStructMembers(struct_id, vstate);
+  uint32_t padStart = 0, padEnd = 0;
   for (size_t memberIdx = 0; memberIdx < members.size(); memberIdx++) {
     auto id = members[memberIdx];
     const auto baseAlignment = getBaseAlignment(id, false, vstate);
@@ -200,10 +247,12 @@ bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
         offset = decoration.params()[0];
       }
     }
+    const auto lastByte = getSize(id, isBlock, vstate) - 1;
     // Check offset.
     if (offset == 0xffffffff) return false;
     if (!checkAlignment(offset, baseAlignment, baseAlignmentRoundedUp, isBlock))
       return false;
+    if (offset >= padStart && offset + lastByte <= padEnd) return false;
     // Check improper straddle of vectors.
     if (SpvOpTypeVector == opcode && hasImproperStraddle(id, offset, vstate))
       return false;
@@ -232,6 +281,13 @@ bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
             !checkAlignment(decoration.params()[0], baseAlignment,
                             baseAlignmentRoundedUp, isBlock))
           return false;
+      }
+      if (SpvOpTypeArray == opcode || SpvOpTypeStruct == opcode) {
+        const auto alignment = isBlock ? baseAlignmentRoundedUp : baseAlignment;
+        padStart = lastByte + 1;
+        padEnd = align(lastByte, alignment);
+      } else {
+        padStart = padEnd = 0;
       }
     }
   }
