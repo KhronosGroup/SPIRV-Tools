@@ -150,7 +150,6 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(member_id);
   const auto words = inst->words();
   const auto baseAlignment = getBaseAlignment(member_id, roundUp, vstate);
-  uint32_t size = 0;
   switch (inst->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
@@ -159,12 +158,13 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
       const auto componentId = words[2];
       const auto numComponents = words[3];
       const auto componentSize = getSize(componentId, roundUp, vstate);
-      size = componentSize * numComponents;
-      return size;
+      return componentSize * numComponents;
     }
     case SpvOpTypeArray:
       return (vstate.FindDef(words[3])->words()[3] - 1) * baseAlignment +
              getSize(vstate.FindDef(member_id)->words()[2], roundUp, vstate);
+    case SpvOpTypeRuntimeArray:
+      return 0;
     case SpvOpTypeMatrix:
       return words[3] * baseAlignment;
     case SpvOpTypeStruct: {
@@ -180,14 +180,12 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
         }
       }
       assert(offset != 0xffffffff);
-      size = offset + getSize(lastMember, roundUp, vstate);
+      return offset + getSize(lastMember, roundUp, vstate);
     }
-      return size;
     default:
       assert(0);
       return 0;
   }
-  return size;
 }
 
 // A member is defined to improperly straddle if either of the following are
