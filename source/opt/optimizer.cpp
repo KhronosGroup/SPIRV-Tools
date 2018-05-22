@@ -31,6 +31,11 @@ struct Optimizer::PassToken::Impl {
 Optimizer::PassToken::PassToken(
     std::unique_ptr<Optimizer::PassToken::Impl> impl)
     : impl_(std::move(impl)) {}
+
+Optimizer::PassToken::PassToken(
+    std::unique_ptr<opt::Pass>&& pass)
+    : impl_(MakeUnique<Optimizer::PassToken::Impl>(std::move(pass))) {}
+
 Optimizer::PassToken::PassToken(PassToken&& that)
     : impl_(std::move(that.impl_)) {}
 
