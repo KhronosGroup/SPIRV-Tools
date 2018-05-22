@@ -220,7 +220,7 @@ TEST_P(ValidateLayout, Layout) {
   // clang-format on
 }
 
-TEST_F(ValidateLayout, MemoryModelMissing) {
+TEST_F(ValidateLayout, MemoryModelMissingBeforeEntryPoint) {
   string str = R"(
     OpCapability Matrix
     OpExtension "TestExtension"
@@ -235,6 +235,15 @@ TEST_F(ValidateLayout, MemoryModelMissing) {
       getDiagnosticString(),
       HasSubstr(
           "EntryPoint cannot appear before the memory model instruction"));
+}
+
+TEST_F(ValidateLayout, MemoryModelMissing) {
+  char str[] = R"(OpCapability Linkage)";
+  CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing required OpMemoryModel instruction"));
 }
 
 TEST_F(ValidateLayout, FunctionDefinitionBeforeDeclarationBad) {
