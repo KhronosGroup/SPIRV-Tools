@@ -263,7 +263,10 @@ class ValidationState_t {
   void set_addressing_model(SpvAddressingModel am);
 
   /// Returns true if the OpMemoryModel was found.
-  bool has_memory_model_specified() const { return has_memory_model_specified_; }
+  bool has_memory_model_specified() const {
+    return addressing_model_ != SpvAddressingModelMax &&
+           memory_model_ != SpvAddressingModelMax;
+  }
 
   /// Returns the addressing model of this module, or Logical if uninitialized.
   SpvAddressingModel addressing_model() const;
@@ -547,7 +550,6 @@ class ValidationState_t {
 
   AssemblyGrammar grammar_;
 
-  bool has_memory_model_specified_ ;
   SpvAddressingModel addressing_model_;
   SpvMemoryModel memory_model_;
 
