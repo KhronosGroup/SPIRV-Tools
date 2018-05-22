@@ -158,6 +158,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       local_vars_(),
       struct_nesting_depth_(),
       grammar_(ctx),
+      has_memory_model_specified_(false),
       addressing_model_(SpvAddressingModelLogical),
       memory_model_(SpvMemoryModelSimple),
       in_function_(false) {
@@ -363,6 +364,7 @@ bool ValidationState_t::HasAnyOfExtensions(
 }
 
 void ValidationState_t::set_addressing_model(SpvAddressingModel am) {
+  has_memory_model_specified_ = true;
   addressing_model_ = am;
 }
 
@@ -371,6 +373,7 @@ SpvAddressingModel ValidationState_t::addressing_model() const {
 }
 
 void ValidationState_t::set_memory_model(SpvMemoryModel mm) {
+  has_memory_model_specified_ = true;
   memory_model_ = mm;
 }
 

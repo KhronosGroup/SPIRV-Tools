@@ -279,6 +279,10 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
                                   ProcessInstruction, pDiagnostic))
     return error;
 
+  if (!vstate->has_memory_model_specified())
+    return vstate->diag(SPV_ERROR_INVALID_LAYOUT)
+           << "Missing required OpMemoryModel instruction.";
+
   if (vstate->in_function_body())
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT)
            << "Missing OpFunctionEnd at end of module.";
