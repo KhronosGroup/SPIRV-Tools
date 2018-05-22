@@ -241,10 +241,9 @@ TEST_F(ValidateLayout, MemoryModelMissing) {
   char str[] = R"(OpCapability Linkage)";
   CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT,
-          ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing required OpMemoryModel instruction"));
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing required OpMemoryModel instruction"));
 }
 
 TEST_F(ValidateLayout, FunctionDefinitionBeforeDeclarationBad) {
