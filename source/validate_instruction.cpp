@@ -488,6 +488,10 @@ spv_result_t InstructionPass(ValidationState_t& _,
     _.RegisterCapability(
         static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
   } else if (opcode == SpvOpMemoryModel) {
+    if (_.has_memory_model_specified()) {
+      return _.diag(SPV_ERROR_INVALID_LAYOUT)
+             << "OpMemoryModel should only be provided once.";
+    }
     _.set_addressing_model(
         static_cast<SpvAddressingModel>(inst->words[inst->operands[0].offset]));
     _.set_memory_model(

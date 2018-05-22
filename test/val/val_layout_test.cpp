@@ -246,6 +246,21 @@ TEST_F(ValidateLayout, MemoryModelMissing) {
               HasSubstr("Missing required OpMemoryModel instruction"));
 }
 
+TEST_F(ValidateLayout, MemoryModelSpecifiedTwice) {
+  char str[] = R"(
+    OpCapability Linkage
+    OpCapability Shader
+    OpMemoryModel Logical Simple
+    OpMemoryModel Logical Simple
+    )";
+
+  CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpMemoryModel should only be provided once"));
+}
+
 TEST_F(ValidateLayout, FunctionDefinitionBeforeDeclarationBad) {
   char str[] = R"(
            OpCapability Shader
