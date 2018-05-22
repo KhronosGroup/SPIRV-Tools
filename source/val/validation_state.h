@@ -265,7 +265,7 @@ class ValidationState_t {
   /// Returns true if the OpMemoryModel was found.
   bool has_memory_model_specified() const {
     return addressing_model_ != SpvAddressingModelMax &&
-           memory_model_ != SpvAddressingModelMax;
+           memory_model_ != SpvMemoryModelMax;
   }
 
   /// Returns the addressing model of this module, or Logical if uninitialized.
