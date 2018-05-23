@@ -37,7 +37,7 @@ using ::testing::ValuesIn;
 
 using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
 
-string kGLSL450MemoryModel = R"(
+string kOpCapabilitySetup = R"(
      OpCapability Shader
      OpCapability Linkage
      OpCapability Addresses
@@ -49,6 +49,9 @@ string kGLSL450MemoryModel = R"(
      OpCapability Int16
      OpCapability Int64
      OpCapability Float64
+)";
+
+string kGLSL450MemoryModel = kOpCapabilitySetup + R"(
      OpMemoryModel Logical GLSL450
 )";
 
@@ -4316,7 +4319,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVoid) {
 
 TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInPhysical) {
   // It's valid to return a pointer in a physical addressing model.
-  string spirv = kGLSL450MemoryModel + R"(
+  string spirv = kOpCapabilitySetup + R"(
      OpMemoryModel Physical32 OpenCL
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
@@ -4333,7 +4336,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInPhysical) {
 
 TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInLogical) {
   // It's invalid to return a pointer in a physical addressing model.
-  string spirv = kGLSL450MemoryModel + R"(
+  string spirv = kOpCapabilitySetup + R"(
      OpMemoryModel Logical GLSL450
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
