@@ -120,9 +120,15 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
     case SpvOpTypeFloat:
       baseAlignment = words[2] / 8;
       break;
-    case SpvOpTypeVector:
-      baseAlignment = getBaseAlignment(words[2], roundUp, vstate);
+    case SpvOpTypeVector: {
+      const auto componentId = words[2];
+      const auto numComponents = words[3];
+      const auto componentAlignment =
+          getBaseAlignment(componentId, roundUp, vstate);
+      baseAlignment =
+          componentAlignment * (numComponents == 3 ? 4 : numComponents);
       break;
+    }
     case SpvOpTypeMatrix:
     case SpvOpTypeArray:
     case SpvOpTypeRuntimeArray:
@@ -160,9 +166,13 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
       const auto componentSize = getSize(componentId, roundUp, vstate);
       return componentSize * numComponents;
     }
-    case SpvOpTypeArray:
-      return (vstate.FindDef(words[3])->words()[3] - 1) * baseAlignment +
+    case SpvOpTypeArray: {
+      const auto sizeInst = vstate.FindDef(words[3]);
+      if (SpvOpSpecConstant == sizeInst->opcode()) return 0;
+      assert(SpvOpConstant == sizeInst->opcode());
+      return (sizeInst->words()[3] - 1) * baseAlignment +
              getSize(vstate.FindDef(member_id)->words()[2], roundUp, vstate);
+    }
     case SpvOpTypeRuntimeArray:
       return 0;
     case SpvOpTypeMatrix:
@@ -199,10 +209,7 @@ bool hasImproperStraddle(uint32_t id, uint32_t offset,
                          ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(id);
   const auto words = inst->words();
-  const auto componentId = words[2];
-  const auto numComponents = words[3];
-  const auto componentSize = vstate.FindDef(componentId)->words()[2] / 8;
-  const auto size = componentSize * numComponents;
+  const auto size = getSize(id, false, vstate);
   const auto F = offset;
   const auto L = offset + size - 1;
   const auto floorF = floor((float)F / 16.0f);
@@ -503,50 +510,58 @@ spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
 }
 
 spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
-  for (const auto& id_dec : vstate.id_decorations()) {
-    const uint32_t id = id_dec.first;
-    const auto& decorations = id_dec.second;
-    if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) continue;
-    for (const auto& dec : decorations) {
-      const bool isBlock = SpvDecorationBlock == dec.dec_type();
-      const bool isBufferBlock = SpvDecorationBufferBlock == dec.dec_type();
-      if (isBlock || isBufferBlock) {
-        std::string dec_str = isBlock ? "Block" : "BufferBlock";
-        if (isMissingOffsetInStruct(id, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as " << dec_str
-                 << " must be explicitly laid out with Offset decorations.";
-        } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as " << dec_str
-                 << " must not use GLSLShared decoration.";
-        } else if (hasDecoration(id, SpvDecorationGLSLPacked, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as " << dec_str
-                 << " must not use GLSLPacked decoration.";
-        } else if (!checkForRequiredDecoration(id, SpvDecorationArrayStride,
-                                               SpvOpTypeArray, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as " << dec_str
-                 << " must be explicitly laid out with ArrayStride "
-                    "decorations.";
-        } else if (!checkForRequiredDecoration(id, SpvDecorationMatrixStride,
-                                               SpvOpTypeMatrix, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as " << dec_str
-                 << " must be explicitly laid out with MatrixStride "
-                    "decorations.";
-        } else if (isBlock && !checkLayout(id, true, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as Block"
-                 << " must follow standard uniform buffer layout rules.";
-        } else if (isBufferBlock && !checkLayout(id, false, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "Structure id " << id << " decorated as BufferBlock"
-                 << " must follow standard storage buffer layout rules.";
+  for (const auto& def : vstate.all_definitions()) {
+    const auto inst = def.second;
+    const auto words = inst->words();
+    if (SpvOpVariable == inst->opcode() &&
+        (SpvStorageClassUniform == words[3] ||
+         SpvStorageClassPushConstant == words[3])) {
+      const auto ptrInst = vstate.FindDef(words[1]);
+      assert(SpvOpTypePointer == ptrInst->opcode());
+      const auto id = ptrInst->words()[3];
+      if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) continue;
+      for (const auto& dec : vstate.id_decorations(id)) {
+        const bool isBlock = SpvDecorationBlock == dec.dec_type();
+        const bool isBufferBlock = SpvDecorationBufferBlock == dec.dec_type();
+        if (isBlock || isBufferBlock) {
+          std::string dec_str = isBlock ? "Block" : "BufferBlock";
+          if (isMissingOffsetInStruct(id, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID)
+                   << "Structure id " << id << " decorated as " << dec_str
+                   << " must be explicitly laid out with Offset decorations.";
+          } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID)
+                   << "Structure id " << id << " decorated as " << dec_str
+                   << " must not use GLSLShared decoration.";
+          } else if (hasDecoration(id, SpvDecorationGLSLPacked, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID)
+                   << "Structure id " << id << " decorated as " << dec_str
+                   << " must not use GLSLPacked decoration.";
+          } else if (!checkForRequiredDecoration(id, SpvDecorationArrayStride,
+                                                 SpvOpTypeArray, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID)
+                   << "Structure id " << id << " decorated as " << dec_str
+                   << " must be explicitly laid out with ArrayStride "
+                      "decorations.";
+          } else if (!checkForRequiredDecoration(id, SpvDecorationMatrixStride,
+                                                 SpvOpTypeMatrix, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID)
+                   << "Structure id " << id << " decorated as " << dec_str
+                   << " must be explicitly laid out with MatrixStride "
+                      "decorations.";
+          } else if (isBlock && !checkLayout(id, true, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID)
+                   << "Structure id " << id << " decorated as Block"
+                   << " must follow standard uniform buffer layout rules.";
+          } else if (isBufferBlock && !checkLayout(id, false, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID)
+                   << "Structure id " << id << " decorated as BufferBlock"
+                   << " must follow standard storage buffer layout rules.";
+          }
         }
       }
     }
+    //	  }
   }
   return SPV_SUCCESS;
 }
