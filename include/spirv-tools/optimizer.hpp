@@ -25,6 +25,10 @@
 
 namespace spvtools {
 
+namespace opt {
+class Pass;
+}
+
 // C++ interface for SPIR-V optimization functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and
 // provides methods for registering optimization passes and optimizing.
@@ -40,6 +44,12 @@ class Optimizer {
     struct Impl;  // Opaque struct for holding inernal data.
 
     PassToken(std::unique_ptr<Impl>);
+
+    // Tokens for built-in passes should be created using Create*Pass functions
+    // below; for out-of-tree passes, use this constructor instead.
+    // Note that this API isn't guaranteed to be stable and may change without
+    // preserving source or binary compatibility in the future.
+    PassToken(std::unique_ptr<opt::Pass>&& pass);
 
     // Tokens can only be moved. Copying is disabled.
     PassToken(const PassToken&) = delete;
