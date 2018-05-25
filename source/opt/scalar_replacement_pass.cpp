@@ -377,11 +377,8 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
     if (global.opcode() == SpvOpTypePointer &&
         global.GetSingleWordInOperand(0u) == SpvStorageClassFunction &&
         global.GetSingleWordInOperand(1u) == id) {
-      if (!context()->get_feature_mgr()->HasExtension(
-              libspirv::Extension::kSPV_KHR_variable_pointers) ||
-          get_decoration_mgr()->GetDecorationsFor(id, false).empty()) {
-        // If variable pointers is enabled, only reuse a decoration-less
-        // pointer of the correct type.
+      if (get_decoration_mgr()->GetDecorationsFor(id, false).empty()) {
+        // Only reuse a decoration-less pointer of the correct type.
         ptrId = global.result_id();
         break;
       }
