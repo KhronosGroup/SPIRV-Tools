@@ -245,9 +245,7 @@ OpMemoryModel Logical GLSL450
 %ptr2 = OpTypePointer Input %u32
 )";
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr(GetErrorString(SpvOpTypePointer)));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateTypeUnique, DuplicatePointerTypesWithExtension) {
