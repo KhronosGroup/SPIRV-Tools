@@ -41,6 +41,8 @@ TypeManager::TypeManager(const MessageConsumer& consumer,
 Type* TypeManager::GetType(uint32_t id) const {
   auto iter = id_to_type_.find(id);
   if (iter != id_to_type_.end()) return (*iter).second;
+  iter = id_to_incomplete_type_.find(id);
+  if (iter != id_to_incomplete_type_.end()) return (*iter).second;
   return nullptr;
 }
 
@@ -60,13 +62,107 @@ uint32_t TypeManager::GetId(const Type* type) const {
   return 0;
 }
 
-ForwardPointer* TypeManager::GetForwardPointer(uint32_t index) const {
-  if (index >= forward_pointers_.size()) return nullptr;
-  return forward_pointers_.at(index).get();
-}
-
 void TypeManager::AnalyzeTypes(const spvtools::ir::Module& module) {
-  for (const auto* inst : module.GetTypes()) RecordIfTypeDefinition(*inst);
+  // First pass through the types.  Any types that reference a forward pointer
+  // (directly or indirectly) are incomplete, and are added to incomplete types.
+  for (const auto* inst : module.GetTypes()) {
+    RecordIfTypeDefinition(*inst);
+  }
+
+  if (incomplete_types_.empty()) {
+    return;
+  }
+
+  // Get the real pointer definition for all of the forward pointers.
+  for (auto& type : incomplete_types_) {
+    if (type.type()->kind() == Type::kForwardPointer) {
+      auto* t = GetType(type.id());
+      assert(t);
+      auto* p = t->AsPointer();
+      assert(p);
+      type.type()->AsForwardPointer()->SetTargetPointer(p);
+    }
+  }
+
+  // Replaces the references to the forward pointers in the incomplete types.
+  for (auto& type : incomplete_types_) {
+    ReplaceForwardPointers(type.type());
+  }
+
+  // Delete the forward pointers now that they are not referenced anymore.
+  for (auto& type : incomplete_types_) {
+    if (type.type()->kind() == Type::kForwardPointer) {
+      type.ResetType(nullptr);
+    }
+  }
+
+  // Compare the complete types looking for types that are the same.  If there
+  // are two types that are the same, then replace one with the other.
+  // Continue until we reach a fixed point.
+  bool restart = true;
+  while (restart) {
+    restart = false;
+    for (auto it1 = incomplete_types_.begin(); it1 != incomplete_types_.end();
+         ++it1) {
+      uint32_t id1 = it1->id();
+      Type* type1 = it1->type();
+      if (!type1) {
+        continue;
+      }
+
+      for (auto it2 = it1 + 1; it2 != incomplete_types_.end(); ++it2) {
+        uint32_t id2 = it2->id();
+        (void)(id2 + id1);
+        Type* type2 = it2->type();
+        if (!type2) {
+          continue;
+        }
+
+        if (type1->IsSame(type2)) {
+          ReplaceType(type1, type2);
+          it2->ResetType(nullptr);
+          id_to_incomplete_type_[it2->id()] = type1;
+          restart = true;
+        }
+      }
+    }
+  }
+
+  // Add the remaining incomplete types to the type pool.
+  for (auto& type : incomplete_types_) {
+    if (type.type() && !type.type()->AsForwardPointer()) {
+      std::vector<ir::Instruction*> decorations =
+          context()->get_decoration_mgr()->GetDecorationsFor(type.id(), true);
+      for (auto dec : decorations) {
+        AttachDecoration(*dec, type.type());
+      }
+      auto pair = type_pool_.insert(type.ReleaseType());
+      id_to_type_[type.id()] = pair.first->get();
+      type_to_id_[pair.first->get()] = type.id();
+      id_to_incomplete_type_.erase(type.id());
+    }
+  }
+
+  // Add a mapping for any ids that whose original type was replaced by an
+  // equivalent type.
+  for (auto& type : id_to_incomplete_type_) {
+    id_to_type_[type.first] = type.second;
+  }
+
+#ifndef NDEBUG
+  // Check if the type pool contains two types that are the same.  This
+  // is an indication that the hashing and comparision are wrong.  It
+  // will cause a problem if the type pool gets resized and everything
+  // is rehashed.
+  for (auto& i : type_pool_) {
+    for (auto& j : type_pool_) {
+      Type* ti = i.get();
+      Type* tj = j.get();
+      assert((ti == tj || !ti->IsSame(tj)) &&
+             "Type pool contains two types that are the same.");
+    }
+  }
+#endif
 }
 
 void TypeManager::RemoveId(uint32_t id) {
@@ -421,7 +517,7 @@ Type* TypeManager::RebuildType(const Type& type) {
     }
     case Type::kStruct: {
       const Struct* struct_ty = type.AsStruct();
-      std::vector<Type*> subtypes;
+      std::vector<const Type*> subtypes;
       subtypes.reserve(struct_ty->element_types().size());
       for (const auto* ele_ty : struct_ty->element_types()) {
         subtypes.push_back(RebuildType(*ele_ty));
@@ -448,7 +544,7 @@ Type* TypeManager::RebuildType(const Type& type) {
     case Type::kFunction: {
       const Function* function_ty = type.AsFunction();
       const Type* ret_ty = function_ty->return_type();
-      std::vector<Type*> param_types;
+      std::vector<const Type*> param_types;
       param_types.reserve(function_ty->param_types().size());
       for (const auto* param_ty : function_ty->param_types()) {
         param_types.push_back(RebuildType(*param_ty));
@@ -544,42 +640,79 @@ Type* TypeManager::RecordIfTypeDefinition(
     case SpvOpTypeArray:
       type = new Array(GetType(inst.GetSingleWordInOperand(0)),
                        inst.GetSingleWordInOperand(1));
+      if (id_to_incomplete_type_.count(inst.GetSingleWordInOperand(0))) {
+        incomplete_types_.emplace_back(inst.result_id(), type);
+        id_to_incomplete_type_[inst.result_id()] = type;
+        return type;
+      }
       break;
     case SpvOpTypeRuntimeArray:
       type = new RuntimeArray(GetType(inst.GetSingleWordInOperand(0)));
+      if (id_to_incomplete_type_.count(inst.GetSingleWordInOperand(0))) {
+        incomplete_types_.emplace_back(inst.result_id(), type);
+        id_to_incomplete_type_[inst.result_id()] = type;
+        return type;
+      }
       break;
     case SpvOpTypeStruct: {
-      std::vector<Type*> element_types;
+      std::vector<const Type*> element_types;
+      bool incomplete_type = false;
       for (uint32_t i = 0; i < inst.NumInOperands(); ++i) {
-        element_types.push_back(GetType(inst.GetSingleWordInOperand(i)));
+        uint32_t type_id = inst.GetSingleWordInOperand(i);
+        element_types.push_back(GetType(type_id));
+        if (id_to_incomplete_type_.count(type_id)) {
+          incomplete_type = true;
+        }
       }
       type = new Struct(element_types);
+
+      if (incomplete_type) {
+        incomplete_types_.emplace_back(inst.result_id(), type);
+        id_to_incomplete_type_[inst.result_id()] = type;
+        return type;
+      }
     } break;
     case SpvOpTypeOpaque: {
       const uint32_t* data = inst.GetInOperand(0).words.data();
       type = new Opaque(reinterpret_cast<const char*>(data));
     } break;
     case SpvOpTypePointer: {
-      auto* ptr = new Pointer(
-          GetType(inst.GetSingleWordInOperand(1)),
+      uint32_t pointee_type_id = inst.GetSingleWordInOperand(1);
+      type = new Pointer(
+          GetType(pointee_type_id),
           static_cast<SpvStorageClass>(inst.GetSingleWordInOperand(0)));
-      // Let's see if somebody forward references this pointer.
-      for (auto* fp : unresolved_forward_pointers_) {
-        if (fp->target_id() == inst.result_id()) {
-          fp->SetTargetPointer(ptr);
-          unresolved_forward_pointers_.erase(fp);
-          break;
-        }
+
+      if (id_to_incomplete_type_.count(pointee_type_id)) {
+        incomplete_types_.emplace_back(inst.result_id(), type);
+        id_to_incomplete_type_[inst.result_id()] = type;
+        return type;
       }
-      type = ptr;
+      id_to_incomplete_type_.erase(inst.result_id());
+
     } break;
     case SpvOpTypeFunction: {
-      Type* return_type = GetType(inst.GetSingleWordInOperand(0));
-      std::vector<Type*> param_types;
-      for (uint32_t i = 1; i < inst.NumInOperands(); ++i) {
-        param_types.push_back(GetType(inst.GetSingleWordInOperand(i)));
+      bool incomplete_type = false;
+      uint32_t return_type_id = inst.GetSingleWordInOperand(0);
+      if (id_to_incomplete_type_.count(return_type_id)) {
+        incomplete_type = true;
       }
+      Type* return_type = GetType(return_type_id);
+      std::vector<const Type*> param_types;
+      for (uint32_t i = 1; i < inst.NumInOperands(); ++i) {
+        uint32_t param_type_id = inst.GetSingleWordInOperand(i);
+        param_types.push_back(GetType(param_type_id));
+        if (id_to_incomplete_type_.count(param_type_id)) {
+          incomplete_type = true;
+        }
+      }
+
       type = new Function(return_type, param_types);
+
+      if (incomplete_type) {
+        incomplete_types_.emplace_back(inst.result_id(), type);
+        id_to_incomplete_type_[inst.result_id()] = type;
+        return type;
+      }
     } break;
     case SpvOpTypeEvent:
       type = new Event();
@@ -599,12 +732,12 @@ Type* TypeManager::RecordIfTypeDefinition(
       break;
     case SpvOpTypeForwardPointer: {
       // Handling of forward pointers is different from the other types.
-      auto* fp = new ForwardPointer(
-          inst.GetSingleWordInOperand(0),
-          static_cast<SpvStorageClass>(inst.GetSingleWordInOperand(1)));
-      forward_pointers_.emplace_back(fp);
-      unresolved_forward_pointers_.insert(fp);
-      return fp;
+      uint32_t target_id = inst.GetSingleWordInOperand(0);
+      type = new ForwardPointer(target_id, static_cast<SpvStorageClass>(
+                                               inst.GetSingleWordInOperand(1)));
+      incomplete_types_.emplace_back(target_id, type);
+      id_to_incomplete_type_[target_id] = type;
+      return type;
     }
     case SpvOpTypePipeStorage:
       type = new PipeStorage();
@@ -618,22 +751,18 @@ Type* TypeManager::RecordIfTypeDefinition(
   }
 
   uint32_t id = inst.result_id();
-  if (id == 0) {
-    SPIRV_ASSERT(consumer_, inst.opcode() == SpvOpTypeForwardPointer,
-                 "instruction without result id found");
-  } else {
-    SPIRV_ASSERT(consumer_, type != nullptr,
-                 "type should not be nullptr at this point");
-    std::vector<ir::Instruction*> decorations =
-        context()->get_decoration_mgr()->GetDecorationsFor(id, true);
-    for (auto dec : decorations) {
-      AttachDecoration(*dec, type);
-    }
-    std::unique_ptr<Type> unique(type);
-    auto pair = type_pool_.insert(std::move(unique));
-    id_to_type_[id] = pair.first->get();
-    type_to_id_[pair.first->get()] = id;
+  SPIRV_ASSERT(consumer_, id != 0, "instruction without result id found");
+  SPIRV_ASSERT(consumer_, type != nullptr,
+               "type should not be nullptr at this point");
+  std::vector<ir::Instruction*> decorations =
+      context()->get_decoration_mgr()->GetDecorationsFor(id, true);
+  for (auto dec : decorations) {
+    AttachDecoration(*dec, type);
   }
+  std::unique_ptr<Type> unique(type);
+  auto pair = type_pool_.insert(std::move(unique));
+  id_to_type_[id] = pair.first->get();
+  type_to_id_[pair.first->get()] = id;
   return type;
 }
 
@@ -688,6 +817,115 @@ const Type* TypeManager::GetMemberType(
     }
   }
   return parent_type;
+}
+
+void TypeManager::ReplaceForwardPointers(Type* type) {
+  switch (type->kind()) {
+    case Type::kArray: {
+      const analysis::ForwardPointer* element_type =
+          type->AsArray()->element_type()->AsForwardPointer();
+      if (element_type) {
+        type->AsArray()->ReplaceElementType(element_type->target_pointer());
+      }
+    } break;
+    case Type::kRuntimeArray: {
+      const analysis::ForwardPointer* element_type =
+          type->AsRuntimeArray()->element_type()->AsForwardPointer();
+      if (element_type) {
+        type->AsRuntimeArray()->ReplaceElementType(
+            element_type->target_pointer());
+      }
+    } break;
+    case Type::kStruct: {
+      auto& member_types = type->AsStruct()->element_types();
+      for (auto& member_type : member_types) {
+        if (member_type->AsForwardPointer()) {
+          member_type = member_type->AsForwardPointer()->target_pointer();
+          assert(member_type);
+        }
+      }
+    } break;
+    case Type::kPointer: {
+      const analysis::ForwardPointer* pointee_type =
+          type->AsPointer()->pointee_type()->AsForwardPointer();
+      if (pointee_type) {
+        type->AsPointer()->SetPointeeType(pointee_type->target_pointer());
+      }
+    } break;
+    case Type::kFunction: {
+      Function* func_type = type->AsFunction();
+      const analysis::ForwardPointer* return_type =
+          func_type->return_type()->AsForwardPointer();
+      if (return_type) {
+        func_type->SetReturnType(return_type->target_pointer());
+      }
+
+      auto& param_types = func_type->param_types();
+      for (auto& param_type : param_types) {
+        if (param_type->AsForwardPointer()) {
+          param_type = param_type->AsForwardPointer()->target_pointer();
+        }
+      }
+    } break;
+    default:
+      break;
+  }
+}
+
+void TypeManager::ReplaceType(Type* new_type, Type* original_type) {
+  assert(original_type->kind() == new_type->kind() &&
+         "Types must be the same for replacement.\n");
+  for (auto& p : incomplete_types_) {
+    Type* type = p.type();
+    if (!type) {
+      continue;
+    }
+
+    switch (type->kind()) {
+      case Type::kArray: {
+        const Type* element_type = type->AsArray()->element_type();
+        if (element_type == original_type) {
+          type->AsArray()->ReplaceElementType(new_type);
+        }
+      } break;
+      case Type::kRuntimeArray: {
+        const Type* element_type = type->AsRuntimeArray()->element_type();
+        if (element_type == original_type) {
+          type->AsRuntimeArray()->ReplaceElementType(new_type);
+        }
+      } break;
+      case Type::kStruct: {
+        auto& member_types = type->AsStruct()->element_types();
+        for (auto& member_type : member_types) {
+          if (member_type == original_type) {
+            member_type = new_type;
+          }
+        }
+      } break;
+      case Type::kPointer: {
+        const Type* pointee_type = type->AsPointer()->pointee_type();
+        if (pointee_type == original_type) {
+          type->AsPointer()->SetPointeeType(new_type);
+        }
+      } break;
+      case Type::kFunction: {
+        Function* func_type = type->AsFunction();
+        const Type* return_type = func_type->return_type();
+        if (return_type == original_type) {
+          func_type->SetReturnType(new_type);
+        }
+
+        auto& param_types = func_type->param_types();
+        for (auto& param_type : param_types) {
+          if (param_type == original_type) {
+            param_type = new_type;
+          }
+        }
+      } break;
+      default:
+        break;
+    }
+  }
 }
 
 }  // namespace analysis
