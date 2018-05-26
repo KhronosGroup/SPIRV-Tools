@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2018.4-dev 2018-05-25
+ - Start v2018.4 development
+
 v2018.3 2018-05-25
  - General:
    - Support SPV_EXT_descriptor_indexing
