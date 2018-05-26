@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2018.3-dev 2018-04-06
+v2018.3 2018-05-25
  - General:
    - Support SPV_EXT_descriptor_indexing
    - Support SPV_GOOGLE_decorate_string
