@@ -168,7 +168,7 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
     }
     case SpvOpTypeArray: {
       const auto sizeInst = vstate.FindDef(words[3]);
-      if (SpvOpSpecConstant == sizeInst->opcode()) return 0;
+      if (spvOpcodeIsSpecConstant(sizeInst->opcode())) return 0;
       assert(SpvOpConstant == sizeInst->opcode());
       return (sizeInst->words()[3] - 1) * baseAlignment +
              getSize(vstate.FindDef(member_id)->words()[2], roundUp, vstate);
