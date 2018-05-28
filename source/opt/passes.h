@@ -67,5 +67,6 @@
 #include "source/opt/upgrade_memory_model.h"
 #include "source/opt/vector_dce.h"
 #include "source/opt/workaround1209.h"
+#include "source/opt/workaround_image_operands.h"
 
 #endif  // SOURCE_OPT_PASSES_H_

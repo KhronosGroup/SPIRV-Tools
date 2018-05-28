@@ -103,6 +103,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   value_number_table.h
   vector_dce.h
   workaround1209.h
+  workaround_image_operands.h
 
   aggressive_dead_code_elim_pass.cpp
   basic_block.cpp
@@ -191,6 +192,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   value_number_table.cpp
   vector_dce.cpp
   workaround1209.cpp
+  workaround_image_operands.cpp
 )
 
 if(MSVC)

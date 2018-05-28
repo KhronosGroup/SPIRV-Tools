@@ -357,6 +357,9 @@ Options (in lexicographical order):
                Rewrites instructions for which there are known driver bugs to
                avoid triggering those bugs.
                Current workarounds: Avoid OpUnreachable in loops.
+  --workaround-unknown-images
+               Rewrites OpSampledImage instructions with operands that are of unknown
+               image type, with depth of non-depth.
   --unify-const
                Remove the duplicated constants.
   -h, --help
@@ -602,7 +605,6 @@ int main(int argc, const char** argv) {
   const char* out_file = nullptr;
 
   spv_target_env target_env = kDefaultEnvironment;
-
 
   spvtools::Optimizer optimizer(target_env);
   optimizer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);

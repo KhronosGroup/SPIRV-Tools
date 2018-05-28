@@ -726,6 +726,11 @@ Optimizer::PassToken CreateWorkaround1209Pass() {
       MakeUnique<opt::Workaround1209>());
 }
 
+Optimizer::PassToken CreateWorkaroundUnknownImagesPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DeanonymizeImages>());
+}
+
 Optimizer::PassToken CreateIfConversionPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::IfConversion>());

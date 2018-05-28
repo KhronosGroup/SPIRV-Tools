@@ -634,6 +634,8 @@ Optimizer::PassToken CreateCCPPass();
 // Current workaround: Avoid OpUnreachable instructions in loops.
 Optimizer::PassToken CreateWorkaround1209Pass();
 
+Optimizer::PassToken CreateWorkaroundUnknownImagesPass();
+
 // Creates a pass that converts if-then-else like assignments into OpSelect.
 Optimizer::PassToken CreateIfConversionPass();
 
