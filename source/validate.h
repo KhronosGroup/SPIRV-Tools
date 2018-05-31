@@ -75,6 +75,16 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_DATA otherwise
 spv_result_t ValidateAdjacency(ValidationState_t& _);
 
+/// @brief Validates static uses of input and output variables
+///
+/// Checks that any entry point that uses a input or output variable lists that
+/// variable in its interface.
+///
+/// @param[in] _ the validation state of the module
+///
+/// @return SPV_SUCCESS if no errors are found.
+spv_result_t ValidateInterfaces(ValidationState_t& _);
+
 /// @brief Updates the immediate dominator for each of the block edges
 ///
 /// Updates the immediate dominator of the blocks for each of the edges

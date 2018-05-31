@@ -158,12 +158,15 @@ spv_result_t ProcessInstruction(void* user_data,
   if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint) {
     const auto entry_point = inst->words[2];
     const SpvExecutionModel execution_model = SpvExecutionModel(inst->words[1]);
-    _.RegisterEntryPointId(entry_point, execution_model);
-    // Operand 3 and later are the <id> of interfaces for the entry point.
+    const char* str =
+        reinterpret_cast<const char*>(inst->words + inst->operands[2].offset);
+    ValidationState_t::EntryPointDescription desc;
+    desc.name = str;
+    std::vector<uint32_t> interfaces;
     for (int i = 3; i < inst->num_operands; ++i) {
-      _.RegisterInterfaceForEntryPoint(entry_point,
-                                       inst->words[inst->operands[i].offset]);
+      desc.interfaces.push_back(inst->words[inst->operands[i].offset]);
     }
+    _.RegisterEntryPoint(entry_point, execution_model, std::move(desc));
   }
   if (static_cast<SpvOp>(inst->opcode) == SpvOpFunctionCall) {
     _.AddFunctionCallTarget(inst->words[3]);
@@ -315,6 +318,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   if (auto error = UpdateIdUse(*vstate)) return error;
   if (auto error = CheckIdDefinitionDominateUse(*vstate)) return error;
   if (auto error = ValidateDecorations(*vstate)) return error;
+  if (auto error = ValidateInterfaces(*vstate)) return error;
 
   // Entry point validation. Based on 2.16.1 (Universal Validation Rules) of the
   // SPIRV spec:
