@@ -298,6 +298,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_image.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_interfaces.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_literals.cpp

@@ -3921,7 +3921,7 @@ OpFunctionEnd
 TEST_F(AggressiveDCETest, LiveNestedSwitch) {
   const std::string text = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %func "func" %3
+OpEntryPoint Fragment %func "func" %3 %10
 OpExecutionMode %func OriginUpperLeft
 OpName %func "func"
 %void = OpTypeVoid

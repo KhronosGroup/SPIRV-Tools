@@ -38,7 +38,10 @@ OpCapability DerivativeControl
 
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical GLSL450\n";
-  ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+  ss << "OpEntryPoint " << execution_model << " %main \"main\""
+     << " %f32_var_input"
+     << " %f32vec4_var_input"
+     << "\n";
 
   ss << R"(
 %void = OpTypeVoid

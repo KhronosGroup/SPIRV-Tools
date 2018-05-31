@@ -91,7 +91,18 @@ OpCapability Int64
   ss << capabilities_and_extensions;
   ss << "%extinst = OpExtInstImport \"GLSL.std.450\"\n";
   ss << "OpMemoryModel Logical GLSL450\n";
-  ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+  ss << "OpEntryPoint " << execution_model << " %main \"main\""
+     << " %f32_output"
+     << " %f32vec2_output"
+     << " %u32_output"
+     << " %u32vec2_output"
+     << " %u64_output"
+     << " %f32_input"
+     << " %f32vec2_input"
+     << " %u32_input"
+     << " %u32vec2_input"
+     << " %u64_input"
+     << "\n";
 
   ss << R"(
 %void = OpTypeVoid
@@ -477,16 +488,8 @@ TEST_P(ValidateGlslStd450SqrtLike, IntOperand) {
 
 INSTANTIATE_TEST_CASE_P(AllSqrtLike, ValidateGlslStd450SqrtLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "Round",
-                            "RoundEven",
-                            "FAbs",
-                            "Trunc",
-                            "FSign",
-                            "Floor",
-                            "Ceil",
-                            "Fract",
-                            "Sqrt",
-                            "InverseSqrt",
+                            "Round", "RoundEven", "FAbs", "Trunc", "FSign",
+                            "Floor", "Ceil", "Fract", "Sqrt", "InverseSqrt",
                             "Normalize",
                         }), );
 
@@ -544,12 +547,7 @@ TEST_P(ValidateGlslStd450FMinLike, IntOperand2) {
 
 INSTANTIATE_TEST_CASE_P(AllFMinLike, ValidateGlslStd450FMinLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "FMin",
-                            "FMax",
-                            "Step",
-                            "Reflect",
-                            "NMin",
-                            "NMax",
+                            "FMin", "FMax", "Step", "Reflect", "NMin", "NMax",
                         }), );
 
 TEST_P(ValidateGlslStd450FClampLike, Success) {
@@ -619,12 +617,8 @@ TEST_P(ValidateGlslStd450FClampLike, IntOperand3) {
 
 INSTANTIATE_TEST_CASE_P(AllFClampLike, ValidateGlslStd450FClampLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "FClamp",
-                            "FMix",
-                            "SmoothStep",
-                            "Fma",
-                            "FaceForward",
-                            "NClamp",
+                            "FClamp", "FMix", "SmoothStep", "Fma",
+                            "FaceForward", "NClamp",
                         }), );
 
 TEST_P(ValidateGlslStd450SAbsLike, Success) {
@@ -700,11 +694,7 @@ TEST_P(ValidateGlslStd450SAbsLike, WrongBitWidthOperand) {
 
 INSTANTIATE_TEST_CASE_P(AllSAbsLike, ValidateGlslStd450SAbsLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "SAbs",
-                            "SSign",
-                            "FindILsb",
-                            "FindUMsb",
-                            "FindSMsb",
+                            "SAbs", "SSign", "FindILsb", "FindUMsb", "FindSMsb",
                         }), );
 
 TEST_F(ValidateExtInst, FindUMsbNot32Bit) {
@@ -849,10 +839,7 @@ TEST_P(ValidateGlslStd450UMinLike, WrongBitWidthOperand2) {
 
 INSTANTIATE_TEST_CASE_P(AllUMinLike, ValidateGlslStd450UMinLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "UMin",
-                            "SMin",
-                            "UMax",
-                            "SMax",
+                            "UMin", "SMin", "UMax", "SMax",
                         }), );
 
 TEST_P(ValidateGlslStd450UClampLike, Success) {
@@ -1012,8 +999,7 @@ TEST_P(ValidateGlslStd450UClampLike, WrongBitWidthOperand3) {
 
 INSTANTIATE_TEST_CASE_P(AllUClampLike, ValidateGlslStd450UClampLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "UClamp",
-                            "SClamp",
+                            "UClamp", "SClamp",
                         }), );
 
 TEST_P(ValidateGlslStd450SinLike, Success) {
@@ -1067,24 +1053,9 @@ TEST_P(ValidateGlslStd450SinLike, IntOperand) {
 
 INSTANTIATE_TEST_CASE_P(AllSinLike, ValidateGlslStd450SinLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "Radians",
-                            "Degrees",
-                            "Sin",
-                            "Cos",
-                            "Tan",
-                            "Asin",
-                            "Acos",
-                            "Atan",
-                            "Sinh",
-                            "Cosh",
-                            "Tanh",
-                            "Asinh",
-                            "Acosh",
-                            "Atanh",
-                            "Exp",
-                            "Exp2",
-                            "Log",
-                            "Log2",
+                            "Radians", "Degrees", "Sin", "Cos", "Tan", "Asin",
+                            "Acos", "Atan", "Sinh", "Cosh", "Tanh", "Asinh",
+                            "Acosh", "Atanh", "Exp", "Exp2", "Log", "Log2",
                         }), );
 
 TEST_P(ValidateGlslStd450PowLike, Success) {
@@ -1152,8 +1123,7 @@ TEST_P(ValidateGlslStd450PowLike, IntOperand2) {
 
 INSTANTIATE_TEST_CASE_P(AllPowLike, ValidateGlslStd450PowLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "Atan2",
-                            "Pow",
+                            "Atan2", "Pow",
                         }), );
 
 TEST_F(ValidateExtInst, GlslStd450DeterminantSuccess) {
@@ -1779,11 +1749,8 @@ TEST_P(ValidateGlslStd450Pack, VWrongSizeVector) {
 
 INSTANTIATE_TEST_CASE_P(AllPack, ValidateGlslStd450Pack,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "PackSnorm4x8",
-                            "PackUnorm4x8",
-                            "PackSnorm2x16",
-                            "PackUnorm2x16",
-                            "PackHalf2x16",
+                            "PackSnorm4x8", "PackUnorm4x8", "PackSnorm2x16",
+                            "PackUnorm2x16", "PackHalf2x16",
                         }), );
 
 TEST_F(ValidateExtInst, PackDouble2x32Success) {
@@ -2018,10 +1985,8 @@ TEST_P(ValidateGlslStd450Unpack, ResultPWrongBitWidth) {
 
 INSTANTIATE_TEST_CASE_P(AllUnpack, ValidateGlslStd450Unpack,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "UnpackSnorm4x8",
-                            "UnpackUnorm4x8",
-                            "UnpackSnorm2x16",
-                            "UnpackUnorm2x16",
+                            "UnpackSnorm4x8", "UnpackUnorm4x8",
+                            "UnpackSnorm2x16", "UnpackUnorm2x16",
                             "UnpackHalf2x16",
                         }), );
 
@@ -2956,11 +2921,7 @@ TEST_P(ValidateOpenCLStdFClampLike, IntOperand3) {
 
 INSTANTIATE_TEST_CASE_P(AllFClampLike, ValidateOpenCLStdFClampLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "fma",
-                            "mad",
-                            "fclamp",
-                            "mix",
-                            "smoothstep",
+                            "fma", "mad", "fclamp", "mix", "smoothstep",
                         }), );
 
 TEST_P(ValidateOpenCLStdSAbsLike, Success) {
@@ -3023,11 +2984,7 @@ TEST_P(ValidateOpenCLStdSAbsLike, U64Operand) {
 
 INSTANTIATE_TEST_CASE_P(AllSAbsLike, ValidateOpenCLStdSAbsLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "s_abs",
-                            "clz",
-                            "ctz",
-                            "popcount",
-                            "u_abs",
+                            "s_abs", "clz", "ctz", "popcount", "u_abs",
                         }), );
 
 TEST_P(ValidateOpenCLStdUMinLike, Success) {
@@ -3122,23 +3079,10 @@ TEST_P(ValidateOpenCLStdUMinLike, U64Operand2) {
 
 INSTANTIATE_TEST_CASE_P(AllUMinLike, ValidateOpenCLStdUMinLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "s_max",
-                            "u_max",
-                            "s_min",
-                            "u_min",
-                            "s_abs_diff",
-                            "s_add_sat",
-                            "u_add_sat",
-                            "s_mul_hi",
-                            "rotate",
-                            "s_sub_sat",
-                            "u_sub_sat",
-                            "s_hadd",
-                            "u_hadd",
-                            "s_rhadd",
-                            "u_rhadd",
-                            "u_abs_diff",
-                            "u_mul_hi",
+                            "s_max", "u_max", "s_min", "u_min", "s_abs_diff",
+                            "s_add_sat", "u_add_sat", "s_mul_hi", "rotate",
+                            "s_sub_sat", "u_sub_sat", "s_hadd", "u_hadd",
+                            "s_rhadd", "u_rhadd", "u_abs_diff", "u_mul_hi",
                         }), );
 
 TEST_P(ValidateOpenCLStdUClampLike, Success) {
@@ -3259,12 +3203,8 @@ TEST_P(ValidateOpenCLStdUClampLike, U64Operand3) {
 
 INSTANTIATE_TEST_CASE_P(AllUClampLike, ValidateOpenCLStdUClampLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "s_clamp",
-                            "u_clamp",
-                            "s_mad_hi",
-                            "u_mad_sat",
-                            "s_mad_sat",
-                            "u_mad_hi",
+                            "s_clamp", "u_clamp", "s_mad_hi", "u_mad_sat",
+                            "s_mad_sat", "u_mad_hi",
                         }), );
 
 // -------------------------------------------------------------
@@ -3373,8 +3313,7 @@ TEST_P(ValidateOpenCLStdUMul24Like, U64Operand2) {
 
 INSTANTIATE_TEST_CASE_P(AllUMul24Like, ValidateOpenCLStdUMul24Like,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "s_mul24",
-                            "u_mul24",
+                            "s_mul24", "u_mul24",
                         }), );
 
 TEST_P(ValidateOpenCLStdUMad24Like, Success) {
@@ -3508,8 +3447,7 @@ TEST_P(ValidateOpenCLStdUMad24Like, U64Operand3) {
 
 INSTANTIATE_TEST_CASE_P(AllUMad24Like, ValidateOpenCLStdUMad24Like,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "s_mad24",
-                            "u_mad24",
+                            "s_mad24", "u_mad24",
                         }), );
 
 TEST_F(ValidateExtInst, OpenCLStdCrossSuccess) {
@@ -3637,8 +3575,7 @@ TEST_P(ValidateOpenCLStdLengthLike, DifferentType) {
 
 INSTANTIATE_TEST_CASE_P(AllLengthLike, ValidateOpenCLStdLengthLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "length",
-                            "fast_length",
+                            "length", "fast_length",
                         }), );
 
 TEST_P(ValidateOpenCLStdDistanceLike, Success) {
@@ -3726,8 +3663,7 @@ TEST_P(ValidateOpenCLStdDistanceLike, DifferentOperands) {
 
 INSTANTIATE_TEST_CASE_P(AllDistanceLike, ValidateOpenCLStdDistanceLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "distance",
-                            "fast_distance",
+                            "distance", "fast_distance",
                         }), );
 
 TEST_P(ValidateOpenCLStdNormalizeLike, Success) {
@@ -3786,8 +3722,7 @@ TEST_P(ValidateOpenCLStdNormalizeLike, DifferentType) {
 
 INSTANTIATE_TEST_CASE_P(AllNormalizeLike, ValidateOpenCLStdNormalizeLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "normalize",
-                            "fast_normalize",
+                            "normalize", "fast_normalize",
                         }), );
 
 TEST_F(ValidateExtInst, OpenCLStdBitselectSuccess) {
@@ -4184,11 +4119,8 @@ TEST_P(ValidateOpenCLStdVStoreHalfLike, PDataTypeFloat32) {
 
 INSTANTIATE_TEST_CASE_P(AllVStoreHalfLike, ValidateOpenCLStdVStoreHalfLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "vstore_half",
-                            "vstore_half_r",
-                            "vstore_halfn",
-                            "vstore_halfn_r",
-                            "vstorea_halfn",
+                            "vstore_half", "vstore_half_r", "vstore_halfn",
+                            "vstore_halfn_r", "vstorea_halfn",
                             "vstorea_halfn_r",
                         }), );
 
@@ -4352,8 +4284,7 @@ TEST_P(ValidateOpenCLStdVLoadHalfLike, WrongN) {
 
 INSTANTIATE_TEST_CASE_P(AllVLoadHalfLike, ValidateOpenCLStdVLoadHalfLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "vload_halfn",
-                            "vloada_halfn",
+                            "vload_halfn", "vloada_halfn",
                         }), );
 
 TEST_F(ValidateExtInst, VLoadNSuccessFloatPhysical32) {
@@ -5277,9 +5208,7 @@ TEST_P(ValidateOpenCLStdFractLike, PointerWrongDataType) {
 
 INSTANTIATE_TEST_CASE_P(AllFractLike, ValidateOpenCLStdFractLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "fract",
-                            "modf",
-                            "sincos",
+                            "fract", "modf", "sincos",
                         }), );
 
 TEST_F(ValidateExtInst, OpenCLStdRemquoSuccess) {
@@ -5496,8 +5425,7 @@ TEST_P(ValidateOpenCLStdFrexpLike, PointerDataTypeDiffSize) {
 
 INSTANTIATE_TEST_CASE_P(AllFrexpLike, ValidateOpenCLStdFrexpLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "frexp",
-                            "lgamma_r",
+                            "frexp", "lgamma_r",
                         }), );
 
 TEST_F(ValidateExtInst, OpenCLStdIlogbSuccess) {
@@ -5694,9 +5622,7 @@ TEST_P(ValidateOpenCLStdLdexpLike, ExponentWrongSize) {
 
 INSTANTIATE_TEST_CASE_P(AllLdexpLike, ValidateOpenCLStdLdexpLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "ldexp",
-                            "pown",
-                            "rootn",
+                            "ldexp", "pown", "rootn",
                         }), );
 
 TEST_P(ValidateOpenCLStdUpsampleLike, Success) {
@@ -5786,8 +5712,7 @@ TEST_P(ValidateOpenCLStdUpsampleLike, HiLoWrongBitWidth) {
 
 INSTANTIATE_TEST_CASE_P(AllUpsampleLike, ValidateOpenCLStdUpsampleLike,
                         ::testing::ValuesIn(std::vector<std::string>{
-                            "u_upsample",
-                            "s_upsample",
+                            "u_upsample", "s_upsample",
                         }), );
 
 }  // anonymous namespace

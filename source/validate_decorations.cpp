@@ -122,58 +122,66 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
     const auto& interfaces = vstate.entry_point_interfaces(entry_point);
     int num_builtin_inputs = 0;
     int num_builtin_outputs = 0;
-    for (auto interface : interfaces) {
-      Instruction* var_instr = vstate.FindDef(interface);
-      if (SpvOpVariable != var_instr->opcode()) {
-        return vstate.diag(SPV_ERROR_INVALID_ID)
-               << "Interfaces passed to OpEntryPoint must be of type "
-                  "OpTypeVariable. Found Op"
-               << spvOpcodeString(static_cast<SpvOp>(var_instr->opcode()))
-               << ".";
+    for (const auto& interface_list : interfaces) {
+      // for (auto interface : interfaces) {
+      for (auto interface : interface_list) {
+        Instruction* var_instr = vstate.FindDef(interface);
+        if (SpvOpVariable != var_instr->opcode()) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "Interfaces passed to OpEntryPoint must be of type "
+                    "OpTypeVariable. Found Op"
+                 << spvOpcodeString(static_cast<SpvOp>(var_instr->opcode()))
+                 << ".";
+        }
+        const uint32_t ptr_id = var_instr->word(1);
+        Instruction* ptr_instr = vstate.FindDef(ptr_id);
+        // It is guaranteed (by validator ID checks) that ptr_instr is
+        // OpTypePointer. Word 3 of this instruction is the type being pointed
+        // to.
+        const uint32_t type_id = ptr_instr->word(3);
+        Instruction* type_instr = vstate.FindDef(type_id);
+        const auto storage_class =
+            static_cast<SpvStorageClass>(var_instr->word(3));
+        if (storage_class != SpvStorageClassInput &&
+            storage_class != SpvStorageClassOutput) {
+          return vstate.diag(SPV_ERROR_INVALID_ID)
+                 << "OpEntryPoint interfaces must be OpVariables with "
+                    "Storage Class of Input(1) or Output(3). Found Storage "
+                    "Class "
+                 << storage_class << " for Entry Point id " << entry_point
+                 << ".";
+        }
+        if (type_instr && SpvOpTypeStruct == type_instr->opcode() &&
+            isBuiltInStruct(type_id, vstate)) {
+          if (storage_class == SpvStorageClassInput) ++num_builtin_inputs;
+          if (storage_class == SpvStorageClassOutput) ++num_builtin_outputs;
+          if (num_builtin_inputs > 1 || num_builtin_outputs > 1) break;
+          if (auto error = CheckBuiltInVariable(interface, vstate))
+            return error;
+        } else if (isBuiltInVar(interface, vstate)) {
+          if (auto error = CheckBuiltInVariable(interface, vstate))
+            return error;
+        }
       }
-      const uint32_t ptr_id = var_instr->word(1);
-      Instruction* ptr_instr = vstate.FindDef(ptr_id);
-      // It is guaranteed (by validator ID checks) that ptr_instr is
-      // OpTypePointer. Word 3 of this instruction is the type being pointed to.
-      const uint32_t type_id = ptr_instr->word(3);
-      Instruction* type_instr = vstate.FindDef(type_id);
-      const auto storage_class =
-          static_cast<SpvStorageClass>(var_instr->word(3));
-      if (storage_class != SpvStorageClassInput &&
-          storage_class != SpvStorageClassOutput) {
-        return vstate.diag(SPV_ERROR_INVALID_ID)
-               << "OpEntryPoint interfaces must be OpVariables with "
-                  "Storage Class of Input(1) or Output(3). Found Storage Class "
-               << storage_class << " for Entry Point id " << entry_point << ".";
-      }
-      if (type_instr && SpvOpTypeStruct == type_instr->opcode() &&
-          isBuiltInStruct(type_id, vstate)) {
-        if (storage_class == SpvStorageClassInput) ++num_builtin_inputs;
-        if (storage_class == SpvStorageClassOutput) ++num_builtin_outputs;
-        if (num_builtin_inputs > 1 || num_builtin_outputs > 1) break;
-        if (auto error = CheckBuiltInVariable(interface, vstate)) return error;
-      } else if (isBuiltInVar(interface, vstate)) {
-        if (auto error = CheckBuiltInVariable(interface, vstate)) return error;
-      }
-    }
-    if (num_builtin_inputs > 1 || num_builtin_outputs > 1) {
-      return vstate.diag(SPV_ERROR_INVALID_BINARY)
-             << "There must be at most one object per Storage Class that can "
-                "contain a structure type containing members decorated with "
-                "BuiltIn, consumed per entry-point. Entry Point id "
-             << entry_point << " does not meet this requirement.";
-    }
-    // The LinkageAttributes Decoration cannot be applied to functions targeted
-    // by an OpEntryPoint instruction
-    for (auto& decoration : vstate.id_decorations(entry_point)) {
-      if (SpvDecorationLinkageAttributes == decoration.dec_type()) {
-        const char* linkage_name =
-            reinterpret_cast<const char*>(&decoration.params()[0]);
+      if (num_builtin_inputs > 1 || num_builtin_outputs > 1) {
         return vstate.diag(SPV_ERROR_INVALID_BINARY)
-               << "The LinkageAttributes Decoration (Linkage name: "
-               << linkage_name << ") cannot be applied to function id "
-               << entry_point
-               << " because it is targeted by an OpEntryPoint instruction.";
+               << "There must be at most one object per Storage Class that can "
+                  "contain a structure type containing members decorated with "
+                  "BuiltIn, consumed per entry-point. Entry Point id "
+               << entry_point << " does not meet this requirement.";
+      }
+      // The LinkageAttributes Decoration cannot be applied to functions
+      // targeted by an OpEntryPoint instruction
+      for (auto& decoration : vstate.id_decorations(entry_point)) {
+        if (SpvDecorationLinkageAttributes == decoration.dec_type()) {
+          const char* linkage_name =
+              reinterpret_cast<const char*>(&decoration.params()[0]);
+          return vstate.diag(SPV_ERROR_INVALID_BINARY)
+                 << "The LinkageAttributes Decoration (Linkage name: "
+                 << linkage_name << ") cannot be applied to function id "
+                 << entry_point
+                 << " because it is targeted by an OpEntryPoint instruction.";
+        }
       }
     }
   }
