@@ -16,6 +16,7 @@
 
 #include <limits>
 
+#include "fold.h"
 #include "latest_version_glsl_std_450_header.h"
 
 namespace spvtools {
@@ -1566,32 +1567,31 @@ FoldingRule FMixFeedingExtract() {
 
     // Get the |a| for the FMix instruction.
     uint32_t a_id = composite_inst->GetSingleWordInOperand(kFMixAIdInIdx);
-    const analysis::Constant* a_const = const_mgr->FindDeclaredConstant(a_id);
+    std::unique_ptr<ir::Instruction> a(inst->Clone(inst->context()));
+    a->SetInOperand(kExtractCompositeIdInIdx, {a_id});
+    FoldInstruction(a.get());
+
+    if (a->opcode() != SpvOpCopyObject) {
+      return false;
+    }
+
+    const analysis::Constant* a_const =
+        const_mgr->FindDeclaredConstant(a->GetSingleWordInOperand(0));
 
     if (!a_const) {
       return false;
     }
 
-    uint32_t componenet_idx = inst->GetSingleWordInOperand(1);
     bool use_x = false;
 
-    if (a_const->AsNullConstant()) {
+    assert(a_const->type()->AsFloat());
+    double element_value = a_const->GetValueAsDouble();
+    if (element_value == 0.0) {
       use_x = true;
+    } else if (element_value == 1.0) {
+      use_x = false;
     } else {
-      const analysis::VectorConstant* a_vec_const = a_const->AsVectorConstant();
-      assert(a_vec_const);
-
-      const analysis::Constant* element_const =
-          a_vec_const->GetComponents()[componenet_idx];
-
-      double element_value = element_const->GetValueAsDouble();
-      if (element_value == 0.0) {
-        use_x = true;
-      } else if (element_value == 1.0) {
-        use_x = false;
-      } else {
-        return false;
-      }
+      return false;
     }
 
     // Get the id of the of the vector the element comes from.

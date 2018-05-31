@@ -93,7 +93,6 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/inline_pass.cpp \
 		source/opt/inline_exhaustive_pass.cpp \
 		source/opt/inline_opaque_pass.cpp \
-		source/opt/insert_extract_elim.cpp \
 		source/opt/instruction.cpp \
 		source/opt/instruction_list.cpp \
 		source/opt/ir_context.cpp \

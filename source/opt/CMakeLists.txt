@@ -45,7 +45,6 @@ add_library(SPIRV-Tools-opt
   inline_exhaustive_pass.h
   inline_opaque_pass.h
   inline_pass.h
-  insert_extract_elim.h
   instruction.h
   instruction_list.h
   ir_builder.h
@@ -133,7 +132,6 @@ add_library(SPIRV-Tools-opt
   inline_exhaustive_pass.cpp
   inline_opaque_pass.cpp
   inline_pass.cpp
-  insert_extract_elim.cpp
   instruction.cpp
   instruction_list.cpp
   ir_context.cpp
