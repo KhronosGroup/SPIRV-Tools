@@ -57,6 +57,7 @@ struct EntryPoint {
   std::string execution_model;
   std::string execution_modes;
   std::string body;
+  std::string interfaces;
 };
 
 class CodeGenerator {
@@ -82,7 +83,8 @@ std::string CodeGenerator::Build() const {
 
   for (const EntryPoint& entry_point : entry_points_) {
     ss << "OpEntryPoint " << entry_point.execution_model << " %"
-       << entry_point.name << " \"" << entry_point.name << "\"\n";
+       << entry_point.name << " \"" << entry_point.name << "\" "
+       << entry_point.interfaces << "\n";
   }
 
   for (const EntryPoint& entry_point : entry_points_) {
@@ -228,6 +230,10 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InMain) {
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = execution_model;
+  if (strncmp(storage_class, "Input", 5) == 0 ||
+      strncmp(storage_class, "Output", 6) == 0) {
+    entry_point.interfaces = "%built_in_var";
+  }
 
   std::ostringstream execution_modes;
   if (0 == std::strcmp(execution_model, "Fragment")) {
@@ -281,6 +287,10 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InFunction) {
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = execution_model;
+  if (strncmp(storage_class, "Input", 5) == 0 ||
+      strncmp(storage_class, "Output", 6) == 0) {
+    entry_point.interfaces = "%built_in_var";
+  }
 
   std::ostringstream execution_modes;
   if (0 == std::strcmp(execution_model, "Fragment")) {
@@ -339,6 +349,10 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, Variable) {
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = execution_model;
+  if (strncmp(storage_class, "Input", 5) == 0 ||
+      strncmp(storage_class, "Output", 6) == 0) {
+    entry_point.interfaces = "%built_in_var";
+  }
   // Any kind of reference would do.
   entry_point.body = R"(
 %val = OpBitcast %u64 %built_in_var
@@ -1514,6 +1528,7 @@ TEST_P(ValidateVulkanCombineBuiltInArrayedVariable, Variable) {
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = execution_model;
+  entry_point.interfaces = "%built_in_var";
   // Any kind of reference would do.
   entry_point.body = R"(
 %val = OpBitcast %u64 %built_in_var
@@ -1842,6 +1857,7 @@ OpMemberDecorate %output_type 0 BuiltIn Position
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = "Geometry";
+  entry_point.interfaces = "%input %output";
   entry_point.body = R"(
 %input_pos = OpAccessChain %input_f32vec4_ptr %input %u32_0 %u32_0
 %output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0 %u32_0
@@ -1876,6 +1892,7 @@ OpMemberDecorate %output_type 0 BuiltIn Position
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = "Geometry";
+  entry_point.interfaces = "%input %output";
   entry_point.body = R"(
 %input_pos = OpAccessChain %input_f32vec4_ptr %input %u32_0
 %output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0
@@ -1913,6 +1930,7 @@ OpMemberDecorate %output_type 0 BuiltIn FragCoord
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = "Geometry";
+  entry_point.interfaces = "%input %output";
   entry_point.body = R"(
 %input_pos = OpAccessChain %input_f32vec4_ptr %input %u32_0
 %output_pos = OpAccessChain %output_f32vec4_ptr %output %u32_0
@@ -1942,6 +1960,7 @@ OpDecorate %position BuiltIn Position
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = "Vertex";
+  entry_point.interfaces = "%position";
   entry_point.body = R"(
 OpStore %position %f32vec4_0123
 )";
@@ -1967,6 +1986,7 @@ OpMemberDecorate %output_type 0 BuiltIn Position
   EntryPoint entry_point;
   entry_point.name = "vmain";
   entry_point.execution_model = "Vertex";
+  entry_point.interfaces = "%output";
   entry_point.body = R"(
 %val1 = OpFunctionCall %void %foo
 )";
@@ -1974,6 +1994,7 @@ OpMemberDecorate %output_type 0 BuiltIn Position
 
   entry_point.name = "fmain";
   entry_point.execution_model = "Fragment";
+  entry_point.interfaces = "%output";
   entry_point.execution_modes = "OpExecutionMode %fmain OriginUpperLeft";
   entry_point.body = R"(
 %val2 = OpFunctionCall %void %foo
@@ -2015,6 +2036,7 @@ OpMemberDecorate %output_type 0 BuiltIn FragDepth
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = "Fragment";
+  entry_point.interfaces = "%output";
   entry_point.execution_modes = "OpExecutionMode %main OriginUpperLeft";
   entry_point.body = R"(
 %val2 = OpFunctionCall %void %foo
@@ -2053,6 +2075,7 @@ OpMemberDecorate %output_type 0 BuiltIn FragDepth
   EntryPoint entry_point;
   entry_point.name = "main_d_r";
   entry_point.execution_model = "Fragment";
+  entry_point.interfaces = "%output";
   entry_point.execution_modes =
       "OpExecutionMode %main_d_r OriginUpperLeft\n"
       "OpExecutionMode %main_d_r DepthReplacing";
@@ -2063,6 +2086,7 @@ OpMemberDecorate %output_type 0 BuiltIn FragDepth
 
   entry_point.name = "main_no_d_r";
   entry_point.execution_model = "Fragment";
+  entry_point.interfaces = "%output";
   entry_point.execution_modes = "OpExecutionMode %main_no_d_r OriginUpperLeft";
   entry_point.body = R"(
 %val3 = OpFunctionCall %void %foo

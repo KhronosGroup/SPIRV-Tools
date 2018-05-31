@@ -91,7 +91,18 @@ OpCapability Int64
   ss << capabilities_and_extensions;
   ss << "%extinst = OpExtInstImport \"GLSL.std.450\"\n";
   ss << "OpMemoryModel Logical GLSL450\n";
-  ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+  ss << "OpEntryPoint " << execution_model << " %main \"main\""
+     << " %f32_output"
+     << " %f32vec2_output"
+     << " %u32_output"
+     << " %u32vec2_output"
+     << " %u64_output"
+     << " %f32_input"
+     << " %f32vec2_input"
+     << " %u32_input"
+     << " %u32vec2_input"
+     << " %u64_input"
+     << "\n";
 
   ss << R"(
 %void = OpTypeVoid
