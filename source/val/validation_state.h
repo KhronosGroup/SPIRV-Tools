@@ -77,6 +77,9 @@ class ValidationState_t {
 
     // Disallows the use of OpUndef
     bool bans_op_undef = false;
+
+    // Allow OpTypeInt with 8 bit width?
+    bool declare_int8_type = false;
   };
 
   ValidationState_t(const spv_const_context context,
