@@ -55,6 +55,13 @@ bool CheckAllImageOperandsHandled() {
     case SpvImageOperandsConstOffsetsMask:
     case SpvImageOperandsSampleMask:
     case SpvImageOperandsMinLodMask:
+
+    // TODO(dneto): Support image operands related to the Vulkan memory model.
+    // https://gitlab.khronos.org/spirv/spirv-tools/issues/32
+    case SpvImageOperandsMakeTexelAvailableKHRMask:
+    case SpvImageOperandsMakeTexelVisibleKHRMask:
+    case SpvImageOperandsNonPrivateTexelKHRMask:
+    case SpvImageOperandsVolatileTexelKHRMask:
       return true;
   }
   return false;
@@ -210,7 +217,12 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   const SpvOp opcode = inst->opcode();
   const size_t num_words = inst->words().size();
 
-  size_t expected_num_image_operand_words = spvtools::utils::CountSetBits(mask);
+  // NonPrivate and Volatile take no operand words.
+  const uint32_t mask_bits_having_operands =
+      mask & ~uint32_t(SpvImageOperandsNonPrivateTexelKHRMask |
+                       SpvImageOperandsVolatileTexelKHRMask);
+  size_t expected_num_image_operand_words =
+      spvtools::utils::CountSetBits(mask_bits_having_operands);
   if (mask & SpvImageOperandsGradMask) {
     // Grad uses two words.
     ++expected_num_image_operand_words;

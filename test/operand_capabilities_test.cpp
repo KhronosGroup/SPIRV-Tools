@@ -604,16 +604,18 @@ INSTANTIATE_TEST_CASE_P(
             })), );
 
 // See SPIR-V Section 3.27 Scope <id>
-INSTANTIATE_TEST_CASE_P(Scope, EnumCapabilityTest,
-                        Combine(Values(SPV_ENV_UNIVERSAL_1_0,
-                                       SPV_ENV_UNIVERSAL_1_1),
-                                ValuesIn(std::vector<EnumCapabilityCase>{
-                                    CASE0(SCOPE_ID, ScopeCrossDevice),
-                                    CASE0(SCOPE_ID, ScopeDevice),
-                                    CASE0(SCOPE_ID, ScopeWorkgroup),
-                                    CASE0(SCOPE_ID, ScopeSubgroup),
-                                    CASE0(SCOPE_ID, ScopeInvocation),
-                                })), );
+INSTANTIATE_TEST_CASE_P(
+    Scope, EnumCapabilityTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3),
+            ValuesIn(std::vector<EnumCapabilityCase>{
+                CASE0(SCOPE_ID, ScopeCrossDevice),
+                CASE0(SCOPE_ID, ScopeDevice),
+                CASE0(SCOPE_ID, ScopeWorkgroup),
+                CASE0(SCOPE_ID, ScopeSubgroup),
+                CASE0(SCOPE_ID, ScopeInvocation),
+                CASE1(SCOPE_ID, ScopeQueueFamilyKHR, VulkanMemoryModelKHR),
+            })), );
 
 // See SPIR-V Section 3.28 Group Operation
 INSTANTIATE_TEST_CASE_P(
