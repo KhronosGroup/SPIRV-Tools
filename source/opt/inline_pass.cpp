@@ -286,8 +286,19 @@ void InlinePass::GenInlineCode(
     switch (cpi->opcode()) {
       case SpvOpFunction:
       case SpvOpFunctionParameter:
-      case SpvOpVariable:
         // Already processed
+        break;
+      case SpvOpVariable:
+        if (cpi->NumInOperands() == 2) {
+          assert(callee2caller.count(cpi->result_id()) &&
+                 "Expected the variable to have already been mapped.");
+          uint32_t new_var_id = callee2caller.at(cpi->result_id());
+
+          // The initializer must be a constant or global value.  No mapped
+          // should be used.
+          uint32_t val_id = cpi->GetSingleWordInOperand(1);
+          AddStore(new_var_id, val_id, &new_blk_ptr);
+        }
         break;
       case SpvOpUnreachable:
       case SpvOpKill: {

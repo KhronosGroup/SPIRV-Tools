@@ -2759,6 +2759,85 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::InlineExhaustivePass>(text, true);
 }
+
+TEST_F(InlineTest, OpVariableWithInit) {
+  // Check that there is a store that corresponds to the initializer.  This
+  // test makes sure that is a store to the variable in the loop and before any
+  // load.
+  const std::string text = R"(
+; CHECK: OpFunction
+; CHECK-NOT: OpFunctionEnd
+; CHECK: [[var:%\w+]] = OpVariable %_ptr_Function_float Function %float_0
+; CHECK: OpLoopMerge [[outer_merge:%\w+]]
+; CHECK-NOT: OpLoad %float [[var]]
+; CHECK: OpStore [[var]] %float_0
+; CHECK: OpFunctionEnd
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %o
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %o Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+          %7 = OpTypeFunction %float
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_0 = OpConstant %float 0
+       %bool = OpTypeBool
+    %float_1 = OpConstant %float 1
+%_ptr_Output_float = OpTypePointer Output %float
+          %o = OpVariable %_ptr_Output_float Output
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Input_int = OpTypePointer Input %int
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %o %float_0
+               OpBranch %34
+         %34 = OpLabel
+         %39 = OpPhi %int %int_0 %5 %47 %37
+               OpLoopMerge %36 %37 None
+               OpBranch %38
+         %38 = OpLabel
+         %41 = OpSLessThan %bool %39 %int_2
+               OpBranchConditional %41 %35 %36
+         %35 = OpLabel
+         %42 = OpFunctionCall %float %foo_
+         %43 = OpLoad %float %o
+         %44 = OpFAdd %float %43 %42
+               OpStore %o %44
+               OpBranch %37
+         %37 = OpLabel
+         %47 = OpIAdd %int %39 %int_1
+               OpBranch %34
+         %36 = OpLabel
+               OpReturn
+               OpFunctionEnd
+       %foo_ = OpFunction %float None %7
+          %9 = OpLabel
+          %n = OpVariable %_ptr_Function_float Function %float_0
+         %13 = OpLoad %float %n
+         %15 = OpFOrdEqual %bool %13 %float_0
+               OpSelectionMerge %17 None
+               OpBranchConditional %15 %16 %17
+         %16 = OpLabel
+         %19 = OpLoad %float %n
+         %20 = OpFAdd %float %19 %float_1
+               OpStore %n %20
+               OpBranch %17
+         %17 = OpLabel
+         %21 = OpLoad %float %n
+               OpReturnValue %21
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::InlineExhaustivePass>(text, true);
+}
 #endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
