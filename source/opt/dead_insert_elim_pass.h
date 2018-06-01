@@ -38,6 +38,14 @@ class DeadInsertElimPass : public MemPass {
   DeadInsertElimPass();
   const char* name() const override { return "eliminate-dead-inserts"; }
   Status Process(ir::IRContext*) override;
+  virtual ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
+           ir::IRContext::kAnalysisDecorations |
+           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
+           ir::IRContext::kAnalysisDominatorAnalysis |
+           ir::IRContext::kAnalysisNameMap;
+  }
 
  private:
   // Return the number of subcomponents in the composite type |typeId|.

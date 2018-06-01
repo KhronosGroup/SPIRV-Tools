@@ -30,7 +30,8 @@ class ReduceLoadSize : public Pass {
 
   // Return the mask of preserved Analyses.
   ir::IRContext::Analysis GetPreservedAnalyses() override {
-    return ir::IRContext::kAnalysisInstrToBlockMapping |
+    return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
            ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
            ir::IRContext::kAnalysisDominatorAnalysis |
            ir::IRContext::kAnalysisLoopAnalysis |
