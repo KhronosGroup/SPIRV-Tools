@@ -316,6 +316,26 @@ INSTANTIATE_TEST_CASE_P(
                                                  SpvBuiltInDeviceIndex})},
             })), );
 
+// SPV_KHR_8bit_storage
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_KHR_8bit_storage, ExtensionRoundTripTest,
+    // We'll get coverage over operand tables by trying the universal
+    // environments, and at least one specific environment.
+    Combine(
+        ValuesIn(CommonVulkanEnvs()),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpCapability StorageBuffer8BitAccess\n",
+             MakeInstruction(SpvOpCapability,
+                             {SpvCapabilityStorageBuffer8BitAccess})},
+            {"OpCapability UniformAndStorageBuffer8BitAccess\n",
+             MakeInstruction(SpvOpCapability,
+                             {SpvCapabilityUniformAndStorageBuffer8BitAccess})},
+            {"OpCapability StoragePushConstant8\n",
+             MakeInstruction(SpvOpCapability,
+                             {SpvCapabilityStoragePushConstant8})},
+        })), );
+
 // SPV_KHR_multiview
 
 INSTANTIATE_TEST_CASE_P(
