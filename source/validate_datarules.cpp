@@ -101,11 +101,12 @@ spv_result_t ValidateIntSize(ValidationState_t& _,
     return SPV_SUCCESS;
   }
   if (num_bits == 8) {
-    if (_.HasCapability(SpvCapabilityInt8)) {
+    if (_.features().declare_int8_type) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA)
-           << "Using an 8-bit integer type requires the Int8 capability.";
+           << "Using an 8-bit integer type requires the Int8 capability,"
+              " or an extension that explicitly enables 16-bit integers.";
   }
   if (num_bits == 16) {
     if (_.features().declare_int16_type) {

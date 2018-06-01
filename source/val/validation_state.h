@@ -74,6 +74,9 @@ class ValidationState_t {
 
     // Permit group oerations Reduce, InclusiveScan, ExclusiveScan
     bool group_ops_reduce_and_scans = false;
+
+    // Allow OpTypeInt with 8 bit width?
+    bool declare_int8_type = false;
   };
 
   ValidationState_t(const spv_const_context context,

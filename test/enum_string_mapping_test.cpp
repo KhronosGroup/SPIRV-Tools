@@ -87,6 +87,7 @@ INSTANTIATE_TEST_CASE_P(
         {Extension::kSPV_GOOGLE_decorate_string, "SPV_GOOGLE_decorate_string"},
         {Extension::kSPV_GOOGLE_hlsl_functionality1,
          "SPV_GOOGLE_hlsl_functionality1"},
+        {Extension::kSPV_KHR_8bit_storage, "SPV_KHR_8bit_storage"},
     })));
 
 INSTANTIATE_TEST_CASE_P(UnknownExtensions, UnknownExtensionTest,
