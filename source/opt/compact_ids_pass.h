@@ -27,6 +27,15 @@ class CompactIdsPass : public Pass {
  public:
   const char* name() const override { return "compact-ids"; }
   Status Process(ir::IRContext*) override;
+
+  // Return the mask of preserved Analyses.
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisInstrToBlockMapping |
+           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
+           ir::IRContext::kAnalysisDominatorAnalysis |
+           ir::IRContext::kAnalysisLoopAnalysis |
+           ir::IRContext::kAnalysisNameMap;
+  }
 };
 
 }  // namespace opt

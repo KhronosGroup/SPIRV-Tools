@@ -42,7 +42,8 @@ class LocalSingleStoreElimPass : public Pass {
   Status Process(ir::IRContext* irContext) override;
 
   ir::IRContext::Analysis GetPreservedAnalyses() override {
-    return ir::IRContext::kAnalysisDefUse;
+    return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping;
   }
 
  private:

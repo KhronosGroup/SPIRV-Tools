@@ -31,6 +31,7 @@ class PrivateToLocalPass : public Pass {
   Status Process(ir::IRContext*) override;
   ir::IRContext::Analysis GetPreservedAnalyses() override {
     return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
            ir::IRContext::kAnalysisDecorations |
            ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
            ir::IRContext::kAnalysisDominatorAnalysis |
