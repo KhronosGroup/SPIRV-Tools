@@ -23,7 +23,7 @@ namespace opt {
 
 class VectorDCE : public MemPass {
  private:
-  using LiveComponentMap = std::unordered_map<uint32_t, utils::BitVector>;
+  using LiveComponentMap = std::vector<std::unique_ptr<utils::BitVector>>;
 
   // According to the SPEC the maximum size for a vector is 16.  See the data
   // rules in the universal validation rules (section 2.16.1).
