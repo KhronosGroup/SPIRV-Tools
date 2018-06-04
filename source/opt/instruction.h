@@ -23,6 +23,7 @@
 #include "opcode.h"
 #include "operand.h"
 #include "util/ilist_node.h"
+#include "util/small_vector.h"
 
 #include "latest_version_glsl_std_450_header.h"
 #include "latest_version_spirv_header.h"
@@ -37,7 +38,7 @@ class IRContext;
 class Module;
 class InstructionList;
 
-// Relaxed logcial addressing:
+// Relaxed logical addressing:
 //
 // In the logical addressing model, pointers cannot be stored or loaded.  This
 // is a useful assumption because it simplifies the aliasing significantly.
@@ -68,14 +69,14 @@ class InstructionList;
 // A *logical* operand to a SPIR-V instruction. It can be the type id, result
 // id, or other additional operands carried in an instruction.
 struct Operand {
-  Operand(spv_operand_type_t t, std::vector<uint32_t>&& w)
+  using OperandData = utils::SmallVector<uint32_t, 2>;
+  Operand(spv_operand_type_t t, OperandData&& w)
       : type(t), words(std::move(w)) {}
 
-  Operand(spv_operand_type_t t, const std::vector<uint32_t>& w)
-      : type(t), words(w) {}
+  Operand(spv_operand_type_t t, const OperandData& w) : type(t), words(w) {}
 
-  spv_operand_type_t type;      // Type of this logical operand.
-  std::vector<uint32_t> words;  // Binary segments of this logical operand.
+  spv_operand_type_t type;  // Type of this logical operand.
+  OperandData words;        // Binary segments of this logical operand.
 
   friend bool operator==(const Operand& o1, const Operand& o2) {
     return o1.type == o2.type && o1.words == o2.words;
@@ -96,8 +97,9 @@ inline bool operator!=(const Operand& o1, const Operand& o2) {
 // needs to change, the user should create a new instruction instead.
 class Instruction : public utils::IntrusiveNodeBase<Instruction> {
  public:
-  using iterator = std::vector<Operand>::iterator;
-  using const_iterator = std::vector<Operand>::const_iterator;
+  using OperandList = std::vector<Operand>;
+  using iterator = OperandList::iterator;
+  using const_iterator = OperandList::const_iterator;
 
   // Creates a default OpNop instruction.
   // This exists solely for containers that can't do without. Should be removed.
@@ -124,7 +126,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Creates an instruction with the given opcode |op|, type id: |ty_id|,
   // result id: |res_id| and input operands: |in_operands|.
   Instruction(IRContext* c, SpvOp op, uint32_t ty_id, uint32_t res_id,
-              const std::vector<Operand>& in_operands);
+              const OperandList& in_operands);
 
   // TODO: I will want to remove these, but will first have to remove the use of
   // std::vector<Instruction>.
@@ -198,13 +200,13 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // words.
   uint32_t GetSingleWordOperand(uint32_t index) const;
   // Sets the |index|-th in-operand's data to the given |data|.
-  inline void SetInOperand(uint32_t index, std::vector<uint32_t>&& data);
+  inline void SetInOperand(uint32_t index, Operand::OperandData&& data);
   // Sets the |index|-th operand's data to the given |data|.
   // This is for in-operands modification only, but with |index| expressed in
   // terms of operand index rather than in-operand index.
-  inline void SetOperand(uint32_t index, std::vector<uint32_t>&& data);
+  inline void SetOperand(uint32_t index, Operand::OperandData&& data);
   // Replace all of the in operands with those in |new_operands|.
-  inline void SetInOperands(std::vector<Operand>&& new_operands);
+  inline void SetInOperands(OperandList&& new_operands);
   // Sets the result type id.
   inline void SetResultType(uint32_t ty_id);
   // Sets the result id
@@ -292,7 +294,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Replaces the operands to the instruction with |new_operands|. The caller
   // is responsible for building a complete and valid list of operands for
   // this instruction.
-  void ReplaceOperands(const std::vector<Operand>& new_operands);
+  void ReplaceOperands(const OperandList& new_operands);
 
   // Returns true if the instruction annotates an id with a decoration.
   inline bool IsDecoration() const;
@@ -441,7 +443,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   uint32_t result_id_;  // Result id. A value of 0 means no result id.
   uint32_t unique_id_;  // Unique instruction id
   // All logical operands, including result type id and result id.
-  std::vector<Operand> operands_;
+  OperandList operands_;
   // Opline and OpNoLine instructions preceding this instruction. Note that for
   // Instructions representing OpLine or OpNonLine itself, this field should be
   // empty.
@@ -485,18 +487,18 @@ inline void Instruction::AddOperand(Operand&& operand) {
 }
 
 inline void Instruction::SetInOperand(uint32_t index,
-                                      std::vector<uint32_t>&& data) {
+                                      Operand::OperandData&& data) {
   SetOperand(index + TypeResultIdCount(), std::move(data));
 }
 
 inline void Instruction::SetOperand(uint32_t index,
-                                    std::vector<uint32_t>&& data) {
+                                    Operand::OperandData&& data) {
   assert(index < operands_.size() && "operand index out of bound");
   assert(index >= TypeResultIdCount() && "operand is not a in-operand");
   operands_[index].words = std::move(data);
 }
 
-inline void Instruction::SetInOperands(std::vector<Operand>&& new_operands) {
+inline void Instruction::SetInOperands(OperandList&& new_operands) {
   // Remove the old in operands.
   operands_.erase(operands_.begin() + TypeResultIdCount(), operands_.end());
   // Add the new in operands.
