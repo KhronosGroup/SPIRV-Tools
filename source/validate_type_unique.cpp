@@ -37,14 +37,8 @@ spv_result_t TypeUniquePass(ValidationState_t& _,
 
   if (spvOpcodeGeneratesType(opcode)) {
     if (opcode == SpvOpTypeArray || opcode == SpvOpTypeRuntimeArray ||
-        opcode == SpvOpTypeStruct) {
+        opcode == SpvOpTypeStruct || opcode == SpvOpTypePointer) {
       // Duplicate declarations of aggregates are allowed.
-      return SPV_SUCCESS;
-    }
-
-    if (inst->opcode == SpvOpTypePointer &&
-        _.HasExtension(Extension::kSPV_KHR_variable_pointers)) {
-      // Duplicate pointer types are allowed with this extension.
       return SPV_SUCCESS;
     }
 

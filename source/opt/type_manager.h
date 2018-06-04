@@ -94,11 +94,6 @@ class TypeManager {
   IdToTypeMap::const_iterator begin() const { return id_to_type_.cbegin(); }
   IdToTypeMap::const_iterator end() const { return id_to_type_.cend(); }
 
-  // Returns the forward pointer type at the given |index|.
-  ForwardPointer* GetForwardPointer(uint32_t index) const;
-  // Returns the number of forward pointer types hold in this manager.
-  size_t NumForwardPointers() const { return forward_pointers_.size(); }
-
   // Returns a pair of the type and pointer to the type in |sc|.
   //
   // |id| must be a registered type.
@@ -146,14 +141,31 @@ class TypeManager {
   using TypePool =
       std::unordered_set<std::unique_ptr<Type>, HashTypeUniquePointer,
                          CompareTypeUniquePointers>;
-  using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
+
+  class UnresolvedType {
+   public:
+    UnresolvedType(uint32_t i, Type* t) : id_(i), type_(t) {}
+    UnresolvedType(const UnresolvedType&) = delete;
+    UnresolvedType(UnresolvedType&& that)
+        : id_(that.id_), type_(std::move(that.type_)) {}
+
+    uint32_t id() { return id_; }
+    Type* type() { return type_.get(); }
+    std::unique_ptr<Type>&& ReleaseType() { return std::move(type_); }
+    void ResetType(Type* t) { type_.reset(t); }
+
+   private:
+    uint32_t id_;
+    std::unique_ptr<Type> type_;
+  };
+  using IdToUnresolvedType = std::vector<UnresolvedType>;
 
   // Analyzes the types and decorations on types in the given |module|.
   void AnalyzeTypes(const spvtools::ir::Module& module);
 
   spvtools::ir::IRContext* context() { return context_; }
 
-  // Attachs the decorations on |type| to |id|.
+  // Attaches the decorations on |type| to |id|.
   void AttachDecorations(uint32_t id, const Type* type);
 
   // Create the annotation instruction.
@@ -177,15 +189,25 @@ class TypeManager {
   // replacing the bool subtype with one owned by |type_pool_|.
   Type* RebuildType(const Type& type);
 
+  // Completes the incomplete type |type|, by replaces all references to
+  // ForwardPointer by the defining Pointer.
+  void ReplaceForwardPointers(Type* type);
+
+  // Replaces all references to |original_type| in |incomplete_types_| by
+  // |new_type|.
+  void ReplaceType(Type* new_type, Type* original_type);
+
   const MessageConsumer& consumer_;  // Message consumer.
   spvtools::ir::IRContext* context_;
   IdToTypeMap id_to_type_;  // Mapping from ids to their type representations.
   TypeToIdMap type_to_id_;  // Mapping from types to their defining ids.
   TypePool type_pool_;      // Memory owner of type pointers.
-  ForwardPointerVector forward_pointers_;  // All forward pointer declarations.
-  // All unresolved forward pointer declarations.
-  // Refers the contents in the above vector.
-  std::unordered_set<ForwardPointer*> unresolved_forward_pointers_;
+  IdToUnresolvedType incomplete_types_;  // All incomplete types.  Stored in an
+                                         // std::vector to make traversals
+                                         // deterministic.
+
+  IdToTypeMap id_to_incomplete_type_;  // Maps ids to their type representations
+                                       // for incomplete types.
 };
 
 }  // namespace analysis

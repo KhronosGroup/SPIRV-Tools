@@ -131,10 +131,11 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   auto* rav3s32 = types.back().get();
 
   // Struct
-  types.emplace_back(new Struct(std::vector<Type*>{s32}));
-  types.emplace_back(new Struct(std::vector<Type*>{s32, f32}));
+  types.emplace_back(new Struct(std::vector<const Type*>{s32}));
+  types.emplace_back(new Struct(std::vector<const Type*>{s32, f32}));
   auto* sts32f32 = types.back().get();
-  types.emplace_back(new Struct(std::vector<Type*>{u64, a42f32, rav3s32}));
+  types.emplace_back(
+      new Struct(std::vector<const Type*>{u64, a42f32, rav3s32}));
 
   // Opaque
   types.emplace_back(new Opaque(""));
@@ -173,7 +174,6 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
 TEST(TypeManager, TypeStrings) {
   const std::string text = R"(
     OpTypeForwardPointer !20 !2 ; id for %p is 20, Uniform is 2
-    OpTypeForwardPointer !10000 !1
     %void    = OpTypeVoid
     %bool    = OpTypeBool
     %u32     = OpTypeInt 32 0
@@ -240,14 +240,232 @@ TEST(TypeManager, TypeStrings) {
   opt::analysis::TypeManager manager(nullptr, context.get());
 
   EXPECT_EQ(type_id_strs.size(), manager.NumTypes());
-  EXPECT_EQ(2u, manager.NumForwardPointers());
 
   for (const auto& p : type_id_strs) {
     EXPECT_EQ(p.second, manager.GetType(p.first)->str());
     EXPECT_EQ(p.first, manager.GetId(manager.GetType(p.first)));
   }
-  EXPECT_EQ("forward_pointer({uint32}*)", manager.GetForwardPointer(0)->str());
-  EXPECT_EQ("forward_pointer(10000)", manager.GetForwardPointer(1)->str());
+}
+
+TEST(TypeManager, StructWithFwdPtr) {
+  const std::string text = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %7 "test"
+               OpSource OpenCL_C 102000
+               OpDecorate %11 FuncParamAttr NoCapture
+         %11 = OpDecorationGroup
+               OpGroupDecorate %11 %8 %9
+               OpTypeForwardPointer %100 CrossWorkgroup
+       %void = OpTypeVoid
+  %150 = OpTypeStruct %100
+%100 = OpTypePointer CrossWorkgroup %150
+          %6 = OpTypeFunction %void %100 %100
+          %7 = OpFunction %void Pure %6
+          %8 = OpFunctionParameter %100
+          %9 = OpFunctionParameter %100
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::analysis::TypeManager manager(nullptr, context.get());
+
+  Type* p100 = manager.GetType(100);
+  Type* s150 = manager.GetType(150);
+
+  EXPECT_TRUE(p100->AsPointer());
+  EXPECT_EQ(p100->AsPointer()->pointee_type(), s150);
+
+  EXPECT_TRUE(s150->AsStruct());
+  EXPECT_EQ(s150->AsStruct()->element_types()[0], p100);
+}
+
+TEST(TypeManager, CircularFwdPtr) {
+  const std::string text = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %7 "test"
+               OpSource OpenCL_C 102000
+               OpDecorate %11 FuncParamAttr NoCapture
+         %11 = OpDecorationGroup
+               OpGroupDecorate %11 %8 %9
+               OpTypeForwardPointer %100 CrossWorkgroup
+               OpTypeForwardPointer %200 CrossWorkgroup
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+  %150 = OpTypeStruct %200 %int
+  %250 = OpTypeStruct %100 %float
+%100 = OpTypePointer CrossWorkgroup %150
+%200 = OpTypePointer CrossWorkgroup %250
+          %6 = OpTypeFunction %void %100 %200
+          %7 = OpFunction %void Pure %6
+          %8 = OpFunctionParameter %100
+          %9 = OpFunctionParameter %200
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::analysis::TypeManager manager(nullptr, context.get());
+
+  Type* p100 = manager.GetType(100);
+  Type* s150 = manager.GetType(150);
+  Type* p200 = manager.GetType(200);
+  Type* s250 = manager.GetType(250);
+
+  EXPECT_TRUE(p100->AsPointer());
+  EXPECT_EQ(p100->AsPointer()->pointee_type(), s150);
+
+  EXPECT_TRUE(p200->AsPointer());
+  EXPECT_EQ(p200->AsPointer()->pointee_type(), s250);
+
+  EXPECT_TRUE(s150->AsStruct());
+  EXPECT_EQ(s150->AsStruct()->element_types()[0], p200);
+
+  EXPECT_TRUE(s250->AsStruct());
+  EXPECT_EQ(s250->AsStruct()->element_types()[0], p100);
+}
+
+TEST(TypeManager, IsomorphicStructWithFwdPtr) {
+  const std::string text = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %7 "test"
+               OpSource OpenCL_C 102000
+               OpDecorate %11 FuncParamAttr NoCapture
+         %11 = OpDecorationGroup
+               OpGroupDecorate %11 %8 %9
+               OpTypeForwardPointer %100 CrossWorkgroup
+               OpTypeForwardPointer %200 CrossWorkgroup
+       %void = OpTypeVoid
+  %_struct_1 = OpTypeStruct %100
+  %_struct_2 = OpTypeStruct %200
+%100 = OpTypePointer CrossWorkgroup %_struct_1
+%200 = OpTypePointer CrossWorkgroup %_struct_2
+          %6 = OpTypeFunction %void %100 %200
+          %7 = OpFunction %void Pure %6
+          %8 = OpFunctionParameter %100
+          %9 = OpFunctionParameter %200
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::analysis::TypeManager manager(nullptr, context.get());
+
+  EXPECT_EQ(manager.GetType(100), manager.GetType(200));
+}
+
+TEST(TypeManager, IsomorphicCircularFwdPtr) {
+  const std::string text = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %7 "test"
+               OpSource OpenCL_C 102000
+               OpDecorate %11 FuncParamAttr NoCapture
+         %11 = OpDecorationGroup
+               OpGroupDecorate %11 %8 %9
+               OpTypeForwardPointer %100 CrossWorkgroup
+               OpTypeForwardPointer %200 CrossWorkgroup
+               OpTypeForwardPointer %300 CrossWorkgroup
+               OpTypeForwardPointer %400 CrossWorkgroup
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+  %150 = OpTypeStruct %200 %int
+  %250 = OpTypeStruct %100 %float
+  %350 = OpTypeStruct %400 %int
+  %450 = OpTypeStruct %300 %float
+%100 = OpTypePointer CrossWorkgroup %150
+%200 = OpTypePointer CrossWorkgroup %250
+%300 = OpTypePointer CrossWorkgroup %350
+%400 = OpTypePointer CrossWorkgroup %450
+          %6 = OpTypeFunction %void %100 %200
+          %7 = OpFunction %void Pure %6
+          %8 = OpFunctionParameter %100
+          %9 = OpFunctionParameter %200
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::analysis::TypeManager manager(nullptr, context.get());
+
+  Type* p100 = manager.GetType(100);
+  Type* p300 = manager.GetType(300);
+  EXPECT_EQ(p100, p300);
+  Type* p200 = manager.GetType(200);
+  Type* p400 = manager.GetType(400);
+  EXPECT_EQ(p200, p400);
+
+  Type* p150 = manager.GetType(150);
+  Type* p350 = manager.GetType(350);
+  EXPECT_EQ(p150, p350);
+  Type* p250 = manager.GetType(250);
+  Type* p450 = manager.GetType(450);
+  EXPECT_EQ(p250, p450);
+}
+
+TEST(TypeManager, PartialIsomorphicFwdPtr) {
+  const std::string text = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %7 "test"
+               OpSource OpenCL_C 102000
+               OpDecorate %11 FuncParamAttr NoCapture
+         %11 = OpDecorationGroup
+               OpGroupDecorate %11 %8 %9
+               OpTypeForwardPointer %100 CrossWorkgroup
+               OpTypeForwardPointer %200 CrossWorkgroup
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+  %150 = OpTypeStruct %200 %int
+  %250 = OpTypeStruct %200 %int
+%100 = OpTypePointer CrossWorkgroup %150
+%200 = OpTypePointer CrossWorkgroup %250
+          %6 = OpTypeFunction %void %100 %200
+          %7 = OpFunction %void Pure %6
+          %8 = OpFunctionParameter %100
+          %9 = OpFunctionParameter %200
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::analysis::TypeManager manager(nullptr, context.get());
+
+  Type* p100 = manager.GetType(100);
+  Type* p200 = manager.GetType(200);
+  EXPECT_EQ(p100->AsPointer()->pointee_type(),
+            p200->AsPointer()->pointee_type());
 }
 
 TEST(TypeManager, DecorationOnStruct) {
@@ -270,7 +488,6 @@ TEST(TypeManager, DecorationOnStruct) {
   opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(7u, manager.NumTypes());
-  ASSERT_EQ(0u, manager.NumForwardPointers());
   // Make sure we get ids correct.
   ASSERT_EQ("uint32", manager.GetType(5)->str());
   ASSERT_EQ("float32", manager.GetType(6)->str());
@@ -320,7 +537,6 @@ TEST(TypeManager, DecorationOnMember) {
   opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(10u, manager.NumTypes());
-  ASSERT_EQ(0u, manager.NumForwardPointers());
   // Make sure we get ids correct.
   ASSERT_EQ("uint32", manager.GetType(8)->str());
   ASSERT_EQ("float32", manager.GetType(9)->str());
@@ -358,7 +574,6 @@ TEST(TypeManager, DecorationEmpty) {
   opt::analysis::TypeManager manager(nullptr, context.get());
 
   ASSERT_EQ(5u, manager.NumTypes());
-  ASSERT_EQ(0u, manager.NumForwardPointers());
   // Make sure we get ids correct.
   ASSERT_EQ("uint32", manager.GetType(3)->str());
   ASSERT_EQ("float32", manager.GetType(4)->str());
@@ -379,7 +594,6 @@ TEST(TypeManager, BeginEndForEmptyModule) {
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   opt::analysis::TypeManager manager(nullptr, context.get());
   ASSERT_EQ(0u, manager.NumTypes());
-  ASSERT_EQ(0u, manager.NumForwardPointers());
 
   EXPECT_EQ(manager.begin(), manager.end());
 }
@@ -396,7 +610,6 @@ TEST(TypeManager, BeginEnd) {
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   opt::analysis::TypeManager manager(nullptr, context.get());
   ASSERT_EQ(5u, manager.NumTypes());
-  ASSERT_EQ(0u, manager.NumForwardPointers());
 
   EXPECT_NE(manager.begin(), manager.end());
   for (const auto& t : manager) {

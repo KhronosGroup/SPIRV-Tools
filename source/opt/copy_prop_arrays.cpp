@@ -747,9 +747,9 @@ uint32_t CopyPropagateArrays::GenerateCopy(
                  original_type->AsStruct()) {
     analysis::Struct* new_struct_type = new_type->AsStruct();
 
-    const std::vector<analysis::Type*>& original_types =
+    const std::vector<const analysis::Type*>& original_types =
         original_struct_type->element_types();
-    const std::vector<analysis::Type*>& new_types =
+    const std::vector<const analysis::Type*>& new_types =
         new_struct_type->element_types();
     std::vector<uint32_t> element_ids;
     for (uint32_t i = 0; i < original_types.size(); i++) {

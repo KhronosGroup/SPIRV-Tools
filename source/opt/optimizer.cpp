@@ -329,7 +329,7 @@ Optimizer::PassToken CreateLocalSingleStoreElimPass() {
 
 Optimizer::PassToken CreateInsertExtractElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::InsertExtractElimPass>());
+      MakeUnique<opt::SimplificationPass>());
 }
 
 Optimizer::PassToken CreateDeadInsertElimPass() {

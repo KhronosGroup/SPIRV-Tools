@@ -132,9 +132,9 @@ Options (in lexicographical order):
   --eliminate-dead-variables
                Deletes module scope variables that are not referenced.
   --eliminate-insert-extract
-               Replace extract from a sequence of inserts with the
-               corresponding value. Performed only on entry point call tree
-               functions.
+               DEPRECATED.  This pass has been replaced by the simplification
+               pass, and that pass will be run instead.
+               See --simplify-instructions.
   --eliminate-local-multi-store
                Replace stores and loads of function scope variables that are
                stored multiple times. Performed on variables referenceed only
