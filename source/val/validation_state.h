@@ -26,6 +26,7 @@
 #include "assembly_grammar.h"
 #include "decoration.h"
 #include "diagnostic.h"
+#include "disassemble.h"
 #include "enum_set.h"
 #include "latest_version_spirv_header.h"
 #include "spirv-tools/libspirv.h"
@@ -76,7 +77,8 @@ class ValidationState_t {
   };
 
   ValidationState_t(const spv_const_context context,
-                    const spv_const_validator_options opt);
+                    const spv_const_validator_options opt,
+                    const uint32_t* words, const size_t num_words);
 
   /// Returns the context
   spv_const_context context() const { return context_; }
@@ -136,6 +138,8 @@ class ValidationState_t {
   bool IsOpcodeInCurrentLayoutSection(SpvOp op);
 
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
+  libspirv::DiagnosticStream diag(spv_result_t error_code,
+                                  int instruction_counter) const;
 
   /// Returns the function states
   std::deque<Function>& functions();
@@ -469,6 +473,12 @@ class ValidationState_t {
   // Returns tuple <is_int32, is_const_int32, value>.
   std::tuple<bool, bool, uint32_t> EvalInt32IfConst(uint32_t id);
 
+  // Returns the disassembly string for the given instruction.
+  std::string Disassemble(const Instruction& inst) const;
+
+  // Returns the disassembly string for the given instruction.
+  std::string Disassemble(const uint32_t* words, uint16_t num_words) const;
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -476,6 +486,10 @@ class ValidationState_t {
 
   /// Stores the Validator command line options. Must be a valid options object.
   const spv_const_validator_options options_;
+
+  /// The SPIR-V binary module we're validating.
+  const uint32_t* words_;
+  const size_t num_words_;
 
   /// Tracks the number of instructions evaluated by the validator
   int instruction_counter_;

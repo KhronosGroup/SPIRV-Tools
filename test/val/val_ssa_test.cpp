@@ -611,7 +611,8 @@ TEST_F(ValidateSSA, EnqueueKernelGood) {
                kKernelDefinition + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
-                )" + kKernelSetup + R"(
+                )" +
+               kKernelSetup + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -633,7 +634,8 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelGood) {
                                         %palign %lsize
                          OpReturn
                          OpFunctionEnd
-                 )" + kKernelDefinition;
+                 )" +
+               kKernelDefinition;
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -643,7 +645,8 @@ TEST_F(ValidateSSA, EnqueueMissingFunctionBad) {
                kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
-                )" + kKernelSetup + R"(
+                )" +
+               kKernelSetup + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -1124,7 +1127,8 @@ TEST_F(ValidateSSA, IdDoesNotDominateItsUseBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex("ID .\\[eleven\\] defined in block .\\[true_block\\] does "
-                   "not dominate its use in block .\\[false_block\\]"));
+                   "not dominate its use in block .\\[false_block\\]\n"
+                   "  OpFunctionEnd ; 0x00000014\n"));
 }
 
 TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
@@ -1264,7 +1268,8 @@ TEST_F(ValidateSSA, PhiVariableDefNotDominatedByParentBlockBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex("In OpPhi instruction .\\[phi\\], ID .\\[true_copy\\] "
-                   "definition does not dominate its parent .\\[if_false\\]"));
+                   "definition does not dominate its parent .\\[if_false\\]\n"
+                   "  OpFunctionEnd ; 0x00000014\n"));
 }
 
 TEST_F(ValidateSSA, PhiVariableDefDominatesButNotDefinedInParentBlock) {
@@ -1389,7 +1394,8 @@ TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex("ID .\\[first\\] used in function .\\[func2\\] is used "
-                   "outside of it's defining function .\\[func\\]"));
+                   "outside of it's defining function .\\[func\\]\n"
+                   "  OpFunctionEnd ; 0x00000014\n"));
 }
 
 TEST_F(ValidateSSA, TypeForwardPointerForwardReference) {

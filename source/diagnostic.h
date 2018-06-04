@@ -30,8 +30,12 @@ class DiagnosticStream {
  public:
   DiagnosticStream(spv_position_t position,
                    const spvtools::MessageConsumer& consumer,
+                   const std::string& disassembled_instruction,
                    spv_result_t error)
-      : position_(position), consumer_(consumer), error_(error) {}
+      : position_(position),
+        consumer_(consumer),
+        disassembled_instruction_(disassembled_instruction),
+        error_(error) {}
 
   // Creates a DiagnosticStream from an expiring DiagnosticStream.
   // The new object takes the contents of the other, and prevents the
@@ -57,6 +61,7 @@ class DiagnosticStream {
   std::ostringstream stream_;
   spv_position_t position_;
   spvtools::MessageConsumer consumer_;  // Message consumer callback.
+  std::string disassembled_instruction_;
   spv_result_t error_;
 };
 
