@@ -211,7 +211,8 @@ spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
     if (SpvOpTypeRuntimeArray == secondaryTypePtr->opcode() ||
         SpvOpTypeArray == secondaryTypePtr->opcode()) {
       return vstate.diag(SPV_ERROR_INVALID_ID)
-             << "Array of arrays is not allowed.";
+             << "Only a single level of array is allowed for descriptor "
+                "set variables";
     }
   }
   return SPV_SUCCESS;

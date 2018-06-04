@@ -548,6 +548,14 @@ OpFunctionEnd
                         "Component decorations"));
 }
 
+// #version 440
+// #extension GL_EXT_nonuniform_qualifier : enable
+// layout(binding = 1) uniform sampler2D s2d[];
+// layout(location = 0) in nonuniformEXT int i;
+// void main()
+// {
+//     vec4 v = texture(s2d[i], vec2(0.3));
+// }
 TEST_F(ValidateDecorations, RuntimeArrayOfDescriptorSetsIsAllowed) {
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
@@ -604,6 +612,14 @@ TEST_F(ValidateDecorations, RuntimeArrayOfDescriptorSetsIsAllowed) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+// #version 440
+// #extension GL_EXT_nonuniform_qualifier : enable
+// layout(binding = 1) uniform sampler2D s2d[][2];
+// layout(location = 0) in nonuniformEXT int i;
+// void main()
+// {
+//     vec4 v = texture(s2d[i][i], vec2(0.3));
+// }
 TEST_F(ValidateDecorations, RuntimeArrayOfArraysOfDescriptorSetsIsDisallowed) {
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
@@ -668,6 +684,10 @@ TEST_F(ValidateDecorations, RuntimeArrayOfArraysOfDescriptorSetsIsDisallowed) {
               HasSubstr("Array of arrays is not allowed"));
 }
 
+// #version 440
+// layout (set=1, binding=1) uniform sampler2D variableName[2][2];
+// void main() {
+// }
 TEST_F(ValidateDecorations, ArrayOfArraysOfDescriptorSetsIsDisallowed) {
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
