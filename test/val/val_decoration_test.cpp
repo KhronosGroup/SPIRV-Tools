@@ -681,7 +681,8 @@ TEST_F(ValidateDecorations, RuntimeArrayOfArraysOfDescriptorSetsIsDisallowed) {
 
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Array of arrays is not allowed"));
+              HasSubstr("Only a single level of array is allowed for "
+                        "descriptor set variables"));
 }
 
 // #version 440
@@ -720,7 +721,8 @@ TEST_F(ValidateDecorations, ArrayOfArraysOfDescriptorSetsIsDisallowed) {
 
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Array of arrays is not allowed"));
+              HasSubstr("Only a single level of array is allowed for "
+                        "descriptor set variables"));
 }
 
 }  // anonymous namespace
