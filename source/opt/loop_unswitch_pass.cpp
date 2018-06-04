@@ -424,7 +424,7 @@ class LoopUnswitch {
           constant_branch[0].second->id(),
           if_merge_block ? if_merge_block->id() : kInvalidId);
     } else {
-      std::vector<std::pair<std::vector<uint32_t>, uint32_t>> targets;
+      std::vector<std::pair<ir::Operand::OperandData, uint32_t>> targets;
       for (auto& t : constant_branch) {
         targets.emplace_back(t.first->GetInOperand(0).words, t.second->id());
       }
