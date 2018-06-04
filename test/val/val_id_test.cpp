@@ -167,8 +167,9 @@ TEST_F(ValidateIdWithMessage, OpMemberNameTypeBad) {
 %1 = OpTypeInt 32 0)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpMemberName Type <id> '1' is not a struct type."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpMemberName Type <id> '1[foo]' is not a struct type."));
 }
 TEST_F(ValidateIdWithMessage, OpMemberNameMemberBad) {
   string spirv = kGLSL450MemoryModel + R"(
@@ -177,9 +178,10 @@ TEST_F(ValidateIdWithMessage, OpMemberNameMemberBad) {
 %1 = OpTypeStruct %2)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpMemberName Member <id> '1' index is larger than "
-                        "Type <id> '1's member count."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpMemberName Member <id> '1[foo]' index is larger than "
+                "Type <id> '1[foo]'s member count."));
 }
 
 TEST_F(ValidateIdWithMessage, OpLineGood) {
@@ -2830,8 +2832,7 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeNonPtrVariableBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_float %_ptr_Private_float )" + elem +
                  R"(%int_0 %int_1
 OpReturn
@@ -2851,8 +2852,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Function_float %my_matrix )" + elem +
                  R"(%int_0 %int_1
 OpReturn
@@ -2873,8 +2873,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_float %my_float_var )" + elem + R"(%int_0
 OpReturn
 OpFunctionEnd
@@ -2893,8 +2892,7 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_float %my_float_var )" + elem + R"(
 OpReturn
 OpFunctionEnd
@@ -2909,8 +2907,7 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_mat4x3 %my_float_var )" + elem + R"(
 OpReturn
 OpFunctionEnd
@@ -3059,10 +3056,9 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesBad) {
 TEST_P(AccessChainInstructionTest, AccessChainUndefinedIndexBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv =
-      kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
-      R"( %_ptr_Private_float %my_matrix )" + elem + R"(%float %int_1
+                 R"( %_ptr_Private_float %my_matrix )" + elem + R"(%float %int_1
 OpReturn
 OpFunctionEnd
   )";
@@ -3079,8 +3075,8 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexNotConstantBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%f = )" +
-                 instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+%f = )" + instr + R"( %_ptr_Uniform_float %blockName_var )" +
+                 elem +
                  R"(%int_0 %spec_int %int_2
 OpReturn
 OpFunctionEnd
@@ -3099,8 +3095,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_0 %int_1 %int_2
 OpReturn
@@ -3120,8 +3115,7 @@ TEST_P(AccessChainInstructionTest, AccessChainStructTooManyIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_0 %int_2 %int_2
 OpReturn
@@ -3140,8 +3134,7 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_3 %int_2 %int_2
 OpReturn
@@ -3192,8 +3185,7 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayGood) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %runtime_arr_entry = )" +
-                 instr +
-                 R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                 instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_2 %int_0
 OpReturn
 OpFunctionEnd
@@ -3208,8 +3200,7 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %runtime_arr_entry = )" +
-                 instr +
-                 R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                 instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_2 %int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -3228,8 +3219,7 @@ TEST_P(AccessChainInstructionTest, AccessChainMatrixMoreArgsThanNeededBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_float %my_matrix )" + elem +
                  R"(%int_0 %int_1 %int_0
 OpReturn
@@ -3249,8 +3239,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                 instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_mat4x3 %my_matrix )" + elem +
                  R"(%int_0 %int_1
 OpReturn
