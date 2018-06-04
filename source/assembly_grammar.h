@@ -56,15 +56,23 @@ class AssemblyGrammar {
 
   // Fills in the desc parameter with the information about the given
   // operand. Returns SPV_SUCCESS if the operand was found, and
-  // SPV_ERROR_INVALID_LOOKUP otherwise.
+  // SPV_ERROR_INVALID_LOOKUP otherwise.  If |unconditional| is true, then
+  // a matching token in the grammar table is returned.  Otherwise,
+  // a token is only discoverable if it is enabled by an extension or
+  // by the SPIR-V version of the target environment.
   spv_result_t lookupOperand(spv_operand_type_t type, const char* name,
-                             size_t name_len, spv_operand_desc* desc) const;
+                             size_t name_len, spv_operand_desc* desc,
+                             bool unconditional = false) const;
 
   // Fills in the desc parameter with the information about the given
   // operand. Returns SPV_SUCCESS if the operand was found, and
-  // SPV_ERROR_INVALID_LOOKUP otherwise.
+  // SPV_ERROR_INVALID_LOOKUP otherwise.  If |unconditional| is true, then
+  // a matching token in the grammar table is returned.  Otherwise,
+  // a token is only discoverable if it is enabled by an extension or
+  // by the SPIR-V version of the target environment.
   spv_result_t lookupOperand(spv_operand_type_t type, uint32_t operand,
-                             spv_operand_desc* desc) const;
+                             spv_operand_desc* desc,
+                             bool unconditional = false) const;
 
   // Finds operand entry in the grammar table and returns its name.
   // Returns "Unknown" if not found.

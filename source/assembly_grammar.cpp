@@ -201,16 +201,16 @@ spv_result_t AssemblyGrammar::lookupOpcode(SpvOp opcode,
 
 spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
                                             const char* name, size_t name_len,
-                                            spv_operand_desc* desc) const {
+                                            spv_operand_desc* desc, bool unconditional) const {
   return spvOperandTableNameLookup(target_env_, operandTable_, type, name,
-                                   name_len, desc);
+                                   name_len, desc, unconditional);
 }
 
 spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
                                             uint32_t operand,
-                                            spv_operand_desc* desc) const {
+                                            spv_operand_desc* desc, bool unconditional) const {
   return spvOperandTableValueLookup(target_env_, operandTable_, type, operand,
-                                    desc);
+                                    desc, unconditional);
 }
 
 spv_result_t AssemblyGrammar::lookupSpecConstantOpcode(const char* name,

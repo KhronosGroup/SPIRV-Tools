@@ -51,7 +51,7 @@ std::string ToString(const CapabilitySet& capabilities,
   capabilities.ForEach([&grammar, &ss](SpvCapability cap) {
     spv_operand_desc desc;
     if (SPV_SUCCESS ==
-        grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
+        grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc, true))
       ss << desc->name << " ";
     else
       ss << cap << " ";
@@ -61,7 +61,7 @@ std::string ToString(const CapabilitySet& capabilities,
 
 // Reports a missing-capability error to _'s diagnostic stream and returns
 // SPV_ERROR_INVALID_CAPABILITY.
-spv_result_t CapabilityError(ValidationState_t& _, int which_operand,
+spv_result_t CapabilityError(const ValidationState_t& _, int which_operand,
                              SpvOp opcode,
                              const std::string& required_capabilities) {
   return _.diag(SPV_ERROR_INVALID_CAPABILITY)
@@ -101,9 +101,14 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
   return CapabilitySet();
 }
 
-// Returns an operand's required capabilities.
-CapabilitySet RequiredCapabilities(const ValidationState_t& state,
-                                   spv_operand_type_t type, uint32_t operand) {
+
+// Returns SPV_SUCCESS if the given operand is enabled by capabilities declared
+// in the module.  Otherwise issues an error message and returns
+// SPV_ERROR_INVALID_CAPABILITY.
+spv_result_t CheckRequiredCapabilities(const ValidationState_t& state,
+                                       SpvOp opcode, int which_operand,
+                                       spv_operand_type_t type,
+                                       uint32_t operand) {
   // Mere mention of PointSize, ClipDistance, or CullDistance in a Builtin
   // decoration does not require the associated capability.  The use of such
   // a variable value should trigger the capability requirement, but that's
@@ -114,47 +119,53 @@ CapabilitySet RequiredCapabilities(const ValidationState_t& state,
       case SpvBuiltInPointSize:
       case SpvBuiltInClipDistance:
       case SpvBuiltInCullDistance:
-        return CapabilitySet();
+        return SPV_SUCCESS;
       default:
         break;
     }
   } else if (type == SPV_OPERAND_TYPE_FP_ROUNDING_MODE) {
     // Allow all FP rounding modes if requested
     if (state.features().free_fp_rounding_mode) {
-      return CapabilitySet();
+      return SPV_SUCCESS;
     }
+  } else if (type == SPV_OPERAND_TYPE_GROUP_OPERATION &&
+             state.features().group_ops_reduce_and_scans &&
+             (operand <= uint32_t(SpvGroupOperationExclusiveScan))) {
+    // Allow certain group operations if requested.
+    return SPV_SUCCESS;
   }
 
-  spv_operand_desc operand_desc;
-  const auto ret = state.grammar().lookupOperand(type, operand, &operand_desc);
-  if (ret == SPV_SUCCESS) {
+  CapabilitySet enabling_capabilities;
+  spv_operand_desc operand_desc = nullptr;
+  // Perform an unconditional lookup for the symbol so we can check capabilities
+  // for symbols that are only enabled by extensions.
+  const auto lookup_result =
+      state.grammar().lookupOperand(type, operand, &operand_desc, true);
+  if (lookup_result == SPV_SUCCESS) {
     // Allow FPRoundingMode decoration if requested.
     if (type == SPV_OPERAND_TYPE_DECORATION &&
         operand_desc->value == SpvDecorationFPRoundingMode) {
-      if (state.features().free_fp_rounding_mode) return CapabilitySet();
+      if (state.features().free_fp_rounding_mode) return SPV_SUCCESS;
 
       // Vulkan API requires more capabilities on rounding mode.
       if (spvIsVulkanEnv(state.context()->target_env)) {
-        CapabilitySet cap_set;
-        cap_set.Add(SpvCapabilityStorageUniformBufferBlock16);
-        cap_set.Add(SpvCapabilityStorageUniform16);
-        cap_set.Add(SpvCapabilityStoragePushConstant16);
-        cap_set.Add(SpvCapabilityStorageInputOutput16);
-        return cap_set;
+        enabling_capabilities.Add(SpvCapabilityStorageUniformBufferBlock16);
+        enabling_capabilities.Add(SpvCapabilityStorageUniform16);
+        enabling_capabilities.Add(SpvCapabilityStoragePushConstant16);
+        enabling_capabilities.Add(SpvCapabilityStorageInputOutput16);
       }
-    }
-    // Allow certain group operations if requested.
-    if (state.features().group_ops_reduce_and_scans &&
-        type == SPV_OPERAND_TYPE_GROUP_OPERATION &&
-        (operand <= uint32_t(SpvGroupOperationExclusiveScan))) {
-      return CapabilitySet();
+    } else {
+      enabling_capabilities = state.grammar().filterCapsAgainstTargetEnv(
+          operand_desc->capabilities, operand_desc->numCapabilities);
     }
 
-    return state.grammar().filterCapsAgainstTargetEnv(
-        operand_desc->capabilities, operand_desc->numCapabilities);
+    if (!state.HasAnyOfCapabilities(enabling_capabilities)) {
+      return CapabilityError(state, which_operand, opcode,
+                             ToString(enabling_capabilities, state.grammar()));
+    }
   }
 
-  return CapabilitySet();
+  return SPV_SUCCESS;
 }
 
 // Returns operand's required extensions.
@@ -196,11 +207,9 @@ spv_result_t CapabilityCheck(ValidationState_t& _,
       // Check for required capabilities for each bit position of the mask.
       for (uint32_t mask_bit = 0x80000000; mask_bit; mask_bit >>= 1) {
         if (word & mask_bit) {
-          const auto caps = RequiredCapabilities(_, operand.type, mask_bit);
-          if (!_.HasAnyOfCapabilities(caps)) {
-            return CapabilityError(_, i + 1, opcode,
-                                   ToString(caps, _.grammar()));
-          }
+          spv_result_t status = CheckRequiredCapabilities(
+              _, opcode, i + 1, operand.type, mask_bit);
+          if (status != SPV_SUCCESS) return status;
         }
       }
     } else if (spvIsIdType(operand.type)) {
@@ -209,10 +218,9 @@ spv_result_t CapabilityCheck(ValidationState_t& _,
       // https://github.com/KhronosGroup/SPIRV-Tools/issues/248
     } else {
       // Check the operand word as a whole.
-      const auto caps = RequiredCapabilities(_, operand.type, word);
-      if (!_.HasAnyOfCapabilities(caps)) {
-        return CapabilityError(_, i + 1, opcode, ToString(caps, _.grammar()));
-      }
+      spv_result_t status =
+          CheckRequiredCapabilities(_, opcode, i + 1, operand.type, word);
+      if (status != SPV_SUCCESS) return status;
     }
   }
   return SPV_SUCCESS;

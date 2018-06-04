@@ -41,12 +41,10 @@ spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
   return SPV_SUCCESS;
 }
 
-spv_result_t spvOperandTableNameLookup(spv_target_env env,
-                                       const spv_operand_table table,
-                                       const spv_operand_type_t type,
-                                       const char* name,
-                                       const size_t nameLength,
-                                       spv_operand_desc* pEntry) {
+spv_result_t spvOperandTableNameLookup(
+    spv_target_env env, const spv_operand_table table,
+    const spv_operand_type_t type, const char* name, const size_t nameLength,
+    spv_operand_desc* pEntry, bool unconditional) {
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!name || !pEntry) return SPV_ERROR_INVALID_POINTER;
 
@@ -58,12 +56,13 @@ spv_result_t spvOperandTableNameLookup(spv_target_env env,
       // We considers the current operand as available as long as
       // 1. The target environment satisfies the minimal requirement of the
       //    operand; or
-      // 2. There is at least one extension enabling this operand.
+      // 2. There is at least one extension enabling this operand; or
+      // 3. An unconditional lookup was requested.
       //
       // Note that the second rule assumes the extension enabling this operand
       // is indeed requested in the SPIR-V code; checking that should be
       // validator's work.
-      if ((spvVersionForTargetEnv(env) >= entry.minVersion ||
+      if ((unconditional || spvVersionForTargetEnv(env) >= entry.minVersion ||
            entry.numExtensions > 0u) &&
           nameLength == strlen(entry.name) &&
           !strncmp(entry.name, name, nameLength)) {
@@ -80,7 +79,8 @@ spv_result_t spvOperandTableValueLookup(spv_target_env env,
                                         const spv_operand_table table,
                                         const spv_operand_type_t type,
                                         const uint32_t value,
-                                        spv_operand_desc* pEntry) {
+                                        spv_operand_desc* pEntry,
+                                        bool unconditional) {
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
@@ -112,12 +112,13 @@ spv_result_t spvOperandTableValueLookup(spv_target_env env,
       // We considers the current operand as available as long as
       // 1. The target environment satisfies the minimal requirement of the
       //    operand; or
-      // 2. There is at least one extension enabling this operand.
+      // 2. There is at least one extension enabling this operand; or
+      // 3. An unconditional lookup was requested.
       //
       // Note that the second rule assumes the extension enabling this operand
       // is indeed requested in the SPIR-V code; checking that should be
       // validator's work.
-      if (spvVersionForTargetEnv(env) >= it->minVersion ||
+      if (unconditional || spvVersionForTargetEnv(env) >= it->minVersion ||
           it->numExtensions > 0u) {
         *pEntry = it;
         return SPV_SUCCESS;

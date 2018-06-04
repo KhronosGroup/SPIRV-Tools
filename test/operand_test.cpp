@@ -14,6 +14,8 @@
 
 #include "unit_spirv.h"
 
+#include "source/assembly_grammar.h"
+
 namespace {
 
 using GetTargetTest = ::testing::TestWithParam<spv_target_env>;
@@ -67,6 +69,29 @@ TEST(OperandIsConcreteMask, Sample) {
   EXPECT_FALSE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_OPTIONAL_IMAGE));
   EXPECT_FALSE(
       spvOperandIsConcreteMask(SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS));
+}
+
+TEST(OperandLookupByValue, ConditionalLookupOfViewportRelativeNV) {
+  const auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
+  const libspirv::AssemblyGrammar grammar(context);
+  spv_operand_desc entry = nullptr;
+  EXPECT_EQ(SPV_ERROR_INVALID_LOOKUP,
+            grammar.lookupOperand(SPV_OPERAND_TYPE_DECORATION,
+                                  SpvDecorationViewportRelativeNV, &entry));
+  EXPECT_EQ(nullptr, entry);
+  spvContextDestroy(context);
+}
+
+TEST(OperandLookupByValue, UnconditionalLookupOfViewportRelativeNV) {
+  const auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
+  const libspirv::AssemblyGrammar grammar(context);
+  spv_operand_desc entry = nullptr;
+  EXPECT_EQ(SPV_SUCCESS, grammar.lookupOperand(SPV_OPERAND_TYPE_DECORATION,
+                                               SpvDecorationViewportRelativeNV,
+                                               &entry, true));
+  ASSERT_NE(entry, nullptr);
+  EXPECT_EQ(entry->value, SpvDecorationViewportRelativeNV);
+  spvContextDestroy(context);
 }
 
 }  // anonymous namespace

@@ -272,7 +272,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_DEBUG_TYPE_QUALIFIER:
     case SPV_OPERAND_TYPE_DEBUG_OPERATION: {
       spv_operand_desc entry;
-      if (grammar_.lookupOperand(operand.type, word, &entry))
+      if (grammar_.lookupOperand(operand.type, word, &entry, true))
         assert(false && "should have caught this earlier");
       stream_ << entry->name;
     } break;
@@ -302,7 +302,7 @@ void Disassembler::EmitMaskOperand(const spv_operand_type_t type,
     if (remaining_word & mask) {
       remaining_word ^= mask;
       spv_operand_desc entry;
-      if (grammar_.lookupOperand(type, mask, &entry))
+      if (grammar_.lookupOperand(type, mask, &entry, true))
         assert(false && "should have caught this earlier");
       if (num_emitted) stream_ << "|";
       stream_ << entry->name;
@@ -313,7 +313,7 @@ void Disassembler::EmitMaskOperand(const spv_operand_type_t type,
     // An operand value of 0 was provided, so represent it by the name
     // of the 0 value. In many cases, that's "None".
     spv_operand_desc entry;
-    if (SPV_SUCCESS == grammar_.lookupOperand(type, 0, &entry))
+    if (SPV_SUCCESS == grammar_.lookupOperand(type, 0, &entry, true))
       stream_ << entry->name;
   }
 }
