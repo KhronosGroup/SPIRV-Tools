@@ -414,7 +414,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       // NOTE: All non literal operands are handled here using the operand
       // table.
       spv_operand_desc entry;
-      if (grammar.lookupOperand(type, textValue, strlen(textValue), &entry)) {
+      if (grammar.lookupOperand(type, textValue, strlen(textValue), &entry, true)) {
         return context->diagnostic() << "Invalid " << spvOperandTypeStr(type)
                                      << " '" << textValue << "'.";
       }

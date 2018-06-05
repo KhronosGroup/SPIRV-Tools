@@ -59,6 +59,7 @@ TEST_P(EnumCapabilityTest, Sample) {
   EXPECT_THAT(ElementsIn(cap_set),
               Eq(ElementsIn(get<1>(GetParam()).expected_capabilities)))
       << " capability value " << get<1>(GetParam()).value;
+  spvContextDestroy(context);
 }
 
 #define CASE0(TYPE, VALUE)                            \

@@ -625,7 +625,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         parsed_operand.type = SPV_OPERAND_TYPE_ACCESS_QUALIFIER;
 
       spv_operand_desc entry;
-      if (grammar_.lookupOperand(type, word, &entry)) {
+      if (grammar_.lookupOperand(type, word, &entry, true)) {
         return diagnostic()
                << "Invalid " << spvOperandTypeStr(parsed_operand.type)
                << " operand: " << word;
@@ -660,7 +660,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       for (uint32_t mask = (1u << 31); remaining_word; mask >>= 1) {
         if (remaining_word & mask) {
           spv_operand_desc entry;
-          if (grammar_.lookupOperand(type, mask, &entry)) {
+          if (grammar_.lookupOperand(type, mask, &entry, true)) {
             return diagnostic()
                    << "Invalid " << spvOperandTypeStr(parsed_operand.type)
                    << " operand: " << word << " has invalid mask component "
@@ -673,7 +673,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       if (word == 0) {
         // An all-zeroes mask *might* also be valid.
         spv_operand_desc entry;
-        if (SPV_SUCCESS == grammar_.lookupOperand(type, 0, &entry)) {
+        if (SPV_SUCCESS == grammar_.lookupOperand(type, 0, &entry, true)) {
           // Prepare for its operands, if any.
           spvPushOperandTypes(entry->operandTypes, expected_operands);
         }
