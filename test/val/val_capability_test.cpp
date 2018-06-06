@@ -1965,4 +1965,55 @@ OpMemoryModel Physical64 OpenCL
                         "Embedded Profile"));
 }
 
+TEST_F(ValidateCapability, DecorationFromExtensionMissingEnabledByCapability) {
+  // Decoration ViewportRelativeNV is enabled by ShaderViewportMaskNV, which in
+  // turn is enabled by SPV_NV_viewport_array2.
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpDecorate %void ViewportRelativeNV
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 2 of Decorate requires one of these "
+                        "capabilities: ShaderViewportMaskNV"));
+}
+
+TEST_F(ValidateCapability, CapabilityEnabledByMissingExtension) {
+  // Capability ShaderViewportMaskNV is enabled by SPV_NV_viewport_array2.
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ShaderViewportMaskNV
+OpMemoryModel Logical Simple
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_ERROR_MISSING_EXTENSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("operand 5255 requires one of these extensions: "
+                        "SPV_NV_viewport_array2"));
+}
+
+TEST_F(ValidateCapability, DecorationEnabledByCapabilityEnabledByPresentExtension) {
+  // Decoration ViewportRelativeNV is enabled by ShaderViewportMaskNV, which in
+  // turn is enabled by SPV_NV_viewport_array2.
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability ShaderViewportMaskNV
+OpExtension "SPV_NV_viewport_array2"
+OpMemoryModel Logical Simple
+OpDecorate %void ViewportRelativeNV
+%void = OpTypeVoid
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_0))
+      << getDiagnosticString();
+}
+
 }  // namespace
