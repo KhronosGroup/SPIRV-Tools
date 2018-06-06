@@ -70,7 +70,8 @@ void Construct::set_exit(BasicBlock* block) { exit_block_ = block; }
 Construct::ConstructBlockSet Construct::blocks(Function* function) const {
   auto header = entry_block();
   auto merge = exit_block();
-  assert(header && merge);
+  assert(header);
+  assert(merge);
   int header_depth = function->GetBlockDepth(const_cast<BasicBlock*>(header));
   ConstructBlockSet construct_blocks;
   std::unordered_set<BasicBlock*> corresponding_headers;
@@ -98,6 +99,11 @@ Construct::ConstructBlockSet Construct::blocks(Function* function) const {
       // Broke to outer construct.
       continue;
     }
+
+    // In a loop, the continue target is at a depth of the loop construct + 1.
+    // A selection construct nested directly within the loop construct is also
+    // at the same depth. It is valid, however, to branch directly to the
+    // continue target from within the selection construct.
     if (block_depth == header_depth && type() == ConstructType::kSelection &&
         block->is_type(kBlockTypeContinue)) {
       // Continued to outer construct.

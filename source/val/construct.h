@@ -104,7 +104,8 @@ class Construct {
   using ConstructBlockSet = std::set<BasicBlock*, less_than_id>;
 
   // Returns the basic blocks in this construct. This function should not
-  // be called before the exit block is set.
+  // be called before the exit block is set and dominators have been
+  // calculated.
   ConstructBlockSet blocks(Function* function) const;
 
  private:
