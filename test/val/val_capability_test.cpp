@@ -1998,7 +1998,8 @@ OpMemoryModel Logical Simple
                         "SPV_NV_viewport_array2"));
 }
 
-TEST_F(ValidateCapability, DecorationEnabledByCapabilityEnabledByPresentExtension) {
+TEST_F(ValidateCapability,
+       DecorationEnabledByCapabilityEnabledByPresentExtension) {
   // Decoration ViewportRelativeNV is enabled by ShaderViewportMaskNV, which in
   // turn is enabled by SPV_NV_viewport_array2.
   const std::string spirv = R"(

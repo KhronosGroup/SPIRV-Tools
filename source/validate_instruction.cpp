@@ -101,7 +101,6 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
   return CapabilitySet();
 }
 
-
 // Returns SPV_SUCCESS if the given operand is enabled by capabilities declared
 // in the module.  Otherwise issues an error message and returns
 // SPV_ERROR_INVALID_CAPABILITY.
