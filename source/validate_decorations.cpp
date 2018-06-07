@@ -180,44 +180,6 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
-spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
-  for (const auto& def : vstate.all_definitions()) {
-    const auto inst = def.second;
-    if (SpvOpVariable != inst->opcode()) continue;
-
-    // Verify this variable is a DescriptorSet
-    bool has_descriptor_set = false;
-    for (const auto& decoration : vstate.id_decorations(def.first)) {
-      if (SpvDecorationDescriptorSet == decoration.dec_type()) {
-        has_descriptor_set = true;
-        break;
-      }
-    }
-    if (!has_descriptor_set) continue;
-
-    const auto& words = inst->words();
-    const auto* ptrInst = vstate.FindDef(words[1]);
-    assert(SpvOpTypePointer == ptrInst->opcode());
-
-    // Check for a first level array
-    const auto typePtr = vstate.FindDef(ptrInst->words()[3]);
-    if (SpvOpTypeRuntimeArray != typePtr->opcode() &&
-        SpvOpTypeArray != typePtr->opcode()) {
-      continue;
-    }
-
-    // Check for a second level array
-    const auto secondaryTypePtr = vstate.FindDef(typePtr->words()[2]);
-    if (SpvOpTypeRuntimeArray == secondaryTypePtr->opcode() ||
-        SpvOpTypeArray == secondaryTypePtr->opcode()) {
-      return vstate.diag(SPV_ERROR_INVALID_ID)
-             << "Only a single level of array is allowed for descriptor "
-                "set variables";
-    }
-  }
-  return SPV_SUCCESS;
-}
-
 }  // anonymous namespace
 
 namespace libspirv {
@@ -227,7 +189,6 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
   if (auto error = CheckImportedVariableInitialization(vstate)) return error;
   if (auto error = CheckDecorationsOfEntryPoints(vstate)) return error;
   if (auto error = CheckLinkageAttrOfFunctions(vstate)) return error;
-  if (auto error = CheckDescriptorSetArrayOfArrays(vstate)) return error;
   return SPV_SUCCESS;
 }
 
