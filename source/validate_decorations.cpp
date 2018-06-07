@@ -561,7 +561,6 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         }
       }
     }
-    //	  }
   }
   return SPV_SUCCESS;
 }
