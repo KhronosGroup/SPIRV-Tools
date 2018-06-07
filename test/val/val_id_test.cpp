@@ -167,8 +167,9 @@ TEST_F(ValidateIdWithMessage, OpMemberNameTypeBad) {
 %1 = OpTypeInt 32 0)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpMemberName Type <id> '1' is not a struct type."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpMemberName Type <id> '1[foo]' is not a struct type."));
 }
 TEST_F(ValidateIdWithMessage, OpMemberNameMemberBad) {
   string spirv = kGLSL450MemoryModel + R"(
@@ -177,9 +178,10 @@ TEST_F(ValidateIdWithMessage, OpMemberNameMemberBad) {
 %1 = OpTypeStruct %2)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpMemberName Member <id> '1' index is larger than "
-                        "Type <id> '1's member count."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpMemberName Member <id> '1[foo]' index is larger than "
+                "Type <id> '1[foo]'s member count."));
 }
 
 TEST_F(ValidateIdWithMessage, OpLineGood) {
