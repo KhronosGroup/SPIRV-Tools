@@ -30,6 +30,14 @@ class CCPPass : public MemPass {
   CCPPass() = default;
   const char* name() const override { return "ccp"; }
   Status Process(ir::IRContext* c) override;
+  virtual ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
+           ir::IRContext::kAnalysisDecorations |
+           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
+           ir::IRContext::kAnalysisDominatorAnalysis |
+           ir::IRContext::kAnalysisNameMap;
+  }
 
  private:
   // Initializes the pass.
