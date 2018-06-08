@@ -37,6 +37,8 @@ enum BlockType : uint32_t {
   kBlockTypeCOUNT  ///< Total number of block types. (must be the last element)
 };
 
+class Instruction;
+
 // This class represents a basic block in a SPIR-V module
 class BasicBlock {
  public:
@@ -106,6 +108,14 @@ class BasicBlock {
 
   /// Ends the block without a successor
   void RegisterBranchInstruction(SpvOp branch_instruction);
+
+  /// Registers the terminator instruction for the block.
+  void set_terminator(const Instruction* terminator) {
+    terminator_ = terminator;
+  }
+
+  /// Returns the terminator instruction for the block.
+  const Instruction* terminator() const { return terminator_; }
 
   /// Adds @p next BasicBlocks as successors of this BasicBlock
   void RegisterSuccessors(
@@ -209,6 +219,9 @@ class BasicBlock {
 
   /// True if the block is reachable in the CFG
   bool reachable_;
+
+  /// Terminator of this block.
+  const Instruction* terminator_;
 };
 
 /// @brief Returns true if the iterators point to the same element or if both
