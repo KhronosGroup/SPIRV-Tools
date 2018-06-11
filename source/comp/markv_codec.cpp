@@ -493,7 +493,7 @@ class MarkvCodecBase {
   // Returns diagnostic stream, position index is set to instruction number.
   DiagnosticStream Diag(spv_result_t error_code) const {
     return DiagnosticStream({0, 0, instructions_.size()}, context_->consumer,
-                            error_code);
+                            "", error_code);
   }
 
   // Returns current id bound.
@@ -2853,14 +2853,14 @@ spv_result_t SpirvToMarkv(
   spv_position_t position = {};
   if (spvBinaryEndianness(&spirv_binary, &endian)) {
     return DiagnosticStream(position, hijack_context.consumer,
-                            SPV_ERROR_INVALID_BINARY)
+                            "", SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V magic number.";
   }
 
   spv_header_t header;
   if (spvBinaryHeaderGet(&spirv_binary, endian, &header)) {
     return DiagnosticStream(position, hijack_context.consumer,
-                            SPV_ERROR_INVALID_BINARY)
+                            "", SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V header.";
   }
 
@@ -2874,7 +2874,7 @@ spv_result_t SpirvToMarkv(
                         SPV_BINARY_TO_TEXT_OPTION_NO_HEADER, &text,
                         nullptr) != SPV_SUCCESS) {
       return DiagnosticStream(position, hijack_context.consumer,
-                              SPV_ERROR_INVALID_BINARY)
+                              "", SPV_ERROR_INVALID_BINARY)
              << "Failed to disassemble SPIR-V binary.";
     }
     assert(text);
@@ -2885,7 +2885,7 @@ spv_result_t SpirvToMarkv(
   if (spvBinaryParse(&hijack_context, &encoder, spirv.data(), spirv.size(),
                      EncodeHeader, EncodeInstruction, nullptr) != SPV_SUCCESS) {
     return DiagnosticStream(position, hijack_context.consumer,
-                            SPV_ERROR_INVALID_BINARY)
+                            "", SPV_ERROR_INVALID_BINARY)
            << "Unable to encode to MARK-V.";
   }
 
@@ -2909,7 +2909,7 @@ spv_result_t MarkvToSpirv(
 
   if (decoder.DecodeModule(spirv) != SPV_SUCCESS) {
     return DiagnosticStream(position, hijack_context.consumer,
-                            SPV_ERROR_INVALID_BINARY)
+                            "", SPV_ERROR_INVALID_BINARY)
            << "Unable to decode MARK-V.";
   }
 
