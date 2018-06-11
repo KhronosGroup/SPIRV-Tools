@@ -40,7 +40,8 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   Status Process(ir::IRContext* c) override;
 
   ir::IRContext::Analysis GetPreservedAnalyses() override {
-    return ir::IRContext::kAnalysisDefUse;
+    return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping;
   }
 
  private:
