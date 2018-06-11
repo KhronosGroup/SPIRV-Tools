@@ -196,7 +196,7 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForValidating) {
         EXPECT_EQ(1u, position.index);
         EXPECT_STREQ(
             "Nop cannot appear before the memory model instruction\n"
-            "  OpNop ; 0x00000014\n",
+            "  OpNop\n",
             message);
       });
 
@@ -291,7 +291,7 @@ TEST(CInterface, SpecifyConsumerSpecifyDiagnosticForValidating) {
   EXPECT_EQ(0, invocation);  // Consumer should not be invoked at all.
   EXPECT_STREQ(
       "Nop cannot appear before the memory model instruction\n"
-      "  OpNop ; 0x00000014\n",
+      "  OpNop\n",
       diagnostic->error);
 
   spvDiagnosticDestroy(diagnostic);

@@ -71,7 +71,7 @@ DiagnosticStream::DiagnosticStream(DiagnosticStream&& other)
     : stream_(),
       position_(other.position_),
       consumer_(other.consumer_),
-      disassembled_instruction_(other.disassembled_instruction_),
+      disassembled_instruction_(std::move(other.disassembled_instruction_)),
       error_(other.error_) {
   // Prevent the other object from emitting output during destruction.
   other.error_ = SPV_FAILED_MATCH;

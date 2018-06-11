@@ -1128,7 +1128,7 @@ TEST_F(ValidateSSA, IdDoesNotDominateItsUseBad) {
       getDiagnosticString(),
       MatchesRegex("ID .\\[eleven\\] defined in block .\\[true_block\\] does "
                    "not dominate its use in block .\\[false_block\\]\n"
-                   "  OpFunctionEnd ; 0x00000014\n"));
+                   "  OpFunctionEnd\n"));
 }
 
 TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
@@ -1269,7 +1269,7 @@ TEST_F(ValidateSSA, PhiVariableDefNotDominatedByParentBlockBad) {
       getDiagnosticString(),
       MatchesRegex("In OpPhi instruction .\\[phi\\], ID .\\[true_copy\\] "
                    "definition does not dominate its parent .\\[if_false\\]\n"
-                   "  OpFunctionEnd ; 0x00000014\n"));
+                   "  OpFunctionEnd\n"));
 }
 
 TEST_F(ValidateSSA, PhiVariableDefDominatesButNotDefinedInParentBlock) {
@@ -1395,7 +1395,7 @@ TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
       getDiagnosticString(),
       MatchesRegex("ID .\\[first\\] used in function .\\[func2\\] is used "
                    "outside of it's defining function .\\[func\\]\n"
-                   "  OpFunctionEnd ; 0x00000014\n"));
+                   "  OpFunctionEnd\n"));
 }
 
 TEST_F(ValidateSSA, TypeForwardPointerForwardReference) {

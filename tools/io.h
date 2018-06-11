@@ -41,7 +41,7 @@ bool ReadFile(const char* filename, const char* mode, std::vector<T>* data) {
       if (sizeof(T) != 1 && (ftell(fp) % sizeof(T))) {
         fprintf(
             stderr,
-            "error: file size should be a multiple of %ld; file '%s' corrput\n",
+            "error: file size should be a multiple of %ld; file '%s' corrupt\n",
             sizeof(T), filename);
         return false;
       }
