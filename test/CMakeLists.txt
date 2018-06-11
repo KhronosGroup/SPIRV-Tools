@@ -298,21 +298,23 @@ set(TEST_SOURCES ${TEST_SOURCES}
 )
 endif()
 
+set(SPIRV_COMP_LIB "")
 if(SPIRV_BUILD_COMPRESSION)
 set(TEST_SOURCES ${TEST_SOURCES}
   comp/markv_codec_test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../tools/comp/markv_model_factory.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../tools/comp/markv_model_shader.cpp
 )
+set(SPIRV_COMP_LIB SPIRV-Tools-comp)
 endif(SPIRV_BUILD_COMPRESSION)
 
 add_spvtools_unittest(
   TARGET spirv_unit_tests
   SRCS ${TEST_SOURCES}
   LIBS ${SPIRV_TOOLS}
-       SPIRV-Tools-comp
        SPIRV-Tools-opt
-       SPIRV-Tools-link)
+       SPIRV-Tools-link
+       ${SPIRV_COMP_LIB})
 
 add_spvtools_unittest(
   TARGET c_interface_shared
