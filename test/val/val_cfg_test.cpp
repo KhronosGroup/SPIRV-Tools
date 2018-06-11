@@ -412,11 +412,10 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   CompileSuccessfully(str);
   if (is_shader) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-    EXPECT_THAT(
-        getDiagnosticString(),
-        MatchesRegex("Block .\\[merge\\] is already a merge block "
-                     "for another header\n"
-                     "  %Main = OpFunction %void None %9\n"));
+    EXPECT_THAT(getDiagnosticString(),
+                MatchesRegex("Block .\\[merge\\] is already a merge block "
+                             "for another header\n"
+                             "  %Main = OpFunction %void None %9\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -448,11 +447,10 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   CompileSuccessfully(str);
   if (is_shader) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-    EXPECT_THAT(
-        getDiagnosticString(),
-        MatchesRegex("Block .\\[merge\\] is already a merge block "
-                     "for another header\n"
-                     "  %Main = OpFunction %void None %9\n"));
+    EXPECT_THAT(getDiagnosticString(),
+                MatchesRegex("Block .\\[merge\\] is already a merge block "
+                             "for another header\n"
+                             "  %Main = OpFunction %void None %9\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -473,11 +471,10 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceEntryBlock) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
-                   "is targeted by block .\\[bad\\]\n"
-                   "  %Main = OpFunction %void None %10\n"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
+                           "is targeted by block .\\[bad\\]\n"
+                           "  %Main = OpFunction %void None %10\n"));
 }
 
 TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceValue) {
@@ -524,11 +521,10 @@ TEST_P(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
-                   "is targeted by block .\\[bad\\]\n"
-                   "  %Main = OpFunction %void None %10\n"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
+                           "is targeted by block .\\[bad\\]\n"
+                           "  %Main = OpFunction %void None %10\n"));
 }
 
 TEST_P(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
@@ -553,11 +549,10 @@ TEST_P(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
-                   "is targeted by block .\\[bad\\]\n"
-                   "  %Main = OpFunction %void None %10\n"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
+                           "is targeted by block .\\[bad\\]\n"
+                           "  %Main = OpFunction %void None %10\n"));
 }
 
 TEST_P(ValidateCFG, SwitchTargetFirstBlockBad) {
@@ -589,11 +584,10 @@ TEST_P(ValidateCFG, SwitchTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
-                   "is targeted by block .\\[bad\\]\n"
-                   "  %Main = OpFunction %void None %10\n"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
+                           "is targeted by block .\\[bad\\]\n"
+                           "  %Main = OpFunction %void None %10\n"));
 }
 
 TEST_P(ValidateCFG, BranchToBlockInOtherFunctionBad) {
