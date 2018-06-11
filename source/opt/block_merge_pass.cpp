@@ -94,7 +94,15 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
     // If bi is sbi's only predecessor, it dominates sbi and thus
     // sbi must follow bi in func's ordering.
     assert(sbi != func->end());
+
+    // Update the inst-to-block mapping for the instructions in sbi.
+    for (auto& inst : *sbi) {
+      context()->set_instr_block(&inst, &*bi);
+    }
+
+    // Now actually move the instructions.
     bi->AddInstructions(&*sbi);
+
     if (merge_inst) {
       if (pred_is_header && lab_id == merge_inst->GetSingleWordInOperand(0u)) {
         // Merging the header and merge blocks, so remove the structured control

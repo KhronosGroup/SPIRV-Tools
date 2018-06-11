@@ -39,6 +39,13 @@ class BlockMergePass : public Pass {
   BlockMergePass();
   const char* name() const override { return "merge-blocks"; }
   Status Process(ir::IRContext*) override;
+  virtual ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
+           ir::IRContext::kAnalysisDecorations |
+           ir::IRContext::kAnalysisCombinators |
+           ir::IRContext::kAnalysisNameMap;
+  }
 
  private:
   // Kill any OpName instruction referencing |inst|, then kill |inst|.
