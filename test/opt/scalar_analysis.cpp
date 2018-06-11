@@ -19,10 +19,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "assembly_builder.h"
-#include "function_utils.h"
-#include "pass_fixture.h"
-#include "pass_utils.h"
+#include "opt/assembly_builder.h"
+#include "opt/function_utils.h"
+#include "opt/pass_fixture.h"
+#include "opt/pass_utils.h"
 
 #include "opt/iterator.h"
 #include "opt/loop_descriptor.h"

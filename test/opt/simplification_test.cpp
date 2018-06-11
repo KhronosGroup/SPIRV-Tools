@@ -14,9 +14,9 @@
 
 #include "opt/simplification_pass.h"
 
-#include "assembly_builder.h"
 #include "gmock/gmock.h"
-#include "pass_fixture.h"
+#include "opt/assembly_builder.h"
+#include "opt/pass_fixture.h"
 
 namespace {
 

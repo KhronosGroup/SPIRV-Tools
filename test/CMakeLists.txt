@@ -92,7 +92,11 @@ set(TEST_SOURCES
   binary_strnlen_s_test.cpp
   binary_to_text_test.cpp
   binary_to_text.literal_test.cpp
+  bit_stream.cpp
+  c_interface_test.cpp
   comment_test.cpp
+  cpp_interface_test.cpp
+  diagnostic_test.cpp
   enum_string_mapping_test.cpp
   enum_set_test.cpp
   ext_inst.debuginfo_test.cpp
@@ -101,8 +105,19 @@ set(TEST_SOURCES
   fix_word_test.cpp
   generator_magic_number_test.cpp
   hex_float_test.cpp
+  huffman_codec.cpp
   immediate_int_test.cpp
   libspirv_macros_test.cpp
+  link/binary_version_test.cpp
+  link/memory_model_test.cpp
+  link/entry_points_test.cpp
+  link/global_values_amount_test.cpp
+  link/ids_limit_test.cpp
+  link/matching_imports_to_exports_test.cpp
+  link/unique_ids_test.cpp
+  link/partial_linkage_test.cpp
+  log_test.cpp
+  move_to_front_test.cpp
   named_id_test.cpp
   name_mapper_test.cpp
   opcode_make_test.cpp
@@ -112,7 +127,110 @@ set(TEST_SOURCES
   operand_capabilities_test.cpp
   operand_test.cpp
   operand_pattern_test.cpp
+  opt/aggressive_dead_code_elim_test.cpp
+  opt/assembly_builder_test.cpp
+  opt/block_merge_test.cpp
+  opt/cfg_cleanup_test.cpp
+  opt/compact_ids_test.cpp
+  opt/common_uniform_elim_test.cpp
+  opt/copy_prop_array_test.cpp
+  opt/ccp_test.cpp
+  opt/dead_branch_elim_test.cpp
+  opt/dead_insert_elim_test.cpp
+  opt/dead_variable_elim_test.cpp
+  opt/decoration_manager_test.cpp
+  opt/def_use_test.cpp
+  opt/dominator_tree/common_dominators.cpp
+  opt/dominator_tree/generated.cpp
+  opt/dominator_tree/nested_ifs.cpp
+  opt/dominator_tree/nested_ifs_post.cpp
+  opt/dominator_tree/nested_loops.cpp
+  opt/dominator_tree/nested_loops_with_unreachables.cpp
+  opt/dominator_tree/post.cpp
+  opt/dominator_tree/simple.cpp
+  opt/dominator_tree/switch_case_fallthrough.cpp
+  opt/dominator_tree/unreachable_for.cpp
+  opt/dominator_tree/unreachable_for_post.cpp
+  opt/eliminate_dead_const_test.cpp
+  opt/eliminate_dead_functions_test.cpp
+  opt/feature_manager_test.cpp
+  opt/flatten_decoration_test.cpp
+  opt/fold_spec_const_op_composite_test.cpp
+  opt/fold_test.cpp
+  opt/freeze_spec_const_test.cpp
+  opt/function_utils.cpp
+  opt/if_conversion_test.cpp
+  opt/inline_test.cpp
+  opt/inline_opaque_test.cpp
+  opt/insert_extract_elim_test.cpp
+  opt/instruction_test.cpp
+  opt/instruction_list_test.cpp
+  opt/ir_builder.cpp
+  opt/ir_context_test.cpp
+  opt/ir_loader_test.cpp
+  opt/iterator_test.cpp
+  opt/line_debug_info_test.cpp
+  opt/local_redundancy_elimination_test.cpp
+  opt/local_ssa_elim_test.cpp
+  opt/local_single_block_elim.cpp
+  opt/local_access_chain_convert_test.cpp
+  opt/local_single_store_elim_test.cpp
+  opt/loop_optimizations/dependence_analysis.cpp
+  opt/loop_optimizations/dependence_analysis_helpers.cpp
+  opt/loop_optimizations/fusion_compatibility.cpp
+  opt/loop_optimizations/fusion_illegal.cpp
+  opt/loop_optimizations/fusion_legal.cpp
+  opt/loop_optimizations/fusion_pass.cpp
+  opt/loop_optimizations/hoist_all_loop_types.cpp
+  opt/loop_optimizations/hoist_double_nested_loops.cpp
+  opt/loop_optimizations/hoist_from_independent_loops.cpp
+  opt/loop_optimizations/hoist_simple_case.cpp
+  opt/loop_optimizations/hoist_single_nested_loops.cpp
+  opt/loop_optimizations/hoist_without_preheader.cpp
+  opt/loop_optimizations/lcssa.cpp
+  opt/loop_optimizations/loop_descriptions.cpp
+  opt/loop_optimizations/loop_fission.cpp
+  opt/loop_optimizations/nested_loops.cpp
+  opt/loop_optimizations/peeling.cpp
+  opt/loop_optimizations/peeling_pass.cpp
+  opt/loop_optimizations/unroll_assumptions.cpp
+  opt/loop_optimizations/unroll_simple.cpp
+  opt/loop_optimizations/unswitch.cpp
+  opt/module_test.cpp
+  opt/optimizer_test.cpp
+  opt/pass_manager_test.cpp
+  opt/pass_merge_return_test.cpp
+  opt/pass_remove_duplicates_test.cpp
+  opt/pass_test.cpp
+  opt/pass_utils.cpp
+  opt/private_to_local_test.cpp
+  opt/propagator_test.cpp
+  opt/reduce_load_size_test.cpp
+  opt/redundancy_elimination_test.cpp
+  opt/register_liveness.cpp
+  opt/replace_invalid_opc_test.cpp
+  opt/scalar_analysis.cpp
+  opt/scalar_replacement_test.cpp
+  opt/set_spec_const_default_value_test.cpp
+  opt/simplification_test.cpp
+  opt/strength_reduction_test.cpp
+  opt/strip_debug_info_test.cpp
+  opt/strip_reflect_info_test.cpp
+  opt/types_test.cpp
+  opt/type_manager_test.cpp
+  opt/unify_const_test.cpp
+  opt/utils_test.cpp
+  opt/value_table_test.cpp
+  opt/vector_dce_test.cpp
+  opt/workaround1209_test.cpp
+  parse_number_test.cpp
+  preserve_numeric_ids_test.cpp
   software_version_test.cpp
+  stats/stats_aggregate_test.cpp
+  stats/stats_analyzer_test.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../tools/stats/stats_analyzer.cpp
+
+  string_utils_test.cpp
   target_env_test.cpp
   text_advance_test.cpp
   text_destroy_test.cpp
@@ -140,79 +258,64 @@ set(TEST_SOURCES
   text_word_get_test.cpp
 
   unit_spirv.cpp
+  util/ilist_test.cpp
+  util/bit_vector_test.cpp
+
+  val/val_capability_test.cpp
+  val/val_cfg_test.cpp
+  val/val_id_test.cpp
+  val/val_layout_test.cpp
+  val/val_ssa_test.cpp
+  val/val_storage_test.cpp
+  val/val_state_test.cpp
+  val/val_data_test.cpp
+  val/val_type_unique_test.cpp
+  val/val_arithmetics_test.cpp
+  val/val_composites_test.cpp
+  val/val_conversion_test.cpp
+  val/val_derivatives_test.cpp
+  val/val_logicals_test.cpp
+  val/val_bitwise_test.cpp
+  val/val_builtins_test.cpp
+  val/val_image_test.cpp
+  val/val_atomics_test.cpp
+  val/val_barriers_test.cpp
+  val/val_primitives_test.cpp
+  val/val_ext_inst_test.cpp
+  val/val_limits_test.cpp
+  val/val_validation_state_test.cpp
+  val/val_decoration_test.cpp
+  val/val_literals_test.cpp
+  val/val_extensions_test.cpp
+  val/val_adjacency_test.cpp
+  val/val_version_test.cpp
+  val/val_non_uniform_test.cpp
 )
+
+if (${SPIRV_TIMER_ENABLED})
+set(TEST_SOURCES ${TEST_SOURCES}
+  timer_test.cpp
+)
+endif()
+
+if(SPIRV_BUILD_COMPRESSION)
+set(TEST_SOURCES ${TEST_SOURCES}
+  comp/markv_codec_test.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../tools/comp/markv_model_factory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../tools/comp/markv_model_shader.cpp
+)
+endif(SPIRV_BUILD_COMPRESSION)
 
 add_spvtools_unittest(
   TARGET spirv_unit_tests
   SRCS ${TEST_SOURCES}
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET diagnostic
-  SRCS diagnostic_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET c_interface
-  SRCS c_interface_test.cpp
-  LIBS ${SPIRV_TOOLS})
+  LIBS ${SPIRV_TOOLS}
+       SPIRV-Tools-comp
+       SPIRV-Tools-opt
+       SPIRV-Tools-link)
 
 add_spvtools_unittest(
   TARGET c_interface_shared
   SRCS c_interface_test.cpp
   LIBS ${SPIRV_TOOLS}-shared
   ENVIRONMENT PATH=$<TARGET_FILE_DIR:${SPIRV_TOOLS}-shared>)
-
-add_spvtools_unittest(
-  TARGET cpp_interface
-  SRCS cpp_interface_test.cpp
-  LIBS SPIRV-Tools-opt)
-
-add_spvtools_unittest(
-  TARGET parse_number
-  SRCS parse_number_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET string_utils
-  SRCS string_utils_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-if (${SPIRV_TIMER_ENABLED})
-add_spvtools_unittest(
-  TARGET timer
-  SRCS timer_test.cpp
-  LIBS ${SPIRV_TOOLS})
-endif()
-
-add_spvtools_unittest(
-  TARGET log
-  SRCS log_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET preserve_numeric_ids
-  SRCS preserve_numeric_ids_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET bit_stream
-  SRCS bit_stream.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET huffman_codec
-  SRCS huffman_codec.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET move_to_front
-  SRCS move_to_front_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_subdirectory(comp)
-add_subdirectory(link)
-add_subdirectory(opt)
-add_subdirectory(stats)
-add_subdirectory(util)
-add_subdirectory(val)
