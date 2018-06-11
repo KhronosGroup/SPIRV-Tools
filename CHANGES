@@ -1,7 +1,18 @@
 Revision history for SPIRV-Tools
 
 v2018.4-dev 2018-05-25
- - Start v2018.4 development
+ - General:
+ - Optimizer:
+   - Remove insert-extract-elim pass. Use simplification pass instead.
+   - Preserve instruction-to-block mapping in most passes, to reduce runtime.
+   - Fixes:
+     #1578: Fix handling of forward-pointer types, and types embedding pointers
+       to themselves.
+     #1577: Scalar replacement uses only undecorated types.
+     #1591: Inliner: Callee variable with initializer should have a store at the call site.
+ - Validator
+   - #1577: Allow duplicate pointer types.
+   - #1581: Better messages: output ID names along with numbers in more cases.
 
 v2018.3 2018-05-25
  - General:
