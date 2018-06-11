@@ -22,8 +22,8 @@
 #include "effcee/effcee.h"
 #endif
 
-#include "../assembly_builder.h"
-#include "../function_utils.h"
+#include "opt/assembly_builder.h"
+#include "opt/function_utils.h"
 
 #include "opt/build_module.h"
 #include "opt/loop_descriptor.h"

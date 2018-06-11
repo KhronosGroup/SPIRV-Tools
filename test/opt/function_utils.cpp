@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2018 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_TEST_OPT_FUNCTION_UTILS_H_
-#define LIBSPIRV_TEST_OPT_FUNCTION_UTILS_H_
-
-#include "opt/function.h"
-#include "opt/module.h"
+#include "opt/function_utils.h"
 
 namespace spvtest {
 
-spvtools::ir::Function* GetFunction(spvtools::ir::Module* module, uint32_t id);
+spvtools::ir::Function* GetFunction(spvtools::ir::Module* module, uint32_t id) {
+  for (spvtools::ir::Function& f : *module) {
+    if (f.result_id() == id) {
+      return &f;
+    }
+  }
+  return nullptr;
+}
+
 const spvtools::ir::Function* GetFunction(const spvtools::ir::Module* module,
-                                          uint32_t id);
+                                          uint32_t id) {
+  for (const spvtools::ir::Function& f : *module) {
+    if (f.result_id() == id) {
+      return &f;
+    }
+  }
+  return nullptr;
+}
+
 const spvtools::ir::BasicBlock* GetBasicBlock(const spvtools::ir::Function* fn,
-                                              uint32_t id);
+                                              uint32_t id) {
+  for (const spvtools::ir::BasicBlock& bb : *fn) {
+    if (bb.id() == id) {
+      return &bb;
+    }
+  }
+  return nullptr;
+}
 
 }  // namespace spvtest
-
-#endif  // LIBSPIRV_TEST_OPT_FUNCTION_UTILS_H_

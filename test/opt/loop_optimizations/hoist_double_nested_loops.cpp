@@ -16,8 +16,8 @@
 
 #include <gmock/gmock.h>
 
-#include "../pass_fixture.h"
 #include "opt/licm_pass.h"
+#include "opt/pass_fixture.h"
 
 namespace {
 

@@ -20,9 +20,9 @@
 #include <string>
 #include <vector>
 
-#include "../pass_fixture.h"
 #include "opt/loop_descriptor.h"
 #include "opt/loop_fusion.h"
+#include "opt/pass_fixture.h"
 
 namespace {
 

@@ -18,7 +18,7 @@
 #include "effcee/effcee.h"
 #endif
 
-#include "../pass_fixture.h"
+#include "opt/pass_fixture.h"
 
 namespace {
 

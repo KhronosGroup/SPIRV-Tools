@@ -18,10 +18,10 @@
 #include "effcee/effcee.h"
 #endif
 
-#include "../pass_fixture.h"
 #include "opt/ir_builder.h"
 #include "opt/loop_descriptor.h"
 #include "opt/loop_peeling.h"
+#include "opt/pass_fixture.h"
 
 namespace {
 
