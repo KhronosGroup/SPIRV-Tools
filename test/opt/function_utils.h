@@ -20,7 +20,8 @@
 
 namespace spvtest {
 
-spvtools::ir::Function* GetFunction(spvtools::ir::Module* module, uint32_t id) {
+inline spvtools::ir::Function* GetFunction(spvtools::ir::Module* module,
+                                           uint32_t id) {
   for (spvtools::ir::Function& f : *module) {
     if (f.result_id() == id) {
       return &f;
@@ -29,8 +30,8 @@ spvtools::ir::Function* GetFunction(spvtools::ir::Module* module, uint32_t id) {
   return nullptr;
 }
 
-const spvtools::ir::Function* GetFunction(const spvtools::ir::Module* module,
-                                          uint32_t id) {
+inline const spvtools::ir::Function* GetFunction(
+    const spvtools::ir::Module* module, uint32_t id) {
   for (const spvtools::ir::Function& f : *module) {
     if (f.result_id() == id) {
       return &f;
@@ -39,8 +40,8 @@ const spvtools::ir::Function* GetFunction(const spvtools::ir::Module* module,
   return nullptr;
 }
 
-const spvtools::ir::BasicBlock* GetBasicBlock(const spvtools::ir::Function* fn,
-                                              uint32_t id) {
+inline const spvtools::ir::BasicBlock* GetBasicBlock(
+    const spvtools::ir::Function* fn, uint32_t id) {
   for (const spvtools::ir::BasicBlock& bb : *fn) {
     if (bb.id() == id) {
       return &bb;
