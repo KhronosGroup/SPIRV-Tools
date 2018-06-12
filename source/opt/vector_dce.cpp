@@ -278,13 +278,18 @@ bool VectorDCE::RewriteInstructions(
     const VectorDCE::LiveComponentMap& live_components) {
   bool modified = false;
   function->ForEachInst(
-      [&modified, this, live_components](ir::Instruction* current_inst) {
+      [&modified, this, &live_components](ir::Instruction* current_inst) {
         if (!context()->IsCombinatorInstruction(current_inst)) {
           return;
         }
 
-        auto live_component = live_components.find(current_inst->result_id());
-        if (live_component == live_components.end()) {
+        if (current_inst->result_id() >= live_components.size()) {
+          return;
+        }
+
+        utils::BitVector* live_component =
+            live_components[current_inst->result_id()].get();
+        if (!live_component) {
           // If this instruction is not in live_components then it does not
           // produce a vector, or it is never referenced and ADCE will remove
           // it.  No point in trying to differentiate.
@@ -293,7 +298,7 @@ bool VectorDCE::RewriteInstructions(
 
         // If no element in the current instruction is used replace it with an
         // OpUndef.
-        if (live_component->second.Empty()) {
+        if (live_component->Empty()) {
           modified = true;
           uint32_t undef_id = this->Type2Undef(current_inst->type_id());
           context()->KillNamesAndDecorates(current_inst);
@@ -304,8 +309,7 @@ bool VectorDCE::RewriteInstructions(
 
         switch (current_inst->opcode()) {
           case SpvOpCompositeInsert:
-            modified |=
-                RewriteInsertInstruction(current_inst, live_component->second);
+            modified |= RewriteInsertInstruction(current_inst, *live_component);
             break;
           case SpvOpCompositeConstruct:
             // TODO: The members that are not live can be replaced by an undef
@@ -351,13 +355,19 @@ void VectorDCE::AddItemToWorkListIfNeeded(
     WorkListItem work_item, VectorDCE::LiveComponentMap* live_components,
     std::vector<WorkListItem>* work_list) {
   ir::Instruction* current_inst = work_item.instruction;
-  auto it = live_components->find(current_inst->result_id());
-  if (it == live_components->end()) {
-    live_components->emplace(
-        std::make_pair(current_inst->result_id(), work_item.components));
+
+  if (current_inst->result_id() >= live_components->size()) {
+    live_components->resize(current_inst->result_id() + 100);
+  }
+
+  utils::BitVector* live_component =
+      live_components->at(current_inst->result_id()).get();
+  if (!live_component) {
+    live_components->at(current_inst->result_id())
+        .reset(new utils::BitVector(work_item.components));
     work_list->emplace_back(work_item);
   } else {
-    if (it->second.Or(work_item.components)) {
+    if (live_component->Or(work_item.components)) {
       work_list->emplace_back(work_item);
     }
   }
