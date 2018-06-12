@@ -179,6 +179,7 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
       return words[3] * baseAlignment;
     case SpvOpTypeStruct: {
       const auto members = getStructMembers(member_id, vstate);
+      if (members.empty()) return 0;
       const auto lastIdx = members.size() - 1;
       const auto& lastMember = members.back();
       uint32_t offset = 0xffffffff;
@@ -227,9 +228,15 @@ bool hasImproperStraddle(uint32_t id, uint32_t offset,
 bool checkAlignment(uint32_t x, uint32_t alignment, uint32_t alignmentRoundedUp,
                     bool isBlock) {
   if (isBlock) {
-    if (x % alignmentRoundedUp != 0) return false;
+    if (alignmentRoundedUp == 0) {
+      if (x != 0) return false;
+    } else if (x % alignmentRoundedUp != 0)
+      return false;
   } else {
-    if (x % alignment != 0 && x % alignmentRoundedUp != 0) return false;
+    if (alignment == 0 || alignmentRoundedUp == 0) {
+      if (x != 0) return false;
+    } else if (x % alignment != 0 && x % alignmentRoundedUp != 0)
+      return false;
   }
   return true;
 }
@@ -252,7 +259,8 @@ bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
         offset = decoration.params()[0];
       }
     }
-    const auto lastByte = getSize(id, isBlock, vstate) - 1;
+    const auto size = getSize(id, isBlock, vstate);
+    const auto lastByte = size - 1;
     // Check offset.
     if (offset == 0xffffffff) return false;
     if (!checkAlignment(offset, baseAlignment, baseAlignmentRoundedUp, isBlock))
@@ -287,7 +295,8 @@ bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
                             baseAlignmentRoundedUp, isBlock))
           return false;
       }
-      if (SpvOpTypeArray == opcode || SpvOpTypeStruct == opcode) {
+      if ((SpvOpTypeArray == opcode || SpvOpTypeStruct == opcode) &&
+          size != 0) {
         const auto alignment = isBlock ? baseAlignmentRoundedUp : baseAlignment;
         padStart = lastByte + 1;
         padEnd = align(lastByte, alignment);
