@@ -49,6 +49,7 @@ add_spvtools_unittest(TARGET val_ijklmnop
   SRCS
        val_id_test.cpp
        val_image_test.cpp
+       val_interfaces_test.cpp
        val_layout_test.cpp
        val_literals_test.cpp
        val_logicals_test.cpp

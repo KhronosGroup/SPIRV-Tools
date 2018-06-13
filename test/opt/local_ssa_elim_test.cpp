@@ -1630,7 +1630,7 @@ TEST_F(LocalSSAElimTest, CompositeExtractProblem) {
                OpCapability Tessellation
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint TessellationControl %2 "main"
+               OpEntryPoint TessellationControl %2 "main" %16 %17 %18 %20 %22 %26 %27 %30 %31
        %void = OpTypeVoid
           %4 = OpTypeFunction %void
       %float = OpTypeFloat 32
