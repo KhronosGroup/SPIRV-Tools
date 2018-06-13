@@ -110,9 +110,7 @@ class BasicBlock {
   void RegisterBranchInstruction(SpvOp branch_instruction);
 
   /// Registers the terminator instruction for the block.
-  void set_terminator(const Instruction* terminator) {
-    terminator_ = terminator;
-  }
+  void set_terminator(const Instruction* t) { terminator_ = t; }
 
   /// Returns the terminator instruction for the block.
   const Instruction* terminator() const { return terminator_; }
