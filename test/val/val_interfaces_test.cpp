@@ -41,9 +41,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Input variable id <5> is used by entry point id <1>, "
-                        "but is not listed as an interface"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Input variable id <5> is used by entry point 'func' id <1>, "
+                "but is not listed as an interface"));
 }
 
 TEST_F(ValidateInterfacesTest, EntryPointMissingOutput) {
@@ -65,9 +66,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Output variable id <5> is used by entry point id <1>, "
-                        "but is not listed as an interface"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Output variable id <5> is used by entry point 'func' id <1>, "
+                "but is not listed as an interface"));
 }
 
 TEST_F(ValidateInterfacesTest, InterfaceMissingUseInSubfunction) {
@@ -94,9 +96,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Input variable id <5> is used by entry point id <1>, "
-                        "but is not listed as an interface"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Input variable id <5> is used by entry point 'func' id <1>, "
+                "but is not listed as an interface"));
 }
 
 TEST_F(ValidateInterfacesTest, TwoEntryPointsOneFunction) {
@@ -119,9 +122,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Input variable id <2> is used by entry point id <1>, "
-                        "but is not listed as an interface"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Input variable id <2> is used by entry point 'func2' id <1>, "
+                "but is not listed as an interface"));
 }
 
 TEST_F(ValidateInterfacesTest, MissingInterfaceThroughInitializer) {
@@ -145,9 +149,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Input variable id <6> is used by entry point id <1>, "
-                        "but is not listed as an interface"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Input variable id <6> is used by entry point 'func' id <1>, "
+                "but is not listed as an interface"));
 }
 
 }  // namespace

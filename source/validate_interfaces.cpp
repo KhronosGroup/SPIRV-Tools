@@ -73,9 +73,9 @@ spv_result_t check_interface_variable(ValidationState_t& _, Instruction* var) {
                      entry_points.end());
 
   for (auto id : entry_points) {
-    for (const auto& interface_list : _.entry_point_interfaces(id)) {
+    for (const auto& desc : _.entry_point_descriptions(id)) {
       bool found = false;
-      for (auto interface : interface_list) {
+      for (auto interface : desc.interfaces) {
         if (var->id() == interface) {
           found = true;
           break;
@@ -84,8 +84,8 @@ spv_result_t check_interface_variable(ValidationState_t& _, Instruction* var) {
       if (!found) {
         return _.diag(SPV_ERROR_INVALID_ID)
                << (var->word(3u) == SpvStorageClassInput ? "Input" : "Output")
-               << " variable id <" << var->id()
-               << "> is used by entry point id <" << id
+               << " variable id <" << var->id() << "> is used by entry point '"
+               << desc.name << "' id <" << id
                << ">, but is not listed as an interface";
       }
     }

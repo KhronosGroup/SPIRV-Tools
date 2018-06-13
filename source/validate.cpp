@@ -158,11 +158,15 @@ spv_result_t ProcessInstruction(void* user_data,
   if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint) {
     const auto entry_point = inst->words[2];
     const SpvExecutionModel execution_model = SpvExecutionModel(inst->words[1]);
+    const char* str =
+        reinterpret_cast<const char*>(inst->words + inst->operands[2].offset);
+    ValidationState_t::EntryPointDescription desc;
+    desc.name = str;
     std::vector<uint32_t> interfaces;
     for (int i = 3; i < inst->num_operands; ++i) {
-      interfaces.push_back(inst->words[inst->operands[i].offset]);
+      desc.interfaces.push_back(inst->words[inst->operands[i].offset]);
     }
-    _.RegisterEntryPoint(entry_point, execution_model, std::move(interfaces));
+    _.RegisterEntryPoint(entry_point, execution_model, std::move(desc));
   }
   if (static_cast<SpvOp>(inst->opcode) == SpvOpFunctionCall) {
     _.AddFunctionCallTarget(inst->words[3]);

@@ -119,12 +119,11 @@ spv_result_t CheckBuiltInVariable(uint32_t var_id, ValidationState_t& vstate) {
 // Checks whether proper decorations have been appied to the entry points.
 spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
   for (uint32_t entry_point : vstate.entry_points()) {
-    const auto& interfaces = vstate.entry_point_interfaces(entry_point);
+    const auto& descs = vstate.entry_point_descriptions(entry_point);
     int num_builtin_inputs = 0;
     int num_builtin_outputs = 0;
-    for (const auto& interface_list : interfaces) {
-      // for (auto interface : interfaces) {
-      for (auto interface : interface_list) {
+    for (const auto& desc : descs) {
+      for (auto interface : desc.interfaces) {
         Instruction* var_instr = vstate.FindDef(interface);
         if (SpvOpVariable != var_instr->opcode()) {
           return vstate.diag(SPV_ERROR_INVALID_ID)
