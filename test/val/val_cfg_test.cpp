@@ -1524,9 +1524,11 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Case construct headed by 10 branches to multiple case "
-                        "constructs 12 and 11"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Case construct that targets 10 has branches to multiple other case "
+          "construct targets 12 and 11"));
 }
 
 TEST_F(ValidateCFG, MultipleFallThroughToDefault) {
@@ -1557,9 +1559,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Multiple case constructs branch to the case construct "
-                        "headed by 10"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Multiple case constructs have branches to the case construct "
+                "that targets 10"));
 }
 
 TEST_F(ValidateCFG, MultipleFallThroughToNonDefault) {
@@ -1590,9 +1593,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Multiple case constructs branch to the case construct "
-                        "headed by 12"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Multiple case constructs have branches to the case construct "
+                "that targets 12"));
 }
 
 TEST_F(ValidateCFG, DuplicateTargetWithFallThrough) {
@@ -1651,10 +1655,11 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Case construct headed by 12 branches to the case "
-                        "construct headed by 11, but does not immediately "
-                        "precede it in the OpSwitch's target list"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Case construct that targets 12 has branches to the case "
+                "construct that targets 11, but does not immediately "
+                "precede it in the OpSwitch's target list"));
 }
 
 TEST_F(ValidateCFG, WrongOperandListThroughDefault) {
@@ -1685,10 +1690,11 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Case construct headed by 12 branches to the case "
-                        "construct headed by 11, but does not immediately "
-                        "precede it in the OpSwitch's target list"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Case construct that targets 12 has branches to the case "
+                "construct that targets 11, but does not immediately "
+                "precede it in the OpSwitch's target list"));
 }
 
 TEST_F(ValidateCFG, WrongOperandListNotLast) {
@@ -1721,10 +1727,11 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Case construct headed by 12 branches to the case "
-                        "construct headed by 11, but does not immediately "
-                        "precede it in the OpSwitch's target list"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Case construct that targets 12 has branches to the case "
+                "construct that targets 11, but does not immediately "
+                "precede it in the OpSwitch's target list"));
 }
 
 /// TODO(umar): Nested CFG constructs

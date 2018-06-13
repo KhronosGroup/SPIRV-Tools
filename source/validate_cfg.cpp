@@ -192,7 +192,7 @@ spv_result_t FindCaseFallThrough(
         stack.push_back(successor);
       }
     } else {
-      // Exiting to non-merge block
+      // Exiting the case construct to non-merge block.
       if (!case_targets.count(block->id())) {
         continue;
       }
@@ -200,9 +200,11 @@ spv_result_t FindCaseFallThrough(
       if (*case_fall_through == 0u) {
         *case_fall_through = block->id();
       } else if (*case_fall_through != block->id()) {
+        // Case construct has at most one branch to another case construct.
         return _.diag(SPV_ERROR_INVALID_CFG)
-               << "Case construct headed by " << _.getIdName(target_block->id())
-               << " branches to multiple case constructs "
+               << "Case construct that targets "
+               << _.getIdName(target_block->id())
+               << " has branches to multiple other case construct targets "
                << _.getIdName(*case_fall_through) << " and "
                << _.getIdName(block->id());
       }
@@ -225,7 +227,6 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
   // Tracks how many times each case construct is targeted by another case
   // construct.
   std::map<uint32_t, uint32_t> num_fall_through_targeted;
-  // uint32_t num_targeting_default = 0u;
   uint32_t default_case_fall_through = 0u;
   uint32_t default_target = switch_inst->GetOperandAs<uint32_t>(1u);
   std::unordered_set<uint32_t> seen;
@@ -235,14 +236,8 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
 
     if (!seen.insert(target).second) continue;
 
-    // Check each case construct for the following:
-    // 1. It is dominated by the OpSwitch.
-    // 2. It branches to at most one other case construct.
-    // 3. If it branches to another case construct, it must immediately
-    // precede that target (or the fall through of the default case) in the
-    // operand list.
-    bool is_default = i == 1;
     const auto target_block = function.GetBlock(target).first;
+    // OpSwitch must dominate all its case constructs.
     if (header->reachable() && target_block->reachable() &&
         !header->dominates(*target_block)) {
       return _.diag(SPV_ERROR_INVALID_CFG)
@@ -272,6 +267,7 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
       case_fall_through = default_case_fall_through;
     }
     if (case_fall_through != 0u) {
+      bool is_default = i == 1;
       if (is_default) {
         default_case_fall_through = case_fall_through;
       } else {
@@ -287,11 +283,14 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
                target == switch_inst->GetOperandAs<uint32_t>(j + 2)) {
           j += 2;
         }
+        // If Target T1 branches to Target T2, or if Target T1 branches to the
+        // Default target and the Default target branches to Target T2, then T1
+        // must immediately precede T2 in the list of OpSwitch Target operands.
         if ((switch_inst->operands().size() < j + 2) ||
             (case_fall_through != switch_inst->GetOperandAs<uint32_t>(j + 2))) {
           return _.diag(SPV_ERROR_INVALID_CFG)
-                 << "Case construct headed by " << _.getIdName(target)
-                 << " branches to the case construct headed by "
+                 << "Case construct that targets " << _.getIdName(target)
+                 << " has branches to the case construct that targets "
                  << _.getIdName(case_fall_through)
                  << ", but does not immediately precede it in the "
                     "OpSwitch's "
@@ -301,12 +300,13 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
     }
   }
 
-  // Check whether any case is branched to by multiple case constructs.
+  // Each case construct must be branched to by at most one other case
+  // construct.
   for (const auto& pair : num_fall_through_targeted) {
     if (pair.second > 1) {
       return _.diag(SPV_ERROR_INVALID_CFG)
-             << "Multiple case constructs branch to the case construct "
-                "headed by "
+             << "Multiple case constructs have branches to the case construct "
+                "that targets "
              << _.getIdName(pair.first);
     }
   }
