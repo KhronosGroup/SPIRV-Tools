@@ -501,6 +501,21 @@ TEST_F(ValidateEntryPoint, FunctionIsTargetOfEntryPointAndFunctionCallBad) {
                 "instruction and an OpFunctionCall instruction."));
 }
 
+// Invalid. Must be within a function to make a function call.
+TEST_F(ValidateEntryPoint, FunctionCallOutsideFunctionBody) {
+  std::string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpName %variableName "variableName"
+         %34 = OpFunctionCall %variableName %1
+      )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FunctionCall must happen within a function body."));
+}
+
 // Valid. Module with a function but no entry point is valid when Linkage
 // Capability is used.
 TEST_F(ValidateEntryPoint, NoEntryPointWithLinkageCapGood) {

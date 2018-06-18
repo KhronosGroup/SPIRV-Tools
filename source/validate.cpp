@@ -154,6 +154,7 @@ spv_result_t ProcessExtensions(void* user_data,
 spv_result_t ProcessInstruction(void* user_data,
                                 const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
+
   _.increment_instruction_count();
   if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint) {
     const auto entry_point = inst->words[2];
@@ -169,6 +170,11 @@ spv_result_t ProcessInstruction(void* user_data,
     _.RegisterEntryPoint(entry_point, execution_model, std::move(desc));
   }
   if (static_cast<SpvOp>(inst->opcode) == SpvOpFunctionCall) {
+    if (!_.in_function_body()) {
+      return _.diag(SPV_ERROR_INVALID_LAYOUT)
+           << "A FunctionCall must happen within a function body.";
+    }
+
     _.AddFunctionCallTarget(inst->words[3]);
   }
 
