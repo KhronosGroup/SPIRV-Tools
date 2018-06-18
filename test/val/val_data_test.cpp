@@ -350,8 +350,7 @@ TEST_F(ValidateData, ids_should_be_validated_before_data) {
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ID 3 has not been defined"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 3 has not been defined"));
 }
 
 TEST_F(ValidateData, matrix_bad_column_type) {
