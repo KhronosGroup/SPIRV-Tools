@@ -174,8 +174,8 @@ spv_result_t ProcessInstruction(void* user_data,
 
   DebugInstructionPass(_, inst);
   if (auto error = CapabilityPass(_, inst)) return error;
-  // ID's must be validated before we do the DataRules validation as the
-  // DataRule validators expect to be able to call FindDefs.
+  // The IdPass check registers instructions and, therefore, must be called
+  // before any instruction lookups are performed.
   if (auto error = IdPass(_, inst)) return error;
   if (auto error = DataRulesPass(_, inst)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
