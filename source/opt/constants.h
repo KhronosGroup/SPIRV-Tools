@@ -502,6 +502,12 @@ class ConstantManager {
   const Constant* GetConstant(
       const Type* type, const std::vector<uint32_t>& literal_words_or_ids);
 
+  template <class C>
+  const Constant* GetConstant(const Type* type, const C& literal_words_or_ids) {
+    return GetConstant(type, std::vector<uint32_t>(literal_words_or_ids.begin(),
+                                                   literal_words_or_ids.end()));
+  }
+
   // Gets or creates a Constant instance to hold the constant value of the given
   // instruction. It returns a pointer to a Constant instance or nullptr if it
   // could not create the constant.

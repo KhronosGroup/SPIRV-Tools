@@ -19,9 +19,9 @@ namespace {
 
 using ::testing::HasSubstr;
 
-class EntryPoints : public spvtest::LinkerTest {
+class EntryPointsAmountTest : public spvtest::LinkerTest {
  public:
-  EntryPoints() { binaries.reserve(0xFFFF); }
+  EntryPointsAmountTest() { binaries.reserve(0xFFFF); }
 
   virtual void SetUp() override {
     binaries.push_back({SpvMagicNumber,
@@ -105,14 +105,14 @@ class EntryPoints : public spvtest::LinkerTest {
   spvtest::Binaries binaries;
 };
 
-TEST_F(EntryPoints, UnderLimit) {
+TEST_F(EntryPointsAmountTest, UnderLimit) {
   spvtest::Binary linked_binary;
 
   EXPECT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
-TEST_F(EntryPoints, OverLimit) {
+TEST_F(EntryPointsAmountTest, OverLimit) {
   binaries.push_back({SpvMagicNumber,
                       SpvVersion,
                       SPV_GENERATOR_CODEPLAY,

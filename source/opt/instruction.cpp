@@ -68,8 +68,7 @@ Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
 }
 
 Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id,
-                         uint32_t res_id,
-                         const std::vector<Operand>& in_operands)
+                         uint32_t res_id, const OperandList& in_operands)
     : utils::IntrusiveNodeBase<Instruction>(),
       context_(c),
       opcode_(op),
@@ -139,10 +138,9 @@ void Instruction::ToBinaryWithoutAttachedDebugInsts(
     binary->insert(binary->end(), operand.words.begin(), operand.words.end());
 }
 
-void Instruction::ReplaceOperands(const std::vector<Operand>& new_operands) {
+void Instruction::ReplaceOperands(const OperandList& new_operands) {
   operands_.clear();
   operands_.insert(operands_.begin(), new_operands.begin(), new_operands.end());
-  operands_.shrink_to_fit();
 }
 
 bool Instruction::IsReadOnlyLoad() const {

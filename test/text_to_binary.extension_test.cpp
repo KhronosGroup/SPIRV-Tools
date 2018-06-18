@@ -145,19 +145,19 @@ INSTANTIATE_TEST_CASE_P(
                  MakeInstruction(SpvOpSubgroupBallotKHR, {1, 2, 3})},
                 {"%2 = OpSubgroupFirstInvocationKHR %1 %3\n",
                  MakeInstruction(SpvOpSubgroupFirstInvocationKHR, {1, 2, 3})},
-                {"OpDecorate %1 BuiltIn SubgroupEqMaskKHR\n",
+                {"OpDecorate %1 BuiltIn SubgroupEqMask\n",
                  MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
                                                  SpvBuiltInSubgroupEqMaskKHR})},
-                {"OpDecorate %1 BuiltIn SubgroupGeMaskKHR\n",
+                {"OpDecorate %1 BuiltIn SubgroupGeMask\n",
                  MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
                                                  SpvBuiltInSubgroupGeMaskKHR})},
-                {"OpDecorate %1 BuiltIn SubgroupGtMaskKHR\n",
+                {"OpDecorate %1 BuiltIn SubgroupGtMask\n",
                  MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
                                                  SpvBuiltInSubgroupGtMaskKHR})},
-                {"OpDecorate %1 BuiltIn SubgroupLeMaskKHR\n",
+                {"OpDecorate %1 BuiltIn SubgroupLeMask\n",
                  MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
                                                  SpvBuiltInSubgroupLeMaskKHR})},
-                {"OpDecorate %1 BuiltIn SubgroupLtMaskKHR\n",
+                {"OpDecorate %1 BuiltIn SubgroupLtMask\n",
                  MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
                                                  SpvBuiltInSubgroupLtMaskKHR})},
             })), );
@@ -522,6 +522,34 @@ INSTANTIATE_TEST_CASE_P(
              MakeInstruction(SpvOpDecorateId,
                              {1, SpvDecorationHlslCounterBufferGOOGLE, 2})},
         })), );
+
+// SPV_NV_viewport_array2
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_NV_viewport_array2, ExtensionRoundTripTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3,
+                   SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpExtension \"SPV_NV_viewport_array2\"\n",
+                 MakeInstruction(SpvOpExtension,
+                                 MakeVector("SPV_NV_viewport_array2"))},
+                // The EXT and NV extensions have the same token number for this
+                // capability.
+                {"OpCapability ShaderViewportIndexLayerEXT\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityShaderViewportIndexLayerNV})},
+                // Check the new capability's token number
+                {"OpCapability ShaderViewportIndexLayerEXT\n",
+                 MakeInstruction(SpvOpCapability, {5254})},
+                // Decorations
+                {"OpDecorate %1 ViewportRelativeNV\n",
+                 MakeInstruction(SpvOpDecorate,
+                                 {1, SpvDecorationViewportRelativeNV})},
+                {"OpDecorate %1 BuiltIn ViewportMaskNV\n",
+                 MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
+                                                 SpvBuiltInViewportMaskNV})},
+            })), );
 
 // SPV_NV_shader_subgroup_partitioned
 

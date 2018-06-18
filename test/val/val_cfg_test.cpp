@@ -1439,6 +1439,316 @@ TEST_F(ValidateCFG, OpReturnInNonVoidFunc) {
           "OpReturn can only be called from a function with void return type"));
 }
 
-/// TODO(umar): Switch instructions
+TEST_F(ValidateCFG, StructuredCFGBranchIntoSelectionBody) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpBranchConditional %true %then %merge
+%merge = OpLabel
+OpBranch %then
+%then = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("branches to the selection construct, but not to the "
+                        "selection header <ID>"));
+}
+
+TEST_F(ValidateCFG, SwitchDefaultOnly) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpFunction %1 None %4
+%6 = OpLabel
+OpSelectionMerge %7 None
+OpSwitch %3 %7
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, SwitchSingleCase) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpFunction %1 None %4
+%6 = OpLabel
+OpSelectionMerge %7 None
+OpSwitch %3 %7 0 %8
+%8 = OpLabel
+OpBranch %7
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, MultipleFallThroughBlocks) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpTypeBool
+%6 = OpConstantTrue %5
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpSwitch %3 %10 0 %11 1 %12
+%10 = OpLabel
+OpBranchConditional %6 %11 %12
+%11 = OpLabel
+OpBranch %9
+%12 = OpLabel
+OpBranch %9
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Case construct that targets 10 has branches to multiple other case "
+          "construct targets 12 and 11"));
+}
+
+TEST_F(ValidateCFG, MultipleFallThroughToDefault) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpTypeBool
+%6 = OpConstantTrue %5
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpSwitch %3 %10 0 %11 1 %12
+%10 = OpLabel
+OpBranch %9
+%11 = OpLabel
+OpBranch %10
+%12 = OpLabel
+OpBranch %10
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Multiple case constructs have branches to the case construct "
+                "that targets 10"));
+}
+
+TEST_F(ValidateCFG, MultipleFallThroughToNonDefault) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpTypeBool
+%6 = OpConstantTrue %5
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpSwitch %3 %10 0 %11 1 %12
+%10 = OpLabel
+OpBranch %12
+%11 = OpLabel
+OpBranch %12
+%12 = OpLabel
+OpBranch %9
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Multiple case constructs have branches to the case construct "
+                "that targets 12"));
+}
+
+TEST_F(ValidateCFG, DuplicateTargetWithFallThrough) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpTypeBool
+%6 = OpConstantTrue %5
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpSwitch %3 %10 0 %10 1 %11
+%10 = OpLabel
+OpBranch %11
+%11 = OpLabel
+OpBranch %9
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, WrongOperandList) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpTypeBool
+%6 = OpConstantTrue %5
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpSwitch %3 %10 0 %11 1 %12
+%10 = OpLabel
+OpBranch %9
+%12 = OpLabel
+OpBranch %11
+%11 = OpLabel
+OpBranch %9
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Case construct that targets 12 has branches to the case "
+                "construct that targets 11, but does not immediately "
+                "precede it in the OpSwitch's target list"));
+}
+
+TEST_F(ValidateCFG, WrongOperandListThroughDefault) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpTypeBool
+%6 = OpConstantTrue %5
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpSwitch %3 %10 0 %11 1 %12
+%10 = OpLabel
+OpBranch %11
+%12 = OpLabel
+OpBranch %10
+%11 = OpLabel
+OpBranch %9
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Case construct that targets 12 has branches to the case "
+                "construct that targets 11, but does not immediately "
+                "precede it in the OpSwitch's target list"));
+}
+
+TEST_F(ValidateCFG, WrongOperandListNotLast) {
+  std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpTypeBool
+%6 = OpConstantTrue %5
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+OpSelectionMerge %9 None
+OpSwitch %3 %10 0 %11 1 %12 2 %13
+%10 = OpLabel
+OpBranch %9
+%12 = OpLabel
+OpBranch %11
+%11 = OpLabel
+OpBranch %9
+%13 = OpLabel
+OpBranch %9
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Case construct that targets 12 has branches to the case "
+                "construct that targets 11, but does not immediately "
+                "precede it in the OpSwitch's target list"));
+}
+
 /// TODO(umar): Nested CFG constructs
 }  // namespace

@@ -23,7 +23,7 @@ namespace {
 
 using namespace spvtools;
 
-class PeelingTest : public PassTest<::testing::Test> {
+class PeelingPassTest : public PassTest<::testing::Test> {
  public:
   // Generic routine to run the loop peeling pass and check
   opt::LoopPeelingPass::LoopPeelingStats AssembleAndRunPeelingTest(
@@ -127,7 +127,7 @@ void main() {
 The condition is interchanged to test < > <= >= == and peel before/after
 opportunities.
 */
-TEST_F(PeelingTest, PeelingPassBasic) {
+TEST_F(PeelingPassTest, PeelingPassBasic) {
   const std::string text_head = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -597,7 +597,7 @@ void main() {
 The condition is interchanged to test < > <= >= == and peel before/after
 opportunities.
 */
-TEST_F(PeelingTest, MultiplePeelingPass) {
+TEST_F(PeelingPassTest, MultiplePeelingPass) {
   const std::string text_head = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -867,7 +867,7 @@ void main() {
   }
 }
 */
-TEST_F(PeelingTest, PeelingNestedPass) {
+TEST_F(PeelingPassTest, PeelingNestedPass) {
   const std::string text_head = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1023,7 +1023,7 @@ void main() {
   }
 }
 */
-TEST_F(PeelingTest, PeelingNoChanges) {
+TEST_F(PeelingPassTest, PeelingNoChanges) {
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"

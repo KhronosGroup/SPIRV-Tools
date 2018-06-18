@@ -55,16 +55,17 @@ spv_result_t spvOperandTableNameLookup(spv_target_env env,
     if (type != group.type) continue;
     for (uint64_t index = 0; index < group.count; ++index) {
       const auto& entry = group.entries[index];
-      // We considers the current operand as available as long as
+      // We consider the current operand as available as long as
       // 1. The target environment satisfies the minimal requirement of the
       //    operand; or
-      // 2. There is at least one extension enabling this operand.
+      // 2. There is at least one extension enabling this operand; or
+      // 3. There is at least one capability enabling this operand.
       //
       // Note that the second rule assumes the extension enabling this operand
       // is indeed requested in the SPIR-V code; checking that should be
       // validator's work.
       if ((spvVersionForTargetEnv(env) >= entry.minVersion ||
-           entry.numExtensions > 0u) &&
+           entry.numExtensions > 0u || entry.numCapabilities > 0u) &&
           nameLength == strlen(entry.name) &&
           !strncmp(entry.name, name, nameLength)) {
         *pEntry = &entry;
@@ -109,16 +110,17 @@ spv_result_t spvOperandTableValueLookup(spv_target_env env,
     // opcode value.
     for (auto it = std::lower_bound(beg, end, needle, comp);
          it != end && it->value == value; ++it) {
-      // We considers the current operand as available as long as
+      // We consider the current operand as available as long as
       // 1. The target environment satisfies the minimal requirement of the
       //    operand; or
-      // 2. There is at least one extension enabling this operand.
+      // 2. There is at least one extension enabling this operand; or
+      // 3. There is at least one capability enabling this operand.
       //
       // Note that the second rule assumes the extension enabling this operand
       // is indeed requested in the SPIR-V code; checking that should be
       // validator's work.
       if (spvVersionForTargetEnv(env) >= it->minVersion ||
-          it->numExtensions > 0u) {
+          it->numExtensions > 0u || it->numCapabilities > 0u) {
         *pEntry = it;
         return SPV_SUCCESS;
       }

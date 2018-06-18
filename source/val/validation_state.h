@@ -159,22 +159,21 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
-  /// Registers the given <id> as an Entry Point with |execution_model|.
-  void RegisterEntryPointId(const uint32_t id,
-                            SpvExecutionModel execution_model) {
+  struct EntryPointDescription {
+    std::string name;
+    std::vector<uint32_t> interfaces;
+  };
+
+  /// Registers |id| as an entry point with |execution_model| and |interfaces|.
+  void RegisterEntryPoint(const uint32_t id, SpvExecutionModel execution_model,
+                          EntryPointDescription&& desc) {
     entry_points_.push_back(id);
-    entry_point_interfaces_.emplace(id, std::vector<uint32_t>());
     entry_point_to_execution_models_[id].insert(execution_model);
+    entry_point_descriptions_[id].emplace_back(desc);
   }
 
   /// Returns a list of entry point function ids
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
-
-  /// Adds a new interface id to the interfaces of the given entry point.
-  void RegisterInterfaceForEntryPoint(uint32_t entry_point,
-                                      uint32_t interface) {
-    entry_point_interfaces_[entry_point].push_back(interface);
-  }
 
   /// Registers execution mode for the given entry point.
   void RegisterExecutionModeForEntryPoint(uint32_t entry_point,
@@ -182,11 +181,10 @@ class ValidationState_t {
     entry_point_to_execution_modes_[entry_point].insert(execution_mode);
   }
 
-  /// Returns the interfaces of a given entry point. If the given id is not a
-  /// valid Entry Point id, std::out_of_range exception is thrown.
-  const std::vector<uint32_t>& entry_point_interfaces(
-      uint32_t entry_point) const {
-    return entry_point_interfaces_.at(entry_point);
+  /// Returns the interface descriptions of a given entry point.
+  const std::vector<EntryPointDescription>& entry_point_descriptions(
+      uint32_t entry_point) {
+    return entry_point_descriptions_.at(entry_point);
   }
 
   /// Returns Execution Models for the given Entry Point.
@@ -532,8 +530,9 @@ class ValidationState_t {
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
 
-  /// Maps an entry point id to its interfaces.
-  std::unordered_map<uint32_t, std::vector<uint32_t>> entry_point_interfaces_;
+  /// Maps an entry point id to its desciptions.
+  std::unordered_map<uint32_t, std::vector<EntryPointDescription>>
+      entry_point_descriptions_;
 
   /// Functions IDs that are target of OpFunctionCall.
   std::unordered_set<uint32_t> function_call_targets_;

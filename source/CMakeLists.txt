@@ -221,6 +221,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_vector.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/parse_number.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/util/small_vector.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/string_utils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/timer.h
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.h
@@ -297,6 +298,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_image.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_interfaces.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_literals.cpp

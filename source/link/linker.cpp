@@ -457,10 +457,11 @@ static spv_result_t MergeModules(const MessageConsumer& consumer,
   // OpModuleProcessed instruction about the linking step.
   if (linked_module->version() >= 0x10100) {
     const std::string processed_string("Linked by SPIR-V Tools Linker");
-    const size_t words_nb =
-        processed_string.size() / 4u + (processed_string.size() % 4u != 0u);
-    std::vector<uint32_t> processed_words(words_nb, 0u);
-    std::memcpy(processed_words.data(), processed_string.data(), words_nb * 4u);
+    const auto num_chars = processed_string.size();
+    // Compute num words, accommodate the terminating null character.
+    const auto num_words = (num_chars + 1 + 3) / 4;
+    std::vector<uint32_t> processed_words(num_words, 0u);
+    std::memcpy(processed_words.data(), processed_string.data(), num_chars);
     linked_module->AddDebug3Inst(std::unique_ptr<Instruction>(
         new Instruction(linked_context, SpvOpModuleProcessed, 0u, 0u,
                         {{SPV_OPERAND_TYPE_LITERAL_STRING, processed_words}})));

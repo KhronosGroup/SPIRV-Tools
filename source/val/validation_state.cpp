@@ -423,6 +423,11 @@ void ValidationState_t::RegisterInstruction(
   if (in_function_body()) {
     ordered_instructions_.emplace_back(&inst, &current_function(),
                                        current_function().current_block());
+    if (in_block() &&
+        spvOpcodeIsBlockTerminator(static_cast<SpvOp>(inst.opcode))) {
+      current_function().current_block()->set_terminator(
+          &ordered_instructions_.back());
+    }
   } else {
     ordered_instructions_.emplace_back(&inst, nullptr, nullptr);
   }

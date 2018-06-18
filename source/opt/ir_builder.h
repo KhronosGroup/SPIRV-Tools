@@ -120,7 +120,7 @@ class InstructionBuilder {
   // well formed.
   ir::Instruction* AddSwitch(
       uint32_t selector_id, uint32_t default_id,
-      const std::vector<std::pair<std::vector<uint32_t>, uint32_t>>& targets,
+      const std::vector<std::pair<ir::Operand::OperandData, uint32_t>>& targets,
       uint32_t merge_id = kInvalidId,
       uint32_t selection_control = SpvSelectionControlMaskNone) {
     if (merge_id != kInvalidId) {
