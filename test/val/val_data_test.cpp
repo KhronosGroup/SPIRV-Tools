@@ -343,6 +343,17 @@ TEST_F(ValidateData, matrix_data_type_float) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateData, ids_should_be_validated_before_data) {
+  string str = header + R"(
+%f32    =  OpTypeFloat 32
+%mat33  =  OpTypeMatrix %vec3 3
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID 3 has not been defined"));
+}
+
 TEST_F(ValidateData, matrix_bad_column_type) {
   string str = header + R"(
 %f32    =  OpTypeFloat 32
