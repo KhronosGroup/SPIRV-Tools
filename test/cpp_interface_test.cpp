@@ -87,28 +87,6 @@ TEST(CppInterface, AssembleOverloads) {
   }
 }
 
-TEST(CppInterface, AssembleWithWrongTargetEnv) {
-  const std::string input_text = "%r = OpSizeOf %type %pointer";
-  SpirvTools t(SPV_ENV_UNIVERSAL_1_0);
-  int invocation_count = 0;
-  t.SetMessageConsumer(
-      [&invocation_count](spv_message_level_t level, const char* source,
-                          const spv_position_t& position, const char* message) {
-        ++invocation_count;
-        EXPECT_EQ(SPV_MSG_ERROR, level);
-        EXPECT_STREQ("input", source);
-        EXPECT_EQ(0u, position.line);
-        EXPECT_EQ(5u, position.column);
-        EXPECT_EQ(5u, position.index);
-        EXPECT_STREQ("Invalid Opcode name 'OpSizeOf'", message);
-      });
-
-  std::vector<uint32_t> binary = {42, 42};
-  EXPECT_FALSE(t.Assemble(input_text, &binary));
-  EXPECT_THAT(binary, ContainerEq(std::vector<uint32_t>{42, 42}));
-  EXPECT_EQ(1, invocation_count);
-}
-
 TEST(CppInterface, DisassembleEmptyModule) {
   std::string text(10, 'x');
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
@@ -146,31 +124,6 @@ TEST(CppInterface, DisassembleOverloads) {
     EXPECT_TRUE(t.Disassemble(binary.data(), binary.size(), &output_text));
     EXPECT_EQ(input_text, output_text);
   }
-}
-
-TEST(CppInterface, DisassembleWithWrongTargetEnv) {
-  const std::string input_text = "%r = OpSizeOf %type %pointer";
-  SpirvTools t11(SPV_ENV_UNIVERSAL_1_1);
-  SpirvTools t10(SPV_ENV_UNIVERSAL_1_0);
-  int invocation_count = 0;
-  t10.SetMessageConsumer(
-      [&invocation_count](spv_message_level_t level, const char* source,
-                          const spv_position_t& position, const char* message) {
-        ++invocation_count;
-        EXPECT_EQ(SPV_MSG_ERROR, level);
-        EXPECT_STREQ("input", source);
-        EXPECT_EQ(0u, position.line);
-        EXPECT_EQ(0u, position.column);
-        EXPECT_EQ(5u, position.index);
-        EXPECT_STREQ("Invalid opcode: 321", message);
-      });
-
-  std::vector<uint32_t> binary;
-  EXPECT_TRUE(t11.Assemble(input_text, &binary));
-
-  std::string output_text(10, 'x');
-  EXPECT_FALSE(t10.Disassemble(binary, &output_text));
-  EXPECT_EQ("xxxxxxxxxx", output_text);  // The original string is unmodified.
 }
 
 TEST(CppInterface, SuccessfulValidation) {

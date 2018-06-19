@@ -22,9 +22,12 @@ using ::testing::Eq;
 
 using OpTypePipeStorageTest = spvtest::TextToBinaryTest;
 
-TEST_F(OpTypePipeStorageTest, OpcodeUnrecognizedInV10) {
-  EXPECT_THAT(CompileFailure("%res = OpTypePipeStorage", SPV_ENV_UNIVERSAL_1_0),
-              Eq("Invalid Opcode name 'OpTypePipeStorage'"));
+// It can assemble, but should not validate.  Validation checks for version
+// and capability are in another test file.
+TEST_F(OpTypePipeStorageTest, OpcodeAssemblesInV10) {
+  EXPECT_THAT(
+      CompiledInstructions("%res = OpTypePipeStorage", SPV_ENV_UNIVERSAL_1_0),
+      Eq(MakeInstruction(SpvOpTypePipeStorage, {1})));
 }
 
 TEST_F(OpTypePipeStorageTest, ArgumentCount) {
@@ -42,10 +45,10 @@ TEST_F(OpTypePipeStorageTest, ArgumentCount) {
 
 using OpConstantPipeStorageTest = spvtest::TextToBinaryTest;
 
-TEST_F(OpConstantPipeStorageTest, OpcodeUnrecognizedInV10) {
-  EXPECT_THAT(CompileFailure("%1 = OpConstantPipeStorage %2 3 4 5",
-                             SPV_ENV_UNIVERSAL_1_0),
-              Eq("Invalid Opcode name 'OpConstantPipeStorage'"));
+TEST_F(OpConstantPipeStorageTest, OpcodeAssemblesInV10) {
+  EXPECT_THAT(CompiledInstructions("%1 = OpConstantPipeStorage %2 3 4 5",
+                                   SPV_ENV_UNIVERSAL_1_0),
+              Eq(MakeInstruction(SpvOpConstantPipeStorage, {1, 2, 3, 4, 5})));
 }
 
 TEST_F(OpConstantPipeStorageTest, ArgumentCount) {
@@ -84,10 +87,10 @@ TEST_F(OpConstantPipeStorageTest, ArgumentTypes) {
 
 using OpCreatePipeFromPipeStorageTest = spvtest::TextToBinaryTest;
 
-TEST_F(OpCreatePipeFromPipeStorageTest, OpcodeUnrecognizedInV10) {
-  EXPECT_THAT(CompileFailure("%1 = OpCreatePipeFromPipeStorage %2 %3",
-                             SPV_ENV_UNIVERSAL_1_0),
-              Eq("Invalid Opcode name 'OpCreatePipeFromPipeStorage'"));
+TEST_F(OpCreatePipeFromPipeStorageTest, OpcodeAssemblesInV10) {
+  EXPECT_THAT(CompiledInstructions("%1 = OpCreatePipeFromPipeStorage %2 %3",
+                                   SPV_ENV_UNIVERSAL_1_0),
+              Eq(MakeInstruction(SpvOpCreatePipeFromPipeStorage, {1, 2, 3})));
 }
 
 TEST_F(OpCreatePipeFromPipeStorageTest, ArgumentCount) {

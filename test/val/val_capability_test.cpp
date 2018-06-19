@@ -1965,6 +1965,10 @@ OpMemoryModel Physical64 OpenCL
                         "Embedded Profile"));
 }
 
+// Three tests to check enablement of an enum (a decoration) which is not
+// in core, and is directly enabled by a capability, but not directly enabled
+// by an extension.  See https://github.com/KhronosGroup/SPIRV-Tools/issues/1596
+
 TEST_F(ValidateCapability, DecorationFromExtensionMissingEnabledByCapability) {
   // Decoration ViewportRelativeNV is enabled by ShaderViewportMaskNV, which in
   // turn is enabled by SPV_NV_viewport_array2.
@@ -2010,6 +2014,94 @@ OpExtension "SPV_NV_viewport_array2"
 OpMemoryModel Logical Simple
 OpDecorate %void ViewportRelativeNV
 %void = OpTypeVoid
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_0))
+      << getDiagnosticString();
+}
+
+// Three tests to check enablement of an instruction  which is not in core, and
+// is directly enabled by a capability, but not directly enabled by an
+// extension. See https://github.com/KhronosGroup/SPIRV-Tools/issues/1624
+// Instruction OpSubgroupShuffleINTEL is enabled by SubgroupShuffleINTEL, which
+// in turn is enabled by SPV_INTEL_subgroups.
+
+TEST_F(ValidateCapability, InstructionFromExtensionMissingEnabledByCapability) {
+  // Decoration ViewportRelativeNV is enabled by ShaderViewportMaskNV, which in
+  // turn is enabled by SPV_NV_viewport_array2.
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+; OpCapability SubgroupShuffleINTEL
+OpExtension "SPV_INTEL_subgroups"
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%voidfn = OpTypeFunction %void
+%zero = OpConstant %uint 0
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%foo = OpSubgroupShuffleINTEL %uint %zero %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Opcode SubgroupShuffleINTEL requires one of these "
+                        "capabilities: SubgroupShuffleINTEL"));
+}
+
+TEST_F(ValidateCapability,
+       InstructionEnablingCapabilityEnabledByMissingExtension) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability SubgroupShuffleINTEL
+; OpExtension "SPV_INTEL_subgroups"
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%voidfn = OpTypeFunction %void
+%zero = OpConstant %uint 0
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%foo = OpSubgroupShuffleINTEL %uint %zero %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_ERROR_MISSING_EXTENSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("operand 5568 requires one of these extensions: "
+                        "SPV_INTEL_subgroups"));
+}
+
+TEST_F(ValidateCapability,
+       InstructionEnabledByCapabilityEnabledByPresentExtension) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability SubgroupShuffleINTEL
+OpExtension "SPV_INTEL_subgroups"
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%voidfn = OpTypeFunction %void
+%zero = OpConstant %uint 0
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%foo = OpSubgroupShuffleINTEL %uint %zero %zero
+OpReturn
+OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
