@@ -48,9 +48,11 @@ namespace {
 // instruction.
 class StatsAggregator {
  public:
-  StatsAggregator(SpirvStats* in_out_stats, const spv_const_context context) {
+  StatsAggregator(SpirvStats* in_out_stats, const spv_const_context context,
+                  const uint32_t* words, size_t num_words) {
     stats_ = in_out_stats;
-    vstate_.reset(new ValidationState_t(context, &validator_options_));
+    vstate_.reset(
+        new ValidationState_t(context, &validator_options_, words, num_words));
   }
 
   // Collects header statistics and sets correct id_bound.
@@ -304,19 +306,19 @@ spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
   spv_endianness_t endian;
   spv_position_t position = {};
   if (spvBinaryEndianness(&binary, &endian)) {
-    return libspirv::DiagnosticStream(position, context.consumer,
+    return libspirv::DiagnosticStream(position, context.consumer, "",
                                       SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V magic number.";
   }
 
   spv_header_t header;
   if (spvBinaryHeaderGet(&binary, endian, &header)) {
-    return libspirv::DiagnosticStream(position, context.consumer,
+    return libspirv::DiagnosticStream(position, context.consumer, "",
                                       SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V header.";
   }
 
-  StatsAggregator stats_aggregator(stats, &context);
+  StatsAggregator stats_aggregator(stats, &context, words, num_words);
 
   return spvBinaryParse(&context, &stats_aggregator, words, num_words,
                         ProcessHeader, ProcessInstruction, pDiagnostic);

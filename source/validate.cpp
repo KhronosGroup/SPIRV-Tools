@@ -250,20 +250,20 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   spv_endianness_t endian;
   spv_position_t position = {};
   if (spvBinaryEndianness(binary.get(), &endian)) {
-    return libspirv::DiagnosticStream(position, context.consumer,
+    return libspirv::DiagnosticStream(position, context.consumer, "",
                                       SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V magic number.";
   }
 
   spv_header_t header;
   if (spvBinaryHeaderGet(binary.get(), endian, &header)) {
-    return libspirv::DiagnosticStream(position, context.consumer,
+    return libspirv::DiagnosticStream(position, context.consumer, "",
                                       SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V header.";
   }
 
   if (header.version > spvVersionForTargetEnv(context.target_env)) {
-    return libspirv::DiagnosticStream(position, context.consumer,
+    return libspirv::DiagnosticStream(position, context.consumer, "",
                                       SPV_ERROR_WRONG_VERSION)
            << "Invalid SPIR-V binary version "
            << SPV_SPIRV_VERSION_MAJOR_PART(header.version) << "."
@@ -391,7 +391,7 @@ spv_result_t spvValidateBinary(const spv_const_context context,
   spv_validator_options default_options = spvValidatorOptionsCreate();
 
   // Create the ValidationState using the context and default options.
-  ValidationState_t vstate(&hijack_context, default_options);
+  ValidationState_t vstate(&hijack_context, default_options, words, num_words);
 
   spv_result_t result = ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, &vstate);
@@ -411,7 +411,8 @@ spv_result_t spvValidateWithOptions(const spv_const_context context,
   }
 
   // Create the ValidationState using the context.
-  ValidationState_t vstate(&hijack_context, options);
+  ValidationState_t vstate(&hijack_context, options, binary->code,
+                           binary->wordCount);
 
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, binary->code, binary->wordCount, pDiagnostic, &vstate);
@@ -429,7 +430,8 @@ spv_result_t ValidateBinaryAndKeepValidationState(
     libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
   }
 
-  vstate->reset(new ValidationState_t(&hijack_context, options));
+  vstate->reset(
+      new ValidationState_t(&hijack_context, options, words, num_words));
 
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, vstate->get());

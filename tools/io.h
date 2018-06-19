@@ -39,7 +39,10 @@ bool ReadFile(const char* filename, const char* mode, std::vector<T>* data) {
       }
     } else {
       if (sizeof(T) != 1 && (ftell(fp) % sizeof(T))) {
-        fprintf(stderr, "error: corrupted word found in file '%s'\n", filename);
+        fprintf(
+            stderr,
+            "error: file size should be a multiple of %zd; file '%s' corrupt\n",
+            sizeof(T), filename);
         return false;
       }
     }

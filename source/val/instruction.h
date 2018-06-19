@@ -83,10 +83,14 @@ class Instruction {
     return *reinterpret_cast<const T*>(&words_[operand.offset]);
   }
 
+  int InstructionPosition() const { return instruction_position_; }
+  void SetInstructionPosition(int pos) { instruction_position_ = pos; }
+
  private:
   const std::vector<uint32_t> words_;
   const std::vector<spv_parsed_operand_t> operands_;
   spv_parsed_instruction_t inst_;
+  int instruction_position_;
 
   /// The function in which this instruction was declared
   Function* function_;

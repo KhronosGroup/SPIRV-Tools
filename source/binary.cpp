@@ -122,7 +122,8 @@ class Parser {
   // returned object will be propagated to the current parse's diagnostic
   // object.
   libspirv::DiagnosticStream diagnostic(spv_result_t error) {
-    return libspirv::DiagnosticStream({0, 0, _.word_index}, consumer_, error);
+    return libspirv::DiagnosticStream({0, 0, _.word_index}, consumer_, "",
+                                      error);
   }
 
   // Returns a diagnostic stream object with the default parse error code.
