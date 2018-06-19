@@ -68,16 +68,16 @@ TEST(Diagnostic, PrintInvalidDiagnostic) {
 TEST(DiagnosticStream, ConversionToResultType) {
   // Check after the DiagnosticStream object is destroyed.
   spv_result_t value;
-  { value = DiagnosticStream({}, nullptr, SPV_ERROR_INVALID_TEXT); }
+  { value = DiagnosticStream({}, nullptr, "", SPV_ERROR_INVALID_TEXT); }
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT, value);
 
   // Check implicit conversion via plain assignment.
-  value = DiagnosticStream({}, nullptr, SPV_SUCCESS);
+  value = DiagnosticStream({}, nullptr, "", SPV_SUCCESS);
   EXPECT_EQ(SPV_SUCCESS, value);
 
   // Check conversion via constructor.
   EXPECT_EQ(SPV_FAILED_MATCH,
-            spv_result_t(DiagnosticStream({}, nullptr, SPV_FAILED_MATCH)));
+            spv_result_t(DiagnosticStream({}, nullptr, "", SPV_FAILED_MATCH)));
 }
 
 TEST(
@@ -94,7 +94,7 @@ TEST(
 
   // Enclose the DiagnosticStream variables in a scope to force destruction.
   {
-    DiagnosticStream ds0({}, consumer, SPV_ERROR_INVALID_BINARY);
+    DiagnosticStream ds0({}, consumer, "", SPV_ERROR_INVALID_BINARY);
     ds0 << "First";
     DiagnosticStream ds1(std::move(ds0));
     ds1 << "Second";

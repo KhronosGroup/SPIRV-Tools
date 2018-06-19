@@ -75,7 +75,8 @@ void printDominatorList(const BasicBlock& b) {
 
 spv_result_t FirstBlockAssert(ValidationState_t& _, uint32_t target) {
   if (_.current_function().IsFirstBlock(target)) {
-    return _.diag(SPV_ERROR_INVALID_CFG)
+    return _.diag(SPV_ERROR_INVALID_CFG,
+                  _.FindDef(_.current_function().id())->InstructionPosition())
            << "First block " << _.getIdName(target) << " of function "
            << _.getIdName(_.current_function().id()) << " is targeted by block "
            << _.getIdName(_.current_function().current_block()->id());
@@ -85,7 +86,8 @@ spv_result_t FirstBlockAssert(ValidationState_t& _, uint32_t target) {
 
 spv_result_t MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
   if (_.current_function().IsBlockType(merge_block, kBlockTypeMerge)) {
-    return _.diag(SPV_ERROR_INVALID_CFG)
+    return _.diag(SPV_ERROR_INVALID_CFG,
+                  _.FindDef(_.current_function().id())->InstructionPosition())
            << "Block " << _.getIdName(merge_block)
            << " is already a merge block for another header";
   }
@@ -342,7 +344,8 @@ spv_result_t StructuredControlFlowChecks(
     auto loop_header_id = loop_header->id();
     auto num_latch_blocks = loop_latch_blocks[loop_header_id].size();
     if (num_latch_blocks != 1) {
-      return _.diag(SPV_ERROR_INVALID_CFG)
+      return _.diag(SPV_ERROR_INVALID_CFG,
+                    _.FindDef(loop_header_id)->InstructionPosition())
              << "Loop header " << _.getIdName(loop_header_id)
              << " is targeted by " << num_latch_blocks
              << " back-edge blocks but the standard requires exactly one";
@@ -358,7 +361,8 @@ spv_result_t StructuredControlFlowChecks(
       string construct_name, header_name, exit_name;
       tie(construct_name, header_name, exit_name) =
           ConstructNames(construct.type());
-      return _.diag(SPV_ERROR_INTERNAL)
+      return _.diag(SPV_ERROR_INTERNAL,
+                    _.FindDef(header->id())->InstructionPosition())
              << "Construct " + construct_name + " with " + header_name + " " +
                     _.getIdName(header->id()) + " does not have a " +
                     exit_name + ". This may be a bug in the validator.";
@@ -368,25 +372,31 @@ spv_result_t StructuredControlFlowChecks(
     // header.
     if (merge && merge->reachable()) {
       if (!header->dominates(*merge)) {
-        return _.diag(SPV_ERROR_INVALID_CFG) << ConstructErrorString(
-                   construct, _.getIdName(header->id()),
-                   _.getIdName(merge->id()), "does not dominate");
+        return _.diag(SPV_ERROR_INVALID_CFG,
+                      _.FindDef(merge->id())->InstructionPosition())
+               << ConstructErrorString(construct, _.getIdName(header->id()),
+                                       _.getIdName(merge->id()),
+                                       "does not dominate");
       }
       // If it's really a merge block for a selection or loop, then it must be
       // *strictly* dominated by the header.
       if (construct.ExitBlockIsMergeBlock() && (header == merge)) {
-        return _.diag(SPV_ERROR_INVALID_CFG) << ConstructErrorString(
-                   construct, _.getIdName(header->id()),
-                   _.getIdName(merge->id()), "does not strictly dominate");
+        return _.diag(SPV_ERROR_INVALID_CFG,
+                      _.FindDef(merge->id())->InstructionPosition())
+               << ConstructErrorString(construct, _.getIdName(header->id()),
+                                       _.getIdName(merge->id()),
+                                       "does not strictly dominate");
       }
     }
     // Check post-dominance for continue constructs.  But dominance and
     // post-dominance only make sense when the construct is reachable.
     if (header->reachable() && construct.type() == ConstructType::kContinue) {
       if (!merge->postdominates(*header)) {
-        return _.diag(SPV_ERROR_INVALID_CFG) << ConstructErrorString(
-                   construct, _.getIdName(header->id()),
-                   _.getIdName(merge->id()), "is not post dominated by");
+        return _.diag(SPV_ERROR_INVALID_CFG,
+                      _.FindDef(merge->id())->InstructionPosition())
+               << ConstructErrorString(construct, _.getIdName(header->id()),
+                                       _.getIdName(merge->id()),
+                                       "is not post dominated by");
       }
     }
 
@@ -434,7 +444,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         }
         first = false;
       }
-      return _.diag(SPV_ERROR_INVALID_CFG)
+      return _.diag(SPV_ERROR_INVALID_CFG,
+                    _.FindDef(function.id())->InstructionPosition())
              << "Block(s) " << undef_blocks << "}"
              << " are referenced but not defined in function "
              << _.getIdName(function.id());
@@ -493,7 +504,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         if (auto idom = (*block)->immediate_dominator()) {
           if (idom != function.pseudo_entry_block() &&
               block == std::find(begin(blocks), block, idom)) {
-            return _.diag(SPV_ERROR_INVALID_CFG)
+            return _.diag(SPV_ERROR_INVALID_CFG,
+                          _.FindDef(idom->id())->InstructionPosition())
                    << "Block " << _.getIdName((*block)->id())
                    << " appears in the binary before its dominator "
                    << _.getIdName(idom->id());
@@ -508,7 +520,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         for (auto block = begin(blocks); block != end(blocks); ++block) {
           if (function.GetBlockDepth(*block) >
               control_flow_nesting_depth_limit) {
-            return _.diag(SPV_ERROR_INVALID_CFG)
+            return _.diag(SPV_ERROR_INVALID_CFG,
+                          _.FindDef((*block)->id())->InstructionPosition())
                    << "Maximum Control Flow nesting depth exceeded.";
           }
         }
@@ -577,7 +590,8 @@ spv_result_t CfgPass(ValidationState_t& _,
       const Instruction* return_type_inst = _.FindDef(return_type);
       assert(return_type_inst);
       if (return_type_inst->opcode() != SpvOpTypeVoid)
-        return _.diag(SPV_ERROR_INVALID_CFG)
+        return _.diag(SPV_ERROR_INVALID_CFG,
+                      return_type_inst->InstructionPosition())
                << "OpReturn can only be called from a function with void "
                << "return type.";
     }

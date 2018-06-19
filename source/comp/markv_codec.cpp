@@ -388,18 +388,7 @@ class MarkvCodecBase {
         model_(model),
         short_id_descriptors_(ShortHashU32Array),
         mtf_huffman_codecs_(GetMtfHuffmanCodecs()),
-        context_(context),
-        vstate_(validator_options
-                    ? new ValidationState_t(context, validator_options_)
-                    : nullptr) {}
-
-  // Validates a single instruction and updates validation state of the module.
-  // Does nothing and returns SPV_SUCCESS if validator was not created.
-  spv_result_t UpdateValidationState(const spv_parsed_instruction_t& inst) {
-    if (!vstate_) return SPV_SUCCESS;
-
-    return ValidateInstructionAndUpdateValidationState(vstate_.get(), &inst);
-  }
+        context_(context) {}
 
   // Returns instruction which created |id| or nullptr if such instruction was
   // not registered.
@@ -493,7 +482,7 @@ class MarkvCodecBase {
   // Returns diagnostic stream, position index is set to instruction number.
   DiagnosticStream Diag(spv_result_t error_code) const {
     return DiagnosticStream({0, 0, instructions_.size()}, context_->consumer,
-                            error_code);
+                            "", error_code);
   }
 
   // Returns current id bound.
@@ -503,7 +492,6 @@ class MarkvCodecBase {
   void SetIdBound(uint32_t id_bound) {
     assert(id_bound >= id_bound_);
     id_bound_ = id_bound;
-    if (vstate_) vstate_->setIdBound(id_bound);
   }
 
   // Returns Huffman codec for ranks of the mtf with given |handle|.
@@ -587,11 +575,9 @@ class MarkvCodecBase {
   // If not nullptr, codec will log comments on the compression process.
   std::unique_ptr<MarkvLogger> logger_;
 
- private:
   spv_const_context context_ = nullptr;
 
-  std::unique_ptr<ValidationState_t> vstate_;
-
+ private:
   // Maps result id to the instruction which defined it.
   std::unordered_map<uint32_t, const Instruction*> id_to_def_instruction_;
 
@@ -760,19 +746,19 @@ class MarkvDecoder : public MarkvCodecBase {
   // of if validation fails.
   spv_result_t DecodeModule(std::vector<uint32_t>* spirv_binary);
 
- private:
-  // Describes the format of a typed literal number.
-  struct NumberType {
-    spv_number_kind_t type;
-    uint32_t bit_width;
-  };
-
   // Creates and returns validator options. Returned value owned by the caller.
   static spv_validator_options GetValidatorOptions(
       const MarkvCodecOptions& options) {
     return options.validate_spirv_binary ? spvValidatorOptionsCreate()
                                          : nullptr;
   }
+
+ private:
+  // Describes the format of a typed literal number.
+  struct NumberType {
+    spv_number_kind_t type;
+    uint32_t bit_width;
+  };
 
   // Reads a single bit from reader_. The read bit is stored in |bit|.
   // Returns false iff reader_ fails.
@@ -2148,9 +2134,6 @@ spv_result_t MarkvEncoder::EncodeInstruction(
   SpvOp opcode = SpvOp(inst.opcode);
   inst_ = inst;
 
-  const spv_result_t validation_result = UpdateValidationState(inst);
-  if (validation_result != SPV_SUCCESS) return validation_result;
-
   LogDisassemblyInstruction();
 
   const spv_result_t opcode_encodig_result =
@@ -2324,11 +2307,16 @@ spv_result_t MarkvDecoder::DecodeModule(std::vector<uint32_t>* spirv_binary) {
     inst_ = {};
     const spv_result_t decode_result = DecodeInstruction();
     if (decode_result != SPV_SUCCESS) return decode_result;
-
-    const spv_result_t validation_result = UpdateValidationState(inst_);
-    if (validation_result != SPV_SUCCESS) return validation_result;
   }
 
+  if (validator_options_) {
+    spv_const_binary_t validation_binary = {spirv_.data(), spirv_.size()};
+    const spv_result_t result = spvValidateWithOptions(
+        context_, validator_options_, &validation_binary, nullptr);
+    if (result != SPV_SUCCESS) return result;
+  }
+
+  // Validate the decode binary
   if (reader_.GetNumReadBits() != header_.markv_length_in_bits ||
       !reader_.OnlyZeroesLeft()) {
     return Diag(SPV_ERROR_INVALID_BINARY)
@@ -2847,25 +2835,18 @@ spv_result_t SpirvToMarkv(
   spv_context_t hijack_context = *context;
   libspirv::SetContextMessageConsumer(&hijack_context, message_consumer);
 
-  spv_const_binary_t spirv_binary = {spirv.data(), spirv.size()};
-
-  spv_endianness_t endian;
-  spv_position_t position = {};
-  if (spvBinaryEndianness(&spirv_binary, &endian)) {
-    return DiagnosticStream(position, hijack_context.consumer,
-                            SPV_ERROR_INVALID_BINARY)
-           << "Invalid SPIR-V magic number.";
-  }
-
-  spv_header_t header;
-  if (spvBinaryHeaderGet(&spirv_binary, endian, &header)) {
-    return DiagnosticStream(position, hijack_context.consumer,
-                            SPV_ERROR_INVALID_BINARY)
-           << "Invalid SPIR-V header.";
+  spv_validator_options validator_options =
+      MarkvDecoder::GetValidatorOptions(options);
+  if (validator_options) {
+    spv_const_binary_t spirv_binary = {spirv.data(), spirv.size()};
+    const spv_result_t result = spvValidateWithOptions(
+        &hijack_context, validator_options, &spirv_binary, nullptr);
+    if (result != SPV_SUCCESS) return result;
   }
 
   MarkvEncoder encoder(&hijack_context, options, &markv_model);
 
+  spv_position_t position = {};
   if (log_consumer || debug_consumer) {
     encoder.CreateLogger(log_consumer, debug_consumer);
 
@@ -2873,7 +2854,7 @@ spv_result_t SpirvToMarkv(
     if (spvBinaryToText(&hijack_context, spirv.data(), spirv.size(),
                         SPV_BINARY_TO_TEXT_OPTION_NO_HEADER, &text,
                         nullptr) != SPV_SUCCESS) {
-      return DiagnosticStream(position, hijack_context.consumer,
+      return DiagnosticStream(position, hijack_context.consumer, "",
                               SPV_ERROR_INVALID_BINARY)
              << "Failed to disassemble SPIR-V binary.";
     }
@@ -2884,7 +2865,7 @@ spv_result_t SpirvToMarkv(
 
   if (spvBinaryParse(&hijack_context, &encoder, spirv.data(), spirv.size(),
                      EncodeHeader, EncodeInstruction, nullptr) != SPV_SUCCESS) {
-    return DiagnosticStream(position, hijack_context.consumer,
+    return DiagnosticStream(position, hijack_context.consumer, "",
                             SPV_ERROR_INVALID_BINARY)
            << "Unable to encode to MARK-V.";
   }
@@ -2908,7 +2889,7 @@ spv_result_t MarkvToSpirv(
     decoder.CreateLogger(log_consumer, debug_consumer);
 
   if (decoder.DecodeModule(spirv) != SPV_SUCCESS) {
-    return DiagnosticStream(position, hijack_context.consumer,
+    return DiagnosticStream(position, hijack_context.consumer, "",
                             SPV_ERROR_INVALID_BINARY)
            << "Unable to decode MARK-V.";
   }

@@ -163,15 +163,16 @@ int main(int argc, char** argv) {
       case SPV_MSG_FATAL:
       case SPV_MSG_INTERNAL_ERROR:
       case SPV_MSG_ERROR:
-        std::cerr << "error: " << position.index << ": " << message
+        std::cerr << "error: line " << position.index << ": " << message
                   << std::endl;
         break;
       case SPV_MSG_WARNING:
-        std::cout << "warning: " << position.index << ": " << message
+        std::cout << "warning: line " << position.index << ": " << message
                   << std::endl;
         break;
       case SPV_MSG_INFO:
-        std::cout << "info: " << position.index << ": " << message << std::endl;
+        std::cout << "info: line " << position.index << ": " << message
+                  << std::endl;
         break;
       default:
         break;
