@@ -174,8 +174,10 @@ spv_result_t ProcessInstruction(void* user_data,
 
   DebugInstructionPass(_, inst);
   if (auto error = CapabilityPass(_, inst)) return error;
-  if (auto error = DataRulesPass(_, inst)) return error;
+  // The IdPass check registers instructions and, therefore, must be called
+  // before any instruction lookups are performed.
   if (auto error = IdPass(_, inst)) return error;
+  if (auto error = DataRulesPass(_, inst)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
   if (auto error = CfgPass(_, inst)) return error;
   if (auto error = InstructionPass(_, inst)) return error;
