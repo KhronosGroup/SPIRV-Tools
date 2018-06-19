@@ -187,6 +187,30 @@ ExtensionSet RequiredExtensions(const ValidationState_t& state,
 
 namespace libspirv {
 
+// Return SPV_ERROR_INVALID_BINARY and emit a diagnostic if the instruction
+// is explicitly reserved in the SPIR-V core spec.  Otherwise return
+// SPV_SUCCESS.
+spv_result_t ReservedCheck(ValidationState_t& _,
+                           const spv_parsed_instruction_t* inst) {
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  switch (opcode) {
+    // These instructions are enabled by a capability, but should never
+    // be used anyway.
+    case SpvOpImageSparseSampleProjImplicitLod:
+    case SpvOpImageSparseSampleProjExplicitLod:
+    case SpvOpImageSparseSampleProjDrefImplicitLod:
+    case SpvOpImageSparseSampleProjDrefExplicitLod: {
+      spv_opcode_desc inst_desc;
+      _.grammar().lookupOpcode(opcode, &inst_desc);
+      return _.diag(SPV_ERROR_INVALID_BINARY)
+             << "Invalid Opcode name 'Op" << inst_desc->name << "'";
+    }
+    default:
+      break;
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t CapabilityCheck(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -246,6 +270,8 @@ spv_result_t ExtensionCheck(ValidationState_t& _,
 }
 
 // Checks that the instruction can be used in this target environment.
+// Assumes that CapabilityCheck has checked direct capability dependencies
+// for the opcode.
 spv_result_t VersionCheck(ValidationState_t& _,
                           const spv_parsed_instruction_t* inst) {
   const auto opcode = static_cast<SpvOp>(inst->opcode);
@@ -255,6 +281,12 @@ spv_result_t VersionCheck(ValidationState_t& _,
   (void)r;
 
   const auto min_version = inst_desc->minVersion;
+
+  if (inst_desc->numCapabilities > 0u) {
+    // We already checked that the direct capability dependency has been
+    // satisfied. We don't need to check any further.
+    return SPV_SUCCESS;
+  }
 
   ExtensionSet exts(inst_desc->numExtensions, inst_desc->extensions);
   if (exts.IsEmpty()) {
@@ -549,6 +581,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
   RegisterDecorations(_, inst);
 
   if (auto error = ExtensionCheck(_, inst)) return error;
+  if (auto error = ReservedCheck(_, inst)) return error;
   if (auto error = CapabilityCheck(_, inst)) return error;
   if (auto error = LimitCheckIdBound(_, inst)) return error;
   if (auto error = LimitCheckStruct(_, inst)) return error;

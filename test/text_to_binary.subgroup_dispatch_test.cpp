@@ -28,12 +28,15 @@ using ::testing::Eq;
 
 using OpGetKernelLocalSizeForSubgroupCountTest = spvtest::TextToBinaryTest;
 
-TEST_F(OpGetKernelLocalSizeForSubgroupCountTest, OpcodeUnrecognizedInV10) {
+// We should be able to assemble it.  Validation checks are in another test
+// file.
+TEST_F(OpGetKernelLocalSizeForSubgroupCountTest, OpcodeAssemblesInV10) {
   EXPECT_THAT(
-      CompileFailure("%res = OpGetKernelLocalSizeForSubgroupCount %type "
-                     "%sgcount %invoke %param %param_size %param_align",
-                     SPV_ENV_UNIVERSAL_1_0),
-      Eq("Invalid Opcode name 'OpGetKernelLocalSizeForSubgroupCount'"));
+      CompiledInstructions("%res = OpGetKernelLocalSizeForSubgroupCount %type "
+                           "%sgcount %invoke %param %param_size %param_align",
+                           SPV_ENV_UNIVERSAL_1_0),
+      Eq(MakeInstruction(SpvOpGetKernelLocalSizeForSubgroupCount,
+                         {1, 2, 3, 4, 5, 6, 7})));
 }
 
 TEST_F(OpGetKernelLocalSizeForSubgroupCountTest, ArgumentCount) {
@@ -75,11 +78,12 @@ TEST_F(OpGetKernelLocalSizeForSubgroupCountTest, ArgumentTypes) {
 
 using OpGetKernelMaxNumSubgroupsTest = spvtest::TextToBinaryTest;
 
-TEST_F(OpGetKernelMaxNumSubgroupsTest, OpcodeUnrecognizedInV10) {
-  EXPECT_THAT(CompileFailure("%res = OpGetKernelLocalSizeForSubgroupCount "
-                             "%type %invoke %param %param_size %param_align",
-                             SPV_ENV_UNIVERSAL_1_0),
-              Eq("Invalid Opcode name 'OpGetKernelLocalSizeForSubgroupCount'"));
+TEST_F(OpGetKernelMaxNumSubgroupsTest, OpcodeAssemblesInV10) {
+  EXPECT_THAT(
+      CompiledInstructions("%res = OpGetKernelMaxNumSubgroups %type "
+                           "%invoke %param %param_size %param_align",
+                           SPV_ENV_UNIVERSAL_1_0),
+      Eq(MakeInstruction(SpvOpGetKernelMaxNumSubgroups, {1, 2, 3, 4, 5, 6})));
 }
 
 TEST_F(OpGetKernelMaxNumSubgroupsTest, ArgumentCount) {

@@ -108,7 +108,7 @@ spv_result_t spvOpcodeTableNameLookup(spv_target_env env,
     // is indeed requested in the SPIR-V code; checking that should be
     // validator's work.
     if ((spvVersionForTargetEnv(env) >= entry.minVersion ||
-         entry.numExtensions > 0u) &&
+         entry.numExtensions > 0u || entry.numCapabilities > 0u) &&
         nameLength == strlen(entry.name) &&
         !strncmp(name, entry.name, nameLength)) {
       // NOTE: Found out Opcode!
@@ -153,7 +153,7 @@ spv_result_t spvOpcodeTableValueLookup(spv_target_env env,
     // is indeed requested in the SPIR-V code; checking that should be
     // validator's work.
     if (spvVersionForTargetEnv(env) >= it->minVersion ||
-        it->numExtensions > 0u) {
+        it->numExtensions > 0u || it->numCapabilities > 0u) {
       *pEntry = it;
       return SPV_SUCCESS;
     }
