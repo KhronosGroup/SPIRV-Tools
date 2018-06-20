@@ -44,6 +44,7 @@ if %VS_VERSION% == 2017 (
   echo "Using VS 2013..."
 )
 
+cd %SRC%
 mkdir build
 cd build
 
@@ -56,7 +57,7 @@ if "%KOKORO_GITHUB_COMMIT%." == "." (
 ) else (
   set BUILD_SHA=%KOKORO_GITHUB_COMMIT%
 )
-cmake -GNinja -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe ..
+cmake -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_INSTALL_PREFIX=install -DRE2_BUILD_TESTING=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe ..
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 
 echo "Build everything... %DATE% %TIME%"
@@ -68,7 +69,7 @@ echo "Build Completed %DATE% %TIME%"
 :: Run the tests.
 :: #########################################
 echo "Running Tests... %DATE% %TIME%"
-ctest -C %BUILD_TYPE% --output-on-failure --timeout 300 -j4
+ctest -C %BUILD_TYPE% --output-on-failure --timeout 300
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 echo "Tests Completed %DATE% %TIME%"
 
