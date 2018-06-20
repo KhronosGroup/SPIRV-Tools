@@ -22,6 +22,7 @@
 #include <gmock/gmock.h>
 
 #include "source/assembly_grammar.h"
+#include "spirv_target_env.h"
 #include "test_fixture.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
@@ -109,6 +110,8 @@ using ValidateCapabilityV11 = spvtest::ValidateBase<CapTestParameter>;
 using ValidateCapabilityVulkan10 = spvtest::ValidateBase<CapTestParameter>;
 // Always assembles using OpenGL 4.0.
 using ValidateCapabilityOpenGL40 = spvtest::ValidateBase<CapTestParameter>;
+// Always assembles using Vulkan 1.1.
+using ValidateCapabilityVulkan11 = spvtest::ValidateBase<CapTestParameter>;
 
 TEST_F(ValidateCapability, Default) {
   const char str[] = R"(
@@ -187,7 +190,26 @@ const vector<string>& AllCapabilities() {
     "MultiViewport",
     "SubgroupDispatch",
     "NamedBarrier",
-    "PipeStorage"};
+    "PipeStorage",
+    "GroupNonUniform",
+    "GroupNonUniformVote",
+    "GroupNonUniformArithmetic",
+    "GroupNonUniformBallot",
+    "GroupNonUniformShuffle",
+    "GroupNonUniformShuffleRelative",
+    "GroupNonUniformClustered",
+    "GroupNonUniformQuad",
+    "DrawParameters",
+    "StorageBuffer16BitAccess",
+    "StorageUniformBufferBlock16",
+    "UniformAndStorageBuffer16BitAccess",
+    "StorageUniform16",
+    "StoragePushConstant16",
+    "StorageInputOutput16",
+    "DeviceGroup",
+    "MultiView",
+    "VariablePointersStorageBuffer",
+    "VariablePointers"};
   return *r;
 }
 
@@ -294,6 +316,66 @@ const vector<string>& AllVulkan10Capabilities() {
   return *r;
 }
 
+const vector<string>& AllVulkan11Capabilities() {
+  static const auto r = new vector<string>{
+    "",
+    "Matrix",
+    "Shader",
+    "InputAttachment",
+    "Sampled1D",
+    "Image1D",
+    "SampledBuffer",
+    "ImageBuffer",
+    "ImageQuery",
+    "DerivativeControl",
+    "Geometry",
+    "Tessellation",
+    "Float64",
+    "Int64",
+    "Int16",
+    "TessellationPointSize",
+    "GeometryPointSize",
+    "ImageGatherExtended",
+    "StorageImageMultisample",
+    "UniformBufferArrayDynamicIndexing",
+    "SampledImageArrayDynamicIndexing",
+    "StorageBufferArrayDynamicIndexing",
+    "StorageImageArrayDynamicIndexing",
+    "ClipDistance",
+    "CullDistance",
+    "ImageCubeArray",
+    "SampleRateShading",
+    "SparseResidency",
+    "MinLod",
+    "SampledCubeArray",
+    "ImageMSArray",
+    "StorageImageExtendedFormats",
+    "InterpolationFunction",
+    "StorageImageReadWithoutFormat",
+    "StorageImageWriteWithoutFormat",
+    "MultiViewport",
+    "GroupNonUniform",
+    "GroupNonUniformVote",
+    "GroupNonUniformArithmetic",
+    "GroupNonUniformBallot",
+    "GroupNonUniformShuffle",
+    "GroupNonUniformShuffleRelative",
+    "GroupNonUniformClustered",
+    "GroupNonUniformQuad",
+    "DrawParameters",
+    "StorageBuffer16BitAccess",
+    "StorageUniformBufferBlock16",
+    "UniformAndStorageBuffer16BitAccess",
+    "StorageUniform16",
+    "StoragePushConstant16",
+    "StorageInputOutput16",
+    "DeviceGroup",
+    "MultiView",
+    "VariablePointersStorageBuffer",
+    "VariablePointers"};
+  return *r;
+}
+
 const vector<string>& MatrixDependencies() {
   static const auto r = new vector<string>{
   "Matrix",
@@ -328,7 +410,11 @@ const vector<string>& MatrixDependencies() {
   "GeometryStreams",
   "StorageImageReadWithoutFormat",
   "StorageImageWriteWithoutFormat",
-  "MultiViewport"};
+  "MultiViewport",
+  "DrawParameters",
+  "MultiView",
+  "VariablePointersStorageBuffer",
+  "VariablePointers"};
   return *r;
 }
 
@@ -365,7 +451,11 @@ const vector<string>& ShaderDependencies() {
   "GeometryStreams",
   "StorageImageReadWithoutFormat",
   "StorageImageWriteWithoutFormat",
-  "MultiViewport"};
+  "MultiViewport",
+  "DrawParameters",
+  "MultiView",
+  "VariablePointersStorageBuffer",
+  "VariablePointers"};
   return *r;
 }
 
@@ -412,6 +502,31 @@ const vector<string>& KernelDependencies() {
   "SubgroupDispatch",
   "NamedBarrier",
   "PipeStorage"};
+  return *r;
+}
+
+const vector<string>& KernelAndGroupNonUniformDependencies() {
+  static const auto r = new vector<string>{
+  "Kernel",
+  "Vector16",
+  "Float16Buffer",
+  "ImageBasic",
+  "ImageReadWrite",
+  "ImageMipmap",
+  "Pipes",
+  "DeviceEnqueue",
+  "LiteralSampler",
+  "SubgroupDispatch",
+  "NamedBarrier",
+  "PipeStorage",
+  "GroupNonUniform",
+  "GroupNonUniformVote",
+  "GroupNonUniformArithmetic",
+  "GroupNonUniformBallot",
+  "GroupNonUniformShuffle",
+  "GroupNonUniformShuffleRelative",
+  "GroupNonUniformClustered",
+  "GroupNonUniformQuad"};
   return *r;
 }
 
@@ -1287,7 +1402,7 @@ make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn SubgroupSize\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          KernelDependencies()),
+          KernelAndGroupNonUniformDependencies()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn SubgroupMaxSize\n"
@@ -1297,7 +1412,7 @@ make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn NumSubgroups\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          KernelDependencies()),
+          KernelAndGroupNonUniformDependencies()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn NumEnqueuedSubgroups\n"
@@ -1307,12 +1422,12 @@ make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn SubgroupId\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          KernelDependencies()),
+          KernelAndGroupNonUniformDependencies()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn SubgroupLocalInvocationId\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          KernelDependencies()),
+          KernelAndGroupNonUniformDependencies()),
 make_pair(string(kOpenCLMemoryModel) +
           "OpEntryPoint Kernel %func \"compute\" \n" +
           "OpDecorate %intt BuiltIn VertexIndex\n"
@@ -1382,6 +1497,23 @@ make_pair(string(kGLSL450MemoryModel) +
           "OpDecorate %intt BuiltIn CullDistance\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
           AllSpirV10Capabilities())
+)),);
+
+INSTANTIATE_TEST_CASE_P(Capabilities, ValidateCapabilityVulkan11,
+                        Combine(
+                            // All capabilities to try.
+                            ValuesIn(AllCapabilities()),
+                            Values(
+make_pair(string(kGLSL450MemoryModel) +
+          "OpEntryPoint Vertex %func \"shader\" \n" +
+          "OpDecorate %intt BuiltIn PointSize\n"
+          "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
+          AllVulkan11Capabilities()),
+make_pair(string(kGLSL450MemoryModel) +
+          "OpEntryPoint Vertex %func \"shader\" \n" +
+          "OpDecorate %intt BuiltIn CullDistance\n"
+          "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
+          AllVulkan11Capabilities())
 )),);
 
 // TODO(umar): Selection Control
@@ -1460,21 +1592,53 @@ INSTANTIATE_TEST_CASE_P(
 
 // TODO(umar): Instruction capability checks
 
-// True if capability exists in env.
+spv_result_t spvCoreOperandTableNameLookup(spv_target_env env,
+                                           const spv_operand_table table,
+                                           const spv_operand_type_t type,
+                                           const char* name,
+                                           const size_t nameLength) {
+  if (!table) return SPV_ERROR_INVALID_TABLE;
+  if (!name) return SPV_ERROR_INVALID_POINTER;
+
+  for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
+    const auto& group = table->types[typeIndex];
+    if (type != group.type) continue;
+    for (uint64_t index = 0; index < group.count; ++index) {
+      const auto& entry = group.entries[index];
+      // Check for min version only.
+      if (spvVersionForTargetEnv(env) >= entry.minVersion &&
+          nameLength == strlen(entry.name) &&
+          !strncmp(entry.name, name, nameLength)) {
+        return SPV_SUCCESS;
+      }
+    }
+  }
+
+  return SPV_ERROR_INVALID_LOOKUP;
+}
+
+// True if capability exists in core spec of env.
 bool Exists(const std::string& capability, spv_target_env env) {
-  spv_operand_desc dummy;
-  return SPV_SUCCESS == libspirv::AssemblyGrammar(ScopedContext(env).context)
-                            .lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
-                                           capability.c_str(),
-                                           capability.size(), &dummy);
+  ScopedContext sc(env);
+  return SPV_SUCCESS ==
+         spvCoreOperandTableNameLookup(env, sc.context->operand_table,
+                                       SPV_OPERAND_TYPE_CAPABILITY,
+                                       capability.c_str(), capability.size());
 }
 
 TEST_P(ValidateCapability, Capability) {
   const string capability = Capability(GetParam());
-  spv_target_env env =
-      (capability.empty() || Exists(capability, SPV_ENV_UNIVERSAL_1_0))
-          ? SPV_ENV_UNIVERSAL_1_0
-          : SPV_ENV_UNIVERSAL_1_1;
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_0;
+  if (!capability.empty()) {
+    if (Exists(capability, SPV_ENV_UNIVERSAL_1_0))
+      env = SPV_ENV_UNIVERSAL_1_0;
+    else if (Exists(capability, SPV_ENV_UNIVERSAL_1_1))
+      env = SPV_ENV_UNIVERSAL_1_1;
+    else if (Exists(capability, SPV_ENV_UNIVERSAL_1_2))
+      env = SPV_ENV_UNIVERSAL_1_2;
+    else
+      env = SPV_ENV_UNIVERSAL_1_3;
+  }
   const string test_code = MakeAssembly(GetParam());
   CompileSuccessfully(test_code, env);
   ASSERT_EQ(ExpectedResult(GetParam()), ValidateInstructions(env))
@@ -1483,27 +1647,47 @@ TEST_P(ValidateCapability, Capability) {
 }
 
 TEST_P(ValidateCapabilityV11, Capability) {
-  const string test_code = MakeAssembly(GetParam());
-  CompileSuccessfully(test_code, SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(ExpectedResult(GetParam()),
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1))
-      << test_code;
+  const string capability = Capability(GetParam());
+  if (Exists(capability, SPV_ENV_UNIVERSAL_1_1)) {
+    const string test_code = MakeAssembly(GetParam());
+    CompileSuccessfully(test_code, SPV_ENV_UNIVERSAL_1_1);
+    ASSERT_EQ(ExpectedResult(GetParam()),
+              ValidateInstructions(SPV_ENV_UNIVERSAL_1_1))
+        << test_code;
+  }
 }
 
 TEST_P(ValidateCapabilityVulkan10, Capability) {
-  const string test_code = MakeAssembly(GetParam());
-  CompileSuccessfully(test_code, SPV_ENV_VULKAN_1_0);
-  ASSERT_EQ(ExpectedResult(GetParam()),
-            ValidateInstructions(SPV_ENV_VULKAN_1_0))
-      << test_code;
+  const string capability = Capability(GetParam());
+  if (Exists(capability, SPV_ENV_VULKAN_1_0)) {
+    const string test_code = MakeAssembly(GetParam());
+    CompileSuccessfully(test_code, SPV_ENV_VULKAN_1_0);
+    ASSERT_EQ(ExpectedResult(GetParam()),
+              ValidateInstructions(SPV_ENV_VULKAN_1_0))
+        << test_code;
+  }
+}
+
+TEST_P(ValidateCapabilityVulkan11, Capability) {
+  const string capability = Capability(GetParam());
+  if (Exists(capability, SPV_ENV_VULKAN_1_1)) {
+    const string test_code = MakeAssembly(GetParam());
+    CompileSuccessfully(test_code, SPV_ENV_VULKAN_1_1);
+    ASSERT_EQ(ExpectedResult(GetParam()),
+              ValidateInstructions(SPV_ENV_VULKAN_1_1))
+        << test_code;
+  }
 }
 
 TEST_P(ValidateCapabilityOpenGL40, Capability) {
-  const string test_code = MakeAssembly(GetParam());
-  CompileSuccessfully(test_code, SPV_ENV_OPENGL_4_0);
-  ASSERT_EQ(ExpectedResult(GetParam()),
-            ValidateInstructions(SPV_ENV_OPENGL_4_0))
-      << test_code;
+  const string capability = Capability(GetParam());
+  if (Exists(capability, SPV_ENV_OPENGL_4_0)) {
+    const string test_code = MakeAssembly(GetParam());
+    CompileSuccessfully(test_code, SPV_ENV_OPENGL_4_0);
+    ASSERT_EQ(ExpectedResult(GetParam()),
+              ValidateInstructions(SPV_ENV_OPENGL_4_0))
+        << test_code;
+  }
 }
 
 TEST_F(ValidateCapability, SemanticsIdIsAnIdNotALiteral) {
