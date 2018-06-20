@@ -34,6 +34,8 @@ class ValidateBase : public ::testing::Test,
   // Returns the a spv_const_binary struct
   spv_const_binary get_const_binary();
 
+  // Checks that 'code' is valid SPIR-V text representation and stores the
+  // binary version for further method calls.
   void CompileSuccessfully(std::string code,
                            spv_target_env env = SPV_ENV_UNIVERSAL_1_0);
 
@@ -43,8 +45,7 @@ class ValidateBase : public ::testing::Test,
   // This function overwrites the word at the given index with a new word.
   void OverwriteAssembledBinary(uint32_t index, uint32_t word);
 
-  // Performs validation on the SPIR-V code and compares the result of the
-  // spvValidate function
+  // Performs validation on the SPIR-V code.
   spv_result_t ValidateInstructions(spv_target_env env = SPV_ENV_UNIVERSAL_1_0);
 
   // Performs validation. Returns the status and stores validation state into

@@ -42,6 +42,9 @@ bool Validate(const std::vector<uint32_t>& bin) {
 }
 
 void Match(const std::string& checks, ir::IRContext* context) {
+  // Silence unused warnings with !defined(SPIRV_EFFCE)
+  (void)checks;
+
   std::vector<uint32_t> bin;
   context->module()->ToBinary(&bin, true);
   EXPECT_TRUE(Validate(bin));
