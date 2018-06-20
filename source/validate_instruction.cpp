@@ -37,11 +37,7 @@
 #include "val/function.h"
 #include "val/validation_state.h"
 
-using libspirv::AssemblyGrammar;
-using libspirv::CapabilitySet;
-using libspirv::DiagnosticStream;
-using libspirv::ExtensionSet;
-using libspirv::ValidationState_t;
+namespace libspirv {
 
 namespace {
 
@@ -86,7 +82,7 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
     case SpvOpGroupFMaxNonUniformAMD:
     case SpvOpGroupUMaxNonUniformAMD:
     case SpvOpGroupSMaxNonUniformAMD:
-      if (state.HasExtension(libspirv::kSPV_AMD_shader_ballot))
+      if (state.HasExtension(kSPV_AMD_shader_ballot))
         return CapabilitySet();
       break;
     default:
@@ -182,10 +178,6 @@ ExtensionSet RequiredExtensions(const ValidationState_t& state,
 
   return {};
 }
-
-}  // namespace
-
-namespace libspirv {
 
 // Return SPV_ERROR_INVALID_BINARY and emit a diagnostic if the instruction
 // is explicitly reserved in the SPIR-V core spec.  Otherwise return
@@ -515,6 +507,8 @@ void CheckIfKnownExtension(ValidationState_t& _,
     return;
   }
 }
+
+}  // namespace
 
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
