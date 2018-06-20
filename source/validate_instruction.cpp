@@ -82,8 +82,7 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
     case SpvOpGroupFMaxNonUniformAMD:
     case SpvOpGroupUMaxNonUniformAMD:
     case SpvOpGroupSMaxNonUniformAMD:
-      if (state.HasExtension(kSPV_AMD_shader_ballot))
-        return CapabilitySet();
+      if (state.HasExtension(kSPV_AMD_shader_ballot)) return CapabilitySet();
       break;
     default:
       break;
@@ -179,7 +178,7 @@ ExtensionSet RequiredExtensions(const ValidationState_t& state,
   return {};
 }
 
-// Return SPV_ERROR_INVALID_BINARY and emit a diagnostic if the instruction
+// Returns SPV_ERROR_INVALID_BINARY and emits a diagnostic if the instruction
 // is explicitly reserved in the SPIR-V core spec.  Otherwise return
 // SPV_SUCCESS.
 spv_result_t ReservedCheck(ValidationState_t& _,
@@ -203,6 +202,26 @@ spv_result_t ReservedCheck(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Returns SPV_ERROR_INVALID_BINARY and emits a diagnostic if the instruction
+// is invalid because of an execution environment constraint.
+spv_result_t EnvironmentCheck(ValidationState_t& _,
+                              const spv_parsed_instruction_t* inst) {
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  switch (opcode) {
+    case SpvOpUndef:
+      if (_.features().bans_op_undef) {
+        return _.diag(SPV_ERROR_INVALID_BINARY) << "OpUndef is disallowed";
+      }
+      break;
+    default:
+      break;
+  }
+  return SPV_SUCCESS;
+}
+
+// Returns SPV_ERROR_INVALID_CAPABILITY and emits a diagnostic if the
+// instruction is invalid because the required capability isn't declared
+// in the module.
 spv_result_t CapabilityCheck(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -261,9 +280,9 @@ spv_result_t ExtensionCheck(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-// Checks that the instruction can be used in this target environment.
-// Assumes that CapabilityCheck has checked direct capability dependencies
-// for the opcode.
+// Checks that the instruction can be used in this target environment's base
+// version. Assumes that CapabilityCheck has checked direct capability
+// dependencies for the opcode.
 spv_result_t VersionCheck(ValidationState_t& _,
                           const spv_parsed_instruction_t* inst) {
   const auto opcode = static_cast<SpvOp>(inst->opcode);
@@ -576,6 +595,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
 
   if (auto error = ExtensionCheck(_, inst)) return error;
   if (auto error = ReservedCheck(_, inst)) return error;
+  if (auto error = EnvironmentCheck(_, inst)) return error;
   if (auto error = CapabilityCheck(_, inst)) return error;
   if (auto error = LimitCheckIdBound(_, inst)) return error;
   if (auto error = LimitCheckStruct(_, inst)) return error;

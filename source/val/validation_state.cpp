@@ -166,6 +166,14 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       memory_model_(SpvMemoryModelMax),
       in_function_(false) {
   assert(opt && "Validator options may not be Null.");
+
+  switch (context_->target_env) {
+    case SPV_ENV_WEBGPU_0:
+      features_.bans_op_undef = true;
+      break;
+    default:
+      break;
+  }
 }
 
 spv_result_t ValidationState_t::ForwardDeclareId(uint32_t id) {
