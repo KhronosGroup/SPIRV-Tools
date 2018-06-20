@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Common validation fixtures for unit tests
+// Validation tests for decorations
 
 #include "gmock/gmock.h"
 #include "source/val/decoration.h"

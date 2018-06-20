@@ -63,6 +63,7 @@ std::string version(spv_target_env env) {
       return "1.2";
     case SPV_ENV_UNIVERSAL_1_3:
     case SPV_ENV_VULKAN_1_1:
+    case SPV_ENV_WEBGPU_0:
       return "1.3";
     default:
       return "0";
@@ -100,6 +101,7 @@ INSTANTIATE_TEST_CASE_P(Universal, ValidateVersion,
     make_tuple(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_OPENGL_4_2,    vulkan_spirv, true),
     make_tuple(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_OPENGL_4_3,    vulkan_spirv, true),
     make_tuple(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_OPENGL_4_5,    vulkan_spirv, true),
+    make_tuple(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_WEBGPU_0,      vulkan_spirv, true),
 
     make_tuple(SPV_ENV_UNIVERSAL_1_1, SPV_ENV_UNIVERSAL_1_0, vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_1, SPV_ENV_UNIVERSAL_1_1, vulkan_spirv, true),
@@ -112,6 +114,7 @@ INSTANTIATE_TEST_CASE_P(Universal, ValidateVersion,
     make_tuple(SPV_ENV_UNIVERSAL_1_1, SPV_ENV_OPENGL_4_2,    vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_1, SPV_ENV_OPENGL_4_3,    vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_1, SPV_ENV_OPENGL_4_5,    vulkan_spirv, false),
+    make_tuple(SPV_ENV_UNIVERSAL_1_1, SPV_ENV_WEBGPU_0,      vulkan_spirv, true),
 
     make_tuple(SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_0, vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_1, vulkan_spirv, false),
@@ -124,6 +127,7 @@ INSTANTIATE_TEST_CASE_P(Universal, ValidateVersion,
     make_tuple(SPV_ENV_UNIVERSAL_1_2, SPV_ENV_OPENGL_4_2,    vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_2, SPV_ENV_OPENGL_4_3,    vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_2, SPV_ENV_OPENGL_4_5,    vulkan_spirv, false),
+    make_tuple(SPV_ENV_UNIVERSAL_1_2, SPV_ENV_WEBGPU_0,      vulkan_spirv, true),
 
     make_tuple(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_UNIVERSAL_1_0, vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_UNIVERSAL_1_1, vulkan_spirv, false),
@@ -135,7 +139,8 @@ INSTANTIATE_TEST_CASE_P(Universal, ValidateVersion,
     make_tuple(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_OPENGL_4_1,    vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_OPENGL_4_2,    vulkan_spirv, false),
     make_tuple(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_OPENGL_4_3,    vulkan_spirv, false),
-    make_tuple(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_OPENGL_4_5,    vulkan_spirv, false)
+    make_tuple(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_OPENGL_4_5,    vulkan_spirv, false),
+    make_tuple(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_WEBGPU_0,      vulkan_spirv, true)
   )
 );
 

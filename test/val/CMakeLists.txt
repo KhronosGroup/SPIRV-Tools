@@ -60,7 +60,7 @@ add_spvtools_unittest(TARGET val_ijklmnop
   LIBS ${SPIRV_TOOLS}
 )
 
-add_spvtools_unittest(TARGET val_stuv
+add_spvtools_unittest(TARGET val_stuvw
   SRCS
        val_ssa_test.cpp
        val_state_test.cpp
@@ -68,6 +68,7 @@ add_spvtools_unittest(TARGET val_stuv
        val_type_unique_test.cpp
        val_validation_state_test.cpp
        val_version_test.cpp
+       val_webgpu_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )

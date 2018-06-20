@@ -58,7 +58,7 @@ enum ModuleLayoutSection {
 /// This class manages the state of the SPIR-V validation as it is being parsed.
 class ValidationState_t {
  public:
-  // Features that can optionally be turned on by a capability.
+  // Features that can optionally be turned on by a capability or environment.
   struct Feature {
     bool declare_int16_type = false;     // Allow OpTypeInt with 16 bit width?
     bool declare_float16_type = false;   // Allow OpTypeFloat with 16 bit width?
@@ -74,6 +74,9 @@ class ValidationState_t {
 
     // Permit group oerations Reduce, InclusiveScan, ExclusiveScan
     bool group_ops_reduce_and_scans = false;
+
+    // Disallows the use of OpUndef
+    bool bans_op_undef = false;
   };
 
   ValidationState_t(const spv_const_context context,
@@ -570,7 +573,7 @@ class ValidationState_t {
   bool in_function_;
 
   /// The state of optional features.  These are determined by capabilities
-  /// declared by the module.
+  /// declared by the module and the environment.
   Feature features_;
 
   /// Maps function ids to function stat objects.
