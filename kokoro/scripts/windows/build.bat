@@ -69,7 +69,7 @@ echo "Build Completed %DATE% %TIME%"
 :: Run the tests.
 :: #########################################
 echo "Running Tests... %DATE% %TIME%"
-ctest -C %BUILD_TYPE% --output-on-failure --timeout 300
+ctest -C %BUILD_TYPE% --output-on-failure --timeout 300 --extra-verbose --debug
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 echo "Tests Completed %DATE% %TIME%"
 
