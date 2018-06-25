@@ -1078,4 +1078,77 @@ TEST_F(VectorDCETest, DeadInsertThroughOtherInst) {
 }
 #endif
 
+TEST_F(VectorDCETest, VectorIntoCompositeConstruct) {
+  const std::string text = R"(OpCapability Linkage
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "EntryPoint_Main" %2 %3
+OpExecutionMode %1 OriginUpperLeft
+OpDecorate %2 Location 0
+OpDecorate %_struct_4 Block
+OpDecorate %3 Location 0
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%_ptr_Function_v2float = OpTypePointer Function %v2float
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%mat4v4float = OpTypeMatrix %v4float 4
+%_ptr_Function_mat4v4float = OpTypePointer Function %mat4v4float
+%v3float = OpTypeVector %float 3
+%_ptr_Function_v3float = OpTypePointer Function %v3float
+%_struct_14 = OpTypeStruct %v2float %mat4v4float %v3float %v2float %v4float
+%_ptr_Function__struct_14 = OpTypePointer Function %_struct_14
+%void = OpTypeVoid
+%int = OpTypeInt 32 1
+%int_2 = OpConstant %int 2
+%int_1 = OpConstant %int 1
+%int_4 = OpConstant %int 4
+%int_0 = OpConstant %int 0
+%int_3 = OpConstant %int 3
+%float_0 = OpConstant %float 0
+%float_1 = OpConstant %float 1
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+%2 = OpVariable %_ptr_Input_v2float Input
+%_ptr_Output_v2float = OpTypePointer Output %v2float
+%_struct_4 = OpTypeStruct %v2float
+%_ptr_Output__struct_4 = OpTypePointer Output %_struct_4
+%3 = OpVariable %_ptr_Output__struct_4 Output
+%28 = OpTypeFunction %void
+%29 = OpConstantComposite %v2float %float_0 %float_0
+%30 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%31 = OpConstantComposite %mat4v4float %30 %30 %30 %30
+%32 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+%1 = OpFunction %void None %28
+%33 = OpLabel
+%34 = OpVariable %_ptr_Function_v4float Function
+%35 = OpVariable %_ptr_Function__struct_14 Function
+%36 = OpAccessChain %_ptr_Function_v2float %35 %int_0
+OpStore %36 %29
+%37 = OpAccessChain %_ptr_Function_mat4v4float %35 %int_1
+OpStore %37 %31
+%38 = OpAccessChain %_ptr_Function_v3float %35 %int_2
+OpStore %38 %32
+%39 = OpAccessChain %_ptr_Function_v2float %35 %int_3
+OpStore %39 %29
+%40 = OpAccessChain %_ptr_Function_v4float %35 %int_4
+OpStore %40 %30
+%41 = OpLoad %v2float %2
+OpStore %36 %41
+%42 = OpLoad %v3float %38
+%43 = OpCompositeConstruct %v4float %42 %float_1
+%44 = OpLoad %mat4v4float %37
+%45 = OpVectorTimesMatrix %v4float %43 %44
+OpStore %34 %45
+OpCopyMemory %40 %34
+OpCopyMemory %36 %39
+%46 = OpAccessChain %_ptr_Output_v2float %3 %int_0
+%47 = OpLoad %v2float %36
+OpStore %46 %47
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::DeadInsertElimPass>(text, text, true, true);
+}
+
 }  // anonymous namespace
