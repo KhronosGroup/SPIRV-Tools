@@ -1996,7 +1996,7 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
 
   if (addressingModel == SpvAddressingModelLogical &&
       SpvOpTypePointer == valueType->opcode() && !uses_variable_pointer &&
-      !module_.options()->relax_logcial_pointer) {
+      !module_.options()->relax_logical_pointer) {
     DIAG(value)
         << "OpReturnValue value's type <id> '"
         << module_.getIdName(value->type_id())
