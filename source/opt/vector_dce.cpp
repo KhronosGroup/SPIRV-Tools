@@ -200,7 +200,7 @@ void VectorDCE::MarkCompositeContructUsesAsLive(
       WorkListItem new_work_item;
       new_work_item.instruction = op_inst;
       uint32_t op_vector_size =
-          type_mgr->GetType(op_inst->result_id())->AsVector()->element_count();
+          type_mgr->GetType(op_inst->type_id())->AsVector()->element_count();
 
       for (uint32_t op_vector_idx = 0; op_vector_idx < op_vector_size;
            op_vector_idx++, current_component++) {
