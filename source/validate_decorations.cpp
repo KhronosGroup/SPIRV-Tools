@@ -213,10 +213,8 @@ bool hasImproperStraddle(uint32_t id, uint32_t offset,
   const auto size = getSize(id, false, vstate);
   const auto F = offset;
   const auto L = offset + size - 1;
-  const auto floorF = floor((float)F / 16.0f);
-  const auto floorL = floor((float)L / 16.0f);
   if (size <= 16) {
-    if (floorF != floorL) return true;
+    if ((F >> 4) != (L >> 4)) return true;
   } else {
     if (F % 16 != 0) return true;
   }
