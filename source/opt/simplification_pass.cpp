@@ -71,6 +71,9 @@ bool SimplificationPass::SimplifyFunction(ir::Function* function) {
                                             inst->GetSingleWordInOperand(0));
               inst_to_kill.insert(inst);
               in_work_list.insert(inst);
+            } else if (inst->opcode() == SpvOpNop) {
+              inst_to_kill.insert(inst);
+              in_work_list.insert(inst);
             }
           }
         }
@@ -96,6 +99,9 @@ bool SimplificationPass::SimplifyFunction(ir::Function* function) {
       if (inst->opcode() == SpvOpCopyObject) {
         context()->ReplaceAllUsesWith(inst->result_id(),
                                       inst->GetSingleWordInOperand(0));
+        inst_to_kill.insert(inst);
+        in_work_list.insert(inst);
+      } else if (inst->opcode() == SpvOpNop) {
         inst_to_kill.insert(inst);
         in_work_list.insert(inst);
       }

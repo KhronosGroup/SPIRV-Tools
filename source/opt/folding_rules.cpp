@@ -31,6 +31,7 @@ const uint32_t kExtInstInstructionInIdx = 1;
 const uint32_t kFMixXIdInIdx = 2;
 const uint32_t kFMixYIdInIdx = 3;
 const uint32_t kFMixAIdInIdx = 4;
+const uint32_t kStoreObjectInIdx = 1;
 
 // Returns the element width of |type|.
 uint32_t ElementWidth(const analysis::Type* type) {
@@ -1989,6 +1990,34 @@ FoldingRule DotProductDoingExtract() {
   };
 }
 
+// If we are storing an undef, then we can remove the store.
+//
+// TODO: We can do something similar for OpImageWrite, but checking for volatile
+// is complicated.  Waiting to see if it is needed.
+FoldingRule StoringUndef() {
+  return [](ir::Instruction* inst,
+            const std::vector<const analysis::Constant*>&) {
+    assert(inst->opcode() == SpvOpStore && "Wrong opcode.  Should be OpStore.");
+
+    ir::IRContext* context = inst->context();
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+
+    // If this is a volatile store, the store cannot be removed.
+    if (inst->NumInOperands() == 3) {
+      if (inst->GetSingleWordInOperand(3) & SpvMemoryAccessVolatileMask) {
+        return false;
+      }
+    }
+
+    uint32_t object_id = inst->GetSingleWordInOperand(kStoreObjectInIdx);
+    ir::Instruction* object_inst = def_use_mgr->GetDef(object_id);
+    if (object_inst->opcode() == SpvOpUndef) {
+      inst->ToNop();
+      return true;
+    }
+    return false;
+  };
+}
 }  // namespace
 
 spvtools::opt::FoldingRules::FoldingRules() {
@@ -1996,7 +2025,6 @@ spvtools::opt::FoldingRules::FoldingRules() {
   // Note that the order in which rules are added to the list matters. If a rule
   // applies to the instruction, the rest of the rules will not be attempted.
   // Take that into consideration.
-
   rules_[SpvOpCompositeConstruct].push_back(CompositeExtractFeedingConstruct());
 
   rules_[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
@@ -2054,6 +2082,8 @@ spvtools::opt::FoldingRules::FoldingRules() {
   rules_[SpvOpSNegate].push_back(MergeNegateAddSubArithmetic());
 
   rules_[SpvOpSelect].push_back(RedundantSelect());
+
+  rules_[SpvOpStore].push_back(StoringUndef());
 
   rules_[SpvOpUDiv].push_back(MergeDivNegateArithmetic());
 }
