@@ -34,13 +34,13 @@ git clone --depth=1 https://github.com/google/re2                 external/re2
 :: set up msvc build env
 :: #########################################
 if %VS_VERSION% == 2017 (
-  call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x86
+  call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
   echo "Using VS 2017..."
 ) else if %VS_VERSION% == 2015 (
-  call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
+  call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
   echo "Using VS 2015..."
 ) else if %VS_VERSION% == 2013 (
-  call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x86
+  call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
   echo "Using VS 2013..."
 )
 
@@ -69,7 +69,7 @@ echo "Build Completed %DATE% %TIME%"
 :: Run the tests.
 :: #########################################
 echo "Running Tests... %DATE% %TIME%"
-ctest -C %BUILD_TYPE% --output-on-failure --timeout 300 --extra-verbose --debug
+ctest -C %BUILD_TYPE% --output-on-failure --timeout 300
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 echo "Tests Completed %DATE% %TIME%"
 
