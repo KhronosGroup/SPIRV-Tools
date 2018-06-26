@@ -59,7 +59,10 @@ class RemoveDuplicatesPass : public Pass {
   //
   // Returns true if the module was modified, false otherwise.
   bool RemoveDuplicateDecorations(ir::IRContext* ir_context) const;
-  void AddStructuresToSet(uint32_t id, ir::IRContext* ctx,
+
+  // Adds |type_id| to |set_of_ids| if |type_id| is the id of a a structure.
+  // Adds any structures that are subtypes of |type_id| to |set_of_ids|.
+  void AddStructuresToSet(uint32_t type_id, ir::IRContext* ctx,
                           std::unordered_set<uint32_t>* set_of_ids) const;
 };
 

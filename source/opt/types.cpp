@@ -233,8 +233,6 @@ size_t Type::HashValue() const {
   return std::hash<std::u32string>()(h);
 }
 
-bool Type::IsTypeOfResource() const { return false; }
-
 bool Integer::IsSameImpl(const Type* that, IsSameCache*) const {
   const Integer* it = that->AsInteger();
   return it && width_ == it->width_ && signed_ == it->signed_ &&
