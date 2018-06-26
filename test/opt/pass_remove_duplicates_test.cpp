@@ -25,8 +25,8 @@
 
 namespace {
 
-using spvtools::ir::IRContext;
 using spvtools::ir::Instruction;
+using spvtools::ir::IRContext;
 using spvtools::opt::PassManager;
 using spvtools::opt::RemoveDuplicatesPass;
 
@@ -129,8 +129,8 @@ OpCapability Linkage
 OpMemoryModel Logical GLSL450
 )";
 
-  EXPECT_THAT(RunPass(spirv), after);
-  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_EQ(RunPass(spirv), after);
+  EXPECT_EQ(GetErrorMessage(), "");
 }
 
 TEST_F(RemoveDuplicatesTest, DuplicateExtInstImports) {
@@ -149,8 +149,8 @@ OpCapability Linkage
 OpMemoryModel Logical GLSL450
 )";
 
-  EXPECT_THAT(RunPass(spirv), after);
-  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_EQ(RunPass(spirv), after);
+  EXPECT_EQ(GetErrorMessage(), "");
 }
 
 TEST_F(RemoveDuplicatesTest, DuplicateTypes) {
@@ -169,8 +169,8 @@ OpMemoryModel Logical GLSL450
 %3 = OpTypeStruct %1 %1
 )";
 
-  EXPECT_THAT(RunPass(spirv), after);
-  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_EQ(RunPass(spirv), after);
+  EXPECT_EQ(GetErrorMessage(), "");
 }
 
 TEST_F(RemoveDuplicatesTest, SameTypeDifferentMemberDecoration) {
@@ -192,8 +192,8 @@ OpDecorate %1 GLSLPacked
 %3 = OpTypeStruct %2 %2
 )";
 
-  EXPECT_THAT(RunPass(spirv), after);
-  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_EQ(RunPass(spirv), after);
+  EXPECT_EQ(GetErrorMessage(), "");
 }
 
 TEST_F(RemoveDuplicatesTest, SameTypeAndMemberDecoration) {
@@ -215,8 +215,8 @@ OpDecorate %1 GLSLPacked
 %1 = OpTypeStruct %3 %3
 )";
 
-  EXPECT_THAT(RunPass(spirv), after);
-  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_EQ(RunPass(spirv), after);
+  EXPECT_EQ(GetErrorMessage(), "");
 }
 
 TEST_F(RemoveDuplicatesTest, SameTypeAndDifferentName) {
@@ -238,8 +238,8 @@ OpName %1 "Type1"
 %1 = OpTypeStruct %3 %3
 )";
 
-  EXPECT_THAT(RunPass(spirv), after);
-  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_EQ(RunPass(spirv), after);
+  EXPECT_EQ(GetErrorMessage(), "");
 }
 
 // Check that #1033 has been fixed.
@@ -268,8 +268,8 @@ OpGroupDecorate %3 %1 %2
 %3 = OpVariable %4 Uniform
 )";
 
-  EXPECT_THAT(RunPass(spirv), after);
-  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_EQ(RunPass(spirv), after);
+  EXPECT_EQ(GetErrorMessage(), "");
 }
 
 TEST_F(RemoveDuplicatesTest, DifferentDecorationGroup) {
@@ -303,8 +303,194 @@ OpGroupDecorate %2 %4
 %4 = OpVariable %5 Uniform
 )";
 
-  EXPECT_THAT(RunPass(spirv), after);
-  EXPECT_THAT(GetErrorMessage(), "");
+  EXPECT_EQ(RunPass(spirv), after);
+  EXPECT_EQ(GetErrorMessage(), "");
 }
 
+TEST_F(RemoveDuplicatesTest, DontMergeNestedResourceTypes) {
+  const std::string spirv = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %2 "NormalAdjust"
+OpMemberName %2 0 "XDir"
+OpMemberName %3 0 "AdjustXYZ"
+OpMemberName %3 1 "AdjustDir"
+OpName %4 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpMemberDecorate %2 0 Offset 0
+OpMemberDecorate %3 0 Offset 0
+OpMemberDecorate %3 1 Offset 16
+OpDecorate %3 Block
+OpDecorate %4 DescriptorSet 0
+OpDecorate %4 Binding 0
+%5 = OpTypeFloat 32
+%6 = OpTypeVector %5 3
+%1 = OpTypeStruct %6
+%2 = OpTypeStruct %6
+%3 = OpTypeStruct %1 %2
+%7 = OpTypePointer Uniform %3
+%4 = OpVariable %7 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), spirv);
+  EXPECT_EQ(GetErrorMessage(), "");
+}
+
+TEST_F(RemoveDuplicatesTest, DontMergeResourceTypes) {
+  const std::string spirv = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %2 "NormalAdjust"
+OpMemberName %2 0 "XDir"
+OpName %3 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpMemberDecorate %2 0 Offset 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+OpDecorate %4 DescriptorSet 1
+OpDecorate %4 Binding 0
+%5 = OpTypeFloat 32
+%6 = OpTypeVector %5 3
+%1 = OpTypeStruct %6
+%2 = OpTypeStruct %6
+%7 = OpTypePointer Uniform %1
+%8 = OpTypePointer Uniform %2
+%3 = OpVariable %7 Uniform
+%4 = OpVariable %8 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), spirv);
+  EXPECT_EQ(GetErrorMessage(), "");
+}
+
+TEST_F(RemoveDuplicatesTest, DontMergeResourceTypesContainingArray) {
+  const std::string spirv = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %2 "NormalAdjust"
+OpMemberName %2 0 "XDir"
+OpName %3 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpMemberDecorate %2 0 Offset 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+OpDecorate %4 DescriptorSet 1
+OpDecorate %4 Binding 0
+%5 = OpTypeFloat 32
+%6 = OpTypeVector %5 3
+%1 = OpTypeStruct %6
+%2 = OpTypeStruct %6
+%7 = OpTypeInt 32 0
+%8 = OpConstant %7 4
+%9 = OpTypeArray %1 %8
+%10 = OpTypeArray %2 %8
+%11 = OpTypePointer Uniform %9
+%12 = OpTypePointer Uniform %10
+%3 = OpVariable %11 Uniform
+%4 = OpVariable %12 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), spirv);
+  EXPECT_EQ(GetErrorMessage(), "");
+}
+
+// Test that we merge the type of a resource with a type that is not the type
+// a resource.  The resource type appears first in this case.  We must keep
+// the resource type.
+TEST_F(RemoveDuplicatesTest, MergeResourceTypeWithNonresourceType1) {
+  const std::string spirv = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %2 "NormalAdjust"
+OpMemberName %2 0 "XDir"
+OpName %3 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpMemberDecorate %2 0 Offset 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+%4 = OpTypeFloat 32
+%5 = OpTypeVector %4 3
+%1 = OpTypeStruct %5
+%2 = OpTypeStruct %5
+%6 = OpTypePointer Uniform %1
+%7 = OpTypePointer Uniform %2
+%3 = OpVariable %6 Uniform
+%8 = OpVariable %7 Uniform
+)";
+
+  const std::string result = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %3 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+%4 = OpTypeFloat 32
+%5 = OpTypeVector %4 3
+%1 = OpTypeStruct %5
+%6 = OpTypePointer Uniform %1
+%3 = OpVariable %6 Uniform
+%8 = OpVariable %6 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), result);
+  EXPECT_EQ(GetErrorMessage(), "");
+}
+
+// Test that we merge the type of a resource with a type that is not the type
+// a resource.  The resource type appears second in this case.  We must keep
+// the resource type.
+TEST_F(RemoveDuplicatesTest, MergeResourceTypeWithNonresourceType2) {
+  const std::string spirv = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %2 "NormalAdjust"
+OpMemberName %2 0 "XDir"
+OpName %3 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpMemberDecorate %2 0 Offset 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+%4 = OpTypeFloat 32
+%5 = OpTypeVector %4 3
+%1 = OpTypeStruct %5
+%2 = OpTypeStruct %5
+%6 = OpTypePointer Uniform %1
+%7 = OpTypePointer Uniform %2
+%8 = OpVariable %6 Uniform
+%3 = OpVariable %7 Uniform
+)";
+
+  const std::string result = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %2 "NormalAdjust"
+OpMemberName %2 0 "XDir"
+OpName %3 "Constants"
+OpMemberDecorate %2 0 Offset 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+%4 = OpTypeFloat 32
+%5 = OpTypeVector %4 3
+%2 = OpTypeStruct %5
+%7 = OpTypePointer Uniform %2
+%8 = OpVariable %7 Uniform
+%3 = OpVariable %7 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), result);
+  EXPECT_EQ(GetErrorMessage(), "");
+}
 }  // namespace
