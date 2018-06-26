@@ -59,6 +59,8 @@ class RemoveDuplicatesPass : public Pass {
   //
   // Returns true if the module was modified, false otherwise.
   bool RemoveDuplicateDecorations(ir::IRContext* ir_context) const;
+  void AddStructuresToSet(uint32_t id, ir::IRContext* ctx,
+                          std::unordered_set<uint32_t>* set_of_ids) const;
 };
 
 }  // namespace opt

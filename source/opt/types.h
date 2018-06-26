@@ -192,6 +192,8 @@ class Type {
       std::vector<uint32_t>* words,
       std::unordered_set<const Type*>* pSet) const = 0;
 
+  bool IsTypeOfResource() const;
+
  protected:
   // Decorations attached to this type. Each decoration is encoded as a vector
   // of uint32_t numbers. The first uint32_t number is the decoration value,

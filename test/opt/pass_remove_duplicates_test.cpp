@@ -25,8 +25,8 @@
 
 namespace {
 
-using spvtools::ir::IRContext;
 using spvtools::ir::Instruction;
+using spvtools::ir::IRContext;
 using spvtools::opt::PassManager;
 using spvtools::opt::RemoveDuplicatesPass;
 
@@ -307,4 +307,34 @@ OpGroupDecorate %2 %4
   EXPECT_THAT(GetErrorMessage(), "");
 }
 
+TEST_F(RemoveDuplicatesTest, DontMergeResourceTypes) {
+  const std::string spirv = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %2 "NormalAdjust"
+OpMemberName %2 0 "XDir"
+OpMemberName %3 0 "AdjustXYZ"
+OpMemberName %3 1 "AdjustDir"
+OpName %4 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpMemberDecorate %2 0 Offset 0
+OpMemberDecorate %3 0 Offset 0
+OpMemberDecorate %3 1 Offset 16
+OpDecorate %3 Block
+OpDecorate %4 DescriptorSet 0
+OpDecorate %4 Binding 0
+%5 = OpTypeFloat 32
+%6 = OpTypeVector %5 3
+%1 = OpTypeStruct %6
+%2 = OpTypeStruct %6
+%3 = OpTypeStruct %1 %2
+%7 = OpTypePointer Uniform %3
+%4 = OpVariable %7 Uniform
+)";
+
+  EXPECT_THAT(RunPass(spirv), spirv);
+  EXPECT_THAT(GetErrorMessage(), "");
+}
 }  // namespace
