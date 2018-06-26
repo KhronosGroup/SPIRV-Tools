@@ -103,4 +103,46 @@ TEST(
   EXPECT_THAT(messages.str(), Eq("FirstSecond"));
 }
 
+TEST(DiagnosticStream, MoveConstructorCanBeDirectlyShiftedTo) {
+  std::ostringstream messages;
+  int message_count = 0;
+  auto consumer = [&messages, &message_count](spv_message_level_t, const char*,
+                                              const spv_position_t&,
+                                              const char* msg) {
+    message_count++;
+    messages << msg;
+  };
+
+  // Enclose the DiagnosticStream variables in a scope to force destruction.
+  {
+    DiagnosticStream ds0({}, consumer, "", SPV_ERROR_INVALID_BINARY);
+    ds0 << "First";
+    std::move(ds0) << "Second";
+  }
+  EXPECT_THAT(message_count, Eq(1));
+  EXPECT_THAT(messages.str(), Eq("FirstSecond"));
+}
+
+TEST(DiagnosticStream, DiagnosticFromLambdaReturnCanStillBeUsed) {
+  std::ostringstream messages;
+  int message_count = 0;
+  auto consumer = [&messages, &message_count](spv_message_level_t, const char*,
+                                              const spv_position_t&,
+                                              const char* msg) {
+    message_count++;
+    messages << msg;
+  };
+
+  {
+    auto emitter = [&consumer]() -> libspirv::DiagnosticStream {
+      DiagnosticStream ds0({}, consumer, "", SPV_ERROR_INVALID_BINARY);
+      ds0 << "First";
+      return ds0;
+    };
+    emitter() << "Second";
+  }
+  EXPECT_THAT(message_count, Eq(1));
+  EXPECT_THAT(messages.str(), Eq("FirstSecond"));
+}
+
 }  // anonymous namespace

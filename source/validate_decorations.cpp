@@ -109,11 +109,13 @@ uint32_t align(uint32_t x, uint32_t alignment) {
   return (x + alignment - 1) & ~(alignment - 1);
 }
 
-// Returns base alignment of struct member.
+// Returns base alignment of struct member. If |roundUp| is true, also
+// ensure that structs and arrays are aligned at least to a multiple of 16
+// bytes.
 uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
                           ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(member_id);
-  const auto words = inst->words();
+  const auto& words = inst->words();
   uint32_t baseAlignment = 0;
   switch (inst->opcode()) {
     case SpvOpTypeInt:
@@ -151,10 +153,10 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
 }
 
 // Returns size of a struct member. Doesn't include padding at the end of struct
-// or array.
+// or array.  Assumes that in the struct case, all members have offsets.
 uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(member_id);
-  const auto words = inst->words();
+  const auto& words = inst->words();
   const auto baseAlignment = getBaseAlignment(member_id, roundUp, vstate);
   switch (inst->opcode()) {
     case SpvOpTypeInt:
@@ -178,7 +180,7 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
     case SpvOpTypeMatrix:
       return words[3] * baseAlignment;
     case SpvOpTypeStruct: {
-      const auto members = getStructMembers(member_id, vstate);
+      const auto& members = getStructMembers(member_id, vstate);
       if (members.empty()) return 0;
       const auto lastIdx = members.size() - 1;
       const auto& lastMember = members.back();
@@ -190,6 +192,8 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
           offset = decoration.params()[0];
         }
       }
+      // This check depends on the fact that all members have offsets.  This
+      // has been checked earlier in the flow.
       assert(offset != 0xffffffff);
       return offset + getSize(lastMember, roundUp, vstate);
     }
@@ -208,8 +212,6 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
 // decorations placing its first byte at a non-integer multiple of 16.
 bool hasImproperStraddle(uint32_t id, uint32_t offset,
                          ValidationState_t& vstate) {
-  const auto inst = vstate.FindDef(id);
-  const auto words = inst->words();
   const auto size = getSize(id, false, vstate);
   const auto F = offset;
   const auto L = offset + size - 1;
@@ -221,33 +223,36 @@ bool hasImproperStraddle(uint32_t id, uint32_t offset,
   return false;
 }
 
-// Check alignment of x. For storage buffers the alignment can be either rounded
-// up or not.
-bool checkAlignment(uint32_t x, uint32_t alignment, uint32_t alignmentRoundedUp,
-                    bool isBlock) {
-  if (isBlock) {
-    if (alignmentRoundedUp == 0) {
-      if (x != 0) return false;
-    } else if (x % alignmentRoundedUp != 0)
-      return false;
-  } else {
-    if (alignment == 0 || alignmentRoundedUp == 0) {
-      if (x != 0) return false;
-    } else if (x % alignment != 0 && x % alignmentRoundedUp != 0)
-      return false;
-  }
-  return true;
+// Returns true if |offset| satsifies an alignment to |alignment|.  In the case
+// of |alignment| of zero, the |offset| must also be zero.
+bool IsAlignedTo(uint32_t offset, uint32_t alignment) {
+  if (alignment == 0) return offset == 0;
+  return 0 == (offset % alignment);
 }
 
-// Checks for standard layout rules.
-bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
-  if (vstate.options()->relax_block_layout) return true;
-  const auto members = getStructMembers(struct_id, vstate);
-  uint32_t padStart = 0, padEnd = 0;
-  for (size_t memberIdx = 0; memberIdx < members.size(); memberIdx++) {
+// Returns SPV_SUCCESS if the given struct satisfies standard layout rules for
+// Block or BufferBlocks in Vulkan.  Otherwise emits a diagnostic and returns
+// something other than SPV_SUCCESS.
+spv_result_t checkLayout(uint32_t struct_id, bool isBlock,
+                         ValidationState_t& vstate) {
+  auto fail = [&vstate, struct_id,
+               isBlock](uint32_t member_idx) -> libspirv::DiagnosticStream {
+    DiagnosticStream ds = std::move(
+        vstate.diag(SPV_ERROR_INVALID_ID)
+        << "Structure id " << struct_id << " decorated as "
+        << (isBlock ? "Block" : "BufferBlock")
+        << " must follow standard uniform buffer layout rules: member "
+        << member_idx << " ");
+    return ds;
+  };
+  if (vstate.options()->relax_block_layout) return SPV_SUCCESS;
+  const auto& members = getStructMembers(struct_id, vstate);
+  uint32_t prevOffset = 0;
+  uint32_t nextValidOffset = 0;
+  for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
+       memberIdx < numMembers; memberIdx++) {
     auto id = members[memberIdx];
-    const auto baseAlignment = getBaseAlignment(id, false, vstate);
-    const auto baseAlignmentRoundedUp = getBaseAlignment(id, true, vstate);
+    const auto alignment = getBaseAlignment(id, isBlock, vstate);
     const auto inst = vstate.FindDef(id);
     const auto opcode = inst->opcode();
     uint32_t offset = 0xffffffff;
@@ -258,25 +263,39 @@ bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
       }
     }
     const auto size = getSize(id, isBlock, vstate);
-    const auto lastByte = size - 1;
     // Check offset.
-    if (offset == 0xffffffff) return false;
-    if (!checkAlignment(offset, baseAlignment, baseAlignmentRoundedUp, isBlock))
-      return false;
-    if (offset >= padStart && offset + lastByte <= padEnd) return false;
+    if (offset == 0xffffffff)
+      return fail(memberIdx) << "is missing an Offset decoration";
+    if (!IsAlignedTo(offset, alignment))
+      return fail(memberIdx)
+             << "at offset " << offset << " is not aligned to " << alignment;
+    // SPIR-V requires struct members to be specified in memory address order,
+    // and they should not overlap.
+    if (size > 0 && (align(offset + size, alignment) <= prevOffset))
+      return fail(memberIdx)
+             << "at offset " << offset << " has a lower offset than member "
+             << memberIdx - 1;
+    if (offset < nextValidOffset)
+      return fail(memberIdx) << "at offset " << offset
+                             << " overlaps previous member ending at offset "
+                             << nextValidOffset - 1;
     // Check improper straddle of vectors.
     if (SpvOpTypeVector == opcode && hasImproperStraddle(id, offset, vstate))
-      return false;
+      return fail(memberIdx)
+             << "is an improperly straddling vector at offset " << offset;
     // Check struct members recursively.
-    if (SpvOpTypeStruct == opcode && !checkLayout(id, isBlock, vstate))
-      return false;
+    spv_result_t recursive_status = SPV_SUCCESS;
+    if (SpvOpTypeStruct == opcode &&
+        SPV_SUCCESS != (recursive_status = checkLayout(id, isBlock, vstate)))
+      return recursive_status;
     // Check matrix stride.
     if (SpvOpTypeMatrix == opcode) {
       for (auto& decoration : vstate.id_decorations(id)) {
         if (SpvDecorationMatrixStride == decoration.dec_type() &&
-            !checkAlignment(decoration.params()[0], baseAlignment,
-                            baseAlignmentRoundedUp, isBlock))
-          return false;
+            !IsAlignedTo(decoration.params()[0], alignment))
+          return fail(memberIdx)
+                 << "is a matrix with stride " << decoration.params()[0]
+                 << " not satisfying alignment to " << alignment;
       }
     }
     // Check arrays.
@@ -284,26 +303,22 @@ bool checkLayout(uint32_t struct_id, bool isBlock, ValidationState_t& vstate) {
       const auto typeId = inst->words()[2];
       const auto arrayInst = vstate.FindDef(typeId);
       if (SpvOpTypeStruct == arrayInst->opcode() &&
-          !checkLayout(typeId, isBlock, vstate))
-        return false;
+          SPV_SUCCESS !=
+              (recursive_status = checkLayout(typeId, isBlock, vstate)))
+        return recursive_status;
       // Check array stride.
       for (auto& decoration : vstate.id_decorations(id)) {
         if (SpvDecorationArrayStride == decoration.dec_type() &&
-            !checkAlignment(decoration.params()[0], baseAlignment,
-                            baseAlignmentRoundedUp, isBlock))
-          return false;
-      }
-      if ((SpvOpTypeArray == opcode || SpvOpTypeStruct == opcode) &&
-          size != 0) {
-        const auto alignment = isBlock ? baseAlignmentRoundedUp : baseAlignment;
-        padStart = lastByte + 1;
-        padEnd = align(lastByte, alignment);
-      } else {
-        padStart = padEnd = 0;
+            !IsAlignedTo(decoration.params()[0], alignment))
+          return fail(memberIdx)
+                 << "is an array with stride " << decoration.params()[0]
+                 << " not satisfying alignment to " << alignment;
       }
     }
+    nextValidOffset = align(offset + size, alignment);
+    prevOffset = offset;
   }
-  return true;
+  return SPV_SUCCESS;
 }
 
 // Returns true if structure id has given decoration. Handles also nested
@@ -324,7 +339,7 @@ bool hasDecoration(uint32_t struct_id, SpvDecoration decoration,
 // Returns true if all ids of given type have a specified decoration.
 bool checkForRequiredDecoration(uint32_t struct_id, SpvDecoration decoration,
                                 SpvOp type, ValidationState_t& vstate) {
-  const auto members = getStructMembers(struct_id, vstate);
+  const auto& members = getStructMembers(struct_id, vstate);
   for (size_t memberIdx = 0; memberIdx < members.size(); memberIdx++) {
     const auto id = members[memberIdx];
     if (type != vstate.FindDef(id)->opcode()) continue;
@@ -519,7 +534,7 @@ spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
 spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
   for (const auto& def : vstate.all_definitions()) {
     const auto inst = def.second;
-    const auto words = inst->words();
+    const auto& words = inst->words();
     if (SpvOpVariable == inst->opcode() &&
         (SpvStorageClassUniform == words[3] ||
          SpvStorageClassPushConstant == words[3])) {
@@ -531,7 +546,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         const bool isBlock = SpvDecorationBlock == dec.dec_type();
         const bool isBufferBlock = SpvDecorationBufferBlock == dec.dec_type();
         if (isBlock || isBufferBlock) {
-          std::string dec_str = isBlock ? "Block" : "BufferBlock";
+          const char* dec_str = isBlock ? "Block" : "BufferBlock";
+          spv_result_t recursive_status = SPV_SUCCESS;
           if (isMissingOffsetInStruct(id, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID)
                    << "Structure id " << id << " decorated as " << dec_str
@@ -556,14 +572,13 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                    << "Structure id " << id << " decorated as " << dec_str
                    << " must be explicitly laid out with MatrixStride "
                       "decorations.";
-          } else if (isBlock && !checkLayout(id, true, vstate)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID)
-                   << "Structure id " << id << " decorated as Block"
-                   << " must follow standard uniform buffer layout rules.";
-          } else if (isBufferBlock && !checkLayout(id, false, vstate)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID)
-                   << "Structure id " << id << " decorated as BufferBlock"
-                   << " must follow standard storage buffer layout rules.";
+          } else if (isBlock && (SPV_SUCCESS != (recursive_status = checkLayout(
+                                                     id, true, vstate)))) {
+            return recursive_status;
+          } else if (isBufferBlock &&
+                     (SPV_SUCCESS !=
+                      (recursive_status = checkLayout(id, false, vstate)))) {
+            return recursive_status;
           }
         }
       }
