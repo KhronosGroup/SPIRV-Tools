@@ -168,8 +168,7 @@ endif()
 
 find_host_package(PythonInterp)
 
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin"
-                          OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows)
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   macro(spvtools_check_symbol_exports TARGET)
     add_test(NAME spirv-tools-symbol-exports-${TARGET}
              COMMAND ${PYTHON_EXECUTABLE}
