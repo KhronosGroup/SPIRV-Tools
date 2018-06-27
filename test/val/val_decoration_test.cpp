@@ -1836,7 +1836,7 @@ TEST_F(ValidateDecorations,
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Structure id 3 decorated as BufferBlock must follow "
-                        "standard uniform buffer layout rules: member 1 at "
+                        "standard storage buffer layout rules: member 1 at "
                         "offset 8 is not aligned to 16"));
 }
 

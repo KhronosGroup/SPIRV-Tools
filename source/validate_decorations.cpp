@@ -240,9 +240,9 @@ spv_result_t checkLayout(uint32_t struct_id, bool isBlock,
     DiagnosticStream ds = std::move(
         vstate.diag(SPV_ERROR_INVALID_ID)
         << "Structure id " << struct_id << " decorated as "
-        << (isBlock ? "Block" : "BufferBlock")
-        << " must follow standard uniform buffer layout rules: member "
-        << member_idx << " ");
+        << (isBlock ? "Block" : "BufferBlock") << " must follow standard "
+        << (isBlock ? "uniform buffer" : "storage buffer")
+        << " layout rules: member " << member_idx << " ");
     return ds;
   };
   if (vstate.options()->relax_block_layout) return SPV_SUCCESS;
