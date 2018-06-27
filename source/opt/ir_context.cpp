@@ -601,9 +601,6 @@ opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
 
 bool ir::IRContext::CheckCFG() {
   std::unordered_map<uint32_t, std::vector<uint32_t>> real_preds;
-  if (!AreAnalysesValid(kAnalysisCFG)) {
-    return true;
-  }
 
   for (ir::Function& function : *module()) {
     for (const auto& bb : function) {
