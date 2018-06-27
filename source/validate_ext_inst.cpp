@@ -676,12 +676,10 @@ spv_result_t ExtInstPass(ValidationState_t& _,
                  << "expected operand N to be of type equal to Result Type";
         }
 
-        const uint32_t eta_type_bit_width = _.GetBitWidth(eta_type);
-        if (!_.IsFloatScalarType(eta_type) ||
-            (eta_type_bit_width != 16 && eta_type_bit_width != 32)) {
+        if (!_.IsFloatScalarType(eta_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
-                 << "expected operand Eta to be a 16 or 32-bit float scalar";
+                 << "expected operand Eta to be a float scalar";
         }
         break;
       }
