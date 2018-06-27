@@ -25,6 +25,7 @@
 
 namespace {
 
+using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::Not;
 
@@ -2369,21 +2370,30 @@ TEST_F(ValidateExtInst, GlslStd450RefractIntEta) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 Refract: "
-                        "expected operand Eta to be a 16 or 32-bit "
-                        "float scalar"));
+                        "expected operand Eta to be a float scalar"));
 }
 
 TEST_F(ValidateExtInst, GlslStd450RefractFloat64Eta) {
+  // SPIR-V issue 337: Eta can be 64-bit float scalar.
   const std::string body = R"(
 %val1 = OpExtInst %f32vec2 %extinst Refract %f32vec2_01 %f32vec2_01 %f64_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateExtInst, GlslStd450RefractVectorEta) {
+  const std::string body = R"(
+%val1 = OpExtInst %f32vec2 %extinst Refract %f32vec2_01 %f32vec2_01 %f32vec2_01
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 Refract: "
-                        "expected operand Eta to be a 16 or 32-bit "
-                        "float scalar"));
+                        "expected operand Eta to be a float scalar"));
 }
 
 TEST_F(ValidateExtInst, GlslStd450InterpolateAtCentroidSuccess) {
