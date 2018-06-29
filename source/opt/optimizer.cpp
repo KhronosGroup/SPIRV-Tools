@@ -137,8 +137,7 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses() {
-  return RegisterPass(CreateRemoveDuplicatesPass())
-      .RegisterPass(CreateMergeReturnPass())
+  return RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
@@ -173,8 +172,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
-  return RegisterPass(CreateRemoveDuplicatesPass())
-      .RegisterPass(CreateMergeReturnPass())
+  return RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateScalarReplacementPass())
