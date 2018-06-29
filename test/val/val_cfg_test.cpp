@@ -1754,5 +1754,72 @@ OpFunctionEnd
                 "  OpSwitch %uint_0 %10 0 %11 1 %12 2 %13"));
 }
 
+TEST_F(ValidateCFG, InvalidCaseExit) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypeFunction %2
+%5 = OpConstant %3 0
+%1 = OpFunction %2 None %4
+%6 = OpLabel
+OpSelectionMerge %7 None
+OpSwitch %5 %7 0 %8 1 %9
+%8 = OpLabel
+OpBranch %10
+%9 = OpLabel
+OpBranch %10
+%10 = OpLabel
+OpReturn
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Case construct that targets 8 has invalid branch to "
+                        "block 10 (not another case construct, corresponding "
+                        "merge, outer loop merge or outer loop continue"));
+}
+
+TEST_F(ValidateCFG, GoodCaseExitsToOuterConstructs) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %7 %6 None
+OpBranch %3
+%3 = OpLabel
+OpSelectionMerge %5 None
+OpSwitch %int0 %5 0 %4
+%4 = OpLabel
+OpBranchConditional %true %6 %7
+%5 = OpLabel
+OpBranchConditional %true %6 %7
+%6 = OpLabel
+OpBranch %2
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 /// TODO(umar): Nested CFG constructs
 }  // namespace
