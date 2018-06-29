@@ -408,6 +408,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     }
   } else if (pass_name == "loop-unroll") {
     RegisterPass(CreateLoopUnrollPass(true));
+  } else if (pass_name == "upgrade-memory-model") {
+    RegisterPass(CreateUpgradeMemoryModelPass());
   } else if (pass_name == "vector-dce") {
     RegisterPass(CreateVectorDCEPass());
   } else if (pass_name == "loop-unroll-partial") {
@@ -766,6 +768,10 @@ Optimizer::PassToken CreateReduceLoadSizePass() {
 Optimizer::PassToken CreateCombineAccessChainsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CombineAccessChains>());
+
+Optimizer::PassToken CreateUpgradeMemoryModelPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::UpgradeMemoryModel>());
 }
 
 Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,

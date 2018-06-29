@@ -342,6 +342,10 @@ Options (in lexicographical order):
                prints CPU/WALL/USR/SYS time (and RSS if possible), but note that
                USR/SYS time are returned by getrusage() and can have a small
                error.
+  --upgrade-memory-model
+               Upgrades the Logical GLSL450 memory model to Logical VulkanKHR.
+               Transforms memory, image, atomic and barrier operations to conform
+               to that model's requirements.
   --vector-dce
                This pass looks for components of vectors that are unused, and
                removes them from the vector.  Note this would still leave around

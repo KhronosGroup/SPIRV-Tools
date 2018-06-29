@@ -155,6 +155,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/type_manager.cpp \
 		source/opt/types.cpp \
 		source/opt/unify_const_pass.cpp \
+		source/opt/upgrade_memory_model.cpp \
 		source/opt/value_number_table.cpp \
 		source/opt/vector_dce.cpp \
 		source/opt/workaround1209.cpp

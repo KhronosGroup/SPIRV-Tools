@@ -707,6 +707,12 @@ Optimizer::PassToken CreateCombineAccessChainsPass();
 Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
                                                  uint32_t shader_id);
 
+// Create a pass to upgrade to the VulkanKHR memory model.
+// This pass upgrades the Logical GLSL450 memory model to Logical VulkanKHR.
+// Additionally, it modifies memory, image, atomic and barrier operations to
+// conform to that model's requirements.
+Optimizer::PassToken CreateUpgradeMemoryModelPass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
