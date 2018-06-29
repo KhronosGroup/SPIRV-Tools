@@ -307,6 +307,9 @@ OpGroupDecorate %2 %4
   EXPECT_EQ(GetErrorMessage(), "");
 }
 
+// Test what happens when a type is a resource type.  For now we are merging
+// them, but, if we want to merge types and make reflection work (issue #1372),
+// we will not be able to merge %2 and %3 below.
 TEST_F(RemoveDuplicatesTest, DontMergeNestedResourceTypes) {
   const std::string spirv = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -334,10 +337,33 @@ OpDecorate %4 Binding 0
 %4 = OpVariable %7 Uniform
 )";
 
-  EXPECT_EQ(RunPass(spirv), spirv);
+  const std::string result = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpMemberName %3 0 "AdjustXYZ"
+OpMemberName %3 1 "AdjustDir"
+OpName %4 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpMemberDecorate %3 0 Offset 0
+OpMemberDecorate %3 1 Offset 16
+OpDecorate %3 Block
+OpDecorate %4 DescriptorSet 0
+OpDecorate %4 Binding 0
+%5 = OpTypeFloat 32
+%6 = OpTypeVector %5 3
+%1 = OpTypeStruct %6
+%3 = OpTypeStruct %1 %1
+%7 = OpTypePointer Uniform %3
+%4 = OpVariable %7 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), result);
   EXPECT_EQ(GetErrorMessage(), "");
 }
 
+// See comment for DontMergeNestedResourceTypes.
 TEST_F(RemoveDuplicatesTest, DontMergeResourceTypes) {
   const std::string spirv = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -363,10 +389,30 @@ OpDecorate %4 Binding 0
 %4 = OpVariable %8 Uniform
 )";
 
-  EXPECT_EQ(RunPass(spirv), spirv);
+  const std::string result = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %3 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+OpDecorate %4 DescriptorSet 1
+OpDecorate %4 Binding 0
+%5 = OpTypeFloat 32
+%6 = OpTypeVector %5 3
+%1 = OpTypeStruct %6
+%7 = OpTypePointer Uniform %1
+%3 = OpVariable %7 Uniform
+%4 = OpVariable %7 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), result);
   EXPECT_EQ(GetErrorMessage(), "");
 }
 
+// See comment for DontMergeNestedResourceTypes.
 TEST_F(RemoveDuplicatesTest, DontMergeResourceTypesContainingArray) {
   const std::string spirv = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -396,7 +442,29 @@ OpDecorate %4 Binding 0
 %4 = OpVariable %12 Uniform
 )";
 
-  EXPECT_EQ(RunPass(spirv), spirv);
+  const std::string result = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpSource HLSL 600
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
+OpName %3 "Constants"
+OpMemberDecorate %1 0 Offset 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+OpDecorate %4 DescriptorSet 1
+OpDecorate %4 Binding 0
+%5 = OpTypeFloat 32
+%6 = OpTypeVector %5 3
+%1 = OpTypeStruct %6
+%7 = OpTypeInt 32 0
+%8 = OpConstant %7 4
+%9 = OpTypeArray %1 %8
+%11 = OpTypePointer Uniform %9
+%3 = OpVariable %11 Uniform
+%4 = OpVariable %11 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), result);
   EXPECT_EQ(GetErrorMessage(), "");
 }
 
@@ -450,6 +518,8 @@ OpDecorate %3 Binding 0
 // Test that we merge the type of a resource with a type that is not the type
 // a resource.  The resource type appears second in this case.  We must keep
 // the resource type.
+//
+// See comment for DontMergeNestedResourceTypes.
 TEST_F(RemoveDuplicatesTest, MergeResourceTypeWithNonresourceType2) {
   const std::string spirv = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -476,18 +546,96 @@ OpDecorate %3 Binding 0
   const std::string result = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpSource HLSL 600
-OpName %2 "NormalAdjust"
-OpMemberName %2 0 "XDir"
+OpName %1 "PositionAdjust"
+OpMemberName %1 0 "XAdjust"
 OpName %3 "Constants"
-OpMemberDecorate %2 0 Offset 0
+OpMemberDecorate %1 0 Offset 0
 OpDecorate %3 DescriptorSet 0
 OpDecorate %3 Binding 0
 %4 = OpTypeFloat 32
 %5 = OpTypeVector %4 3
-%2 = OpTypeStruct %5
-%7 = OpTypePointer Uniform %2
-%8 = OpVariable %7 Uniform
-%3 = OpVariable %7 Uniform
+%1 = OpTypeStruct %5
+%6 = OpTypePointer Uniform %1
+%8 = OpVariable %6 Uniform
+%3 = OpVariable %6 Uniform
+)";
+
+  EXPECT_EQ(RunPass(spirv), result);
+  EXPECT_EQ(GetErrorMessage(), "");
+}
+
+// In this test, %8 and %9 are the same and only %9 is used in a resource.
+// However, we cannot merge them unless we also merge %2 and %3, which cannot
+// happen because both are used in resources.
+//
+// If we try to avoid replaces resource types, then remove duplicates should
+// have not change in this case.  That is not currently implemented.
+TEST_F(RemoveDuplicatesTest, MergeResourceTypeWithNonresourceType3) {
+  const std::string spirv = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %1 "main"
+OpSource HLSL 600
+OpName %2 "PositionAdjust"
+OpMemberName %2 0 "XAdjust"
+OpName %3 "NormalAdjust"
+OpMemberName %3 0 "XDir"
+OpName %4 "Constants"
+OpMemberDecorate %2 0 Offset 0
+OpMemberDecorate %3 0 Offset 0
+OpDecorate %4 DescriptorSet 0
+OpDecorate %4 Binding 0
+OpDecorate %5 DescriptorSet 1
+OpDecorate %5 Binding 0
+%6 = OpTypeFloat 32
+%7 = OpTypeVector %6 3
+%2 = OpTypeStruct %7
+%3 = OpTypeStruct %7
+%8 = OpTypePointer Uniform %3
+%9 = OpTypePointer Uniform %2
+%10 = OpTypeStruct %3
+%11 = OpTypePointer Uniform %10
+%5 = OpVariable %9 Uniform
+%4 = OpVariable %11 Uniform
+%12 = OpTypeVoid
+%13 = OpTypeFunction %12
+%14 = OpTypeInt 32 0
+%15 = OpConstant %14 0
+%1 = OpFunction %12 None %13
+%16 = OpLabel
+%17 = OpAccessChain %8 %4 %15
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string result = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %1 "main"
+OpSource HLSL 600
+OpName %2 "PositionAdjust"
+OpMemberName %2 0 "XAdjust"
+OpName %4 "Constants"
+OpMemberDecorate %2 0 Offset 0
+OpDecorate %4 DescriptorSet 0
+OpDecorate %4 Binding 0
+OpDecorate %5 DescriptorSet 1
+OpDecorate %5 Binding 0
+%6 = OpTypeFloat 32
+%7 = OpTypeVector %6 3
+%2 = OpTypeStruct %7
+%8 = OpTypePointer Uniform %2
+%10 = OpTypeStruct %2
+%11 = OpTypePointer Uniform %10
+%5 = OpVariable %8 Uniform
+%4 = OpVariable %11 Uniform
+%12 = OpTypeVoid
+%13 = OpTypeFunction %12
+%14 = OpTypeInt 32 0
+%15 = OpConstant %14 0
+%1 = OpFunction %12 None %13
+%16 = OpLabel
+%17 = OpAccessChain %8 %4 %15
+OpReturn
+OpFunctionEnd
 )";
 
   EXPECT_EQ(RunPass(spirv), result);

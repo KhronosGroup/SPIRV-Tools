@@ -105,22 +105,6 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
     return modified;
   }
 
-  std::unordered_set<uint32_t> types_ids_of_resources;
-  for (auto& decoration_inst : ir_context->annotations()) {
-    if (decoration_inst.opcode() != SpvOpDecorate) {
-      continue;
-    }
-
-    if (decoration_inst.GetSingleWordInOperand(1) != SpvDecorationBinding) {
-      continue;
-    }
-
-    uint32_t var_id = decoration_inst.GetSingleWordInOperand(0);
-    ir::Instruction* var_inst = ir_context->get_def_use_mgr()->GetDef(var_id);
-    uint32_t type_id = var_inst->type_id();
-    AddStructuresToSet(type_id, ir_context, &types_ids_of_resources);
-  }
-
   std::vector<Instruction*> visited_types;
   std::vector<Instruction*> to_delete;
   for (auto* i = &*ir_context->types_values_begin(); i; i = i->NextNode()) {
@@ -132,26 +116,12 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
 
     // Is the current type equal to one of the types we have aready visited?
     SpvId id_to_keep = 0u;
-    bool i_is_resource_type = types_ids_of_resources.count(i->result_id()) != 0;
-
     // TODO(dneto0): Use a trie to avoid quadratic behaviour? Extract the
     // ResultIdTrie from unify_const_pass.cpp for this.
-    for (auto& j : visited_types) {
-      if (!j) {
-        continue;
-      }
-
+    for (auto j : visited_types) {
       if (AreTypesEqual(*i, *j, ir_context)) {
-        if (!i_is_resource_type) {
-          id_to_keep = j->result_id();
-          break;
-        } else if (!types_ids_of_resources.count(j->result_id())) {
-          ir_context->KillNamesAndDecorates(j->result_id());
-          ir_context->ReplaceAllUsesWith(j->result_id(), i->result_id());
-          modified = true;
-          to_delete.emplace_back(j);
-          j = nullptr;
-        }
+        id_to_keep = j->result_id();
+        break;
       }
     }
 
@@ -172,7 +142,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
   }
 
   return modified;
-}  // namespace opt
+}
 
 // TODO(pierremoreau): Duplicate decoration groups should be removed. For
 // example, in
@@ -230,32 +200,6 @@ bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
   if (type1 && type2 && *type1 == *type2) return true;
 
   return false;
-}
-
-void RemoveDuplicatesPass::AddStructuresToSet(
-    uint32_t type_id, ir::IRContext* ctx,
-    std::unordered_set<uint32_t>* set_of_ids) const {
-  ir::Instruction* type_inst = ctx->get_def_use_mgr()->GetDef(type_id);
-  switch (type_inst->opcode()) {
-    case SpvOpTypeStruct:
-      set_of_ids->insert(type_id);
-      for (uint32_t i = 0; i < type_inst->NumInOperands(); ++i) {
-        AddStructuresToSet(type_inst->GetSingleWordInOperand(i), ctx,
-                           set_of_ids);
-      }
-      break;
-    case SpvOpTypeArray:
-    case SpvOpTypeRuntimeArray:
-      set_of_ids->insert(type_id);
-      AddStructuresToSet(type_inst->GetSingleWordInOperand(0), ctx, set_of_ids);
-      break;
-    case SpvOpTypePointer:
-      set_of_ids->insert(type_id);
-      AddStructuresToSet(type_inst->GetSingleWordInOperand(1), ctx, set_of_ids);
-      break;
-    default:
-      break;
-  }
 }
 
 }  // namespace opt
