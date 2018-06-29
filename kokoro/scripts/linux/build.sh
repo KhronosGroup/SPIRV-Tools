@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2017 Google Inc.
+# Copyright (c) 2018 Google LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ then
 fi
 
 # Get NINJA.
-wget -q https://github.com/ninja-build/ninja/releases/download/v1.7.2/ninja-linux.zip
+wget -q https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-linux.zip
 unzip -q ninja-linux.zip
 export PATH="$PWD:$PATH"
 

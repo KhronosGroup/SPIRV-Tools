@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2017 Google Inc.
+# Copyright (c) 2018 Google LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ SRC=$PWD/github/SPIRV-Tools
 BUILD_TYPE=$1
 
 # Get NINJA.
-wget -q https://github.com/ninja-build/ninja/releases/download/v1.7.2/ninja-mac.zip
+wget -q https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-mac.zip
 unzip -q ninja-mac.zip
 chmod +x ninja
 export PATH="$PWD:$PATH"
