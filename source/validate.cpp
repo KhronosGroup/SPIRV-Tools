@@ -39,6 +39,7 @@
 #include "spirv_validator_options.h"
 #include "val/construct.h"
 #include "val/function.h"
+#include "val/instruction.h"
 #include "val/validation_state.h"
 
 using std::function;
@@ -53,6 +54,7 @@ using libspirv::CfgPass;
 using libspirv::DataRulesPass;
 using libspirv::Extension;
 using libspirv::IdPass;
+using libspirv::Instruction;
 using libspirv::InstructionPass;
 using libspirv::LiteralsPass;
 using libspirv::ModuleLayoutPass;
@@ -177,9 +179,12 @@ spv_result_t ProcessInstruction(void* user_data,
   // The IdPass check registers instructions and, therefore, must be called
   // before any instruction lookups are performed.
   if (auto error = IdPass(_, inst)) return error;
+
+  const Instruction* instruction = &(_.ordered_instructions().back());
+
   if (auto error = DataRulesPass(_, inst)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
-  if (auto error = CfgPass(_, inst)) return error;
+  if (auto error = CfgPass(_, instruction)) return error;
   if (auto error = InstructionPass(_, inst)) return error;
   if (auto error = TypeUniquePass(_, inst)) return error;
   if (auto error = ArithmeticsPass(_, inst)) return error;

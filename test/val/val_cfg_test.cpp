@@ -1436,7 +1436,8 @@ TEST_F(ValidateCFG, OpReturnInNonVoidFunc) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpReturn can only be called from a function with void return type"));
+          "OpReturn can only be called from a function with void return type.\n"
+          "  OpReturn"));
 }
 
 TEST_F(ValidateCFG, StructuredCFGBranchIntoSelectionBody) {
@@ -1463,7 +1464,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("branches to the selection construct, but not to the "
-                        "selection header <ID>"));
+                        "selection header <ID> 6\n  %7 = OpLabel"));
 }
 
 TEST_F(ValidateCFG, SwitchDefaultOnly) {
@@ -1544,7 +1545,7 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr(
           "Case construct that targets 10 has branches to multiple other case "
-          "construct targets 12 and 11"));
+          "construct targets 12 and 11\n  %10 = OpLabel"));
 }
 
 TEST_F(ValidateCFG, MultipleFallThroughToDefault) {
@@ -1578,7 +1579,7 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Multiple case constructs have branches to the case construct "
-                "that targets 10"));
+                "that targets 10\n  %10 = OpLabel"));
 }
 
 TEST_F(ValidateCFG, MultipleFallThroughToNonDefault) {
@@ -1612,7 +1613,7 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Multiple case constructs have branches to the case construct "
-                "that targets 12"));
+                "that targets 12\n  %12 = OpLabel"));
 }
 
 TEST_F(ValidateCFG, DuplicateTargetWithFallThrough) {

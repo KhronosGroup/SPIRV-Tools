@@ -109,6 +109,12 @@ class BasicBlock {
   /// Ends the block without a successor
   void RegisterBranchInstruction(SpvOp branch_instruction);
 
+  /// Returns the initiator instruction for the block.
+  const Instruction* initiator() const { return initiator_; }
+
+  //// Registers the initiator instruction for the block.
+  void set_initiator(const Instruction* t) { initiator_ = t; }
+
   /// Registers the terminator instruction for the block.
   void set_terminator(const Instruction* t) { terminator_ = t; }
 
@@ -217,6 +223,9 @@ class BasicBlock {
 
   /// True if the block is reachable in the CFG
   bool reachable_;
+
+  /// Initiator of this block.
+  const Instruction* initiator_;
 
   /// Terminator of this block.
   const Instruction* terminator_;
