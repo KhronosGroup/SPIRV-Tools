@@ -203,9 +203,8 @@ spv_result_t FindCaseFallThrough(
         *case_fall_through = block->id();
       } else if (*case_fall_through != block->id()) {
         uint32_t instruction_id =
-            target_block->initiator()
-                ? target_block->initiator()->InstructionPosition()
-                : -1;
+            target_block->label() ? target_block->label()->InstructionPosition()
+                                  : -1;
 
         // Case construct has at most one branch to another case construct.
         return _.diag(SPV_ERROR_INVALID_CFG, instruction_id)
@@ -295,7 +294,8 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
         // must immediately precede T2 in the list of OpSwitch Target operands.
         if ((switch_inst->operands().size() < j + 2) ||
             (case_fall_through != switch_inst->GetOperandAs<uint32_t>(j + 2))) {
-          return _.diag(SPV_ERROR_INVALID_CFG, -1)
+          return _.diag(SPV_ERROR_INVALID_CFG,
+                        switch_inst->InstructionPosition())
                  << "Case construct that targets " << _.getIdName(target)
                  << " has branches to the case construct that targets "
                  << _.getIdName(case_fall_through)
@@ -550,7 +550,10 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
       if (auto error = _.current_function().RegisterBlock(inst->id()))
         return error;
 
-      _.current_function().current_block()->set_initiator(inst);
+      // TODO(github:1661) This should be done in the
+      // ValidationState::RegisterInstruction method but because of the order of
+      // passes the OpLabel ends up not being part of the basic block it starts.
+      _.current_function().current_block()->set_label(inst);
       break;
     case SpvOpLoopMerge: {
       uint32_t merge_block = inst->GetOperandAs<uint32_t>(0);

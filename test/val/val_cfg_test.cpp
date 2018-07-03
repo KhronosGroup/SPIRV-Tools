@@ -1676,7 +1676,8 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr("Case construct that targets 12 has branches to the case "
                 "construct that targets 11, but does not immediately "
-                "precede it in the OpSwitch's target list"));
+                "precede it in the OpSwitch's target list\n"
+                "  OpSwitch %uint_0 %10 0 %11 1 %12"));
 }
 
 TEST_F(ValidateCFG, WrongOperandListThroughDefault) {
@@ -1711,7 +1712,8 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr("Case construct that targets 12 has branches to the case "
                 "construct that targets 11, but does not immediately "
-                "precede it in the OpSwitch's target list"));
+                "precede it in the OpSwitch's target list\n"
+                "  OpSwitch %uint_0 %10 0 %11 1 %12"));
 }
 
 TEST_F(ValidateCFG, WrongOperandListNotLast) {
@@ -1748,7 +1750,8 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr("Case construct that targets 12 has branches to the case "
                 "construct that targets 11, but does not immediately "
-                "precede it in the OpSwitch's target list"));
+                "precede it in the OpSwitch's target list\n"
+                "  OpSwitch %uint_0 %10 0 %11 1 %12 2 %13"));
 }
 
 /// TODO(umar): Nested CFG constructs
