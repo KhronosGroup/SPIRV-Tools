@@ -59,8 +59,10 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
     return SPV_SUCCESS;
   } else {
     // NOTE: Assume this is a binary position
-    std::cerr << "error: " << diagnostic->position.index << ": "
-              << diagnostic->error << "\n";
+    std::cerr << "error: ";
+    if (diagnostic->position.index > 0)
+      std::cerr << diagnostic->position.index << ": ";
+    std::cerr << diagnostic->error << "\n";
     return SPV_SUCCESS;
   }
 }

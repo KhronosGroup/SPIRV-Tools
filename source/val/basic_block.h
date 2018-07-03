@@ -109,6 +109,12 @@ class BasicBlock {
   /// Ends the block without a successor
   void RegisterBranchInstruction(SpvOp branch_instruction);
 
+  /// Returns the label instruction for the block, or nullptr if not set.
+  const Instruction* label() const { return label_; }
+
+  //// Registers the label instruction for the block.
+  void set_label(const Instruction* t) { label_ = t; }
+
   /// Registers the terminator instruction for the block.
   void set_terminator(const Instruction* t) { terminator_ = t; }
 
@@ -217,6 +223,9 @@ class BasicBlock {
 
   /// True if the block is reachable in the CFG
   bool reachable_;
+
+  /// label of this block, if any.
+  const Instruction* label_;
 
   /// Terminator of this block.
   const Instruction* terminator_;

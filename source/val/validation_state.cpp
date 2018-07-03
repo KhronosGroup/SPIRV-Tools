@@ -276,9 +276,9 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
                                       ordered_instructions_.size()) {
     disassembly = Disassemble(ordered_instructions_[instruction_counter - 1]);
   }
-  return libspirv::DiagnosticStream(
-      {0, 0, static_cast<size_t>(instruction_counter)}, context_->consumer,
-      disassembly, error_code);
+  size_t pos = instruction_counter >= 0 ? instruction_counter : 0;
+  return libspirv::DiagnosticStream({0, 0, pos}, context_->consumer,
+                                    disassembly, error_code);
 }
 
 deque<Function>& ValidationState_t::functions() { return module_functions_; }
