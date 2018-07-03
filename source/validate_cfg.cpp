@@ -202,8 +202,12 @@ spv_result_t FindCaseFallThrough(
       if (*case_fall_through == 0u) {
         *case_fall_through = block->id();
       } else if (*case_fall_through != block->id()) {
+        uint32_t instruction_id =
+            target_block->label() ? target_block->label()->InstructionPosition()
+                                  : -1;
+
         // Case construct has at most one branch to another case construct.
-        return _.diag(SPV_ERROR_INVALID_CFG)
+        return _.diag(SPV_ERROR_INVALID_CFG, instruction_id)
                << "Case construct that targets "
                << _.getIdName(target_block->id())
                << " has branches to multiple other case construct targets "
@@ -290,13 +294,13 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
         // must immediately precede T2 in the list of OpSwitch Target operands.
         if ((switch_inst->operands().size() < j + 2) ||
             (case_fall_through != switch_inst->GetOperandAs<uint32_t>(j + 2))) {
-          return _.diag(SPV_ERROR_INVALID_CFG)
+          return _.diag(SPV_ERROR_INVALID_CFG,
+                        switch_inst->InstructionPosition())
                  << "Case construct that targets " << _.getIdName(target)
                  << " has branches to the case construct that targets "
                  << _.getIdName(case_fall_through)
                  << ", but does not immediately precede it in the "
-                    "OpSwitch's "
-                    "target list";
+                    "OpSwitch's target list";
         }
       }
     }
@@ -306,7 +310,8 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
   // construct.
   for (const auto& pair : num_fall_through_targeted) {
     if (pair.second > 1) {
-      return _.diag(SPV_ERROR_INVALID_CFG)
+      return _.diag(SPV_ERROR_INVALID_CFG,
+                    _.FindDef(pair.first)->InstructionPosition())
              << "Multiple case constructs have branches to the case construct "
                 "that targets "
              << _.getIdName(pair.first);
@@ -410,7 +415,8 @@ spv_result_t StructuredControlFlowChecks(
           string construct_name, header_name, exit_name;
           tie(construct_name, header_name, exit_name) =
               ConstructNames(construct.type());
-          return _.diag(SPV_ERROR_INVALID_CFG)
+          return _.diag(SPV_ERROR_INVALID_CFG,
+                        _.FindDef(pred->id())->InstructionPosition())
                  << "block <ID> " << pred->id() << " branches to the "
                  << construct_name << " construct, but not to the "
                  << header_name << " <ID> " << header->id();
@@ -537,17 +543,21 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
   return SPV_SUCCESS;
 }
 
-spv_result_t CfgPass(ValidationState_t& _,
-                     const spv_parsed_instruction_t* inst) {
-  SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
+  SpvOp opcode = static_cast<SpvOp>(inst->opcode());
   switch (opcode) {
     case SpvOpLabel:
-      if (auto error = _.current_function().RegisterBlock(inst->result_id))
+      if (auto error = _.current_function().RegisterBlock(inst->id()))
         return error;
+
+      // TODO(github:1661) This should be done in the
+      // ValidationState::RegisterInstruction method but because of the order of
+      // passes the OpLabel ends up not being part of the basic block it starts.
+      _.current_function().current_block()->set_label(inst);
       break;
     case SpvOpLoopMerge: {
-      uint32_t merge_block = inst->words[inst->operands[0].offset];
-      uint32_t continue_block = inst->words[inst->operands[1].offset];
+      uint32_t merge_block = inst->GetOperandAs<uint32_t>(0);
+      uint32_t continue_block = inst->GetOperandAs<uint32_t>(1);
       CFG_ASSERT(MergeBlockAssert, merge_block);
 
       if (auto error = _.current_function().RegisterLoopMerge(merge_block,
@@ -555,21 +565,21 @@ spv_result_t CfgPass(ValidationState_t& _,
         return error;
     } break;
     case SpvOpSelectionMerge: {
-      uint32_t merge_block = inst->words[inst->operands[0].offset];
+      uint32_t merge_block = inst->GetOperandAs<uint32_t>(0);
       CFG_ASSERT(MergeBlockAssert, merge_block);
 
       if (auto error = _.current_function().RegisterSelectionMerge(merge_block))
         return error;
     } break;
     case SpvOpBranch: {
-      uint32_t target = inst->words[inst->operands[0].offset];
+      uint32_t target = inst->GetOperandAs<uint32_t>(0);
       CFG_ASSERT(FirstBlockAssert, target);
 
       _.current_function().RegisterBlockEnd({target}, opcode);
     } break;
     case SpvOpBranchConditional: {
-      uint32_t tlabel = inst->words[inst->operands[1].offset];
-      uint32_t flabel = inst->words[inst->operands[2].offset];
+      uint32_t tlabel = inst->GetOperandAs<uint32_t>(1);
+      uint32_t flabel = inst->GetOperandAs<uint32_t>(2);
       CFG_ASSERT(FirstBlockAssert, tlabel);
       CFG_ASSERT(FirstBlockAssert, flabel);
 
@@ -578,8 +588,8 @@ spv_result_t CfgPass(ValidationState_t& _,
 
     case SpvOpSwitch: {
       vector<uint32_t> cases;
-      for (int i = 1; i < inst->num_operands; i += 2) {
-        uint32_t target = inst->words[inst->operands[i].offset];
+      for (size_t i = 1; i < inst->operands().size(); i += 2) {
+        uint32_t target = inst->GetOperandAs<uint32_t>(i);
         CFG_ASSERT(FirstBlockAssert, target);
         cases.push_back(target);
       }
@@ -590,8 +600,7 @@ spv_result_t CfgPass(ValidationState_t& _,
       const Instruction* return_type_inst = _.FindDef(return_type);
       assert(return_type_inst);
       if (return_type_inst->opcode() != SpvOpTypeVoid)
-        return _.diag(SPV_ERROR_INVALID_CFG,
-                      return_type_inst->InstructionPosition())
+        return _.diag(SPV_ERROR_INVALID_CFG, inst->InstructionPosition())
                << "OpReturn can only be called from a function with void "
                << "return type.";
     }
@@ -611,4 +620,5 @@ spv_result_t CfgPass(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
+
 }  // namespace libspirv
