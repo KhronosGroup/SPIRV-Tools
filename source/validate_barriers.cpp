@@ -30,9 +30,8 @@ namespace {
 
 // Validates Execution Scope operand.
 spv_result_t ValidateExecutionScope(ValidationState_t& _,
-                                    const spv_parsed_instruction_t* inst,
-                                    uint32_t id) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+                                    const Instruction* inst, uint32_t id) {
+  const SpvOp opcode = inst->opcode();
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
   std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
@@ -82,10 +81,9 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
 }
 
 // Validates Memory Scope operand.
-spv_result_t ValidateMemoryScope(ValidationState_t& _,
-                                 const spv_parsed_instruction_t* inst,
+spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
                                  uint32_t id) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  const SpvOp opcode = inst->opcode();
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
   std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
@@ -124,9 +122,8 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _,
 
 // Validates Memory Semantics operand.
 spv_result_t ValidateMemorySemantics(ValidationState_t& _,
-                                     const spv_parsed_instruction_t* inst,
-                                     uint32_t id) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+                                     const Instruction* inst, uint32_t id) {
+  const SpvOp opcode = inst->opcode();
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
   std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
@@ -193,10 +190,9 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
 }  // anonymous namespace
 
 // Validates correctness of barrier instructions.
-spv_result_t BarriersPass(ValidationState_t& _,
-                          const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
+spv_result_t BarriersPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
 
   switch (opcode) {
     case SpvOpControlBarrier: {
@@ -219,9 +215,9 @@ spv_result_t BarriersPass(ValidationState_t& _,
             });
       }
 
-      const uint32_t execution_scope = inst->words[1];
-      const uint32_t memory_scope = inst->words[2];
-      const uint32_t memory_semantics = inst->words[3];
+      const uint32_t execution_scope = inst->word(1);
+      const uint32_t memory_scope = inst->word(2);
+      const uint32_t memory_semantics = inst->word(3);
 
       if (auto error = ValidateExecutionScope(_, inst, execution_scope)) {
         return error;
@@ -238,8 +234,8 @@ spv_result_t BarriersPass(ValidationState_t& _,
     }
 
     case SpvOpMemoryBarrier: {
-      const uint32_t memory_scope = inst->words[1];
-      const uint32_t memory_semantics = inst->words[2];
+      const uint32_t memory_scope = inst->word(1);
+      const uint32_t memory_semantics = inst->word(2);
 
       if (auto error = ValidateMemoryScope(_, inst, memory_scope)) {
         return error;
@@ -276,8 +272,8 @@ spv_result_t BarriersPass(ValidationState_t& _,
                << ": expected Named Barrier to be of type OpTypeNamedBarrier";
       }
 
-      const uint32_t memory_scope = inst->words[2];
-      const uint32_t memory_semantics = inst->words[3];
+      const uint32_t memory_scope = inst->word(2);
+      const uint32_t memory_semantics = inst->word(3);
 
       if (auto error = ValidateMemoryScope(_, inst, memory_scope)) {
         return error;

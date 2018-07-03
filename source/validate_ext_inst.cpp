@@ -41,18 +41,17 @@ uint32_t GetSizeTBitWidth(const ValidationState_t& _) {
 }  // anonymous namespace
 
 // Validates correctness of ExtInst instructions.
-spv_result_t ExtInstPass(ValidationState_t& _,
-                         const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
-  const uint32_t num_operands = inst->num_operands;
+spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
+  const uint32_t num_operands = static_cast<uint32_t>(inst->operands().size());
 
   if (opcode != SpvOpExtInst) return SPV_SUCCESS;
 
-  const uint32_t ext_inst_set = inst->words[3];
-  const uint32_t ext_inst_index = inst->words[4];
+  const uint32_t ext_inst_set = inst->word(3);
+  const uint32_t ext_inst_index = inst->word(4);
   const spv_ext_inst_type_t ext_inst_type =
-      spv_ext_inst_type_t(inst->ext_inst_type);
+      spv_ext_inst_type_t(inst->ext_inst_type());
 
   auto ext_inst_name = [&_, ext_inst_set, ext_inst_type, ext_inst_index]() {
     spv_ext_inst_desc desc = nullptr;
@@ -1530,7 +1529,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
                     "type of Result Type";
         }
 
-        const uint32_t n_value = inst->words[7];
+        const uint32_t n_value = inst->word(7);
         if (num_components != n_value) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
@@ -1716,7 +1715,7 @@ spv_result_t ExtInstPass(ValidationState_t& _,
                  << "expected operand P data type to be 16-bit float scalar";
         }
 
-        const uint32_t n_value = inst->words[7];
+        const uint32_t n_value = inst->word(7);
         if (num_components != n_value) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "

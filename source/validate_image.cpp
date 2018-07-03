@@ -199,14 +199,14 @@ uint32_t GetMinCoordSize(SpvOp opcode, const ImageTypeInfo& info) {
 
 // Checks ImageOperand bitfield and respective operands.
 spv_result_t ValidateImageOperands(ValidationState_t& _,
-                                   const spv_parsed_instruction_t& inst,
+                                   const Instruction* inst,
                                    const ImageTypeInfo& info, uint32_t mask,
                                    uint32_t word_index) {
   static const bool kAllImageOperandsHandled = CheckAllImageOperandsHandled();
   (void)kAllImageOperandsHandled;
 
-  const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
-  const uint32_t num_words = inst.num_words;
+  const SpvOp opcode = inst->opcode();
+  const size_t num_words = inst->words().size();
 
   size_t expected_num_image_operand_words = spvutils::CountSetBits(mask);
   if (mask & SpvImageOperandsGradMask) {
@@ -240,7 +240,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << spvOpcodeString(opcode);
     };
 
-    const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
+    const uint32_t type_id = _.GetTypeId(inst->word(word_index++));
     if (!_.IsFloatScalarType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
              << "Expected Image Operand Bias to be float scalar: "
@@ -277,7 +277,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << spvOpcodeString(opcode);
     }
 
-    const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
+    const uint32_t type_id = _.GetTypeId(inst->word(word_index++));
     if (is_explicit_lod) {
       if (!_.IsFloatScalarType(type_id)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -314,8 +314,8 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << spvOpcodeString(opcode);
     };
 
-    const uint32_t dx_type_id = _.GetTypeId(inst.words[word_index++]);
-    const uint32_t dy_type_id = _.GetTypeId(inst.words[word_index++]);
+    const uint32_t dx_type_id = _.GetTypeId(inst->word(word_index++));
+    const uint32_t dy_type_id = _.GetTypeId(inst->word(word_index++));
     if (!_.IsFloatScalarOrVectorType(dx_type_id) ||
         !_.IsFloatScalarOrVectorType(dy_type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
@@ -355,7 +355,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << spvOpcodeString(opcode);
     }
 
-    const uint32_t id = inst.words[word_index++];
+    const uint32_t id = inst->word(word_index++);
     const uint32_t type_id = _.GetTypeId(id);
     if (!_.IsIntScalarOrVectorType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
@@ -386,7 +386,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << spvOpcodeString(opcode);
     }
 
-    const uint32_t id = inst.words[word_index++];
+    const uint32_t id = inst->word(word_index++);
     const uint32_t type_id = _.GetTypeId(id);
     if (!_.IsIntScalarOrVectorType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
@@ -421,7 +421,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << spvOpcodeString(opcode);
     }
 
-    const uint32_t id = inst.words[word_index++];
+    const uint32_t id = inst->word(word_index++);
     const uint32_t type_id = _.GetTypeId(id);
     const Instruction* type_inst = _.FindDef(type_id);
     assert(type_inst);
@@ -475,7 +475,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << spvOpcodeString(opcode);
     }
 
-    const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
+    const uint32_t type_id = _.GetTypeId(inst->word(word_index++));
     if (!_.IsIntScalarType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
              << "Expected Image Operand Sample to be int scalar: "
@@ -491,7 +491,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << spvOpcodeString(opcode);
     };
 
-    const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
+    const uint32_t type_id = _.GetTypeId(inst->word(word_index++));
     if (!_.IsFloatScalarType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
              << "Expected Image Operand MinLod to be float scalar: "
@@ -517,10 +517,9 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 }
 
 // Checks some of the validation rules which are common to multiple opcodes.
-spv_result_t ValidateImageCommon(ValidationState_t& _,
-                                 const spv_parsed_instruction_t& inst,
+spv_result_t ValidateImageCommon(ValidationState_t& _, const Instruction* inst,
                                  const ImageTypeInfo& info) {
-  const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
+  const SpvOp opcode = inst->opcode();
   if (IsProj(opcode)) {
     if (info.dim != SpvDim1D && info.dim != SpvDim2D && info.dim != SpvDim3D &&
         info.dim != SpvDimRect) {
@@ -616,13 +615,12 @@ bool IsSparse(SpvOp opcode) {
 // Checks sparse image opcode result type and returns the second struct member.
 // Returns inst.type_id for non-sparse image opcodes.
 // Not valid for sparse image opcodes which do not return a struct.
-spv_result_t GetActualResultType(ValidationState_t& _,
-                                 const spv_parsed_instruction_t& inst,
+spv_result_t GetActualResultType(ValidationState_t& _, const Instruction* inst,
                                  uint32_t* actual_result_type) {
-  const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
+  const SpvOp opcode = inst->opcode();
 
   if (IsSparse(opcode)) {
-    const Instruction* const type_inst = _.FindDef(inst.type_id);
+    const Instruction* const type_inst = _.FindDef(inst->type_id());
     assert(type_inst);
 
     if (!type_inst || type_inst->opcode() != SpvOpTypeStruct) {
@@ -642,7 +640,7 @@ spv_result_t GetActualResultType(ValidationState_t& _,
 
     *actual_result_type = type_inst->word(3);
   } else {
-    *actual_result_type = inst.type_id;
+    *actual_result_type = inst->type_id();
   }
 
   return SPV_SUCCESS;
@@ -658,10 +656,9 @@ const char* GetActualResultTypeStr(SpvOp opcode) {
 }  // namespace
 
 // Validates correctness of image instructions.
-spv_result_t ImagePass(ValidationState_t& _,
-                       const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
+spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
 
   if (IsImplicitLod(opcode)) {
     _.current_function().RegisterExecutionModelLimitation(
@@ -674,7 +671,7 @@ spv_result_t ImagePass(ValidationState_t& _,
       assert(result_type == 0);
 
       ImageTypeInfo info;
-      if (!GetImageTypeInfo(_, inst->words[1], &info)) {
+      if (!GetImageTypeInfo(_, inst->word(1), &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "OpTypeImage: corrupt definition";
       }
@@ -746,7 +743,7 @@ spv_result_t ImagePass(ValidationState_t& _,
     }
 
     case SpvOpTypeSampledImage: {
-      const uint32_t image_type = inst->words[2];
+      const uint32_t image_type = inst->word(2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << spvOpcodeString(opcode)
@@ -817,7 +814,7 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageSparseSampleExplicitLod: {
       uint32_t actual_result_type = 0;
       if (spv_result_t error =
-              GetActualResultType(_, *inst, &actual_result_type)) {
+              GetActualResultType(_, inst, &actual_result_type)) {
         return error;
       }
 
@@ -848,7 +845,7 @@ spv_result_t ImagePass(ValidationState_t& _,
                << "Corrupt image type definition";
       }
 
-      if (spv_result_t result = ValidateImageCommon(_, *inst, info))
+      if (spv_result_t result = ValidateImageCommon(_, inst, info))
         return result;
 
       if (_.GetIdOpcode(info.sampled_type) != SpvOpTypeVoid) {
@@ -889,14 +886,14 @@ spv_result_t ImagePass(ValidationState_t& _,
                << spvOpcodeString(opcode);
       }
 
-      if (inst->num_words <= 5) {
+      if (inst->words().size() <= 5) {
         assert(IsImplicitLod(opcode));
         break;
       }
 
-      const uint32_t mask = inst->words[5];
+      const uint32_t mask = inst->word(5);
       if (spv_result_t result =
-              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 6))
+              ValidateImageOperands(_, inst, info, mask, /* word_index = */ 6))
         return result;
 
       break;
@@ -910,7 +907,7 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageSparseSampleDrefExplicitLod: {
       uint32_t actual_result_type = 0;
       if (spv_result_t error =
-              GetActualResultType(_, *inst, &actual_result_type)) {
+              GetActualResultType(_, inst, &actual_result_type)) {
         return error;
       }
 
@@ -935,7 +932,7 @@ spv_result_t ImagePass(ValidationState_t& _,
                << "Corrupt image type definition";
       }
 
-      if (spv_result_t result = ValidateImageCommon(_, *inst, info))
+      if (spv_result_t result = ValidateImageCommon(_, inst, info))
         return result;
 
       if (actual_result_type != info.sampled_type) {
@@ -968,14 +965,14 @@ spv_result_t ImagePass(ValidationState_t& _,
                << ": Expected Dref to be of 32-bit float type";
       }
 
-      if (inst->num_words <= 6) {
+      if (inst->words().size() <= 6) {
         assert(IsImplicitLod(opcode));
         break;
       }
 
-      const uint32_t mask = inst->words[6];
+      const uint32_t mask = inst->word(6);
       if (spv_result_t result =
-              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 7))
+              ValidateImageOperands(_, inst, info, mask, /* word_index = */ 7))
         return result;
 
       break;
@@ -985,7 +982,7 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageSparseFetch: {
       uint32_t actual_result_type = 0;
       if (spv_result_t error =
-              GetActualResultType(_, *inst, &actual_result_type)) {
+              GetActualResultType(_, inst, &actual_result_type)) {
         return error;
       }
 
@@ -1054,11 +1051,11 @@ spv_result_t ImagePass(ValidationState_t& _,
                << spvOpcodeString(opcode);
       }
 
-      if (inst->num_words <= 5) break;
+      if (inst->words().size() <= 5) break;
 
-      const uint32_t mask = inst->words[5];
+      const uint32_t mask = inst->word(5);
       if (spv_result_t result =
-              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 6))
+              ValidateImageOperands(_, inst, info, mask, /* word_index = */ 6))
         return result;
 
       break;
@@ -1070,7 +1067,7 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageSparseDrefGather: {
       uint32_t actual_result_type = 0;
       if (spv_result_t error =
-              GetActualResultType(_, *inst, &actual_result_type)) {
+              GetActualResultType(_, inst, &actual_result_type)) {
         return error;
       }
 
@@ -1156,11 +1153,11 @@ spv_result_t ImagePass(ValidationState_t& _,
         }
       }
 
-      if (inst->num_words <= 6) break;
+      if (inst->words().size() <= 6) break;
 
-      const uint32_t mask = inst->words[6];
+      const uint32_t mask = inst->word(6);
       if (spv_result_t result =
-              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 7))
+              ValidateImageOperands(_, inst, info, mask, /* word_index = */ 7))
         return result;
 
       break;
@@ -1170,7 +1167,7 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageSparseRead: {
       uint32_t actual_result_type = 0;
       if (spv_result_t error =
-              GetActualResultType(_, *inst, &actual_result_type)) {
+              GetActualResultType(_, inst, &actual_result_type)) {
         return error;
       }
 
@@ -1228,7 +1225,7 @@ spv_result_t ImagePass(ValidationState_t& _,
         }
       }
 
-      if (spv_result_t result = ValidateImageCommon(_, *inst, info))
+      if (spv_result_t result = ValidateImageCommon(_, inst, info))
         return result;
 
       const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
@@ -1255,11 +1252,11 @@ spv_result_t ImagePass(ValidationState_t& _,
                << "read storage image: " << spvOpcodeString(opcode);
       }
 
-      if (inst->num_words <= 5) break;
+      if (inst->words().size() <= 5) break;
 
-      const uint32_t mask = inst->words[5];
+      const uint32_t mask = inst->word(5);
       if (spv_result_t result =
-              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 6))
+              ValidateImageOperands(_, inst, info, mask, /* word_index = */ 6))
         return result;
 
       break;
@@ -1285,7 +1282,7 @@ spv_result_t ImagePass(ValidationState_t& _,
                << spvOpcodeString(opcode);
       }
 
-      if (spv_result_t result = ValidateImageCommon(_, *inst, info))
+      if (spv_result_t result = ValidateImageCommon(_, inst, info))
         return result;
 
       const uint32_t coord_type = _.GetOperandTypeId(inst, 1);
@@ -1341,11 +1338,11 @@ spv_result_t ImagePass(ValidationState_t& _,
                << "to storage image: " << spvOpcodeString(opcode);
       }
 
-      if (inst->num_words <= 4) break;
+      if (inst->words().size() <= 4) break;
 
-      const uint32_t mask = inst->words[4];
+      const uint32_t mask = inst->word(4);
       if (spv_result_t result =
-              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 5))
+              ValidateImageOperands(_, inst, info, mask, /* word_index = */ 5))
         return result;
 
       break;

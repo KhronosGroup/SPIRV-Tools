@@ -66,6 +66,10 @@ class Instruction {
   /// The words used to define the Instruction
   const std::vector<uint32_t>& words() const { return words_; }
 
+  const spv_parsed_operand_t& operand(size_t idx) const {
+    return operands_[idx];
+  }
+
   /// The operands of the Instruction
   const std::vector<spv_parsed_operand_t>& operands() const {
     return operands_;
@@ -73,6 +77,11 @@ class Instruction {
 
   /// Provides direct access to the stored C instruction object.
   const spv_parsed_instruction_t& c_inst() const { return inst_; }
+
+  /// Provides direct access to instructions spv_ext_inst_type_t object.
+  const spv_ext_inst_type_t& ext_inst_type() const {
+    return inst_.ext_inst_type;
+  }
 
   // Casts the words belonging to the operand under |index| to |T| and returns.
   template <typename T>

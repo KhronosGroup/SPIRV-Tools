@@ -24,10 +24,9 @@
 namespace libspirv {
 
 // Validates correctness of conversion instructions.
-spv_result_t ConversionPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
+spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
 
   switch (opcode) {
     case SpvOpConvertFToU: {
@@ -320,7 +319,7 @@ spv_result_t ConversionPass(ValidationState_t& _,
                << "Expected Result Type to be a pointer: "
                << spvOpcodeString(opcode);
 
-      const uint32_t target_storage_class = inst->words[4];
+      const uint32_t target_storage_class = inst->word(4);
       if (result_storage_class != target_storage_class)
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected Result Type to be of target storage class: "

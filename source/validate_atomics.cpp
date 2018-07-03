@@ -26,10 +26,9 @@
 namespace libspirv {
 
 // Validates Memory Scope operand.
-spv_result_t ValidateMemoryScope(ValidationState_t& _,
-                                 const spv_parsed_instruction_t* inst,
+spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
                                  uint32_t id) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  const SpvOp opcode = inst->opcode();
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
   std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
@@ -63,13 +62,12 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _,
 
 // Validates a Memory Semantics operand.
 spv_result_t ValidateMemorySemantics(ValidationState_t& _,
-                                     const spv_parsed_instruction_t* inst,
+                                     const Instruction* inst,
                                      uint32_t operand_index) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  const SpvOp opcode = inst->opcode();
   bool is_int32 = false, is_const_int32 = false;
   uint32_t flags = 0;
-  const uint32_t memory_semantics_id =
-      inst->words[inst->operands[operand_index].offset];
+  auto memory_semantics_id = inst->GetOperandAs<const uint32_t>(operand_index);
   std::tie(is_int32, is_const_int32, flags) =
       _.EvalInt32IfConst(memory_semantics_id);
 
@@ -153,10 +151,9 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
 }
 
 // Validates correctness of atomic instructions.
-spv_result_t AtomicsPass(ValidationState_t& _,
-                         const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
+spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
 
   switch (opcode) {
     case SpvOpAtomicLoad:
@@ -261,8 +258,7 @@ spv_result_t AtomicsPass(ValidationState_t& _,
         }
       }
 
-      const uint32_t memory_scope =
-          inst->words[inst->operands[operand_index++].offset];
+      auto memory_scope = inst->GetOperandAs<const uint32_t>(operand_index++);
       if (auto error = ValidateMemoryScope(_, inst, memory_scope)) {
         return error;
       }

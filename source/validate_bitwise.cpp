@@ -23,32 +23,10 @@
 
 namespace libspirv {
 
-namespace {
-
-// Returns operand word for given instruction and operand index.
-// The operand is expected to only have one word.
-inline uint32_t GetOperandWord(const spv_parsed_instruction_t* inst,
-                               size_t operand_index) {
-  assert(operand_index < inst->num_operands);
-  const spv_parsed_operand_t& operand = inst->operands[operand_index];
-  assert(operand.num_words == 1);
-  return inst->words[operand.offset];
-}
-
-// Returns the type id of instruction operand at |operand_index|.
-// The operand is expected to be an id.
-inline uint32_t GetOperandTypeId(ValidationState_t& _,
-                                 const spv_parsed_instruction_t* inst,
-                                 size_t operand_index) {
-  return _.GetTypeId(GetOperandWord(inst, operand_index));
-}
-}  // namespace
-
 // Validates correctness of bitwise instructions.
-spv_result_t BitwisePass(ValidationState_t& _,
-                         const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
+spv_result_t BitwisePass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
 
   switch (opcode) {
     case SpvOpShiftRightLogical:
@@ -60,8 +38,8 @@ spv_result_t BitwisePass(ValidationState_t& _,
                << spvOpcodeString(opcode);
 
       const uint32_t result_dimension = _.GetDimension(result_type);
-      const uint32_t base_type = GetOperandTypeId(_, inst, 2);
-      const uint32_t shift_type = GetOperandTypeId(_, inst, 3);
+      const uint32_t base_type = _.GetOperandTypeId(inst, 2);
+      const uint32_t shift_type = _.GetOperandTypeId(inst, 3);
 
       if (!base_type ||
           (!_.IsIntScalarType(base_type) && !_.IsIntVectorType(base_type)))
@@ -104,9 +82,9 @@ spv_result_t BitwisePass(ValidationState_t& _,
       const uint32_t result_dimension = _.GetDimension(result_type);
       const uint32_t result_bit_width = _.GetBitWidth(result_type);
 
-      for (size_t operand_index = 2; operand_index < inst->num_operands;
+      for (size_t operand_index = 2; operand_index < inst->operands().size();
            ++operand_index) {
-        const uint32_t type_id = GetOperandTypeId(_, inst, operand_index);
+        const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
         if (!type_id ||
             (!_.IsIntScalarType(type_id) && !_.IsIntVectorType(type_id)))
           return _.diag(SPV_ERROR_INVALID_DATA)
@@ -135,10 +113,10 @@ spv_result_t BitwisePass(ValidationState_t& _,
                << "Expected int scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t base_type = GetOperandTypeId(_, inst, 2);
-      const uint32_t insert_type = GetOperandTypeId(_, inst, 3);
-      const uint32_t offset_type = GetOperandTypeId(_, inst, 4);
-      const uint32_t count_type = GetOperandTypeId(_, inst, 5);
+      const uint32_t base_type = _.GetOperandTypeId(inst, 2);
+      const uint32_t insert_type = _.GetOperandTypeId(inst, 3);
+      const uint32_t offset_type = _.GetOperandTypeId(inst, 4);
+      const uint32_t count_type = _.GetOperandTypeId(inst, 5);
 
       if (base_type != result_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -169,9 +147,9 @@ spv_result_t BitwisePass(ValidationState_t& _,
                << "Expected int scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t base_type = GetOperandTypeId(_, inst, 2);
-      const uint32_t offset_type = GetOperandTypeId(_, inst, 3);
-      const uint32_t count_type = GetOperandTypeId(_, inst, 4);
+      const uint32_t base_type = _.GetOperandTypeId(inst, 2);
+      const uint32_t offset_type = _.GetOperandTypeId(inst, 3);
+      const uint32_t count_type = _.GetOperandTypeId(inst, 4);
 
       if (base_type != result_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -196,7 +174,7 @@ spv_result_t BitwisePass(ValidationState_t& _,
                << "Expected int scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t base_type = GetOperandTypeId(_, inst, 2);
+      const uint32_t base_type = _.GetOperandTypeId(inst, 2);
 
       if (base_type != result_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -211,7 +189,7 @@ spv_result_t BitwisePass(ValidationState_t& _,
                << "Expected int scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t base_type = GetOperandTypeId(_, inst, 2);
+      const uint32_t base_type = _.GetOperandTypeId(inst, 2);
       if (!base_type ||
           (!_.IsIntScalarType(base_type) && !_.IsIntVectorType(base_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)

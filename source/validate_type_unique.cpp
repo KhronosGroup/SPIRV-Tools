@@ -28,12 +28,11 @@ namespace libspirv {
 // (see section 2.8 Types and Variables)
 // Doesn't do anything if SPV_VAL_ignore_type_decl_unique was declared in the
 // module.
-spv_result_t TypeUniquePass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst) {
+spv_result_t TypeUniquePass(ValidationState_t& _, const Instruction* inst) {
   if (_.HasExtension(Extension::kSPV_VALIDATOR_ignore_type_decl_unique))
     return SPV_SUCCESS;
 
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  const SpvOp opcode = inst->opcode();
 
   if (spvOpcodeGeneratesType(opcode)) {
     if (opcode == SpvOpTypeArray || opcode == SpvOpTypeRuntimeArray ||
@@ -42,11 +41,11 @@ spv_result_t TypeUniquePass(ValidationState_t& _,
       return SPV_SUCCESS;
     }
 
-    if (!_.RegisterUniqueTypeDeclaration(*inst)) {
+    if (!_.RegisterUniqueTypeDeclaration(inst)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
              << "Duplicate non-aggregate type declarations are not allowed."
-             << " Opcode: " << spvOpcodeString(SpvOp(inst->opcode))
-             << " id: " << inst->result_id;
+             << " Opcode: " << spvOpcodeString(SpvOp(inst->opcode()))
+             << " id: " << inst->id();
     }
   }
 

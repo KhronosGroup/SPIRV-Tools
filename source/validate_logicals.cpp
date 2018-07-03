@@ -23,32 +23,10 @@
 
 namespace libspirv {
 
-namespace {
-
-// Returns operand word for given instruction and operand index.
-// The operand is expected to only have one word.
-inline uint32_t GetOperandWord(const spv_parsed_instruction_t* inst,
-                               size_t operand_index) {
-  assert(operand_index < inst->num_operands);
-  const spv_parsed_operand_t& operand = inst->operands[operand_index];
-  assert(operand.num_words == 1);
-  return inst->words[operand.offset];
-}
-
-// Returns the type id of instruction operand at |operand_index|.
-// The operand is expected to be an id.
-inline uint32_t GetOperandTypeId(ValidationState_t& _,
-                                 const spv_parsed_instruction_t* inst,
-                                 size_t operand_index) {
-  return _.GetTypeId(GetOperandWord(inst, operand_index));
-}
-}  // namespace
-
 // Validates correctness of logical instructions.
-spv_result_t LogicalsPass(ValidationState_t& _,
-                          const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
+spv_result_t LogicalsPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
 
   switch (opcode) {
     case SpvOpAny:
@@ -58,7 +36,7 @@ spv_result_t LogicalsPass(ValidationState_t& _,
                << "Expected bool scalar type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t vector_type = GetOperandTypeId(_, inst, 2);
+      const uint32_t vector_type = _.GetOperandTypeId(inst, 2);
       if (!vector_type || !_.IsBoolVectorType(vector_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected operand to be vector bool: "
@@ -77,7 +55,7 @@ spv_result_t LogicalsPass(ValidationState_t& _,
                << "Expected bool scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t operand_type = GetOperandTypeId(_, inst, 2);
+      const uint32_t operand_type = _.GetOperandTypeId(inst, 2);
       if (!operand_type || (!_.IsFloatScalarType(operand_type) &&
                             !_.IsFloatVectorType(operand_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -113,7 +91,7 @@ spv_result_t LogicalsPass(ValidationState_t& _,
                << "Expected bool scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t left_operand_type = GetOperandTypeId(_, inst, 2);
+      const uint32_t left_operand_type = _.GetOperandTypeId(inst, 2);
       if (!left_operand_type || (!_.IsFloatScalarType(left_operand_type) &&
                                  !_.IsFloatVectorType(left_operand_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -126,7 +104,7 @@ spv_result_t LogicalsPass(ValidationState_t& _,
                   "equal: "
                << spvOpcodeString(opcode);
 
-      if (left_operand_type != GetOperandTypeId(_, inst, 3))
+      if (left_operand_type != _.GetOperandTypeId(inst, 3))
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected left and right operands to have the same type: "
                << spvOpcodeString(opcode);
@@ -143,8 +121,8 @@ spv_result_t LogicalsPass(ValidationState_t& _,
                << "Expected bool scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      if (result_type != GetOperandTypeId(_, inst, 2) ||
-          result_type != GetOperandTypeId(_, inst, 3))
+      if (result_type != _.GetOperandTypeId(inst, 2) ||
+          result_type != _.GetOperandTypeId(inst, 3))
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected both operands to be of Result Type: "
                << spvOpcodeString(opcode);
@@ -158,7 +136,7 @@ spv_result_t LogicalsPass(ValidationState_t& _,
                << "Expected bool scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      if (result_type != GetOperandTypeId(_, inst, 2))
+      if (result_type != _.GetOperandTypeId(inst, 2))
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected operand to be of Result Type: "
                << spvOpcodeString(opcode);
@@ -202,9 +180,9 @@ spv_result_t LogicalsPass(ValidationState_t& _,
         }
       }
 
-      const uint32_t condition_type = GetOperandTypeId(_, inst, 2);
-      const uint32_t left_type = GetOperandTypeId(_, inst, 3);
-      const uint32_t right_type = GetOperandTypeId(_, inst, 4);
+      const uint32_t condition_type = _.GetOperandTypeId(inst, 2);
+      const uint32_t left_type = _.GetOperandTypeId(inst, 3);
+      const uint32_t right_type = _.GetOperandTypeId(inst, 4);
 
       if (!condition_type || (!_.IsBoolScalarType(condition_type) &&
                               !_.IsBoolVectorType(condition_type)))
@@ -240,8 +218,8 @@ spv_result_t LogicalsPass(ValidationState_t& _,
                << "Expected bool scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t left_type = GetOperandTypeId(_, inst, 2);
-      const uint32_t right_type = GetOperandTypeId(_, inst, 3);
+      const uint32_t left_type = _.GetOperandTypeId(inst, 2);
+      const uint32_t right_type = _.GetOperandTypeId(inst, 3);
 
       if (!left_type ||
           (!_.IsIntScalarType(left_type) && !_.IsIntVectorType(left_type)))
