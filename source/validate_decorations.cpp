@@ -15,7 +15,10 @@
 #include "validate.h"
 
 #include <algorithm>
+#include <cassert>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 #include "diagnostic.h"
 #include "opcode.h"
@@ -27,10 +30,48 @@ using libspirv::Decoration;
 using libspirv::DiagnosticStream;
 using libspirv::Instruction;
 using libspirv::ValidationState_t;
+using std::make_pair;
 
 namespace {
 
-// Returns whether the given variable has a BuiltIn decoration.
+// Distinguish between row and column major matrix layouts.
+enum MatrixLayout { kRowMajor, kColumnMajor };
+
+// A functor for hashing a pair of integers.
+struct PairHash {
+  std::size_t operator()(const std::pair<uint32_t, uint32_t> pair) const {
+    const uint32_t a = pair.first;
+    const uint32_t b = pair.second;
+    const uint32_t rotated_b = (b >> 2) | ((b & 3) << 30);
+    return a ^ rotated_b;
+  }
+};
+
+// Struct member layout attributes that are inherited through arrays.
+struct LayoutConstraints {
+  explicit LayoutConstraints(
+      MatrixLayout the_majorness = MatrixLayout::kColumnMajor,
+      uint32_t stride = 0)
+      : majorness(the_majorness), matrix_stride(stride) {}
+  MatrixLayout majorness;
+  uint32_t matrix_stride;
+};
+
+// A type for mapping (struct id, member id) to layout constraints.
+using MemberConstraints = std::unordered_map<std::pair<uint32_t, uint32_t>,
+                                             LayoutConstraints, PairHash>;
+
+// Returns the array stride of the given array type.
+uint32_t GetArrayStride(uint32_t array_id, ValidationState_t& vstate) {
+  for (auto& decoration : vstate.id_decorations(array_id)) {
+    if (SpvDecorationArrayStride == decoration.dec_type()) {
+      return decoration.params()[0];
+    }
+  }
+  return 0;
+}
+
+// Returns true if the given variable has a BuiltIn decoration.
 bool isBuiltInVar(uint32_t var_id, ValidationState_t& vstate) {
   const auto& decorations = vstate.id_decorations(var_id);
   return std::any_of(
@@ -38,7 +79,7 @@ bool isBuiltInVar(uint32_t var_id, ValidationState_t& vstate) {
       [](const Decoration& d) { return SpvDecorationBuiltIn == d.dec_type(); });
 }
 
-// Returns whether the given structure type has any members with BuiltIn
+// Returns true if the given structure type has any members with BuiltIn
 // decoration.
 bool isBuiltInStruct(uint32_t struct_id, ValidationState_t& vstate) {
   const auto& decorations = vstate.id_decorations(struct_id);
@@ -113,6 +154,8 @@ uint32_t align(uint32_t x, uint32_t alignment) {
 // ensure that structs and arrays are aligned at least to a multiple of 16
 // bytes.
 uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
+                          const LayoutConstraints& inherited,
+                          MemberConstraints& constraints,
                           ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(member_id);
   const auto& words = inst->words();
@@ -125,25 +168,48 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
     case SpvOpTypeVector: {
       const auto componentId = words[2];
       const auto numComponents = words[3];
-      const auto componentAlignment =
-          getBaseAlignment(componentId, roundUp, vstate);
+      const auto componentAlignment = getBaseAlignment(
+          componentId, roundUp, inherited, constraints, vstate);
       baseAlignment =
           componentAlignment * (numComponents == 3 ? 4 : numComponents);
       break;
     }
-    case SpvOpTypeMatrix:
+    case SpvOpTypeMatrix: {
+      const auto column_type = words[2];
+      if (inherited.majorness == kColumnMajor) {
+        baseAlignment = getBaseAlignment(column_type, roundUp, inherited,
+                                         constraints, vstate);
+      } else {
+        // A row-major matrix of C columns has a base alignment equal to the
+        // base alignment of a vector of C matrix components.
+        const auto num_columns = words[3];
+        const auto component_inst = vstate.FindDef(column_type);
+        const auto component_id = component_inst->words()[2];
+        const auto componentAlignment = getBaseAlignment(
+            component_id, roundUp, inherited, constraints, vstate);
+        baseAlignment =
+            componentAlignment * (num_columns == 3 ? 4 : num_columns);
+      }
+    } break;
     case SpvOpTypeArray:
     case SpvOpTypeRuntimeArray:
-      baseAlignment = getBaseAlignment(words[2], roundUp, vstate);
+      baseAlignment =
+          getBaseAlignment(words[2], roundUp, inherited, constraints, vstate);
       if (roundUp) baseAlignment = align(baseAlignment, 16u);
       break;
-    case SpvOpTypeStruct:
-      for (auto id : getStructMembers(member_id, vstate)) {
-        baseAlignment =
-            std::max(baseAlignment, getBaseAlignment(id, roundUp, vstate));
+    case SpvOpTypeStruct: {
+      const auto members = getStructMembers(member_id, vstate);
+      for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
+           memberIdx < numMembers; ++memberIdx) {
+        const auto id = members[memberIdx];
+        const auto& constraint = constraints[make_pair(member_id, memberIdx)];
+        baseAlignment = std::max(
+            baseAlignment,
+            getBaseAlignment(id, roundUp, constraint, constraints, vstate));
       }
       if (roundUp) baseAlignment = align(baseAlignment, 16u);
       break;
+    }
     default:
       assert(0);
       break;
@@ -154,35 +220,60 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
 
 // Returns size of a struct member. Doesn't include padding at the end of struct
 // or array.  Assumes that in the struct case, all members have offsets.
-uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
+uint32_t getSize(uint32_t member_id, bool roundUp,
+                 const LayoutConstraints& inherited,
+                 MemberConstraints& constraints, ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(member_id);
   const auto& words = inst->words();
-  const auto baseAlignment = getBaseAlignment(member_id, roundUp, vstate);
   switch (inst->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
-      return baseAlignment;
+      return getBaseAlignment(member_id, roundUp, inherited, constraints,
+                              vstate);
     case SpvOpTypeVector: {
       const auto componentId = words[2];
       const auto numComponents = words[3];
-      const auto componentSize = getSize(componentId, roundUp, vstate);
-      return componentSize * numComponents;
+      const auto componentSize =
+          getSize(componentId, roundUp, inherited, constraints, vstate);
+      const auto size = componentSize * numComponents;
+      return size;
     }
     case SpvOpTypeArray: {
       const auto sizeInst = vstate.FindDef(words[3]);
       if (spvOpcodeIsSpecConstant(sizeInst->opcode())) return 0;
       assert(SpvOpConstant == sizeInst->opcode());
-      return (sizeInst->words()[3] - 1) * baseAlignment +
-             getSize(vstate.FindDef(member_id)->words()[2], roundUp, vstate);
+      const uint32_t num_elem = sizeInst->words()[3];
+      const uint32_t elem_type = words[2];
+      const uint32_t elem_size =
+          getSize(elem_type, roundUp, inherited, constraints, vstate);
+      // Account for gaps due to alignments in the first N-1 elements,
+      // then add the size of the last element.
+      const auto size =
+          (num_elem - 1) * GetArrayStride(member_id, vstate) + elem_size;
+      return size;
     }
     case SpvOpTypeRuntimeArray:
       return 0;
-    case SpvOpTypeMatrix:
-      return words[3] * baseAlignment;
+    case SpvOpTypeMatrix: {
+      const auto num_columns = words[3];
+      if (inherited.majorness == kColumnMajor) {
+        return num_columns * inherited.matrix_stride;
+      } else {
+        // Row major case.
+        const auto column_type = words[2];
+        const auto component_inst = vstate.FindDef(column_type);
+        const auto num_rows = component_inst->words()[3];
+        const auto scalar_elem_type = component_inst->words()[2];
+        const uint32_t scalar_elem_size =
+            getSize(scalar_elem_type, roundUp, inherited, constraints, vstate);
+        return (num_rows - 1) * inherited.matrix_stride +
+               num_columns * scalar_elem_size;
+      }
+    }
     case SpvOpTypeStruct: {
       const auto& members = getStructMembers(member_id, vstate);
       if (members.empty()) return 0;
-      const auto lastIdx = members.size() - 1;
+      const auto lastIdx = uint32_t(members.size() - 1);
       const auto& lastMember = members.back();
       uint32_t offset = 0xffffffff;
       // Find the offset of the last element and add the size.
@@ -195,7 +286,9 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
       // This check depends on the fact that all members have offsets.  This
       // has been checked earlier in the flow.
       assert(offset != 0xffffffff);
-      return offset + getSize(lastMember, roundUp, vstate);
+      const auto& constraint = constraints[make_pair(lastMember, lastIdx)];
+      return offset +
+             getSize(lastMember, roundUp, constraint, constraints, vstate);
     }
     default:
       assert(0);
@@ -211,8 +304,10 @@ uint32_t getSize(uint32_t member_id, bool roundUp, ValidationState_t& vstate) {
 // - It is a vector with total size greater than 16 bytes and has its Offset
 // decorations placing its first byte at a non-integer multiple of 16.
 bool hasImproperStraddle(uint32_t id, uint32_t offset,
+                         const LayoutConstraints& inherited,
+                         MemberConstraints& constraints,
                          ValidationState_t& vstate) {
-  const auto size = getSize(id, false, vstate);
+  const auto size = getSize(id, false, inherited, constraints, vstate);
   const auto F = offset;
   const auto L = offset + size - 1;
   if (size <= 16) {
@@ -232,9 +327,11 @@ bool IsAlignedTo(uint32_t offset, uint32_t alignment) {
 
 // Returns SPV_SUCCESS if the given struct satisfies standard layout rules for
 // Block or BufferBlocks in Vulkan.  Otherwise emits a diagnostic and returns
-// something other than SPV_SUCCESS.
+// something other than SPV_SUCCESS.  Matrices inherit the specified column
+// or row major-ness.
 spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                          const char* decoration_str, bool blockRules,
+                         MemberConstraints& constraints,
                          ValidationState_t& vstate) {
   auto fail = [&vstate, struct_id, storage_class_str, decoration_str,
                blockRules](uint32_t member_idx) -> libspirv::DiagnosticStream {
@@ -254,17 +351,25 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
   for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
        memberIdx < numMembers; memberIdx++) {
     auto id = members[memberIdx];
-    const auto alignment = getBaseAlignment(id, blockRules, vstate);
-    const auto inst = vstate.FindDef(id);
-    const auto opcode = inst->opcode();
     uint32_t offset = 0xffffffff;
     for (auto& decoration : vstate.id_decorations(struct_id)) {
-      if (SpvDecorationOffset == decoration.dec_type() &&
-          decoration.struct_member_index() == (int)memberIdx) {
-        offset = decoration.params()[0];
+      if (decoration.struct_member_index() == (int)memberIdx) {
+        switch (decoration.dec_type()) {
+          case SpvDecorationOffset:
+            offset = decoration.params()[0];
+            break;
+          default:
+            break;
+        }
       }
     }
-    const auto size = getSize(id, blockRules, vstate);
+    const LayoutConstraints& constraint =
+        constraints[make_pair(struct_id, uint32_t(memberIdx))];
+    const auto alignment =
+        getBaseAlignment(id, blockRules, constraint, constraints, vstate);
+    const auto inst = vstate.FindDef(id);
+    const auto opcode = inst->opcode();
+    const auto size = getSize(id, blockRules, constraint, constraints, vstate);
     // Check offset.
     if (offset == 0xffffffff)
       return fail(memberIdx) << "is missing an Offset decoration";
@@ -282,15 +387,16 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                              << " overlaps previous member ending at offset "
                              << nextValidOffset - 1;
     // Check improper straddle of vectors.
-    if (SpvOpTypeVector == opcode && hasImproperStraddle(id, offset, vstate))
+    if (SpvOpTypeVector == opcode &&
+        hasImproperStraddle(id, offset, constraint, constraints, vstate))
       return fail(memberIdx)
              << "is an improperly straddling vector at offset " << offset;
     // Check struct members recursively.
     spv_result_t recursive_status = SPV_SUCCESS;
     if (SpvOpTypeStruct == opcode &&
-        SPV_SUCCESS !=
-            (recursive_status = checkLayout(
-                 id, storage_class_str, decoration_str, blockRules, vstate)))
+        SPV_SUCCESS != (recursive_status =
+                            checkLayout(id, storage_class_str, decoration_str,
+                                        blockRules, constraints, vstate)))
       return recursive_status;
     // Check matrix stride.
     if (SpvOpTypeMatrix == opcode) {
@@ -307,9 +413,9 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       const auto typeId = inst->words()[2];
       const auto arrayInst = vstate.FindDef(typeId);
       if (SpvOpTypeStruct == arrayInst->opcode() &&
-          SPV_SUCCESS != (recursive_status =
-                              checkLayout(typeId, storage_class_str,
-                                          decoration_str, blockRules, vstate)))
+          SPV_SUCCESS != (recursive_status = checkLayout(
+                              typeId, storage_class_str, decoration_str,
+                              blockRules, constraints, vstate)))
         return recursive_status;
       // Check array stride.
       for (auto& decoration : vstate.id_decorations(id)) {
@@ -541,6 +647,87 @@ spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
+// Load |constraints| with all the member constraints for structs contained
+// within the given array type.
+void ComputeMemberConstraintsForArray(MemberConstraints* constraints,
+                                      uint32_t array_id,
+                                      const LayoutConstraints& inherited,
+                                      ValidationState_t& vstate);
+
+// Load |constraints| with all the member constraints for the given struct,
+// and all its contained structs.
+void ComputeMemberConstraintsForStruct(MemberConstraints* constraints,
+                                       uint32_t struct_id,
+                                       const LayoutConstraints& inherited,
+                                       ValidationState_t& vstate) {
+  assert(constraints);
+  const auto& members = getStructMembers(struct_id, vstate);
+  for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
+       memberIdx < numMembers; memberIdx++) {
+    LayoutConstraints& constraint =
+        (*constraints)[make_pair(struct_id, memberIdx)];
+    constraint = inherited;
+    for (auto& decoration : vstate.id_decorations(struct_id)) {
+      if (decoration.struct_member_index() == (int)memberIdx) {
+        switch (decoration.dec_type()) {
+          case SpvDecorationRowMajor:
+            constraint.majorness = kRowMajor;
+            break;
+          case SpvDecorationColMajor:
+            constraint.majorness = kColumnMajor;
+            break;
+          case SpvDecorationMatrixStride:
+            constraint.matrix_stride = decoration.params()[0];
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    // Now recurse
+    auto member_type_id = members[memberIdx];
+    const auto member_type_inst = vstate.FindDef(member_type_id);
+    const auto opcode = member_type_inst->opcode();
+    switch (opcode) {
+      case SpvOpTypeArray:
+      case SpvOpTypeRuntimeArray:
+        ComputeMemberConstraintsForArray(constraints, member_type_id, inherited,
+                                         vstate);
+        break;
+      case SpvOpTypeStruct:
+        ComputeMemberConstraintsForStruct(constraints, member_type_id,
+                                          inherited, vstate);
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+void ComputeMemberConstraintsForArray(MemberConstraints* constraints,
+                                      uint32_t array_id,
+                                      const LayoutConstraints& inherited,
+                                      ValidationState_t& vstate) {
+  assert(constraints);
+  auto elem_type_id = vstate.FindDef(array_id)->words()[2];
+  const auto elem_type_inst = vstate.FindDef(elem_type_id);
+  const auto opcode = elem_type_inst->opcode();
+  switch (opcode) {
+    case SpvOpTypeArray:
+    case SpvOpTypeRuntimeArray:
+      ComputeMemberConstraintsForArray(constraints, elem_type_id, inherited,
+                                       vstate);
+      break;
+    case SpvOpTypeStruct:
+      ComputeMemberConstraintsForStruct(constraints, elem_type_id, inherited,
+                                        vstate);
+      break;
+    default:
+      break;
+  }
+}
+
 spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
   for (const auto& def : vstate.all_definitions()) {
     const auto inst = def.second;
@@ -557,7 +744,9 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         assert(SpvOpTypePointer == ptrInst->opcode());
         const auto id = ptrInst->words()[3];
         if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) continue;
-
+        MemberConstraints constraints;
+        ComputeMemberConstraintsForStruct(&constraints, id, LayoutConstraints(),
+                                          vstate);
         // Prepare for messages
         const char* sc_str =
             uniform ? "Uniform"
@@ -598,14 +787,14 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                      << " must be explicitly laid out with MatrixStride "
                         "decorations.";
             } else if (blockRules &&
-                       (SPV_SUCCESS !=
-                        (recursive_status = checkLayout(id, sc_str, deco_str,
-                                                        true, vstate)))) {
+                       (SPV_SUCCESS != (recursive_status = checkLayout(
+                                            id, sc_str, deco_str, true,
+                                            constraints, vstate)))) {
               return recursive_status;
             } else if (bufferRules &&
-                       (SPV_SUCCESS !=
-                        (recursive_status = checkLayout(id, sc_str, deco_str,
-                                                        false, vstate)))) {
+                       (SPV_SUCCESS != (recursive_status = checkLayout(
+                                            id, sc_str, deco_str, false,
+                                            constraints, vstate)))) {
               return recursive_status;
             }
           }
