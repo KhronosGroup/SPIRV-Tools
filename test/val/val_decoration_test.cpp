@@ -2360,4 +2360,307 @@ TEST_F(ValidateDecorations, BufferBlockEmptyStruct) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, RowMajorMatrixTightPackingGood) {
+  // Row major matrix rule:
+  //     A row-major matrix of C columns has a base alignment equal to
+  //     the base alignment of a vector of C matrix components.
+  // Note: The "matrix component" is the scalar element type.
+
+  // The matrix has 3 columns and 2 rows (C=3, R=2).
+  // So the base alignment of b is the same as a vector of 3 floats, which is 16
+  // bytes. The matrix consists of two of these, and therefore occupies 2 x 16
+  // bytes, or 32 bytes.
+  //
+  // So the offsets can be:
+  // a -> 0
+  // b -> 16
+  // c -> 48
+  // d -> 60 ; d fits at bytes 12-15 after offset of c. Tight (vec3;float)
+  // packing
+
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+               OpSource GLSL 450
+               OpMemberDecorate %_struct_2 0 Offset 0
+               OpMemberDecorate %_struct_2 1 RowMajor
+               OpMemberDecorate %_struct_2 1 Offset 16
+               OpMemberDecorate %_struct_2 1 MatrixStride 16
+               OpMemberDecorate %_struct_2 2 Offset 48
+               OpMemberDecorate %_struct_2 3 Offset 60
+               OpDecorate %_struct_2 Block
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %v2float = OpTypeVector %float 2
+%mat3v2float = OpTypeMatrix %v2float 3
+    %v3float = OpTypeVector %float 3
+  %_struct_2 = OpTypeStruct %v4float %mat3v2float %v3float %float
+%_ptr_Uniform__struct_2 = OpTypePointer Uniform %_struct_2
+          %3 = OpVariable %_ptr_Uniform__struct_2 Uniform
+          %1 = OpFunction %void None %5
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, ArrayArrayRowMajorMatrixTightPackingGood) {
+  // Like the previous case, but we have an array of arrays of matrices.
+  // The RowMajor decoration goes on the struct member (surprisingly).
+
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+               OpSource GLSL 450
+               OpMemberDecorate %_struct_2 0 Offset 0
+               OpMemberDecorate %_struct_2 1 RowMajor
+               OpMemberDecorate %_struct_2 1 Offset 16
+               OpMemberDecorate %_struct_2 1 MatrixStride 16
+               OpMemberDecorate %_struct_2 2 Offset 80
+               OpMemberDecorate %_struct_2 3 Offset 92
+               OpDecorate %arr_mat ArrayStride 32
+               OpDecorate %arr_arr_mat ArrayStride 32
+               OpDecorate %_struct_2 Block
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %v2float = OpTypeVector %float 2
+%mat3v2float = OpTypeMatrix %v2float 3
+%uint        = OpTypeInt 32 0
+%uint_1      = OpConstant %uint 1
+%uint_2      = OpConstant %uint 2
+    %arr_mat = OpTypeArray %mat3v2float %uint_1
+%arr_arr_mat = OpTypeArray %arr_mat %uint_2
+    %v3float = OpTypeVector %float 3
+  %_struct_2 = OpTypeStruct %v4float %arr_arr_mat %v3float %float
+%_ptr_Uniform__struct_2 = OpTypePointer Uniform %_struct_2
+          %3 = OpVariable %_ptr_Uniform__struct_2 Uniform
+          %1 = OpFunction %void None %5
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, ArrayArrayRowMajorMatrixNextMemberOverlapsBad) {
+  // Like the previous case, but the offset of member 2 overlaps the matrix.
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+               OpSource GLSL 450
+               OpMemberDecorate %_struct_2 0 Offset 0
+               OpMemberDecorate %_struct_2 1 RowMajor
+               OpMemberDecorate %_struct_2 1 Offset 16
+               OpMemberDecorate %_struct_2 1 MatrixStride 16
+               OpMemberDecorate %_struct_2 2 Offset 64
+               OpMemberDecorate %_struct_2 3 Offset 92
+               OpDecorate %arr_mat ArrayStride 32
+               OpDecorate %arr_arr_mat ArrayStride 32
+               OpDecorate %_struct_2 Block
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %v2float = OpTypeVector %float 2
+%mat3v2float = OpTypeMatrix %v2float 3
+%uint        = OpTypeInt 32 0
+%uint_1      = OpConstant %uint 1
+%uint_2      = OpConstant %uint 2
+    %arr_mat = OpTypeArray %mat3v2float %uint_1
+%arr_arr_mat = OpTypeArray %arr_mat %uint_2
+    %v3float = OpTypeVector %float 3
+  %_struct_2 = OpTypeStruct %v4float %arr_arr_mat %v3float %float
+%_ptr_Uniform__struct_2 = OpTypePointer Uniform %_struct_2
+          %3 = OpVariable %_ptr_Uniform__struct_2 Uniform
+          %1 = OpFunction %void None %5
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 2 decorated as Block for variable in Uniform storage "
+          "class must follow standard uniform buffer layout rules: member 2 at "
+          "offset 64 overlaps previous member ending at offset 79"));
+}
+
+TEST_F(ValidateDecorations, StorageBufferArraySizeCalculationPackGood) {
+  // Original GLSL
+
+  // #version 450
+  // layout (set=0,binding=0) buffer S {
+  //   uvec3 arr[2][2]; // first 3 elements are 16 bytes, last is 12
+  //   uint i;  // Can have offset 60 = 3x16 + 12
+  // } B;
+  // void main() {}
+
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+               OpDecorate %_arr_v3uint_uint_2 ArrayStride 16
+               OpDecorate %_arr__arr_v3uint_uint_2_uint_2 ArrayStride 32
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpMemberDecorate %_struct_4 1 Offset 60
+               OpDecorate %_struct_4 BufferBlock
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 0
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+     %uint_2 = OpConstant %uint 2
+%_arr_v3uint_uint_2 = OpTypeArray %v3uint %uint_2
+%_arr__arr_v3uint_uint_2_uint_2 = OpTypeArray %_arr_v3uint_uint_2 %uint_2
+  %_struct_4 = OpTypeStruct %_arr__arr_v3uint_uint_2_uint_2 %uint
+%_ptr_Uniform__struct_4 = OpTypePointer Uniform %_struct_4
+          %5 = OpVariable %_ptr_Uniform__struct_4 Uniform
+          %1 = OpFunction %void None %7
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, StorageBufferArraySizeCalculationPackBad) {
+  // Like previous but, the offset of the second member is too small.
+
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+               OpDecorate %_arr_v3uint_uint_2 ArrayStride 16
+               OpDecorate %_arr__arr_v3uint_uint_2_uint_2 ArrayStride 32
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpMemberDecorate %_struct_4 1 Offset 56
+               OpDecorate %_struct_4 BufferBlock
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 0
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+     %uint_2 = OpConstant %uint 2
+%_arr_v3uint_uint_2 = OpTypeArray %v3uint %uint_2
+%_arr__arr_v3uint_uint_2_uint_2 = OpTypeArray %_arr_v3uint_uint_2 %uint_2
+  %_struct_4 = OpTypeStruct %_arr__arr_v3uint_uint_2_uint_2 %uint
+%_ptr_Uniform__struct_4 = OpTypePointer Uniform %_struct_4
+          %5 = OpVariable %_ptr_Uniform__struct_4 Uniform
+          %1 = OpFunction %void None %7
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure id 4 decorated as BufferBlock for variable "
+                        "in Uniform storage class must follow standard storage "
+                        "buffer layout rules: member 1 at offset 56 overlaps "
+                        "previous member ending at offset 59"));
+}
+
+TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackGood) {
+  // Like the corresponding buffer block case, but the array padding must
+  // count for the last element as well, and so the offset of the second
+  // member must be at least 64.
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+               OpDecorate %_arr_v3uint_uint_2 ArrayStride 16
+               OpDecorate %_arr__arr_v3uint_uint_2_uint_2 ArrayStride 32
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpMemberDecorate %_struct_4 1 Offset 64
+               OpDecorate %_struct_4 Block
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 0
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+     %uint_2 = OpConstant %uint 2
+%_arr_v3uint_uint_2 = OpTypeArray %v3uint %uint_2
+%_arr__arr_v3uint_uint_2_uint_2 = OpTypeArray %_arr_v3uint_uint_2 %uint_2
+  %_struct_4 = OpTypeStruct %_arr__arr_v3uint_uint_2_uint_2 %uint
+%_ptr_Uniform__struct_4 = OpTypePointer Uniform %_struct_4
+          %5 = OpVariable %_ptr_Uniform__struct_4 Uniform
+          %1 = OpFunction %void None %7
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackBad) {
+  // Like previous but, the offset of the second member is too small.
+
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+               OpDecorate %_arr_v3uint_uint_2 ArrayStride 16
+               OpDecorate %_arr__arr_v3uint_uint_2_uint_2 ArrayStride 32
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpMemberDecorate %_struct_4 1 Offset 60
+               OpDecorate %_struct_4 Block
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 0
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+     %uint_2 = OpConstant %uint 2
+%_arr_v3uint_uint_2 = OpTypeArray %v3uint %uint_2
+%_arr__arr_v3uint_uint_2_uint_2 = OpTypeArray %_arr_v3uint_uint_2 %uint_2
+  %_struct_4 = OpTypeStruct %_arr__arr_v3uint_uint_2_uint_2 %uint
+%_ptr_Uniform__struct_4 = OpTypePointer Uniform %_struct_4
+          %5 = OpVariable %_ptr_Uniform__struct_4 Uniform
+          %1 = OpFunction %void None %7
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 4 decorated as Block for variable in Uniform storage "
+          "class must follow standard uniform buffer layout rules: member 1 at "
+          "offset 60 overlaps previous member ending at offset 63"));
+}
+
 }  // anonymous namespace
