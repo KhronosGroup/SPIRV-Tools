@@ -76,6 +76,54 @@ OpDecorate %var Coherent
 
   SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
 }
+
+TEST_F(UpgradeMemoryModelTest, WorkgroupVariable) {
+  const std::string text = R"(
+; CHECK: [[scope:%\w+]] = OpConstant {{%w\+}} 2
+; CHECK: OpLoad {{%w\+}} {{%w\+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%w\+}} {{%w\+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr_int_Workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_Workgroup Workgroup
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %int %var
+%st = OpStore %var %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, WorkgroupFunctionParameter) {
+  const std::string text = R"(
+; CHECK: [[scope:%\w+]] = OpConstant {{%w\+}} 2
+; CHECK: OpLoad {{%w\+}} {{%w\+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%w\+}} {{%w\+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr_int_Workgroup = OpTypePointer Workgroup %int
+%func_ty = OpTypeFunction %void %ptr_int_Workgroup
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_int_Workgroup
+%1 = OpLabel
+%ld = OpLoad %int %param
+%st = OpStore %param %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
 #endif
 
 }  // namespace
