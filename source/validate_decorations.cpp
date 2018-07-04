@@ -273,7 +273,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
              << "at offset " << offset << " is not aligned to " << alignment;
     // SPIR-V requires struct members to be specified in memory address order,
     // and they should not overlap.
-    if (size > 0 && (align(offset + size, alignment) <= prevOffset))
+    if (size > 0 && (offset + size <= prevOffset))
       return fail(memberIdx)
              << "at offset " << offset << " has a lower offset than member "
              << memberIdx - 1;
@@ -320,7 +320,12 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                  << " not satisfying alignment to " << alignment;
       }
     }
-    nextValidOffset = align(offset + size, alignment);
+    nextValidOffset = offset + size;
+    if (blockRules && (SpvOpTypeArray == opcode || SpvOpTypeStruct == opcode)) {
+      // Uniform block rules don't permit anything in the padding of a struct
+      // or array.
+      nextValidOffset = align(nextValidOffset, alignment);
+    }
     prevOffset = offset;
   }
   return SPV_SUCCESS;
