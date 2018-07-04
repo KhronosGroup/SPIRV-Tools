@@ -1091,6 +1091,56 @@ OpMemoryModel Logical GLSL450
 
   Match(text, context.get());
 }
+
+TEST(TypeManager, GetPointerToAmbiguousType1) {
+  const std::string text = R"(
+; CHECK: [[struct1:%\w+]] = OpTypeStruct
+; CHECK: [[struct2:%\w+]] = OpTypeStruct
+; CHECK: OpTypePointer Function [[struct2]]
+; CHECK: OpTypePointer Function [[struct1]]
+OpCapability Shader
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%uint = OpTypeInt 32 0
+%1 = OpTypeStruct %uint
+%2 = OpTypeStruct %uint
+%3 = OpTypePointer Function %2
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  context->get_type_mgr()->FindPointerToType(1, SpvStorageClassFunction);
+  Match(text, context.get());
+}
+
+TEST(TypeManager, GetPointerToAmbiguousType2) {
+  const std::string text = R"(
+; CHECK: [[struct1:%\w+]] = OpTypeStruct
+; CHECK: [[struct2:%\w+]] = OpTypeStruct
+; CHECK: OpTypePointer Function [[struct1]]
+; CHECK: OpTypePointer Function [[struct2]]
+OpCapability Shader
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%uint = OpTypeInt 32 0
+%1 = OpTypeStruct %uint
+%2 = OpTypeStruct %uint
+%3 = OpTypePointer Function %1
+  )";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(context, nullptr);
+
+  context->get_type_mgr()->FindPointerToType(2, SpvStorageClassFunction);
+  Match(text, context.get());
+}
 #endif  // SPIRV_EFFCEE
 
 }  // anonymous namespace

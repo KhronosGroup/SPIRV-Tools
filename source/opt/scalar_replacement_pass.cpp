@@ -800,7 +800,8 @@ ir::Instruction* ScalarReplacementPass::CreateNullConstant(uint32_t type_id) {
 
   const analysis::Type* type = type_mgr->GetType(type_id);
   const analysis::Constant* null_const = const_mgr->GetConstant(type, {});
-  ir::Instruction* null_inst = const_mgr->GetDefiningInstruction(null_const);
+  ir::Instruction* null_inst =
+      const_mgr->GetDefiningInstruction(null_const, type_id);
   context()->UpdateDefUse(null_inst);
   return null_inst;
 }

@@ -519,8 +519,17 @@ class ConstantManager {
   // optional |pos| is given, it will insert any newly created instructions at
   // the given instruction iterator position. Otherwise, it inserts the new
   // instruction at the end of the current module's types section.
+  //
+  // |type_id| is an optional argument for disambiguating equivalent types. If
+  // |type_id| is specified, it is used as the type of the constant when a new
+  // instruction is created. Otherwise the type of the constant is derived by
+  // getting an id from the type manager for |c|.
+  //
+  // When |type_id| is not zero, the type of |c| must be the type returned by
+  // type manager when given |type_id|.
   ir::Instruction* GetDefiningInstruction(
-      const Constant* c, ir::Module::inst_iterator* pos = nullptr);
+      const Constant* c, uint32_t type_id = 0,
+      ir::Module::inst_iterator* pos = nullptr);
 
   // Creates a constant defining instruction for the given Constant instance
   // and inserts the instruction at the position specified by the given
@@ -558,6 +567,9 @@ class ConstantManager {
 
   // Returns the canonical constant that has the same structure and value as the
   // given Constant |cst|. If none is found, it returns nullptr.
+  //
+  // TODO: Should be able to give a type id to disambiguate types with the same
+  // structure.
   const Constant* FindConstant(const Constant* c) const {
     auto it = const_pool_.find(c);
     return (it != const_pool_.end()) ? *it : nullptr;
