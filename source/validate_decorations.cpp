@@ -535,50 +535,65 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
   for (const auto& def : vstate.all_definitions()) {
     const auto inst = def.second;
     const auto& words = inst->words();
-    if (SpvOpVariable == inst->opcode() &&
-        (SpvStorageClassUniform == words[3] ||
-         SpvStorageClassPushConstant == words[3])) {
-      const auto ptrInst = vstate.FindDef(words[1]);
-      assert(SpvOpTypePointer == ptrInst->opcode());
-      const auto id = ptrInst->words()[3];
-      if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) continue;
-      for (const auto& dec : vstate.id_decorations(id)) {
-        const bool isBlock = SpvDecorationBlock == dec.dec_type();
-        const bool isBufferBlock = SpvDecorationBufferBlock == dec.dec_type();
-        if (isBlock || isBufferBlock) {
-          const char* dec_str = isBlock ? "Block" : "BufferBlock";
-          spv_result_t recursive_status = SPV_SUCCESS;
-          if (isMissingOffsetInStruct(id, vstate)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID)
-                   << "Structure id " << id << " decorated as " << dec_str
-                   << " must be explicitly laid out with Offset decorations.";
-          } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID)
-                   << "Structure id " << id << " decorated as " << dec_str
-                   << " must not use GLSLShared decoration.";
-          } else if (hasDecoration(id, SpvDecorationGLSLPacked, vstate)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID)
-                   << "Structure id " << id << " decorated as " << dec_str
-                   << " must not use GLSLPacked decoration.";
-          } else if (!checkForRequiredDecoration(id, SpvDecorationArrayStride,
-                                                 SpvOpTypeArray, vstate)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID)
-                   << "Structure id " << id << " decorated as " << dec_str
-                   << " must be explicitly laid out with ArrayStride "
-                      "decorations.";
-          } else if (!checkForRequiredDecoration(id, SpvDecorationMatrixStride,
-                                                 SpvOpTypeMatrix, vstate)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID)
-                   << "Structure id " << id << " decorated as " << dec_str
-                   << " must be explicitly laid out with MatrixStride "
-                      "decorations.";
-          } else if (isBlock && (SPV_SUCCESS != (recursive_status = checkLayout(
-                                                     id, true, vstate)))) {
-            return recursive_status;
-          } else if (isBufferBlock &&
-                     (SPV_SUCCESS !=
-                      (recursive_status = checkLayout(id, false, vstate)))) {
-            return recursive_status;
+    if (SpvOpVariable == inst->opcode()) {
+      // For storage class / decoration combinations, see Vulkan 14.5.4 "Offset
+      // and Stride Assignment".
+      const auto storageClass = words[3];
+      const bool uniform = storageClass == SpvStorageClassUniform;
+      const bool push_constant = storageClass == SpvStorageClassPushConstant;
+      const bool storage_buffer = storageClass == SpvStorageClassStorageBuffer;
+      if (uniform || push_constant || storage_buffer) {
+        const auto ptrInst = vstate.FindDef(words[1]);
+        assert(SpvOpTypePointer == ptrInst->opcode());
+        const auto id = ptrInst->words()[3];
+        if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) continue;
+        for (const auto& dec : vstate.id_decorations(id)) {
+          const bool blockDeco = SpvDecorationBlock == dec.dec_type();
+          const bool bufferDeco = SpvDecorationBufferBlock == dec.dec_type();
+          const bool blockRules = uniform && blockDeco;
+          const bool bufferRules = (uniform && bufferDeco) ||
+                                   (push_constant && blockDeco) ||
+                                   (storage_buffer && blockDeco);
+          if (blockRules || bufferRules) {
+            const char* dec_str =
+                blockRules
+                    ? "Block"
+                    : (push_constant ? "Push Constant" : "Storage Buffer");
+            spv_result_t recursive_status = SPV_SUCCESS;
+            if (isMissingOffsetInStruct(id, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID)
+                     << "Structure id " << id << " decorated as " << dec_str
+                     << " must be explicitly laid out with Offset decorations.";
+            } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID)
+                     << "Structure id " << id << " decorated as " << dec_str
+                     << " must not use GLSLShared decoration.";
+            } else if (hasDecoration(id, SpvDecorationGLSLPacked, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID)
+                     << "Structure id " << id << " decorated as " << dec_str
+                     << " must not use GLSLPacked decoration.";
+            } else if (!checkForRequiredDecoration(id, SpvDecorationArrayStride,
+                                                   SpvOpTypeArray, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID)
+                     << "Structure id " << id << " decorated as " << dec_str
+                     << " must be explicitly laid out with ArrayStride "
+                        "decorations.";
+            } else if (!checkForRequiredDecoration(id,
+                                                   SpvDecorationMatrixStride,
+                                                   SpvOpTypeMatrix, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID)
+                     << "Structure id " << id << " decorated as " << dec_str
+                     << " must be explicitly laid out with MatrixStride "
+                        "decorations.";
+            } else if (blockRules &&
+                       (SPV_SUCCESS !=
+                        (recursive_status = checkLayout(id, true, vstate)))) {
+              return recursive_status;
+            } else if (bufferRules &&
+                       (SPV_SUCCESS !=
+                        (recursive_status = checkLayout(id, false, vstate)))) {
+              return recursive_status;
+            }
           }
         }
       }

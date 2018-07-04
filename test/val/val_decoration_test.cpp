@@ -1547,6 +1547,79 @@ TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, PushConstantArrayBaseAlignmentGood) {
+  // Tests https://github.com/KhronosGroup/SPIRV-Tools/issues/1664
+  // From GLSL vertex shader:
+  //#version 450
+  // layout(push_constant) uniform S { vec2 v; float arr[2]; } u;
+  // void main() { }
+
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpDecorate %_arr_float_uint_2 ArrayStride 4
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 8
+               OpDecorate %S Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+          %S = OpTypeStruct %v2float %_arr_float_uint_2
+%_ptr_PushConstant_S = OpTypePointer PushConstant %S
+          %u = OpVariable %_ptr_PushConstant_S PushConstant
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBaseAlignmentGood) {
+  // Spot check buffer rules when using StorageBuffer storage class with Block
+  // decoration.
+  string spirv = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpDecorate %_arr_float_uint_2 ArrayStride 4
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 8
+               OpDecorate %S Block
+               OpDecorate %u DescriptorSet 0
+               OpDecorate %u Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+          %S = OpTypeStruct %v2float %_arr_float_uint_2
+%_ptr_Uniform_S = OpTypePointer StorageBuffer %S
+          %u = OpVariable %_ptr_Uniform_S StorageBuffer
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
 TEST_F(ValidateDecorations, BufferBlockStandardStorageBufferLayout) {
   string spirv = R"(
                OpCapability Shader
