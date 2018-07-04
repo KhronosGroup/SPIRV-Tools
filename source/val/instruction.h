@@ -86,10 +86,10 @@ class Instruction {
   // Casts the words belonging to the operand under |index| to |T| and returns.
   template <typename T>
   T GetOperandAs(size_t index) const {
-    const spv_parsed_operand_t& operand = operands_.at(index);
-    assert(operand.num_words * 4 >= sizeof(T));
-    assert(operand.offset + operand.num_words <= inst_.num_words);
-    return *reinterpret_cast<const T*>(&words_[operand.offset]);
+    const spv_parsed_operand_t& op = operands_.at(index);
+    assert(op.num_words * 4 >= sizeof(T));
+    assert(op.offset + op.num_words <= inst_.num_words);
+    return *reinterpret_cast<const T*>(&words_[op.offset]);
   }
 
   int InstructionPosition() const { return instruction_position_; }
