@@ -1584,6 +1584,43 @@ TEST_F(ValidateDecorations, PushConstantArrayBaseAlignmentGood) {
       << getDiagnosticString();
 }
 
+TEST_F(ValidateDecorations, PushConstantArrayBadAlignmentBad) {
+  // Like the previous test, but with offset 7 instead of 8.
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpDecorate %_arr_float_uint_2 ArrayStride 4
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 7
+               OpDecorate %S Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+          %S = OpTypeStruct %v2float %_arr_float_uint_2
+%_ptr_PushConstant_S = OpTypePointer PushConstant %S
+          %u = OpVariable %_ptr_PushConstant_S PushConstant
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 3 decorated as Block for variable in PushConstant "
+          "storage class must follow standard storage buffer layout rules: "
+          "member 1 at offset 7 is not aligned to 4"));
+}
+
 TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBaseAlignmentGood) {
   // Spot check buffer rules when using StorageBuffer storage class with Block
   // decoration.
@@ -1618,6 +1655,46 @@ TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBaseAlignmentGood) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
       << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBadAlignmentBad) {
+  // Like the previous test, but with offset 7.
+  string spirv = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpDecorate %_arr_float_uint_2 ArrayStride 4
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 7
+               OpDecorate %S Block
+               OpDecorate %u DescriptorSet 0
+               OpDecorate %u Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+          %S = OpTypeStruct %v2float %_arr_float_uint_2
+%_ptr_Uniform_S = OpTypePointer StorageBuffer %S
+          %u = OpVariable %_ptr_Uniform_S StorageBuffer
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 3 decorated as Block for variable in StorageBuffer "
+          "storage class must follow standard storage buffer layout rules: "
+          "member 1 at offset 7 is not aligned to 4"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockStandardStorageBufferLayout) {
@@ -1743,9 +1820,9 @@ TEST_F(ValidateDecorations,
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Structure id 6 decorated as Block must follow standard uniform "
-          "buffer layout rules: member 2 at offset 24 is not aligned to 16"));
+      HasSubstr("Structure id 6 decorated as Block for variable in Uniform "
+                "storage class must follow standard uniform buffer layout "
+                "rules: member 2 at offset 24 is not aligned to 16"));
 }
 
 TEST_F(ValidateDecorations,
@@ -1810,9 +1887,9 @@ TEST_F(ValidateDecorations,
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Structure id 8 decorated as Block must follow standard uniform "
-          "buffer layout rules: member 5 at offset 71 is not aligned to 16"));
+      HasSubstr("Structure id 8 decorated as Block for variable in Uniform "
+                "storage class must follow standard uniform buffer layout "
+                "rules: member 5 at offset 71 is not aligned to 16"));
 }
 
 TEST_F(ValidateDecorations, BlockUniformBufferLayoutIncorrectArrayStrideBad) {
@@ -1874,10 +1951,12 @@ TEST_F(ValidateDecorations, BlockUniformBufferLayoutIncorrectArrayStrideBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Structure id 6 decorated as Block must follow "
-                        "standard uniform buffer layout rules: member 4 is an "
-                        "array with stride 49 not satisfying alignment to 16"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 6 decorated as Block for variable in Uniform storage "
+          "class must follow standard uniform buffer layout rules: member 4 is "
+          "an array with stride 49 not satisfying alignment to 16"));
 }
 
 TEST_F(ValidateDecorations,
@@ -1907,10 +1986,11 @@ TEST_F(ValidateDecorations,
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Structure id 3 decorated as BufferBlock must follow "
-                        "standard storage buffer layout rules: member 1 at "
-                        "offset 8 is not aligned to 16"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Structure id 3 decorated as BufferBlock for variable in "
+                "Uniform storage class must follow standard storage buffer "
+                "layout rules: member 1 at offset 8 is not aligned to 16"));
 }
 
 TEST_F(ValidateDecorations, BlockUniformBufferLayoutOffsetInsidePaddingBad) {
@@ -1946,9 +2026,10 @@ TEST_F(ValidateDecorations, BlockUniformBufferLayoutOffsetInsidePaddingBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Structure id 4 decorated as Block must follow standard "
-                "uniform buffer layout rules: member 1 at offset 20 overlaps "
-                "previous member ending at offset 31"));
+      HasSubstr(
+          "Structure id 4 decorated as Block for variable in Uniform storage "
+          "class must follow standard uniform buffer layout rules: member 1 at "
+          "offset 20 overlaps previous member ending at offset 31"));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBad) {
@@ -1977,10 +2058,12 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Structure id 3 decorated as Block must follow "
-                        "standard uniform buffer layout rules: member 1 at "
-                        "offset 0 has a lower offset than member 0"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 3 decorated as Block for variable in Uniform storage "
+          "class must follow standard uniform buffer layout rules: member 1 at "
+          "offset 0 has a lower offset than member 0"));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutOffsetOverlapBad) {
@@ -2014,9 +2097,10 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOverlapBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Structure id 3 decorated as Block must follow standard "
-                "uniform buffer layout rules: member 1 at offset 16 overlaps "
-                "previous member ending at offset 31"));
+      HasSubstr(
+          "Structure id 3 decorated as Block for variable in Uniform storage "
+          "class must follow standard uniform buffer layout rules: member 1 at "
+          "offset 16 overlaps previous member ending at offset 31"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockEmptyStruct) {

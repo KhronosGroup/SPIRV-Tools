@@ -233,16 +233,18 @@ bool IsAlignedTo(uint32_t offset, uint32_t alignment) {
 // Returns SPV_SUCCESS if the given struct satisfies standard layout rules for
 // Block or BufferBlocks in Vulkan.  Otherwise emits a diagnostic and returns
 // something other than SPV_SUCCESS.
-spv_result_t checkLayout(uint32_t struct_id, bool isBlock,
+spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
+                         const char* decoration_str, bool blockRules,
                          ValidationState_t& vstate) {
-  auto fail = [&vstate, struct_id,
-               isBlock](uint32_t member_idx) -> libspirv::DiagnosticStream {
-    DiagnosticStream ds = std::move(
-        vstate.diag(SPV_ERROR_INVALID_ID)
-        << "Structure id " << struct_id << " decorated as "
-        << (isBlock ? "Block" : "BufferBlock") << " must follow standard "
-        << (isBlock ? "uniform buffer" : "storage buffer")
-        << " layout rules: member " << member_idx << " ");
+  auto fail = [&vstate, struct_id, storage_class_str, decoration_str,
+               blockRules](uint32_t member_idx) -> libspirv::DiagnosticStream {
+    DiagnosticStream ds =
+        std::move(vstate.diag(SPV_ERROR_INVALID_ID)
+                  << "Structure id " << struct_id << " decorated as "
+                  << decoration_str << " for variable in " << storage_class_str
+                  << " storage class must follow standard "
+                  << (blockRules ? "uniform buffer" : "storage buffer")
+                  << " layout rules: member " << member_idx << " ");
     return ds;
   };
   if (vstate.options()->relax_block_layout) return SPV_SUCCESS;
@@ -252,7 +254,7 @@ spv_result_t checkLayout(uint32_t struct_id, bool isBlock,
   for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
        memberIdx < numMembers; memberIdx++) {
     auto id = members[memberIdx];
-    const auto alignment = getBaseAlignment(id, isBlock, vstate);
+    const auto alignment = getBaseAlignment(id, blockRules, vstate);
     const auto inst = vstate.FindDef(id);
     const auto opcode = inst->opcode();
     uint32_t offset = 0xffffffff;
@@ -262,7 +264,7 @@ spv_result_t checkLayout(uint32_t struct_id, bool isBlock,
         offset = decoration.params()[0];
       }
     }
-    const auto size = getSize(id, isBlock, vstate);
+    const auto size = getSize(id, blockRules, vstate);
     // Check offset.
     if (offset == 0xffffffff)
       return fail(memberIdx) << "is missing an Offset decoration";
@@ -286,7 +288,9 @@ spv_result_t checkLayout(uint32_t struct_id, bool isBlock,
     // Check struct members recursively.
     spv_result_t recursive_status = SPV_SUCCESS;
     if (SpvOpTypeStruct == opcode &&
-        SPV_SUCCESS != (recursive_status = checkLayout(id, isBlock, vstate)))
+        SPV_SUCCESS !=
+            (recursive_status = checkLayout(
+                 id, storage_class_str, decoration_str, blockRules, vstate)))
       return recursive_status;
     // Check matrix stride.
     if (SpvOpTypeMatrix == opcode) {
@@ -303,8 +307,9 @@ spv_result_t checkLayout(uint32_t struct_id, bool isBlock,
       const auto typeId = inst->words()[2];
       const auto arrayInst = vstate.FindDef(typeId);
       if (SpvOpTypeStruct == arrayInst->opcode() &&
-          SPV_SUCCESS !=
-              (recursive_status = checkLayout(typeId, isBlock, vstate)))
+          SPV_SUCCESS != (recursive_status =
+                              checkLayout(typeId, storage_class_str,
+                                          decoration_str, blockRules, vstate)))
         return recursive_status;
       // Check array stride.
       for (auto& decoration : vstate.id_decorations(id)) {
@@ -547,6 +552,11 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         assert(SpvOpTypePointer == ptrInst->opcode());
         const auto id = ptrInst->words()[3];
         if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) continue;
+
+        // Prepare for messages
+        const char* sc_str =
+            uniform ? "Uniform"
+                    : (push_constant ? "PushConstant" : "StorageBuffer");
         for (const auto& dec : vstate.id_decorations(id)) {
           const bool blockDeco = SpvDecorationBlock == dec.dec_type();
           const bool bufferDeco = SpvDecorationBufferBlock == dec.dec_type();
@@ -555,43 +565,42 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                                    (push_constant && blockDeco) ||
                                    (storage_buffer && blockDeco);
           if (blockRules || bufferRules) {
-            const char* dec_str =
-                blockRules
-                    ? "Block"
-                    : (push_constant ? "Push Constant" : "Storage Buffer");
+            const char* deco_str = blockDeco ? "Block" : "BufferBlock";
             spv_result_t recursive_status = SPV_SUCCESS;
             if (isMissingOffsetInStruct(id, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID)
-                     << "Structure id " << id << " decorated as " << dec_str
+                     << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with Offset decorations.";
             } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID)
-                     << "Structure id " << id << " decorated as " << dec_str
+                     << "Structure id " << id << " decorated as " << deco_str
                      << " must not use GLSLShared decoration.";
             } else if (hasDecoration(id, SpvDecorationGLSLPacked, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID)
-                     << "Structure id " << id << " decorated as " << dec_str
+                     << "Structure id " << id << " decorated as " << deco_str
                      << " must not use GLSLPacked decoration.";
             } else if (!checkForRequiredDecoration(id, SpvDecorationArrayStride,
                                                    SpvOpTypeArray, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID)
-                     << "Structure id " << id << " decorated as " << dec_str
+                     << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with ArrayStride "
                         "decorations.";
             } else if (!checkForRequiredDecoration(id,
                                                    SpvDecorationMatrixStride,
                                                    SpvOpTypeMatrix, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID)
-                     << "Structure id " << id << " decorated as " << dec_str
+                     << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with MatrixStride "
                         "decorations.";
             } else if (blockRules &&
                        (SPV_SUCCESS !=
-                        (recursive_status = checkLayout(id, true, vstate)))) {
+                        (recursive_status = checkLayout(id, sc_str, deco_str,
+                                                        true, vstate)))) {
               return recursive_status;
             } else if (bufferRules &&
                        (SPV_SUCCESS !=
-                        (recursive_status = checkLayout(id, false, vstate)))) {
+                        (recursive_status = checkLayout(id, sc_str, deco_str,
+                                                        false, vstate)))) {
               return recursive_status;
             }
           }
