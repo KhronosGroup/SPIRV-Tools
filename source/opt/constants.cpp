@@ -161,15 +161,19 @@ ir::Instruction* ConstantManager::BuildInstructionAndAddToModule(
 }
 
 ir::Instruction* ConstantManager::GetDefiningInstruction(
-    const Constant* c, ir::Module::inst_iterator* pos) {
+    const Constant* c, uint32_t type_id, ir::Module::inst_iterator* pos) {
+  assert(type_id == 0 ||
+         context()->get_type_mgr()->GetType(type_id) == c->type());
   uint32_t decl_id = FindDeclaredConstant(c);
   if (decl_id == 0) {
     auto iter = context()->types_values_end();
     if (pos == nullptr) pos = &iter;
-    return BuildInstructionAndAddToModule(c, pos);
+    return BuildInstructionAndAddToModule(c, pos, type_id);
   } else {
     auto def = context()->get_def_use_mgr()->GetDef(decl_id);
     assert(def != nullptr);
+    assert((type_id == 0 || def->type_id() == type_id) &&
+           "This constant already has an instruction with a different type.");
     return def;
   }
 }

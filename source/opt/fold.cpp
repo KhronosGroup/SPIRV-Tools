@@ -628,7 +628,8 @@ ir::Instruction* FoldInstructionToConstant(
       folded_const = rule(inst, constants);
       if (folded_const != nullptr) {
         ir::Instruction* const_inst =
-            const_mgr->GetDefiningInstruction(folded_const);
+            const_mgr->GetDefiningInstruction(folded_const, inst->type_id());
+        assert(const_inst->type_id() == inst->type_id());
         // May be a new instruction that needs to be analysed.
         context->UpdateDefUse(const_inst);
         return const_inst;
@@ -651,7 +652,9 @@ ir::Instruction* FoldInstructionToConstant(
   if (successful) {
     const analysis::Constant* result_const =
         const_mgr->GetConstant(const_mgr->GetType(inst), {result_val});
-    return const_mgr->GetDefiningInstruction(result_const);
+    ir::Instruction* folded_inst =
+        const_mgr->GetDefiningInstruction(result_const, inst->type_id());
+    return folded_inst;
   }
   return nullptr;
 }

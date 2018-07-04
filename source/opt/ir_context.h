@@ -795,7 +795,7 @@ void IRContext::AddAnnotationInst(std::unique_ptr<Instruction>&& a) {
 void IRContext::AddType(std::unique_ptr<Instruction>&& t) {
   module()->AddType(std::move(t));
   if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDef(&*(--types_values_end()));
+    get_def_use_mgr()->AnalyzeInstDefUse(&*(--types_values_end()));
   }
 }
 

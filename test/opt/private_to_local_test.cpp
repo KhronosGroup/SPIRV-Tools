@@ -238,5 +238,75 @@ TEST_F(PrivateToLocalTest, UsedInFunctionCall) {
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
+
+TEST_F(PrivateToLocalTest, CreatePointerToAmbiguousStruct1) {
+  // Test that the correct pointer type is picked up.
+  const std::string text = R"(
+; CHECK: [[struct1:%[a-zA-Z_\d]+]] = OpTypeStruct
+; CHECK: [[struct2:%[a-zA-Z_\d]+]] = OpTypeStruct
+; CHECK: [[priv_ptr:%[\w]+]] = OpTypePointer Private [[struct1]]
+; CHECK: [[fuct_ptr2:%[\w]+]] = OpTypePointer Function [[struct2]]
+; CHECK: [[fuct_ptr1:%[\w]+]] = OpTypePointer Function [[struct1]]
+; CHECK: OpFunction
+; CHECK: OpLabel
+; CHECK-NEXT: [[newvar:%[a-zA-Z_\d]+]] = OpVariable [[fuct_ptr1]] Function
+; CHECK: OpLoad [[struct1]] [[newvar]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeFloat 32
+    %struct1 = OpTypeStruct %5
+    %struct2 = OpTypeStruct %5
+          %6 = OpTypePointer Private %struct1
+  %func_ptr2 = OpTypePointer Function %struct2
+          %8 = OpVariable %6 Private
+          %2 = OpFunction %3 None %4
+          %7 = OpLabel
+          %9 = OpLoad %struct1 %8
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<opt::PrivateToLocalPass>(text, false);
+}
+
+TEST_F(PrivateToLocalTest, CreatePointerToAmbiguousStruct2) {
+  // Test that the correct pointer type is picked up.
+  const std::string text = R"(
+; CHECK: [[struct1:%[a-zA-Z_\d]+]] = OpTypeStruct
+; CHECK: [[struct2:%[a-zA-Z_\d]+]] = OpTypeStruct
+; CHECK: [[priv_ptr:%[\w]+]] = OpTypePointer Private [[struct2]]
+; CHECK: [[fuct_ptr1:%[\w]+]] = OpTypePointer Function [[struct1]]
+; CHECK: [[fuct_ptr2:%[\w]+]] = OpTypePointer Function [[struct2]]
+; CHECK: OpFunction
+; CHECK: OpLabel
+; CHECK-NEXT: [[newvar:%[a-zA-Z_\d]+]] = OpVariable [[fuct_ptr2]] Function
+; CHECK: OpLoad [[struct2]] [[newvar]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeFloat 32
+    %struct1 = OpTypeStruct %5
+    %struct2 = OpTypeStruct %5
+          %6 = OpTypePointer Private %struct2
+  %func_ptr2 = OpTypePointer Function %struct1
+          %8 = OpVariable %6 Private
+          %2 = OpFunction %3 None %4
+          %7 = OpLabel
+          %9 = OpLoad %struct2 %8
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<opt::PrivateToLocalPass>(text, false);
+}
 #endif
 }  // anonymous namespace
