@@ -1506,6 +1506,70 @@ TEST_F(ValidateDecorations, BlockStandardUniformBufferLayout) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, BlockLayoutPermitsTightVec3ScalarPackingGood) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 12
+               OpDecorate %S Block
+               OpDecorate %B DescriptorSet 0
+               OpDecorate %B Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+          %S = OpTypeStruct %v3float %float
+%_ptr_Uniform_S = OpTypePointer Uniform %S
+          %B = OpVariable %_ptr_Uniform_S Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 4
+               OpDecorate %S Block
+               OpDecorate %B DescriptorSet 0
+               OpDecorate %B Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+          %S = OpTypeStruct %float %v3float
+%_ptr_Uniform_S = OpTypePointer Uniform %S
+          %B = OpVariable %_ptr_Uniform_S Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Structure id 2 decorated as Block for variable in Uniform "
+                "storage class must follow standard uniform buffer layout "
+                "rules: member 1 at offset 4 is not aligned to 16"));
+}
+
 TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
   string spirv = R"(
              OpCapability Shader
@@ -1619,6 +1683,69 @@ TEST_F(ValidateDecorations, PushConstantArrayBadAlignmentBad) {
           "Structure id 3 decorated as Block for variable in PushConstant "
           "storage class must follow standard storage buffer layout rules: "
           "member 1 at offset 7 is not aligned to 4"));
+}
+
+TEST_F(ValidateDecorations,
+       PushConstantLayoutPermitsTightVec3ScalarPackingGood) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 12
+               OpDecorate %S Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+          %S = OpTypeStruct %v3float %float
+%_ptr_PushConstant_S = OpTypePointer PushConstant %S
+          %B = OpVariable %_ptr_PushConstant_S PushConstant
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations,
+       PushConstantLayoutForbidsTightScalarVec3PackingBad) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 4
+               OpDecorate %S Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+          %S = OpTypeStruct %float %v3float
+%_ptr_Uniform_S = OpTypePointer PushConstant %S
+          %B = OpVariable %_ptr_Uniform_S PushConstant
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 2 decorated as Block for variable in PushConstant "
+          "storage class must follow standard storage buffer layout "
+          "rules: member 1 at offset 4 is not aligned to 16"));
 }
 
 TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBaseAlignmentGood) {
@@ -1756,6 +1883,75 @@ TEST_F(ValidateDecorations, BufferBlockStandardStorageBufferLayout) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations,
+       StorageBufferLayoutPermitsTightVec3ScalarPackingGood) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
+  string spirv = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 12
+               OpDecorate %S Block
+               OpDecorate %B DescriptorSet 0
+               OpDecorate %B Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+          %S = OpTypeStruct %v3float %float
+%_ptr_StorageBuffer_S = OpTypePointer StorageBuffer %S
+          %B = OpVariable %_ptr_StorageBuffer_S StorageBuffer
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations,
+       StorageBufferLayoutForbidsTightScalarVec3PackingBad) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
+  string spirv = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 4
+               OpDecorate %S Block
+               OpDecorate %B DescriptorSet 0
+               OpDecorate %B Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+          %S = OpTypeStruct %float %v3float
+%_ptr_StorageBuffer_S = OpTypePointer StorageBuffer %S
+          %B = OpVariable %_ptr_StorageBuffer_S StorageBuffer
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 2 decorated as Block for variable in StorageBuffer "
+          "storage class must follow standard storage buffer layout "
+          "rules: member 1 at offset 4 is not aligned to 16"));
 }
 
 TEST_F(ValidateDecorations,
@@ -1993,7 +2189,8 @@ TEST_F(ValidateDecorations,
                 "layout rules: member 1 at offset 8 is not aligned to 16"));
 }
 
-TEST_F(ValidateDecorations, BlockUniformBufferLayoutOffsetInsidePaddingBad) {
+TEST_F(ValidateDecorations,
+       BlockUniformBufferLayoutOffsetInsideArrayPaddingBad) {
   // In this case the 2nd member fits entirely within the padding.
   string spirv = R"(
                OpCapability Shader
@@ -2030,6 +2227,40 @@ TEST_F(ValidateDecorations, BlockUniformBufferLayoutOffsetInsidePaddingBad) {
           "Structure id 4 decorated as Block for variable in Uniform storage "
           "class must follow standard uniform buffer layout rules: member 1 at "
           "offset 20 overlaps previous member ending at offset 31"));
+}
+
+TEST_F(ValidateDecorations,
+       BlockUniformBufferLayoutOffsetInsideStructPaddingBad) {
+  // In this case the 2nd member fits entirely within the padding.
+  string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpMemberDecorate %_struct_6 0 Offset 0
+               OpMemberDecorate %_struct_2 0 Offset 0
+               OpMemberDecorate %_struct_2 1 Offset 4
+               OpDecorate %_struct_2 Block
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+  %_struct_6 = OpTypeStruct %float
+  %_struct_2 = OpTypeStruct %_struct_6 %float
+%_ptr_Uniform__struct_2 = OpTypePointer Uniform %_struct_2
+          %8 = OpVariable %_ptr_Uniform__struct_2 Uniform
+          %1 = OpFunction %void None %4
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 3 decorated as Block for variable in Uniform storage "
+          "class must follow standard uniform buffer layout rules: member 1 at "
+          "offset 4 overlaps previous member ending at offset 15"));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBad) {
