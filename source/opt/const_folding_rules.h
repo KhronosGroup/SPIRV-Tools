@@ -18,11 +18,6 @@
 #include <vector>
 
 #include "constants.h"
-#include "def_use_manager.h"
-#include "folding_rules.h"
-#include "ir_builder.h"
-#include "ir_context.h"
-#include "latest_version_spirv_header.h"
 
 namespace spvtools {
 namespace opt {
