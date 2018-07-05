@@ -17,6 +17,8 @@
 
 #include "pass.h"
 
+#include <tuple>
+
 namespace spvtools {
 namespace opt {
 
@@ -25,33 +27,13 @@ class UpgradeMemoryModel : public Pass {
   const char* name() const override { return "upgrade-memory-model"; }
   Status Process(ir::IRContext* context) override;
 
-  struct Tracker {
-    ir::Instruction* inst;
-    bool is_volatile;
-    bool is_coherent;
-    uint32_t in_operand;
-    uint32_t nesting;
-    int member_index;
-    SpvScope scope;
-
-    Tracker() = default;
-    Tracker(const Tracker&) = default;
-
-    Tracker(ir::Instruction* i)
-        : inst(i),
-          is_volatile(false),
-          is_coherent(false),
-          in_operand(0),
-          nesting(0),
-          member_index(-1),
-          scope(SpvScopeDevice) {}
-  };
-
  private:
   void UpgradeMemoryModelInstruction();
   void UpgradeInstructions();
-  void UpgradeInstruction(const Tracker& tracker);
-  void UpgradeFlags(const Tracker& tracker);
+  std::tuple<bool, bool, SpvScope> GetInstructionAttributes(uint32_t id);
+  void UpgradeFlags(ir::Instruction* inst, uint32_t in_operand,
+                    bool is_coherent, bool is_volatile, bool visible,
+                    bool is_memory);
   uint32_t GetScopeConstant(SpvScope scope);
   void CleanupDecorations();
 };

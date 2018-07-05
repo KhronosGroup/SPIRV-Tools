@@ -79,9 +79,9 @@ OpDecorate %var Coherent
 
 TEST_F(UpgradeMemoryModelTest, WorkgroupVariable) {
   const std::string text = R"(
-; CHECK: [[scope:%\w+]] = OpConstant {{%w\+}} 2
-; CHECK: OpLoad {{%w\+}} {{%w\+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
-; CHECK: OpStore {{%w\+}} {{%w\+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
@@ -103,9 +103,9 @@ OpFunctionEnd
 
 TEST_F(UpgradeMemoryModelTest, WorkgroupFunctionParameter) {
   const std::string text = R"(
-; CHECK: [[scope:%\w+]] = OpConstant {{%w\+}} 2
-; CHECK: OpLoad {{%w\+}} {{%w\+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
-; CHECK: OpStore {{%w\+}} {{%w\+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450

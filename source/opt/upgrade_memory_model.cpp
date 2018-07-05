@@ -65,144 +65,106 @@ void UpgradeMemoryModel::UpgradeInstructions() {
   // instructions. Additionally, Workgroup storage class variables and function
   // parameters are implicitly coherent in GLSL450.
 
-  for (auto global : get_module()->types_values()) {
-    std::vector<ir::Instruction*> decorations =
-        get_decoration_mgr()->GetDecorationsFor(global.result_id(), false);
-    if (global.opcode() == SpvOpTypeStruct) {
-    } else if (global.opcode() == SpvOpVariable) {
+  for (auto& func : *get_module()) {
+    func.ForEachInst([this](ir::Instruction* inst) {
       bool is_coherent = false;
       bool is_volatile = false;
-      for (auto dec : decorations) {
-        is_coherent |= dec->GetSingleWordInOperand(1u) == SpvDecorationCoherent;
-        is_volatile |= dec->GetSingleWordInOperand(1u) == SpvDecorationVolatile;
-      }
-
       SpvScope scope = SpvScopeDevice;
-      SpvStorageClass storage_class =
-          static_cast<SpvStorageClass>(global.GetSingleWordInOperand(0u));
-      if (storage_class == SpvStorageClassWorkgroup) {
-        is_coherent = true;
-        scope = SpvScopeWorkgroup;
-      }
-
-      // Nothing to upgrade.
-      if (!is_coherent && !is_volatile) continue;
-
-      Tracker tracker(&global);
-      tracker.is_volatile = is_volatile;
-      tracker.is_coherent = is_coherent;
-      tracker.in_operand = 0u;
-      tracker.nesting = 0u;
-      tracker.member_index = -1;
-      tracker.scope = scope;
-      UpgradeInstruction(tracker);
-    }
-  }
-}
-
-void UpgradeMemoryModel::UpgradeInstruction(const Tracker& tracker) {
-  std::vector<Tracker> stack;
-  stack.push_back(tracker);
-
-  std::unordered_set<ir::Instruction*> visited;
-  while (!stack.empty()) {
-    Tracker current = stack.back();
-    stack.pop_back();
-
-    if (!visited.insert(current.inst).second) continue;
-
-    UpgradeFlags(current);
-    if (current.is_coherent) {
-      switch (current.inst->opcode()) {
+      switch (inst->opcode()) {
         case SpvOpLoad:
         case SpvOpStore:
+          std::tie(is_coherent, is_volatile, scope) =
+              GetInstructionAttributes(inst->GetSingleWordInOperand(0u));
+          break;
         case SpvOpImageRead:
         case SpvOpImageSparseRead:
         case SpvOpImageWrite:
-          current.inst->AddOperand(
-              {SPV_OPERAND_TYPE_ID, {GetScopeConstant(current.scope)}});
           break;
         case SpvOpCopyMemory:
         case SpvOpCopyMemorySized:
+          break;
         default:
           break;
       }
-    }
+
+      if (!is_coherent && !is_volatile) return;
+
+      switch (inst->opcode()) {
+        case SpvOpLoad:
+          UpgradeFlags(inst, 1u, is_coherent, is_volatile, false, true);
+          inst->AddOperand(
+              {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          break;
+        case SpvOpStore:
+          UpgradeFlags(inst, 2u, is_coherent, is_volatile, true, true);
+          inst->AddOperand(
+              {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          break;
+        default:
+          break;
+      }
+    });
   }
 }
 
-void UpgradeMemoryModel::UpgradeFlags(const Tracker& tracker) {
+std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
+    uint32_t id) {
+  // |id| is a pointer used in a memory/image instruction. Need to determine if
+  // that pointer points to volatile or coherent memory. Workgroup storage
+  // class is implicitly coherent and cannot be decorated with volatile, so
+  // short circuit that case.
+  ir::Instruction* inst = context()->get_def_use_mgr()->GetDef(id);
+  analysis::Type* type = context()->get_type_mgr()->GetType(inst->type_id());
+  assert(type->AsPointer());
+  if (type->AsPointer()->storage_class() == SpvStorageClassWorkgroup) {
+    return std::make_tuple(true, false, SpvScopeWorkgroup);
+  }
+
+  bool is_coherent = false;
+  bool is_volatile = false;
+  return std::make_tuple(is_coherent, is_volatile, SpvScopeDevice);
+}
+
+void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,
+                                      uint32_t in_operand, bool is_coherent,
+                                      bool is_volatile, bool visible,
+                                      bool is_memory) {
   uint32_t flags = 0;
-  ir::Instruction* inst = tracker.inst;
-  if (tracker.is_volatile) {
-    switch (inst->opcode()) {
-      case SpvOpLoad:
-      case SpvOpStore:
-      case SpvOpCopyMemory:
-      case SpvOpCopyMemorySized:
-        flags |= SpvMemoryAccessVolatileMask;
-        break;
-      case SpvOpImageRead:
-      case SpvOpImageSparseRead:
-      case SpvOpImageWrite:
-        flags |= SpvImageOperandsVolatileTexelKHRMask;
-        break;
-      default:
-        break;
-    }
+  if (inst->NumInOperands() > in_operand) {
+    inst->GetSingleWordInOperand(in_operand);
   }
-
-  if (tracker.is_coherent) {
-    switch (inst->opcode()) {
-      case SpvOpLoad:
-        flags |= SpvMemoryAccessNonPrivatePointerKHRMask;
-        flags |= SpvMemoryAccessMakePointerAvailableKHRMask;
-        break;
-      case SpvOpStore:
-        flags |= SpvMemoryAccessNonPrivatePointerKHRMask;
+  if (is_coherent) {
+    if (is_memory) {
+      flags |= SpvMemoryAccessNonPrivatePointerKHRMask;
+      if (visible) {
         flags |= SpvMemoryAccessMakePointerVisibleKHRMask;
-        break;
-      case SpvOpCopyMemory:
-      case SpvOpCopyMemorySized:
-        flags |= SpvMemoryAccessNonPrivatePointerKHRMask;
-        if (tracker.in_operand == 0u)
-          flags |= SpvMemoryAccessMakePointerAvailableKHRMask;
-        if (tracker.in_operand == 1u)
-          flags |= SpvMemoryAccessMakePointerVisibleKHRMask;
-        break;
-      case SpvOpImageRead:
-      case SpvOpImageSparseRead:
-        flags |= SpvImageOperandsNonPrivateTexelKHRMask;
-        flags |= SpvImageOperandsMakeTexelAvailableKHRMask;
-        break;
-      case SpvOpImageWrite:
-        flags |= SpvImageOperandsNonPrivateTexelKHRMask;
+      } else {
+        flags |= SpvMemoryAccessMakePointerAvailableKHRMask;
+      }
+    } else {
+      flags |= SpvImageOperandsNonPrivateTexelKHRMask;
+      if (visible) {
         flags |= SpvImageOperandsMakeTexelVisibleKHRMask;
-        break;
-      default:
-        break;
+      } else {
+        flags |= SpvImageOperandsMakeTexelAvailableKHRMask;
+      }
     }
   }
 
-  switch (inst->opcode()) {
-    case SpvOpLoad:
-      flags |= inst->GetSingleWordInOperand(1u);
-      inst->SetInOperand(1u, {flags});
-      break;
-    case SpvOpStore:
-    case SpvOpCopyMemory:
-    case SpvOpImageRead:
-    case SpvOpImageSparseRead:
-      flags |= inst->GetSingleWordInOperand(2u);
-      inst->SetInOperand(2u, {flags});
-      break;
-    case SpvOpCopyMemorySized:
-    case SpvOpImageWrite:
-      flags |= inst->GetSingleWordInOperand(3u);
-      inst->SetInOperand(3u, {flags});
-      break;
-    default:
-      break;
+  if (is_volatile) {
+    if (is_memory) {
+      flags |= SpvMemoryAccessVolatileMask;
+    } else {
+      flags |= SpvImageOperandsVolatileTexelKHRMask;
+    }
+  }
+
+  if (inst->NumInOperands() > in_operand) {
+    inst->SetInOperand(in_operand, {flags});
+  } else if (is_memory) {
+    inst->AddOperand({SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS, {flags}});
+  } else {
+    inst->AddOperand({SPV_OPERAND_TYPE_OPTIONAL_IMAGE, {flags}});
   }
 }
 
