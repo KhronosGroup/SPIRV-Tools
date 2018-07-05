@@ -124,6 +124,60 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
 }
+
+TEST_F(UpgradeMemoryModelTest, SimpleUniformVariable) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} Volatile|MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} Volatile|MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %var Coherent
+OpDecorate %var Volatile
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr_int_Uniform = OpTypePointer Uniform %int
+%var = OpVariable %ptr_int_Uniform Uniform
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %int %var
+OpStore %var %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, SimpleUniformFunctionParameter) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} Volatile|MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} Volatile|MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %param Coherent
+OpDecorate %param Volatile
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr_int_Uniform = OpTypePointer Uniform %int
+%func_ty = OpTypeFunction %void %ptr_int_Uniform
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_int_Uniform
+%1 = OpLabel
+%ld = OpLoad %int %param
+OpStore %param %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
 #endif
 
 }  // namespace

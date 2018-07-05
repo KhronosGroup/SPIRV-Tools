@@ -16,6 +16,8 @@
 
 #include "make_unique.h"
 
+#include <utility>
+
 namespace spvtools {
 namespace opt {
 
@@ -122,7 +124,43 @@ std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
 
   bool is_coherent = false;
   bool is_volatile = false;
+  std::vector<std::pair<ir::Instruction*, std::vector<uint32_t>>> stack;
+  stack.push_back(std::make_pair(context()->get_def_use_mgr()->GetDef(id),
+                                 std::vector<uint32_t>()));
+  while (!stack.empty()) {
+    ir::Instruction* def = stack.back().first;
+    std::vector<uint32_t> indices = stack.back().second;
+    stack.pop_back();
+
+    switch (inst->opcode()) {
+      case SpvOpVariable:
+      case SpvOpFunctionParameter:
+        is_coherent |= HasDecoration(def, indices, SpvDecorationCoherent);
+        is_volatile |= HasDecoration(def, indices, SpvDecorationVolatile);
+        break;
+      case SpvOpTypePointer:
+        break;
+      default:
+        break;
+    }
+  }
+
   return std::make_tuple(is_coherent, is_volatile, SpvScopeDevice);
+}
+
+bool UpgradeMemoryModel::HasDecoration(const ir::Instruction* inst,
+                                       const std::vector<uint32_t>& indices,
+                                       SpvDecoration decoration) {
+  (void)indices;
+  return !context()->get_decoration_mgr()->WhileEachDecoration(
+      inst->result_id(), decoration, [](const ir::Instruction& i) {
+        if (i.opcode() == SpvOpDecorate || i.opcode() == SpvOpDecorateId) {
+          return false;
+        } else if (i.opcode() == SpvOpMemberDecorate) {
+        }
+
+        return true;
+      });
 }
 
 void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,

@@ -31,6 +31,9 @@ class UpgradeMemoryModel : public Pass {
   void UpgradeMemoryModelInstruction();
   void UpgradeInstructions();
   std::tuple<bool, bool, SpvScope> GetInstructionAttributes(uint32_t id);
+  bool HasDecoration(const ir::Instruction* inst,
+                     const std::vector<uint32_t>& indices,
+                     SpvDecoration decoration);
   void UpgradeFlags(ir::Instruction* inst, uint32_t in_operand,
                     bool is_coherent, bool is_volatile, bool visible,
                     bool is_memory);
