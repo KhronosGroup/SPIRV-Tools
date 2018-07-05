@@ -86,7 +86,7 @@ TEST_P(IntegerInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
   EXPECT_TRUE(succeeded);
@@ -454,7 +454,7 @@ TEST_P(IntVectorInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
   EXPECT_TRUE(succeeded);
@@ -518,7 +518,7 @@ TEST_P(BooleanInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
   EXPECT_TRUE(succeeded);
@@ -1129,7 +1129,7 @@ TEST_P(FloatInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
   EXPECT_TRUE(succeeded);
@@ -1276,7 +1276,7 @@ TEST_P(DoubleInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
   EXPECT_TRUE(succeeded);
@@ -2034,7 +2034,8 @@ TEST_P(IntegerInstructionFoldingTestWithMap, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  inst = opt::FoldInstructionToConstant(inst, tc.id_map);
+  inst = context->get_instruction_folder().FoldInstructionToConstant(inst,
+                                                                     tc.id_map);
 
   // Make sure the instruction folded as expected.
   EXPECT_NE(inst, nullptr);
@@ -2081,7 +2082,8 @@ TEST_P(BooleanInstructionFoldingTestWithMap, Case) {
   // Fold the instruction to test.
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  inst = opt::FoldInstructionToConstant(inst, tc.id_map);
+  inst = context->get_instruction_folder().FoldInstructionToConstant(inst,
+                                                                     tc.id_map);
 
   // Make sure the instruction folded as expected.
   EXPECT_NE(inst, nullptr);
@@ -2131,7 +2133,7 @@ TEST_P(GeneralInstructionFoldingTest, Case) {
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   std::unique_ptr<ir::Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
   EXPECT_EQ(inst->result_id(), original_inst->result_id());
@@ -3637,7 +3639,7 @@ TEST_P(ToNegateFoldingTest, Case) {
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   std::unique_ptr<ir::Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
   EXPECT_EQ(inst->result_id(), original_inst->result_id());
@@ -3760,7 +3762,7 @@ TEST_P(MatchingInstructionFoldingTest, Case) {
   opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   ir::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   std::unique_ptr<ir::Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
   EXPECT_EQ(succeeded, tc.expected_result);
   if (succeeded) {
     Match(tc.test_body, context.get());
@@ -5625,7 +5627,7 @@ TEST_P(MatchingInstructionWithNoResultFoldingTest, Case) {
   }
   assert(inst && "Invalid test.  Could not find instruction to fold.");
   std::unique_ptr<ir::Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = opt::FoldInstruction(inst);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
   EXPECT_EQ(succeeded, tc.expected_result);
   if (succeeded) {
     Match(tc.test_body, context.get());
