@@ -134,7 +134,8 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(ir::Instruction* instr) {
     return it->second;
   };
   ir::Instruction* folded_inst =
-      opt::FoldInstructionToConstant(instr, map_func);
+      context()->get_instruction_folder().FoldInstructionToConstant(instr,
+                                                                    map_func);
   if (folded_inst != nullptr) {
     // We do not want to change the body of the function by adding new
     // instructions.  When folding we can only generate new constants.

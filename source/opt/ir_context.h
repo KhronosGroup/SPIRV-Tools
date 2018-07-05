@@ -22,6 +22,7 @@
 #include "def_use_manager.h"
 #include "dominator_analysis.h"
 #include "feature_manager.h"
+#include "fold.h"
 #include "loop_descriptor.h"
 #include "module.h"
 #include "register_pressure.h"
@@ -445,6 +446,13 @@ class IRContext {
   // its definitions and uses.
   inline void UpdateDefUse(Instruction* inst);
 
+  const opt::InstructionFolder& get_instruction_folder() {
+    if (!inst_folder_) {
+      inst_folder_.reset(new opt::InstructionFolder());
+    }
+    return *inst_folder_;
+  }
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -601,6 +609,8 @@ class IRContext {
   std::unique_ptr<opt::LivenessAnalysis> reg_pressure_;
 
   std::unique_ptr<opt::ValueNumberTable> vn_table_;
+
+  std::unique_ptr<opt::InstructionFolder> inst_folder_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,
