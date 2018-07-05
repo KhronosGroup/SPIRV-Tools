@@ -45,18 +45,20 @@ bool SimplificationPass::SimplifyFunction(ir::Function* function) {
   std::unordered_set<ir::Instruction*> process_phis;
   std::unordered_set<ir::Instruction*> inst_to_kill;
   std::unordered_set<ir::Instruction*> in_work_list;
+  const opt::InstructionFolder& folder = context()->get_instruction_folder();
 
   cfg()->ForEachBlockInReversePostOrder(
       function->entry().get(),
       [&modified, &process_phis, &work_list, &in_work_list, &inst_to_kill,
-       this](ir::BasicBlock* bb) {
+       folder, this](ir::BasicBlock* bb) {
         for (ir::Instruction* inst = &*bb->begin(); inst;
              inst = inst->NextNode()) {
           if (inst->opcode() == SpvOpPhi) {
             process_phis.insert(inst);
           }
 
-          if (inst->opcode() == SpvOpCopyObject || FoldInstruction(inst)) {
+          if (inst->opcode() == SpvOpCopyObject ||
+              folder.FoldInstruction(inst)) {
             modified = true;
             context()->AnalyzeUses(inst);
             get_def_use_mgr()->ForEachUser(inst, [&work_list, &process_phis,
@@ -85,7 +87,7 @@ bool SimplificationPass::SimplifyFunction(ir::Function* function) {
   for (size_t i = 0; i < work_list.size(); ++i) {
     ir::Instruction* inst = work_list[i];
     in_work_list.erase(inst);
-    if (inst->opcode() == SpvOpCopyObject || FoldInstruction(inst)) {
+    if (inst->opcode() == SpvOpCopyObject || folder.FoldInstruction(inst)) {
       modified = true;
       context()->AnalyzeUses(inst);
       get_def_use_mgr()->ForEachUser(

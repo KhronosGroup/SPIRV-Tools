@@ -19,9 +19,6 @@
 #include <vector>
 
 #include "constants.h"
-#include "def_use_manager.h"
-#include "ir_builder.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -62,7 +59,7 @@ class FoldingRules {
  public:
   FoldingRules();
 
-  const std::vector<FoldingRule>& GetRulesForOpcode(SpvOp opcode) {
+  const std::vector<FoldingRule>& GetRulesForOpcode(SpvOp opcode) const {
     auto it = rules_.find(opcode);
     if (it != rules_.end()) {
       return it->second;

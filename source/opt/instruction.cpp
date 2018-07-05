@@ -470,15 +470,16 @@ bool Instruction::IsOpaqueType() const {
 
 bool Instruction::IsFoldable() const {
   return IsFoldableByFoldScalar() ||
-         opt::GetConstantFoldingRules().HasFoldingRule(opcode());
+         context()->get_instruction_folder().HasConstFoldingRule(opcode());
 }
 
 bool Instruction::IsFoldableByFoldScalar() const {
-  if (!opt::IsFoldableOpcode(opcode())) {
+  const opt::InstructionFolder& folder = context()->get_instruction_folder();
+  if (!folder.IsFoldableOpcode(opcode())) {
     return false;
   }
   Instruction* type = context()->get_def_use_mgr()->GetDef(type_id());
-  return opt::IsFoldableType(type);
+  return folder.IsFoldableType(type);
 }
 
 bool Instruction::IsFloatingPointFoldingAllowed() const {

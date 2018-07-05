@@ -14,6 +14,8 @@
 
 #include "const_folding_rules.h"
 
+#include "ir_context.h"
+
 namespace spvtools {
 namespace opt {
 

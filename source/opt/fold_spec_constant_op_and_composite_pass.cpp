@@ -351,7 +351,8 @@ ir::Instruction* FoldSpecConstantOpAndCompositePass::DoComponentWiseOperation(
 
   if (result_type->AsInteger() || result_type->AsBool()) {
     // Scalar operation
-    uint32_t result_val = FoldScalars(spec_opcode, operands);
+    uint32_t result_val =
+        context()->get_instruction_folder().FoldScalars(spec_opcode, operands);
     auto result_const =
         context()->get_constant_mgr()->GetConstant(result_type, {result_val});
     return context()->get_constant_mgr()->BuildInstructionAndAddToModule(
@@ -362,7 +363,8 @@ ir::Instruction* FoldSpecConstantOpAndCompositePass::DoComponentWiseOperation(
         result_type->AsVector()->element_type();
     uint32_t num_dims = result_type->AsVector()->element_count();
     std::vector<uint32_t> result_vec =
-        FoldVectors(spec_opcode, num_dims, operands);
+        context()->get_instruction_folder().FoldVectors(spec_opcode, num_dims,
+                                                        operands);
     std::vector<const analysis::Constant*> result_vector_components;
     for (uint32_t r : result_vec) {
       if (auto rc =
