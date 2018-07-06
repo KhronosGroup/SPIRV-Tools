@@ -124,6 +124,7 @@ std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
 
   bool is_coherent = false;
   bool is_volatile = false;
+  std::unordered_set<ir::Instruction*> visited;
   std::vector<std::pair<ir::Instruction*, std::vector<uint32_t>>> stack;
   stack.push_back(std::make_pair(context()->get_def_use_mgr()->GetDef(id),
                                  std::vector<uint32_t>()));
@@ -132,16 +133,35 @@ std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
     std::vector<uint32_t> indices = stack.back().second;
     stack.pop_back();
 
-    switch (inst->opcode()) {
+    if (!visited.insert(def).second) continue;
+
+    switch (def->opcode()) {
       case SpvOpVariable:
       case SpvOpFunctionParameter:
         is_coherent |= HasDecoration(def, indices, SpvDecorationCoherent);
         is_volatile |= HasDecoration(def, indices, SpvDecorationVolatile);
         break;
-      case SpvOpTypePointer:
+      case SpvOpAccessChain:
+      case SpvOpInBoundsAccessChain:
+        break;
+      case SpvOpPtrAccessChain:
         break;
       default:
         break;
+    }
+
+    if (inst->opcode() != SpvOpVariable &&
+        inst->opcode() != SpvOpFunctionParameter) {
+      def->ForEachInId([this, &stack, &indices](const uint32_t* id_ptr) {
+        ir::Instruction* op_inst =
+            context()->get_def_use_mgr()->GetDef(*id_ptr);
+        if (context()
+                ->get_type_mgr()
+                ->GetType(op_inst->type_id())
+                ->AsPointer()) {
+          stack.push_back(std::make_pair(op_inst, indices));
+        }
+      });
     }
   }
 
