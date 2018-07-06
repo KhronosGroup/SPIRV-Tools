@@ -155,10 +155,9 @@ std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
       def->ForEachInId([this, &stack, &indices](const uint32_t* id_ptr) {
         ir::Instruction* op_inst =
             context()->get_def_use_mgr()->GetDef(*id_ptr);
-        if (context()
-                ->get_type_mgr()
-                ->GetType(op_inst->type_id())
-                ->AsPointer()) {
+        const analysis::Type* type =
+            context()->get_type_mgr()->GetType(op_inst->type_id());
+        if (type && type->AsPointer()) {
           stack.push_back(std::make_pair(op_inst, indices));
         }
       });
