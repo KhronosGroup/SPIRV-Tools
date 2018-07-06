@@ -24,7 +24,7 @@
 using spvutils::HuffmanCodec;
 
 namespace spvtools {
-
+namespace comp {
 namespace {
 
 // Signals that the value is not in the coding scheme and a fallback method
@@ -97,4 +97,5 @@ MarkvModelShaderMax::MarkvModelShaderMax() {
   id_fallback_strategy_ = IdFallbackStrategy::kRuleBased;
 }
 
+}  // namespace comp
 }  // namespace spvtools
