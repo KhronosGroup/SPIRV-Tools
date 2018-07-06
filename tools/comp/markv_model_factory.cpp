@@ -17,6 +17,7 @@
 #include "markv_model_shader.h"
 
 namespace spvtools {
+namespace comp {
 
 std::unique_ptr<MarkvModel> CreateMarkvModel(MarkvModelType type) {
   std::unique_ptr<MarkvModel> model;
@@ -44,4 +45,5 @@ std::unique_ptr<MarkvModel> CreateMarkvModel(MarkvModelType type) {
   return model;
 }
 
+}  // namespace comp
 }  // namespace spvtools

@@ -24,6 +24,7 @@
 #include "util/huffman_codec.h"
 
 namespace spvtools {
+namespace comp {
 
 // Base class for MARK-V models.
 // The class contains encoding/decoding model with various constants and
@@ -227,6 +228,7 @@ class MarkvModel {
   uint32_t model_version_ = 0;
 };
 
+}  // namespace comp
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_COMP_MARKV_MODEL_H_

@@ -71,7 +71,7 @@ using MoveToFront = spvutils::MoveToFront<uint32_t>;
 using MultiMoveToFront = spvutils::MultiMoveToFront<uint32_t>;
 
 namespace spvtools {
-
+namespace comp {
 namespace {
 
 const uint32_t kSpirvMagicNumber = SpvMagicNumber;
@@ -2898,4 +2898,5 @@ spv_result_t MarkvToSpirv(
   return SPV_SUCCESS;
 }
 
+}  // namespace comp
 }  // namespace spvtools

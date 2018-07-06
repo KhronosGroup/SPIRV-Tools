@@ -39,7 +39,7 @@ namespace {
 // Signals that the value is not in the coding scheme and a fallback method
 // needs to be used.
 const uint64_t kMarkvNoneOfTheAbove =
-    spvtools::MarkvModel::GetMarkvNoneOfTheAbove();
+    spvtools::comp::MarkvModel::GetMarkvNoneOfTheAbove();
 
 inline uint32_t CombineOpcodeAndNumOperands(uint32_t opcode,
                                             uint32_t num_operands) {
