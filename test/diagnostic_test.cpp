@@ -18,9 +18,9 @@
 #include "gmock/gmock.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::DiagnosticStream;
 using ::testing::Eq;
 
 // Returns a newly created diagnostic value.
@@ -134,7 +134,7 @@ TEST(DiagnosticStream, DiagnosticFromLambdaReturnCanStillBeUsed) {
   };
 
   {
-    auto emitter = [&consumer]() -> libspirv::DiagnosticStream {
+    auto emitter = [&consumer]() -> DiagnosticStream {
       DiagnosticStream ds0({}, consumer, "", SPV_ERROR_INVALID_BINARY);
       ds0 << "First";
       return ds0;
@@ -145,4 +145,5 @@ TEST(DiagnosticStream, DiagnosticFromLambdaReturnCanStillBeUsed) {
   EXPECT_THAT(messages.str(), Eq("FirstSecond"));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

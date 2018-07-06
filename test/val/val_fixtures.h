@@ -60,7 +60,7 @@ class ValidateBase : public ::testing::Test,
   spv_binary binary_;
   spv_diagnostic diagnostic_;
   spv_validator_options options_;
-  std::unique_ptr<libspirv::ValidationState_t> vstate_;
+  std::unique_ptr<spvtools::ValidationState_t> vstate_;
 };
 
 template <typename T>

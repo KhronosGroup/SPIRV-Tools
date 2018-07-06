@@ -49,10 +49,7 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
-using libspirv::BasicBlock;
-
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 using bb_ptr = BasicBlock*;
@@ -470,29 +467,28 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
-      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
+      CFA<BasicBlock>::DepthFirstTraversal(
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
           ignore_block, [&](cbb_ptr b) { postorder.push_back(b); },
           ignore_edge);
-      auto edges = spvtools::CFA<libspirv::BasicBlock>::CalculateDominators(
+      auto edges = CFA<BasicBlock>::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
       for (auto edge : edges) {
         edge.first->SetImmediateDominator(edge.second);
       }
 
       /// calculate post dominators
-      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
+      CFA<BasicBlock>::DepthFirstTraversal(
           function.pseudo_exit_block(),
           function.AugmentedCFGPredecessorsFunction(), ignore_block,
           [&](cbb_ptr b) { postdom_postorder.push_back(b); }, ignore_edge);
-      auto postdom_edges =
-          spvtools::CFA<libspirv::BasicBlock>::CalculateDominators(
-              postdom_postorder, function.AugmentedCFGSuccessorsFunction());
+      auto postdom_edges = CFA<BasicBlock>::CalculateDominators(
+          postdom_postorder, function.AugmentedCFGSuccessorsFunction());
       for (auto edge : postdom_edges) {
         edge.first->SetImmediatePostDominator(edge.second);
       }
       /// calculate back edges.
-      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
+      CFA<BasicBlock>::DepthFirstTraversal(
           function.pseudo_entry_block(),
           function
               .AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge(),
@@ -621,4 +617,4 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

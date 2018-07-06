@@ -24,8 +24,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Validates Execution Scope operand.
@@ -296,4 +295,4 @@ spv_result_t BarriersPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

@@ -31,8 +31,8 @@ void FeatureManager::AddExtensions(ir::Module* module) {
   for (auto ext : module->extensions()) {
     const std::string name =
         reinterpret_cast<const char*>(ext.GetInOperand(0u).words.data());
-    libspirv::Extension extension;
-    if (libspirv::GetExtensionFromString(name.c_str(), &extension)) {
+    Extension extension;
+    if (GetExtensionFromString(name.c_str(), &extension)) {
       extensions_.Add(extension);
     }
   }
@@ -46,7 +46,7 @@ void FeatureManager::AddCapability(SpvCapability cap) {
   spv_operand_desc desc = {};
   if (SPV_SUCCESS ==
       grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc)) {
-    libspirv::CapabilitySet(desc->numCapabilities, desc->capabilities)
+    CapabilitySet(desc->numCapabilities, desc->capabilities)
         .ForEach([this](SpvCapability c) { AddCapability(c); });
   }
 }

@@ -34,9 +34,6 @@
 #include "val/function.h"
 #include "val/validation_state.h"
 
-using libspirv::Decoration;
-using libspirv::Function;
-using libspirv::ValidationState_t;
 using std::function;
 using std::ignore;
 using std::make_pair;
@@ -44,6 +41,7 @@ using std::pair;
 using std::unordered_set;
 using std::vector;
 
+namespace spvtools {
 namespace {
 
 class idUsage {
@@ -52,7 +50,7 @@ class idUsage {
           const uint64_t instCountArg, const SpvMemoryModel memoryModelArg,
           const SpvAddressingModel addressingModelArg,
           const ValidationState_t& module, const vector<uint32_t>& entry_points,
-          spv_position positionArg, const spvtools::MessageConsumer& consumer)
+          spv_position positionArg, const MessageConsumer& consumer)
       : targetEnv(context->target_env),
         opcodeTable(context->opcode_table),
         operandTable(context->operand_table),
@@ -81,26 +79,26 @@ class idUsage {
   const SpvMemoryModel memoryModel;
   const SpvAddressingModel addressingModel;
   spv_position position;
-  const spvtools::MessageConsumer& consumer_;
+  const MessageConsumer& consumer_;
   const ValidationState_t& module_;
   vector<uint32_t> entry_points_;
 
   // Returns true if the two instructions represent structs that, as far as the
   // validator can tell, have the exact same data layout.
-  bool AreLayoutCompatibleStructs(const libspirv::Instruction* type1,
-                                  const libspirv::Instruction* type2);
+  bool AreLayoutCompatibleStructs(const Instruction* type1,
+                                  const Instruction* type2);
 
   // Returns true if the operands to the OpTypeStruct instruction defining the
   // types are the same or are layout compatible types. |type1| and |type2| must
   // be OpTypeStruct instructions.
-  bool HaveLayoutCompatibleMembers(const libspirv::Instruction* type1,
-                                   const libspirv::Instruction* type2);
+  bool HaveLayoutCompatibleMembers(const Instruction* type1,
+                                   const Instruction* type2);
 
   // Returns true if all decorations that affect the data layout of the struct
   // (like Offset), are the same for the two types. |type1| and |type2| must be
   // OpTypeStruct instructions.
-  bool HaveSameLayoutDecorations(const libspirv::Instruction* type1,
-                                 const libspirv::Instruction* type2);
+  bool HaveSameLayoutDecorations(const Instruction* type1,
+                                 const Instruction* type2);
   bool HasConflictingMemberOffsets(
       const vector<Decoration>& type1_decorations,
       const vector<Decoration>& type2_decorations) const;
@@ -113,8 +111,8 @@ class idUsage {
     disassembly = module_.Disassemble(                                      \
         inst->words().data(), static_cast<uint16_t>(inst->words().size())); \
   }                                                                         \
-  libspirv::DiagnosticStream helper(*position, consumer_, disassembly,      \
-                                    SPV_ERROR_INVALID_DIAGNOSTIC);          \
+  DiagnosticStream helper(*position, consumer_, disassembly,                \
+                          SPV_ERROR_INVALID_DIAGNOSTIC);                    \
   helper
 
 #if 0
@@ -1857,7 +1855,7 @@ bool idUsage::isValid<SpvOpPhi>(const spv_instruction_t* inst,
   std::vector<uint32_t> predIds;
   std::transform(block->predecessors()->begin(), block->predecessors()->end(),
                  std::back_inserter(predIds),
-                 [](const libspirv::BasicBlock* b) { return b->id(); });
+                 [](const BasicBlock* b) { return b->id(); });
   std::sort(predIds.begin(), predIds.end());
   predIds.erase(std::unique(predIds.begin(), predIds.end()), predIds.end());
 
@@ -1927,7 +1925,7 @@ bool idUsage::isValid<SpvOpBranchConditional>(const spv_instruction_t* inst,
   // num_operands is either 3 or 5 --- if 5, the last two need to be literal
   // integers
   if (numOperands != 3 && numOperands != 5) {
-    libspirv::Instruction* fake_inst = nullptr;
+    Instruction* fake_inst = nullptr;
     DIAG(fake_inst) << "OpBranchConditional requires either 3 or 5 parameters";
     return false;
   }
@@ -2546,8 +2544,8 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
 #undef CASE
 }
 
-bool idUsage::AreLayoutCompatibleStructs(const libspirv::Instruction* type1,
-                                         const libspirv::Instruction* type2) {
+bool idUsage::AreLayoutCompatibleStructs(const Instruction* type1,
+                                         const Instruction* type2) {
   if (type1->opcode() != SpvOpTypeStruct) {
     return false;
   }
@@ -2560,8 +2558,8 @@ bool idUsage::AreLayoutCompatibleStructs(const libspirv::Instruction* type1,
   return HaveSameLayoutDecorations(type1, type2);
 }
 
-bool idUsage::HaveLayoutCompatibleMembers(const libspirv::Instruction* type1,
-                                          const libspirv::Instruction* type2) {
+bool idUsage::HaveLayoutCompatibleMembers(const Instruction* type1,
+                                          const Instruction* type2) {
   assert(type1->opcode() == SpvOpTypeStruct &&
          "type1 must be and OpTypeStruct instruction.");
   assert(type2->opcode() == SpvOpTypeStruct &&
@@ -2584,8 +2582,8 @@ bool idUsage::HaveLayoutCompatibleMembers(const libspirv::Instruction* type1,
   return true;
 }
 
-bool idUsage::HaveSameLayoutDecorations(const libspirv::Instruction* type1,
-                                        const libspirv::Instruction* type2) {
+bool idUsage::HaveSameLayoutDecorations(const Instruction* type1,
+                                        const Instruction* type2) {
   assert(type1->opcode() == SpvOpTypeStruct &&
          "type1 must be and OpTypeStruct instruction.");
   assert(type2->opcode() == SpvOpTypeStruct &&
@@ -2641,9 +2639,8 @@ bool idUsage::HasConflictingMemberOffsets(
   }
   return false;
 }
-}  // anonymous namespace
 
-namespace libspirv {
+}  // namespace
 
 spv_result_t UpdateIdUse(ValidationState_t& _) {
   for (const auto& inst : _.ordered_instructions()) {
@@ -2798,15 +2795,17 @@ spv_result_t IdPass(ValidationState_t& _,
   _.RegisterInstruction(*inst);
   return SPV_SUCCESS;
 }
-}  // namespace libspirv
+
+}  // namespace spvtools
 
 spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const uint64_t instCount,
-                                       const libspirv::ValidationState_t& state,
+                                       const spvtools::ValidationState_t& state,
                                        spv_position position) {
-  idUsage idUsage(state.context(), pInsts, instCount, state.memory_model(),
-                  state.addressing_model(), state, state.entry_points(),
-                  position, state.context()->consumer);
+  spvtools::idUsage idUsage(state.context(), pInsts, instCount,
+                            state.memory_model(), state.addressing_model(),
+                            state, state.entry_points(), position,
+                            state.context()->consumer);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
     if (!idUsage.isValid(&pInsts[instIndex])) return SPV_ERROR_INVALID_ID;
   }

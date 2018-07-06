@@ -24,7 +24,7 @@
 #include "stats_analyzer.h"
 #include "tools/io.h"
 
-using libspirv::SpirvStats;
+using spvtools::SpirvStats;
 
 namespace {
 
@@ -181,9 +181,9 @@ int main(int argc, char** argv) {
   std::cerr << "Processing " << paths.size() << " files..." << std::endl;
 
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_1);
-  libspirv::SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
+  spvtools::SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
-  libspirv::SpirvStats stats;
+  spvtools::SpirvStats stats;
   stats.opcode_markov_hist.resize(1);
 
   for (size_t index = 0; index < paths.size(); ++index) {
@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
     std::vector<uint32_t> contents;
     if (!ReadFile<uint32_t>(path, "rb", &contents)) return 1;
 
-    if (SPV_SUCCESS != libspirv::AggregateStats(*ctx.context, contents.data(),
+    if (SPV_SUCCESS != spvtools::AggregateStats(*ctx.context, contents.data(),
                                                 contents.size(), nullptr,
                                                 &stats)) {
       std::cerr << "error: Failed to aggregate stats for " << path << std::endl;

@@ -25,13 +25,10 @@ namespace opt {
 // Tracks features enabled by a module. The IRContext has a FeatureManager.
 class FeatureManager {
  public:
-  explicit FeatureManager(const libspirv::AssemblyGrammar& grammar)
-      : grammar_(grammar) {}
+  explicit FeatureManager(const AssemblyGrammar& grammar) : grammar_(grammar) {}
 
   // Returns true if |ext| is an enabled extension in the module.
-  bool HasExtension(libspirv::Extension ext) const {
-    return extensions_.Contains(ext);
-  }
+  bool HasExtension(Extension ext) const { return extensions_.Contains(ext); }
 
   // Returns true if |cap| is an enabled capability in the module.
   bool HasCapability(SpvCapability cap) const {
@@ -41,10 +38,8 @@ class FeatureManager {
   // Analyzes |module| and records enabled extensions and capabilities.
   void Analyze(ir::Module* module);
 
-  libspirv::CapabilitySet* GetCapabilities() { return &capabilities_; }
-  const libspirv::CapabilitySet* GetCapabilities() const {
-    return &capabilities_;
-  }
+  CapabilitySet* GetCapabilities() { return &capabilities_; }
+  const CapabilitySet* GetCapabilities() const { return &capabilities_; }
 
   uint32_t GetExtInstImportId_GLSLstd450() const {
     return extinst_importid_GLSLstd450_;
@@ -65,13 +60,13 @@ class FeatureManager {
   void AddExtInstImportIds(ir::Module* module);
 
   // Auxiliary object for querying SPIR-V grammar facts.
-  const libspirv::AssemblyGrammar& grammar_;
+  const AssemblyGrammar& grammar_;
 
   // The enabled extensions.
-  libspirv::ExtensionSet extensions_;
+  ExtensionSet extensions_;
 
   // The enabled capabilities.
-  libspirv::CapabilitySet capabilities_;
+  CapabilitySet capabilities_;
 
   // Common external instruction import ids, cached for performance.
   uint32_t extinst_importid_GLSLstd450_ = 0;

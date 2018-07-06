@@ -21,7 +21,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
+namespace spvtools {
 
 namespace {
 
@@ -468,4 +468,4 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

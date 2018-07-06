@@ -60,10 +60,6 @@
 #include "val/validation_state.h"
 #include "validate.h"
 
-using libspirv::DiagnosticStream;
-using libspirv::IdDescriptorCollection;
-using libspirv::Instruction;
-using libspirv::ValidationState_t;
 using spvutils::BitReaderWord64;
 using spvutils::BitWriterWord64;
 using spvutils::HuffmanCodec;
@@ -71,7 +67,6 @@ using MoveToFront = spvutils::MoveToFront<uint32_t>;
 using MultiMoveToFront = spvutils::MultiMoveToFront<uint32_t>;
 
 namespace spvtools {
-
 namespace {
 
 const uint32_t kSpirvMagicNumber = SpvMagicNumber;
@@ -517,7 +512,7 @@ class MarkvCodecBase {
   }
 
   spv_validator_options validator_options_ = nullptr;
-  const libspirv::AssemblyGrammar grammar_;
+  const AssemblyGrammar grammar_;
   MarkvHeader header_;
 
   // MARK-V model, not owned.
@@ -2833,7 +2828,7 @@ spv_result_t SpirvToMarkv(
     MessageConsumer message_consumer, MarkvLogConsumer log_consumer,
     MarkvDebugConsumer debug_consumer, std::vector<uint8_t>* markv) {
   spv_context_t hijack_context = *context;
-  libspirv::SetContextMessageConsumer(&hijack_context, message_consumer);
+  SetContextMessageConsumer(&hijack_context, message_consumer);
 
   spv_validator_options validator_options =
       MarkvDecoder::GetValidatorOptions(options);
@@ -2881,7 +2876,7 @@ spv_result_t MarkvToSpirv(
     MarkvDebugConsumer debug_consumer, std::vector<uint32_t>* spirv) {
   spv_position_t position = {};
   spv_context_t hijack_context = *context;
-  libspirv::SetContextMessageConsumer(&hijack_context, message_consumer);
+  SetContextMessageConsumer(&hijack_context, message_consumer);
 
   MarkvDecoder decoder(&hijack_context, markv, options, &markv_model);
 

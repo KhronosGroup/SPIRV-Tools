@@ -23,7 +23,7 @@
 
 #include "latest_version_spirv_header.h"
 
-namespace libspirv {
+namespace spvtools {
 
 // A set of values of a 32-bit enum type.
 // It is fast and compact for the common case, where enum values
@@ -167,6 +167,6 @@ class EnumSet {
 // A set of SpvCapability, optimized for small capability values.
 using CapabilitySet = EnumSet<SpvCapability>;
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_ENUM_SET_H

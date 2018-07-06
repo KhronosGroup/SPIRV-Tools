@@ -24,9 +24,9 @@
 #include "tools/comp/markv_model_factory.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::SetContextMessageConsumer;
 using spvtest::ScopedContext;
 using spvtools::MarkvModelType;
 using MarkvTest = ::testing::TestWithParam<MarkvModelType>;
@@ -826,3 +826,4 @@ INSTANTIATE_TEST_CASE_P(AllMarkvModels, MarkvTest,
                         }), );
 
 }  // namespace
+}  // namespace spvtools

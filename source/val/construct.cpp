@@ -19,7 +19,7 @@
 #include <cstddef>
 #include <unordered_set>
 
-namespace libspirv {
+namespace spvtools {
 
 Construct::Construct(ConstructType construct_type, BasicBlock* entry,
                      BasicBlock* exit, std::vector<Construct*> constructs)
@@ -121,4 +121,5 @@ Construct::ConstructBlockSet Construct::blocks(Function* function) const {
 
   return construct_blocks;
 }
-}  // namespace libspirv
+
+}  // namespace spvtools

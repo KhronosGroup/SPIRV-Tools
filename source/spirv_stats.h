@@ -22,7 +22,7 @@
 
 #include "spirv-tools/libspirv.hpp"
 
-namespace libspirv {
+namespace spvtools {
 
 struct SpirvStats {
   // Version histogram, version_word -> count.
@@ -125,6 +125,6 @@ spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
                             const size_t num_words, spv_diagnostic* pDiagnostic,
                             SpirvStats* stats);
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_SPIRV_STATS_H_

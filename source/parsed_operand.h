@@ -18,7 +18,7 @@
 #include <ostream>
 #include "spirv-tools/libspirv.h"
 
-namespace libspirv {
+namespace spvtools {
 
 // Emits the numeric literal representation of the given instruction operand
 // to the stream.  The operand must be of numeric type.  If integral it may
@@ -27,6 +27,6 @@ namespace libspirv {
 void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
                         const spv_parsed_operand_t& operand);
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_BINARY_H_

@@ -229,7 +229,7 @@ bool IRContext::IsConsistent() {
   return true;
 }
 
-void spvtools::ir::IRContext::ForgetUses(Instruction* inst) {
+void IRContext::ForgetUses(Instruction* inst) {
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->EraseUseRecordsOfOperandIds(inst);
   }

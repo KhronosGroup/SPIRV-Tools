@@ -23,11 +23,7 @@
 #include "spirv_validator_options.h"
 #include "val/validation_state.h"
 
-using libspirv::Decoration;
-using libspirv::DiagnosticStream;
-using libspirv::Instruction;
-using libspirv::ValidationState_t;
-
+namespace spvtools {
 namespace {
 
 // Returns whether the given variable has a BuiltIn decoration.
@@ -236,7 +232,7 @@ bool IsAlignedTo(uint32_t offset, uint32_t alignment) {
 spv_result_t checkLayout(uint32_t struct_id, bool isBlock,
                          ValidationState_t& vstate) {
   auto fail = [&vstate, struct_id,
-               isBlock](uint32_t member_idx) -> libspirv::DiagnosticStream {
+               isBlock](uint32_t member_idx) -> DiagnosticStream {
     DiagnosticStream ds = std::move(
         vstate.diag(SPV_ERROR_INVALID_ID)
         << "Structure id " << struct_id << " decorated as "
@@ -587,9 +583,7 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
-}  // anonymous namespace
-
-namespace libspirv {
+}  // namespace
 
 // Validates that decorations have been applied properly.
 spv_result_t ValidateDecorations(ValidationState_t& vstate) {
@@ -601,4 +595,4 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

@@ -27,6 +27,7 @@
 #include "latest_version_spirv_header.h"
 #include "parsed_operand.h"
 
+namespace spvtools {
 namespace {
 
 // Converts a uint32_t to its string decimal representation.
@@ -40,14 +41,12 @@ std::string to_string(uint32_t id) {
 
 }  // anonymous namespace
 
-namespace libspirv {
-
 NameMapper GetTrivialNameMapper() { return to_string; }
 
 FriendlyNameMapper::FriendlyNameMapper(const spv_const_context context,
                                        const uint32_t* code,
                                        const size_t wordCount)
-    : grammar_(libspirv::AssemblyGrammar(context)) {
+    : grammar_(AssemblyGrammar(context)) {
   spv_diagnostic diag = nullptr;
   // We don't care if the parse fails.
   spvBinaryParse(context, this, code, wordCount, nullptr,
@@ -329,4 +328,4 @@ std::string FriendlyNameMapper::NameForEnumOperand(spv_operand_type_t type,
   }
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

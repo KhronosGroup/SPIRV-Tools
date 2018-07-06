@@ -19,9 +19,9 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::Decoration;
 using std::string;
 using std::vector;
 using ::testing::Eq;
@@ -1972,4 +1972,5 @@ TEST_F(ValidateDecorations, BufferBlockEmptyStruct) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

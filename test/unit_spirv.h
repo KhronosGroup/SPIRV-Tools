@@ -224,7 +224,7 @@ inline std::vector<spv_target_env> AllTargetEnvironments() {
 
 // Returns the capabilities in a CapabilitySet as an ordered vector.
 inline std::vector<SpvCapability> ElementsIn(
-    const libspirv::CapabilitySet& capabilities) {
+    const spvtools::CapabilitySet& capabilities) {
   std::vector<SpvCapability> result;
   capabilities.ForEach([&result](SpvCapability c) { result.push_back(c); });
   return result;

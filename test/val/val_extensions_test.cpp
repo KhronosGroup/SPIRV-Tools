@@ -24,9 +24,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
 namespace {
-
-using ::libspirv::Extension;
 
 using ::testing::HasSubstr;
 using ::testing::Not;
@@ -316,4 +315,5 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

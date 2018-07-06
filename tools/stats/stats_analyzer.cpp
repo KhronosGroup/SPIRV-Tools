@@ -31,7 +31,7 @@
 #include "source/spirv_constant.h"
 #include "source/util/huffman_codec.h"
 
-using libspirv::SpirvStats;
+using spvtools::SpirvStats;
 using spvutils::HuffmanCodec;
 
 namespace {
@@ -380,7 +380,7 @@ std::string GetOpcodeString(uint32_t word) {
 }
 
 std::string GetCapabilityString(uint32_t word) {
-  return libspirv::CapabilityToString(static_cast<SpvCapability>(word));
+  return spvtools::CapabilityToString(static_cast<SpvCapability>(word));
 }
 
 template <class T>

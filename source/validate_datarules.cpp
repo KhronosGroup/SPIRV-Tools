@@ -26,10 +26,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-using libspirv::CapabilitySet;
-using libspirv::DiagnosticStream;
-using libspirv::ValidationState_t;
-
+namespace spvtools {
 namespace {
 
 // Validates that the number of components in the vector is valid.
@@ -219,9 +216,7 @@ spv_result_t ValidateStruct(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // anonymous namespace
-
-namespace libspirv {
+}  // namespace
 
 // Validates that Data Rules are followed according to the specifications.
 // (Data Rules subsection of 2.16.1 Universal Validation Rules)
@@ -271,4 +266,4 @@ spv_result_t DataRulesPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

@@ -28,11 +28,9 @@
 #include "val/validation_state.h"
 #include "validate.h"
 
+namespace spvtools {
 namespace {
-using libspirv::CapabilitySet;
-using libspirv::Extension;
-using libspirv::ExtensionSet;
-using libspirv::ValidationState_t;
+
 using std::vector;
 
 // This is all we need for these tests.
@@ -136,4 +134,6 @@ TEST_F(ValidationState_HasAnyOfExtensions, MultiCapMask) {
   EXPECT_TRUE(state_.HasAnyOfExtensions(set1));
   EXPECT_FALSE(state_.HasAnyOfExtensions(set2));
 }
+
 }  // namespace
+}  // namespace spvtools

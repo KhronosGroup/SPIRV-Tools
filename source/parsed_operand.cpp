@@ -19,7 +19,7 @@
 #include <cassert>
 #include "util/hex_float.h"
 
-namespace libspirv {
+namespace spvtools {
 
 void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
                         const spv_parsed_operand_t& operand) {
@@ -72,4 +72,4 @@ void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
     assert(false && "Unhandled");
   }
 }
-}  // namespace libspirv
+}  // namespace spvtools

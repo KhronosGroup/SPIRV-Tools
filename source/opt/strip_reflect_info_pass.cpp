@@ -22,7 +22,7 @@
 namespace spvtools {
 namespace opt {
 
-using spvtools::ir::Instruction;
+using ir::Instruction;
 
 Pass::Status StripReflectInfoPass::Process(ir::IRContext* irContext) {
   bool modified = false;

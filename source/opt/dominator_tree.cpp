@@ -20,9 +20,6 @@
 #include "dominator_tree.h"
 #include "ir_context.h"
 
-using namespace spvtools;
-using namespace spvtools::opt;
-
 // Calculates the dominator or postdominator tree for a given function.
 // 1 - Compute the successors and predecessors for each BasicBlock. We add a
 // dummy node for the start node or for postdominators the exit. This node will
@@ -40,6 +37,8 @@ using namespace spvtools::opt;
 // preorder and postorder index of each node. We use these indexes to compare
 // nodes against each other for domination checks.
 
+namespace spvtools {
+namespace opt {
 namespace {
 
 // Wrapper around CFA::DepthFirstTraversal to provide an interface to perform
@@ -214,9 +213,6 @@ void BasicBlockSuccessorHelper<BBType>::CreateSuccessorMap(
 }
 
 }  // namespace
-
-namespace spvtools {
-namespace opt {
 
 bool DominatorTree::StrictlyDominates(uint32_t a, uint32_t b) const {
   if (a == b) return false;

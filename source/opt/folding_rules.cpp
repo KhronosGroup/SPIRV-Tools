@@ -21,8 +21,8 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
+
 const uint32_t kExtractCompositeIdInIdx = 0;
 const uint32_t kInsertObjectIdInIdx = 0;
 const uint32_t kInsertCompositeIdInIdx = 1;
@@ -2021,7 +2021,7 @@ FoldingRule StoringUndef() {
 }
 }  // namespace
 
-spvtools::opt::FoldingRules::FoldingRules() {
+FoldingRules::FoldingRules() {
   // Add all folding rules to the list for the opcodes to which they apply.
   // Note that the order in which rules are added to the list matters. If a rule
   // applies to the instruction, the rest of the rules will not be attempted.
