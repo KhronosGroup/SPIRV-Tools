@@ -20,13 +20,15 @@
 
 #include "util/string_utils.h"
 
-namespace spvutils {
+namespace spvtools {
+namespace utils {
 
 // Converts arithmetic value |val| to its default string representation.
 template <class T>
 std::string ToString(T val) {
-  static_assert(std::is_arithmetic<T>::value,
-                "spvutils::ToString is restricted to only arithmetic values");
+  static_assert(
+      std::is_arithmetic<T>::value,
+      "spvtools::utils::ToString is restricted to only arithmetic values");
   std::stringstream os;
   os << val;
   return os.str();
@@ -35,6 +37,7 @@ std::string ToString(T val) {
 // Converts cardinal number to ordinal number string.
 std::string CardinalToOrdinal(size_t cardinal);
 
-}  // namespace spvutils
+}  // namespace utils
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_UTIL_STRING_UTILS_H_

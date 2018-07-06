@@ -64,14 +64,13 @@ using libspirv::DiagnosticStream;
 using libspirv::IdDescriptorCollection;
 using libspirv::Instruction;
 using libspirv::ValidationState_t;
-using spvutils::BitReaderWord64;
-using spvutils::BitWriterWord64;
-using spvutils::HuffmanCodec;
-using MoveToFront = spvutils::MoveToFront<uint32_t>;
-using MultiMoveToFront = spvutils::MultiMoveToFront<uint32_t>;
+using spvtools::utils::BitReaderWord64;
+using spvtools::utils::BitWriterWord64;
+using spvtools::utils::HuffmanCodec;
+using MoveToFront = spvtools::utils::MoveToFront<uint32_t>;
+using MultiMoveToFront = spvtools::utils::MultiMoveToFront<uint32_t>;
 
 namespace spvtools {
-
 namespace {
 
 const uint32_t kSpirvMagicNumber = SpvMagicNumber;
@@ -497,7 +496,7 @@ class MarkvCodecBase {
   // Returns Huffman codec for ranks of the mtf with given |handle|.
   // Different mtfs can use different rank distributions.
   // May return nullptr if the codec doesn't exist.
-  const spvutils::HuffmanCodec<uint32_t>* GetMtfHuffmanCodec(
+  const spvtools::utils::HuffmanCodec<uint32_t>* GetMtfHuffmanCodec(
       uint64_t handle) const {
     const auto it = mtf_huffman_codecs_.find(handle);
     if (it == mtf_huffman_codecs_.end()) return nullptr;

@@ -208,7 +208,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
   const uint32_t num_words = inst.num_words;
 
-  size_t expected_num_image_operand_words = spvutils::CountSetBits(mask);
+  size_t expected_num_image_operand_words = spvtools::utils::CountSetBits(mask);
   if (mask & SpvImageOperandsGradMask) {
     // Grad uses two words.
     ++expected_num_image_operand_words;
@@ -220,9 +220,9 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
            << spvOpcodeString(opcode);
   }
 
-  if (spvutils::CountSetBits(mask & (SpvImageOperandsOffsetMask |
-                                     SpvImageOperandsConstOffsetMask |
-                                     SpvImageOperandsConstOffsetsMask)) > 1) {
+  if (spvtools::utils::CountSetBits(
+          mask & (SpvImageOperandsOffsetMask | SpvImageOperandsConstOffsetMask |
+                  SpvImageOperandsConstOffsetsMask)) > 1) {
     return _.diag(SPV_ERROR_INVALID_DATA)
            << "Image Operands Offset, ConstOffset, ConstOffsets cannot be used "
            << "together: " << spvOpcodeString(opcode);

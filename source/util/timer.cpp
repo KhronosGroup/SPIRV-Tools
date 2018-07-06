@@ -20,7 +20,8 @@
 #include <iostream>
 #include <string>
 
-namespace spvutils {
+namespace spvtools {
+namespace utils {
 
 #if defined(SPIRV_TIMER_ENABLED)
 
@@ -97,4 +98,5 @@ void Timer::Report(const char* tag) {
 
 #endif  // defined(SPIRV_TIMER_ENABLED)
 
-}  // namespace spvutils
+}  // namespace utils
+}  // namespace spvtools

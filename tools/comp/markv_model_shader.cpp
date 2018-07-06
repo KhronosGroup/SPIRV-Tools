@@ -21,7 +21,7 @@
 #include <unordered_set>
 #include <vector>
 
-using spvutils::HuffmanCodec;
+using spvtools::utils::HuffmanCodec;
 
 namespace spvtools {
 
