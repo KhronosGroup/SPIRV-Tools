@@ -83,7 +83,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
-  if (spvutils::CountSetBits(
+  if (spvtools::utils::CountSetBits(
           flags &
           (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
            SpvMemorySemanticsAcquireReleaseMask |

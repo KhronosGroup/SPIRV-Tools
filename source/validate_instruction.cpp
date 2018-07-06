@@ -271,9 +271,9 @@ spv_result_t ExtensionCheck(ValidationState_t& _,
         RequiredExtensions(_, operand.type, word);
     if (!_.HasAnyOfExtensions(required_extensions)) {
       return _.diag(SPV_ERROR_MISSING_EXTENSION)
-             << spvutils::CardinalToOrdinal(operand_index + 1) << " operand of "
-             << spvOpcodeString(opcode) << ": operand " << word
-             << " requires one of these extensions: "
+             << spvtools::utils::CardinalToOrdinal(operand_index + 1)
+             << " operand of " << spvOpcodeString(opcode) << ": operand "
+             << word << " requires one of these extensions: "
              << ExtensionSetToString(required_extensions);
     }
   }

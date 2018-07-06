@@ -20,8 +20,8 @@
 
 #include "util/bit_stream.h"
 
-namespace spvutils {
-
+namespace spvtools {
+namespace utils {
 namespace {
 
 // Returns if the system is little-endian. Unfortunately only works during
@@ -434,4 +434,5 @@ bool BitReaderWord64::OnlyZeroesLeft() const {
   return !remaining_bits;
 }
 
-}  // namespace spvutils
+}  // namespace utils
+}  // namespace spvtools
