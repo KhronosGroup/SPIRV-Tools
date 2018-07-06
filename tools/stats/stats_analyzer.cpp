@@ -32,7 +32,7 @@
 #include "source/util/huffman_codec.h"
 
 using libspirv::SpirvStats;
-using spvutils::HuffmanCodec;
+using spvtools::utils::HuffmanCodec;
 
 namespace {
 

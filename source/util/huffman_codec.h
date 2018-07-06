@@ -31,7 +31,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace spvutils {
+namespace spvtools {
+namespace utils {
 
 // Used to generate and apply a Huffman coding scheme.
 // |Val| is the type of variable being encoded (for example a string or a
@@ -380,6 +381,7 @@ class HuffmanCodec {
   uint32_t next_node_id_ = 1;
 };
 
-}  // namespace spvutils
+}  // namespace utils
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_UTIL_HUFFMAN_CODEC_H_

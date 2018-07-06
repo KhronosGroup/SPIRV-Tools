@@ -233,7 +233,7 @@ class FloatConstant : public ScalarConstant {
   float GetFloatValue() const {
     assert(type()->AsFloat()->width() == 32 &&
            "Not a 32-bit floating point value.");
-    spvutils::FloatProxy<float> a(words()[0]);
+    utils::FloatProxy<float> a(words()[0]);
     return a.getAsFloat();
   }
 
@@ -245,7 +245,7 @@ class FloatConstant : public ScalarConstant {
     uint64_t combined_words = words()[1];
     combined_words = combined_words << 32;
     combined_words |= words()[0];
-    spvutils::FloatProxy<double> a(combined_words);
+    utils::FloatProxy<double> a(combined_words);
     return a.getAsFloat();
   }
 };
