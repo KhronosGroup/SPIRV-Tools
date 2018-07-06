@@ -19,24 +19,9 @@
 #include "gmock/gmock.h"
 #include "util/bit_stream.h"
 
+namespace spvtools {
+namespace utils {
 namespace {
-
-using spvutils::BitReaderInterface;
-using spvutils::BitReaderWord64;
-using spvutils::BitsetToStream;
-using spvutils::BitsToStream;
-using spvutils::BitWriterInterface;
-using spvutils::BitWriterWord64;
-using spvutils::BufferToStream;
-using spvutils::DecodeZigZag;
-using spvutils::EncodeZigZag;
-using spvutils::GetLowerBits;
-using spvutils::Log2U64;
-using spvutils::NumBitsToNumWords;
-using spvutils::PadToWord;
-using spvutils::StreamToBits;
-using spvutils::StreamToBitset;
-using spvutils::StreamToBuffer;
 
 // A simple and inefficient implementatition of BitWriterInterface,
 // using std::stringstream. Intended for tests only.
@@ -1421,4 +1406,6 @@ TEST(FixedWidthRead, Fail) {
   ASSERT_FALSE(reader.ReadFixedWidth(&val, 127));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace utils
+}  // namespace spvtools

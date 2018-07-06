@@ -93,10 +93,10 @@ uint32_t NegateFloatingPointConstant(analysis::ConstantManager* const_mgr,
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
   if (width == 64) {
-    spvutils::FloatProxy<double> result(c->GetDouble() * -1.0);
+    utils::FloatProxy<double> result(c->GetDouble() * -1.0);
     words = result.GetWords();
   } else {
-    spvutils::FloatProxy<float> result(c->GetFloat() * -1.0f);
+    utils::FloatProxy<float> result(c->GetFloat() * -1.0f);
     words = result.GetWords();
   }
 
@@ -183,11 +183,11 @@ uint32_t Reciprocal(analysis::ConstantManager* const_mgr,
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
   if (width == 64) {
-    spvutils::FloatProxy<double> result(1.0 / c->GetDouble());
+    spvtools::utils::FloatProxy<double> result(1.0 / c->GetDouble());
     if (!IsValidResult(result.getAsFloat())) return 0;
     words = result.GetWords();
   } else {
-    spvutils::FloatProxy<float> result(1.0f / c->GetFloat());
+    spvtools::utils::FloatProxy<float> result(1.0f / c->GetFloat());
     if (!IsValidResult(result.getAsFloat())) return 0;
     words = result.GetWords();
   }
@@ -421,19 +421,18 @@ uint32_t PerformFloatingPointOperation(analysis::ConstantManager* const_mgr,
   uint32_t width = type->AsFloat()->width();
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
-#define FOLD_OP(op)                                 \
-  if (width == 64) {                                \
-    spvutils::FloatProxy<double> val =              \
-        input1->GetDouble() op input2->GetDouble(); \
-    double dval = val.getAsFloat();                 \
-    if (!IsValidResult(dval)) return 0;             \
-    words = val.GetWords();                         \
-  } else {                                          \
-    spvutils::FloatProxy<float> val =               \
-        input1->GetFloat() op input2->GetFloat();   \
-    float fval = val.getAsFloat();                  \
-    if (!IsValidResult(fval)) return 0;             \
-    words = val.GetWords();                         \
+#define FOLD_OP(op)                                                          \
+  if (width == 64) {                                                         \
+    utils::FloatProxy<double> val =                                          \
+        input1->GetDouble() op input2->GetDouble();                          \
+    double dval = val.getAsFloat();                                          \
+    if (!IsValidResult(dval)) return 0;                                      \
+    words = val.GetWords();                                                  \
+  } else {                                                                   \
+    utils::FloatProxy<float> val = input1->GetFloat() op input2->GetFloat(); \
+    float fval = val.getAsFloat();                                           \
+    if (!IsValidResult(fval)) return 0;                                      \
+    words = val.GetWords();                                                  \
   }
   switch (opcode) {
     case SpvOpFMul:

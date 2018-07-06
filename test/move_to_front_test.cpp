@@ -19,10 +19,9 @@
 #include "gmock/gmock.h"
 #include "util/move_to_front.h"
 
+namespace spvtools {
+namespace utils {
 namespace {
-
-using spvutils::MoveToFront;
-using spvutils::MultiMoveToFront;
 
 // Class used to test the inner workings of MoveToFront.
 class MoveToFrontTester : public MoveToFront<uint32_t> {
@@ -938,4 +937,6 @@ TEST(MultiMoveToFront, TwoSequences) {
   EXPECT_EQ(1u, rank);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace utils
+}  // namespace spvtools
