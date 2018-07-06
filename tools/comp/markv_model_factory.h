@@ -20,6 +20,7 @@
 #include "source/comp/markv_model.h"
 
 namespace spvtools {
+namespace comp {
 
 enum MarkvModelType {
   kMarkvModelUnknown = 0,
@@ -30,6 +31,7 @@ enum MarkvModelType {
 
 std::unique_ptr<MarkvModel> CreateMarkvModel(MarkvModelType type);
 
+}  // namespace comp
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_COMP_MARKV_MODEL_FACTORY_H_
