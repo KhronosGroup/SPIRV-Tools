@@ -819,7 +819,8 @@ OpFunctionEnd
 
 INSTANTIATE_TEST_CASE_P(AllMarkvModels, MarkvTest,
                         ::testing::ValuesIn(std::vector<MarkvModelType>{
-                            kMarkvModelShaderLite, kMarkvModelShaderMid,
+                            kMarkvModelShaderLite,
+                            kMarkvModelShaderMid,
                             kMarkvModelShaderMax,
                         }), );
 
