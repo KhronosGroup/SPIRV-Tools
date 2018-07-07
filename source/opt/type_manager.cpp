@@ -32,8 +32,7 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-TypeManager::TypeManager(const MessageConsumer& consumer,
-                         spvtools::ir::IRContext* c)
+TypeManager::TypeManager(const MessageConsumer& consumer, ir::IRContext* c)
     : consumer_(consumer), context_(c) {
   AnalyzeTypes(*c->module());
 }
@@ -62,7 +61,7 @@ uint32_t TypeManager::GetId(const Type* type) const {
   return 0;
 }
 
-void TypeManager::AnalyzeTypes(const spvtools::ir::Module& module) {
+void TypeManager::AnalyzeTypes(const ir::Module& module) {
   // First pass through the types.  Any types that reference a forward pointer
   // (directly or indirectly) are incomplete, and are added to incomplete types.
   for (const auto* inst : module.GetTypes()) {
@@ -591,9 +590,8 @@ Type* TypeManager::GetRegisteredType(const Type* type) {
   return GetType(id);
 }
 
-Type* TypeManager::RecordIfTypeDefinition(
-    const spvtools::ir::Instruction& inst) {
-  if (!spvtools::ir::IsTypeInst(inst.opcode())) return nullptr;
+Type* TypeManager::RecordIfTypeDefinition(const ir::Instruction& inst) {
+  if (!ir::IsTypeInst(inst.opcode())) return nullptr;
 
   Type* type = nullptr;
   switch (inst.opcode()) {

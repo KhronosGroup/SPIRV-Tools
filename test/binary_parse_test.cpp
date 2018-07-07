@@ -33,9 +33,9 @@ static bool operator==(const spv_parsed_operand_t& a,
          a.number_bit_width == b.number_bit_width;
 }
 
+namespace spvtools {
 namespace {
 
-using ::libspirv::SetContextMessageConsumer;
 using ::spvtest::Concatenate;
 using ::spvtest::MakeInstruction;
 using ::spvtest::MakeVector;
@@ -895,4 +895,5 @@ INSTANTIATE_TEST_CASE_P(
          "Invalid selection control operand: 7 has invalid mask component 4"},
     }), );
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

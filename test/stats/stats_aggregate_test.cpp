@@ -20,10 +20,9 @@
 #include "test_fixture.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::SetContextMessageConsumer;
-using libspirv::SpirvStats;
 using spvtest::ScopedContext;
 
 void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
@@ -47,7 +46,7 @@ void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
   }
 }
 
-// Calls libspirv::AggregateStats for binary compiled from |code|.
+// Calls AggregateStats for binary compiled from |code|.
 void CompileAndAggregateStats(const std::string& code, SpirvStats* stats,
                               spv_target_env env = SPV_ENV_UNIVERSAL_1_1) {
   ScopedContext ctx(env);
@@ -482,3 +481,4 @@ OpMemoryModel Logical GLSL450
 }
 
 }  // namespace
+}  // namespace spvtools

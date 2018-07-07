@@ -20,7 +20,7 @@
 
 #include "spirv-tools/libspirv.hpp"
 
-namespace libspirv {
+namespace spvtools {
 
 // A DiagnosticStream remembers the current position of the input and an error
 // code, and captures diagnostic messages via the left-shift operator.
@@ -28,8 +28,7 @@ namespace libspirv {
 // emitted during the destructor.
 class DiagnosticStream {
  public:
-  DiagnosticStream(spv_position_t position,
-                   const spvtools::MessageConsumer& consumer,
+  DiagnosticStream(spv_position_t position, const MessageConsumer& consumer,
                    const std::string& disassembled_instruction,
                    spv_result_t error)
       : position_(position),
@@ -60,7 +59,7 @@ class DiagnosticStream {
  private:
   std::ostringstream stream_;
   spv_position_t position_;
-  spvtools::MessageConsumer consumer_;  // Message consumer callback.
+  MessageConsumer consumer_;  // Message consumer callback.
   std::string disassembled_instruction_;
   spv_result_t error_;
 };
@@ -75,6 +74,6 @@ void UseDiagnosticAsMessageConsumer(spv_context context,
 
 std::string spvResultToString(spv_result_t res);
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_DIAGNOSTIC_H_

@@ -21,8 +21,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Returns the type of the value accessed by OpCompositeExtract or
@@ -478,4 +477,4 @@ spv_result_t CompositesPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

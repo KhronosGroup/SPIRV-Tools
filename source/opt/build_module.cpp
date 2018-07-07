@@ -20,7 +20,6 @@
 #include "table.h"
 
 namespace spvtools {
-
 namespace {
 
 // Sets the module header for IrLoader. Meets the interface requirement of
@@ -49,7 +48,7 @@ std::unique_ptr<ir::IRContext> BuildModule(spv_target_env env,
                                            const uint32_t* binary,
                                            const size_t size) {
   auto context = spvContextCreate(env);
-  libspirv::SetContextMessageConsumer(context, consumer);
+  SetContextMessageConsumer(context, consumer);
 
   auto irContext = MakeUnique<ir::IRContext>(env, consumer);
   ir::IrLoader loader(consumer, irContext->module());

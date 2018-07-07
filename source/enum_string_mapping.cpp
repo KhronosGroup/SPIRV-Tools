@@ -22,8 +22,8 @@
 
 #include "extensions.h"
 
-namespace libspirv {
+namespace spvtools {
 
 #include "enum_string_mapping.inc"
 
-}  // namespace libspirv
+}  // namespace spvtools

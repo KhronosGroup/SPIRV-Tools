@@ -26,13 +26,10 @@
 #include "spirv_validator_options.h"
 #include "val/validation_state.h"
 
-using libspirv::Decoration;
-using libspirv::DiagnosticStream;
-using libspirv::Instruction;
-using libspirv::ValidationState_t;
-using std::make_pair;
-
+namespace spvtools {
 namespace {
+
+using std::make_pair;
 
 // Distinguish between row and column major matrix layouts.
 enum MatrixLayout { kRowMajor, kColumnMajor };
@@ -334,7 +331,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                          MemberConstraints& constraints,
                          ValidationState_t& vstate) {
   auto fail = [&vstate, struct_id, storage_class_str, decoration_str,
-               blockRules](uint32_t member_idx) -> libspirv::DiagnosticStream {
+               blockRules](uint32_t member_idx) -> DiagnosticStream {
     DiagnosticStream ds =
         std::move(vstate.diag(SPV_ERROR_INVALID_ID)
                   << "Structure id " << struct_id << " decorated as "
@@ -805,9 +802,7 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
-}  // anonymous namespace
-
-namespace libspirv {
+}  // namespace
 
 // Validates that decorations have been applied properly.
 spv_result_t ValidateDecorations(ValidationState_t& vstate) {
@@ -819,4 +814,4 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

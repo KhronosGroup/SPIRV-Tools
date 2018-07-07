@@ -354,7 +354,7 @@ void Loop::GetExitBlocks(std::unordered_set<uint32_t>* exit_blocks) const {
   exit_blocks->clear();
 
   for (uint32_t bb_id : GetBlocks()) {
-    const spvtools::ir::BasicBlock* bb = cfg->block(bb_id);
+    const BasicBlock* bb = cfg->block(bb_id);
     bb->ForEachSuccessorLabel([exit_blocks, this](uint32_t succ) {
       if (!IsInsideLoop(succ)) {
         exit_blocks->insert(succ);

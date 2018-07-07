@@ -22,8 +22,7 @@
 namespace spvtools {
 namespace opt {
 
-uint32_t ValueNumberTable::GetValueNumber(
-    spvtools::ir::Instruction* inst) const {
+uint32_t ValueNumberTable::GetValueNumber(ir::Instruction* inst) const {
   assert(inst->result_id() != 0 &&
          "inst must have a result id to get a value number.");
 
@@ -209,8 +208,7 @@ bool ComputeSameValue::operator()(const ir::Instruction& lhs,
       lhs.result_id(), rhs.result_id());
 }
 
-std::size_t ValueTableHash::operator()(
-    const spvtools::ir::Instruction& inst) const {
+std::size_t ValueTableHash::operator()(const ir::Instruction& inst) const {
   // We hash the opcode and in-operands, not the result, because we want
   // instructions that are the same except for the result to hash to the
   // same value.

@@ -23,8 +23,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Performs compile time check that all SpvImageOperandsXXX cases are handled in
@@ -1667,4 +1666,4 @@ spv_result_t ImagePass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

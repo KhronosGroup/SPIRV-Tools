@@ -24,8 +24,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 bool IsSupportGuaranteedVulkan_1_0(uint32_t capability) {
@@ -306,4 +305,4 @@ spv_result_t CapabilityPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

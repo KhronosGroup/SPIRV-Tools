@@ -25,10 +25,9 @@
 #include "test_fixture.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::AssemblyContext;
-using libspirv::AssemblyGrammar;
 using spvtest::AutoText;
 using spvtest::Concatenate;
 using spvtest::MakeInstruction;
@@ -266,4 +265,5 @@ TEST(CreateContext, VulkanEnvironment) {
   spvContextDestroy(c);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

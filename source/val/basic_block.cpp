@@ -20,7 +20,7 @@
 
 using std::vector;
 
-namespace libspirv {
+namespace spvtools {
 
 BasicBlock::BasicBlock(uint32_t label_id)
     : id_(label_id),
@@ -144,4 +144,4 @@ bool operator!=(const BasicBlock::DominatorIterator& lhs,
 const BasicBlock*& BasicBlock::DominatorIterator::operator*() {
   return current_;
 }
-}  // namespace libspirv
+}  // namespace spvtools

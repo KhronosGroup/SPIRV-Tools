@@ -19,9 +19,9 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::Decoration;
 using std::string;
 using std::vector;
 using ::testing::Eq;
@@ -2663,4 +2663,5 @@ TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackBad) {
           "offset 60 overlaps previous member ending at offset 63"));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

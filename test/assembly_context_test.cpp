@@ -19,7 +19,7 @@
 
 #include "source/instruction.h"
 
-using libspirv::AssemblyContext;
+using spvtools::AssemblyContext;
 using spvtest::AutoText;
 using spvtest::Concatenate;
 using ::testing::Eq;

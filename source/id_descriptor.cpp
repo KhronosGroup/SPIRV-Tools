@@ -20,8 +20,7 @@
 #include "opcode.h"
 #include "operand.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Hashes an array of words. Order of words is important.
@@ -76,4 +75,4 @@ uint32_t IdDescriptorCollection::ProcessInstruction(
   return descriptor;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

@@ -16,9 +16,9 @@
 
 #include "enum_set.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::CapabilitySet;
 using spvtest::ElementsIn;
 
 // Capabilities required by an Opcode.
@@ -74,4 +74,5 @@ INSTANTIATE_TEST_CASE_P(
             SpvOpGetKernelMaxNumSubgroups,
             CapabilitySet{SpvCapabilitySubgroupDispatch}}), );
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

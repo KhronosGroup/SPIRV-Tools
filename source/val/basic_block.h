@@ -24,7 +24,7 @@
 #include <memory>
 #include <vector>
 
-namespace libspirv {
+namespace spvtools {
 
 enum BlockType : uint32_t {
   kBlockTypeUndefined,
@@ -241,6 +241,6 @@ bool operator==(const BasicBlock::DominatorIterator& lhs,
 bool operator!=(const BasicBlock::DominatorIterator& lhs,
                 const BasicBlock::DominatorIterator& rhs);
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  /// LIBSPIRV_VAL_BASICBLOCK_H_

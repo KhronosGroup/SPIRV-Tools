@@ -23,9 +23,7 @@ namespace spvtools {
 namespace ir {
 class IRContext;
 }
-}  // namespace spvtools
 
-namespace spvtools {
 namespace opt {
 
 // Returns true if the two instructions compute the same value.  Used by the
@@ -38,7 +36,7 @@ class ComputeSameValue {
 // The hash function used in the value number table.
 class ValueTableHash {
  public:
-  std::size_t operator()(const spvtools::ir::Instruction& inst) const;
+  std::size_t operator()(const ir::Instruction& inst) const;
 };
 
 // This class implements the value number analysis.  It is using a hash-based
@@ -61,7 +59,7 @@ class ValueNumberTable {
   // Returns the value number of the value computed by |inst|.  |inst| must have
   // a result id that will hold the computed value.  If no value number has been
   // assigned to the result id, then the return value is 0.
-  uint32_t GetValueNumber(spvtools::ir::Instruction* inst) const;
+  uint32_t GetValueNumber(ir::Instruction* inst) const;
 
   // Returns the value number of the value contain in |id|.  Returns 0 if it
   // has not been assigned a value number.
@@ -81,7 +79,7 @@ class ValueNumberTable {
   // id.
   uint32_t AssignValueNumber(ir::Instruction* inst);
 
-  std::unordered_map<spvtools::ir::Instruction, uint32_t, ValueTableHash,
+  std::unordered_map<ir::Instruction, uint32_t, ValueTableHash,
                      ComputeSameValue>
       instruction_to_value_;
   std::unordered_map<uint32_t, uint32_t> id_to_value_;

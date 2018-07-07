@@ -28,7 +28,7 @@
 #include "val/basic_block.h"
 #include "val/construct.h"
 
-namespace libspirv {
+namespace spvtools {
 
 struct bb_constr_type_pair_hash {
   std::size_t operator()(
@@ -331,7 +331,7 @@ class Function {
   /// constructs, the type of the construct should also be specified in order to
   /// get the unique construct.
   std::unordered_map<std::pair<const BasicBlock*, ConstructType>, Construct*,
-                     libspirv::bb_constr_type_pair_hash>
+                     bb_constr_type_pair_hash>
       entry_block_to_construct_;
 
   /// This map provides the header block for a given merge block.
@@ -351,6 +351,6 @@ class Function {
   std::set<uint32_t> function_call_targets_;
 };
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  /// LIBSPIRV_VAL_FUNCTION_H_

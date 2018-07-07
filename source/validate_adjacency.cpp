@@ -24,7 +24,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
+namespace spvtools {
 
 spv_result_t ValidateAdjacency(ValidationState_t& _) {
   const auto& instructions = _.ordered_instructions();
@@ -81,4 +81,4 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

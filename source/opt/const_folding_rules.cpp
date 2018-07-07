@@ -771,7 +771,7 @@ ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
 
 }  // namespace
 
-spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
+ConstantFoldingRules::ConstantFoldingRules() {
   // Add all folding rules to the list for the opcodes to which they apply.
   // Note that the order in which rules are added to the list matters. If a rule
   // applies to the instruction, the rest of the rules will not be attempted.

@@ -24,7 +24,7 @@
 #include "spirv-tools/libspirv.h"
 #include "table.h"
 
-namespace libspirv {
+namespace spvtools {
 
 class BasicBlock;
 class Function;
@@ -113,13 +113,13 @@ OPERATOR(<);
 OPERATOR(==);
 #undef OPERATOR
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 // custom specialization of std::hash for Instruction
 namespace std {
 template <>
-struct hash<libspirv::Instruction> {
-  typedef libspirv::Instruction argument_type;
+struct hash<spvtools::Instruction> {
+  typedef spvtools::Instruction argument_type;
   typedef std::size_t result_type;
   result_type operator()(const argument_type& inst) const {
     return hash<uint32_t>()(inst.id());

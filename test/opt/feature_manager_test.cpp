@@ -19,7 +19,7 @@
 #include "opt/build_module.h"
 #include "opt/ir_context.h"
 
-using namespace spvtools;
+namespace spvtools {
 
 using FeatureManagerTest = ::testing::Test;
 
@@ -34,7 +34,7 @@ OpMemoryModel Logical GLSL450
   ASSERT_NE(context, nullptr);
 
   EXPECT_FALSE(context->get_feature_mgr()->HasExtension(
-      libspirv::Extension::kSPV_KHR_variable_pointers));
+      Extension::kSPV_KHR_variable_pointers));
 }
 
 TEST_F(FeatureManagerTest, OneExtension) {
@@ -49,7 +49,7 @@ OpExtension "SPV_KHR_variable_pointers"
   ASSERT_NE(context, nullptr);
 
   EXPECT_TRUE(context->get_feature_mgr()->HasExtension(
-      libspirv::Extension::kSPV_KHR_variable_pointers));
+      Extension::kSPV_KHR_variable_pointers));
 }
 
 TEST_F(FeatureManagerTest, NotADifferentExtension) {
@@ -64,7 +64,7 @@ OpExtension "SPV_KHR_variable_pointers"
   ASSERT_NE(context, nullptr);
 
   EXPECT_FALSE(context->get_feature_mgr()->HasExtension(
-      libspirv::Extension::kSPV_KHR_storage_buffer_storage_class));
+      Extension::kSPV_KHR_storage_buffer_storage_class));
 }
 
 TEST_F(FeatureManagerTest, TwoExtensions) {
@@ -80,9 +80,9 @@ OpExtension "SPV_KHR_storage_buffer_storage_class"
   ASSERT_NE(context, nullptr);
 
   EXPECT_TRUE(context->get_feature_mgr()->HasExtension(
-      libspirv::Extension::kSPV_KHR_variable_pointers));
+      Extension::kSPV_KHR_variable_pointers));
   EXPECT_TRUE(context->get_feature_mgr()->HasExtension(
-      libspirv::Extension::kSPV_KHR_storage_buffer_storage_class));
+      Extension::kSPV_KHR_storage_buffer_storage_class));
 }
 
 // Test capability checks.
@@ -132,3 +132,5 @@ OpMemoryModel Logical GLSL450
   EXPECT_TRUE(context->get_feature_mgr()->HasCapability(SpvCapabilityMatrix));
   EXPECT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
 }
+
+}  // namespace spvtools

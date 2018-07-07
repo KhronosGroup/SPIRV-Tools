@@ -34,7 +34,6 @@ using std::tie;
 using std::tuple;
 using std::vector;
 
-using libspirv::spvResultToString;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::StrEq;
@@ -43,6 +42,7 @@ using pred_type = function<spv_result_t(int)>;
 using ValidateLayout =
     spvtest::ValidateBase<tuple<int, tuple<string, pred_type, pred_type>>>;
 
+namespace spvtools {
 namespace {
 
 // returns true if order is equal to VAL
@@ -640,3 +640,4 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidInBasicBlock) {
 
 // TODO(umar): Test optional instructions
 }  // namespace
+}  // namespace spvtools
