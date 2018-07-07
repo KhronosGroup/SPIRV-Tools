@@ -24,6 +24,7 @@
 #include "util/huffman_codec.h"
 
 namespace spvtools {
+namespace comp {
 
 // Base class for MARK-V models.
 // The class contains encoding/decoding model with various constants and
@@ -97,7 +98,7 @@ class MarkvModel {
 
   // Returns a codec for common opcode_and_num_operands words for the given
   // previous opcode. May return nullptr if the codec doesn't exist.
-  const spvutils::HuffmanCodec<uint64_t>*
+  const utils::HuffmanCodec<uint64_t>*
   GetOpcodeAndNumOperandsMarkovHuffmanCodec(uint32_t prev_opcode) const {
     if (prev_opcode == SpvOpNop)
       return opcode_and_num_operands_huffman_codec_.get();
@@ -112,7 +113,7 @@ class MarkvModel {
   // Returns a codec for common non-id words used for given operand slot.
   // Operand slot is defined by the opcode and the operand index.
   // May return nullptr if the codec doesn't exist.
-  const spvutils::HuffmanCodec<uint64_t>* GetNonIdWordHuffmanCodec(
+  const utils::HuffmanCodec<uint64_t>* GetNonIdWordHuffmanCodec(
       uint32_t opcode, uint32_t operand_index) const {
     const auto it = non_id_word_huffman_codecs_.find(
         std::pair<uint32_t, uint32_t>(opcode, operand_index));
@@ -123,7 +124,7 @@ class MarkvModel {
   // Returns a codec for common id descriptos used for given operand slot.
   // Operand slot is defined by the opcode and the operand index.
   // May return nullptr if the codec doesn't exist.
-  const spvutils::HuffmanCodec<uint64_t>* GetIdDescriptorHuffmanCodec(
+  const utils::HuffmanCodec<uint64_t>* GetIdDescriptorHuffmanCodec(
       uint32_t opcode, uint32_t operand_index) const {
     const auto it = id_descriptor_huffman_codecs_.find(
         std::pair<uint32_t, uint32_t>(opcode, operand_index));
@@ -134,7 +135,7 @@ class MarkvModel {
   // Returns a codec for common strings used by the given opcode.
   // Operand slot is defined by the opcode and the operand index.
   // May return nullptr if the codec doesn't exist.
-  const spvutils::HuffmanCodec<std::string>* GetLiteralStringHuffmanCodec(
+  const utils::HuffmanCodec<std::string>* GetLiteralStringHuffmanCodec(
       uint32_t opcode) const {
     const auto it = literal_string_huffman_codecs_.find(opcode);
     if (it == literal_string_huffman_codecs_.end()) return nullptr;
@@ -178,23 +179,23 @@ class MarkvModel {
 
  protected:
   // Huffman codec for base-rate of opcode_and_num_operands.
-  std::unique_ptr<spvutils::HuffmanCodec<uint64_t>>
+  std::unique_ptr<utils::HuffmanCodec<uint64_t>>
       opcode_and_num_operands_huffman_codec_;
 
   // Huffman codecs for opcode_and_num_operands. The map key is previous opcode.
-  std::map<uint32_t, std::unique_ptr<spvutils::HuffmanCodec<uint64_t>>>
+  std::map<uint32_t, std::unique_ptr<utils::HuffmanCodec<uint64_t>>>
       opcode_and_num_operands_markov_huffman_codecs_;
 
   // Huffman codecs for non-id single-word operand values.
   // The map key is pair <opcode, operand_index>.
   std::map<std::pair<uint32_t, uint32_t>,
-           std::unique_ptr<spvutils::HuffmanCodec<uint64_t>>>
+           std::unique_ptr<utils::HuffmanCodec<uint64_t>>>
       non_id_word_huffman_codecs_;
 
   // Huffman codecs for id descriptors. The map key is pair
   // <opcode, operand_index>.
   std::map<std::pair<uint32_t, uint32_t>,
-           std::unique_ptr<spvutils::HuffmanCodec<uint64_t>>>
+           std::unique_ptr<utils::HuffmanCodec<uint64_t>>>
       id_descriptor_huffman_codecs_;
 
   // Set of all descriptors which have a coding scheme in any of
@@ -205,7 +206,7 @@ class MarkvModel {
   // current instruction. This assumes, that there is no more than one literal
   // string operand per instruction, but would still work even if this is not
   // the case. Names and debug information strings are not collected.
-  std::map<uint32_t, std::unique_ptr<spvutils::HuffmanCodec<std::string>>>
+  std::map<uint32_t, std::unique_ptr<utils::HuffmanCodec<std::string>>>
       literal_string_huffman_codecs_;
 
   // Chunk lengths used for variable width encoding of operands (index is
@@ -227,6 +228,7 @@ class MarkvModel {
   uint32_t model_version_ = 0;
 };
 
+}  // namespace comp
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_COMP_MARKV_MODEL_H_

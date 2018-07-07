@@ -157,7 +157,7 @@ const IdType kUnknownType = {0, false, IdTypeClass::kBottom};
 uint32_t AssemblyContext::spvNamedIdAssignOrGet(const char* textValue) {
   if (!ids_to_preserve_.empty()) {
     uint32_t id = 0;
-    if (spvutils::ParseNumber(textValue, &id)) {
+    if (spvtools::utils::ParseNumber(textValue, &id)) {
       if (ids_to_preserve_.find(id) != ids_to_preserve_.end()) {
         bound_ = std::max(bound_, id + 1);
         return id;
@@ -239,9 +239,9 @@ spv_result_t AssemblyContext::binaryEncodeU32(const uint32_t value,
 spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
     const char* val, spv_result_t error_code, const IdType& type,
     spv_instruction_t* pInst) {
-  using spvutils::EncodeNumberStatus;
+  using spvtools::utils::EncodeNumberStatus;
   // Populate the NumberType from the IdType for parsing.
-  spvutils::NumberType number_type;
+  spvtools::utils::NumberType number_type;
   switch (type.type_class) {
     case IdTypeClass::kOtherType:
       return diagnostic(SPV_ERROR_INTERNAL)
@@ -389,7 +389,7 @@ std::set<uint32_t> AssemblyContext::GetNumericIds() const {
   std::set<uint32_t> ids;
   for (const auto& kv : named_ids_) {
     uint32_t id;
-    if (spvutils::ParseNumber(kv.first.c_str(), &id)) ids.insert(id);
+    if (spvtools::utils::ParseNumber(kv.first.c_str(), &id)) ids.insert(id);
   }
   return ids;
 }

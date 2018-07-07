@@ -28,7 +28,8 @@
 #include <unordered_set>
 #include <vector>
 
-namespace spvutils {
+namespace spvtools {
+namespace utils {
 
 // Log(n) move-to-front implementation. Implements the following functions:
 // Insert - pushes value to the front of the mtf sequence
@@ -820,6 +821,7 @@ void MoveToFront<Val>::UpdateNode(uint32_t node) {
       1 + std::max(HeightOf(LeftOf(node)), HeightOf(RightOf(node)));
 }
 
-}  // namespace spvutils
+}  // namespace utils
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_UTIL_MOVE_TO_FRONT_H_

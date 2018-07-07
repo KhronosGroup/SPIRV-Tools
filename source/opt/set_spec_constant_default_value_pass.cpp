@@ -32,10 +32,10 @@ namespace spvtools {
 namespace opt {
 
 namespace {
-using spvutils::EncodeNumberStatus;
-using spvutils::NumberType;
-using spvutils::ParseAndEncodeNumber;
-using spvutils::ParseNumber;
+using utils::EncodeNumberStatus;
+using utils::NumberType;
+using utils::ParseAndEncodeNumber;
+using utils::ParseNumber;
 
 // Given a numeric value in a null-terminated c string and the expected type of
 // the value, parses the string and encodes it in a vector of words. If the

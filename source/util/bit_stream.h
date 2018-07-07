@@ -25,7 +25,8 @@
 #include <string>
 #include <vector>
 
-namespace spvutils {
+namespace spvtools {
+namespace utils {
 
 // Returns rounded down log2(val). log2(0) is considered 0.
 size_t Log2U64(uint64_t val);
@@ -442,6 +443,7 @@ class BitReaderWord64 : public BitReaderInterface {
   std::function<void(const std::string&)> callback_;
 };
 
-}  // namespace spvutils
+}  // namespace utils
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_UTIL_BIT_STREAM_H_

@@ -18,7 +18,8 @@
 #include <cstdint>
 #include <cstring>
 
-namespace spvutils {
+namespace spvtools {
+namespace utils {
 
 // Performs a bitwise copy of source to the destination type Dest.
 template <typename Dest, typename Src>
@@ -89,6 +90,7 @@ size_t CountSetBits(T word) {
   return count;
 }
 
-}  // namespace spvutils
+}  // namespace utils
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_UTIL_BITUTILS_H_

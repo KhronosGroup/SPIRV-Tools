@@ -23,10 +23,9 @@
 #include "util/bit_stream.h"
 #include "util/huffman_codec.h"
 
+namespace spvtools {
+namespace utils {
 namespace {
-
-using spvutils::BitsToStream;
-using spvutils::HuffmanCodec;
 
 const std::map<std::string, uint32_t>& GetTestSet() {
   static const std::map<std::string, uint32_t> hist = {
@@ -312,4 +311,6 @@ TEST(Huffman, CreateFromTextU64) {
   EXPECT_EQ("00", BitsToStream(bits, num_bits));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace utils
+}  // namespace spvtools

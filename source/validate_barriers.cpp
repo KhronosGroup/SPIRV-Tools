@@ -140,7 +140,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
-  const size_t num_memory_order_set_bits = spvutils::CountSetBits(
+  const size_t num_memory_order_set_bits = spvtools::utils::CountSetBits(
       value & (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
                SpvMemorySemanticsAcquireReleaseMask |
                SpvMemorySemanticsSequentiallyConsistentMask));

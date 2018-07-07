@@ -31,15 +31,15 @@
 #include "source/spirv_constant.h"
 #include "source/util/huffman_codec.h"
 
-using spvtools::SpirvStats;
-using spvutils::HuffmanCodec;
-
 namespace {
+
+using spvtools::SpirvStats;
+using spvtools::utils::HuffmanCodec;
 
 // Signals that the value is not in the coding scheme and a fallback method
 // needs to be used.
 const uint64_t kMarkvNoneOfTheAbove =
-    spvtools::MarkvModel::GetMarkvNoneOfTheAbove();
+    spvtools::comp::MarkvModel::GetMarkvNoneOfTheAbove();
 
 inline uint32_t CombineOpcodeAndNumOperands(uint32_t opcode,
                                             uint32_t num_operands) {

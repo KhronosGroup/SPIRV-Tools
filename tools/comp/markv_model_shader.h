@@ -18,6 +18,7 @@
 #include "source/comp/markv_model.h"
 
 namespace spvtools {
+namespace comp {
 
 // MARK-V shader compression model, which only uses fast and lightweight
 // algorithms, which do not require training and are not heavily dependent on
@@ -40,6 +41,7 @@ class MarkvModelShaderMax : public MarkvModel {
   MarkvModelShaderMax();
 };
 
+}  // namespace comp
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_MARKV_MODEL_SHADER_H_

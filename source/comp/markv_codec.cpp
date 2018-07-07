@@ -60,14 +60,15 @@
 #include "val/validation_state.h"
 #include "validate.h"
 
-using spvutils::BitReaderWord64;
-using spvutils::BitWriterWord64;
-using spvutils::HuffmanCodec;
-using MoveToFront = spvutils::MoveToFront<uint32_t>;
-using MultiMoveToFront = spvutils::MultiMoveToFront<uint32_t>;
-
 namespace spvtools {
+namespace comp {
 namespace {
+
+using utils::BitReaderWord64;
+using utils::BitWriterWord64;
+using utils::HuffmanCodec;
+using MoveToFront = utils::MoveToFront<uint32_t>;
+using MultiMoveToFront = utils::MultiMoveToFront<uint32_t>;
 
 const uint32_t kSpirvMagicNumber = SpvMagicNumber;
 const uint32_t kMarkvMagicNumber = 0x07230303;
@@ -492,7 +493,7 @@ class MarkvCodecBase {
   // Returns Huffman codec for ranks of the mtf with given |handle|.
   // Different mtfs can use different rank distributions.
   // May return nullptr if the codec doesn't exist.
-  const spvutils::HuffmanCodec<uint32_t>* GetMtfHuffmanCodec(
+  const spvtools::utils::HuffmanCodec<uint32_t>* GetMtfHuffmanCodec(
       uint64_t handle) const {
     const auto it = mtf_huffman_codecs_.find(handle);
     if (it == mtf_huffman_codecs_.end()) return nullptr;
@@ -2893,4 +2894,5 @@ spv_result_t MarkvToSpirv(
   return SPV_SUCCESS;
 }
 
+}  // namespace comp
 }  // namespace spvtools
