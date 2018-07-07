@@ -330,7 +330,7 @@ void CommonUniformElimPass::ComputeStructuredOrder(
   };
 
   order->clear();
-  spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
+  CFA<ir::BasicBlock>::DepthFirstTraversal(
       &*func->begin(), get_structured_successors, ignore_block, post_order,
       ignore_edge);
 }

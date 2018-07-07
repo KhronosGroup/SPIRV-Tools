@@ -20,7 +20,7 @@
 
 #include "spirv-tools/libspirv.hpp"
 
-namespace libspirv {
+namespace spvtools {
 
 using CustomHashFunc = std::function<uint32_t(const std::vector<uint32_t>&)>;
 
@@ -58,6 +58,6 @@ class IdDescriptorCollection {
   std::vector<uint32_t> words_;
 };
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_ID_DESCRIPTOR_H_

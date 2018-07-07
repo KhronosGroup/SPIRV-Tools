@@ -21,9 +21,9 @@
 #include "enum_set.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::CapabilitySet;
 using spvtest::ElementsIn;
 using std::get;
 using std::tuple;
@@ -47,7 +47,7 @@ using EnumCapabilityTest =
 TEST_P(EnumCapabilityTest, Sample) {
   const auto env = get<0>(GetParam());
   const auto context = spvContextCreate(env);
-  const libspirv::AssemblyGrammar grammar(context);
+  const AssemblyGrammar grammar(context);
   spv_operand_desc entry;
 
   ASSERT_EQ(SPV_SUCCESS,
@@ -730,4 +730,5 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE1
 #undef CASE2
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

@@ -74,7 +74,7 @@ class IRContext {
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
   // Creates an |IRContext| that contains an owned |Module|
-  IRContext(spv_target_env env, spvtools::MessageConsumer c)
+  IRContext(spv_target_env env, MessageConsumer c)
       : syntax_context_(spvContextCreate(env)),
         grammar_(syntax_context_),
         unique_id_(0),
@@ -85,12 +85,11 @@ class IRContext {
         constant_mgr_(nullptr),
         type_mgr_(nullptr),
         id_to_name_(nullptr) {
-    libspirv::SetContextMessageConsumer(syntax_context_, consumer_);
+    SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
   }
 
-  IRContext(spv_target_env env, std::unique_ptr<Module>&& m,
-            spvtools::MessageConsumer c)
+  IRContext(spv_target_env env, std::unique_ptr<Module>&& m, MessageConsumer c)
       : syntax_context_(spvContextCreate(env)),
         grammar_(syntax_context_),
         unique_id_(0),
@@ -100,7 +99,7 @@ class IRContext {
         valid_analyses_(kAnalysisNone),
         type_mgr_(nullptr),
         id_to_name_(nullptr) {
-    libspirv::SetContextMessageConsumer(syntax_context_, consumer_);
+    SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
     InitializeCombinators();
   }
@@ -303,12 +302,10 @@ class IRContext {
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
-  void SetMessageConsumer(spvtools::MessageConsumer c) {
-    consumer_ = std::move(c);
-  }
+  void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
 
   // Returns the reference to the message consumer for this pass.
-  const spvtools::MessageConsumer& consumer() const { return consumer_; }
+  const MessageConsumer& consumer() const { return consumer_; }
 
   // Rebuilds the analyses in |set| that are invalid.
   void BuildInvalidAnalyses(Analysis set);
@@ -440,7 +437,7 @@ class IRContext {
   }
 
   // Returns the grammar for this context.
-  const libspirv::AssemblyGrammar& grammar() const { return grammar_; }
+  const AssemblyGrammar& grammar() const { return grammar_; }
 
   // If |inst| has not yet been analysed by the def-use manager, then analyse
   // its definitions and uses.
@@ -545,7 +542,7 @@ class IRContext {
   spv_context syntax_context_;
 
   // Auxiliary object for querying SPIR-V grammar facts.
-  libspirv::AssemblyGrammar grammar_;
+  AssemblyGrammar grammar_;
 
   // An unique identifier for instructions in |module_|. Can be used to order
   // instructions in a container.
@@ -558,7 +555,7 @@ class IRContext {
   std::unique_ptr<Module> module_;
 
   // A message consumer for diagnostics.
-  spvtools::MessageConsumer consumer_;
+  MessageConsumer consumer_;
 
   // The def-use manager for |module_|.
   std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;
@@ -637,7 +634,7 @@ inline ir::IRContext::Analysis& operator<<=(ir::IRContext::Analysis& a,
   return a;
 }
 
-std::vector<Instruction*> spvtools::ir::IRContext::GetConstants() {
+std::vector<Instruction*> IRContext::GetConstants() {
   return module()->GetConstants();
 }
 
@@ -854,4 +851,5 @@ IRContext::GetNames(uint32_t id) {
 
 }  // namespace ir
 }  // namespace spvtools
+
 #endif  // SPIRV_TOOLS_IR_CONTEXT_H

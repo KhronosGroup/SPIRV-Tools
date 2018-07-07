@@ -67,7 +67,7 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
   }
 }
 
-namespace libspirv {
+namespace spvtools {
 
 DiagnosticStream::DiagnosticStream(DiagnosticStream&& other)
     : stream_(),
@@ -123,7 +123,7 @@ void UseDiagnosticAsMessageConsumer(spv_context context,
     spvDiagnosticDestroy(*diagnostic);  // Avoid memory leak.
     *diagnostic = spvDiagnosticCreate(&p, message);
   };
-  libspirv::SetContextMessageConsumer(context, std::move(create_diagnostic));
+  SetContextMessageConsumer(context, std::move(create_diagnostic));
 }
 
 std::string spvResultToString(spv_result_t res) {
@@ -189,4 +189,4 @@ std::string spvResultToString(spv_result_t res) {
   return out;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

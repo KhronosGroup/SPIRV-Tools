@@ -21,8 +21,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Returns operand word for given instruction and operand index.
@@ -281,4 +280,4 @@ spv_result_t LogicalsPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

@@ -19,6 +19,7 @@
 #include "opt/constants.h"
 #include "opt/instruction.h"
 #include "opt/ir_context.h"
+
 namespace spvtools {
 namespace opt {
 
@@ -33,7 +34,7 @@ const uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
 //   - Instruction to block analysis
 class InstructionBuilder {
  public:
-  using InsertionPointTy = spvtools::ir::BasicBlock::iterator;
+  using InsertionPointTy = ir::BasicBlock::iterator;
 
   // Creates an InstructionBuilder, all new instructions will be inserted before
   // the instruction |insert_before|.

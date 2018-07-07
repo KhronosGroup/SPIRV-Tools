@@ -86,7 +86,7 @@ void CFG::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
   auto post_order = [&](cbb_ptr b) {
     order->push_front(const_cast<ir::BasicBlock*>(b));
   };
-  spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
+  CFA<ir::BasicBlock>::DepthFirstTraversal(
       root, get_structured_successors, ignore_block, post_order, ignore_edge);
 }
 

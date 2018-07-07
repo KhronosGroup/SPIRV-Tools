@@ -30,7 +30,9 @@
 #include "util/hex_float.h"
 #include "util/parse_number.h"
 
+namespace spvtools {
 namespace {
+
 // Advances |text| to the start of the next line and writes the new position to
 // |position|.
 spv_result_t advanceLine(spv_text text, spv_position position) {
@@ -144,9 +146,7 @@ bool startsWithOp(spv_text text, spv_position position) {
   return ('O' == ch0 && 'p' == ch1 && ('A' <= ch2 && ch2 <= 'Z'));
 }
 
-}  // anonymous namespace
-
-namespace libspirv {
+}  // namespace
 
 const IdType kUnknownType = {0, false, IdTypeClass::kBottom};
 
@@ -185,35 +185,35 @@ uint32_t AssemblyContext::spvNamedIdAssignOrGet(const char* textValue) {
 uint32_t AssemblyContext::getBound() const { return bound_; }
 
 spv_result_t AssemblyContext::advance() {
-  return ::advance(text_, &current_position_);
+  return spvtools::advance(text_, &current_position_);
 }
 
 spv_result_t AssemblyContext::getWord(std::string* word,
                                       spv_position next_position) {
   *next_position = current_position_;
-  return ::getWord(text_, next_position, word);
+  return spvtools::getWord(text_, next_position, word);
 }
 
 bool AssemblyContext::startsWithOp() {
-  return ::startsWithOp(text_, &current_position_);
+  return spvtools::startsWithOp(text_, &current_position_);
 }
 
 bool AssemblyContext::isStartOfNewInst() {
   spv_position_t pos = current_position_;
-  if (::advance(text_, &pos)) return false;
-  if (::startsWithOp(text_, &pos)) return true;
+  if (spvtools::advance(text_, &pos)) return false;
+  if (spvtools::startsWithOp(text_, &pos)) return true;
 
   std::string word;
   pos = current_position_;
-  if (::getWord(text_, &pos, &word)) return false;
+  if (spvtools::getWord(text_, &pos, &word)) return false;
   if ('%' != word.front()) return false;
 
-  if (::advance(text_, &pos)) return false;
-  if (::getWord(text_, &pos, &word)) return false;
+  if (spvtools::advance(text_, &pos)) return false;
+  if (spvtools::getWord(text_, &pos, &word)) return false;
   if ("=" != word) return false;
 
-  if (::advance(text_, &pos)) return false;
-  if (::startsWithOp(text_, &pos)) return true;
+  if (spvtools::advance(text_, &pos)) return false;
+  if (spvtools::startsWithOp(text_, &pos)) return true;
   return false;
 }
 
@@ -394,4 +394,4 @@ std::set<uint32_t> AssemblyContext::GetNumericIds() const {
   return ids;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

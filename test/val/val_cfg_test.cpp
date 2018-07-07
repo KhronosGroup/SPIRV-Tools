@@ -40,12 +40,10 @@ using std::vector;
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
-using libspirv::BasicBlock;
-using libspirv::ValidationState_t;
-
 using ValidateCFG = spvtest::ValidateBase<SpvCapability>;
 using spvtest::ScopedContext;
 
+namespace spvtools {
 namespace {
 
 string nameOps() { return ""; }
@@ -1822,4 +1820,6 @@ OpFunctionEnd
 }
 
 /// TODO(umar): Nested CFG constructs
+
 }  // namespace
+}  // namespace spvtools

@@ -21,7 +21,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
+namespace spvtools {
 
 // Validates correctness of derivative instructions.
 spv_result_t DerivativesPass(ValidationState_t& _,
@@ -66,4 +66,4 @@ spv_result_t DerivativesPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

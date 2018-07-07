@@ -21,7 +21,7 @@
 
 class StatsAnalyzer {
  public:
-  explicit StatsAnalyzer(const libspirv::SpirvStats& stats);
+  explicit StatsAnalyzer(const spvtools::SpirvStats& stats);
 
   // Writes respective histograms to |out|.
   void WriteVersion(std::ostream& out);
@@ -66,7 +66,7 @@ class StatsAnalyzer {
   void WriteCodegenIdDescriptorHuffmanCodecs(std::ostream& out);
 
  private:
-  const libspirv::SpirvStats& stats_;
+  const spvtools::SpirvStats& stats_;
 
   uint32_t num_modules_;
 

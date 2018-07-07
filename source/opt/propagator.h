@@ -148,7 +148,7 @@ struct Edge {
 // following code builds a table |values| where every id that was assigned a
 // constant value is mapped to the constant value it was assigned.
 //
-//   auto ctx = spvtools::BuildModule(...);
+//   auto ctx = BuildModule(...);
 //   std::map<uint32_t, uint32_t> values;
 //   const auto visit_fn = [&ctx, &values](ir::Instruction* instr,
 //                                         ir::BasicBlock** dest_bb) {

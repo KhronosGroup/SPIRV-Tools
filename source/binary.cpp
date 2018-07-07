@@ -121,13 +121,13 @@ class Parser {
   // the input stream, and for the given error code. Any data written to the
   // returned object will be propagated to the current parse's diagnostic
   // object.
-  libspirv::DiagnosticStream diagnostic(spv_result_t error) {
-    return libspirv::DiagnosticStream({0, 0, _.word_index}, consumer_, "",
+  spvtools::DiagnosticStream diagnostic(spv_result_t error) {
+    return spvtools::DiagnosticStream({0, 0, _.word_index}, consumer_, "",
                                       error);
   }
 
   // Returns a diagnostic stream object with the default parse error code.
-  libspirv::DiagnosticStream diagnostic() {
+  spvtools::DiagnosticStream diagnostic() {
     // The default failure for parsing is invalid binary.
     return diagnostic(SPV_ERROR_INVALID_BINARY);
   }
@@ -157,7 +157,7 @@ class Parser {
 
   // Data members
 
-  const libspirv::AssemblyGrammar grammar_;        // SPIR-V syntax utility.
+  const spvtools::AssemblyGrammar grammar_;        // SPIR-V syntax utility.
   const spvtools::MessageConsumer& consumer_;      // Message consumer callback.
   void* const user_data_;                          // Context for the callbacks
   const spv_parsed_header_fn_t parsed_header_fn_;  // Parsed header callback
@@ -767,7 +767,7 @@ spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
   spv_context_t hijack_context = *context;
   if (diagnostic) {
     *diagnostic = nullptr;
-    libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, diagnostic);
+    spvtools::UseDiagnosticAsMessageConsumer(&hijack_context, diagnostic);
   }
   Parser parser(&hijack_context, user_data, parsed_header, parsed_instruction);
   return parser.parse(code, num_words, diagnostic);
