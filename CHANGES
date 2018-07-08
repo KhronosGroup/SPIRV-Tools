@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2018.5-dev 2018-07-08
+ - Start v2018.5 development
+
 v2018.4 2018-07-08
  - General:
    - Support SPV_KHR_8bit_storage
