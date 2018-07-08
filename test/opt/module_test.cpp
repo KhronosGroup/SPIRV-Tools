@@ -29,8 +29,8 @@ namespace {
 
 using ::testing::Eq;
 using spvtest::GetIdBound;
-using spvtools::ir::IRContext;
-using spvtools::ir::Module;
+using spvtools::opt::IRContext;
+using spvtools::opt::Module;
 
 TEST(ModuleTest, SetIdBound) {
   Module m;

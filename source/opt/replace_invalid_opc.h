@@ -27,7 +27,7 @@ namespace opt {
 class ReplaceInvalidOpcodePass : public Pass {
  public:
   const char* name() const override { return "replace-invalid-opcodes"; }
-  Status Process(ir::IRContext*) override;
+  Status Process(opt::IRContext*) override;
 
  private:
   // Returns the execution model that is used by every entry point in the
@@ -38,16 +38,16 @@ class ReplaceInvalidOpcodePass : public Pass {
   // Replaces all instructions in |function| that are invalid with execution
   // model |mode|, but valid for another shader model, with a special constant
   // value.  See |GetSpecialConstant|.
-  bool RewriteFunction(ir::Function* function, SpvExecutionModel mode);
+  bool RewriteFunction(opt::Function* function, SpvExecutionModel mode);
 
   // Returns true if |inst| is valid for fragment shaders only.
-  bool IsFragmentShaderOnlyInstruction(ir::Instruction* inst);
+  bool IsFragmentShaderOnlyInstruction(opt::Instruction* inst);
 
   // Replaces all uses of the result of |inst|, if there is one, with the id of
   // a special constant.  Then |inst| is killed.  |inst| cannot be a block
   // terminator because the basic block will then become invalid.  |inst| is no
   // longer valid after calling this function.
-  void ReplaceInstruction(ir::Instruction* inst, const char* source,
+  void ReplaceInstruction(opt::Instruction* inst, const char* source,
                           uint32_t line_number, uint32_t column_number);
 
   // Returns the id of a constant with type |type_id|.  The type must be an

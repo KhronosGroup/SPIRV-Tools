@@ -23,7 +23,7 @@
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 // Loader class for constructing SPIR-V in-memory IR representation. Methods in
 // this class are designed to work with the interface for spvBinaryParse() in
@@ -78,7 +78,7 @@ class IrLoader {
   std::vector<Instruction> dbg_line_info_;
 };
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_IR_LOADER_H_

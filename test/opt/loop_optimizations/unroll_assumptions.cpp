@@ -37,10 +37,10 @@ class PartialUnrollerTestPass : public opt::Pass {
 
   const char* name() const override { return "Loop unroller"; }
 
-  Status Process(ir::IRContext* context) override {
+  Status Process(opt::IRContext* context) override {
     bool changed = false;
-    for (ir::Function& f : *context->module()) {
-      ir::LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(&f);
+    for (opt::Function& f : *context->module()) {
+      opt::LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(&f);
       for (auto& loop : loop_descriptor) {
         opt::LoopUtils loop_utils{context, &loop};
         if (loop_utils.PartiallyUnroll(factor)) {
@@ -120,10 +120,10 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -220,10 +220,10 @@ OpReturn
 OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -301,16 +301,16 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
-  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                             << text << std::endl;
+std::unique_ptr<opt::IRContext> context =
+    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+opt::Module* module = context->module();
+EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                           << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
-  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
+opt::LoopUnroller loop_unroller;
+SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
 }
 
 /*
@@ -382,16 +382,16 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
-  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                             << text << std::endl;
+std::unique_ptr<opt::IRContext> context =
+    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+opt::Module* module = context->module();
+EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                           << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
-  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
+opt::LoopUnroller loop_unroller;
+SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
 }
 
 /*
@@ -519,10 +519,10 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -591,10 +591,10 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -662,10 +662,10 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -739,10 +739,10 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -957,10 +957,10 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -1031,10 +1031,10 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -1111,20 +1111,20 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
-  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                             << text << std::endl;
+std::unique_ptr<opt::IRContext> context =
+    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+opt::Module* module = context->module();
+EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                           << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
-  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+opt::LoopUnroller loop_unroller;
+SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
-  // Make sure the pass doesn't run
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+// Make sure the pass doesn't run
+SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
 }
 
 /*
@@ -1190,20 +1190,20 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
-  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                             << text << std::endl;
+std::unique_ptr<opt::IRContext> context =
+    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+opt::Module* module = context->module();
+EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                           << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
-  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+opt::LoopUnroller loop_unroller;
+SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
-  // Make sure the pass doesn't run
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+// Make sure the pass doesn't run
+SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
 }
 
 /*
@@ -1269,20 +1269,20 @@ OpFunctionEnd
 )";
 
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
-  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                             << text << std::endl;
+std::unique_ptr<opt::IRContext> context =
+    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+opt::Module* module = context->module();
+EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                           << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
-  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+opt::LoopUnroller loop_unroller;
+SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
-  // Make sure the pass doesn't run
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+// Make sure the pass doesn't run
+SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
 }
 
 /*
@@ -1348,20 +1348,20 @@ OpFunctionEnd
 )";
 
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
-  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                             << text << std::endl;
+std::unique_ptr<opt::IRContext> context =
+    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+opt::Module* module = context->module();
+EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                           << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
-  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+opt::LoopUnroller loop_unroller;
+SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
-  // Make sure the pass doesn't run
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+// Make sure the pass doesn't run
+SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
 }
 
 /*
@@ -1427,20 +1427,20 @@ OpFunctionEnd
 )";
 
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
-  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                             << text << std::endl;
+std::unique_ptr<opt::IRContext> context =
+    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+opt::Module* module = context->module();
+EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                           << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
-  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+opt::LoopUnroller loop_unroller;
+SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
-  // Make sure the pass doesn't run
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+// Make sure the pass doesn't run
+SinglePassRunAndCheck<opt::LoopUnroller>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
+SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
 }
 
 }  // namespace

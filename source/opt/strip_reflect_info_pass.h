@@ -26,15 +26,15 @@ namespace opt {
 class StripReflectInfoPass : public Pass {
  public:
   const char* name() const override { return "strip-reflect"; }
-  Status Process(ir::IRContext* irContext) override;
+  Status Process(opt::IRContext* irContext) override;
 
   // Return the mask of preserved Analyses.
-  ir::IRContext::Analysis GetPreservedAnalyses() override {
-    return ir::IRContext::kAnalysisInstrToBlockMapping |
-           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
-           ir::IRContext::kAnalysisDominatorAnalysis |
-           ir::IRContext::kAnalysisLoopAnalysis |
-           ir::IRContext::kAnalysisNameMap;
+  opt::IRContext::Analysis GetPreservedAnalyses() override {
+    return opt::IRContext::kAnalysisInstrToBlockMapping |
+           opt::IRContext::kAnalysisCombinators | opt::IRContext::kAnalysisCFG |
+           opt::IRContext::kAnalysisDominatorAnalysis |
+           opt::IRContext::kAnalysisLoopAnalysis |
+           opt::IRContext::kAnalysisNameMap;
   }
 };
 

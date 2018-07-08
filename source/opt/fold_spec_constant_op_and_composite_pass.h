@@ -36,19 +36,19 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
 
   const char* name() const override { return "fold-spec-const-op-composite"; }
 
-  Status Process(ir::IRContext* irContext) override;
+  Status Process(opt::IRContext* irContext) override;
 
  private:
   // Initializes the type manager, def-use manager and get the maximal id used
   // in the module.
-  void Initialize(ir::IRContext* irContext);
+  void Initialize(opt::IRContext* irContext);
 
   // The real entry of processing. Iterates through the types-constants-globals
   // section of the given module, finds the Spec Constants defined with
   // OpSpecConstantOp and OpSpecConstantComposite instructions. If the result
   // value of those spec constants can be folded, fold them to their
   // corresponding normal constants.
-  Status ProcessImpl(ir::IRContext* irContext);
+  Status ProcessImpl(opt::IRContext* irContext);
 
   // Processes the OpSpecConstantOp instruction pointed by the given
   // instruction iterator, folds it to normal constants if possible. Returns
@@ -59,26 +59,27 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
   // folding is done successfully, the original OpSpecConstantOp instruction
   // will be changed to Nop and new folded instruction will be inserted before
   // it.
-  bool ProcessOpSpecConstantOp(ir::Module::inst_iterator* pos);
+  bool ProcessOpSpecConstantOp(opt::Module::inst_iterator* pos);
 
   // Try to fold the OpSpecConstantOp CompositeExtract instruction pointed by
   // the given instruction iterator to a normal constant defining instruction.
   // Returns the pointer to the new constant defining instruction if succeeded.
   // Otherwise returns nullptr.
-  ir::Instruction* DoCompositeExtract(ir::Module::inst_iterator* inst_iter_ptr);
+  opt::Instruction* DoCompositeExtract(
+      opt::Module::inst_iterator* inst_iter_ptr);
 
   // Try to fold the OpSpecConstantOp VectorShuffle instruction pointed by the
   // given instruction iterator to a normal constant defining instruction.
   // Returns the pointer to the new constant defining instruction if succeeded.
   // Otherwise return nullptr.
-  ir::Instruction* DoVectorShuffle(ir::Module::inst_iterator* inst_iter_ptr);
+  opt::Instruction* DoVectorShuffle(opt::Module::inst_iterator* inst_iter_ptr);
 
   // Try to fold the OpSpecConstantOp <component wise operations> instruction
   // pointed by the given instruction iterator to a normal constant defining
   // instruction. Returns the pointer to the new constant defining instruction
   // if succeeded, otherwise return nullptr.
-  ir::Instruction* DoComponentWiseOperation(
-      ir::Module::inst_iterator* inst_iter_ptr);
+  opt::Instruction* DoComponentWiseOperation(
+      opt::Module::inst_iterator* inst_iter_ptr);
 
   // Returns the |element|'th subtype of |type|.
   //

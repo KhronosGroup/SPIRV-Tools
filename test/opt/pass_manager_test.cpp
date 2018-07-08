@@ -74,8 +74,8 @@ TEST(PassManager, Interface) {
 class AppendOpNopPass : public opt::Pass {
  public:
   const char* name() const override { return "AppendOpNop"; }
-  Status Process(ir::IRContext* irContext) override {
-    irContext->AddDebug1Inst(MakeUnique<ir::Instruction>(irContext));
+  Status Process(opt::IRContext* irContext) override {
+    irContext->AddDebug1Inst(MakeUnique<opt::Instruction>(irContext));
     return Status::SuccessWithChange;
   }
 };
@@ -87,9 +87,9 @@ class AppendMultipleOpNopPass : public opt::Pass {
   explicit AppendMultipleOpNopPass(uint32_t num_nop) : num_nop_(num_nop) {}
 
   const char* name() const override { return "AppendOpNop"; }
-  Status Process(ir::IRContext* irContext) override {
+  Status Process(opt::IRContext* irContext) override {
     for (uint32_t i = 0; i < num_nop_; i++) {
-      irContext->AddDebug1Inst(MakeUnique<ir::Instruction>(irContext));
+      irContext->AddDebug1Inst(MakeUnique<opt::Instruction>(irContext));
     }
     return Status::SuccessWithChange;
   }
@@ -102,8 +102,8 @@ class AppendMultipleOpNopPass : public opt::Pass {
 class DuplicateInstPass : public opt::Pass {
  public:
   const char* name() const override { return "DuplicateInst"; }
-  Status Process(ir::IRContext* irContext) override {
-    auto inst = MakeUnique<ir::Instruction>(
+  Status Process(opt::IRContext* irContext) override {
+    auto inst = MakeUnique<opt::Instruction>(
         *(--irContext->debug1_end())->Clone(irContext));
     irContext->AddDebug1Inst(std::move(inst));
     return Status::SuccessWithChange;
@@ -140,9 +140,9 @@ class AppendTypeVoidInstPass : public opt::Pass {
   explicit AppendTypeVoidInstPass(uint32_t result_id) : result_id_(result_id) {}
 
   const char* name() const override { return "AppendTypeVoidInstPass"; }
-  Status Process(ir::IRContext* irContext) override {
-    auto inst = MakeUnique<ir::Instruction>(
-        irContext, SpvOpTypeVoid, 0, result_id_, std::vector<ir::Operand>{});
+  Status Process(opt::IRContext* irContext) override {
+    auto inst = MakeUnique<opt::Instruction>(
+        irContext, SpvOpTypeVoid, 0, result_id_, std::vector<opt::Operand>{});
     irContext->AddType(std::move(inst));
     return Status::SuccessWithChange;
   }
@@ -153,9 +153,9 @@ class AppendTypeVoidInstPass : public opt::Pass {
 
 TEST(PassManager, RecomputeIdBoundAutomatically) {
   opt::PassManager manager;
-  std::unique_ptr<ir::Module> module(new ir::Module());
-  ir::IRContext context(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                        manager.consumer());
+  std::unique_ptr<opt::Module> module(new opt::Module());
+  opt::IRContext context(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                         manager.consumer());
   EXPECT_THAT(GetIdBound(*context.module()), Eq(0u));
 
   manager.Run(&context);

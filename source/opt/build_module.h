@@ -24,19 +24,20 @@
 
 namespace spvtools {
 
-// Builds an ir::Module returns the owning ir::IRContext from the given SPIR-V
+// Builds an opt::Module returns the owning opt::IRContext from the given SPIR-V
 // |binary|. |size| specifies number of words in |binary|. The |binary| will be
 // decoded according to the given target |env|. Returns nullptr if errors occur
 // and sends the errors to |consumer|.
-std::unique_ptr<ir::IRContext> BuildModule(spv_target_env env,
-                                           MessageConsumer consumer,
-                                           const uint32_t* binary, size_t size);
+std::unique_ptr<opt::IRContext> BuildModule(spv_target_env env,
+                                            MessageConsumer consumer,
+                                            const uint32_t* binary,
+                                            size_t size);
 
-// Builds an ir::Module and returns the owning ir::IRContext from the given
+// Builds an opt::Module and returns the owning opt::IRContext from the given
 // SPIR-V assembly |text|.  The |text| will be encoded according to the given
 // target |env|. Returns nullptr if errors occur and sends the errors to
 // |consumer|.
-std::unique_ptr<ir::IRContext> BuildModule(
+std::unique_ptr<opt::IRContext> BuildModule(
     spv_target_env env, MessageConsumer consumer, const std::string& text,
     uint32_t assemble_options = SpirvTools::kDefaultAssembleOption);
 

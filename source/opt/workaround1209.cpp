@@ -20,7 +20,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status Workaround1209::Process(ir::IRContext* c) {
+Pass::Status Workaround1209::Process(opt::IRContext* c) {
   InitializeProcessing(c);
   bool modified = false;
   modified = RemoveOpUnreachableInLoops();
@@ -30,14 +30,14 @@ Pass::Status Workaround1209::Process(ir::IRContext* c) {
 bool Workaround1209::RemoveOpUnreachableInLoops() {
   bool modified = false;
   for (auto& func : *get_module()) {
-    std::list<ir::BasicBlock*> structured_order;
+    std::list<opt::BasicBlock*> structured_order;
     cfg()->ComputeStructuredOrder(&func, &*func.begin(), &structured_order);
 
     // Keep track of the loop merges.  The top of the stack will always be the
     // loop merge for the loop that immediately contains the basic block being
     // processed.
     std::stack<uint32_t> loop_merges;
-    for (ir::BasicBlock* bb : structured_order) {
+    for (opt::BasicBlock* bb : structured_order) {
       if (!loop_merges.empty() && bb->id() == loop_merges.top()) {
         loop_merges.pop();
       }
@@ -47,10 +47,10 @@ bool Workaround1209::RemoveOpUnreachableInLoops() {
           // We found an OpUnreachable inside a loop.
           // Replace it with an unconditional branch to the loop merge.
           context()->KillInst(&*bb->tail());
-          std::unique_ptr<ir::Instruction> new_branch(
-              new ir::Instruction(context(), SpvOpBranch, 0, 0,
-                                  {{spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                                    {loop_merges.top()}}}));
+          std::unique_ptr<opt::Instruction> new_branch(
+              new opt::Instruction(context(), SpvOpBranch, 0, 0,
+                                   {{spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+                                     {loop_merges.top()}}}));
           context()->AnalyzeDefUse(&*new_branch);
           bb->AddInstruction(std::move(new_branch));
           modified = true;

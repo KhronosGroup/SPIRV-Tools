@@ -22,21 +22,21 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status LoopFusionPass::Process(ir::IRContext* c) {
+Pass::Status LoopFusionPass::Process(opt::IRContext* c) {
   bool modified = false;
-  ir::Module* module = c->module();
+  opt::Module* module = c->module();
 
   // Process each function in the module
-  for (ir::Function& f : *module) {
+  for (opt::Function& f : *module) {
     modified |= ProcessFunction(&f);
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool LoopFusionPass::ProcessFunction(ir::Function* function) {
+bool LoopFusionPass::ProcessFunction(opt::Function* function) {
   auto c = function->context();
-  ir::LoopDescriptor& ld = *c->GetLoopDescriptor(function);
+  opt::LoopDescriptor& ld = *c->GetLoopDescriptor(function);
 
   // If a loop doesn't have a preheader needs then it needs to be created. Make
   // sure to return Status::SuccessWithChange in that case.

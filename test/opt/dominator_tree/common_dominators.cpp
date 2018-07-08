@@ -59,12 +59,13 @@ OpReturn
 OpFunctionEnd
 )";
 
-ir::BasicBlock* GetBlock(uint32_t id, std::unique_ptr<ir::IRContext>& context) {
+opt::BasicBlock* GetBlock(uint32_t id,
+                          std::unique_ptr<opt::IRContext>& context) {
   return context->get_instr_block(context->get_def_use_mgr()->GetDef(id));
 }
 
 TEST(CommonDominatorsTest, SameBlock) {
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
@@ -78,7 +79,7 @@ TEST(CommonDominatorsTest, SameBlock) {
 }
 
 TEST(CommonDominatorsTest, ParentAndChild) {
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
@@ -98,7 +99,7 @@ TEST(CommonDominatorsTest, ParentAndChild) {
 }
 
 TEST(CommonDominatorsTest, BranchSplit) {
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
@@ -115,7 +116,7 @@ TEST(CommonDominatorsTest, BranchSplit) {
 }
 
 TEST(CommonDominatorsTest, LoopContinueAndMerge) {
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
@@ -129,7 +130,7 @@ TEST(CommonDominatorsTest, LoopContinueAndMerge) {
 }
 
 TEST(CommonDominatorsTest, NoCommonDominator) {
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);

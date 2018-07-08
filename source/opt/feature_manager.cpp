@@ -21,13 +21,13 @@
 namespace spvtools {
 namespace opt {
 
-void FeatureManager::Analyze(ir::Module* module) {
+void FeatureManager::Analyze(opt::Module* module) {
   AddExtensions(module);
   AddCapabilities(module);
   AddExtInstImportIds(module);
 }
 
-void FeatureManager::AddExtensions(ir::Module* module) {
+void FeatureManager::AddExtensions(opt::Module* module) {
   for (auto ext : module->extensions()) {
     const std::string name =
         reinterpret_cast<const char*>(ext.GetInOperand(0u).words.data());
@@ -51,13 +51,13 @@ void FeatureManager::AddCapability(SpvCapability cap) {
   }
 }
 
-void FeatureManager::AddCapabilities(ir::Module* module) {
-  for (ir::Instruction& inst : module->capabilities()) {
+void FeatureManager::AddCapabilities(opt::Module* module) {
+  for (opt::Instruction& inst : module->capabilities()) {
     AddCapability(static_cast<SpvCapability>(inst.GetSingleWordInOperand(0)));
   }
 }
 
-void FeatureManager::AddExtInstImportIds(ir::Module* module) {
+void FeatureManager::AddExtInstImportIds(opt::Module* module) {
   extinst_importid_GLSLstd450_ = module->GetExtInstImportId("GLSL.std.450");
 }
 

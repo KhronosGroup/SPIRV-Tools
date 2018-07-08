@@ -45,7 +45,7 @@ class Pass {
     SuccessWithoutChange = 0x11,
   };
 
-  using ProcessFunction = std::function<bool(ir::Function*)>;
+  using ProcessFunction = std::function<bool(opt::Function*)>;
 
   // Constructs a new pass.
   //
@@ -87,26 +87,27 @@ class Pass {
   }
 
   // Returns a pointer to the current module for this pass.
-  ir::Module* get_module() const { return context_->module(); }
+  opt::Module* get_module() const { return context_->module(); }
 
   // Returns a pointer to the current context for this pass.
-  ir::IRContext* context() const { return context_; }
+  opt::IRContext* context() const { return context_; }
 
   // Returns a pointer to the CFG for current module.
-  ir::CFG* cfg() const { return context()->cfg(); }
+  opt::CFG* cfg() const { return context()->cfg(); }
 
   // Add to |todo| all ids of functions called in |func|.
-  void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
+  void AddCalls(opt::Function* func, std::queue<uint32_t>* todo);
 
   // Applies |pfn| to every function in the call trees that are rooted at the
   // entry points.  Returns true if any call |pfn| returns true.  By convention
   // |pfn| should return true if it modified the module.
-  bool ProcessEntryPointCallTree(ProcessFunction& pfn, ir::Module* module);
+  bool ProcessEntryPointCallTree(ProcessFunction& pfn, opt::Module* module);
 
   // Applies |pfn| to every function in the call trees rooted at the entry
   // points and exported functions.  Returns true if any call |pfn| returns
   // true.  By convention |pfn| should return true if it modified the module.
-  bool ProcessReachableCallTree(ProcessFunction& pfn, ir::IRContext* irContext);
+  bool ProcessReachableCallTree(ProcessFunction& pfn,
+                                opt::IRContext* irContext);
 
   // Applies |pfn| to every function in the call trees rooted at the elements of
   // |roots|.  Returns true if any call to |pfn| returns true.  By convention
@@ -114,7 +115,7 @@ class Pass {
   // |roots| will be empty.
   bool ProcessCallTreeFromRoots(
       ProcessFunction& pfn,
-      const std::unordered_map<uint32_t, ir::Function*>& id2function,
+      const std::unordered_map<uint32_t, opt::Function*>& id2function,
       std::queue<uint32_t>* roots);
 
   // Run the pass on the given |module|. Returns Status::Failure if errors occur
@@ -125,25 +126,25 @@ class Pass {
   //
   // It is an error if |Run| is called twice with the same instance of the pass.
   // If this happens the return value will be |Failure|.
-  virtual Status Run(ir::IRContext* ctx) final;
+  virtual Status Run(opt::IRContext* ctx) final;
 
   // Returns the set of analyses that the pass is guaranteed to preserve.
-  virtual ir::IRContext::Analysis GetPreservedAnalyses() {
-    return ir::IRContext::kAnalysisNone;
+  virtual opt::IRContext::Analysis GetPreservedAnalyses() {
+    return opt::IRContext::kAnalysisNone;
   }
 
   // Return type id for |ptrInst|'s pointee
-  uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
+  uint32_t GetPointeeTypeId(const opt::Instruction* ptrInst) const;
 
  protected:
   // Initialize basic data structures for the pass. This sets up the def-use
   // manager, module and other attributes.
-  virtual void InitializeProcessing(ir::IRContext* c) { context_ = c; }
+  virtual void InitializeProcessing(opt::IRContext* c) { context_ = c; }
 
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes are made to the module.
-  virtual Status Process(ir::IRContext* context) = 0;
+  virtual Status Process(opt::IRContext* context) = 0;
 
   // Return the next available SSA id and increment it.
   uint32_t TakeNextId() { return context_->TakeNextId(); }
@@ -152,7 +153,7 @@ class Pass {
   MessageConsumer consumer_;  // Message consumer.
 
   // The context that this pass belongs to.
-  ir::IRContext* context_;
+  opt::IRContext* context_;
 
   // An instance of a pass can only be run once because it is too hard to
   // enforce proper resetting of internal state for each instance.  This member

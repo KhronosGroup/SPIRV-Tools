@@ -26,7 +26,7 @@ namespace opt {
 class FlattenDecorationPass : public Pass {
  public:
   const char* name() const override { return "flatten-decoration"; }
-  Status Process(ir::IRContext*) override;
+  Status Process(opt::IRContext*) override;
 };
 
 }  // namespace opt

@@ -27,12 +27,12 @@ namespace opt {
 class StrengthReductionPass : public Pass {
  public:
   const char* name() const override { return "strength-reduction"; }
-  Status Process(ir::IRContext*) override;
+  Status Process(opt::IRContext*) override;
 
  private:
   // Replaces multiple by power of 2 with an equivalent bit shift.
   // Returns true if something changed.
-  bool ReplaceMultiplyByPowerOf2(ir::BasicBlock::iterator*);
+  bool ReplaceMultiplyByPowerOf2(opt::BasicBlock::iterator*);
 
   // Scan the types and constants in the module looking for the the integer
   // types that we are

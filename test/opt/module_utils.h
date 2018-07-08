@@ -20,7 +20,7 @@
 
 namespace spvtest {
 
-inline uint32_t GetIdBound(const spvtools::ir::Module& m) {
+inline uint32_t GetIdBound(const spvtools::opt::Module& m) {
   std::vector<uint32_t> binary;
   m.ToBinary(&binary, false);
   // The 5-word header must always exist.

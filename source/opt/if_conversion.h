@@ -27,13 +27,13 @@ namespace opt {
 class IfConversion : public Pass {
  public:
   const char* name() const override { return "if-conversion"; }
-  Status Process(ir::IRContext* context) override;
+  Status Process(opt::IRContext* context) override;
 
-  ir::IRContext::Analysis GetPreservedAnalyses() override {
-    return ir::IRContext::kAnalysisDefUse |
-           ir::IRContext::kAnalysisDominatorAnalysis |
-           ir::IRContext::kAnalysisInstrToBlockMapping |
-           ir::IRContext::kAnalysisCFG | ir::IRContext::kAnalysisNameMap;
+  opt::IRContext::Analysis GetPreservedAnalyses() override {
+    return opt::IRContext::kAnalysisDefUse |
+           opt::IRContext::kAnalysisDominatorAnalysis |
+           opt::IRContext::kAnalysisInstrToBlockMapping |
+           opt::IRContext::kAnalysisCFG | opt::IRContext::kAnalysisNameMap;
   }
 
  private:
@@ -42,14 +42,16 @@ class IfConversion : public Pass {
   bool CheckType(uint32_t id);
 
   // Returns the basic block containing |id|.
-  ir::BasicBlock* GetBlock(uint32_t id);
+  opt::BasicBlock* GetBlock(uint32_t id);
 
   // Returns the basic block for the |predecessor|'th index predecessor of
   // |phi|.
-  ir::BasicBlock* GetIncomingBlock(ir::Instruction* phi, uint32_t predecessor);
+  opt::BasicBlock* GetIncomingBlock(opt::Instruction* phi,
+                                    uint32_t predecessor);
 
   // Returns the instruction defining the |predecessor|'th index of |phi|.
-  ir::Instruction* GetIncomingValue(ir::Instruction* phi, uint32_t predecessor);
+  opt::Instruction* GetIncomingValue(opt::Instruction* phi,
+                                     uint32_t predecessor);
 
   // Returns the id of a OpCompositeConstruct boolean vector. The composite has
   // the same number of elements as |vec_data_ty| and each member is |cond|.
@@ -60,26 +62,27 @@ class IfConversion : public Pass {
                           InstructionBuilder* builder);
 
   // Returns true if none of |phi|'s users are in |block|.
-  bool CheckPhiUsers(ir::Instruction* phi, ir::BasicBlock* block);
+  bool CheckPhiUsers(opt::Instruction* phi, opt::BasicBlock* block);
 
   // Returns |false| if |block| is not appropriate to transform. Only
   // transforms blocks with two predecessors. Neither incoming block can be
   // dominated by |block|. Both predecessors must share a common dominator that
   // is terminated by a conditional branch.
-  bool CheckBlock(ir::BasicBlock* block, DominatorAnalysis* dominators,
-                  ir::BasicBlock** common);
+  bool CheckBlock(opt::BasicBlock* block, DominatorAnalysis* dominators,
+                  opt::BasicBlock** common);
 
   // Moves |inst| to |target_block| if it does not already dominate the block.
   // Any instructions that |inst| depends on are move if necessary.  It is
   // assumed that |inst| can be hoisted to |target_block| as defined by
   // |CanHoistInstruction|.  |dominators| is the dominator analysis for the
   // function that contains |target_block|.
-  void HoistInstruction(ir::Instruction* inst, ir::BasicBlock* target_block,
+  void HoistInstruction(opt::Instruction* inst, opt::BasicBlock* target_block,
                         DominatorAnalysis* dominators);
 
   // Returns true if it is legal to move |inst| and the instructions it depends
   // on to |target_block| if they do not already dominate |target_block|.
-  bool CanHoistInstruction(ir::Instruction* inst, ir::BasicBlock* target_block,
+  bool CanHoistInstruction(opt::Instruction* inst,
+                           opt::BasicBlock* target_block,
                            DominatorAnalysis* dominators);
 };
 

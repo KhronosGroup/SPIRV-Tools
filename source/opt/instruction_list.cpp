@@ -15,7 +15,7 @@
 #include "instruction_list.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 InstructionList::iterator InstructionList::iterator::InsertBefore(
     std::vector<std::unique_ptr<Instruction>>&& list) {
@@ -32,5 +32,5 @@ InstructionList::iterator InstructionList::iterator::InsertBefore(
   i.get()->InsertBefore(node_);
   return iterator(i.release());
 }
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools

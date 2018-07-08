@@ -32,20 +32,20 @@ TEST_F(ConstantManagerTest, GetDefiningInstruction) {
 %2 = OpTypeStruct %int
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(context, nullptr);
 
   Type* struct_type_1 = context->get_type_mgr()->GetType(1);
   StructConstant struct_const_1(struct_type_1->AsStruct());
-  ir::Instruction* const_inst_1 =
+  opt::Instruction* const_inst_1 =
       context->get_constant_mgr()->GetDefiningInstruction(&struct_const_1, 1);
   EXPECT_EQ(const_inst_1->type_id(), 1);
 
   Type* struct_type_2 = context->get_type_mgr()->GetType(2);
   StructConstant struct_const_2(struct_type_2->AsStruct());
-  ir::Instruction* const_inst_2 =
+  opt::Instruction* const_inst_2 =
       context->get_constant_mgr()->GetDefiningInstruction(&struct_const_2, 2);
   EXPECT_EQ(const_inst_2->type_id(), 2);
 }
