@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2018.4-dev 2018-05-25
+v2018.4 2018-07-08
  - General:
    - Support SPV_KHR_8bit_storage
    - Add gclient and presubmit configurations
