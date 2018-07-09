@@ -17,7 +17,7 @@
 //   - MARK-V to SPIR-V decoder
 //
 // MARK-V is a compression format for SPIR-V binaries. It strips away
-// non-essential information (such as result ids which can be regenerated) and
+// non-essential information (such as result IDs which can be regenerated) and
 // uses various bit reduction techiniques to reduce the size of the binary.
 
 #include <algorithm>
