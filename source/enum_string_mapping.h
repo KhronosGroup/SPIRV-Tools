@@ -20,7 +20,7 @@
 #include "extensions.h"
 #include "latest_version_spirv_header.h"
 
-namespace libspirv {
+namespace spvtools {
 
 // Finds Extension enum corresponding to |str|. Returns false if not found.
 bool GetExtensionFromString(const char* str, Extension* extension);
@@ -31,6 +31,6 @@ const char* ExtensionToString(Extension extension);
 // Returns text string corresponding to |capability|.
 const char* CapabilityToString(SpvCapability capability);
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_ENUM_STRING_MAPPING_H_

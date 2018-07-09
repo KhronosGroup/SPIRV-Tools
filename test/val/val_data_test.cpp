@@ -224,6 +224,33 @@ TEST_F(ValidateData, int8_bad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_int8_cap_error));
 }
 
+TEST_F(ValidateData, int8_with_storage_buffer_8bit_access_good) {
+  string str = HeaderWith(
+                   "StorageBuffer8BitAccess "
+                   "OpExtension \"SPV_KHR_8bit_storage\"") +
+               " %2 = OpTypeInt 8 0";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_F(ValidateData, int8_with_uniform_and_storage_buffer_8bit_access_good) {
+  string str = HeaderWith(
+                   "UniformAndStorageBuffer8BitAccess "
+                   "OpExtension \"SPV_KHR_8bit_storage\"") +
+               " %2 = OpTypeInt 8 0";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_F(ValidateData, int8_with_storage_push_constant_8_good) {
+  string str = HeaderWith(
+                   "StoragePushConstant8 "
+                   "OpExtension \"SPV_KHR_8bit_storage\"") +
+               " %2 = OpTypeInt 8 0";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
 TEST_F(ValidateData, int16_good) {
   string str = header_with_int16 + "%2 = OpTypeInt 16 1";
   CompileSuccessfully(str.c_str());

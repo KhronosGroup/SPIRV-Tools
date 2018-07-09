@@ -49,10 +49,7 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
-using libspirv::BasicBlock;
-
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 using bb_ptr = BasicBlock*;
@@ -173,21 +170,23 @@ string ConstructErrorString(const Construct& construct,
 // |case_fall_through|. Returns SPV_ERROR_INVALID_CFG if the case construct
 // headed by |target_block| branches to multiple case constructs.
 spv_result_t FindCaseFallThrough(
-    const ValidationState_t& _, const BasicBlock* target_block,
+    const ValidationState_t& _, BasicBlock* target_block,
     uint32_t* case_fall_through, const BasicBlock* merge,
-    const std::unordered_set<uint32_t>& case_targets) {
-  std::vector<const BasicBlock*> stack;
+    const std::unordered_set<uint32_t>& case_targets, Function* function) {
+  std::vector<BasicBlock*> stack;
   stack.push_back(target_block);
   std::unordered_set<const BasicBlock*> visited;
+  bool target_reachable = target_block->reachable();
+  int target_depth = function->GetBlockDepth(target_block);
   while (!stack.empty()) {
-    const auto block = stack.back();
+    auto block = stack.back();
     stack.pop_back();
 
     if (block == merge) continue;
 
     if (!visited.insert(block).second) continue;
 
-    if (target_block->reachable() && block->reachable() &&
+    if (target_reachable && block->reachable() &&
         target_block->dominates(*block)) {
       // Still in the case construct.
       for (auto successor : *block->successors()) {
@@ -196,7 +195,18 @@ spv_result_t FindCaseFallThrough(
     } else {
       // Exiting the case construct to non-merge block.
       if (!case_targets.count(block->id())) {
-        continue;
+        int depth = function->GetBlockDepth(block);
+        if ((depth < target_depth) ||
+            (depth == target_depth && block->is_type(kBlockTypeContinue))) {
+          continue;
+        }
+
+        return _.diag(SPV_ERROR_INVALID_CFG)
+               << "Case construct that targets "
+               << _.getIdName(target_block->id())
+               << " has invalid branch to block " << _.getIdName(block->id())
+               << " (not another case construct, corresponding merge, outer "
+                  "loop merge or outer loop continue)";
       }
 
       if (*case_fall_through == 0u) {
@@ -221,7 +231,7 @@ spv_result_t FindCaseFallThrough(
 }
 
 spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
-                                    const Function& function,
+                                    Function* function,
                                     const Instruction* switch_inst,
                                     const BasicBlock* header,
                                     const BasicBlock* merge) {
@@ -242,7 +252,7 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
 
     if (!seen.insert(target).second) continue;
 
-    const auto target_block = function.GetBlock(target).first;
+    const auto target_block = function->GetBlock(target).first;
     // OpSwitch must dominate all its case constructs.
     if (header->reachable() && target_block->reachable() &&
         !header->dominates(*target_block)) {
@@ -253,7 +263,7 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
 
     uint32_t case_fall_through = 0u;
     if (auto error = FindCaseFallThrough(_, target_block, &case_fall_through,
-                                         merge, case_targets)) {
+                                         merge, case_targets, function)) {
       return error;
     }
 
@@ -429,7 +439,7 @@ spv_result_t StructuredControlFlowChecks(
         header->terminator()->opcode() == SpvOpSwitch) {
       const auto terminator = header->terminator();
       if (auto error =
-              StructuredSwitchChecks(_, *function, terminator, header, merge)) {
+              StructuredSwitchChecks(_, function, terminator, header, merge)) {
         return error;
       }
     }
@@ -470,29 +480,28 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
-      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
+      CFA<BasicBlock>::DepthFirstTraversal(
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
           ignore_block, [&](cbb_ptr b) { postorder.push_back(b); },
           ignore_edge);
-      auto edges = spvtools::CFA<libspirv::BasicBlock>::CalculateDominators(
+      auto edges = CFA<BasicBlock>::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
       for (auto edge : edges) {
         edge.first->SetImmediateDominator(edge.second);
       }
 
       /// calculate post dominators
-      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
+      CFA<BasicBlock>::DepthFirstTraversal(
           function.pseudo_exit_block(),
           function.AugmentedCFGPredecessorsFunction(), ignore_block,
           [&](cbb_ptr b) { postdom_postorder.push_back(b); }, ignore_edge);
-      auto postdom_edges =
-          spvtools::CFA<libspirv::BasicBlock>::CalculateDominators(
-              postdom_postorder, function.AugmentedCFGSuccessorsFunction());
+      auto postdom_edges = CFA<BasicBlock>::CalculateDominators(
+          postdom_postorder, function.AugmentedCFGSuccessorsFunction());
       for (auto edge : postdom_edges) {
         edge.first->SetImmediatePostDominator(edge.second);
       }
       /// calculate back edges.
-      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
+      CFA<BasicBlock>::DepthFirstTraversal(
           function.pseudo_entry_block(),
           function
               .AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge(),
@@ -621,4 +630,4 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

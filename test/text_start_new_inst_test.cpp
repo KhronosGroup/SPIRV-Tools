@@ -16,9 +16,9 @@
 
 #include <string>
 
+namespace spvtools {
 namespace {
 
-using libspirv::AssemblyContext;
 using spvtest::AutoText;
 
 TEST(TextStartsWithOp, YesAtStart) {
@@ -71,4 +71,5 @@ TEST(TextStartsWithOp, NoForNearlyValueGeneration) {
   EXPECT_FALSE(AssemblyContext(AutoText("%foo"), nullptr).isStartOfNewInst());
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

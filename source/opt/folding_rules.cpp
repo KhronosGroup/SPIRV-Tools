@@ -16,13 +16,13 @@
 
 #include <limits>
 
-#include "fold.h"
+#include "ir_context.h"
 #include "latest_version_glsl_std_450_header.h"
 
 namespace spvtools {
 namespace opt {
-
 namespace {
+
 const uint32_t kExtractCompositeIdInIdx = 0;
 const uint32_t kInsertObjectIdInIdx = 0;
 const uint32_t kInsertCompositeIdInIdx = 1;
@@ -93,10 +93,10 @@ uint32_t NegateFloatingPointConstant(analysis::ConstantManager* const_mgr,
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
   if (width == 64) {
-    spvutils::FloatProxy<double> result(c->GetDouble() * -1.0);
+    utils::FloatProxy<double> result(c->GetDouble() * -1.0);
     words = result.GetWords();
   } else {
-    spvutils::FloatProxy<float> result(c->GetFloat() * -1.0f);
+    utils::FloatProxy<float> result(c->GetFloat() * -1.0f);
     words = result.GetWords();
   }
 
@@ -183,11 +183,11 @@ uint32_t Reciprocal(analysis::ConstantManager* const_mgr,
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
   if (width == 64) {
-    spvutils::FloatProxy<double> result(1.0 / c->GetDouble());
+    spvtools::utils::FloatProxy<double> result(1.0 / c->GetDouble());
     if (!IsValidResult(result.getAsFloat())) return 0;
     words = result.GetWords();
   } else {
-    spvutils::FloatProxy<float> result(1.0f / c->GetFloat());
+    spvtools::utils::FloatProxy<float> result(1.0f / c->GetFloat());
     if (!IsValidResult(result.getAsFloat())) return 0;
     words = result.GetWords();
   }
@@ -421,19 +421,18 @@ uint32_t PerformFloatingPointOperation(analysis::ConstantManager* const_mgr,
   uint32_t width = type->AsFloat()->width();
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
-#define FOLD_OP(op)                                 \
-  if (width == 64) {                                \
-    spvutils::FloatProxy<double> val =              \
-        input1->GetDouble() op input2->GetDouble(); \
-    double dval = val.getAsFloat();                 \
-    if (!IsValidResult(dval)) return 0;             \
-    words = val.GetWords();                         \
-  } else {                                          \
-    spvutils::FloatProxy<float> val =               \
-        input1->GetFloat() op input2->GetFloat();   \
-    float fval = val.getAsFloat();                  \
-    if (!IsValidResult(fval)) return 0;             \
-    words = val.GetWords();                         \
+#define FOLD_OP(op)                                                          \
+  if (width == 64) {                                                         \
+    utils::FloatProxy<double> val =                                          \
+        input1->GetDouble() op input2->GetDouble();                          \
+    double dval = val.getAsFloat();                                          \
+    if (!IsValidResult(dval)) return 0;                                      \
+    words = val.GetWords();                                                  \
+  } else {                                                                   \
+    utils::FloatProxy<float> val = input1->GetFloat() op input2->GetFloat(); \
+    float fval = val.getAsFloat();                                           \
+    if (!IsValidResult(fval)) return 0;                                      \
+    words = val.GetWords();                                                  \
   }
   switch (opcode) {
     case SpvOpFMul:
@@ -1541,72 +1540,73 @@ FoldingRule VectorShuffleFeedingExtract() {
 // corresponding |a| in the FMix is 0 or 1, we can extract from one of the
 // operands of the FMix.
 FoldingRule FMixFeedingExtract() {
-  return [](ir::Instruction* inst,
-            const std::vector<const analysis::Constant*>&) {
-    assert(inst->opcode() == SpvOpCompositeExtract &&
-           "Wrong opcode.  Should be OpCompositeExtract.");
-    analysis::DefUseManager* def_use_mgr = inst->context()->get_def_use_mgr();
-    analysis::ConstantManager* const_mgr = inst->context()->get_constant_mgr();
+  return
+      [](ir::Instruction* inst, const std::vector<const analysis::Constant*>&) {
+        assert(inst->opcode() == SpvOpCompositeExtract &&
+               "Wrong opcode.  Should be OpCompositeExtract.");
+        ir::IRContext* context = inst->context();
+        analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+        analysis::ConstantManager* const_mgr = context->get_constant_mgr();
 
-    uint32_t composite_id =
-        inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-    ir::Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
+        uint32_t composite_id =
+            inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
+        ir::Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
 
-    if (composite_inst->opcode() != SpvOpExtInst) {
-      return false;
-    }
+        if (composite_inst->opcode() != SpvOpExtInst) {
+          return false;
+        }
 
-    uint32_t inst_set_id =
-        inst->context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+        uint32_t inst_set_id =
+            inst->context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
 
-    if (composite_inst->GetSingleWordInOperand(kExtInstSetIdInIdx) !=
-            inst_set_id ||
-        composite_inst->GetSingleWordInOperand(kExtInstInstructionInIdx) !=
-            GLSLstd450FMix) {
-      return false;
-    }
+        if (composite_inst->GetSingleWordInOperand(kExtInstSetIdInIdx) !=
+                inst_set_id ||
+            composite_inst->GetSingleWordInOperand(kExtInstInstructionInIdx) !=
+                GLSLstd450FMix) {
+          return false;
+        }
 
-    // Get the |a| for the FMix instruction.
-    uint32_t a_id = composite_inst->GetSingleWordInOperand(kFMixAIdInIdx);
-    std::unique_ptr<ir::Instruction> a(inst->Clone(inst->context()));
-    a->SetInOperand(kExtractCompositeIdInIdx, {a_id});
-    FoldInstruction(a.get());
+        // Get the |a| for the FMix instruction.
+        uint32_t a_id = composite_inst->GetSingleWordInOperand(kFMixAIdInIdx);
+        std::unique_ptr<ir::Instruction> a(inst->Clone(inst->context()));
+        a->SetInOperand(kExtractCompositeIdInIdx, {a_id});
+        context->get_instruction_folder().FoldInstruction(a.get());
 
-    if (a->opcode() != SpvOpCopyObject) {
-      return false;
-    }
+        if (a->opcode() != SpvOpCopyObject) {
+          return false;
+        }
 
-    const analysis::Constant* a_const =
-        const_mgr->FindDeclaredConstant(a->GetSingleWordInOperand(0));
+        const analysis::Constant* a_const =
+            const_mgr->FindDeclaredConstant(a->GetSingleWordInOperand(0));
 
-    if (!a_const) {
-      return false;
-    }
+        if (!a_const) {
+          return false;
+        }
 
-    bool use_x = false;
+        bool use_x = false;
 
-    assert(a_const->type()->AsFloat());
-    double element_value = a_const->GetValueAsDouble();
-    if (element_value == 0.0) {
-      use_x = true;
-    } else if (element_value == 1.0) {
-      use_x = false;
-    } else {
-      return false;
-    }
+        assert(a_const->type()->AsFloat());
+        double element_value = a_const->GetValueAsDouble();
+        if (element_value == 0.0) {
+          use_x = true;
+        } else if (element_value == 1.0) {
+          use_x = false;
+        } else {
+          return false;
+        }
 
-    // Get the id of the of the vector the element comes from.
-    uint32_t new_vector = 0;
-    if (use_x) {
-      new_vector = composite_inst->GetSingleWordInOperand(kFMixXIdInIdx);
-    } else {
-      new_vector = composite_inst->GetSingleWordInOperand(kFMixYIdInIdx);
-    }
+        // Get the id of the of the vector the element comes from.
+        uint32_t new_vector = 0;
+        if (use_x) {
+          new_vector = composite_inst->GetSingleWordInOperand(kFMixXIdInIdx);
+        } else {
+          new_vector = composite_inst->GetSingleWordInOperand(kFMixYIdInIdx);
+        }
 
-    // Update the extract instruction.
-    inst->SetInOperand(kExtractCompositeIdInIdx, {new_vector});
-    return true;
-  };
+        // Update the extract instruction.
+        inst->SetInOperand(kExtractCompositeIdInIdx, {new_vector});
+        return true;
+      };
 }
 
 FoldingRule RedundantPhi() {
@@ -2020,7 +2020,7 @@ FoldingRule StoringUndef() {
 }
 }  // namespace
 
-spvtools::opt::FoldingRules::FoldingRules() {
+FoldingRules::FoldingRules() {
   // Add all folding rules to the list for the opcodes to which they apply.
   // Note that the order in which rules are added to the list matters. If a rule
   // applies to the instruction, the rest of the rules will not be attempted.

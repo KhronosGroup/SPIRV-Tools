@@ -37,8 +37,7 @@
 #include "val/function.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 std::string ToString(const CapabilitySet& capabilities,
@@ -267,9 +266,9 @@ spv_result_t ExtensionCheck(ValidationState_t& _, const Instruction* inst) {
         RequiredExtensions(_, operand.type, word);
     if (!_.HasAnyOfExtensions(required_extensions)) {
       return _.diag(SPV_ERROR_MISSING_EXTENSION)
-             << spvutils::CardinalToOrdinal(operand_index + 1) << " operand of "
-             << spvOpcodeString(opcode) << ": operand " << word
-             << " requires one of these extensions: "
+             << spvtools::utils::CardinalToOrdinal(operand_index + 1)
+             << " operand of " << spvOpcodeString(opcode) << ": operand "
+             << word << " requires one of these extensions: "
              << ExtensionSetToString(required_extensions);
     }
   }
@@ -591,4 +590,4 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
   // All instruction checks have passed.
   return SPV_SUCCESS;
 }
-}  // namespace libspirv
+}  // namespace spvtools

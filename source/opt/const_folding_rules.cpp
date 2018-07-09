@@ -14,6 +14,8 @@
 
 #include "const_folding_rules.h"
 
+#include "ir_context.h"
+
 namespace spvtools {
 namespace opt {
 
@@ -166,8 +168,7 @@ ConstantFoldingRule FoldVectorTimesScalar() {
     if (float_type->width() == 32) {
       float scalar = c2->GetFloat();
       for (uint32_t i = 0; i < c1_components.size(); ++i) {
-        spvutils::FloatProxy<float> result(c1_components[i]->GetFloat() *
-                                           scalar);
+        utils::FloatProxy<float> result(c1_components[i]->GetFloat() * scalar);
         std::vector<uint32_t> words = result.GetWords();
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
@@ -177,8 +178,8 @@ ConstantFoldingRule FoldVectorTimesScalar() {
     } else if (float_type->width() == 64) {
       double scalar = c2->GetDouble();
       for (uint32_t i = 0; i < c1_components.size(); ++i) {
-        spvutils::FloatProxy<double> result(c1_components[i]->GetDouble() *
-                                            scalar);
+        utils::FloatProxy<double> result(c1_components[i]->GetDouble() *
+                                         scalar);
         std::vector<uint32_t> words = result.GetWords();
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
@@ -382,14 +383,14 @@ UnaryScalarFoldingRule FoldIToFOp() {
       float result_val = integer_type->IsSigned()
                              ? static_cast<float>(static_cast<int32_t>(ua))
                              : static_cast<float>(ua);
-      spvutils::FloatProxy<float> result(result_val);
+      utils::FloatProxy<float> result(result_val);
       std::vector<uint32_t> words = {result.data()};
       return const_mgr->GetConstant(result_type, words);
     } else if (float_type->width() == 64) {
       double result_val = integer_type->IsSigned()
                               ? static_cast<double>(static_cast<int32_t>(ua))
                               : static_cast<double>(ua);
-      spvutils::FloatProxy<double> result(result_val);
+      utils::FloatProxy<double> result(result_val);
       std::vector<uint32_t> words = result.GetWords();
       return const_mgr->GetConstant(result_type, words);
     }
@@ -411,13 +412,13 @@ UnaryScalarFoldingRule FoldIToFOp() {
     if (float_type_in_macro->width() == 32) {                              \
       float fa = a->GetFloat();                                            \
       float fb = b->GetFloat();                                            \
-      spvutils::FloatProxy<float> result_in_macro(fa op fb);               \
+      utils::FloatProxy<float> result_in_macro(fa op fb);                  \
       std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();   \
       return const_mgr_in_macro->GetConstant(result_type, words_in_macro); \
     } else if (float_type_in_macro->width() == 64) {                       \
       double fa = a->GetDouble();                                          \
       double fb = b->GetDouble();                                          \
-      spvutils::FloatProxy<double> result_in_macro(fa op fb);              \
+      utils::FloatProxy<double> result_in_macro(fa op fb);                 \
       std::vector<uint32_t> words_in_macro = result_in_macro.GetWords();   \
       return const_mgr_in_macro->GetConstant(result_type, words_in_macro); \
     }                                                                      \
@@ -546,12 +547,12 @@ ConstantFoldingRule FoldOpDotWithConstants() {
 
     if (has_zero_operand) {
       if (float_type->width() == 32) {
-        spvutils::FloatProxy<float> result(0.0f);
+        utils::FloatProxy<float> result(0.0f);
         std::vector<uint32_t> words = result.GetWords();
         return const_mgr->GetConstant(float_type, words);
       }
       if (float_type->width() == 64) {
-        spvutils::FloatProxy<double> result(0.0);
+        utils::FloatProxy<double> result(0.0);
         std::vector<uint32_t> words = result.GetWords();
         return const_mgr->GetConstant(float_type, words);
       }
@@ -568,7 +569,7 @@ ConstantFoldingRule FoldOpDotWithConstants() {
     a_components = constants[0]->GetVectorComponents(const_mgr);
     b_components = constants[1]->GetVectorComponents(const_mgr);
 
-    spvutils::FloatProxy<double> result(0.0);
+    utils::FloatProxy<double> result(0.0);
     std::vector<uint32_t> words = result.GetWords();
     const analysis::Constant* result_const =
         const_mgr->GetConstant(float_type, words);
@@ -597,12 +598,12 @@ UnaryScalarFoldingRule FoldFNegateOp() {
     assert(float_type != nullptr);
     if (float_type->width() == 32) {
       float fa = a->GetFloat();
-      spvutils::FloatProxy<float> result(-fa);
+      utils::FloatProxy<float> result(-fa);
       std::vector<uint32_t> words = result.GetWords();
       return const_mgr->GetConstant(result_type, words);
     } else if (float_type->width() == 64) {
       double da = a->GetDouble();
-      spvutils::FloatProxy<double> result(-da);
+      utils::FloatProxy<double> result(-da);
       std::vector<uint32_t> words = result.GetWords();
       return const_mgr->GetConstant(result_type, words);
     }
@@ -770,7 +771,7 @@ ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
 
 }  // namespace
 
-spvtools::opt::ConstantFoldingRules::ConstantFoldingRules() {
+ConstantFoldingRules::ConstantFoldingRules() {
   // Add all folding rules to the list for the opcodes to which they apply.
   // Note that the order in which rules are added to the list matters. If a rule
   // applies to the instruction, the rest of the rules will not be attempted.

@@ -18,7 +18,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace libspirv {
+namespace spvtools {
 
 // Wrapper for out stream selection.
 class out_stream {
@@ -70,6 +70,6 @@ struct blue {
 };
 }  // namespace clr
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_PRINT_H_

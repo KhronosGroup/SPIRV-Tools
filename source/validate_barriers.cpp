@@ -24,8 +24,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Validates Execution Scope operand.
@@ -138,7 +137,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
-  const size_t num_memory_order_set_bits = spvutils::CountSetBits(
+  const size_t num_memory_order_set_bits = spvtools::utils::CountSetBits(
       value & (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
                SpvMemorySemanticsAcquireReleaseMask |
                SpvMemorySemanticsSequentiallyConsistentMask));
@@ -292,4 +291,4 @@ spv_result_t BarriersPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

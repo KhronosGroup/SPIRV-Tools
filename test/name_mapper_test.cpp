@@ -19,15 +19,14 @@
 
 #include "source/name_mapper.h"
 
-using libspirv::FriendlyNameMapper;
-using libspirv::NameMapper;
 using spvtest::ScopedContext;
 using ::testing::Eq;
 
+namespace spvtools {
 namespace {
 
 TEST(TrivialNameTest, Samples) {
-  auto mapper = libspirv::GetTrivialNameMapper();
+  auto mapper = GetTrivialNameMapper();
   EXPECT_EQ(mapper(1), "1");
   EXPECT_EQ(mapper(1999), "1999");
   EXPECT_EQ(mapper(1024), "1024");
@@ -343,4 +342,5 @@ INSTANTIATE_TEST_CASE_P(
         {"%1 = OpTypeBool\n%2 = OpConstantFalse %1", 2, "false"},
     }), );
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

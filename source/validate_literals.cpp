@@ -23,8 +23,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Returns true if the operand holds a literal number
@@ -95,4 +94,4 @@ spv_result_t LiteralsPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

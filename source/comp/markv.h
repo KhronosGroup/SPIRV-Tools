@@ -24,10 +24,11 @@
 #include <string>
 #include <vector>
 
-#include "markv_model.h"
+#include "comp/markv_model.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
+namespace comp {
 
 struct MarkvCodecOptions {
   bool validate_spirv_binary = false;
@@ -69,6 +70,7 @@ spv_result_t MarkvToSpirv(
     MessageConsumer message_consumer, MarkvLogConsumer log_consumer,
     MarkvDebugConsumer debug_consumer, std::vector<uint32_t>* spirv);
 
+}  // namespace comp
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_MARKV_HPP_

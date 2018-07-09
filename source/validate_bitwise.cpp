@@ -21,7 +21,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
+namespace spvtools {
 
 // Validates correctness of bitwise instructions.
 spv_result_t BitwisePass(ValidationState_t& _, const Instruction* inst) {
@@ -214,4 +214,4 @@ spv_result_t BitwisePass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

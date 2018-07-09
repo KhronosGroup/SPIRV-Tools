@@ -26,8 +26,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 uint32_t GetSizeTBitWidth(const ValidationState_t& _) {
@@ -347,15 +346,15 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         }
 
         if (!_.IsIntScalarOrVectorType(exp_data_type) ||
-            (!_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16) &&
+            (!_.HasExtension(kSPV_AMD_gpu_shader_int16) &&
              _.GetBitWidth(exp_data_type) != 32) ||
-            (_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16) &&
+            (_.HasExtension(kSPV_AMD_gpu_shader_int16) &&
              _.GetBitWidth(exp_data_type) != 16 &&
              _.GetBitWidth(exp_data_type) != 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << ext_inst_name() << ": "
                  << "expected operand Exp data type to be a "
-                 << (_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16)
+                 << (_.HasExtension(kSPV_AMD_gpu_shader_int16)
                          ? "16-bit or 32-bit "
                          : "32-bit ")
                  << "int scalar or vector type";
@@ -410,9 +409,9 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             result_types.size() != 2 ||
             !_.IsFloatScalarOrVectorType(result_types[0]) ||
             !_.IsIntScalarOrVectorType(result_types[1]) ||
-            (!_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16) &&
+            (!_.HasExtension(kSPV_AMD_gpu_shader_int16) &&
              _.GetBitWidth(result_types[1]) != 32) ||
-            (_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16) &&
+            (_.HasExtension(kSPV_AMD_gpu_shader_int16) &&
              _.GetBitWidth(result_types[1]) != 16 &&
              _.GetBitWidth(result_types[1]) != 32) ||
             _.GetDimension(result_types[0]) !=
@@ -421,7 +420,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a struct with two members, "
                  << "first member a float scalar or vector, second member a "
-                 << (_.HasExtension(libspirv::kSPV_AMD_gpu_shader_int16)
+                 << (_.HasExtension(kSPV_AMD_gpu_shader_int16)
                          ? "16-bit or 32-bit "
                          : "32-bit ")
                  << "int scalar or vector with the same number of "
@@ -1984,4 +1983,4 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

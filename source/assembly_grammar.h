@@ -21,7 +21,7 @@
 #include "spirv-tools/libspirv.h"
 #include "table.h"
 
-namespace libspirv {
+namespace spvtools {
 
 // Encapsulates the grammar to use for SPIR-V assembly.
 // Contains methods to query for valid instructions and operands.
@@ -132,6 +132,7 @@ class AssemblyGrammar {
   const spv_opcode_table opcodeTable_;
   const spv_ext_inst_table extInstTable_;
 };
-}  // namespace libspirv
+
+}  // namespace spvtools
 
 #endif  // LIBSPIRV_ASSEMBLY_GRAMMAR_H_

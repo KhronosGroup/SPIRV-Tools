@@ -18,15 +18,13 @@
 #include "spirv-tools/libspirv.h"
 #include "table.h"
 
+namespace spvtools {
 namespace {
-
-using namespace spvtools;
 
 // TODO(antiagainst): Use public C API for setting the consumer once exists.
 #ifndef SPIRV_TOOLS_SHAREDLIB
-void SetContextMessageConsumer(spv_context context,
-                               spvtools::MessageConsumer consumer) {
-  libspirv::SetContextMessageConsumer(context, consumer);
+void SetContextMessageConsumer(spv_context context, MessageConsumer consumer) {
+  spvtools::SetContextMessageConsumer(context, consumer);
 }
 #else
 void SetContextMessageConsumer(spv_context, spvtools::MessageConsumer) {}
@@ -299,4 +297,5 @@ TEST(CInterface, SpecifyConsumerSpecifyDiagnosticForValidating) {
   spvContextDestroy(context);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

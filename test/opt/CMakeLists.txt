@@ -326,3 +326,9 @@ add_spvtools_unittest(TARGET reduce_load_size
   SRCS reduce_load_size_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET constant_manager
+  SRCS constant_manager_test.cpp
+  LIBS SPIRV-Tools-opt
+)
+

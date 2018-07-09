@@ -32,8 +32,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Returns a short textual description of the id defined by the given
@@ -2555,4 +2554,4 @@ spv_result_t ValidateBuiltIns(const ValidationState_t& _) {
   return validator.Run();
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

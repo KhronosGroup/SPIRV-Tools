@@ -18,7 +18,8 @@
 
 using std::make_pair;
 
-namespace libspirv {
+namespace spvtools {
+
 #define OPERATOR(OP)                                                 \
   bool operator OP(const Instruction& lhs, const Instruction& rhs) { \
     return lhs.id() OP rhs.id();                                     \
@@ -47,4 +48,5 @@ Instruction::Instruction(const spv_parsed_instruction_t* inst,
 void Instruction::RegisterUse(const Instruction* inst, uint32_t index) {
   uses_.push_back(make_pair(inst, index));
 }
-}  // namespace libspirv
+
+}  // namespace spvtools

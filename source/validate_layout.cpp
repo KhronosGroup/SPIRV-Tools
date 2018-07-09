@@ -26,14 +26,9 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-using libspirv::FunctionDecl;
-using libspirv::Instruction;
-using libspirv::kLayoutFunctionDeclarations;
-using libspirv::kLayoutFunctionDefinitions;
-using libspirv::kLayoutMemoryModel;
-using libspirv::ValidationState_t;
-
+namespace spvtools {
 namespace {
+
 // Module scoped instructions are processed by determining if the opcode
 // is part of the current layout section. If it is not then the next sections is
 // checked.
@@ -53,7 +48,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
       case kLayoutFunctionDeclarations:
         // All module sections have been processed. Recursively call
         // ModuleLayoutPass to process the next section of the module
-        return libspirv::ModuleLayoutPass(_, inst);
+        return ModuleLayoutPass(_, inst);
       default:
         break;
     }
@@ -169,9 +164,9 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
+
 }  // namespace
 
-namespace libspirv {
 // TODO(umar): Check linkage capabilities for function declarations
 // TODO(umar): Better error messages
 // NOTE: This function does not handle CFG related validation
@@ -202,4 +197,4 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _, const Instruction* inst) {
   }
   return SPV_SUCCESS;
 }
-}  // namespace libspirv
+}  // namespace spvtools

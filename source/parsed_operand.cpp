@@ -19,7 +19,7 @@
 #include <cassert>
 #include "util/hex_float.h"
 
-namespace libspirv {
+namespace spvtools {
 
 void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
                         const spv_parsed_operand_t& operand) {
@@ -39,11 +39,11 @@ void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
         break;
       case SPV_NUMBER_FLOATING:
         if (operand.number_bit_width == 16) {
-          *out << spvutils::FloatProxy<spvutils::Float16>(
+          *out << spvtools::utils::FloatProxy<spvtools::utils::Float16>(
               uint16_t(word & 0xFFFF));
         } else {
           // Assume 32-bit floats.
-          *out << spvutils::FloatProxy<float>(word);
+          *out << spvtools::utils::FloatProxy<float>(word);
         }
         break;
       default:
@@ -62,7 +62,7 @@ void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
         break;
       case SPV_NUMBER_FLOATING:
         // Assume only 64-bit floats.
-        *out << spvutils::FloatProxy<double>(bits);
+        *out << spvtools::utils::FloatProxy<double>(bits);
         break;
       default:
         assert(false && "Unreachable");
@@ -72,4 +72,4 @@ void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
     assert(false && "Unhandled");
   }
 }
-}  // namespace libspirv
+}  // namespace spvtools

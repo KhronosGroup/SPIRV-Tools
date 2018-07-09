@@ -26,11 +26,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-using libspirv::CapabilitySet;
-using libspirv::DiagnosticStream;
-using libspirv::Instruction;
-using libspirv::ValidationState_t;
-
+namespace spvtools {
 namespace {
 
 // Validates that the number of components in the vector is valid.
@@ -100,11 +96,12 @@ spv_result_t ValidateIntSize(ValidationState_t& _, const Instruction* inst) {
     return SPV_SUCCESS;
   }
   if (num_bits == 8) {
-    if (_.HasCapability(SpvCapabilityInt8)) {
+    if (_.features().declare_int8_type) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA)
-           << "Using an 8-bit integer type requires the Int8 capability.";
+           << "Using an 8-bit integer type requires the Int8 capability,"
+              " or an extension that explicitly enables 8-bit integers.";
   }
   if (num_bits == 16) {
     if (_.features().declare_int16_type) {
@@ -216,9 +213,7 @@ spv_result_t ValidateStruct(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // anonymous namespace
-
-namespace libspirv {
+}  // namespace
 
 // Validates that Data Rules are followed according to the specifications.
 // (Data Rules subsection of 2.16.1 Universal Validation Rules)
@@ -267,4 +262,4 @@ spv_result_t DataRulesPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

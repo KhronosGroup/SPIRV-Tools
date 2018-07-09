@@ -29,7 +29,7 @@ using std::string;
 using std::unordered_map;
 using std::vector;
 
-namespace libspirv {
+namespace spvtools {
 
 namespace {
 bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
@@ -277,8 +277,8 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
     disassembly = Disassemble(ordered_instructions_[instruction_counter - 1]);
   }
   size_t pos = instruction_counter >= 0 ? instruction_counter : 0;
-  return libspirv::DiagnosticStream({0, 0, pos}, context_->consumer,
-                                    disassembly, error_code);
+  return DiagnosticStream({0, 0, pos}, context_->consumer, disassembly,
+                          error_code);
 }
 
 deque<Function>& ValidationState_t::functions() { return module_functions_; }
@@ -323,6 +323,12 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
   switch (cap) {
     case SpvCapabilityKernel:
       features_.group_ops_reduce_and_scans = true;
+      break;
+    case SpvCapabilityInt8:
+    case SpvCapabilityStorageBuffer8BitAccess:
+    case SpvCapabilityUniformAndStorageBuffer8BitAccess:
+    case SpvCapabilityStoragePushConstant8:
+      features_.declare_int8_type = true;
       break;
     case SpvCapabilityInt16:
       features_.declare_int16_type = true;
@@ -865,9 +871,8 @@ std::string ValidationState_t::Disassemble(const uint32_t* words,
   uint32_t disassembly_options = SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                                  SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
 
-  return spvtools::spvInstructionBinaryToText(context()->target_env, words,
-                                              num_words, words_, num_words_,
-                                              disassembly_options);
+  return spvInstructionBinaryToText(context()->target_env, words, num_words,
+                                    words_, num_words_, disassembly_options);
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

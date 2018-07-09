@@ -14,9 +14,9 @@
 
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
-using libspirv::AssemblyContext;
 using spvtest::AutoText;
 
 #define TAB "\t"
@@ -248,4 +248,5 @@ TEST(TextWordGet, CRLF) {
   EXPECT_STREQ("d", word.c_str());
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

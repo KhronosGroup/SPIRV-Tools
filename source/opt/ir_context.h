@@ -22,6 +22,7 @@
 #include "def_use_manager.h"
 #include "dominator_analysis.h"
 #include "feature_manager.h"
+#include "fold.h"
 #include "loop_descriptor.h"
 #include "module.h"
 #include "register_pressure.h"
@@ -73,7 +74,7 @@ class IRContext {
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
   // Creates an |IRContext| that contains an owned |Module|
-  IRContext(spv_target_env env, spvtools::MessageConsumer c)
+  IRContext(spv_target_env env, MessageConsumer c)
       : syntax_context_(spvContextCreate(env)),
         grammar_(syntax_context_),
         unique_id_(0),
@@ -84,12 +85,11 @@ class IRContext {
         constant_mgr_(nullptr),
         type_mgr_(nullptr),
         id_to_name_(nullptr) {
-    libspirv::SetContextMessageConsumer(syntax_context_, consumer_);
+    SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
   }
 
-  IRContext(spv_target_env env, std::unique_ptr<Module>&& m,
-            spvtools::MessageConsumer c)
+  IRContext(spv_target_env env, std::unique_ptr<Module>&& m, MessageConsumer c)
       : syntax_context_(spvContextCreate(env)),
         grammar_(syntax_context_),
         unique_id_(0),
@@ -99,7 +99,7 @@ class IRContext {
         valid_analyses_(kAnalysisNone),
         type_mgr_(nullptr),
         id_to_name_(nullptr) {
-    libspirv::SetContextMessageConsumer(syntax_context_, consumer_);
+    SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
     InitializeCombinators();
   }
@@ -302,12 +302,10 @@ class IRContext {
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
-  void SetMessageConsumer(spvtools::MessageConsumer c) {
-    consumer_ = std::move(c);
-  }
+  void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
 
   // Returns the reference to the message consumer for this pass.
-  const spvtools::MessageConsumer& consumer() const { return consumer_; }
+  const MessageConsumer& consumer() const { return consumer_; }
 
   // Rebuilds the analyses in |set| that are invalid.
   void BuildInvalidAnalyses(Analysis set);
@@ -439,11 +437,18 @@ class IRContext {
   }
 
   // Returns the grammar for this context.
-  const libspirv::AssemblyGrammar& grammar() const { return grammar_; }
+  const AssemblyGrammar& grammar() const { return grammar_; }
 
   // If |inst| has not yet been analysed by the def-use manager, then analyse
   // its definitions and uses.
   inline void UpdateDefUse(Instruction* inst);
+
+  const opt::InstructionFolder& get_instruction_folder() {
+    if (!inst_folder_) {
+      inst_folder_.reset(new opt::InstructionFolder());
+    }
+    return *inst_folder_;
+  }
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
@@ -537,7 +542,7 @@ class IRContext {
   spv_context syntax_context_;
 
   // Auxiliary object for querying SPIR-V grammar facts.
-  libspirv::AssemblyGrammar grammar_;
+  AssemblyGrammar grammar_;
 
   // An unique identifier for instructions in |module_|. Can be used to order
   // instructions in a container.
@@ -550,7 +555,7 @@ class IRContext {
   std::unique_ptr<Module> module_;
 
   // A message consumer for diagnostics.
-  spvtools::MessageConsumer consumer_;
+  MessageConsumer consumer_;
 
   // The def-use manager for |module_|.
   std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;
@@ -601,6 +606,8 @@ class IRContext {
   std::unique_ptr<opt::LivenessAnalysis> reg_pressure_;
 
   std::unique_ptr<opt::ValueNumberTable> vn_table_;
+
+  std::unique_ptr<opt::InstructionFolder> inst_folder_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,
@@ -627,7 +634,7 @@ inline ir::IRContext::Analysis& operator<<=(ir::IRContext::Analysis& a,
   return a;
 }
 
-std::vector<Instruction*> spvtools::ir::IRContext::GetConstants() {
+std::vector<Instruction*> IRContext::GetConstants() {
   return module()->GetConstants();
 }
 
@@ -795,7 +802,7 @@ void IRContext::AddAnnotationInst(std::unique_ptr<Instruction>&& a) {
 void IRContext::AddType(std::unique_ptr<Instruction>&& t) {
   module()->AddType(std::move(t));
   if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDef(&*(--types_values_end()));
+    get_def_use_mgr()->AnalyzeInstDefUse(&*(--types_values_end()));
   }
 }
 
@@ -844,4 +851,5 @@ IRContext::GetNames(uint32_t id) {
 
 }  // namespace ir
 }  // namespace spvtools
+
 #endif  // SPIRV_TOOLS_IR_CONTEXT_H

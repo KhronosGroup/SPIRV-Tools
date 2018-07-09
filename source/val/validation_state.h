@@ -34,7 +34,7 @@
 #include "val/function.h"
 #include "val/instruction.h"
 
-namespace libspirv {
+namespace spvtools {
 
 /// This enum represents the sections of a SPIRV module. See section 2.4
 /// of the SPIRV spec for additional details of the order. The enumerant values
@@ -77,6 +77,9 @@ class ValidationState_t {
 
     // Disallows the use of OpUndef
     bool bans_op_undef = false;
+
+    // Allow OpTypeInt with 8 bit width?
+    bool declare_int8_type = false;
   };
 
   ValidationState_t(const spv_const_context context,
@@ -140,9 +143,8 @@ class ValidationState_t {
   /// Determines if the op instruction is part of the current section
   bool IsOpcodeInCurrentLayoutSection(SpvOp op);
 
-  libspirv::DiagnosticStream diag(spv_result_t error_code) const;
-  libspirv::DiagnosticStream diag(spv_result_t error_code,
-                                  int instruction_counter) const;
+  DiagnosticStream diag(spv_result_t error_code) const;
+  DiagnosticStream diag(spv_result_t error_code, int instruction_counter) const;
 
   /// Returns the function states
   std::deque<Function>& functions();
@@ -258,11 +260,11 @@ class ValidationState_t {
 
   /// Returns true if any of the capabilities is enabled, or if |capabilities|
   /// is an empty set.
-  bool HasAnyOfCapabilities(const libspirv::CapabilitySet& capabilities) const;
+  bool HasAnyOfCapabilities(const CapabilitySet& capabilities) const;
 
   /// Returns true if any of the extensions is enabled, or if |extensions|
   /// is an empty set.
-  bool HasAnyOfExtensions(const libspirv::ExtensionSet& extensions) const;
+  bool HasAnyOfExtensions(const ExtensionSet& extensions) const;
 
   /// Sets the addressing model of this module (logical/physical).
   void set_addressing_model(SpvAddressingModel am);
@@ -517,10 +519,10 @@ class ValidationState_t {
   std::deque<Function> module_functions_;
 
   /// Capabilities declared in the module
-  libspirv::CapabilitySet module_capabilities_;
+  CapabilitySet module_capabilities_;
 
   /// Extensions declared in the module
-  libspirv::ExtensionSet module_extensions_;
+  ExtensionSet module_extensions_;
 
   /// List of all instructions in the order they appear in the binary
   /// Pointers to objects in this container are guaranteed to be stable and
@@ -595,6 +597,6 @@ class ValidationState_t {
   const std::vector<uint32_t> empty_ids_;
 };
 
-}  // namespace libspirv
+}  // namespace spvtools
 
 #endif  /// LIBSPIRV_VAL_VALIDATIONSTATE_H_

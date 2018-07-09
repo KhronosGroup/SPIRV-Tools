@@ -23,8 +23,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
-
+namespace spvtools {
 namespace {
 
 // Performs compile time check that all SpvImageOperandsXXX cases are handled in
@@ -208,7 +207,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   const SpvOp opcode = inst->opcode();
   const size_t num_words = inst->words().size();
 
-  size_t expected_num_image_operand_words = spvutils::CountSetBits(mask);
+  size_t expected_num_image_operand_words = spvtools::utils::CountSetBits(mask);
   if (mask & SpvImageOperandsGradMask) {
     // Grad uses two words.
     ++expected_num_image_operand_words;
@@ -220,9 +219,9 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
            << spvOpcodeString(opcode);
   }
 
-  if (spvutils::CountSetBits(mask & (SpvImageOperandsOffsetMask |
-                                     SpvImageOperandsConstOffsetMask |
-                                     SpvImageOperandsConstOffsetsMask)) > 1) {
+  if (spvtools::utils::CountSetBits(
+          mask & (SpvImageOperandsOffsetMask | SpvImageOperandsConstOffsetMask |
+                  SpvImageOperandsConstOffsetsMask)) > 1) {
     return _.diag(SPV_ERROR_INVALID_DATA)
            << "Image Operands Offset, ConstOffset, ConstOffsets cannot be used "
            << "together: " << spvOpcodeString(opcode);
@@ -1664,4 +1663,4 @@ spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

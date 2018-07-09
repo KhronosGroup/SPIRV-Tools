@@ -23,7 +23,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
+namespace spvtools {
 
 // Validates Memory Scope operand.
 spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
@@ -81,7 +81,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
-  if (spvutils::CountSetBits(
+  if (spvtools::utils::CountSetBits(
           flags &
           (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
            SpvMemorySemanticsAcquireReleaseMask |
@@ -314,4 +314,4 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

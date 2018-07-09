@@ -36,11 +36,7 @@
 #include "val/validation_state.h"
 #include "validate.h"
 
-using libspirv::IdDescriptorCollection;
-using libspirv::Instruction;
-using libspirv::SpirvStats;
-using libspirv::ValidationState_t;
-
+namespace spvtools {
 namespace {
 
 // Helper class for stats aggregation. Receives as in/out parameter.
@@ -70,8 +66,7 @@ class StatsAggregator {
   // then procession the instruction to collect stats.
   spv_result_t ProcessInstruction(const spv_parsed_instruction_t* inst) {
     const spv_result_t validation_result =
-        spvtools::ValidateInstructionAndUpdateValidationState(vstate_.get(),
-                                                              inst);
+        ValidateInstructionAndUpdateValidationState(vstate_.get(), inst);
     if (validation_result != SPV_SUCCESS) return validation_result;
 
     ProcessOpcode();
@@ -190,7 +185,7 @@ class StatsAggregator {
   void ProcessExtension() {
     const Instruction& inst = GetCurrentInstruction();
     if (inst.opcode() != SpvOpExtension) return;
-    const std::string extension = libspirv::GetExtensionString(&inst.c_inst());
+    const std::string extension = GetExtensionString(&inst.c_inst());
     ++stats_->extension_hist[extension];
   }
 
@@ -296,8 +291,6 @@ spv_result_t ProcessInstruction(void* user_data,
 
 }  // namespace
 
-namespace libspirv {
-
 spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
                             const size_t num_words, spv_diagnostic* pDiagnostic,
                             SpirvStats* stats) {
@@ -306,15 +299,15 @@ spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
   spv_endianness_t endian;
   spv_position_t position = {};
   if (spvBinaryEndianness(&binary, &endian)) {
-    return libspirv::DiagnosticStream(position, context.consumer, "",
-                                      SPV_ERROR_INVALID_BINARY)
+    return DiagnosticStream(position, context.consumer, "",
+                            SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V magic number.";
   }
 
   spv_header_t header;
   if (spvBinaryHeaderGet(&binary, endian, &header)) {
-    return libspirv::DiagnosticStream(position, context.consumer, "",
-                                      SPV_ERROR_INVALID_BINARY)
+    return DiagnosticStream(position, context.consumer, "",
+                            SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V header.";
   }
 
@@ -324,4 +317,4 @@ spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
                         ProcessHeader, ProcessInstruction, pDiagnostic);
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

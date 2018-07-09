@@ -20,7 +20,7 @@
 
 #include "enum_string_mapping.h"
 
-namespace libspirv {
+namespace spvtools {
 
 std::string GetExtensionString(const spv_parsed_instruction_t* inst) {
   if (inst->opcode != SpvOpExtension) return "ERROR_not_op_extension";
@@ -41,4 +41,4 @@ std::string ExtensionSetToString(const ExtensionSet& extensions) {
   return ss.str();
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

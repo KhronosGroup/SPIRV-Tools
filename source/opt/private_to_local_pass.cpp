@@ -117,6 +117,7 @@ uint32_t PrivateToLocalPass::GetNewType(uint32_t old_type_id) {
       old_type_inst->GetSingleWordInOperand(kSpvTypePointerTypeIdInIdx);
   uint32_t new_type_id =
       type_mgr->FindPointerToType(pointee_type_id, SpvStorageClassFunction);
+  context()->UpdateDefUse(context()->get_def_use_mgr()->GetDef(new_type_id));
   return new_type_id;
 }
 

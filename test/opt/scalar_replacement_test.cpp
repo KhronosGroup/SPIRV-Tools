@@ -1356,6 +1356,97 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
 }
+
+TEST_F(ScalarReplacementTest, CreateAmbiguousNullConstant1) {
+  const std::string text = R"(
+;
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]] [[struct_member:%\w+]]
+; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
+; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
+; CHECK: [[null:%\w+]] = OpConstantNull [[struct_member]]
+; CHECK: [[var0a:%\w+]] = OpVariable [[uint_ptr]] Function
+; CHECK: [[var1:%\w+]] = OpVariable [[uint_ptr]] Function
+; CHECK: [[var0b:%\w+]] = OpVariable [[uint_ptr]] Function
+; CHECK-NOT: OpVariable
+; CHECK: OpStore [[var1]]
+; CHECK: [[l1:%\w+]] = OpLoad [[uint]] [[var1]]
+; CHECK: [[c1:%\w+]] = OpCompositeConstruct [[struct1]] [[l1]] [[null]]
+; CHECK: [[e1:%\w+]] = OpCompositeExtract [[uint]] [[c1]] 0
+;
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %func "replace_whole_load"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%struct2 = OpTypeStruct %uint
+%struct3 = OpTypeStruct %uint
+%struct1 = OpTypeStruct %uint %struct2
+%uint_ptr = OpTypePointer Function %uint
+%struct1_ptr = OpTypePointer Function %struct1
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%func = OpTypeFunction %void
+%1 = OpFunction %void None %func
+%2 = OpLabel
+%var1 = OpVariable %struct1_ptr Function
+%var2 = OpVariable %struct1_ptr Function
+%load1 = OpLoad %struct1 %var1
+OpStore %var2 %load1
+%load2 = OpLoad %struct1 %var2
+%3 = OpCompositeExtract %uint %load2 0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
+}
+
+TEST_F(ScalarReplacementTest, CreateAmbiguousNullConstant2) {
+  const std::string text = R"(
+;
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct1:%\w+]] = OpTypeStruct [[uint]] [[struct_member:%\w+]]
+; CHECK: [[uint_ptr:%\w+]] = OpTypePointer Function [[uint]]
+; CHECK: [[const:%\w+]] = OpConstant [[uint]] 0
+; CHECK: [[null:%\w+]] = OpConstantNull [[struct_member]]
+; CHECK: [[var0a:%\w+]] = OpVariable [[uint_ptr]] Function
+; CHECK: [[var1:%\w+]] = OpVariable [[uint_ptr]] Function
+; CHECK: [[var0b:%\w+]] = OpVariable [[uint_ptr]] Function
+; CHECK: OpStore [[var1]]
+; CHECK: [[l1:%\w+]] = OpLoad [[uint]] [[var1]]
+; CHECK: [[c1:%\w+]] = OpCompositeConstruct [[struct1]] [[l1]] [[null]]
+; CHECK: [[e1:%\w+]] = OpCompositeExtract [[uint]] [[c1]] 0
+;
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpName %func "replace_whole_load"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%struct3 = OpTypeStruct %uint
+%struct2 = OpTypeStruct %uint
+%struct1 = OpTypeStruct %uint %struct2
+%uint_ptr = OpTypePointer Function %uint
+%struct1_ptr = OpTypePointer Function %struct1
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%func = OpTypeFunction %void
+%1 = OpFunction %void None %func
+%2 = OpLabel
+%var1 = OpVariable %struct1_ptr Function
+%var2 = OpVariable %struct1_ptr Function
+%load1 = OpLoad %struct1 %var1
+OpStore %var2 %load1
+%load2 = OpLoad %struct1 %var2
+%3 = OpCompositeExtract %uint %load2 0
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 // Test that a struct of size 4 is not replaced when there is a limit of 2.

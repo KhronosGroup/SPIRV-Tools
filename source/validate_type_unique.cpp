@@ -21,7 +21,7 @@
 #include "val/instruction.h"
 #include "val/validation_state.h"
 
-namespace libspirv {
+namespace spvtools {
 
 // Validates that type declarations are unique, unless multiple declarations
 // of the same data type are allowed by the specification.
@@ -52,4 +52,4 @@ spv_result_t TypeUniquePass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

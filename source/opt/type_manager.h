@@ -28,6 +28,7 @@ namespace spvtools {
 namespace ir {
 class IRContext;
 }  // namespace ir
+
 namespace opt {
 namespace analysis {
 
@@ -75,7 +76,7 @@ class TypeManager {
   // will be communicated to the outside via the given message |consumer|.
   // This instance only keeps a reference to the |consumer|, so the |consumer|
   // should outlive this instance.
-  TypeManager(const MessageConsumer& consumer, spvtools::ir::IRContext* c);
+  TypeManager(const MessageConsumer& consumer, ir::IRContext* c);
 
   TypeManager(const TypeManager&) = delete;
   TypeManager(TypeManager&&) = delete;
@@ -161,9 +162,9 @@ class TypeManager {
   using IdToUnresolvedType = std::vector<UnresolvedType>;
 
   // Analyzes the types and decorations on types in the given |module|.
-  void AnalyzeTypes(const spvtools::ir::Module& module);
+  void AnalyzeTypes(const ir::Module& module);
 
-  spvtools::ir::IRContext* context() { return context_; }
+  ir::IRContext* context() { return context_; }
 
   // Attaches the decorations on |type| to |id|.
   void AttachDecorations(uint32_t id, const Type* type);
@@ -178,11 +179,11 @@ class TypeManager {
 
   // Creates and returns a type from the given SPIR-V |inst|. Returns nullptr if
   // the given instruction is not for defining a type.
-  Type* RecordIfTypeDefinition(const spvtools::ir::Instruction& inst);
+  Type* RecordIfTypeDefinition(const ir::Instruction& inst);
   // Attaches the decoration encoded in |inst| to |type|. Does nothing if the
   // given instruction is not a decoration instruction. Assumes the target is
   // |type| (e.g. should be called in loop of |type|'s decorations).
-  void AttachDecoration(const spvtools::ir::Instruction& inst, Type* type);
+  void AttachDecoration(const ir::Instruction& inst, Type* type);
 
   // Returns an equivalent pointer to |type| built in terms of pointers owned by
   // |type_pool_|. For example, if |type| is a vec3 of bool, it will be rebuilt
@@ -198,7 +199,7 @@ class TypeManager {
   void ReplaceType(Type* new_type, Type* original_type);
 
   const MessageConsumer& consumer_;  // Message consumer.
-  spvtools::ir::IRContext* context_;
+  ir::IRContext* context_;
   IdToTypeMap id_to_type_;  // Mapping from ids to their type representations.
   TypeToIdMap type_to_id_;  // Mapping from types to their defining ids.
   TypePool type_pool_;      // Memory owner of type pointers.
