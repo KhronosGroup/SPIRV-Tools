@@ -344,11 +344,19 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
   };
   if (vstate.options()->relax_block_layout) return SPV_SUCCESS;
   const auto& members = getStructMembers(struct_id, vstate);
-  uint32_t prevOffset = 0;
-  uint32_t nextValidOffset = 0;
+
+  // To check for member overlaps, we want to traverse the members in
+  // offset order.
+  const bool permit_non_monotonic_member_offsets =
+      vstate.features().non_monotonic_struct_member_offsets;
+  struct MemberOffsetPair {
+    uint32_t member;
+    uint32_t offset;
+  };
+  std::vector<MemberOffsetPair> member_offsets;
+  member_offsets.reserve(members.size());
   for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
        memberIdx < numMembers; memberIdx++) {
-    auto id = members[memberIdx];
     uint32_t offset = 0xffffffff;
     for (auto& decoration : vstate.id_decorations(struct_id)) {
       if (decoration.struct_member_index() == (int)memberIdx) {
@@ -361,6 +369,23 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
         }
       }
     }
+    member_offsets.push_back(MemberOffsetPair{memberIdx, offset});
+  }
+  std::stable_sort(
+      member_offsets.begin(), member_offsets.end(),
+      [](const MemberOffsetPair& lhs, const MemberOffsetPair& rhs) {
+        return lhs.offset < rhs.offset;
+      });
+
+  // Now scan from lowest offest to highest offset.
+  uint32_t prevOffset = 0;
+  uint32_t nextValidOffset = 0;
+  for (size_t ordered_member_idx = 0;
+       ordered_member_idx < member_offsets.size(); ordered_member_idx++) {
+    const auto& member_offset = member_offsets[ordered_member_idx];
+    const auto memberIdx = member_offset.member;
+    const auto offset = member_offset.offset;
+    auto id = members[member_offset.member];
     const LayoutConstraints& constraint =
         constraints[make_pair(struct_id, uint32_t(memberIdx))];
     const auto alignment =
@@ -375,11 +400,18 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       return fail(memberIdx)
              << "at offset " << offset << " is not aligned to " << alignment;
     // SPIR-V requires struct members to be specified in memory address order,
-    // and they should not overlap.
-    if (size > 0 && (offset + size <= prevOffset))
-      return fail(memberIdx)
-             << "at offset " << offset << " has a lower offset than member "
-             << memberIdx - 1;
+    // and they should not overlap.  Vulkan relaxes that rule.
+    if (!permit_non_monotonic_member_offsets) {
+      const auto out_of_order =
+          ordered_member_idx > 0 &&
+          (memberIdx < member_offsets[ordered_member_idx - 1].member);
+      if (out_of_order) {
+        return fail(memberIdx)
+               << "at offset " << offset << " has a higher offset than member "
+               << member_offsets[ordered_member_idx - 1].member << " at offset "
+               << prevOffset;
+      }
+    }
     if (offset < nextValidOffset)
       return fail(memberIdx) << "at offset " << offset
                              << " overlaps previous member ending at offset "
