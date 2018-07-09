@@ -182,16 +182,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
 template <int factor>
@@ -419,8 +419,7 @@ TEST_F(PassClassTest, SimpleUnevenPartialUnroll) {
             OpFunctionEnd
   )";
 
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main" %3
@@ -514,19 +513,19 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-// By unrolling by a factor that doesn't divide evenly into the number of loop
-// iterations we perfom an additional transform when partially unrolling to
-// account for the remainder.
-SinglePassRunAndCheck<PartialUnrollerTestPass<3>>(text, output, false);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  // By unrolling by a factor that doesn't divide evenly into the number of loop
+  // iterations we perfom an additional transform when partially unrolling to
+  // account for the remainder.
+  SinglePassRunAndCheck<PartialUnrollerTestPass<3>>(text, output, false);
 }
 
 /* Generated from
@@ -800,8 +799,7 @@ TEST_F(PassClassTest, UnrollNestedLoops) {
                OpFunctionEnd
     )";
 
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -956,15 +954,15 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
 /*
@@ -979,7 +977,7 @@ void main() {
 */
 TEST_F(PassClassTest, NegativeConditionAndInit) {
   // With opt::LocalMultiStoreElimPass
-const std::string text = R"(
+  const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1025,7 +1023,7 @@ const std::string text = R"(
                OpFunctionEnd
 )";
 
-const std::string expected = R"(OpCapability Shader
+  const std::string expected = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -1081,40 +1079,40 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-// SinglePassRunAndCheck<opt::LoopUnroller>(text, expected, false);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  // SinglePassRunAndCheck<opt::LoopUnroller>(text, expected, false);
 
-opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::Function* f = spvtest::GetFunction(module, 4);
 
-opt::LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(f);
-EXPECT_EQ(loop_descriptor.NumLoops(), 1u);
+  opt::LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(f);
+  EXPECT_EQ(loop_descriptor.NumLoops(), 1u);
 
-opt::Loop& loop = loop_descriptor.GetLoopByIndex(0);
+  opt::Loop& loop = loop_descriptor.GetLoopByIndex(0);
 
-EXPECT_TRUE(loop.HasUnrollLoopControl());
+  EXPECT_TRUE(loop.HasUnrollLoopControl());
 
-opt::BasicBlock* condition = loop.FindConditionBlock();
-EXPECT_EQ(condition->id(), 14u);
+  opt::BasicBlock* condition = loop.FindConditionBlock();
+  EXPECT_EQ(condition->id(), 14u);
 
-opt::Instruction* induction = loop.FindConditionVariable(condition);
-EXPECT_EQ(induction->result_id(), 32u);
+  opt::Instruction* induction = loop.FindConditionVariable(condition);
+  EXPECT_EQ(induction->result_id(), 32u);
 
-opt::LoopUtils loop_utils{context.get(), &loop};
-EXPECT_TRUE(loop_utils.CanPerformUnroll());
+  opt::LoopUtils loop_utils{context.get(), &loop};
+  EXPECT_TRUE(loop_utils.CanPerformUnroll());
 
-size_t iterations = 0;
-EXPECT_TRUE(
-    loop.FindNumberOfIterations(induction, &*condition->ctail(), &iterations));
-EXPECT_EQ(iterations, 2u);
-SinglePassRunAndCheck<opt::LoopUnroller>(text, expected, false);
+  size_t iterations = 0;
+  EXPECT_TRUE(loop.FindNumberOfIterations(induction, &*condition->ctail(),
+                                          &iterations));
+  EXPECT_EQ(iterations, 2u);
+  SinglePassRunAndCheck<opt::LoopUnroller>(text, expected, false);
 }
 
 /*
@@ -1129,7 +1127,7 @@ void main() {
 */
 TEST_F(PassClassTest, NegativeConditionAndInitResidualUnroll) {
   // With opt::LocalMultiStoreElimPass
-const std::string text = R"(
+  const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1175,7 +1173,7 @@ const std::string text = R"(
                OpFunctionEnd
 )";
 
-const std::string expected = R"(OpCapability Shader
+  const std::string expected = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -1253,39 +1251,39 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
-opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::Function* f = spvtest::GetFunction(module, 4);
 
-opt::LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(f);
-EXPECT_EQ(loop_descriptor.NumLoops(), 1u);
+  opt::LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(f);
+  EXPECT_EQ(loop_descriptor.NumLoops(), 1u);
 
-opt::Loop& loop = loop_descriptor.GetLoopByIndex(0);
+  opt::Loop& loop = loop_descriptor.GetLoopByIndex(0);
 
-EXPECT_TRUE(loop.HasUnrollLoopControl());
+  EXPECT_TRUE(loop.HasUnrollLoopControl());
 
-opt::BasicBlock* condition = loop.FindConditionBlock();
-EXPECT_EQ(condition->id(), 14u);
+  opt::BasicBlock* condition = loop.FindConditionBlock();
+  EXPECT_EQ(condition->id(), 14u);
 
-opt::Instruction* induction = loop.FindConditionVariable(condition);
-EXPECT_EQ(induction->result_id(), 32u);
+  opt::Instruction* induction = loop.FindConditionVariable(condition);
+  EXPECT_EQ(induction->result_id(), 32u);
 
-opt::LoopUtils loop_utils{context.get(), &loop};
-EXPECT_TRUE(loop_utils.CanPerformUnroll());
+  opt::LoopUtils loop_utils{context.get(), &loop};
+  EXPECT_TRUE(loop_utils.CanPerformUnroll());
 
-size_t iterations = 0;
-EXPECT_TRUE(
-    loop.FindNumberOfIterations(induction, &*condition->ctail(), &iterations));
-EXPECT_EQ(iterations, 9u);
-SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, expected, false);
+  size_t iterations = 0;
+  EXPECT_TRUE(loop.FindNumberOfIterations(induction, &*condition->ctail(),
+                                          &iterations));
+  EXPECT_EQ(iterations, 9u);
+  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, expected, false);
 }
 
 /*
@@ -1512,8 +1510,7 @@ TEST_F(PassClassTest, FullyUnrollNegativeStepLoopTest) {
                OpFunctionEnd
     )";
 
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -1583,16 +1580,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
 /*
@@ -1654,8 +1651,7 @@ TEST_F(PassClassTest, FullyUnrollNegativeNonOneStepLoop) {
                OpFunctionEnd
     )";
 
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -1725,16 +1721,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
 /*
@@ -1795,8 +1791,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -1866,16 +1861,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
 /*
@@ -1936,8 +1931,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -2020,16 +2014,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
 // With opt::LocalMultiStoreElimPass
@@ -2477,8 +2471,7 @@ TEST_F(PassClassTest, FullyUnrollEqualToOperations) {
                OpFunctionEnd
     )";
 
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -2558,16 +2551,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << text << std::endl;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  opt::Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                             << text << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  opt::LoopUnroller loop_unroller;
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
 // With opt::LocalMultiStoreElimPass
