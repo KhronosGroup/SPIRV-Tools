@@ -2637,12 +2637,10 @@ SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
                OpReturn
                OpFunctionEnd
     )";
-//clang-format on
+  // clang-format on
 
-
-TEST_F(PassClassTest, FullyUnrollConditionIsInHeaderBlock) {
-
-// clang-format off
+  TEST_F(PassClassTest, FullyUnrollConditionIsInHeaderBlock) {
+    // clang-format off
 const std::string output =
 R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -2700,17 +2698,18 @@ OpBranch %18
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, condition_in_header,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
-                           << condition_in_header << std::endl;
+    // clang-format on
+    std::unique_ptr<opt::IRContext> context =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, condition_in_header,
+                    SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+    opt::Module* module = context->module();
+    EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
+                               << condition_in_header << std::endl;
 
-opt::LoopUnroller loop_unroller;
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopUnroller>(condition_in_header, output, false);
+    opt::LoopUnroller loop_unroller;
+    SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+    SinglePassRunAndCheck<opt::LoopUnroller>(condition_in_header, output,
+                                             false);
 }
 
 TEST_F(PassClassTest, PartiallyUnrollResidualConditionIsInHeaderBlock) {

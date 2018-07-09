@@ -227,8 +227,8 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::ValuesIn(std::vector<
                         std::pair<FloatProxy<double>, std::string>>({
         // Various NAN and INF cases
-        {uint64_t(0xFFF0000000000000LL), "-0x1p+1024"},                //-inf
-        {uint64_t(0x7FF0000000000000LL), "0x1p+1024"},                 //+inf
+        {uint64_t(0xFFF0000000000000LL), "-0x1p+1024"},                // -inf
+        {uint64_t(0x7FF0000000000000LL), "0x1p+1024"},                 // +inf
         {uint64_t(0xFFF8000000000000LL), "-0x1.8p+1024"},              // -nan
         {uint64_t(0xFFF0F00000000000LL), "-0x1.0fp+1024"},             // -nan
         {uint64_t(0xFFF0000000000001LL), "-0x1.0000000000001p+1024"},  // -nan
