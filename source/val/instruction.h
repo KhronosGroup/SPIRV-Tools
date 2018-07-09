@@ -66,6 +66,7 @@ class Instruction {
   /// The words used to define the Instruction
   const std::vector<uint32_t>& words() const { return words_; }
 
+  /// Returns the operand at |idx|.
   const spv_parsed_operand_t& operand(size_t idx) const {
     return operands_[idx];
   }
@@ -86,10 +87,10 @@ class Instruction {
   // Casts the words belonging to the operand under |index| to |T| and returns.
   template <typename T>
   T GetOperandAs(size_t index) const {
-    const spv_parsed_operand_t& op = operands_.at(index);
-    assert(op.num_words * 4 >= sizeof(T));
-    assert(op.offset + op.num_words <= inst_.num_words);
-    return *reinterpret_cast<const T*>(&words_[op.offset]);
+    const spv_parsed_operand_t& o = operands_.at(index);
+    assert(o.num_words * 4 >= sizeof(T));
+    assert(o.offset + o.num_words <= inst_.num_words);
+    return *reinterpret_cast<const T*>(&words_[o.offset]);
   }
 
   int InstructionPosition() const { return instruction_position_; }
