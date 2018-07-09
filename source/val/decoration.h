@@ -22,6 +22,7 @@
 #include "latest_version_spirv_header.h"
 
 namespace spvtools {
+namespace val {
 
 // An object of this class represents a specific decoration including its
 // parameters (if any). Decorations are used by OpDecorate and OpMemberDecorate,
@@ -82,6 +83,7 @@ class Decoration {
   int struct_member_index_;
 };
 
+}  // namespace val
 }  // namespace spvtools
 
 #endif  /// LIBSPIRV_VAL_DECORATION_H_

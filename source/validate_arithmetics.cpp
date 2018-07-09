@@ -22,7 +22,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
-
+namespace val {
 namespace {
 
 // Returns operand word for given instruction and operand index.
@@ -42,6 +42,7 @@ inline uint32_t GetOperandTypeId(ValidationState_t& _,
                                  size_t operand_index) {
   return _.GetTypeId(GetOperandWord(inst, operand_index));
 }
+
 }  // namespace
 
 // Validates correctness of arithmetic instructions.
@@ -468,4 +469,5 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

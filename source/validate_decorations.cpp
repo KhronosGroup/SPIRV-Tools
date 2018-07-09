@@ -27,6 +27,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 using std::make_pair;
@@ -814,4 +815,5 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

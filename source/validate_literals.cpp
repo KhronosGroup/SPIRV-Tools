@@ -24,6 +24,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 // Returns true if the operand holds a literal number
@@ -95,4 +96,5 @@ spv_result_t LiteralsPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

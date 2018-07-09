@@ -20,6 +20,7 @@
 #include <unordered_set>
 
 namespace spvtools {
+namespace val {
 
 Construct::Construct(ConstructType construct_type, BasicBlock* entry,
                      BasicBlock* exit, std::vector<Construct*> constructs)
@@ -122,4 +123,5 @@ Construct::ConstructBlockSet Construct::blocks(Function* function) const {
   return construct_blocks;
 }
 
+}  // namespace val
 }  // namespace spvtools

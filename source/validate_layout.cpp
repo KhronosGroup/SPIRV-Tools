@@ -26,6 +26,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 // Module scoped instructions are processed by determining if the opcode
@@ -200,4 +201,6 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
+
+}  // namespace val
 }  // namespace spvtools

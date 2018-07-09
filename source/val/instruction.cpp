@@ -19,6 +19,7 @@
 using std::make_pair;
 
 namespace spvtools {
+namespace val {
 
 #define OPERATOR(OP)                                                 \
   bool operator OP(const Instruction& lhs, const Instruction& rhs) { \
@@ -49,4 +50,5 @@ void Instruction::RegisterUse(const Instruction* inst, uint32_t index) {
   uses_.push_back(make_pair(inst, index));
 }
 
+}  // namespace val
 }  // namespace spvtools
