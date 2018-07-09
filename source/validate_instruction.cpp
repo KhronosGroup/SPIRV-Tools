@@ -282,7 +282,7 @@ spv_result_t ExtensionCheck(ValidationState_t& _, const Instruction* inst) {
 spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
   const auto opcode = inst->opcode();
   spv_opcode_desc inst_desc;
-  const bool r = _.grammar().lookupOpcode(opcode, &inst_desc);
+  const spv_result_t r = _.grammar().lookupOpcode(opcode, &inst_desc);
   assert(r == SPV_SUCCESS);
   (void)r;
 
