@@ -25,7 +25,7 @@
 #include "iterator.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 class IRContext;
 
@@ -470,7 +470,7 @@ inline Module::const_iterator Module::cend() const {
   return const_iterator(&functions_, functions_.cend());
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_MODULE_H_

@@ -24,7 +24,7 @@ namespace opt {
 class Workaround1209 : public Pass {
  public:
   const char* name() const override { return "workaround-1209"; }
-  Status Process(ir::IRContext*) override;
+  Status Process(opt::IRContext*) override;
 
  private:
   // There is at least one driver where an OpUnreachable found in a loop is not

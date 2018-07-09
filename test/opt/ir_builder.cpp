@@ -32,7 +32,7 @@
 namespace {
 
 using namespace spvtools;
-using ir::IRContext;
+using opt::IRContext;
 using Analysis = IRContext::Analysis;
 
 #ifdef SPIRV_EFFCEE
@@ -51,7 +51,7 @@ bool Validate(const std::vector<uint32_t>& bin) {
   return error == 0;
 }
 
-void Match(const std::string& original, ir::IRContext* context,
+void Match(const std::string& original, opt::IRContext* context,
            bool do_validation = true) {
   std::vector<uint32_t> bin;
   context->module()->ToBinary(&bin, true);
@@ -112,18 +112,18 @@ TEST_F(IRBuilderTest, TestInsnAddition) {
 )";
 
   {
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
 
-    ir::BasicBlock* bb = context->cfg()->block(18);
+    opt::BasicBlock* bb = context->cfg()->block(18);
 
     // Build managers.
     context->get_def_use_mgr();
     context->get_instr_block(nullptr);
 
     opt::InstructionBuilder builder(context.get(), &*bb->begin());
-    ir::Instruction* phi1 = builder.AddPhi(7, {9, 14});
-    ir::Instruction* phi2 = builder.AddPhi(10, {16, 14});
+    opt::Instruction* phi1 = builder.AddPhi(7, {9, 14});
+    opt::Instruction* phi2 = builder.AddPhi(10, {16, 14});
 
     // Make sure the InstructionBuilder did not update the def/use manager.
     EXPECT_EQ(context->get_def_use_mgr()->GetDef(phi1->result_id()), nullptr);
@@ -135,20 +135,20 @@ TEST_F(IRBuilderTest, TestInsnAddition) {
   }
 
   {
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
 
     // Build managers.
     context->get_def_use_mgr();
     context->get_instr_block(nullptr);
 
-    ir::BasicBlock* bb = context->cfg()->block(18);
+    opt::BasicBlock* bb = context->cfg()->block(18);
     opt::InstructionBuilder builder(
         context.get(), &*bb->begin(),
-        ir::IRContext::kAnalysisDefUse |
-            ir::IRContext::kAnalysisInstrToBlockMapping);
-    ir::Instruction* phi1 = builder.AddPhi(7, {9, 14});
-    ir::Instruction* phi2 = builder.AddPhi(10, {16, 14});
+        opt::IRContext::kAnalysisDefUse |
+            opt::IRContext::kAnalysisInstrToBlockMapping);
+    opt::Instruction* phi1 = builder.AddPhi(7, {9, 14});
+    opt::Instruction* phi2 = builder.AddPhi(10, {16, 14});
 
     // Make sure InstructionBuilder updated the def/use manager
     EXPECT_NE(context->get_def_use_mgr()->GetDef(phi1->result_id()), nullptr);
@@ -197,26 +197,28 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
 )";
 
   {
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
 
-    ir::Function& fn = *context->module()->begin();
+    opt::Function& fn = *context->module()->begin();
 
-    ir::BasicBlock& bb_merge = *fn.begin();
+    opt::BasicBlock& bb_merge = *fn.begin();
 
-    fn.begin().InsertBefore(std::unique_ptr<ir::BasicBlock>(
-        new ir::BasicBlock(std::unique_ptr<ir::Instruction>(new ir::Instruction(
-            context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
-    ir::BasicBlock& bb_true = *fn.begin();
+    fn.begin().InsertBefore(
+        std::unique_ptr<opt::BasicBlock>(new opt::BasicBlock(
+            std::unique_ptr<opt::Instruction>(new opt::Instruction(
+                context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
+    opt::BasicBlock& bb_true = *fn.begin();
     {
       opt::InstructionBuilder builder(context.get(), &*bb_true.begin());
       builder.AddBranch(bb_merge.id());
     }
 
-    fn.begin().InsertBefore(std::unique_ptr<ir::BasicBlock>(
-        new ir::BasicBlock(std::unique_ptr<ir::Instruction>(new ir::Instruction(
-            context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
-    ir::BasicBlock& bb_cond = *fn.begin();
+    fn.begin().InsertBefore(
+        std::unique_ptr<opt::BasicBlock>(new opt::BasicBlock(
+            std::unique_ptr<opt::Instruction>(new opt::Instruction(
+                context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
+    opt::BasicBlock& bb_cond = *fn.begin();
 
     opt::InstructionBuilder builder(context.get(), &bb_cond);
     // This also test consecutive instruction insertion: merge selection +
@@ -251,7 +253,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(nullptr, context);
 
@@ -284,7 +286,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(nullptr, context);
 
@@ -317,7 +319,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(nullptr, context);
 
@@ -362,14 +364,14 @@ OpReturn
 OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(nullptr, context);
 
   opt::InstructionBuilder builder(
       context.get(), &*context->module()->begin()->begin()->begin());
-  ir::Instruction* const_1 = builder.Add32BitUnsignedIntegerConstant(13);
-  ir::Instruction* const_2 = builder.Add32BitSignedIntegerConstant(-1);
+  opt::Instruction* const_1 = builder.Add32BitUnsignedIntegerConstant(13);
+  opt::Instruction* const_2 = builder.Add32BitSignedIntegerConstant(-1);
 
   EXPECT_NE(nullptr, const_1);
   EXPECT_NE(nullptr, const_2);
@@ -378,15 +380,15 @@ OpFunctionEnd
   EXPECT_EQ(const_1, builder.Add32BitUnsignedIntegerConstant(13));
   EXPECT_EQ(const_2, builder.Add32BitSignedIntegerConstant(-1));
 
-  ir::Instruction* const_3 = builder.Add32BitUnsignedIntegerConstant(1);
-  ir::Instruction* const_4 = builder.Add32BitSignedIntegerConstant(34);
+  opt::Instruction* const_3 = builder.Add32BitUnsignedIntegerConstant(1);
+  opt::Instruction* const_4 = builder.Add32BitSignedIntegerConstant(34);
 
   // Try adding different constants to make sure the type is reused.
   EXPECT_NE(nullptr, const_3);
   EXPECT_NE(nullptr, const_4);
 
-  ir::Instruction* const_5 = builder.Add32BitUnsignedIntegerConstant(0);
-  ir::Instruction* const_6 = builder.Add32BitSignedIntegerConstant(0);
+  opt::Instruction* const_5 = builder.Add32BitUnsignedIntegerConstant(0);
+  opt::Instruction* const_6 = builder.Add32BitSignedIntegerConstant(0);
 
   // Try adding 0 as both signed and unsigned.
   EXPECT_NE(nullptr, const_5);

@@ -24,13 +24,11 @@
 #include "types.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
+
 class IRContext;
 class Loop;
 class LoopDescriptor;
-}  // namespace ir
-
-namespace opt {
 
 // Handles the register pressure of a function for different regions (function,
 // loop, basic block). It also contains some utilities to foresee the register
@@ -49,7 +47,7 @@ class RegisterLiveness {
   };
 
   struct RegionRegisterLiveness {
-    using LiveSet = std::unordered_set<ir::Instruction*>;
+    using LiveSet = std::unordered_set<opt::Instruction*>;
     using RegClassSetTy = std::vector<std::pair<RegisterClass, size_t>>;
 
     // SSA register live when entering the basic block.
@@ -83,17 +81,17 @@ class RegisterLiveness {
       }
     }
 
-    void AddRegisterClass(ir::Instruction* insn);
+    void AddRegisterClass(opt::Instruction* insn);
   };
 
-  RegisterLiveness(ir::IRContext* context, ir::Function* f)
+  RegisterLiveness(opt::IRContext* context, opt::Function* f)
       : context_(context) {
     Analyze(f);
   }
 
   // Returns liveness and register information for the basic block |bb|. If no
   // entry exist for the basic block, the function returns null.
-  const RegionRegisterLiveness* Get(const ir::BasicBlock* bb) const {
+  const RegionRegisterLiveness* Get(const opt::BasicBlock* bb) const {
     return Get(bb->id());
   }
 
@@ -107,11 +105,11 @@ class RegisterLiveness {
     return nullptr;
   }
 
-  ir::IRContext* GetContext() const { return context_; }
+  opt::IRContext* GetContext() const { return context_; }
 
   // Returns liveness and register information for the basic block |bb|. If no
   // entry exist for the basic block, the function returns null.
-  RegionRegisterLiveness* Get(const ir::BasicBlock* bb) {
+  RegionRegisterLiveness* Get(const opt::BasicBlock* bb) {
     return Get(bb->id());
   }
 
@@ -135,12 +133,12 @@ class RegisterLiveness {
   // |reg_pressure|. The live-in set corresponds to the live-in set of the
   // header block, the live-out set of the loop corresponds to the union of the
   // live-in sets of each exit basic block.
-  void ComputeLoopRegisterPressure(const ir::Loop& loop,
+  void ComputeLoopRegisterPressure(const opt::Loop& loop,
                                    RegionRegisterLiveness* reg_pressure) const;
 
   // Estimate the register pressure for the |l1| and |l2| as if they were making
   // one unique loop. The result is stored into |simulation_result|.
-  void SimulateFusion(const ir::Loop& l1, const ir::Loop& l2,
+  void SimulateFusion(const opt::Loop& l1, const opt::Loop& l2,
                       RegionRegisterLiveness* simulation_result) const;
 
   // Estimate the register pressure of |loop| after it has been fissioned
@@ -152,9 +150,9 @@ class RegisterLiveness {
   // moved instructions. The set |loop2_sim_result| store the simulation result
   // of the loop with the removed instructions.
   void SimulateFission(
-      const ir::Loop& loop,
-      const std::unordered_set<ir::Instruction*>& moved_instructions,
-      const std::unordered_set<ir::Instruction*>& copied_instructions,
+      const opt::Loop& loop,
+      const std::unordered_set<opt::Instruction*>& moved_instructions,
+      const std::unordered_set<opt::Instruction*>& copied_instructions,
       RegionRegisterLiveness* loop1_sim_result,
       RegionRegisterLiveness* loop2_sim_result) const;
 
@@ -162,10 +160,10 @@ class RegisterLiveness {
   using RegionRegisterLivenessMap =
       std::unordered_map<uint32_t, RegionRegisterLiveness>;
 
-  ir::IRContext* context_;
+  opt::IRContext* context_;
   RegionRegisterLivenessMap block_pressure_;
 
-  void Analyze(ir::Function* f);
+  void Analyze(opt::Function* f);
 };
 
 // Handles the register pressure of a function for different regions (function,
@@ -173,15 +171,15 @@ class RegisterLiveness {
 // pressure following code transformations.
 class LivenessAnalysis {
   using LivenessAnalysisMap =
-      std::unordered_map<const ir::Function*, RegisterLiveness>;
+      std::unordered_map<const opt::Function*, RegisterLiveness>;
 
  public:
-  LivenessAnalysis(ir::IRContext* context) : context_(context) {}
+  LivenessAnalysis(opt::IRContext* context) : context_(context) {}
 
   // Computes the liveness analysis for the function |f| and cache the result.
   // If the analysis was performed for this function, then the cached analysis
   // is returned.
-  const RegisterLiveness* Get(ir::Function* f) {
+  const RegisterLiveness* Get(opt::Function* f) {
     LivenessAnalysisMap::iterator it = analysis_cache_.find(f);
     if (it != analysis_cache_.end()) {
       return &it->second;
@@ -191,7 +189,7 @@ class LivenessAnalysis {
   }
 
  private:
-  ir::IRContext* context_;
+  opt::IRContext* context_;
   LivenessAnalysisMap analysis_cache_;
 };
 

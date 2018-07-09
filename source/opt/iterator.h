@@ -22,7 +22,7 @@
 #include <vector>
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 // An ad hoc iterator class for std::vector<std::unique_ptr<|ValueType|>>. The
 // purpose of this iterator class is to provide transparent access to those
@@ -351,7 +351,7 @@ inline
   return UptrVectorIterator(container_, container_->begin() + index);
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_ITERATOR_H_

@@ -102,7 +102,7 @@ int64_t Constant::GetS64() const {
   }
 }
 
-ConstantManager::ConstantManager(ir::IRContext* ctx) : ctx_(ctx) {
+ConstantManager::ConstantManager(opt::IRContext* ctx) : ctx_(ctx) {
   // Populate the constant table with values from constant declarations in the
   // module.  The values of each OpConstant declaration is the identity
   // assignment (i.e., each constant is its own value).
@@ -111,15 +111,15 @@ ConstantManager::ConstantManager(ir::IRContext* ctx) : ctx_(ctx) {
   }
 }
 
-Type* ConstantManager::GetType(const ir::Instruction* inst) const {
+Type* ConstantManager::GetType(const opt::Instruction* inst) const {
   return context()->get_type_mgr()->GetType(inst->type_id());
 }
 
 std::vector<const Constant*> ConstantManager::GetOperandConstants(
-    ir::Instruction* inst) const {
+    opt::Instruction* inst) const {
   std::vector<const Constant*> constants;
   for (uint32_t i = 0; i < inst->NumInOperands(); i++) {
-    const ir::Operand* operand = &inst->GetInOperand(i);
+    const opt::Operand* operand = &inst->GetInOperand(i);
     if (operand->type != SPV_OPERAND_TYPE_ID) {
       constants.push_back(nullptr);
     } else {
@@ -144,8 +144,8 @@ std::vector<const Constant*> ConstantManager::GetConstantsFromIds(
   return constants;
 }
 
-ir::Instruction* ConstantManager::BuildInstructionAndAddToModule(
-    const Constant* new_const, ir::Module::inst_iterator* pos,
+opt::Instruction* ConstantManager::BuildInstructionAndAddToModule(
+    const Constant* new_const, opt::Module::inst_iterator* pos,
     uint32_t type_id) {
   uint32_t new_id = context()->TakeNextId();
   auto new_inst = CreateInstruction(new_id, new_const, type_id);
@@ -160,8 +160,8 @@ ir::Instruction* ConstantManager::BuildInstructionAndAddToModule(
   return new_inst_ptr;
 }
 
-ir::Instruction* ConstantManager::GetDefiningInstruction(
-    const Constant* c, uint32_t type_id, ir::Module::inst_iterator* pos) {
+opt::Instruction* ConstantManager::GetDefiningInstruction(
+    const Constant* c, uint32_t type_id, opt::Module::inst_iterator* pos) {
   assert(type_id == 0 ||
          context()->get_type_mgr()->GetType(type_id) == c->type());
   uint32_t decl_id = FindDeclaredConstant(c);
@@ -231,7 +231,7 @@ const Constant* ConstantManager::CreateConstant(
   }
 }
 
-const Constant* ConstantManager::GetConstantFromInst(ir::Instruction* inst) {
+const Constant* ConstantManager::GetConstantFromInst(opt::Instruction* inst) {
   std::vector<uint32_t> literal_words_or_ids;
 
   // Collect the constant defining literals or component ids.
@@ -262,29 +262,29 @@ const Constant* ConstantManager::GetConstantFromInst(ir::Instruction* inst) {
   return GetConstant(GetType(inst), literal_words_or_ids);
 }
 
-std::unique_ptr<ir::Instruction> ConstantManager::CreateInstruction(
+std::unique_ptr<opt::Instruction> ConstantManager::CreateInstruction(
     uint32_t id, const Constant* c, uint32_t type_id) const {
   uint32_t type =
       (type_id == 0) ? context()->get_type_mgr()->GetId(c->type()) : type_id;
   if (c->AsNullConstant()) {
-    return MakeUnique<ir::Instruction>(context(), SpvOp::SpvOpConstantNull,
-                                       type, id,
-                                       std::initializer_list<ir::Operand>{});
+    return MakeUnique<opt::Instruction>(context(), SpvOp::SpvOpConstantNull,
+                                        type, id,
+                                        std::initializer_list<opt::Operand>{});
   } else if (const BoolConstant* bc = c->AsBoolConstant()) {
-    return MakeUnique<ir::Instruction>(
+    return MakeUnique<opt::Instruction>(
         context(),
         bc->value() ? SpvOp::SpvOpConstantTrue : SpvOp::SpvOpConstantFalse,
-        type, id, std::initializer_list<ir::Operand>{});
+        type, id, std::initializer_list<opt::Operand>{});
   } else if (const IntConstant* ic = c->AsIntConstant()) {
-    return MakeUnique<ir::Instruction>(
+    return MakeUnique<opt::Instruction>(
         context(), SpvOp::SpvOpConstant, type, id,
-        std::initializer_list<ir::Operand>{ir::Operand(
+        std::initializer_list<opt::Operand>{opt::Operand(
             spv_operand_type_t::SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
             ic->words())});
   } else if (const FloatConstant* fc = c->AsFloatConstant()) {
-    return MakeUnique<ir::Instruction>(
+    return MakeUnique<opt::Instruction>(
         context(), SpvOp::SpvOpConstant, type, id,
-        std::initializer_list<ir::Operand>{ir::Operand(
+        std::initializer_list<opt::Operand>{opt::Operand(
             spv_operand_type_t::SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
             fc->words())});
   } else if (const CompositeConstant* cc = c->AsCompositeConstant()) {
@@ -294,9 +294,9 @@ std::unique_ptr<ir::Instruction> ConstantManager::CreateInstruction(
   }
 }
 
-std::unique_ptr<ir::Instruction> ConstantManager::CreateCompositeInstruction(
+std::unique_ptr<opt::Instruction> ConstantManager::CreateCompositeInstruction(
     uint32_t result_id, const CompositeConstant* cc, uint32_t type_id) const {
-  std::vector<ir::Operand> operands;
+  std::vector<opt::Operand> operands;
   for (const Constant* component_const : cc->GetComponents()) {
     uint32_t id = FindDeclaredConstant(component_const);
     if (id == 0) {
@@ -310,8 +310,8 @@ std::unique_ptr<ir::Instruction> ConstantManager::CreateCompositeInstruction(
   }
   uint32_t type =
       (type_id == 0) ? context()->get_type_mgr()->GetId(cc->type()) : type_id;
-  return MakeUnique<ir::Instruction>(context(), SpvOp::SpvOpConstantComposite,
-                                     type, result_id, std::move(operands));
+  return MakeUnique<opt::Instruction>(context(), SpvOp::SpvOpConstantComposite,
+                                      type, result_id, std::move(operands));
 }
 
 const Constant* ConstantManager::GetConstant(

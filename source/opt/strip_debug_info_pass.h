@@ -26,7 +26,7 @@ namespace opt {
 class StripDebugInfoPass : public Pass {
  public:
   const char* name() const override { return "strip-debug"; }
-  Status Process(ir::IRContext* irContext) override;
+  Status Process(opt::IRContext* irContext) override;
 };
 
 }  // namespace opt

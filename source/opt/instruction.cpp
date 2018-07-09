@@ -22,7 +22,7 @@
 #include "reflect.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 namespace {
 // Indices used to get particular operands out of instructions using InOperand.
@@ -145,7 +145,7 @@ void Instruction::ReplaceOperands(const OperandList& new_operands) {
 
 bool Instruction::IsReadOnlyLoad() const {
   if (IsLoad()) {
-    ir::Instruction* address_def = GetBaseAddress();
+    opt::Instruction* address_def = GetBaseAddress();
     if (!address_def || address_def->opcode() != SpvOpVariable) {
       return false;
     }
@@ -161,7 +161,7 @@ Instruction* Instruction::GetBaseAddress() const {
          "GetBaseAddress should only be called on instructions that take a "
          "pointer or image.");
   uint32_t base = GetSingleWordInOperand(kLoadBaseIndex);
-  ir::Instruction* base_inst = context()->get_def_use_mgr()->GetDef(base);
+  opt::Instruction* base_inst = context()->get_def_use_mgr()->GetDef(base);
   bool done = false;
   while (!done) {
     switch (base_inst->opcode()) {
@@ -217,7 +217,7 @@ bool Instruction::IsVulkanStorageImage() const {
     return false;
   }
 
-  ir::Instruction* base_type =
+  opt::Instruction* base_type =
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
   if (base_type->opcode() != SpvOpTypeImage) {
     return false;
@@ -243,7 +243,7 @@ bool Instruction::IsVulkanSampledImage() const {
     return false;
   }
 
-  ir::Instruction* base_type =
+  opt::Instruction* base_type =
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
   if (base_type->opcode() != SpvOpTypeImage) {
     return false;
@@ -269,7 +269,7 @@ bool Instruction::IsVulkanStorageTexelBuffer() const {
     return false;
   }
 
-  ir::Instruction* base_type =
+  opt::Instruction* base_type =
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
   if (base_type->opcode() != SpvOpTypeImage) {
     return false;
@@ -291,7 +291,7 @@ bool Instruction::IsVulkanStorageBuffer() const {
     return false;
   }
 
-  ir::Instruction* base_type =
+  opt::Instruction* base_type =
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
 
   if (base_type->opcode() != SpvOpTypeStruct) {
@@ -303,13 +303,15 @@ bool Instruction::IsVulkanStorageBuffer() const {
     bool is_buffer_block = false;
     context()->get_decoration_mgr()->ForEachDecoration(
         base_type->result_id(), SpvDecorationBufferBlock,
-        [&is_buffer_block](const ir::Instruction&) { is_buffer_block = true; });
+        [&is_buffer_block](const opt::Instruction&) {
+          is_buffer_block = true;
+        });
     return is_buffer_block;
   } else if (storage_class == SpvStorageClassStorageBuffer) {
     bool is_block = false;
     context()->get_decoration_mgr()->ForEachDecoration(
         base_type->result_id(), SpvDecorationBlock,
-        [&is_block](const ir::Instruction&) { is_block = true; });
+        [&is_block](const opt::Instruction&) { is_block = true; });
     return is_block;
   }
   return false;
@@ -325,7 +327,7 @@ bool Instruction::IsVulkanUniformBuffer() const {
     return false;
   }
 
-  ir::Instruction* base_type =
+  opt::Instruction* base_type =
       context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
   if (base_type->opcode() != SpvOpTypeStruct) {
     return false;
@@ -334,7 +336,7 @@ bool Instruction::IsVulkanUniformBuffer() const {
   bool is_block = false;
   context()->get_decoration_mgr()->ForEachDecoration(
       base_type->result_id(), SpvDecorationBlock,
-      [&is_block](const ir::Instruction&) { is_block = true; });
+      [&is_block](const opt::Instruction&) { is_block = true; });
   return is_block;
 }
 
@@ -414,7 +416,7 @@ bool Instruction::IsValidBasePointer() const {
     return false;
   }
 
-  ir::Instruction* type = context()->get_def_use_mgr()->GetDef(tid);
+  opt::Instruction* type = context()->get_def_use_mgr()->GetDef(tid);
   if (type->opcode() != SpvOpTypePointer) {
     return false;
   }
@@ -429,7 +431,7 @@ bool Instruction::IsValidBasePointer() const {
   }
 
   uint32_t pointee_type_id = type->GetSingleWordInOperand(1);
-  ir::Instruction* pointee_type_inst =
+  opt::Instruction* pointee_type_inst =
       context()->get_def_use_mgr()->GetDef(pointee_type_id);
 
   if (pointee_type_inst->IsOpaqueType()) {
@@ -444,7 +446,7 @@ bool Instruction::IsValidBaseImage() const {
     return false;
   }
 
-  ir::Instruction* type = context()->get_def_use_mgr()->GetDef(tid);
+  opt::Instruction* type = context()->get_def_use_mgr()->GetDef(tid);
   return (type->opcode() == SpvOpTypeImage ||
           type->opcode() == SpvOpTypeSampledImage);
 }
@@ -453,13 +455,14 @@ bool Instruction::IsOpaqueType() const {
   if (opcode() == SpvOpTypeStruct) {
     bool is_opaque = false;
     ForEachInOperand([&is_opaque, this](const uint32_t* op_id) {
-      ir::Instruction* type_inst = context()->get_def_use_mgr()->GetDef(*op_id);
+      opt::Instruction* type_inst =
+          context()->get_def_use_mgr()->GetDef(*op_id);
       is_opaque |= type_inst->IsOpaqueType();
     });
     return is_opaque;
   } else if (opcode() == SpvOpTypeArray) {
     uint32_t sub_type_id = GetSingleWordInOperand(0);
-    ir::Instruction* sub_type_inst =
+    opt::Instruction* sub_type_inst =
         context()->get_def_use_mgr()->GetDef(sub_type_id);
     return sub_type_inst->IsOpaqueType();
   } else {
@@ -491,7 +494,7 @@ bool Instruction::IsFloatingPointFoldingAllowed() const {
   bool is_nocontract = false;
   context_->get_decoration_mgr()->WhileEachDecoration(
       opcode_, SpvDecorationNoContraction,
-      [&is_nocontract](const ir::Instruction&) {
+      [&is_nocontract](const opt::Instruction&) {
         is_nocontract = true;
         return false;
       });
@@ -515,7 +518,7 @@ std::string Instruction::PrettyPrint(uint32_t options) const {
       options | SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 }
 
-std::ostream& operator<<(std::ostream& str, const ir::Instruction& inst) {
+std::ostream& operator<<(std::ostream& str, const opt::Instruction& inst) {
   str << inst.PrettyPrint();
   return str;
 }
@@ -722,5 +725,5 @@ bool Instruction::IsOpcodeSafeToDelete() const {
   }
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools

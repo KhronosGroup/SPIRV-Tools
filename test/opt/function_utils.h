@@ -20,9 +20,9 @@
 
 namespace spvtest {
 
-inline spvtools::ir::Function* GetFunction(spvtools::ir::Module* module,
-                                           uint32_t id) {
-  for (spvtools::ir::Function& f : *module) {
+inline spvtools::opt::Function* GetFunction(spvtools::opt::Module* module,
+                                            uint32_t id) {
+  for (spvtools::opt::Function& f : *module) {
     if (f.result_id() == id) {
       return &f;
     }
@@ -30,9 +30,9 @@ inline spvtools::ir::Function* GetFunction(spvtools::ir::Module* module,
   return nullptr;
 }
 
-inline const spvtools::ir::Function* GetFunction(
-    const spvtools::ir::Module* module, uint32_t id) {
-  for (const spvtools::ir::Function& f : *module) {
+inline const spvtools::opt::Function* GetFunction(
+    const spvtools::opt::Module* module, uint32_t id) {
+  for (const spvtools::opt::Function& f : *module) {
     if (f.result_id() == id) {
       return &f;
     }
@@ -40,9 +40,9 @@ inline const spvtools::ir::Function* GetFunction(
   return nullptr;
 }
 
-inline const spvtools::ir::BasicBlock* GetBasicBlock(
-    const spvtools::ir::Function* fn, uint32_t id) {
-  for (const spvtools::ir::BasicBlock& bb : *fn) {
+inline const spvtools::opt::BasicBlock* GetBasicBlock(
+    const spvtools::opt::Function* fn, uint32_t id) {
+  for (const spvtools::opt::BasicBlock& bb : *fn) {
     if (bb.id() == id) {
       return &bb;
     }

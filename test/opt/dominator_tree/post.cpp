@@ -139,15 +139,15 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::CFG cfg(module);
+  const opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::CFG cfg(module);
   opt::PostDominatorAnalysis* analysis = context->GetPostDominatorAnalysis(f);
 
   EXPECT_TRUE(analysis->Dominates(19, 18));

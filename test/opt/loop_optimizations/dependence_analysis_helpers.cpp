@@ -155,24 +155,24 @@ TEST(DependencyAnalysisHelpers, UnsupportedLoops) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   {
     // Function a
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[1] = {nullptr};
+    const opt::Instruction* store[1] = {nullptr};
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 16)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 16)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -190,16 +190,16 @@ TEST(DependencyAnalysisHelpers, UnsupportedLoops) {
   }
   {
     // Function b
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[1] = {nullptr};
+    const opt::Instruction* store[1] = {nullptr};
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 47)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 47)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -729,18 +729,18 @@ TEST(DependencyAnalysisHelpers, loop_information) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   {
     // Function a
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -763,10 +763,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function b
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -789,10 +789,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function c
-    const ir::Function* f = spvtest::GetFunction(module, 10);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 10);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -815,10 +815,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function d
-    const ir::Function* f = spvtest::GetFunction(module, 12);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 12);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -841,10 +841,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function e
-    const ir::Function* f = spvtest::GetFunction(module, 14);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 14);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -867,10 +867,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function f
-    const ir::Function* f = spvtest::GetFunction(module, 16);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 16);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -893,10 +893,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function g
-    const ir::Function* f = spvtest::GetFunction(module, 18);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 18);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -919,10 +919,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function h
-    const ir::Function* f = spvtest::GetFunction(module, 20);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 20);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -945,10 +945,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function i
-    const ir::Function* f = spvtest::GetFunction(module, 22);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 22);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -971,10 +971,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function j
-    const ir::Function* f = spvtest::GetFunction(module, 24);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 24);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -997,10 +997,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function k
-    const ir::Function* f = spvtest::GetFunction(module, 26);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 26);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -1023,10 +1023,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function l
-    const ir::Function* f = spvtest::GetFunction(module, 28);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 28);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -1049,10 +1049,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function m
-    const ir::Function* f = spvtest::GetFunction(module, 30);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 30);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -1075,10 +1075,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function n
-    const ir::Function* f = spvtest::GetFunction(module, 32);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 32);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -1101,10 +1101,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function o
-    const ir::Function* f = spvtest::GetFunction(module, 34);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 34);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -1127,10 +1127,10 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function p
-    const ir::Function* f = spvtest::GetFunction(module, 36);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 36);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
@@ -1202,18 +1202,18 @@ TEST(DependencyAnalysisHelpers, bounds_checks) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // We need a shader that includes a loop for this test so we can build a
   // LoopDependenceAnalaysis
-  const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-  ir::Loop* loop = &ld.GetLoopByIndex(0);
-  std::vector<const ir::Loop*> loops{loop};
+  const opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  opt::Loop* loop = &ld.GetLoopByIndex(0);
+  std::vector<const opt::Loop*> loops{loop};
   opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
   EXPECT_TRUE(analysis.IsWithinBounds(0, 0, 0));
@@ -1478,24 +1478,24 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
   {
     // Function a
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -1510,7 +1510,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(47)
@@ -1521,7 +1521,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -1540,7 +1540,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(54)
@@ -1551,7 +1551,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -1568,15 +1568,15 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
   }
   {
     // Function b
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 65)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 65)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -1591,7 +1591,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(78)
@@ -1601,7 +1601,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -1620,7 +1620,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(85)
@@ -1630,7 +1630,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -1647,15 +1647,15 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
   }
   {
     // Function c
-    const ir::Function* f = spvtest::GetFunction(module, 10);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 10);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 96)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 96)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -1670,7 +1670,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(109)
@@ -1680,7 +1680,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -1699,7 +1699,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(116)
@@ -1709,7 +1709,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -1726,15 +1726,15 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
   }
   {
     // Function d
-    const ir::Function* f = spvtest::GetFunction(module, 12);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 12);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 126)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 126)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -1749,7 +1749,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(139)
@@ -1759,7 +1759,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -1778,7 +1778,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(146)
@@ -1788,7 +1788,7 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2051,23 +2051,23 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   {
     // Function a
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2082,7 +2082,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(47)
@@ -2093,7 +2093,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2112,7 +2112,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(54)
@@ -2123,7 +2123,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2140,15 +2140,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
   }
   {
     // Function b
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 66)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 66)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2163,7 +2163,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(78)
@@ -2174,7 +2174,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2193,7 +2193,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(85)
@@ -2204,7 +2204,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2221,15 +2221,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
   }
   {
     // Function c
-    const ir::Function* f = spvtest::GetFunction(module, 10);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 10);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 96)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 96)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2244,7 +2244,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(109)
@@ -2255,7 +2255,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2274,7 +2274,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(116)
@@ -2285,7 +2285,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2302,15 +2302,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
   }
   {
     // Function d
-    const ir::Function* f = spvtest::GetFunction(module, 12);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 12);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 127)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 127)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2325,7 +2325,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(139)
@@ -2336,7 +2336,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2355,7 +2355,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(146)
@@ -2366,7 +2366,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2689,23 +2689,23 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   {
     // Function a
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 35)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 35)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2720,7 +2720,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(60)
@@ -2731,7 +2731,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2749,7 +2749,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(74)
@@ -2760,7 +2760,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2776,15 +2776,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
   }
   {
     // Function b
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 90)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 90)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2799,7 +2799,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(110)
@@ -2810,7 +2810,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2828,7 +2828,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(124)
@@ -2839,7 +2839,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2855,15 +2855,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
   }
   {
     // Function c
-    const ir::Function* f = spvtest::GetFunction(module, 10);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 10);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 139)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 139)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2878,7 +2878,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(159)
@@ -2889,7 +2889,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2907,7 +2907,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(173)
@@ -2918,7 +2918,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2934,15 +2934,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
   }
   {
     // Function d
-    const ir::Function* f = spvtest::GetFunction(module, 12);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    const opt::Function* f = spvtest::GetFunction(module, 12);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* stores[2];
+    const opt::Instruction* stores[2];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 188)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 188)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2957,7 +2957,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(208)
@@ -2968,7 +2968,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
@@ -2986,7 +2986,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      ir::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(222)
@@ -2997,7 +2997,7 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      ir::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));

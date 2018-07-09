@@ -36,15 +36,15 @@ namespace opt {
 
 // See optimizer.hpp for documentation.
 class CommonUniformElimPass : public Pass {
-  using cbb_ptr = const ir::BasicBlock*;
+  using cbb_ptr = const opt::BasicBlock*;
 
  public:
   using GetBlocksFunction =
-      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
+      std::function<std::vector<opt::BasicBlock*>*(const opt::BasicBlock*)>;
 
   CommonUniformElimPass();
   const char* name() const override { return "eliminate-common-uniform"; }
-  Status Process(ir::IRContext*) override;
+  Status Process(opt::IRContext*) override;
 
  private:
   // Returns true if |opcode| is a non-ptr access chain op
@@ -52,7 +52,7 @@ class CommonUniformElimPass : public Pass {
 
   // Returns true if |typeInst| is a sampler or image type or a struct
   // containing one, recursively.
-  bool IsSamplerOrImageType(const ir::Instruction* typeInst) const;
+  bool IsSamplerOrImageType(const opt::Instruction* typeInst) const;
 
   // Returns true if |varId| is a variable containing a sampler or image.
   bool IsSamplerOrImageVar(uint32_t varId) const;
@@ -60,7 +60,7 @@ class CommonUniformElimPass : public Pass {
   // Given a load or store pointed at by |ip|, return the top-most
   // non-CopyObj in its pointer operand. Also return the base pointer
   // in |objId|.
-  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* objId);
+  opt::Instruction* GetPtr(opt::Instruction* ip, uint32_t* objId);
 
   // Return true if variable is uniform
   bool IsUniformVar(uint32_t varId);
@@ -73,12 +73,12 @@ class CommonUniformElimPass : public Pass {
   // if the accessed variable belongs to a volatile
   // decorated object or member of a struct type
   bool IsAccessChainToVolatileStructType(
-      const ir::Instruction& AccessChainInst);
+      const opt::Instruction& AccessChainInst);
 
   // Given an OpLoad instruction, return true if
   // OpLoad has a Volatile Memory Access flag or if
   // the resulting type is a volatile decorated struct
-  bool IsVolatileLoad(const ir::Instruction& loadInst);
+  bool IsVolatileLoad(const opt::Instruction& loadInst);
 
   // Return true if any uses of |id| are decorate ops.
   bool HasUnsupportedDecorates(uint32_t id) const;
@@ -87,25 +87,25 @@ class CommonUniformElimPass : public Pass {
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
 
   // Delete inst if it has no uses. Assumes inst has a resultId.
-  void DeleteIfUseless(ir::Instruction* inst);
+  void DeleteIfUseless(opt::Instruction* inst);
 
   // Replace all instances of load's id with replId and delete load
   // and its access chain, if any
-  ir::Instruction* ReplaceAndDeleteLoad(ir::Instruction* loadInst,
-                                        uint32_t replId,
-                                        ir::Instruction* ptrInst);
+  opt::Instruction* ReplaceAndDeleteLoad(opt::Instruction* loadInst,
+                                         uint32_t replId,
+                                         opt::Instruction* ptrInst);
 
   // For the (constant index) access chain ptrInst, create an
   // equivalent load and extract
-  void GenACLoadRepl(const ir::Instruction* ptrInst,
-                     std::vector<std::unique_ptr<ir::Instruction>>* newInsts,
+  void GenACLoadRepl(const opt::Instruction* ptrInst,
+                     std::vector<std::unique_ptr<opt::Instruction>>* newInsts,
                      uint32_t* resultId);
 
   // Return true if all indices are constant
-  bool IsConstantIndexAccessChain(ir::Instruction* acp);
+  bool IsConstantIndexAccessChain(opt::Instruction* acp);
 
   // Convert all uniform access chain loads into load/extract.
-  bool UniformAccessChainConvert(ir::Function* func);
+  bool UniformAccessChainConvert(opt::Function* func);
 
   // Compute structured successors for function |func|.
   // A block's structured successors are the blocks it branches to
@@ -117,7 +117,7 @@ class CommonUniformElimPass : public Pass {
   //
   // TODO(dnovillo): This pass computes structured successors slightly different
   // than the implementation in class Pass. Can this be re-factored?
-  void ComputeStructuredSuccessors(ir::Function* func);
+  void ComputeStructuredSuccessors(opt::Function* func);
 
   // Compute structured block order for |func| into |structuredOrder|. This
   // order has the property that dominators come before all blocks they
@@ -126,24 +126,24 @@ class CommonUniformElimPass : public Pass {
   //
   // TODO(dnovillo): This pass computes structured order slightly different
   // than the implementation in class Pass. Can this be re-factored?
-  void ComputeStructuredOrder(ir::Function* func,
-                              std::list<ir::BasicBlock*>* order);
+  void ComputeStructuredOrder(opt::Function* func,
+                              std::list<opt::BasicBlock*>* order);
 
   // Eliminate loads of uniform variables which have previously been loaded.
   // If first load is in control flow, move it to first block of function.
   // Most effective if preceded by UniformAccessChainRemoval().
-  bool CommonUniformLoadElimination(ir::Function* func);
+  bool CommonUniformLoadElimination(opt::Function* func);
 
   // Eliminate loads of uniform sampler and image variables which have
   // previously
   // been loaded in the same block for types whose loads cannot cross blocks.
-  bool CommonUniformLoadElimBlock(ir::Function* func);
+  bool CommonUniformLoadElimBlock(opt::Function* func);
 
   // Eliminate duplicated extracts of same id. Extract may be moved to same
   // block as the id definition. This is primarily intended for extracts
   // from uniform loads. Most effective if preceded by
   // CommonUniformLoadElimination().
-  bool CommonExtractElimination(ir::Function* func);
+  bool CommonExtractElimination(opt::Function* func);
 
   // For function |func|, first change all uniform constant index
   // access chain loads into equivalent composite extracts. Then consolidate
@@ -157,7 +157,7 @@ class CommonUniformElimPass : public Pass {
   // is not enabled. It also currently does not support any extensions.
   //
   // This function currently only optimizes loads with a single index.
-  bool EliminateCommonUniform(ir::Function* func);
+  bool EliminateCommonUniform(opt::Function* func);
 
   // Initialize extensions whitelist
   void InitExtensions();
@@ -172,10 +172,10 @@ class CommonUniformElimPass : public Pass {
 
   // Return true if |inst| is an instruction that loads uniform variable and
   // can be replaced with other uniform load instruction.
-  bool IsUniformLoadToBeRemoved(ir::Instruction* inst) {
+  bool IsUniformLoadToBeRemoved(opt::Instruction* inst) {
     if (inst->opcode() == SpvOpLoad) {
       uint32_t varId;
-      ir::Instruction* ptrInst = GetPtr(inst, &varId);
+      opt::Instruction* ptrInst = GetPtr(inst, &varId);
       if (ptrInst->opcode() == SpvOpVariable && IsUniformVar(varId) &&
           !IsSamplerOrImageVar(varId) &&
           !HasUnsupportedDecorates(inst->result_id()) && !IsVolatileLoad(*inst))
@@ -184,7 +184,7 @@ class CommonUniformElimPass : public Pass {
     return false;
   }
 
-  void Initialize(ir::IRContext* c);
+  void Initialize(opt::IRContext* c);
   Pass::Status ProcessImpl();
 
   // Map from uniform variable id to its common load id
@@ -193,7 +193,7 @@ class CommonUniformElimPass : public Pass {
   // Map of extract composite ids to map of indices to insts
   // TODO(greg-lunarg): Consider std::vector.
   std::unordered_map<uint32_t,
-                     std::unordered_map<uint32_t, std::list<ir::Instruction*>>>
+                     std::unordered_map<uint32_t, std::list<opt::Instruction*>>>
       comp2idx2inst_;
 
   // Extensions supported by this pass.
@@ -201,7 +201,7 @@ class CommonUniformElimPass : public Pass {
 
   // Map from block to its structured successor blocks. See
   // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
+  std::unordered_map<const opt::BasicBlock*, std::vector<opt::BasicBlock*>>
       block2structured_succs_;
 };
 

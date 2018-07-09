@@ -181,15 +181,15 @@ bool NormalizeAndCompareFractions(int64_t numerator_0, int64_t denominator_0,
 
 }  // namespace
 
-bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
-                                           const ir::Instruction* destination,
+bool LoopDependenceAnalysis::GetDependence(const opt::Instruction* source,
+                                           const opt::Instruction* destination,
                                            DistanceVector* distance_vector) {
   // Start off by finding and marking all the loops in |loops_| that are
   // irrelevant to the dependence analysis.
   MarkUnsusedDistanceEntriesAsIrrelevant(source, destination, distance_vector);
 
-  ir::Instruction* source_access_chain = GetOperandDefinition(source, 0);
-  ir::Instruction* destination_access_chain =
+  opt::Instruction* source_access_chain = GetOperandDefinition(source, 0);
+  opt::Instruction* destination_access_chain =
       GetOperandDefinition(destination, 0);
 
   auto num_access_chains =
@@ -234,8 +234,8 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
 
   // If the access chains aren't collecting from the same structure there is no
   // dependence.
-  ir::Instruction* source_array = GetOperandDefinition(source_access_chain, 0);
-  ir::Instruction* destination_array =
+  opt::Instruction* source_array = GetOperandDefinition(source_access_chain, 0);
+  opt::Instruction* destination_array =
       GetOperandDefinition(destination_access_chain, 0);
 
   // Nested access chains are not supported yet, bail out.
@@ -254,8 +254,8 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
 
   // To handle multiple subscripts we must get every operand in the access
   // chains past the first.
-  std::vector<ir::Instruction*> source_subscripts = GetSubscripts(source);
-  std::vector<ir::Instruction*> destination_subscripts =
+  std::vector<opt::Instruction*> source_subscripts = GetSubscripts(source);
+  std::vector<opt::Instruction*> destination_subscripts =
       GetSubscripts(destination);
 
   auto sets_of_subscripts =
@@ -263,7 +263,7 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
 
   auto first_coupled = std::partition(
       std::begin(sets_of_subscripts), std::end(sets_of_subscripts),
-      [](const std::set<std::pair<ir::Instruction*, ir::Instruction*>>& set) {
+      [](const std::set<std::pair<opt::Instruction*, opt::Instruction*>>& set) {
         return set.size() == 1;
       });
 
@@ -284,7 +284,7 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
     // Check the loops are in a form we support.
     auto subscript_pair = std::make_pair(source_node, destination_node);
 
-    const ir::Loop* loop = GetLoopForSubscriptPair(subscript_pair);
+    const opt::Loop* loop = GetLoopForSubscriptPair(subscript_pair);
     if (loop) {
       if (!IsSupportedLoop(loop)) {
         PrintDebug(
@@ -371,9 +371,9 @@ bool LoopDependenceAnalysis::GetDependence(const ir::Instruction* source,
     for (const auto& subscript : coupled_subscripts) {
       auto loops = CollectLoops(std::get<0>(subscript), std::get<1>(subscript));
 
-      auto is_subscript_supported =
-          std::all_of(std::begin(loops), std::end(loops),
-                      [this](const ir::Loop* l) { return IsSupportedLoop(l); });
+      auto is_subscript_supported = std::all_of(
+          std::begin(loops), std::end(loops),
+          [this](const opt::Loop* l) { return IsSupportedLoop(l); });
 
       supported = supported && is_subscript_supported;
     }
@@ -541,7 +541,7 @@ bool LoopDependenceAnalysis::StrongSIVTest(SENode* source, SENode* destination,
   // Build an SENode for distance.
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
-  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
+  const opt::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
   SENode* source_constant_term =
       GetConstantTerm(subscript_loop, source->AsSERecurrentNode());
   SENode* destination_constant_term =
@@ -676,7 +676,7 @@ bool LoopDependenceAnalysis::SymbolicStrongSIVTest(
   // outwith the bounds.
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
-  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
+  const opt::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
   if (IsProvablyOutsideOfLoopBounds(subscript_loop, source_destination_delta,
                                     coefficient)) {
     PrintDebug(
@@ -701,7 +701,7 @@ bool LoopDependenceAnalysis::WeakZeroSourceSIVTest(
   PrintDebug("Performing WeakZeroSourceSIVTest.");
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
-  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
+  const opt::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
   // Build an SENode for distance.
   SENode* destination_constant_term =
       GetConstantTerm(subscript_loop, destination);
@@ -855,7 +855,7 @@ bool LoopDependenceAnalysis::WeakZeroDestinationSIVTest(
   // Build an SENode for distance.
   std::pair<SENode*, SENode*> subscript_pair =
       std::make_pair(source, destination);
-  const ir::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
+  const opt::Loop* subscript_loop = GetLoopForSubscriptPair(subscript_pair);
   SENode* source_constant_term = GetConstantTerm(subscript_loop, source);
   SENode* delta = scalar_evolution_.SimplifyExpression(
       scalar_evolution_.CreateSubtraction(destination, source_constant_term));
@@ -1115,10 +1115,10 @@ bool LoopDependenceAnalysis::GCDMIVTest(
 }
 
 using PartitionedSubscripts =
-    std::vector<std::set<std::pair<ir::Instruction*, ir::Instruction*>>>;
+    std::vector<std::set<std::pair<opt::Instruction*, opt::Instruction*>>>;
 PartitionedSubscripts LoopDependenceAnalysis::PartitionSubscripts(
-    const std::vector<ir::Instruction*>& source_subscripts,
-    const std::vector<ir::Instruction*>& destination_subscripts) {
+    const std::vector<opt::Instruction*>& source_subscripts,
+    const std::vector<opt::Instruction*>& destination_subscripts) {
   PartitionedSubscripts partitions{};
 
   auto num_subscripts = source_subscripts.size();
@@ -1139,7 +1139,7 @@ PartitionedSubscripts LoopDependenceAnalysis::PartitionSubscripts(
       auto it = std::find_if(
           current_partition.begin(), current_partition.end(),
           [loop,
-           this](const std::pair<ir::Instruction*, ir::Instruction*>& elem)
+           this](const std::pair<opt::Instruction*, opt::Instruction*>& elem)
               -> bool {
             auto source_recurrences =
                 scalar_evolution_.AnalyzeInstruction(std::get<0>(elem))
@@ -1177,7 +1177,7 @@ PartitionedSubscripts LoopDependenceAnalysis::PartitionSubscripts(
   partitions.erase(
       std::remove_if(
           partitions.begin(), partitions.end(),
-          [](const std::set<std::pair<ir::Instruction*, ir::Instruction*>>&
+          [](const std::set<std::pair<opt::Instruction*, opt::Instruction*>>&
                  partition) { return partition.empty(); }),
       partitions.end());
 

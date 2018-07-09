@@ -90,18 +90,18 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
                OpFunctionEnd
   )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const opt::Function* f = spvtest::GetFunction(module, 2);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
   EXPECT_EQ(ld.NumLoops(), 1u);
 
-  ir::Loop& loop = ld.GetLoopByIndex(0);
+  opt::Loop& loop = ld.GetLoopByIndex(0);
   EXPECT_EQ(loop.GetHeaderBlock(), spvtest::GetBasicBlock(f, 18));
   EXPECT_EQ(loop.GetLatchBlock(), spvtest::GetBasicBlock(f, 20));
   EXPECT_EQ(loop.GetMergeBlock(), spvtest::GetBasicBlock(f, 19));
@@ -187,18 +187,18 @@ TEST_F(PassClassTest, LoopWithNoPreHeader) {
                OpFunctionEnd
   )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const opt::Function* f = spvtest::GetFunction(module, 2);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
   EXPECT_EQ(ld.NumLoops(), 2u);
 
-  ir::Loop* loop = ld[27];
+  opt::Loop* loop = ld[27];
   EXPECT_EQ(loop->GetPreHeaderBlock(), nullptr);
   EXPECT_NE(loop->GetOrCreatePreHeaderBlock(), nullptr);
 }
@@ -285,14 +285,14 @@ TEST_F(PassClassTest, NoLoop) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::LoopDescriptor ld{f};
+  const opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::LoopDescriptor ld{f};
 
   EXPECT_EQ(ld.NumLoops(), 0u);
 }
@@ -361,18 +361,18 @@ TEST_F(PassClassTest, LoopLatchNotContinue) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
-  ir::LoopDescriptor ld{f};
+  const opt::Function* f = spvtest::GetFunction(module, 2);
+  opt::LoopDescriptor ld{f};
 
   EXPECT_EQ(ld.NumLoops(), 1u);
 
-  ir::Loop& loop = ld.GetLoopByIndex(0u);
+  opt::Loop& loop = ld.GetLoopByIndex(0u);
 
   EXPECT_NE(loop.GetLatchBlock(), loop.GetContinueBlock());
 

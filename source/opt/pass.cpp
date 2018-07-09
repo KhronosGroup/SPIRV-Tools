@@ -30,16 +30,17 @@ const uint32_t kTypePointerTypeIdInIdx = 1;
 
 Pass::Pass() : consumer_(nullptr), context_(nullptr), already_run_(false) {}
 
-void Pass::AddCalls(ir::Function* func, std::queue<uint32_t>* todo) {
+void Pass::AddCalls(opt::Function* func, std::queue<uint32_t>* todo) {
   for (auto bi = func->begin(); bi != func->end(); ++bi)
     for (auto ii = bi->begin(); ii != bi->end(); ++ii)
       if (ii->opcode() == SpvOpFunctionCall)
         todo->push(ii->GetSingleWordInOperand(0));
 }
 
-bool Pass::ProcessEntryPointCallTree(ProcessFunction& pfn, ir::Module* module) {
+bool Pass::ProcessEntryPointCallTree(ProcessFunction& pfn,
+                                     opt::Module* module) {
   // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function;
+  std::unordered_map<uint32_t, opt::Function*> id2function;
   for (auto& fn : *module) id2function[fn.result_id()] = &fn;
 
   // Collect all of the entry points as the roots.
@@ -50,9 +51,9 @@ bool Pass::ProcessEntryPointCallTree(ProcessFunction& pfn, ir::Module* module) {
 }
 
 bool Pass::ProcessReachableCallTree(ProcessFunction& pfn,
-                                    ir::IRContext* irContext) {
+                                    opt::IRContext* irContext) {
   // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function;
+  std::unordered_map<uint32_t, opt::Function*> id2function;
   for (auto& fn : *irContext->module()) id2function[fn.result_id()] = &fn;
 
   std::queue<uint32_t> roots;
@@ -84,7 +85,7 @@ bool Pass::ProcessReachableCallTree(ProcessFunction& pfn,
 
 bool Pass::ProcessCallTreeFromRoots(
     ProcessFunction& pfn,
-    const std::unordered_map<uint32_t, ir::Function*>& id2function,
+    const std::unordered_map<uint32_t, opt::Function*>& id2function,
     std::queue<uint32_t>* roots) {
   // Process call tree
   bool modified = false;
@@ -94,7 +95,7 @@ bool Pass::ProcessCallTreeFromRoots(
     const uint32_t fi = roots->front();
     roots->pop();
     if (done.insert(fi).second) {
-      ir::Function* fn = id2function.at(fi);
+      opt::Function* fn = id2function.at(fi);
       modified = pfn(fn) || modified;
       AddCalls(fn, roots);
     }
@@ -102,7 +103,7 @@ bool Pass::ProcessCallTreeFromRoots(
   return modified;
 }
 
-Pass::Status Pass::Run(ir::IRContext* ctx) {
+Pass::Status Pass::Run(opt::IRContext* ctx) {
   if (already_run_) {
     return Status::Failure;
   }
@@ -116,9 +117,9 @@ Pass::Status Pass::Run(ir::IRContext* ctx) {
   return status;
 }
 
-uint32_t Pass::GetPointeeTypeId(const ir::Instruction* ptrInst) const {
+uint32_t Pass::GetPointeeTypeId(const opt::Instruction* ptrInst) const {
   const uint32_t ptrTypeId = ptrInst->type_id();
-  const ir::Instruction* ptrTypeInst = get_def_use_mgr()->GetDef(ptrTypeId);
+  const opt::Instruction* ptrTypeInst = get_def_use_mgr()->GetDef(ptrTypeId);
   return ptrTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
 }
 

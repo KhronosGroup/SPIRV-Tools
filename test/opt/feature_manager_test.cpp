@@ -29,7 +29,7 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -44,7 +44,7 @@ OpMemoryModel Logical GLSL450
 OpExtension "SPV_KHR_variable_pointers"
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -59,7 +59,7 @@ OpMemoryModel Logical GLSL450
 OpExtension "SPV_KHR_variable_pointers"
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -75,7 +75,7 @@ OpExtension "SPV_KHR_variable_pointers"
 OpExtension "SPV_KHR_storage_buffer_storage_class"
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -92,7 +92,7 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -106,7 +106,7 @@ OpCapability Kernel
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -120,7 +120,7 @@ OpCapability Tessellation
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 

@@ -38,33 +38,33 @@ class BlockMergePass : public Pass {
  public:
   BlockMergePass();
   const char* name() const override { return "merge-blocks"; }
-  Status Process(ir::IRContext*) override;
-  virtual ir::IRContext::Analysis GetPreservedAnalyses() override {
-    return ir::IRContext::kAnalysisDefUse |
-           ir::IRContext::kAnalysisInstrToBlockMapping |
-           ir::IRContext::kAnalysisDecorations |
-           ir::IRContext::kAnalysisCombinators |
-           ir::IRContext::kAnalysisNameMap;
+  Status Process(opt::IRContext*) override;
+  virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
+    return opt::IRContext::kAnalysisDefUse |
+           opt::IRContext::kAnalysisInstrToBlockMapping |
+           opt::IRContext::kAnalysisDecorations |
+           opt::IRContext::kAnalysisCombinators |
+           opt::IRContext::kAnalysisNameMap;
   }
 
  private:
   // Kill any OpName instruction referencing |inst|, then kill |inst|.
-  void KillInstAndName(ir::Instruction* inst);
+  void KillInstAndName(opt::Instruction* inst);
 
   // Search |func| for blocks which have a single Branch to a block
   // with no other predecessors. Merge these blocks into a single block.
-  bool MergeBlocks(ir::Function* func);
+  bool MergeBlocks(opt::Function* func);
 
   // Returns true if |block| (or |id|) contains a merge instruction.
-  bool IsHeader(ir::BasicBlock* block);
+  bool IsHeader(opt::BasicBlock* block);
   bool IsHeader(uint32_t id);
 
   // Returns true if |block| (or |id|) is the merge target of a merge
   // instruction.
-  bool IsMerge(ir::BasicBlock* block);
+  bool IsMerge(opt::BasicBlock* block);
   bool IsMerge(uint32_t id);
 
-  void Initialize(ir::IRContext* c);
+  void Initialize(opt::IRContext* c);
   Pass::Status ProcessImpl();
 };
 
