@@ -26,7 +26,7 @@ const uint32_t kTypePointerTypeIdInIdx = 1;
 }  // anonymous namespace
 
 bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
-  const ir::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
+  const opt::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
   switch (typeInst->opcode()) {
     case SpvOpTypeSampler:
     case SpvOpTypeImage:
@@ -47,14 +47,14 @@ bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
   });
 }
 
-bool InlineOpaquePass::HasOpaqueArgsOrReturn(const ir::Instruction* callInst) {
+bool InlineOpaquePass::HasOpaqueArgsOrReturn(const opt::Instruction* callInst) {
   // Check return type
   if (IsOpaqueType(callInst->type_id())) return true;
   // Check args
   int icnt = 0;
   return !callInst->WhileEachInId([&icnt, this](const uint32_t* iid) {
     if (icnt > 0) {
-      const ir::Instruction* argInst = get_def_use_mgr()->GetDef(*iid);
+      const opt::Instruction* argInst = get_def_use_mgr()->GetDef(*iid);
       if (IsOpaqueType(argInst->type_id())) return false;
     }
     ++icnt;
@@ -62,15 +62,15 @@ bool InlineOpaquePass::HasOpaqueArgsOrReturn(const ir::Instruction* callInst) {
   });
 }
 
-bool InlineOpaquePass::InlineOpaque(ir::Function* func) {
+bool InlineOpaquePass::InlineOpaque(opt::Function* func) {
   bool modified = false;
   // Using block iterators here because of block erasures and insertions.
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end();) {
       if (IsInlinableFunctionCall(&*ii) && HasOpaqueArgsOrReturn(&*ii)) {
         // Inline call.
-        std::vector<std::unique_ptr<ir::BasicBlock>> newBlocks;
-        std::vector<std::unique_ptr<ir::Instruction>> newVars;
+        std::vector<std::unique_ptr<opt::BasicBlock>> newBlocks;
+        std::vector<std::unique_ptr<opt::Instruction>> newVars;
         GenInlineCode(&newBlocks, &newVars, ii, bi);
         // If call block is replaced with more than one block, point
         // succeeding phis at new last block.
@@ -92,18 +92,18 @@ bool InlineOpaquePass::InlineOpaque(ir::Function* func) {
   return modified;
 }
 
-void InlineOpaquePass::Initialize(ir::IRContext* c) { InitializeInline(c); }
+void InlineOpaquePass::Initialize(opt::IRContext* c) { InitializeInline(c); }
 
 Pass::Status InlineOpaquePass::ProcessImpl() {
   // Do opaque inlining on each function in entry point call tree
-  ProcessFunction pfn = [this](ir::Function* fp) { return InlineOpaque(fp); };
+  ProcessFunction pfn = [this](opt::Function* fp) { return InlineOpaque(fp); };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 InlineOpaquePass::InlineOpaquePass() {}
 
-Pass::Status InlineOpaquePass::Process(ir::IRContext* c) {
+Pass::Status InlineOpaquePass::Process(opt::IRContext* c) {
   Initialize(c);
   return ProcessImpl();
 }

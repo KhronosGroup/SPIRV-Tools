@@ -43,7 +43,7 @@ using PassClassTest = PassTest<::testing::Test>;
 //   if x == x then
 //      x does not strictly dominate itself
 void check_dominance(const opt::DominatorAnalysisBase& dom_tree,
-                     const ir::Function* fn, uint32_t x, uint32_t y) {
+                     const opt::Function* fn, uint32_t x, uint32_t y) {
   SCOPED_TRACE("Check dominance properties for Basic Block " +
                std::to_string(x) + " and " + std::to_string(y));
   EXPECT_TRUE(dom_tree.Dominates(spvtest::GetBasicBlock(fn, x),
@@ -60,7 +60,7 @@ void check_dominance(const opt::DominatorAnalysisBase& dom_tree,
 
 // Check that x does not dominates y and vise versa
 void check_no_dominance(const opt::DominatorAnalysisBase& dom_tree,
-                        const ir::Function* fn, uint32_t x, uint32_t y) {
+                        const opt::Function* fn, uint32_t x, uint32_t y) {
   SCOPED_TRACE("Check no domination for Basic Block " + std::to_string(x) +
                " and " + std::to_string(y));
   EXPECT_FALSE(dom_tree.Dominates(spvtest::GetBasicBlock(fn, x),
@@ -108,14 +108,14 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_0, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* fn = spvtest::GetFunction(module, 1);
-  const ir::BasicBlock* entry = spvtest::GetBasicBlock(fn, 10);
+  const opt::Function* fn = spvtest::GetFunction(module, 1);
+  const opt::BasicBlock* entry = spvtest::GetBasicBlock(fn, 10);
   EXPECT_EQ(entry, fn->entry().get())
       << "The entry node is not the expected one";
 
@@ -123,7 +123,7 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
   {
     opt::DominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -155,8 +155,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
     // check with some invalid inputs
     EXPECT_FALSE(dom_tree.Dominates(nullptr, entry));
     EXPECT_FALSE(dom_tree.Dominates(entry, nullptr));
-    EXPECT_FALSE(dom_tree.Dominates(static_cast<ir::BasicBlock*>(nullptr),
-                                    static_cast<ir::BasicBlock*>(nullptr)));
+    EXPECT_FALSE(dom_tree.Dominates(static_cast<opt::BasicBlock*>(nullptr),
+                                    static_cast<opt::BasicBlock*>(nullptr)));
     EXPECT_FALSE(dom_tree.Dominates(10, 1));
     EXPECT_FALSE(dom_tree.Dominates(1, 10));
     EXPECT_FALSE(dom_tree.Dominates(1, 1));
@@ -188,7 +188,7 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
   {
     opt::PostDominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -217,8 +217,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
     // check with some invalid inputs
     EXPECT_FALSE(dom_tree.Dominates(nullptr, entry));
     EXPECT_FALSE(dom_tree.Dominates(entry, nullptr));
-    EXPECT_FALSE(dom_tree.Dominates(static_cast<ir::BasicBlock*>(nullptr),
-                                    static_cast<ir::BasicBlock*>(nullptr)));
+    EXPECT_FALSE(dom_tree.Dominates(static_cast<opt::BasicBlock*>(nullptr),
+                                    static_cast<opt::BasicBlock*>(nullptr)));
     EXPECT_FALSE(dom_tree.Dominates(10, 1));
     EXPECT_FALSE(dom_tree.Dominates(1, 10));
     EXPECT_FALSE(dom_tree.Dominates(1, 1));
@@ -274,15 +274,15 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_0, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* fn = spvtest::GetFunction(module, 1);
+  const opt::Function* fn = spvtest::GetFunction(module, 1);
 
-  const ir::BasicBlock* entry = spvtest::GetBasicBlock(fn, 8);
+  const opt::BasicBlock* entry = spvtest::GetBasicBlock(fn, 8);
   EXPECT_EQ(entry, fn->entry().get())
       << "The entry node is not the expected one";
 
@@ -290,7 +290,7 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
   {
     opt::DominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -332,7 +332,7 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
   {
     opt::PostDominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -395,15 +395,15 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_0, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* fn = spvtest::GetFunction(module, 1);
+  const opt::Function* fn = spvtest::GetFunction(module, 1);
 
-  const ir::BasicBlock* entry = spvtest::GetBasicBlock(fn, 10);
+  const opt::BasicBlock* entry = spvtest::GetBasicBlock(fn, 10);
   EXPECT_EQ(entry, fn->entry().get())
       << "The entry node is not the expected one";
 
@@ -411,7 +411,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
   {
     opt::DominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -466,7 +466,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
       opt::DominatorTree::post_iterator node_end =
           dom_tree.GetDomTree().post_end();
       for (uint32_t id :
-           ir::make_range(node_order.rbegin(), node_order.rend())) {
+           opt::make_range(node_order.rbegin(), node_order.rend())) {
         EXPECT_NE(node_it, node_end);
         EXPECT_EQ(node_it->id(), id);
         node_it++;
@@ -480,7 +480,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
       opt::DominatorTree::const_post_iterator node_end =
           dom_tree.GetDomTree().post_cend();
       for (uint32_t id :
-           ir::make_range(node_order.rbegin(), node_order.rend())) {
+           opt::make_range(node_order.rbegin(), node_order.rend())) {
         EXPECT_NE(node_it, node_end);
         EXPECT_EQ(node_it->id(), id);
         node_it++;
@@ -493,7 +493,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
   {
     opt::PostDominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -548,7 +548,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
       opt::DominatorTree::post_iterator node_end =
           dom_tree.GetDomTree().post_end();
       for (uint32_t id :
-           ir::make_range(node_order.rbegin(), node_order.rend())) {
+           opt::make_range(node_order.rbegin(), node_order.rend())) {
         EXPECT_NE(node_it, node_end);
         EXPECT_EQ(node_it->id(), id);
         node_it++;
@@ -562,7 +562,7 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
       opt::DominatorTree::const_post_iterator node_end =
           dom_tree.GetDomTree().post_cend();
       for (uint32_t id :
-           ir::make_range(node_order.rbegin(), node_order.rend())) {
+           opt::make_range(node_order.rbegin(), node_order.rend())) {
         EXPECT_NE(node_it, node_end);
         EXPECT_EQ(node_it->id(), id);
         node_it++;
@@ -602,15 +602,15 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_0, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* fn = spvtest::GetFunction(module, 1);
+  const opt::Function* fn = spvtest::GetFunction(module, 1);
 
-  const ir::BasicBlock* entry = spvtest::GetBasicBlock(fn, 10);
+  const opt::BasicBlock* entry = spvtest::GetBasicBlock(fn, 10);
   EXPECT_EQ(entry, fn->entry().get())
       << "The entry node is not the expected one";
 
@@ -618,7 +618,7 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
   {
     opt::DominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -669,7 +669,7 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
   {
     opt::PostDominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // (strict) dominance checks.
     for (uint32_t id : {10, 11, 12, 13, 14, 15})
@@ -733,22 +733,22 @@ TEST_F(PassClassTest, DominatorInfinitLoop) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_0, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* fn = spvtest::GetFunction(module, 1);
+  const opt::Function* fn = spvtest::GetFunction(module, 1);
 
-  const ir::BasicBlock* entry = spvtest::GetBasicBlock(fn, 10);
+  const opt::BasicBlock* entry = spvtest::GetBasicBlock(fn, 10);
   EXPECT_EQ(entry, fn->entry().get())
       << "The entry node is not the expected one";
   // Check normal dominator tree
   {
     opt::DominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -783,7 +783,7 @@ TEST_F(PassClassTest, DominatorInfinitLoop) {
   {
     opt::PostDominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -837,15 +837,15 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_0, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* fn = spvtest::GetFunction(module, 1);
+  const opt::Function* fn = spvtest::GetFunction(module, 1);
 
-  const ir::BasicBlock* entry = spvtest::GetBasicBlock(fn, 8);
+  const opt::BasicBlock* entry = spvtest::GetBasicBlock(fn, 8);
   EXPECT_EQ(entry, fn->entry().get())
       << "The entry node is not the expected one";
 
@@ -853,7 +853,7 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
   {
     opt::DominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
@@ -881,7 +881,7 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
   {
     opt::PostDominatorAnalysis dom_tree;
     dom_tree.InitializeTree(fn);
-    const ir::CFG& cfg = *context->cfg();
+    const opt::CFG& cfg = *context->cfg();
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();

@@ -27,10 +27,10 @@ class LoopUnroller : public Pass {
 
   const char* name() const override { return "Loop unroller"; }
 
-  Status Process(ir::IRContext* context) override;
+  Status Process(opt::IRContext* context) override;
 
  private:
-  ir::IRContext* context_;
+  opt::IRContext* context_;
   bool fully_unroll_;
   int unroll_factor_;
 };

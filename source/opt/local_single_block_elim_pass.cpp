@@ -29,7 +29,7 @@ const uint32_t kStoreValIdInIdx = 1;
 
 bool LocalSingleBlockLoadStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end()) return true;
-  if (get_def_use_mgr()->WhileEachUser(ptrId, [this](ir::Instruction* user) {
+  if (get_def_use_mgr()->WhileEachUser(ptrId, [this](opt::Instruction* user) {
         SpvOp op = user->opcode();
         if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
           if (!HasOnlySupportedRefs(user->result_id())) {
@@ -48,12 +48,12 @@ bool LocalSingleBlockLoadStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
 }
 
 bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
-    ir::Function* func) {
+    opt::Function* func) {
   // Perform local store/load, load/load and store/store elimination
   // on each block
   bool modified = false;
-  std::vector<ir::Instruction*> instructions_to_kill;
-  std::unordered_set<ir::Instruction*> instructions_to_save;
+  std::vector<opt::Instruction*> instructions_to_kill;
+  std::unordered_set<opt::Instruction*> instructions_to_save;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     var2store_.clear();
     var2load_.clear();
@@ -64,7 +64,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
         case SpvOpStore: {
           // Verify store variable is target type
           uint32_t varId;
-          ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+          opt::Instruction* ptrInst = GetPtr(&*ii, &varId);
           if (!IsTargetVar(varId)) continue;
           if (!HasOnlySupportedRefs(varId)) continue;
           // If a store to the whole variable, remember it for succeeding
@@ -106,7 +106,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
         case SpvOpLoad: {
           // Verify store variable is target type
           uint32_t varId;
-          ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+          opt::Instruction* ptrInst = GetPtr(&*ii, &varId);
           if (!IsTargetVar(varId)) continue;
           if (!HasOnlySupportedRefs(varId)) continue;
           uint32_t replId = 0;
@@ -151,14 +151,14 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
     }
   }
 
-  for (ir::Instruction* inst : instructions_to_kill) {
+  for (opt::Instruction* inst : instructions_to_kill) {
     context()->KillInst(inst);
   }
 
   return modified;
 }
 
-void LocalSingleBlockLoadStoreElimPass::Initialize(ir::IRContext* c) {
+void LocalSingleBlockLoadStoreElimPass::Initialize(opt::IRContext* c) {
   InitializeProcessing(c);
 
   // Initialize Target Type Caches
@@ -196,7 +196,7 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
   // Process all entry point functions
-  ProcessFunction pfn = [this](ir::Function* fp) {
+  ProcessFunction pfn = [this](opt::Function* fp) {
     return LocalSingleBlockLoadStoreElim(fp);
   };
 
@@ -206,7 +206,7 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
 
 LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElimPass() {}
 
-Pass::Status LocalSingleBlockLoadStoreElimPass::Process(ir::IRContext* c) {
+Pass::Status LocalSingleBlockLoadStoreElimPass::Process(opt::IRContext* c) {
   Initialize(c);
   return ProcessImpl();
 }

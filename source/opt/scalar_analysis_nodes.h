@@ -22,12 +22,9 @@
 #include "opt/tree_iterator.h"
 
 namespace spvtools {
-namespace ir {
-class Loop;
-}  // namespace ir
-
 namespace opt {
 
+class Loop;
 class ScalarEvolutionAnalysis;
 class SEConstantNode;
 class SERecurrentNode;
@@ -241,7 +238,7 @@ class SEConstantNode : public SENode {
 class SERecurrentNode : public SENode {
  public:
   SERecurrentNode(opt::ScalarEvolutionAnalysis* parent_analysis,
-                  const ir::Loop* loop)
+                  const opt::Loop* loop)
       : SENode(parent_analysis), loop_(loop) {}
 
   SENodeType GetType() const final { return RecurrentAddExpr; }
@@ -263,7 +260,7 @@ class SERecurrentNode : public SENode {
   inline SENode* GetOffset() { return offset_; }
 
   // Return the loop which this recurrent expression is recurring within.
-  const ir::Loop* GetLoop() const { return loop_; }
+  const opt::Loop* GetLoop() const { return loop_; }
 
   SERecurrentNode* AsSERecurrentNode() override { return this; }
   const SERecurrentNode* AsSERecurrentNode() const override { return this; }
@@ -271,7 +268,7 @@ class SERecurrentNode : public SENode {
  private:
   SENode* coefficient_;
   SENode* offset_;
-  const ir::Loop* loop_;
+  const opt::Loop* loop_;
 };
 
 // A node representing an addition operation between child nodes.

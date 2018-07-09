@@ -19,7 +19,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status ReplaceInvalidOpcodePass::Process(ir::IRContext* c) {
+Pass::Status ReplaceInvalidOpcodePass::Process(opt::IRContext* c) {
   InitializeProcessing(c);
   bool modified = false;
 
@@ -38,7 +38,7 @@ Pass::Status ReplaceInvalidOpcodePass::Process(ir::IRContext* c) {
     return Status::SuccessWithoutChange;
   }
 
-  for (ir::Function& func : *get_module()) {
+  for (opt::Function& func : *get_module()) {
     modified |= RewriteFunction(&func, execution_model);
   }
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
@@ -47,7 +47,7 @@ Pass::Status ReplaceInvalidOpcodePass::Process(ir::IRContext* c) {
 SpvExecutionModel ReplaceInvalidOpcodePass::GetExecutionModel() {
   SpvExecutionModel result = SpvExecutionModelMax;
   bool first = true;
-  for (ir::Instruction& entry_point : get_module()->entry_points()) {
+  for (opt::Instruction& entry_point : get_module()->entry_points()) {
     if (first) {
       result =
           static_cast<SpvExecutionModel>(entry_point.GetSingleWordInOperand(0));
@@ -64,12 +64,12 @@ SpvExecutionModel ReplaceInvalidOpcodePass::GetExecutionModel() {
   return result;
 }
 
-bool ReplaceInvalidOpcodePass::RewriteFunction(ir::Function* function,
+bool ReplaceInvalidOpcodePass::RewriteFunction(opt::Function* function,
                                                SpvExecutionModel model) {
   bool modified = false;
-  ir::Instruction* last_line_dbg_inst = nullptr;
+  opt::Instruction* last_line_dbg_inst = nullptr;
   function->ForEachInst(
-      [model, &modified, &last_line_dbg_inst, this](ir::Instruction* inst) {
+      [model, &modified, &last_line_dbg_inst, this](opt::Instruction* inst) {
         // Track the debug information so we can have a meaningful message.
         if (inst->opcode() == SpvOpLabel || inst->opcode() == SpvOpNoLine) {
           last_line_dbg_inst = nullptr;
@@ -100,7 +100,7 @@ bool ReplaceInvalidOpcodePass::RewriteFunction(ir::Function* function,
             ReplaceInstruction(inst, nullptr, 0, 0);
           } else {
             // Get the name of the source file.
-            ir::Instruction* file_name = context()->get_def_use_mgr()->GetDef(
+            opt::Instruction* file_name = context()->get_def_use_mgr()->GetDef(
                 last_line_dbg_inst->GetSingleWordInOperand(0));
             const char* source = reinterpret_cast<const char*>(
                 &file_name->GetInOperand(0).words[0]);
@@ -120,7 +120,7 @@ bool ReplaceInvalidOpcodePass::RewriteFunction(ir::Function* function,
 }
 
 bool ReplaceInvalidOpcodePass::IsFragmentShaderOnlyInstruction(
-    ir::Instruction* inst) {
+    opt::Instruction* inst) {
   switch (inst->opcode()) {
     case SpvOpDPdx:
     case SpvOpDPdy:
@@ -147,7 +147,7 @@ bool ReplaceInvalidOpcodePass::IsFragmentShaderOnlyInstruction(
   }
 }
 
-void ReplaceInvalidOpcodePass::ReplaceInstruction(ir::Instruction* inst,
+void ReplaceInvalidOpcodePass::ReplaceInstruction(opt::Instruction* inst,
                                                   const char* source,
                                                   uint32_t line_number,
                                                   uint32_t column_number) {
@@ -172,7 +172,7 @@ uint32_t ReplaceInvalidOpcodePass::GetSpecialConstant(uint32_t type_id) {
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
 
-  ir::Instruction* type = context()->get_def_use_mgr()->GetDef(type_id);
+  opt::Instruction* type = context()->get_def_use_mgr()->GetDef(type_id);
   if (type->opcode() == SpvOpTypeVector) {
     uint32_t component_const =
         GetSpecialConstant(type->GetSingleWordInOperand(0));

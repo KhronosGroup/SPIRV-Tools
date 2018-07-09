@@ -18,10 +18,10 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status FreezeSpecConstantValuePass::Process(ir::IRContext* irContext) {
+Pass::Status FreezeSpecConstantValuePass::Process(opt::IRContext* irContext) {
   bool modified = false;
   irContext->module()->ForEachInst(
-      [&modified, irContext](ir::Instruction* inst) {
+      [&modified, irContext](opt::Instruction* inst) {
         switch (inst->opcode()) {
           case SpvOp::SpvOpSpecConstant:
             inst->SetOpcode(SpvOp::SpvOpConstant);

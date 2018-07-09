@@ -33,7 +33,7 @@ const uint32_t kTypePointerTypeIdInIdx = 1;
 
 }  // namespace
 
-bool MemPass::IsBaseTargetType(const ir::Instruction* typeInst) const {
+bool MemPass::IsBaseTargetType(const opt::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
@@ -51,7 +51,7 @@ bool MemPass::IsBaseTargetType(const ir::Instruction* typeInst) const {
   return false;
 }
 
-bool MemPass::IsTargetType(const ir::Instruction* typeInst) const {
+bool MemPass::IsTargetType(const opt::Instruction* typeInst) const {
   if (IsBaseTargetType(typeInst)) return true;
   if (typeInst->opcode() == SpvOpTypeArray) {
     if (!IsTargetType(
@@ -63,7 +63,7 @@ bool MemPass::IsTargetType(const ir::Instruction* typeInst) const {
   if (typeInst->opcode() != SpvOpTypeStruct) return false;
   // All struct members must be math type
   return typeInst->WhileEachInId([this](const uint32_t* tid) {
-    ir::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
+    opt::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
     if (!IsTargetType(compTypeInst)) return false;
     return true;
   });
@@ -75,7 +75,7 @@ bool MemPass::IsNonPtrAccessChain(const SpvOp opcode) const {
 
 bool MemPass::IsPtr(uint32_t ptrId) {
   uint32_t varId = ptrId;
-  ir::Instruction* ptrInst = get_def_use_mgr()->GetDef(varId);
+  opt::Instruction* ptrInst = get_def_use_mgr()->GetDef(varId);
   while (ptrInst->opcode() == SpvOpCopyObject) {
     varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
     ptrInst = get_def_use_mgr()->GetDef(varId);
@@ -84,14 +84,14 @@ bool MemPass::IsPtr(uint32_t ptrId) {
   if (op == SpvOpVariable || IsNonPtrAccessChain(op)) return true;
   if (op != SpvOpFunctionParameter) return false;
   const uint32_t varTypeId = ptrInst->type_id();
-  const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
+  const opt::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   return varTypeInst->opcode() == SpvOpTypePointer;
 }
 
-ir::Instruction* MemPass::GetPtr(uint32_t ptrId, uint32_t* varId) {
+opt::Instruction* MemPass::GetPtr(uint32_t ptrId, uint32_t* varId) {
   *varId = ptrId;
-  ir::Instruction* ptrInst = get_def_use_mgr()->GetDef(*varId);
-  ir::Instruction* varInst;
+  opt::Instruction* ptrInst = get_def_use_mgr()->GetDef(*varId);
+  opt::Instruction* varInst;
 
   if (ptrInst->opcode() != SpvOpVariable &&
       ptrInst->opcode() != SpvOpFunctionParameter) {
@@ -113,7 +113,7 @@ ir::Instruction* MemPass::GetPtr(uint32_t ptrId, uint32_t* varId) {
   return ptrInst;
 }
 
-ir::Instruction* MemPass::GetPtr(ir::Instruction* ip, uint32_t* varId) {
+opt::Instruction* MemPass::GetPtr(opt::Instruction* ip, uint32_t* varId) {
   assert(ip->opcode() == SpvOpStore || ip->opcode() == SpvOpLoad ||
          ip->opcode() == SpvOpImageTexelPointer);
 
@@ -123,7 +123,7 @@ ir::Instruction* MemPass::GetPtr(ir::Instruction* ip, uint32_t* varId) {
 }
 
 bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
-  return get_def_use_mgr()->WhileEachUser(id, [this](ir::Instruction* user) {
+  return get_def_use_mgr()->WhileEachUser(id, [this](opt::Instruction* user) {
     SpvOp op = user->opcode();
     if (op != SpvOpName && !IsNonTypeDecorate(op)) {
       return false;
@@ -132,13 +132,13 @@ bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
   });
 }
 
-void MemPass::KillAllInsts(ir::BasicBlock* bp, bool killLabel) {
+void MemPass::KillAllInsts(opt::BasicBlock* bp, bool killLabel) {
   bp->KillAllInsts(killLabel);
 }
 
 bool MemPass::HasLoads(uint32_t varId) const {
   return !get_def_use_mgr()->WhileEachUser(varId, [this](
-                                                      ir::Instruction* user) {
+                                                      opt::Instruction* user) {
     SpvOp op = user->opcode();
     // TODO(): The following is slightly conservative. Could be
     // better handling of non-store/name.
@@ -154,12 +154,12 @@ bool MemPass::HasLoads(uint32_t varId) const {
 }
 
 bool MemPass::IsLiveVar(uint32_t varId) const {
-  const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
+  const opt::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
   // assume live if not a variable eg. function parameter
   if (varInst->opcode() != SpvOpVariable) return true;
   // non-function scope vars are live
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
+  const opt::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
       SpvStorageClassFunction)
     return true;
@@ -167,8 +167,8 @@ bool MemPass::IsLiveVar(uint32_t varId) const {
   return HasLoads(varId);
 }
 
-void MemPass::AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
-  get_def_use_mgr()->ForEachUser(ptr_id, [this, insts](ir::Instruction* user) {
+void MemPass::AddStores(uint32_t ptr_id, std::queue<opt::Instruction*>* insts) {
+  get_def_use_mgr()->ForEachUser(ptr_id, [this, insts](opt::Instruction* user) {
     SpvOp op = user->opcode();
     if (IsNonPtrAccessChain(op)) {
       AddStores(user->result_id(), insts);
@@ -178,12 +178,12 @@ void MemPass::AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
   });
 }
 
-void MemPass::DCEInst(ir::Instruction* inst,
-                      const function<void(ir::Instruction*)>& call_back) {
-  std::queue<ir::Instruction*> deadInsts;
+void MemPass::DCEInst(opt::Instruction* inst,
+                      const function<void(opt::Instruction*)>& call_back) {
+  std::queue<opt::Instruction*> deadInsts;
   deadInsts.push(inst);
   while (!deadInsts.empty()) {
-    ir::Instruction* di = deadInsts.front();
+    opt::Instruction* di = deadInsts.front();
     // Don't delete labels
     if (di->opcode() == SpvOpLabel) {
       deadInsts.pop();
@@ -203,7 +203,7 @@ void MemPass::DCEInst(ir::Instruction* inst,
     // to the dead instruction queue.
     for (auto id : ids)
       if (HasOnlyNamesAndDecorates(id)) {
-        ir::Instruction* odi = get_def_use_mgr()->GetDef(id);
+        opt::Instruction* odi = get_def_use_mgr()->GetDef(id);
         if (context()->IsCombinatorInstruction(odi)) deadInsts.push(odi);
       }
     // if a load was deleted and it was the variable's
@@ -216,7 +216,8 @@ void MemPass::DCEInst(ir::Instruction* inst,
 MemPass::MemPass() {}
 
 bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
-  return get_def_use_mgr()->WhileEachUser(varId, [this](ir::Instruction* user) {
+  return get_def_use_mgr()->WhileEachUser(varId, [this](
+                                                     opt::Instruction* user) {
     SpvOp op = user->opcode();
     if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
         !IsNonTypeDecorate(op)) {
@@ -230,8 +231,8 @@ uint32_t MemPass::Type2Undef(uint32_t type_id) {
   const auto uitr = type2undefs_.find(type_id);
   if (uitr != type2undefs_.end()) return uitr->second;
   const uint32_t undefId = TakeNextId();
-  std::unique_ptr<ir::Instruction> undef_inst(
-      new ir::Instruction(context(), SpvOpUndef, type_id, undefId, {}));
+  std::unique_ptr<opt::Instruction> undef_inst(
+      new opt::Instruction(context(), SpvOpUndef, type_id, undefId, {}));
   get_def_use_mgr()->AnalyzeInstDefUse(&*undef_inst);
   get_module()->AddGlobalValue(std::move(undef_inst));
   type2undefs_[type_id] = undefId;
@@ -246,10 +247,10 @@ bool MemPass::IsTargetVar(uint32_t varId) {
   if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
     return false;
   if (seen_target_vars_.find(varId) != seen_target_vars_.end()) return true;
-  const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
+  const opt::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
   if (varInst->opcode() != SpvOpVariable) return false;
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
+  const opt::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
       SpvStorageClassFunction) {
     seen_non_target_vars_.insert(varId);
@@ -257,7 +258,7 @@ bool MemPass::IsTargetVar(uint32_t varId) {
   }
   const uint32_t varPteTypeId =
       varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
-  ir::Instruction* varPteTypeInst = get_def_use_mgr()->GetDef(varPteTypeId);
+  opt::Instruction* varPteTypeInst = get_def_use_mgr()->GetDef(varPteTypeId);
   if (!IsTargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
     return false;
@@ -311,9 +312,9 @@ bool MemPass::IsTargetVar(uint32_t varId) {
 //           [ ... ]
 //           %30 = OpPhi %int %int_42 %13 %50 %14 %50 %15
 void MemPass::RemovePhiOperands(
-    ir::Instruction* phi,
-    const unordered_set<ir::BasicBlock*>& reachable_blocks) {
-  std::vector<ir::Operand> keep_operands;
+    opt::Instruction* phi,
+    const unordered_set<opt::BasicBlock*>& reachable_blocks) {
+  std::vector<opt::Operand> keep_operands;
   uint32_t type_id = 0;
   // The id of an undefined value we've generated.
   uint32_t undef_id = 0;
@@ -333,7 +334,7 @@ void MemPass::RemovePhiOperands(
     assert(i % 2 == 0 && i < phi->NumOperands() - 1 &&
            "malformed Phi arguments");
 
-    ir::BasicBlock* in_block = cfg()->block(phi->GetSingleWordOperand(i + 1));
+    opt::BasicBlock* in_block = cfg()->block(phi->GetSingleWordOperand(i + 1));
     if (reachable_blocks.find(in_block) == reachable_blocks.end()) {
       // If the incoming block is unreachable, remove both operands as this
       // means that the |phi| has lost an incoming edge.
@@ -343,8 +344,8 @@ void MemPass::RemovePhiOperands(
 
     // In all other cases, the operand must be kept but may need to be changed.
     uint32_t arg_id = phi->GetSingleWordOperand(i);
-    ir::Instruction* arg_def_instr = get_def_use_mgr()->GetDef(arg_id);
-    ir::BasicBlock* def_block = context()->get_instr_block(arg_def_instr);
+    opt::Instruction* arg_def_instr = get_def_use_mgr()->GetDef(arg_id);
+    opt::BasicBlock* def_block = context()->get_instr_block(arg_def_instr);
     if (def_block &&
         reachable_blocks.find(def_block) == reachable_blocks.end()) {
       // If the current |phi| argument was defined in an unreachable block, it
@@ -355,7 +356,7 @@ void MemPass::RemovePhiOperands(
         undef_id = Type2Undef(type_id);
       }
       keep_operands.push_back(
-          ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {undef_id}));
+          opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {undef_id}));
     } else {
       // Otherwise, the argument comes from a reachable block or from no block
       // at all (meaning that it was defined in the global section of the
@@ -373,11 +374,11 @@ void MemPass::RemovePhiOperands(
   context()->AnalyzeUses(phi);
 }
 
-void MemPass::RemoveBlock(ir::Function::iterator* bi) {
+void MemPass::RemoveBlock(opt::Function::iterator* bi) {
   auto& rm_block = **bi;
 
   // Remove instructions from the block.
-  rm_block.ForEachInst([&rm_block, this](ir::Instruction* inst) {
+  rm_block.ForEachInst([&rm_block, this](opt::Instruction* inst) {
     // Note that we do not kill the block label instruction here. The label
     // instruction is needed to identify the block, which is needed by the
     // removal of phi operands.
@@ -393,13 +394,13 @@ void MemPass::RemoveBlock(ir::Function::iterator* bi) {
   *bi = bi->Erase();
 }
 
-bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
+bool MemPass::RemoveUnreachableBlocks(opt::Function* func) {
   bool modified = false;
 
   // Mark reachable all blocks reachable from the function's entry block.
-  std::unordered_set<ir::BasicBlock*> reachable_blocks;
-  std::unordered_set<ir::BasicBlock*> visited_blocks;
-  std::queue<ir::BasicBlock*> worklist;
+  std::unordered_set<opt::BasicBlock*> reachable_blocks;
+  std::unordered_set<opt::BasicBlock*> visited_blocks;
+  std::queue<opt::BasicBlock*> worklist;
   reachable_blocks.insert(func->entry().get());
 
   // Initially mark the function entry point as reachable.
@@ -417,11 +418,11 @@ bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
 
   // Transitively mark all blocks reachable from the entry as reachable.
   while (!worklist.empty()) {
-    ir::BasicBlock* block = worklist.front();
+    opt::BasicBlock* block = worklist.front();
     worklist.pop();
 
     // All the successors of a live block are also live.
-    static_cast<const ir::BasicBlock*>(block)->ForEachSuccessorLabel(
+    static_cast<const opt::BasicBlock*>(block)->ForEachSuccessorLabel(
         mark_reachable);
 
     // All the Merge and ContinueTarget blocks of a live block are also live.
@@ -439,7 +440,7 @@ bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
     // If the block is reachable and has Phi instructions, remove all
     // operands from its Phi instructions that reference unreachable blocks.
     // If the block has no Phi instructions, this is a no-op.
-    block.ForEachPhiInst([&reachable_blocks, this](ir::Instruction* phi) {
+    block.ForEachPhiInst([&reachable_blocks, this](opt::Instruction* phi) {
       RemovePhiOperands(phi, reachable_blocks);
     });
   }
@@ -457,13 +458,13 @@ bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
   return modified;
 }
 
-bool MemPass::CFGCleanup(ir::Function* func) {
+bool MemPass::CFGCleanup(opt::Function* func) {
   bool modified = false;
   modified |= RemoveUnreachableBlocks(func);
   return modified;
 }
 
-void MemPass::CollectTargetVars(ir::Function* func) {
+void MemPass::CollectTargetVars(opt::Function* func) {
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
   type2undefs_.clear();

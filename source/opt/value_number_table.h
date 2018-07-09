@@ -20,23 +20,22 @@
 #include "instruction.h"
 
 namespace spvtools {
-namespace ir {
-class IRContext;
-}
-
 namespace opt {
+
+class IRContext;
 
 // Returns true if the two instructions compute the same value.  Used by the
 // value number table to compare two instructions.
 class ComputeSameValue {
  public:
-  bool operator()(const ir::Instruction& lhs, const ir::Instruction& rhs) const;
+  bool operator()(const opt::Instruction& lhs,
+                  const opt::Instruction& rhs) const;
 };
 
 // The hash function used in the value number table.
 class ValueTableHash {
  public:
-  std::size_t operator()(const ir::Instruction& inst) const;
+  std::size_t operator()(const opt::Instruction& inst) const;
 };
 
 // This class implements the value number analysis.  It is using a hash-based
@@ -52,20 +51,20 @@ class ValueTableHash {
 // the scope.
 class ValueNumberTable {
  public:
-  ValueNumberTable(ir::IRContext* ctx) : context_(ctx), next_value_number_(1) {
+  ValueNumberTable(opt::IRContext* ctx) : context_(ctx), next_value_number_(1) {
     BuildDominatorTreeValueNumberTable();
   }
 
   // Returns the value number of the value computed by |inst|.  |inst| must have
   // a result id that will hold the computed value.  If no value number has been
   // assigned to the result id, then the return value is 0.
-  uint32_t GetValueNumber(ir::Instruction* inst) const;
+  uint32_t GetValueNumber(opt::Instruction* inst) const;
 
   // Returns the value number of the value contain in |id|.  Returns 0 if it
   // has not been assigned a value number.
   uint32_t GetValueNumber(uint32_t id) const;
 
-  ir::IRContext* context() const { return context_; }
+  opt::IRContext* context() const { return context_; }
 
  private:
   // Assigns a value number to every result id in the module.
@@ -77,13 +76,13 @@ class ValueNumberTable {
   // Assigns a new value number to the result of |inst| if it does not already
   // have one.  Return the value number for |inst|.  |inst| must have a result
   // id.
-  uint32_t AssignValueNumber(ir::Instruction* inst);
+  uint32_t AssignValueNumber(opt::Instruction* inst);
 
-  std::unordered_map<ir::Instruction, uint32_t, ValueTableHash,
+  std::unordered_map<opt::Instruction, uint32_t, ValueTableHash,
                      ComputeSameValue>
       instruction_to_value_;
   std::unordered_map<uint32_t, uint32_t> id_to_value_;
-  ir::IRContext* context_;
+  opt::IRContext* context_;
   uint32_t next_value_number_;
 };
 

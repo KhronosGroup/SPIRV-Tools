@@ -70,7 +70,7 @@ class PassManager {
   // whether changes are made to the module.
   //
   // After running all the passes, they are removed from the list.
-  Pass::Status Run(ir::IRContext* context);
+  Pass::Status Run(opt::IRContext* context);
 
   // Sets the option to print the disassembly before each pass and after the
   // last pass.   Output is written to |out| if that is not null.  No output

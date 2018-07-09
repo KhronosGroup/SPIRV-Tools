@@ -27,7 +27,7 @@ using namespace spvtools;
 class DummyPass : public opt::Pass {
  public:
   const char* name() const override { return "dummy-pass"; }
-  Status Process(ir::IRContext* irContext) override {
+  Status Process(opt::IRContext* irContext) override {
     return irContext ? Status::SuccessWithoutChange : Status::Failure;
   }
 };
@@ -76,14 +76,14 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
 )";
   // clang-format on
 
-  std::unique_ptr<ir::IRContext> localContext =
+  std::unique_ptr<opt::IRContext> localContext =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, localContext) << "Assembling failed for shader:\n"
                                    << text << std::endl;
   DummyPass testPass;
   std::vector<uint32_t> processed;
-  opt::Pass::ProcessFunction mark_visited = [&processed](ir::Function* fp) {
+  opt::Pass::ProcessFunction mark_visited = [&processed](opt::Function* fp) {
     processed.push_back(fp->result_id());
     return false;
   };
@@ -132,7 +132,7 @@ TEST_F(PassClassTest, BasicVisitReachable) {
 )";
   // clang-format on
 
-  std::unique_ptr<ir::IRContext> localContext =
+  std::unique_ptr<opt::IRContext> localContext =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, localContext) << "Assembling failed for shader:\n"
@@ -140,7 +140,7 @@ TEST_F(PassClassTest, BasicVisitReachable) {
 
   DummyPass testPass;
   std::vector<uint32_t> processed;
-  opt::Pass::ProcessFunction mark_visited = [&processed](ir::Function* fp) {
+  opt::Pass::ProcessFunction mark_visited = [&processed](opt::Function* fp) {
     processed.push_back(fp->result_id());
     return false;
   };
@@ -184,7 +184,7 @@ TEST_F(PassClassTest, BasicVisitOnlyOnce) {
 )";
   // clang-format on
 
-  std::unique_ptr<ir::IRContext> localContext =
+  std::unique_ptr<opt::IRContext> localContext =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, localContext) << "Assembling failed for shader:\n"
@@ -192,7 +192,7 @@ TEST_F(PassClassTest, BasicVisitOnlyOnce) {
 
   DummyPass testPass;
   std::vector<uint32_t> processed;
-  opt::Pass::ProcessFunction mark_visited = [&processed](ir::Function* fp) {
+  opt::Pass::ProcessFunction mark_visited = [&processed](opt::Function* fp) {
     processed.push_back(fp->result_id());
     return false;
   };
@@ -226,7 +226,7 @@ TEST_F(PassClassTest, BasicDontVisitExportedVariable) {
 )";
   // clang-format on
 
-  std::unique_ptr<ir::IRContext> localContext =
+  std::unique_ptr<opt::IRContext> localContext =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, localContext) << "Assembling failed for shader:\n"
@@ -234,7 +234,7 @@ TEST_F(PassClassTest, BasicDontVisitExportedVariable) {
 
   DummyPass testPass;
   std::vector<uint32_t> processed;
-  opt::Pass::ProcessFunction mark_visited = [&processed](ir::Function* fp) {
+  opt::Pass::ProcessFunction mark_visited = [&processed](opt::Function* fp) {
     processed.push_back(fp->result_id());
     return false;
   };

@@ -29,7 +29,7 @@
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 // This class is intended to be the container for Instructions.  This container
 // owns the instructions that are in it.  When removing an Instruction from the
@@ -124,7 +124,7 @@ void InstructionList::clear() {
   }
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_INSTRUCTION_LIST_H_

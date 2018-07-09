@@ -25,7 +25,7 @@ namespace spvtools {
 
 namespace opt {
 
-Pass::Status PassManager::Run(ir::IRContext* context) {
+Pass::Status PassManager::Run(opt::IRContext* context) {
   auto status = Pass::Status::SuccessWithoutChange;
 
   // If print_all_stream_ is not null, prints the disassembly of the module

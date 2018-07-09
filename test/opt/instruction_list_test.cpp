@@ -24,8 +24,8 @@
 
 namespace {
 
-using Instruction = spvtools::ir::Instruction;
-using InstructionList = spvtools::ir::InstructionList;
+using Instruction = spvtools::opt::Instruction;
+using InstructionList = spvtools::opt::InstructionList;
 using ::testing::ContainerEq;
 using ::testing::ElementsAre;
 using InstructionListTest = ::testing::Test;

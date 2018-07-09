@@ -30,11 +30,13 @@ class DominatorAnalysisBase {
   explicit DominatorAnalysisBase(bool is_post_dom) : tree_(is_post_dom) {}
 
   // Calculates the dominator (or postdominator) tree for given function |f|.
-  inline void InitializeTree(const ir::Function* f) { tree_.InitializeTree(f); }
+  inline void InitializeTree(const opt::Function* f) {
+    tree_.InitializeTree(f);
+  }
 
   // Returns true if BasicBlock |a| dominates BasicBlock |b|.
-  inline bool Dominates(const ir::BasicBlock* a,
-                        const ir::BasicBlock* b) const {
+  inline bool Dominates(const opt::BasicBlock* a,
+                        const opt::BasicBlock* b) const {
     if (!a || !b) return false;
     return Dominates(a->id(), b->id());
   }
@@ -46,11 +48,11 @@ class DominatorAnalysisBase {
   }
 
   // Returns true if instruction |a| dominates instruction |b|.
-  bool Dominates(ir::Instruction* a, ir::Instruction* b) const;
+  bool Dominates(opt::Instruction* a, opt::Instruction* b) const;
 
   // Returns true if BasicBlock |a| strictly dominates BasicBlock |b|.
-  inline bool StrictlyDominates(const ir::BasicBlock* a,
-                                const ir::BasicBlock* b) const {
+  inline bool StrictlyDominates(const opt::BasicBlock* a,
+                                const opt::BasicBlock* b) const {
     if (!a || !b) return false;
     return StrictlyDominates(a->id(), b->id());
   }
@@ -63,19 +65,20 @@ class DominatorAnalysisBase {
 
   // Returns the immediate dominator of |node| or returns nullptr if it is has
   // no dominator.
-  inline ir::BasicBlock* ImmediateDominator(const ir::BasicBlock* node) const {
+  inline opt::BasicBlock* ImmediateDominator(
+      const opt::BasicBlock* node) const {
     if (!node) return nullptr;
     return tree_.ImmediateDominator(node);
   }
 
   // Returns the immediate dominator of |node_id| or returns nullptr if it is
   // has no dominator. Same as above but operates on IDs.
-  inline ir::BasicBlock* ImmediateDominator(uint32_t node_id) const {
+  inline opt::BasicBlock* ImmediateDominator(uint32_t node_id) const {
     return tree_.ImmediateDominator(node_id);
   }
 
   // Returns true if |node| is reachable from the entry.
-  inline bool IsReachable(const ir::BasicBlock* node) const {
+  inline bool IsReachable(const opt::BasicBlock* node) const {
     if (!node) return false;
     return tree_.ReachableFromRoots(node->id());
   }
@@ -114,7 +117,8 @@ class DominatorAnalysisBase {
 
   // Returns the most immediate basic block that dominates both |b1| and |b2|.
   // If there is no such basic block, nullptr is returned.
-  ir::BasicBlock* CommonDominator(ir::BasicBlock* b1, ir::BasicBlock* b2) const;
+  opt::BasicBlock* CommonDominator(opt::BasicBlock* b1,
+                                   opt::BasicBlock* b2) const;
 
  protected:
   DominatorTree tree_;

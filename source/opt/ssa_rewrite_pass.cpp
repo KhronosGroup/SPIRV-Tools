@@ -66,7 +66,7 @@ const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kVariableInitIdInIdx = 1;
 }  // namespace
 
-std::string SSARewriter::PhiCandidate::PrettyPrint(const ir::CFG* cfg) const {
+std::string SSARewriter::PhiCandidate::PrettyPrint(const opt::CFG* cfg) const {
   std::ostringstream str;
   str << "%" << result_id_ << " = Phi[%" << var_id_ << ", BB %" << bb_->id()
       << "](";
@@ -86,8 +86,8 @@ std::string SSARewriter::PhiCandidate::PrettyPrint(const ir::CFG* cfg) const {
   return str.str();
 }
 
-SSARewriter::PhiCandidate& SSARewriter::CreatePhiCandidate(uint32_t var_id,
-                                                           ir::BasicBlock* bb) {
+SSARewriter::PhiCandidate& SSARewriter::CreatePhiCandidate(
+    uint32_t var_id, opt::BasicBlock* bb) {
   uint32_t phi_result_id = pass_->context()->TakeNextId();
   auto result = phi_candidates_.emplace(
       phi_result_id, PhiCandidate(var_id, phi_result_id, bb));
@@ -161,7 +161,7 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
 
   bool found_0_arg = false;
   for (uint32_t pred : pass_->cfg()->preds(phi_candidate->bb()->id())) {
-    ir::BasicBlock* pred_bb = pass_->cfg()->block(pred);
+    opt::BasicBlock* pred_bb = pass_->cfg()->block(pred);
 
     // If |pred_bb| is not sealed, use %0 to indicate that
     // |phi_candidate| needs to be completed after the whole CFG has
@@ -233,7 +233,7 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
   return repl_id;
 }
 
-uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
+uint32_t SSARewriter::GetReachingDef(uint32_t var_id, opt::BasicBlock* bb) {
   // If |var_id| has a definition in |bb|, return it.
   const auto& bb_it = defs_at_block_.find(bb);
   if (bb_it != defs_at_block_.end()) {
@@ -271,14 +271,14 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, ir::BasicBlock* bb) {
   return val_id;
 }
 
-void SSARewriter::SealBlock(ir::BasicBlock* bb) {
+void SSARewriter::SealBlock(opt::BasicBlock* bb) {
   auto result = sealed_blocks_.insert(bb);
   (void)result;
   assert(result.second == true &&
          "Tried to seal the same basic block more than once.");
 }
 
-void SSARewriter::ProcessStore(ir::Instruction* inst, ir::BasicBlock* bb) {
+void SSARewriter::ProcessStore(opt::Instruction* inst, opt::BasicBlock* bb) {
   auto opcode = inst->opcode();
   assert((opcode == SpvOpStore || opcode == SpvOpVariable) &&
          "Expecting a store or a variable definition instruction.");
@@ -303,7 +303,7 @@ void SSARewriter::ProcessStore(ir::Instruction* inst, ir::BasicBlock* bb) {
   }
 }
 
-void SSARewriter::ProcessLoad(ir::Instruction* inst, ir::BasicBlock* bb) {
+void SSARewriter::ProcessLoad(opt::Instruction* inst, opt::BasicBlock* bb) {
   uint32_t var_id = 0;
   (void)pass_->GetPtr(inst, &var_id);
   if (pass_->IsTargetVar(var_id)) {
@@ -346,7 +346,7 @@ void SSARewriter::PrintReplacementTable() const {
   std::cerr << "\n";
 }
 
-void SSARewriter::GenerateSSAReplacements(ir::BasicBlock* bb) {
+void SSARewriter::GenerateSSAReplacements(opt::BasicBlock* bb) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
   std::cerr << "Generating SSA replacements for block: " << bb->id() << "\n";
   std::cerr << bb->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES)
@@ -416,7 +416,7 @@ bool SSARewriter::ApplyReplacements() {
 #endif
 
   // Add Phi instructions from completed Phi candidates.
-  std::vector<ir::Instruction*> generated_phis;
+  std::vector<opt::Instruction*> generated_phis;
   for (const PhiCandidate* phi_candidate : phis_to_generate_) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 2
     std::cerr << "Phi candidate: " << phi_candidate->PrettyPrint(pass_->cfg())
@@ -430,7 +430,7 @@ bool SSARewriter::ApplyReplacements() {
     // Build the vector of operands for the new OpPhi instruction.
     uint32_t type_id = pass_->GetPointeeTypeId(
         pass_->get_def_use_mgr()->GetDef(phi_candidate->var_id()));
-    std::vector<ir::Operand> phi_operands;
+    std::vector<opt::Operand> phi_operands;
     uint32_t arg_ix = 0;
     for (uint32_t pred_label : pass_->cfg()->preds(phi_candidate->bb()->id())) {
       uint32_t op_val_id = GetPhiArgument(phi_candidate, arg_ix++);
@@ -442,9 +442,9 @@ bool SSARewriter::ApplyReplacements() {
 
     // Generate a new OpPhi instruction and insert it in its basic
     // block.
-    std::unique_ptr<ir::Instruction> phi_inst(
-        new ir::Instruction(pass_->context(), SpvOpPhi, type_id,
-                            phi_candidate->result_id(), phi_operands));
+    std::unique_ptr<opt::Instruction> phi_inst(
+        new opt::Instruction(pass_->context(), SpvOpPhi, type_id,
+                             phi_candidate->result_id(), phi_operands));
     generated_phis.push_back(phi_inst.get());
     pass_->get_def_use_mgr()->AnalyzeInstDef(&*phi_inst);
     pass_->context()->set_instr_block(&*phi_inst, phi_candidate->bb());
@@ -456,7 +456,7 @@ bool SSARewriter::ApplyReplacements() {
   // Scan uses for all inserted Phi instructions. Do this separately from the
   // registration of the Phi instruction itself to avoid trying to analyze uses
   // of Phi instructions that have not been registered yet.
-  for (ir::Instruction* phi_inst : generated_phis) {
+  for (opt::Instruction* phi_inst : generated_phis) {
     pass_->get_def_use_mgr()->AnalyzeInstUse(&*phi_inst);
   }
 
@@ -469,7 +469,7 @@ bool SSARewriter::ApplyReplacements() {
   for (auto& repl : load_replacement_) {
     uint32_t load_id = repl.first;
     uint32_t val_id = GetReplacement(repl);
-    ir::Instruction* load_inst =
+    opt::Instruction* load_inst =
         pass_->context()->get_def_use_mgr()->GetDef(load_id);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 2
@@ -498,7 +498,7 @@ void SSARewriter::FinalizePhiCandidate(PhiCandidate* phi_candidate) {
 
   uint32_t ix = 0;
   for (uint32_t pred : pass_->cfg()->preds(phi_candidate->bb()->id())) {
-    ir::BasicBlock* pred_bb = pass_->cfg()->block(pred);
+    opt::BasicBlock* pred_bb = pass_->cfg()->block(pred);
     uint32_t& arg_id = phi_candidate->phi_args()[ix++];
     if (arg_id == 0) {
       // If |pred_bb| is still not sealed, it means it's unreachable. In this
@@ -536,7 +536,7 @@ void SSARewriter::FinalizePhiCandidates() {
   }
 }
 
-bool SSARewriter::RewriteFunctionIntoSSA(ir::Function* fp) {
+bool SSARewriter::RewriteFunctionIntoSSA(opt::Function* fp) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 0
   std::cerr << "Function before SSA rewrite:\n"
             << fp->PrettyPrint(0) << "\n\n\n";
@@ -549,7 +549,7 @@ bool SSARewriter::RewriteFunctionIntoSSA(ir::Function* fp) {
   // generate incomplete and trivial Phis.
   pass_->cfg()->ForEachBlockInReversePostOrder(
       fp->entry().get(),
-      [this](ir::BasicBlock* bb) { GenerateSSAReplacements(bb); });
+      [this](opt::BasicBlock* bb) { GenerateSSAReplacements(bb); });
 
   // Remove trivial Phis and add arguments to incomplete Phis.
   FinalizePhiCandidates();
@@ -565,9 +565,9 @@ bool SSARewriter::RewriteFunctionIntoSSA(ir::Function* fp) {
   return modified;
 }
 
-void SSARewritePass::Initialize(ir::IRContext* c) { InitializeProcessing(c); }
+void SSARewritePass::Initialize(opt::IRContext* c) { InitializeProcessing(c); }
 
-Pass::Status SSARewritePass::Process(ir::IRContext* c) {
+Pass::Status SSARewritePass::Process(opt::IRContext* c) {
   Initialize(c);
 
   bool modified = false;

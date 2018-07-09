@@ -204,7 +204,7 @@ Optimizer& Optimizer::RegisterSizePasses() {
 bool Optimizer::Run(const uint32_t* original_binary,
                     const size_t original_binary_size,
                     std::vector<uint32_t>* optimized_binary) const {
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(impl_->target_env, impl_->pass_manager.consumer(),
                   original_binary, original_binary_size);
   if (context == nullptr) return false;

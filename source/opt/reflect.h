@@ -18,7 +18,7 @@
 #include "latest_version_spirv_header.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 // Note that as SPIR-V evolves over time, new opcodes may appear. So the
 // following functions tend to be outdated and should be updated when SPIR-V
@@ -59,7 +59,7 @@ inline bool IsTerminatorInst(SpvOp opcode) {
   return opcode >= SpvOpBranch && opcode <= SpvOpUnreachable;
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_REFLECT_H_
