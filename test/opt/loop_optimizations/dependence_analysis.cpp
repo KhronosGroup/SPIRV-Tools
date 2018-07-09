@@ -120,22 +120,22 @@ TEST(DependencyAnalysis, ZIV) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  ir::Loop* loop = &ld.GetLoopByIndex(0);
-  std::vector<const ir::Loop*> loops{loop};
+  opt::Loop* loop = &ld.GetLoopByIndex(0);
+  std::vector<const opt::Loop*> loops{loop};
   opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-  const ir::Instruction* store[4];
+  const opt::Instruction* store[4];
   int stores_found = 0;
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 13)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 13)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -277,22 +277,22 @@ TEST(DependencyAnalysis, SymbolicZIV) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  ir::Loop* loop = &ld.GetLoopByIndex(0);
-  std::vector<const ir::Loop*> loops{loop};
+  opt::Loop* loop = &ld.GetLoopByIndex(0);
+  std::vector<const opt::Loop*> loops{loop};
   opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-  const ir::Instruction* store[4];
+  const opt::Instruction* store[4];
   int stores_found = 0;
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 22)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 22)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -511,24 +511,24 @@ TEST(DependencyAnalysis, SIV) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // For the loop in function a.
   {
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[4];
+    const opt::Instruction* store[4];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 17)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 17)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -592,16 +592,16 @@ TEST(DependencyAnalysis, SIV) {
   }
   // For the loop in function b.
   {
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[4];
+    const opt::Instruction* store[4];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 68)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 68)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -905,24 +905,24 @@ TEST(DependencyAnalysis, SymbolicSIV) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // For the loop in function a.
   {
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[4];
+    const opt::Instruction* store[4];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -969,16 +969,16 @@ TEST(DependencyAnalysis, SymbolicSIV) {
   }
   // For the loop in function b.
   {
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[4];
+    const opt::Instruction* store[4];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 114)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 114)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -1401,10 +1401,10 @@ TEST(DependencyAnalysis, Crossing) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -1412,15 +1412,15 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests even crossing subscripts from low to high indexes.
   // 47 -> 48
   {
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store = nullptr;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
+    const opt::Instruction* store = nullptr;
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -1433,15 +1433,15 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests even crossing subscripts from high to low indexes.
   // 67 -> 68
   {
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store = nullptr;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
+    const opt::Instruction* store = nullptr;
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -1455,15 +1455,15 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests uneven crossing subscripts from low to high indexes.
   // 92 -> 93
   {
-    const ir::Function* f = spvtest::GetFunction(module, 10);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 10);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store = nullptr;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 75)) {
+    const opt::Instruction* store = nullptr;
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 75)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -1476,15 +1476,15 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests uneven crossing subscripts from high to low indexes.
   // 113 -> 114
   {
-    const ir::Function* f = spvtest::GetFunction(module, 12);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 12);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store = nullptr;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 99)) {
+    const opt::Instruction* store = nullptr;
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 99)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -1498,15 +1498,15 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests even crossing subscripts from low to high indexes.
   // 134 -> 135
   {
-    const ir::Function* f = spvtest::GetFunction(module, 14);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 14);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store = nullptr;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 121)) {
+    const opt::Instruction* store = nullptr;
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 121)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -1519,15 +1519,15 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests even crossing subscripts from high to low indexes.
   // 154 -> 155
   {
-    const ir::Function* f = spvtest::GetFunction(module, 16);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 16);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store = nullptr;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 142)) {
+    const opt::Instruction* store = nullptr;
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 142)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -1541,15 +1541,15 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests uneven crossing subscripts from low to high indexes.
   // 175 -> 176
   {
-    const ir::Function* f = spvtest::GetFunction(module, 18);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 18);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store = nullptr;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 162)) {
+    const opt::Instruction* store = nullptr;
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 162)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -1562,15 +1562,15 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests uneven crossing subscripts from high to low indexes.
   // 196 -> 197
   {
-    const ir::Function* f = spvtest::GetFunction(module, 20);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 20);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store = nullptr;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 183)) {
+    const opt::Instruction* store = nullptr;
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 183)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -1829,24 +1829,24 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // For the loop in function a
   {
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[4];
+    const opt::Instruction* store[4];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 19)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 19)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -1905,16 +1905,16 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
   }
   // For the loop in function b
   {
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[4];
+    const opt::Instruction* store[4];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -1973,15 +1973,15 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
   }
   // For the loop in function c
   {
-    const ir::Function* f = spvtest::GetFunction(module, 10);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 10);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
-    const ir::Instruction* store[4];
+    const opt::Instruction* store[4];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 84)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 84)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -2040,16 +2040,16 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
   }
   // For the loop in function d
   {
-    const ir::Function* f = spvtest::GetFunction(module, 12);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 12);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    ir::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const ir::Loop*> loops{loop};
+    opt::Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const opt::Loop*> loops{loop};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[4];
+    const opt::Instruction* store[4];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 111)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 111)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -2195,22 +2195,22 @@ TEST(DependencyAnalysis, MultipleSubscriptZIVSIV) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  ir::Loop* loop = &ld.GetLoopByIndex(0);
-  std::vector<const ir::Loop*> loops{loop};
+  opt::Loop* loop = &ld.GetLoopByIndex(0);
+  std::vector<const opt::Loop*> loops{loop};
   opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-  const ir::Instruction* store[6];
+  const opt::Instruction* store[6];
   int stores_found = 0;
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 11)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 11)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -2426,24 +2426,24 @@ TEST(DependencyAnalysis, IrrelevantSubscripts) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // For the loop in function a
   {
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    std::vector<const ir::Loop*> loops{&ld.GetLoopByIndex(1),
-                                       &ld.GetLoopByIndex(0)};
+    std::vector<const opt::Loop*> loops{&ld.GetLoopByIndex(1),
+                                        &ld.GetLoopByIndex(0)};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[1];
+    const opt::Instruction* store[1];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 25)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 25)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -2470,16 +2470,16 @@ TEST(DependencyAnalysis, IrrelevantSubscripts) {
 
   // For the loop in function b
   {
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    std::vector<const ir::Loop*> loops{&ld.GetLoopByIndex(1),
-                                       &ld.GetLoopByIndex(0)};
+    std::vector<const opt::Loop*> loops{&ld.GetLoopByIndex(1),
+                                        &ld.GetLoopByIndex(0)};
     opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const ir::Instruction* store[1];
+    const opt::Instruction* store[1];
     int stores_found = 0;
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 56)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 56)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -2504,8 +2504,8 @@ TEST(DependencyAnalysis, IrrelevantSubscripts) {
   }
 }
 
-void CheckDependenceAndDirection(const ir::Instruction* source,
-                                 const ir::Instruction* destination,
+void CheckDependenceAndDirection(const opt::Instruction* source,
+                                 const opt::Instruction* destination,
                                  bool expected_dependence,
                                  opt::DistanceVector expected_distance,
                                  opt::LoopDependenceAnalysis* analysis) {
@@ -2768,30 +2768,30 @@ TEST(DependencyAnalysis, MIV) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  std::vector<const ir::Loop*> loops{&ld.GetLoopByIndex(0),
-                                     &ld.GetLoopByIndex(1)};
+  std::vector<const opt::Loop*> loops{&ld.GetLoopByIndex(0),
+                                      &ld.GetLoopByIndex(1)};
 
   opt::LoopDependenceAnalysis analysis{context.get(), loops};
 
   const int instructions_expected = 17;
-  const ir::Instruction* store[instructions_expected];
-  const ir::Instruction* load[instructions_expected];
+  const opt::Instruction* store[instructions_expected];
+  const opt::Instruction* load[instructions_expected];
   int stores_found = 0;
   int loads_found = 0;
 
   int block_id = 36;
   ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -2836,19 +2836,19 @@ TEST(DependencyAnalysis, MIV) {
                               &analysis);
 }
 
-void PartitionSubscripts(const ir::Instruction* instruction_0,
-                         const ir::Instruction* instruction_1,
+void PartitionSubscripts(const opt::Instruction* instruction_0,
+                         const opt::Instruction* instruction_1,
                          opt::LoopDependenceAnalysis* analysis,
                          std::vector<std::vector<int>> expected_ids) {
   auto subscripts_0 = analysis->GetSubscripts(instruction_0);
   auto subscripts_1 = analysis->GetSubscripts(instruction_1);
 
-  std::vector<std::set<std::pair<ir::Instruction*, ir::Instruction*>>>
+  std::vector<std::set<std::pair<opt::Instruction*, opt::Instruction*>>>
       expected_partition{};
 
   for (const auto& partition : expected_ids) {
     expected_partition.push_back(
-        std::set<std::pair<ir::Instruction*, ir::Instruction*>>{});
+        std::set<std::pair<opt::Instruction*, opt::Instruction*>>{});
     for (auto id : partition) {
       expected_partition.back().insert({subscripts_0[id], subscripts_1[id]});
     }
@@ -3059,30 +3059,30 @@ TEST(DependencyAnalysis, SubscriptPartitioning) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 4);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const opt::Function* f = spvtest::GetFunction(module, 4);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  std::vector<const ir::Loop*> loop_nest{
+  std::vector<const opt::Loop*> loop_nest{
       &ld.GetLoopByIndex(0), &ld.GetLoopByIndex(1), &ld.GetLoopByIndex(2),
       &ld.GetLoopByIndex(3)};
   opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
   const int instructions_expected = 13;
-  const ir::Instruction* store[instructions_expected];
-  const ir::Instruction* load[instructions_expected];
+  const opt::Instruction* store[instructions_expected];
+  const opt::Instruction* load[instructions_expected];
   int stores_found = 0;
   int loads_found = 0;
 
   int block_id = 37;
   ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -3445,25 +3445,25 @@ TEST(DependencyAnalysis, Delta) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
   {
-    const ir::Function* f = spvtest::GetFunction(module, 6);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 6);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const ir::Instruction* store = nullptr;
-    const ir::Instruction* load = nullptr;
+    const opt::Instruction* store = nullptr;
+    const opt::Instruction* load = nullptr;
 
     int block_id = 31;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3476,8 +3476,8 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const ir::Loop*> loop_nest{&ld.GetLoopByIndex(0),
-                                           &ld.GetLoopByIndex(1)};
+    std::vector<const opt::Loop*> loop_nest{&ld.GetLoopByIndex(0),
+                                            &ld.GetLoopByIndex(1)};
     opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
     opt::DistanceVector dv_entry(loop_nest.size());
@@ -3495,16 +3495,16 @@ TEST(DependencyAnalysis, Delta) {
   }
 
   {
-    const ir::Function* f = spvtest::GetFunction(module, 8);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 8);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const ir::Instruction* store = nullptr;
-    const ir::Instruction* load = nullptr;
+    const opt::Instruction* store = nullptr;
+    const opt::Instruction* load = nullptr;
 
     int block_id = 62;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3517,7 +3517,7 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const ir::Loop*> loop_nest{&ld.GetLoopByIndex(0)};
+    std::vector<const opt::Loop*> loop_nest{&ld.GetLoopByIndex(0)};
     opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
     opt::DistanceVector dv_entry(loop_nest.size());
@@ -3527,16 +3527,16 @@ TEST(DependencyAnalysis, Delta) {
   }
 
   {
-    const ir::Function* f = spvtest::GetFunction(module, 10);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 10);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const ir::Instruction* store = nullptr;
-    const ir::Instruction* load = nullptr;
+    const opt::Instruction* store = nullptr;
+    const opt::Instruction* load = nullptr;
 
     int block_id = 84;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3549,7 +3549,7 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const ir::Loop*> loop_nest{&ld.GetLoopByIndex(0)};
+    std::vector<const opt::Loop*> loop_nest{&ld.GetLoopByIndex(0)};
     opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
     opt::DistanceVector dv_entry(loop_nest.size());
@@ -3562,16 +3562,16 @@ TEST(DependencyAnalysis, Delta) {
   }
 
   {
-    const ir::Function* f = spvtest::GetFunction(module, 12);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 12);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const ir::Instruction* store = nullptr;
-    const ir::Instruction* load = nullptr;
+    const opt::Instruction* store = nullptr;
+    const opt::Instruction* load = nullptr;
 
     int block_id = 119;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3584,7 +3584,7 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const ir::Loop*> loop_nest{
+    std::vector<const opt::Loop*> loop_nest{
         &ld.GetLoopByIndex(0), &ld.GetLoopByIndex(1), &ld.GetLoopByIndex(2)};
     opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
@@ -3604,16 +3604,16 @@ TEST(DependencyAnalysis, Delta) {
   }
 
   {
-    const ir::Function* f = spvtest::GetFunction(module, 14);
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const opt::Function* f = spvtest::GetFunction(module, 14);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const ir::Instruction* store = nullptr;
-    const ir::Instruction* load = nullptr;
+    const opt::Instruction* store = nullptr;
+    const opt::Instruction* load = nullptr;
 
     int block_id = 162;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3626,8 +3626,8 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const ir::Loop*> loop_nest{&ld.GetLoopByIndex(0),
-                                           &ld.GetLoopByIndex(1)};
+    std::vector<const opt::Loop*> loop_nest{&ld.GetLoopByIndex(0),
+                                            &ld.GetLoopByIndex(1)};
     opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
     opt::DistanceVector dv_entry(loop_nest.size());
@@ -3638,7 +3638,8 @@ TEST(DependencyAnalysis, Delta) {
 }
 
 TEST(DependencyAnalysis, ConstraintIntersection) {
-  opt::LoopDependenceAnalysis analysis{nullptr, std::vector<const ir::Loop*>{}};
+  opt::LoopDependenceAnalysis analysis{nullptr,
+                                       std::vector<const opt::Loop*>{}};
   auto scalar_evolution = analysis.GetScalarEvolution();
   {
     // One is none. Other should be returned

@@ -224,7 +224,7 @@ OpFunctionEnd
 )");
 
   spvtools::SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, input,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(context, nullptr);

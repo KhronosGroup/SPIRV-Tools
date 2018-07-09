@@ -34,16 +34,16 @@ namespace opt {
 
 // See optimizer.hpp for documentation.
 class DeadBranchElimPass : public MemPass {
-  using cbb_ptr = const ir::BasicBlock*;
+  using cbb_ptr = const opt::BasicBlock*;
 
  public:
   DeadBranchElimPass();
   const char* name() const override { return "eliminate-dead-branches"; }
-  Status Process(ir::IRContext* context) override;
+  Status Process(opt::IRContext* context) override;
 
-  ir::IRContext::Analysis GetPreservedAnalyses() override {
-    return ir::IRContext::kAnalysisDefUse |
-           ir::IRContext::kAnalysisInstrToBlockMapping;
+  opt::IRContext::Analysis GetPreservedAnalyses() override {
+    return opt::IRContext::kAnalysisDefUse |
+           opt::IRContext::kAnalysisInstrToBlockMapping;
   }
 
  private:
@@ -56,7 +56,7 @@ class DeadBranchElimPass : public MemPass {
   bool GetConstInteger(uint32_t valId, uint32_t* value);
 
   // Add branch to |labelId| to end of block |bp|.
-  void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
+  void AddBranch(uint32_t labelId, opt::BasicBlock* bp);
 
   // For function |func|, look for BranchConditionals with constant condition
   // and convert to a Branch to the indicated label. Delete resulting dead
@@ -64,21 +64,21 @@ class DeadBranchElimPass : public MemPass {
   // invalid control flow.
   // TODO(greg-lunarg): Remove remaining constant conditional branches and dead
   // blocks.
-  bool EliminateDeadBranches(ir::Function* func);
+  bool EliminateDeadBranches(opt::Function* func);
 
   // Returns the basic block containing |id|.
   // Note: this pass only requires correct instruction block mappings for the
   // input. This pass does not preserve the block mapping, so it is not kept
   // up-to-date during processing.
-  ir::BasicBlock* GetParentBlock(uint32_t id);
+  opt::BasicBlock* GetParentBlock(uint32_t id);
 
   // Marks live blocks reachable from the entry of |func|. Simplifies constant
   // branches and switches as it proceeds, to limit the number of live blocks.
   // It is careful not to eliminate backedges even if they are dead, but the
   // header is live. Likewise, unreachable merge blocks named in live merge
   // instruction must be retained (though they may be clobbered).
-  bool MarkLiveBlocks(ir::Function* func,
-                      std::unordered_set<ir::BasicBlock*>* live_blocks);
+  bool MarkLiveBlocks(opt::Function* func,
+                      std::unordered_set<opt::BasicBlock*>* live_blocks);
 
   // Checks for unreachable merge and continue blocks with live headers; those
   // blocks must be retained. Continues are tracked separately so that a live
@@ -88,9 +88,9 @@ class DeadBranchElimPass : public MemPass {
   // |unreachable_continues| maps the id of an unreachable continue target to
   // the header block that declares it.
   void MarkUnreachableStructuredTargets(
-      const std::unordered_set<ir::BasicBlock*>& live_blocks,
-      std::unordered_set<ir::BasicBlock*>* unreachable_merges,
-      std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>*
+      const std::unordered_set<opt::BasicBlock*>& live_blocks,
+      std::unordered_set<opt::BasicBlock*>* unreachable_merges,
+      std::unordered_map<opt::BasicBlock*, opt::BasicBlock*>*
           unreachable_continues);
 
   // Fix phis in reachable blocks so that only live (or unremovable) incoming
@@ -106,9 +106,9 @@ class DeadBranchElimPass : public MemPass {
   // |unreachable_continues| maps continue targets that cannot be reached to
   // merge instruction that declares them.
   bool FixPhiNodesInLiveBlocks(
-      ir::Function* func,
-      const std::unordered_set<ir::BasicBlock*>& live_blocks,
-      const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
+      opt::Function* func,
+      const std::unordered_set<opt::BasicBlock*>& live_blocks,
+      const std::unordered_map<opt::BasicBlock*, opt::BasicBlock*>&
           unreachable_continues);
 
   // Erases dead blocks. Any block captured in |unreachable_merges| or
@@ -123,13 +123,13 @@ class DeadBranchElimPass : public MemPass {
   // |unreachable_continues| maps continue targets that cannot be reached to
   // corresponding header block that declares them.
   bool EraseDeadBlocks(
-      ir::Function* func,
-      const std::unordered_set<ir::BasicBlock*>& live_blocks,
-      const std::unordered_set<ir::BasicBlock*>& unreachable_merges,
-      const std::unordered_map<ir::BasicBlock*, ir::BasicBlock*>&
+      opt::Function* func,
+      const std::unordered_set<opt::BasicBlock*>& live_blocks,
+      const std::unordered_set<opt::BasicBlock*>& unreachable_merges,
+      const std::unordered_map<opt::BasicBlock*, opt::BasicBlock*>&
           unreachable_continues);
 
-  void Initialize(ir::IRContext* c);
+  void Initialize(opt::IRContext* c);
   Pass::Status ProcessImpl();
 };
 

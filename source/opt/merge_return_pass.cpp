@@ -23,14 +23,15 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status MergeReturnPass::Process(ir::IRContext* irContext) {
+Pass::Status MergeReturnPass::Process(opt::IRContext* irContext) {
   InitializeProcessing(irContext);
 
   bool modified = false;
   bool is_shader =
       context()->get_feature_mgr()->HasCapability(SpvCapabilityShader);
   for (auto& function : *get_module()) {
-    std::vector<ir::BasicBlock*> return_blocks = CollectReturnBlocks(&function);
+    std::vector<opt::BasicBlock*> return_blocks =
+        CollectReturnBlocks(&function);
     if (return_blocks.size() <= 1) continue;
 
     function_ = &function;
@@ -50,8 +51,9 @@ Pass::Status MergeReturnPass::Process(ir::IRContext* irContext) {
 }
 
 void MergeReturnPass::ProcessStructured(
-    ir::Function* function, const std::vector<ir::BasicBlock*>& return_blocks) {
-  std::list<ir::BasicBlock*> order;
+    opt::Function* function,
+    const std::vector<opt::BasicBlock*>& return_blocks) {
+  std::list<opt::BasicBlock*> order;
   cfg()->ComputeStructuredOrder(function, &*function->begin(), &order);
 
   // Create the new return block
@@ -78,8 +80,8 @@ void MergeReturnPass::ProcessStructured(
     ProcessStructuredBlock(block);
 
     // Generate state for next block
-    if (ir::Instruction* mergeInst = block->GetMergeInst()) {
-      ir::Instruction* loopMergeInst = block->GetLoopMergeInst();
+    if (opt::Instruction* mergeInst = block->GetMergeInst()) {
+      opt::Instruction* loopMergeInst = block->GetLoopMergeInst();
       if (!loopMergeInst) loopMergeInst = state_.back().LoopMergeInst();
       state_.emplace_back(loopMergeInst, mergeInst);
     }
@@ -96,12 +98,12 @@ void MergeReturnPass::ProcessStructured(
 
 void MergeReturnPass::CreateReturnBlock() {
   // Create a label for the new return block
-  std::unique_ptr<ir::Instruction> return_label(
-      new ir::Instruction(context(), SpvOpLabel, 0u, TakeNextId(), {}));
+  std::unique_ptr<opt::Instruction> return_label(
+      new opt::Instruction(context(), SpvOpLabel, 0u, TakeNextId(), {}));
 
   // Create the new basic block
-  std::unique_ptr<ir::BasicBlock> return_block(
-      new ir::BasicBlock(std::move(return_label)));
+  std::unique_ptr<opt::BasicBlock> return_block(
+      new opt::BasicBlock(std::move(return_label)));
   function_->AddBasicBlock(std::move(return_block));
   final_return_block_ = &*(--function_->end());
   context()->AnalyzeDefUse(final_return_block_->GetLabelInst());
@@ -110,33 +112,33 @@ void MergeReturnPass::CreateReturnBlock() {
   final_return_block_->SetParent(function_);
 }
 
-void MergeReturnPass::CreateReturn(ir::BasicBlock* block) {
+void MergeReturnPass::CreateReturn(opt::BasicBlock* block) {
   AddReturnValue();
 
   if (return_value_) {
     // Load and return the final return value
     uint32_t loadId = TakeNextId();
-    block->AddInstruction(MakeUnique<ir::Instruction>(
+    block->AddInstruction(MakeUnique<opt::Instruction>(
         context(), SpvOpLoad, function_->type_id(), loadId,
-        std::initializer_list<ir::Operand>{
+        std::initializer_list<opt::Operand>{
             {SPV_OPERAND_TYPE_ID, {return_value_->result_id()}}}));
-    ir::Instruction* var_inst = block->terminator();
+    opt::Instruction* var_inst = block->terminator();
     context()->AnalyzeDefUse(var_inst);
     context()->set_instr_block(var_inst, block);
 
-    block->AddInstruction(MakeUnique<ir::Instruction>(
+    block->AddInstruction(MakeUnique<opt::Instruction>(
         context(), SpvOpReturnValue, 0, 0,
-        std::initializer_list<ir::Operand>{{SPV_OPERAND_TYPE_ID, {loadId}}}));
+        std::initializer_list<opt::Operand>{{SPV_OPERAND_TYPE_ID, {loadId}}}));
     context()->AnalyzeDefUse(block->terminator());
     context()->set_instr_block(block->terminator(), block);
   } else {
-    block->AddInstruction(MakeUnique<ir::Instruction>(context(), SpvOpReturn));
+    block->AddInstruction(MakeUnique<opt::Instruction>(context(), SpvOpReturn));
     context()->AnalyzeDefUse(block->terminator());
     context()->set_instr_block(block->terminator(), block);
   }
 }
 
-void MergeReturnPass::ProcessStructuredBlock(ir::BasicBlock* block) {
+void MergeReturnPass::ProcessStructuredBlock(opt::BasicBlock* block) {
   SpvOp tail_opcode = block->tail()->opcode();
   if (tail_opcode == SpvOpReturn || tail_opcode == SpvOpReturnValue) {
     if (!return_flag_) {
@@ -157,7 +159,7 @@ void MergeReturnPass::ProcessStructuredBlock(ir::BasicBlock* block) {
   }
 }
 
-void MergeReturnPass::BranchToBlock(ir::BasicBlock* block, uint32_t target) {
+void MergeReturnPass::BranchToBlock(opt::BasicBlock* block, uint32_t target) {
   if (block->tail()->opcode() == SpvOpReturn ||
       block->tail()->opcode() == SpvOpReturnValue) {
     RecordReturned(block);
@@ -168,8 +170,8 @@ void MergeReturnPass::BranchToBlock(ir::BasicBlock* block, uint32_t target) {
   //
   // A new edge is being added from |block| to |target|, so go through
   // |target|'s phi nodes add an undef incoming value for |block|.
-  ir::BasicBlock* target_block = context()->get_instr_block(target);
-  target_block->ForEachPhiInst([this, block](ir::Instruction* inst) {
+  opt::BasicBlock* target_block = context()->get_instr_block(target);
+  target_block->ForEachPhiInst([this, block](opt::Instruction* inst) {
     uint32_t undefId = Type2Undef(inst->type_id());
     inst->AddOperand({SPV_OPERAND_TYPE_ID, {undefId}});
     inst->AddOperand({SPV_OPERAND_TYPE_ID, {block->id()}});
@@ -182,25 +184,25 @@ void MergeReturnPass::BranchToBlock(ir::BasicBlock* block, uint32_t target) {
                        context()->get_instr_block(target_pred[0]));
   }
 
-  ir::Instruction* return_inst = block->terminator();
+  opt::Instruction* return_inst = block->terminator();
   return_inst->SetOpcode(SpvOpBranch);
   return_inst->ReplaceOperands({{SPV_OPERAND_TYPE_ID, {target}}});
   context()->get_def_use_mgr()->AnalyzeInstDefUse(return_inst);
   cfg()->AddEdge(block->id(), target);
 }
 
-void MergeReturnPass::CreatePhiNodesForInst(ir::BasicBlock* merge_block,
+void MergeReturnPass::CreatePhiNodesForInst(opt::BasicBlock* merge_block,
                                             uint32_t predecessor,
-                                            ir::Instruction& inst) {
+                                            opt::Instruction& inst) {
   opt::DominatorAnalysis* dom_tree =
       context()->GetDominatorAnalysis(merge_block->GetParent());
-  ir::BasicBlock* inst_bb = context()->get_instr_block(&inst);
+  opt::BasicBlock* inst_bb = context()->get_instr_block(&inst);
 
   if (inst.result_id() != 0) {
-    std::vector<ir::Instruction*> users_to_update;
+    std::vector<opt::Instruction*> users_to_update;
     context()->get_def_use_mgr()->ForEachUser(
         &inst,
-        [&users_to_update, &dom_tree, inst_bb, this](ir::Instruction* user) {
+        [&users_to_update, &dom_tree, inst_bb, this](opt::Instruction* user) {
           if (!dom_tree->Dominates(inst_bb, context()->get_instr_block(user))) {
             users_to_update.push_back(user);
           }
@@ -213,7 +215,7 @@ void MergeReturnPass::CreatePhiNodesForInst(ir::BasicBlock* merge_block,
     // There is at least one values that needs to be replaced.
     // First create the OpPhi instruction.
     InstructionBuilder builder(context(), &*merge_block->begin(),
-                               ir::IRContext::kAnalysisDefUse);
+                               opt::IRContext::kAnalysisDefUse);
     uint32_t undef_id = Type2Undef(inst.type_id());
     std::vector<uint32_t> phi_operands;
 
@@ -230,11 +232,11 @@ void MergeReturnPass::CreatePhiNodesForInst(ir::BasicBlock* merge_block,
       }
     }
 
-    ir::Instruction* new_phi = builder.AddPhi(inst.type_id(), phi_operands);
+    opt::Instruction* new_phi = builder.AddPhi(inst.type_id(), phi_operands);
     uint32_t result_of_phi = new_phi->result_id();
 
     // Update all of the users to use the result of the new OpPhi.
-    for (ir::Instruction* user : users_to_update) {
+    for (opt::Instruction* user : users_to_update) {
       user->ForEachInId([&inst, result_of_phi](uint32_t* id) {
         if (*id == inst.result_id()) {
           *id = result_of_phi;
@@ -246,26 +248,26 @@ void MergeReturnPass::CreatePhiNodesForInst(ir::BasicBlock* merge_block,
 }
 
 void MergeReturnPass::PredicateBlocks(
-    const std::vector<ir::BasicBlock*>& return_blocks) {
+    const std::vector<opt::BasicBlock*>& return_blocks) {
   // The CFG is being modified as the function proceeds so avoid caching
   // successors.
-  std::vector<ir::BasicBlock*> stack;
-  auto add_successors = [this, &stack](ir::BasicBlock* block) {
-    const ir::BasicBlock* const_block =
-        const_cast<const ir::BasicBlock*>(block);
+  std::vector<opt::BasicBlock*> stack;
+  auto add_successors = [this, &stack](opt::BasicBlock* block) {
+    const opt::BasicBlock* const_block =
+        const_cast<const opt::BasicBlock*>(block);
     const_block->ForEachSuccessorLabel([this, &stack](const uint32_t idx) {
       stack.push_back(context()->get_instr_block(idx));
     });
   };
 
-  std::unordered_set<ir::BasicBlock*> seen;
-  std::unordered_set<ir::BasicBlock*> predicated;
+  std::unordered_set<opt::BasicBlock*> seen;
+  std::unordered_set<opt::BasicBlock*> predicated;
   for (auto b : return_blocks) {
     seen.clear();
     add_successors(b);
 
     while (!stack.empty()) {
-      ir::BasicBlock* block = stack.back();
+      opt::BasicBlock* block = stack.back();
       assert(block);
       stack.pop_back();
 
@@ -275,7 +277,7 @@ void MergeReturnPass::PredicateBlocks(
       if (!predicated.insert(block).second) continue;
 
       // Skip structured subgraphs.
-      ir::BasicBlock* next = block;
+      opt::BasicBlock* next = block;
       while (next->GetMergeInst()) {
         next = context()->get_instr_block(next->MergeBlockIdIfAny());
       }
@@ -286,15 +288,15 @@ void MergeReturnPass::PredicateBlocks(
 }
 
 bool MergeReturnPass::RequiresPredication(
-    const ir::BasicBlock* block, const ir::BasicBlock* tail_block) const {
+    const opt::BasicBlock* block, const opt::BasicBlock* tail_block) const {
   // This is intentionally conservative.
   // TODO(alanbaker): re-visit this when more performance data is available.
   if (block != tail_block) return true;
 
   bool requires_predicate = false;
-  block->ForEachInst([&requires_predicate](const ir::Instruction* inst) {
+  block->ForEachInst([&requires_predicate](const opt::Instruction* inst) {
     if (inst->opcode() != SpvOpPhi && inst->opcode() != SpvOpLabel &&
-        !ir::IsTerminatorInst(inst->opcode())) {
+        !opt::IsTerminatorInst(inst->opcode())) {
       requires_predicate = true;
     }
   });
@@ -302,15 +304,15 @@ bool MergeReturnPass::RequiresPredication(
 }
 
 void MergeReturnPass::PredicateBlock(
-    ir::BasicBlock* block, ir::BasicBlock* tail_block,
-    std::unordered_set<ir::BasicBlock*>* predicated) {
+    opt::BasicBlock* block, opt::BasicBlock* tail_block,
+    std::unordered_set<opt::BasicBlock*>* predicated) {
   if (!RequiresPredication(block, tail_block)) {
     return;
   }
 
   // Make sure the cfg is build here.  If we don't then it becomes very hard to
   // know which new blocks need to be updated.
-  context()->BuildInvalidAnalyses(ir::IRContext::kAnalysisCFG);
+  context()->BuildInvalidAnalyses(opt::IRContext::kAnalysisCFG);
 
   // When predicating, be aware of whether this block is a header block, a merge
   // block or both.
@@ -336,9 +338,9 @@ void MergeReturnPass::PredicateBlock(
   // Forget about the edges leaving block.  They will be removed.
   cfg()->RemoveSuccessorEdges(block);
 
-  std::unique_ptr<ir::BasicBlock> new_block(
+  std::unique_ptr<opt::BasicBlock> new_block(
       block->SplitBasicBlock(context(), TakeNextId(), iter));
-  ir::BasicBlock* old_body =
+  opt::BasicBlock* old_body =
       function_->InsertBasicBlockAfter(std::move(new_block), block);
   predicated->insert(old_body);
 
@@ -346,21 +348,21 @@ void MergeReturnPass::PredicateBlock(
     tail_block = old_body;
   }
 
-  const ir::BasicBlock* const_old_body =
-      static_cast<const ir::BasicBlock*>(old_body);
+  const opt::BasicBlock* const_old_body =
+      static_cast<const opt::BasicBlock*>(old_body);
   const_old_body->ForEachSuccessorLabel(
       [old_body, block, this](const uint32_t label) {
-        ir::BasicBlock* target_bb = context()->get_instr_block(label);
+        opt::BasicBlock* target_bb = context()->get_instr_block(label);
         if (MarkedSinglePred(target_bb) == block) {
           MarkForNewPhiNodes(target_bb, old_body);
         }
       });
 
-  std::unique_ptr<ir::BasicBlock> new_merge_block(new ir::BasicBlock(
-      MakeUnique<ir::Instruction>(context(), SpvOpLabel, 0, TakeNextId(),
-                                  std::initializer_list<ir::Operand>{})));
+  std::unique_ptr<opt::BasicBlock> new_merge_block(new opt::BasicBlock(
+      MakeUnique<opt::Instruction>(context(), SpvOpLabel, 0, TakeNextId(),
+                                   std::initializer_list<opt::Operand>{})));
 
-  ir::BasicBlock* new_merge =
+  opt::BasicBlock* new_merge =
       function_->InsertBasicBlockAfter(std::move(new_merge_block), tail_block);
   predicated->insert(new_merge);
   new_merge->SetParent(function_);
@@ -374,8 +376,8 @@ void MergeReturnPass::PredicateBlock(
   // Move the tail branch into the new merge and fix the mapping. If a single
   // block is being predicated then its branch was moved to the old body
   // previously.
-  std::unique_ptr<ir::Instruction> inst;
-  ir::Instruction* i = tail_block->terminator();
+  std::unique_ptr<opt::Instruction> inst;
+  opt::Instruction* i = tail_block->terminator();
   cfg()->RemoveSuccessorEdges(tail_block);
   get_def_use_mgr()->ClearInst(i);
   inst.reset(std::move(i));
@@ -386,9 +388,9 @@ void MergeReturnPass::PredicateBlock(
 
   // Add a branch to the new merge. If we jumped multiple blocks, the branch is
   // added to tail_block, otherwise the branch belongs in old_body.
-  tail_block->AddInstruction(MakeUnique<ir::Instruction>(
+  tail_block->AddInstruction(MakeUnique<opt::Instruction>(
       context(), SpvOpBranch, 0, 0,
-      std::initializer_list<ir::Operand>{
+      std::initializer_list<opt::Operand>{
           {SPV_OPERAND_TYPE_ID, {new_merge->id()}}}));
   get_def_use_mgr()->AnalyzeInstUse(tail_block->terminator());
   context()->set_instr_block(tail_block->terminator(), tail_block);
@@ -403,27 +405,27 @@ void MergeReturnPass::PredicateBlock(
   uint32_t bool_id = context()->get_type_mgr()->GetId(&bool_type);
   assert(bool_id != 0);
   uint32_t load_id = TakeNextId();
-  block->AddInstruction(MakeUnique<ir::Instruction>(
+  block->AddInstruction(MakeUnique<opt::Instruction>(
       context(), SpvOpLoad, bool_id, load_id,
-      std::initializer_list<ir::Operand>{
+      std::initializer_list<opt::Operand>{
           {SPV_OPERAND_TYPE_ID, {return_flag_->result_id()}}}));
   get_def_use_mgr()->AnalyzeInstDefUse(block->terminator());
   context()->set_instr_block(block->terminator(), block);
 
   // 2. Declare the merge block
   block->AddInstruction(
-      MakeUnique<ir::Instruction>(context(), SpvOpSelectionMerge, 0, 0,
-                                  std::initializer_list<ir::Operand>{
-                                      {SPV_OPERAND_TYPE_ID, {new_merge->id()}},
-                                      {SPV_OPERAND_TYPE_SELECTION_CONTROL,
-                                       {SpvSelectionControlMaskNone}}}));
+      MakeUnique<opt::Instruction>(context(), SpvOpSelectionMerge, 0, 0,
+                                   std::initializer_list<opt::Operand>{
+                                       {SPV_OPERAND_TYPE_ID, {new_merge->id()}},
+                                       {SPV_OPERAND_TYPE_SELECTION_CONTROL,
+                                        {SpvSelectionControlMaskNone}}}));
   get_def_use_mgr()->AnalyzeInstUse(block->terminator());
   context()->set_instr_block(block->terminator(), block);
 
   // 3. Branch to new merge (true) or old body (false)
-  block->AddInstruction(MakeUnique<ir::Instruction>(
+  block->AddInstruction(MakeUnique<opt::Instruction>(
       context(), SpvOpBranchConditional, 0, 0,
-      std::initializer_list<ir::Operand>{
+      std::initializer_list<opt::Operand>{
           {SPV_OPERAND_TYPE_ID, {load_id}},
           {SPV_OPERAND_TYPE_ID, {new_merge->id()}},
           {SPV_OPERAND_TYPE_ID, {old_body->id()}}}));
@@ -444,7 +446,7 @@ void MergeReturnPass::PredicateBlock(
   MarkForNewPhiNodes(new_merge, tail_block);
 }
 
-void MergeReturnPass::RecordReturned(ir::BasicBlock* block) {
+void MergeReturnPass::RecordReturned(opt::BasicBlock* block) {
   if (block->tail()->opcode() != SpvOpReturn &&
       block->tail()->opcode() != SpvOpReturnValue)
     return;
@@ -463,19 +465,19 @@ void MergeReturnPass::RecordReturned(ir::BasicBlock* block) {
     context()->UpdateDefUse(constant_true_);
   }
 
-  std::unique_ptr<ir::Instruction> return_store(new ir::Instruction(
+  std::unique_ptr<opt::Instruction> return_store(new opt::Instruction(
       context(), SpvOpStore, 0, 0,
-      std::initializer_list<ir::Operand>{
+      std::initializer_list<opt::Operand>{
           {SPV_OPERAND_TYPE_ID, {return_flag_->result_id()}},
           {SPV_OPERAND_TYPE_ID, {constant_true_->result_id()}}}));
 
-  ir::Instruction* store_inst =
+  opt::Instruction* store_inst =
       &*block->tail().InsertBefore(std::move(return_store));
   context()->set_instr_block(store_inst, block);
   context()->AnalyzeDefUse(store_inst);
 }
 
-void MergeReturnPass::RecordReturnValue(ir::BasicBlock* block) {
+void MergeReturnPass::RecordReturnValue(opt::BasicBlock* block) {
   auto terminator = *block->tail();
   if (terminator.opcode() != SpvOpReturnValue) {
     return;
@@ -484,13 +486,13 @@ void MergeReturnPass::RecordReturnValue(ir::BasicBlock* block) {
   assert(return_value_ &&
          "Did not generate the variable to hold the return value.");
 
-  std::unique_ptr<ir::Instruction> value_store(new ir::Instruction(
+  std::unique_ptr<opt::Instruction> value_store(new opt::Instruction(
       context(), SpvOpStore, 0, 0,
-      std::initializer_list<ir::Operand>{
+      std::initializer_list<opt::Operand>{
           {SPV_OPERAND_TYPE_ID, {return_value_->result_id()}},
           {SPV_OPERAND_TYPE_ID, {terminator.GetSingleWordInOperand(0u)}}}));
 
-  ir::Instruction* store_inst =
+  opt::Instruction* store_inst =
       &*block->tail().InsertBefore(std::move(value_store));
   context()->set_instr_block(store_inst, block);
   context()->AnalyzeDefUse(store_inst);
@@ -507,14 +509,14 @@ void MergeReturnPass::AddReturnValue() {
       return_type_id, SpvStorageClassFunction);
 
   uint32_t var_id = TakeNextId();
-  std::unique_ptr<ir::Instruction> returnValue(new ir::Instruction(
+  std::unique_ptr<opt::Instruction> returnValue(new opt::Instruction(
       context(), SpvOpVariable, return_ptr_type, var_id,
-      std::initializer_list<ir::Operand>{
+      std::initializer_list<opt::Operand>{
           {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}}}));
 
   auto insert_iter = function_->begin()->begin();
   insert_iter.InsertBefore(std::move(returnValue));
-  ir::BasicBlock* entry_block = &*function_->begin();
+  opt::BasicBlock* entry_block = &*function_->begin();
   return_value_ = &*entry_block->begin();
   context()->AnalyzeDefUse(return_value_);
   context()->set_instr_block(return_value_, entry_block);
@@ -539,26 +541,26 @@ void MergeReturnPass::AddReturnFlag() {
       type_mgr->FindPointerToType(bool_id, SpvStorageClassFunction);
 
   uint32_t var_id = TakeNextId();
-  std::unique_ptr<ir::Instruction> returnFlag(new ir::Instruction(
+  std::unique_ptr<opt::Instruction> returnFlag(new opt::Instruction(
       context(), SpvOpVariable, bool_ptr_id, var_id,
-      std::initializer_list<ir::Operand>{
+      std::initializer_list<opt::Operand>{
           {SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}},
           {SPV_OPERAND_TYPE_ID, {const_false_id}}}));
 
   auto insert_iter = function_->begin()->begin();
 
   insert_iter.InsertBefore(std::move(returnFlag));
-  ir::BasicBlock* entry_block = &*function_->begin();
+  opt::BasicBlock* entry_block = &*function_->begin();
   return_flag_ = &*entry_block->begin();
   context()->AnalyzeDefUse(return_flag_);
   context()->set_instr_block(return_flag_, entry_block);
 }
 
-std::vector<ir::BasicBlock*> MergeReturnPass::CollectReturnBlocks(
-    ir::Function* function) {
-  std::vector<ir::BasicBlock*> return_blocks;
+std::vector<opt::BasicBlock*> MergeReturnPass::CollectReturnBlocks(
+    opt::Function* function) {
+  std::vector<opt::BasicBlock*> return_blocks;
   for (auto& block : *function) {
-    ir::Instruction& terminator = *block.tail();
+    opt::Instruction& terminator = *block.tail();
     if (terminator.opcode() == SpvOpReturn ||
         terminator.opcode() == SpvOpReturnValue) {
       return_blocks.push_back(&block);
@@ -568,7 +570,8 @@ std::vector<ir::BasicBlock*> MergeReturnPass::CollectReturnBlocks(
 }
 
 void MergeReturnPass::MergeReturnBlocks(
-    ir::Function* function, const std::vector<ir::BasicBlock*>& return_blocks) {
+    opt::Function* function,
+    const std::vector<opt::BasicBlock*>& return_blocks) {
   if (return_blocks.size() <= 1) {
     // No work to do.
     return;
@@ -579,7 +582,7 @@ void MergeReturnPass::MergeReturnBlocks(
   auto ret_block_iter = --function->end();
   // Create the PHI for the merged block (if necessary).
   // Create new return.
-  std::vector<ir::Operand> phi_ops;
+  std::vector<opt::Operand> phi_ops;
   for (auto block : return_blocks) {
     if (block->tail()->opcode() == SpvOpReturnValue) {
       phi_ops.push_back(
@@ -592,23 +595,23 @@ void MergeReturnPass::MergeReturnBlocks(
     // Need a PHI node to select the correct return value.
     uint32_t phi_result_id = TakeNextId();
     uint32_t phi_type_id = function->type_id();
-    std::unique_ptr<ir::Instruction> phi_inst(new ir::Instruction(
+    std::unique_ptr<opt::Instruction> phi_inst(new opt::Instruction(
         context(), SpvOpPhi, phi_type_id, phi_result_id, phi_ops));
     ret_block_iter->AddInstruction(std::move(phi_inst));
-    ir::BasicBlock::iterator phiIter = ret_block_iter->tail();
+    opt::BasicBlock::iterator phiIter = ret_block_iter->tail();
 
-    std::unique_ptr<ir::Instruction> return_inst(
-        new ir::Instruction(context(), SpvOpReturnValue, 0u, 0u,
-                            {{SPV_OPERAND_TYPE_ID, {phi_result_id}}}));
+    std::unique_ptr<opt::Instruction> return_inst(
+        new opt::Instruction(context(), SpvOpReturnValue, 0u, 0u,
+                             {{SPV_OPERAND_TYPE_ID, {phi_result_id}}}));
     ret_block_iter->AddInstruction(std::move(return_inst));
-    ir::BasicBlock::iterator ret = ret_block_iter->tail();
+    opt::BasicBlock::iterator ret = ret_block_iter->tail();
 
     // Register the phi def and mark instructions for use updates.
     get_def_use_mgr()->AnalyzeInstDefUse(&*phiIter);
     get_def_use_mgr()->AnalyzeInstDef(&*ret);
   } else {
-    std::unique_ptr<ir::Instruction> return_inst(
-        new ir::Instruction(context(), SpvOpReturn));
+    std::unique_ptr<opt::Instruction> return_inst(
+        new opt::Instruction(context(), SpvOpReturn));
     ret_block_iter->AddInstruction(std::move(return_inst));
   }
 
@@ -626,32 +629,32 @@ void MergeReturnPass::MergeReturnBlocks(
 
 void MergeReturnPass::AddNewPhiNodes() {
   opt::DominatorAnalysis* dom_tree = context()->GetDominatorAnalysis(function_);
-  std::list<ir::BasicBlock*> order;
+  std::list<opt::BasicBlock*> order;
   cfg()->ComputeStructuredOrder(function_, &*function_->begin(), &order);
 
-  for (ir::BasicBlock* bb : order) {
+  for (opt::BasicBlock* bb : order) {
     AddNewPhiNodes(bb, new_merge_nodes_[bb],
                    dom_tree->ImmediateDominator(bb)->id());
   }
 }
 
-void MergeReturnPass::AddNewPhiNodes(ir::BasicBlock* bb, ir::BasicBlock* pred,
+void MergeReturnPass::AddNewPhiNodes(opt::BasicBlock* bb, opt::BasicBlock* pred,
                                      uint32_t header_id) {
   opt::DominatorAnalysis* dom_tree = context()->GetDominatorAnalysis(function_);
   // Insert as a stopping point.  We do not have to add anything in the block or
   // above because the header dominates |bb|.
 
-  ir::BasicBlock* current_bb = pred;
+  opt::BasicBlock* current_bb = pred;
   while (current_bb != nullptr && current_bb->id() != header_id) {
-    for (ir::Instruction& inst : *current_bb) {
+    for (opt::Instruction& inst : *current_bb) {
       CreatePhiNodesForInst(bb, pred->id(), inst);
     }
     current_bb = dom_tree->ImmediateDominator(current_bb);
   }
 }
 
-void MergeReturnPass::MarkForNewPhiNodes(ir::BasicBlock* block,
-                                         ir::BasicBlock* single_original_pred) {
+void MergeReturnPass::MarkForNewPhiNodes(
+    opt::BasicBlock* block, opt::BasicBlock* single_original_pred) {
   new_merge_nodes_[block] = single_original_pred;
 }
 

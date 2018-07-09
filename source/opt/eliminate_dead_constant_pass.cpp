@@ -26,22 +26,22 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
-  std::unordered_set<ir::Instruction*> working_list;
+Pass::Status EliminateDeadConstantPass::Process(opt::IRContext* irContext) {
+  std::unordered_set<opt::Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
   // working list and count number of real uses for constants. Uses in
   // annotation instructions do not count.
-  std::unordered_map<ir::Instruction*, size_t> use_counts;
-  std::vector<ir::Instruction*> constants = irContext->GetConstants();
+  std::unordered_map<opt::Instruction*, size_t> use_counts;
+  std::vector<opt::Instruction*> constants = irContext->GetConstants();
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
     size_t count = 0;
     irContext->get_def_use_mgr()->ForEachUse(
-        const_id, [&count](ir::Instruction* user, uint32_t index) {
+        const_id, [&count](opt::Instruction* user, uint32_t index) {
           (void)index;
           SpvOp op = user->opcode();
-          if (!(ir::IsAnnotationInst(op) || ir::IsDebug1Inst(op) ||
-                ir::IsDebug2Inst(op) || ir::IsDebug3Inst(op))) {
+          if (!(opt::IsAnnotationInst(op) || opt::IsDebug1Inst(op) ||
+                opt::IsDebug2Inst(op) || opt::IsDebug3Inst(op))) {
             ++count;
           }
         });
@@ -53,9 +53,9 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
 
   // Start from the constants with 0 uses, back trace through the def-use chain
   // to find all dead constants.
-  std::unordered_set<ir::Instruction*> dead_consts;
+  std::unordered_set<opt::Instruction*> dead_consts;
   while (!working_list.empty()) {
-    ir::Instruction* inst = *working_list.begin();
+    opt::Instruction* inst = *working_list.begin();
     // Back propagate if the instruction contains IDs in its operands.
     switch (inst->opcode()) {
       case SpvOp::SpvOpConstantComposite:
@@ -68,7 +68,7 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
             continue;
           }
           uint32_t operand_id = inst->GetSingleWordInOperand(i);
-          ir::Instruction* def_inst =
+          opt::Instruction* def_inst =
               irContext->get_def_use_mgr()->GetDef(operand_id);
           // If the use_count does not have any count for the def_inst,
           // def_inst must not be a constant, and should be ignored here.

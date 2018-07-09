@@ -23,13 +23,13 @@
 namespace spvtools {
 namespace opt {
 
-using ir::Instruction;
-using ir::Operand;
+using opt::Instruction;
+using opt::Operand;
 
 using Words = std::vector<uint32_t>;
 using OrderedUsesMap = std::unordered_map<uint32_t, Words>;
 
-Pass::Status FlattenDecorationPass::Process(ir::IRContext* c) {
+Pass::Status FlattenDecorationPass::Process(opt::IRContext* c) {
   InitializeProcessing(c);
 
   bool modified = false;

@@ -43,12 +43,12 @@ class SSARewriter {
   //
   // It returns true if function |fp| was modified.  Otherwise, it returns
   // false.
-  bool RewriteFunctionIntoSSA(ir::Function* fp);
+  bool RewriteFunctionIntoSSA(opt::Function* fp);
 
  private:
   class PhiCandidate {
    public:
-    explicit PhiCandidate(uint32_t var, uint32_t result, ir::BasicBlock* block)
+    explicit PhiCandidate(uint32_t var, uint32_t result, opt::BasicBlock* block)
         : var_id_(var),
           result_id_(result),
           bb_(block),
@@ -59,7 +59,7 @@ class SSARewriter {
 
     uint32_t var_id() const { return var_id_; }
     uint32_t result_id() const { return result_id_; }
-    ir::BasicBlock* bb() const { return bb_; }
+    opt::BasicBlock* bb() const { return bb_; }
     std::vector<uint32_t>& phi_args() { return phi_args_; }
     const std::vector<uint32_t>& phi_args() const { return phi_args_; }
     uint32_t copy_of() const { return copy_of_; }
@@ -81,7 +81,7 @@ class SSARewriter {
 
     // Pretty prints this Phi candidate into a string and returns it. |cfg| is
     // needed to lookup basic block predecessors.
-    std::string PrettyPrint(const ir::CFG* cfg) const;
+    std::string PrettyPrint(const opt::CFG* cfg) const;
 
     // Registers |operand_id| as a user of this Phi candidate.
     void AddUser(uint32_t operand_id) { users_.push_back(operand_id); }
@@ -95,7 +95,7 @@ class SSARewriter {
     uint32_t result_id_;
 
     // Basic block to hold this Phi.
-    ir::BasicBlock* bb_;
+    opt::BasicBlock* bb_;
 
     // Vector of operands for every predecessor block of |bb|.  This vector is
     // organized so that the Ith slot contains the argument coming from the Ith
@@ -117,21 +117,21 @@ class SSARewriter {
   };
 
   // Type used to keep track of store operations in each basic block.
-  typedef std::unordered_map<ir::BasicBlock*,
+  typedef std::unordered_map<opt::BasicBlock*,
                              std::unordered_map<uint32_t, uint32_t>>
       BlockDefsMap;
 
   // Generates all the SSA rewriting decisions for basic block |bb|.  This
   // populates the Phi candidate table (|phi_candidate_|) and the load
   // replacement table (|load_replacement_).
-  void GenerateSSAReplacements(ir::BasicBlock* bb);
+  void GenerateSSAReplacements(opt::BasicBlock* bb);
 
   // Seals block |bb|.  Sealing a basic block means |bb| and all its
   // predecessors of |bb| have been scanned for loads/stores.
-  void SealBlock(ir::BasicBlock* bb);
+  void SealBlock(opt::BasicBlock* bb);
 
   // Returns true if |bb| has been sealed.
-  bool IsBlockSealed(ir::BasicBlock* bb) {
+  bool IsBlockSealed(opt::BasicBlock* bb) {
     return sealed_blocks_.count(bb) != 0;
   }
 
@@ -183,7 +183,7 @@ class SSARewriter {
 
   // Registers a definition for variable |var_id| in basic block |bb| with
   // value |val_id|.
-  void WriteVariable(uint32_t var_id, ir::BasicBlock* bb, uint32_t val_id) {
+  void WriteVariable(uint32_t var_id, opt::BasicBlock* bb, uint32_t val_id) {
     defs_at_block_[bb][var_id] = val_id;
   }
 
@@ -191,13 +191,13 @@ class SSARewriter {
   // the variable ID being stored into, determines whether the variable is an
   // SSA-target variable, and, if it is, it stores its value in the
   // |defs_at_block_| map.
-  void ProcessStore(ir::Instruction* inst, ir::BasicBlock* bb);
+  void ProcessStore(opt::Instruction* inst, opt::BasicBlock* bb);
 
   // Processes the load operation |inst| in basic block |bb|. This extracts
   // the variable ID being stored into, determines whether the variable is an
   // SSA-target variable, and, if it is, it reads its reaching definition by
   // calling |GetReachingDef|.
-  void ProcessLoad(ir::Instruction* inst, ir::BasicBlock* bb);
+  void ProcessLoad(opt::Instruction* inst, opt::BasicBlock* bb);
 
   // Reads the current definition for variable |var_id| in basic block |bb|.
   // If |var_id| is not defined in block |bb| it walks up the predecessors of
@@ -205,7 +205,7 @@ class SSARewriter {
   //
   // It returns the value for |var_id| from the RHS of the current reaching
   // definition for |var_id|.
-  uint32_t GetReachingDef(uint32_t var_id, ir::BasicBlock* bb);
+  uint32_t GetReachingDef(uint32_t var_id, opt::BasicBlock* bb);
 
   // Adds arguments to |phi_candidate| by getting the reaching definition of
   // |phi_candidate|'s variable on each of the predecessors of its basic
@@ -223,7 +223,7 @@ class SSARewriter {
   // during rewriting.
   //
   // Once the candidate Phi is created, it returns its ID.
-  PhiCandidate& CreatePhiCandidate(uint32_t var_id, ir::BasicBlock* bb);
+  PhiCandidate& CreatePhiCandidate(uint32_t var_id, opt::BasicBlock* bb);
 
   // Attempts to remove a trivial Phi candidate |phi_cand|. Trivial Phis are
   // those that only reference themselves and one other value |val| any number
@@ -277,7 +277,7 @@ class SSARewriter {
   std::unordered_map<uint32_t, uint32_t> load_replacement_;
 
   // Set of blocks that have been sealed already.
-  std::unordered_set<ir::BasicBlock*> sealed_blocks_;
+  std::unordered_set<opt::BasicBlock*> sealed_blocks_;
 
   // Memory pass requesting the SSA rewriter.
   MemPass* pass_;
@@ -291,11 +291,11 @@ class SSARewritePass : public MemPass {
  public:
   SSARewritePass() = default;
   const char* name() const override { return "ssa-rewrite"; }
-  Status Process(ir::IRContext* c) override;
+  Status Process(opt::IRContext* c) override;
 
  private:
   // Initializes the pass.
-  void Initialize(ir::IRContext* c);
+  void Initialize(opt::IRContext* c);
 };
 
 }  // namespace opt

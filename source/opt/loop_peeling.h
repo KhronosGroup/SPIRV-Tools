@@ -75,8 +75,8 @@ class LoopPeeling {
   // |loop_iteration_count| and start at 0 and increase by step of one at each
   // iteration. The value nullptr is interpreted as no suitable variable exists
   // and one will be created.
-  LoopPeeling(ir::Loop* loop, ir::Instruction* loop_iteration_count,
-              ir::Instruction* canonical_induction_variable = nullptr)
+  LoopPeeling(opt::Loop* loop, opt::Instruction* loop_iteration_count,
+              opt::Instruction* canonical_induction_variable = nullptr)
       : context_(loop->GetContext()),
         loop_utils_(loop->GetContext(), loop),
         loop_(loop),
@@ -115,7 +115,7 @@ class LoopPeeling {
   // This restriction will not apply if a loop rotate is applied before (i.e.
   // becomes a do-while loop).
   bool CanPeelLoop() const {
-    ir::CFG& cfg = *context_->cfg();
+    opt::CFG& cfg = *context_->cfg();
 
     if (!loop_iteration_count_) {
       return false;
@@ -140,7 +140,7 @@ class LoopPeeling {
     }
 
     return !std::any_of(exit_value_.cbegin(), exit_value_.cend(),
-                        [](std::pair<uint32_t, ir::Instruction*> it) {
+                        [](std::pair<uint32_t, opt::Instruction*> it) {
                           return it.second == nullptr;
                         });
   }
@@ -154,31 +154,31 @@ class LoopPeeling {
   void PeelAfter(uint32_t factor);
 
   // Returns the cloned loop.
-  ir::Loop* GetClonedLoop() { return cloned_loop_; }
+  opt::Loop* GetClonedLoop() { return cloned_loop_; }
   // Returns the original loop.
-  ir::Loop* GetOriginalLoop() { return loop_; }
+  opt::Loop* GetOriginalLoop() { return loop_; }
 
  private:
-  ir::IRContext* context_;
+  opt::IRContext* context_;
   LoopUtils loop_utils_;
   // The original loop.
-  ir::Loop* loop_;
+  opt::Loop* loop_;
   // The initial |loop_| upper bound.
-  ir::Instruction* loop_iteration_count_;
+  opt::Instruction* loop_iteration_count_;
   // The int type to use for the canonical_induction_variable_.
   analysis::Integer* int_type_;
   // The cloned loop.
-  ir::Loop* cloned_loop_;
+  opt::Loop* cloned_loop_;
   // This is set to true when the exit and back-edge branch instruction is the
   // same.
   bool do_while_form_;
   // The canonical induction variable from the original loop if it exists.
-  ir::Instruction* original_loop_canonical_induction_variable_;
+  opt::Instruction* original_loop_canonical_induction_variable_;
   // The canonical induction variable of the cloned loop. The induction variable
   // is initialized to 0 and incremented by step of 1.
-  ir::Instruction* canonical_induction_variable_;
+  opt::Instruction* canonical_induction_variable_;
   // Map between loop iterators and exit values. Loop iterators
-  std::unordered_map<uint32_t, ir::Instruction*> exit_value_;
+  std::unordered_map<uint32_t, opt::Instruction*> exit_value_;
 
   // Duplicate |loop_| and place the new loop before the cloned loop. Iterating
   // values from the cloned loop are then connected to the original loop as
@@ -193,16 +193,16 @@ class LoopPeeling {
   // Fixes the exit condition of the before loop. The function calls
   // |condition_builder| to get the condition to use in the conditional branch
   // of the loop exit. The loop will be exited if the condition evaluate to
-  // true. |condition_builder| takes an ir::Instruction* that represent the
+  // true. |condition_builder| takes an opt::Instruction* that represent the
   // insertion point.
   void FixExitCondition(
-      const std::function<uint32_t(ir::Instruction*)>& condition_builder);
+      const std::function<uint32_t(opt::Instruction*)>& condition_builder);
 
   // Gathers all operations involved in the update of |iterator| into
   // |operations|.
   void GetIteratorUpdateOperations(
-      const ir::Loop* loop, ir::Instruction* iterator,
-      std::unordered_set<ir::Instruction*>* operations);
+      const opt::Loop* loop, opt::Instruction* iterator,
+      std::unordered_set<opt::Instruction*>* operations);
 
   // Gathers exiting iterator values. The function builds a map between each
   // iterating value in the loop (a phi instruction in the loop header) and its
@@ -216,14 +216,14 @@ class LoopPeeling {
 
   // Creates a new basic block and insert it between |bb| and the predecessor of
   // |bb|.
-  ir::BasicBlock* CreateBlockBefore(ir::BasicBlock* bb);
+  opt::BasicBlock* CreateBlockBefore(opt::BasicBlock* bb);
 
   // Inserts code to only execute |loop| only if the given |condition| is true.
   // |if_merge| is a suitable basic block to be used by the if condition as
   // merge block.
   // The function returns the if block protecting the loop.
-  ir::BasicBlock* ProtectLoop(ir::Loop* loop, ir::Instruction* condition,
-                              ir::BasicBlock* if_merge);
+  opt::BasicBlock* ProtectLoop(opt::Loop* loop, opt::Instruction* condition,
+                               opt::BasicBlock* if_merge);
 };
 
 // Implements a loop peeling optimization.
@@ -241,7 +241,7 @@ class LoopPeelingPass : public Pass {
 
   // Holds some statistics about peeled function.
   struct LoopPeelingStats {
-    std::vector<std::tuple<const ir::Loop*, PeelDirection, uint32_t>>
+    std::vector<std::tuple<const opt::Loop*, PeelDirection, uint32_t>>
         peeled_loops_;
   };
 
@@ -262,7 +262,7 @@ class LoopPeelingPass : public Pass {
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes have been made to the modue.
-  Pass::Status Process(ir::IRContext* context) override;
+  Pass::Status Process(opt::IRContext* context) override;
 
  private:
   // Describes the peeling direction.
@@ -277,7 +277,7 @@ class LoopPeelingPass : public Pass {
    public:
     using Direction = std::pair<PeelDirection, uint32_t>;
 
-    LoopPeelingInfo(ir::Loop* loop, size_t loop_max_iterations,
+    LoopPeelingInfo(opt::Loop* loop, size_t loop_max_iterations,
                     opt::ScalarEvolutionAnalysis* scev_analysis)
         : context_(loop->GetContext()),
           loop_(loop),
@@ -288,15 +288,15 @@ class LoopPeelingPass : public Pass {
     // make the conditional branch of the basic block |bb| an unconditional
     // branch. If |bb|'s terminator is not a conditional branch or the condition
     // is not workable then it returns PeelDirection::kNone and a 0 factor.
-    Direction GetPeelingInfo(ir::BasicBlock* bb) const;
+    Direction GetPeelingInfo(opt::BasicBlock* bb) const;
 
    private:
     // Returns the id of the loop invariant operand of the conditional
     // expression |condition|. It returns if no operand is invariant.
-    uint32_t GetFirstLoopInvariantOperand(ir::Instruction* condition) const;
+    uint32_t GetFirstLoopInvariantOperand(opt::Instruction* condition) const;
     // Returns the id of the non loop invariant operand of the conditional
     // expression |condition|. It returns if all operands are invariant.
-    uint32_t GetFirstNonLoopInvariantOperand(ir::Instruction* condition) const;
+    uint32_t GetFirstNonLoopInvariantOperand(opt::Instruction* condition) const;
 
     // Returns the value of |rec| at the first loop iteration.
     SExpression GetValueAtFirstIteration(SERecurrentNode* rec) const;
@@ -316,16 +316,16 @@ class LoopPeelingPass : public Pass {
     static Direction GetNoneDirection() {
       return Direction{LoopPeelingPass::PeelDirection::kNone, 0};
     }
-    ir::IRContext* context_;
-    ir::Loop* loop_;
+    opt::IRContext* context_;
+    opt::Loop* loop_;
     opt::ScalarEvolutionAnalysis* scev_analysis_;
     size_t loop_max_iterations_;
   };
   // Peel profitable loops in |f|.
-  bool ProcessFunction(ir::Function* f);
+  bool ProcessFunction(opt::Function* f);
   // Peel |loop| if profitable.
-  std::pair<bool, ir::Loop*> ProcessLoop(ir::Loop* loop,
-                                         CodeMetrics* loop_size);
+  std::pair<bool, opt::Loop*> ProcessLoop(opt::Loop* loop,
+                                          CodeMetrics* loop_size);
 
   static size_t code_grow_threshold_;
   LoopPeelingStats* stats_;

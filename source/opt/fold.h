@@ -66,7 +66,7 @@ class InstructionFolder {
 
   // Returns true if |FoldInstructionToConstant| could fold an instruction whose
   // result type is |type_inst|.
-  bool IsFoldableType(ir::Instruction* type_inst) const;
+  bool IsFoldableType(opt::Instruction* type_inst) const;
 
   // Tries to fold |inst| to a single constant, when the input ids to |inst|
   // have been substituted using |id_map|.  Returns a pointer to the OpConstant*
@@ -77,8 +77,8 @@ class InstructionFolder {
   // can be used for things like CCP where it is known that some ids contain a
   // constant, but the instruction itself has not been updated yet.  This can
   // map those ids to the appropriate constants.
-  ir::Instruction* FoldInstructionToConstant(
-      ir::Instruction* inst, std::function<uint32_t(uint32_t)> id_map) const;
+  opt::Instruction* FoldInstructionToConstant(
+      opt::Instruction* inst, std::function<uint32_t(uint32_t)> id_map) const;
   // Returns true if |inst| can be folded into a simpler instruction.
   // If |inst| can be simplified, |inst| is overwritten with the simplified
   // instruction reusing the same result id.
@@ -90,7 +90,7 @@ class InstructionFolder {
   // 1) An OpPhi becomes and OpCopyObject - If there are OpPhi instruction after
   //    |inst| in a basic block then this is invalid.  The caller must fix this
   //    up.
-  bool FoldInstruction(ir::Instruction* inst) const;
+  bool FoldInstruction(opt::Instruction* inst) const;
 
   // Return true if this opcode has a const folding rule associtated with it.
   bool HasConstFoldingRule(SpvOp opcode) const {
@@ -126,7 +126,7 @@ class InstructionFolder {
   uint32_t OperateWords(SpvOp opcode,
                         const std::vector<uint32_t>& operand_words) const;
 
-  bool FoldInstructionInternal(ir::Instruction* inst) const;
+  bool FoldInstructionInternal(opt::Instruction* inst) const;
 
   // Returns true if |inst| is a binary operation that takes two integers as
   // parameters and folds to a constant that can be represented as an unsigned
@@ -134,7 +134,7 @@ class InstructionFolder {
   // folded, the resulting value is returned in |*result|.  Valid result types
   // for the instruction are any integer (signed or unsigned) with 32-bits or
   // less, or a boolean value.
-  bool FoldBinaryIntegerOpToConstant(ir::Instruction* inst,
+  bool FoldBinaryIntegerOpToConstant(opt::Instruction* inst,
                                      std::function<uint32_t(uint32_t)> id_map,
                                      uint32_t* result) const;
 
@@ -142,7 +142,7 @@ class InstructionFolder {
   // folds
   // to a constant boolean value when the ids have been replaced using |id_map|.
   // If |inst| can be folded, the result value is returned in |*result|.
-  bool FoldBinaryBooleanOpToConstant(ir::Instruction* inst,
+  bool FoldBinaryBooleanOpToConstant(opt::Instruction* inst,
                                      std::function<uint32_t(uint32_t)> id_map,
                                      uint32_t* result) const;
 
@@ -150,7 +150,7 @@ class InstructionFolder {
   // substituted using id_map.  If it can, the value is returned in |result|. If
   // not, |result| is unchanged.  It is assumed that not all operands are
   // constant.  Those cases are handled by |FoldScalar|.
-  bool FoldIntegerOpToConstant(ir::Instruction* inst,
+  bool FoldIntegerOpToConstant(opt::Instruction* inst,
                                std::function<uint32_t(uint32_t)> id_map,
                                uint32_t* result) const;
 

@@ -31,7 +31,7 @@
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 class Function;
 class IRContext;
@@ -458,7 +458,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 // to provide the correct interpretation of types, constants, etc.
 //
 // Disassembly uses raw ids (not pretty printed names).
-std::ostream& operator<<(std::ostream& str, const ir::Instruction& inst);
+std::ostream& operator<<(std::ostream& str, const opt::Instruction& inst);
 
 inline bool Instruction::operator==(const Instruction& other) const {
   return unique_id() == other.unique_id();
@@ -709,7 +709,7 @@ bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode()); }
 bool Instruction::IsConstant() const {
   return IsCompileTimeConstantInst(opcode());
 }
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_INSTRUCTION_H_

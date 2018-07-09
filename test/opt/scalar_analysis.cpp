@@ -99,18 +99,18 @@ TEST_F(ScalarAnalysisTest, BasicEvolutionTest) {
                OpFunctionEnd
   )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 4);
+  const opt::Function* f = spvtest::GetFunction(module, 4);
   opt::ScalarEvolutionAnalysis analysis{context.get()};
 
-  const ir::Instruction* store = nullptr;
-  const ir::Instruction* load = nullptr;
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 11)) {
+  const opt::Instruction* store = nullptr;
+  const opt::Instruction* load = nullptr;
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 11)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store = &inst;
     }
@@ -122,10 +122,10 @@ TEST_F(ScalarAnalysisTest, BasicEvolutionTest) {
   EXPECT_NE(load, nullptr);
   EXPECT_NE(store, nullptr);
 
-  ir::Instruction* access_chain =
+  opt::Instruction* access_chain =
       context->get_def_use_mgr()->GetDef(load->GetSingleWordInOperand(0));
 
-  ir::Instruction* child = context->get_def_use_mgr()->GetDef(
+  opt::Instruction* child = context->get_def_use_mgr()->GetDef(
       access_chain->GetSingleWordInOperand(1));
   const opt::SENode* node = analysis.AnalyzeInstruction(child);
 
@@ -228,17 +228,17 @@ TEST_F(ScalarAnalysisTest, LoadTest) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
+  const opt::Function* f = spvtest::GetFunction(module, 2);
   opt::ScalarEvolutionAnalysis analysis{context.get()};
 
-  const ir::Instruction* load = nullptr;
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 28)) {
+  const opt::Instruction* load = nullptr;
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 28)) {
     if (inst.opcode() == SpvOp::SpvOpLoad) {
       load = &inst;
     }
@@ -246,10 +246,10 @@ TEST_F(ScalarAnalysisTest, LoadTest) {
 
   EXPECT_NE(load, nullptr);
 
-  ir::Instruction* access_chain =
+  opt::Instruction* access_chain =
       context->get_def_use_mgr()->GetDef(load->GetSingleWordInOperand(0));
 
-  ir::Instruction* child = context->get_def_use_mgr()->GetDef(
+  opt::Instruction* child = context->get_def_use_mgr()->GetDef(
       access_chain->GetSingleWordInOperand(1));
   //  const opt::SENode* node =
   //  analysis.GetNodeFromInstruction(child->unique_id());
@@ -345,17 +345,17 @@ TEST_F(ScalarAnalysisTest, SimplifySimple) {
                OpFunctionEnd
     )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
+  const opt::Function* f = spvtest::GetFunction(module, 2);
   opt::ScalarEvolutionAnalysis analysis{context.get()};
 
-  const ir::Instruction* load = nullptr;
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 21)) {
+  const opt::Instruction* load = nullptr;
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 21)) {
     if (inst.opcode() == SpvOp::SpvOpLoad && inst.result_id() == 33) {
       load = &inst;
     }
@@ -363,10 +363,10 @@ TEST_F(ScalarAnalysisTest, SimplifySimple) {
 
   EXPECT_NE(load, nullptr);
 
-  ir::Instruction* access_chain =
+  opt::Instruction* access_chain =
       context->get_def_use_mgr()->GetDef(load->GetSingleWordInOperand(0));
 
-  ir::Instruction* child = context->get_def_use_mgr()->GetDef(
+  opt::Instruction* child = context->get_def_use_mgr()->GetDef(
       access_chain->GetSingleWordInOperand(1));
 
   const opt::SENode* node = analysis.AnalyzeInstruction(child);
@@ -496,21 +496,21 @@ TEST_F(ScalarAnalysisTest, Simplify) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 4);
+  const opt::Function* f = spvtest::GetFunction(module, 4);
   opt::ScalarEvolutionAnalysis analysis{context.get()};
 
-  const ir::Instruction* loads[6];
-  const ir::Instruction* stores[6];
+  const opt::Instruction* loads[6];
+  const opt::Instruction* stores[6];
   int load_count = 0;
   int store_count = 0;
 
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 22)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 22)) {
     if (inst.opcode() == SpvOp::SpvOpLoad) {
       loads[load_count] = &inst;
       ++load_count;
@@ -524,10 +524,10 @@ TEST_F(ScalarAnalysisTest, Simplify) {
   EXPECT_EQ(load_count, 6);
   EXPECT_EQ(store_count, 6);
 
-  ir::Instruction* load_access_chain;
-  ir::Instruction* store_access_chain;
-  ir::Instruction* load_child;
-  ir::Instruction* store_child;
+  opt::Instruction* load_access_chain;
+  opt::Instruction* store_access_chain;
+  opt::Instruction* load_child;
+  opt::Instruction* store_child;
   opt::SENode* load_node;
   opt::SENode* store_node;
   opt::SENode* subtract_node;
@@ -735,21 +735,21 @@ TEST_F(ScalarAnalysisTest, SimplifyMultiplyInductions) {
                OpReturn
                OpFunctionEnd
     )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
+  const opt::Function* f = spvtest::GetFunction(module, 2);
   opt::ScalarEvolutionAnalysis analysis{context.get()};
 
-  const ir::Instruction* loads[2] = {nullptr, nullptr};
-  const ir::Instruction* stores[2] = {nullptr, nullptr};
+  const opt::Instruction* loads[2] = {nullptr, nullptr};
+  const opt::Instruction* stores[2] = {nullptr, nullptr};
   int load_count = 0;
   int store_count = 0;
 
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 31)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 31)) {
     if (inst.opcode() == SpvOp::SpvOpLoad) {
       loads[load_count] = &inst;
       ++load_count;
@@ -763,14 +763,14 @@ TEST_F(ScalarAnalysisTest, SimplifyMultiplyInductions) {
   EXPECT_EQ(load_count, 2);
   EXPECT_EQ(store_count, 2);
 
-  ir::Instruction* load_access_chain =
+  opt::Instruction* load_access_chain =
       context->get_def_use_mgr()->GetDef(loads[0]->GetSingleWordInOperand(0));
-  ir::Instruction* store_access_chain =
+  opt::Instruction* store_access_chain =
       context->get_def_use_mgr()->GetDef(stores[0]->GetSingleWordInOperand(0));
 
-  ir::Instruction* load_child = context->get_def_use_mgr()->GetDef(
+  opt::Instruction* load_child = context->get_def_use_mgr()->GetDef(
       load_access_chain->GetSingleWordInOperand(1));
-  ir::Instruction* store_child = context->get_def_use_mgr()->GetDef(
+  opt::Instruction* store_child = context->get_def_use_mgr()->GetDef(
       store_access_chain->GetSingleWordInOperand(1));
 
   opt::SENode* store_node = analysis.AnalyzeInstruction(store_child);
@@ -872,19 +872,19 @@ TEST_F(ScalarAnalysisTest, SimplifyNegativeSteps) {
                OpReturn
                OpFunctionEnd
     )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
+  const opt::Function* f = spvtest::GetFunction(module, 2);
   opt::ScalarEvolutionAnalysis analysis{context.get()};
 
-  const ir::Instruction* loads[1] = {nullptr};
+  const opt::Instruction* loads[1] = {nullptr};
   int load_count = 0;
 
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
     if (inst.opcode() == SpvOp::SpvOpLoad) {
       loads[load_count] = &inst;
       ++load_count;
@@ -893,9 +893,9 @@ TEST_F(ScalarAnalysisTest, SimplifyNegativeSteps) {
 
   EXPECT_EQ(load_count, 1);
 
-  ir::Instruction* load_access_chain =
+  opt::Instruction* load_access_chain =
       context->get_def_use_mgr()->GetDef(loads[0]->GetSingleWordInOperand(0));
-  ir::Instruction* load_child = context->get_def_use_mgr()->GetDef(
+  opt::Instruction* load_child = context->get_def_use_mgr()->GetDef(
       load_access_chain->GetSingleWordInOperand(1));
 
   opt::SENode* load_node = analysis.AnalyzeInstruction(load_child);
@@ -1017,19 +1017,19 @@ TEST_F(ScalarAnalysisTest, SimplifyInductionsAndLoads) {
                OpReturn
                OpFunctionEnd
     )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
+  const opt::Function* f = spvtest::GetFunction(module, 2);
   opt::ScalarEvolutionAnalysis analysis{context.get()};
 
-  std::vector<const ir::Instruction*> loads{};
-  std::vector<const ir::Instruction*> stores{};
+  std::vector<const opt::Instruction*> loads{};
+  std::vector<const opt::Instruction*> stores{};
 
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
     if (inst.opcode() == SpvOp::SpvOpLoad) {
       loads.push_back(&inst);
     }
@@ -1041,20 +1041,20 @@ TEST_F(ScalarAnalysisTest, SimplifyInductionsAndLoads) {
   EXPECT_EQ(loads.size(), 3u);
   EXPECT_EQ(stores.size(), 2u);
   {
-    ir::Instruction* store_access_chain = context->get_def_use_mgr()->GetDef(
+    opt::Instruction* store_access_chain = context->get_def_use_mgr()->GetDef(
         stores[0]->GetSingleWordInOperand(0));
 
-    ir::Instruction* store_child = context->get_def_use_mgr()->GetDef(
+    opt::Instruction* store_child = context->get_def_use_mgr()->GetDef(
         store_access_chain->GetSingleWordInOperand(1));
 
     opt::SENode* store_node = analysis.AnalyzeInstruction(store_child);
 
     opt::SENode* store_simplified = analysis.SimplifyExpression(store_node);
 
-    ir::Instruction* load_access_chain =
+    opt::Instruction* load_access_chain =
         context->get_def_use_mgr()->GetDef(loads[1]->GetSingleWordInOperand(0));
 
-    ir::Instruction* load_child = context->get_def_use_mgr()->GetDef(
+    opt::Instruction* load_child = context->get_def_use_mgr()->GetDef(
         load_access_chain->GetSingleWordInOperand(1));
 
     opt::SENode* load_node = analysis.AnalyzeInstruction(load_child);
@@ -1082,18 +1082,18 @@ TEST_F(ScalarAnalysisTest, SimplifyInductionsAndLoads) {
   }
 
   {
-    ir::Instruction* store_access_chain = context->get_def_use_mgr()->GetDef(
+    opt::Instruction* store_access_chain = context->get_def_use_mgr()->GetDef(
         stores[1]->GetSingleWordInOperand(0));
 
-    ir::Instruction* store_child = context->get_def_use_mgr()->GetDef(
+    opt::Instruction* store_child = context->get_def_use_mgr()->GetDef(
         store_access_chain->GetSingleWordInOperand(1));
     opt::SENode* store_node = analysis.AnalyzeInstruction(store_child);
     opt::SENode* store_simplified = analysis.SimplifyExpression(store_node);
 
-    ir::Instruction* load_access_chain =
+    opt::Instruction* load_access_chain =
         context->get_def_use_mgr()->GetDef(loads[2]->GetSingleWordInOperand(0));
 
-    ir::Instruction* load_child = context->get_def_use_mgr()->GetDef(
+    opt::Instruction* load_child = context->get_def_use_mgr()->GetDef(
         load_access_chain->GetSingleWordInOperand(1));
 
     opt::SENode* load_node = analysis.AnalyzeInstruction(load_child);
@@ -1191,18 +1191,18 @@ TEST_F(ScalarAnalysisTest, InductionWithVariantStep) {
                OpReturn
                OpFunctionEnd
   )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const ir::Function* f = spvtest::GetFunction(module, 2);
+  const opt::Function* f = spvtest::GetFunction(module, 2);
   opt::ScalarEvolutionAnalysis analysis{context.get()};
 
-  std::vector<const ir::Instruction*> phis{};
+  std::vector<const opt::Instruction*> phis{};
 
-  for (const ir::Instruction& inst : *spvtest::GetBasicBlock(f, 21)) {
+  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 21)) {
     if (inst.opcode() == SpvOp::SpvOpPhi) {
       phis.push_back(&inst);
     }

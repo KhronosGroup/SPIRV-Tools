@@ -32,7 +32,7 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-TypeManager::TypeManager(const MessageConsumer& consumer, ir::IRContext* c)
+TypeManager::TypeManager(const MessageConsumer& consumer, opt::IRContext* c)
     : consumer_(consumer), context_(c) {
   AnalyzeTypes(*c->module());
 }
@@ -61,7 +61,7 @@ uint32_t TypeManager::GetId(const Type* type) const {
   return 0;
 }
 
-void TypeManager::AnalyzeTypes(const ir::Module& module) {
+void TypeManager::AnalyzeTypes(const opt::Module& module) {
   // First pass through the types.  Any types that reference a forward pointer
   // (directly or indirectly) are incomplete, and are added to incomplete types.
   for (const auto* inst : module.GetTypes()) {
@@ -130,7 +130,7 @@ void TypeManager::AnalyzeTypes(const ir::Module& module) {
   // Add the remaining incomplete types to the type pool.
   for (auto& type : incomplete_types_) {
     if (type.type() && !type.type()->AsForwardPointer()) {
-      std::vector<ir::Instruction*> decorations =
+      std::vector<opt::Instruction*> decorations =
           context()->get_decoration_mgr()->GetDecorationsFor(type.id(), true);
       for (auto dec : decorations) {
         AttachDecoration(*dec, type.type());
@@ -200,14 +200,15 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
   uint32_t id = GetId(type);
   if (id != 0) return id;
 
-  std::unique_ptr<ir::Instruction> typeInst;
+  std::unique_ptr<opt::Instruction> typeInst;
   id = context()->TakeNextId();
   RegisterType(id, *type);
   switch (type->kind()) {
-#define DefineParameterlessCase(kind)                                          \
-  case Type::k##kind:                                                          \
-    typeInst.reset(new ir::Instruction(context(), SpvOpType##kind, 0, id,      \
-                                       std::initializer_list<ir::Operand>{})); \
+#define DefineParameterlessCase(kind)                                 \
+  case Type::k##kind:                                                 \
+    typeInst.reset(                                                   \
+        new opt::Instruction(context(), SpvOpType##kind, 0, id,       \
+                             std::initializer_list<opt::Operand>{})); \
     break;
     DefineParameterlessCase(Void);
     DefineParameterlessCase(Bool);
@@ -220,45 +221,45 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
     DefineParameterlessCase(NamedBarrier);
 #undef DefineParameterlessCase
     case Type::kInteger:
-      typeInst.reset(new ir::Instruction(
+      typeInst.reset(new opt::Instruction(
           context(), SpvOpTypeInt, 0, id,
-          std::initializer_list<ir::Operand>{
+          std::initializer_list<opt::Operand>{
               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {type->AsInteger()->width()}},
               {SPV_OPERAND_TYPE_LITERAL_INTEGER,
                {(type->AsInteger()->IsSigned() ? 1u : 0u)}}}));
       break;
     case Type::kFloat:
-      typeInst.reset(new ir::Instruction(
+      typeInst.reset(new opt::Instruction(
           context(), SpvOpTypeFloat, 0, id,
-          std::initializer_list<ir::Operand>{
+          std::initializer_list<opt::Operand>{
               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {type->AsFloat()->width()}}}));
       break;
     case Type::kVector: {
       uint32_t subtype = GetTypeInstruction(type->AsVector()->element_type());
       typeInst.reset(
-          new ir::Instruction(context(), SpvOpTypeVector, 0, id,
-                              std::initializer_list<ir::Operand>{
-                                  {SPV_OPERAND_TYPE_ID, {subtype}},
-                                  {SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                                   {type->AsVector()->element_count()}}}));
+          new opt::Instruction(context(), SpvOpTypeVector, 0, id,
+                               std::initializer_list<opt::Operand>{
+                                   {SPV_OPERAND_TYPE_ID, {subtype}},
+                                   {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                                    {type->AsVector()->element_count()}}}));
       break;
     }
     case Type::kMatrix: {
       uint32_t subtype = GetTypeInstruction(type->AsMatrix()->element_type());
       typeInst.reset(
-          new ir::Instruction(context(), SpvOpTypeMatrix, 0, id,
-                              std::initializer_list<ir::Operand>{
-                                  {SPV_OPERAND_TYPE_ID, {subtype}},
-                                  {SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                                   {type->AsMatrix()->element_count()}}}));
+          new opt::Instruction(context(), SpvOpTypeMatrix, 0, id,
+                               std::initializer_list<opt::Operand>{
+                                   {SPV_OPERAND_TYPE_ID, {subtype}},
+                                   {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                                    {type->AsMatrix()->element_count()}}}));
       break;
     }
     case Type::kImage: {
       const Image* image = type->AsImage();
       uint32_t subtype = GetTypeInstruction(image->sampled_type());
-      typeInst.reset(new ir::Instruction(
+      typeInst.reset(new opt::Instruction(
           context(), SpvOpTypeImage, 0, id,
-          std::initializer_list<ir::Operand>{
+          std::initializer_list<opt::Operand>{
               {SPV_OPERAND_TYPE_ID, {subtype}},
               {SPV_OPERAND_TYPE_DIMENSIONALITY,
                {static_cast<uint32_t>(image->dim())}},
@@ -278,16 +279,16 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       uint32_t subtype =
           GetTypeInstruction(type->AsSampledImage()->image_type());
       typeInst.reset(
-          new ir::Instruction(context(), SpvOpTypeSampledImage, 0, id,
-                              std::initializer_list<ir::Operand>{
-                                  {SPV_OPERAND_TYPE_ID, {subtype}}}));
+          new opt::Instruction(context(), SpvOpTypeSampledImage, 0, id,
+                               std::initializer_list<opt::Operand>{
+                                   {SPV_OPERAND_TYPE_ID, {subtype}}}));
       break;
     }
     case Type::kArray: {
       uint32_t subtype = GetTypeInstruction(type->AsArray()->element_type());
-      typeInst.reset(new ir::Instruction(
+      typeInst.reset(new opt::Instruction(
           context(), SpvOpTypeArray, 0, id,
-          std::initializer_list<ir::Operand>{
+          std::initializer_list<opt::Operand>{
               {SPV_OPERAND_TYPE_ID, {subtype}},
               {SPV_OPERAND_TYPE_ID, {type->AsArray()->LengthId()}}}));
       break;
@@ -296,20 +297,20 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       uint32_t subtype =
           GetTypeInstruction(type->AsRuntimeArray()->element_type());
       typeInst.reset(
-          new ir::Instruction(context(), SpvOpTypeRuntimeArray, 0, id,
-                              std::initializer_list<ir::Operand>{
-                                  {SPV_OPERAND_TYPE_ID, {subtype}}}));
+          new opt::Instruction(context(), SpvOpTypeRuntimeArray, 0, id,
+                               std::initializer_list<opt::Operand>{
+                                   {SPV_OPERAND_TYPE_ID, {subtype}}}));
       break;
     }
     case Type::kStruct: {
-      std::vector<ir::Operand> ops;
+      std::vector<opt::Operand> ops;
       const Struct* structTy = type->AsStruct();
       for (auto ty : structTy->element_types()) {
         ops.push_back(
-            ir::Operand(SPV_OPERAND_TYPE_ID, {GetTypeInstruction(ty)}));
+            opt::Operand(SPV_OPERAND_TYPE_ID, {GetTypeInstruction(ty)}));
       }
       typeInst.reset(
-          new ir::Instruction(context(), SpvOpTypeStruct, 0, id, ops));
+          new opt::Instruction(context(), SpvOpTypeStruct, 0, id, ops));
       break;
     }
     case Type::kOpaque: {
@@ -320,46 +321,46 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       char* dst = reinterpret_cast<char*>(words.data());
       strncpy(dst, opaque->name().c_str(), size);
       typeInst.reset(
-          new ir::Instruction(context(), SpvOpTypeOpaque, 0, id,
-                              std::initializer_list<ir::Operand>{
-                                  {SPV_OPERAND_TYPE_LITERAL_STRING, words}}));
+          new opt::Instruction(context(), SpvOpTypeOpaque, 0, id,
+                               std::initializer_list<opt::Operand>{
+                                   {SPV_OPERAND_TYPE_LITERAL_STRING, words}}));
       break;
     }
     case Type::kPointer: {
       const Pointer* pointer = type->AsPointer();
       uint32_t subtype = GetTypeInstruction(pointer->pointee_type());
-      typeInst.reset(new ir::Instruction(
+      typeInst.reset(new opt::Instruction(
           context(), SpvOpTypePointer, 0, id,
-          std::initializer_list<ir::Operand>{
+          std::initializer_list<opt::Operand>{
               {SPV_OPERAND_TYPE_STORAGE_CLASS,
                {static_cast<uint32_t>(pointer->storage_class())}},
               {SPV_OPERAND_TYPE_ID, {subtype}}}));
       break;
     }
     case Type::kFunction: {
-      std::vector<ir::Operand> ops;
+      std::vector<opt::Operand> ops;
       const Function* function = type->AsFunction();
-      ops.push_back(ir::Operand(SPV_OPERAND_TYPE_ID,
-                                {GetTypeInstruction(function->return_type())}));
+      ops.push_back(opt::Operand(
+          SPV_OPERAND_TYPE_ID, {GetTypeInstruction(function->return_type())}));
       for (auto ty : function->param_types()) {
         ops.push_back(
-            ir::Operand(SPV_OPERAND_TYPE_ID, {GetTypeInstruction(ty)}));
+            opt::Operand(SPV_OPERAND_TYPE_ID, {GetTypeInstruction(ty)}));
       }
       typeInst.reset(
-          new ir::Instruction(context(), SpvOpTypeFunction, 0, id, ops));
+          new opt::Instruction(context(), SpvOpTypeFunction, 0, id, ops));
       break;
     }
     case Type::kPipe:
-      typeInst.reset(new ir::Instruction(
+      typeInst.reset(new opt::Instruction(
           context(), SpvOpTypePipe, 0, id,
-          std::initializer_list<ir::Operand>{
+          std::initializer_list<opt::Operand>{
               {SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
                {static_cast<uint32_t>(type->AsPipe()->access_qualifier())}}}));
       break;
     case Type::kForwardPointer:
-      typeInst.reset(new ir::Instruction(
+      typeInst.reset(new opt::Instruction(
           context(), SpvOpTypeForwardPointer, 0, 0,
-          std::initializer_list<ir::Operand>{
+          std::initializer_list<opt::Operand>{
               {SPV_OPERAND_TYPE_ID, {type->AsForwardPointer()->target_id()}},
               {SPV_OPERAND_TYPE_STORAGE_CLASS,
                {static_cast<uint32_t>(
@@ -385,10 +386,10 @@ uint32_t TypeManager::FindPointerToType(uint32_t type_id,
   }
 
   // Ambiguous type, do a linear search.
-  ir::Module::inst_iterator type_itr =
+  opt::Module::inst_iterator type_itr =
       context()->module()->types_values_begin();
   for (; type_itr != context()->module()->types_values_end(); ++type_itr) {
-    const ir::Instruction* type_inst = &*type_itr;
+    const opt::Instruction* type_inst = &*type_itr;
     if (type_inst->opcode() == SpvOpTypePointer &&
         type_inst->GetSingleWordOperand(kSpvTypePointerTypeIdInIdx) ==
             type_id &&
@@ -399,7 +400,7 @@ uint32_t TypeManager::FindPointerToType(uint32_t type_id,
 
   // Must create the pointer type.
   uint32_t resultId = context()->TakeNextId();
-  std::unique_ptr<ir::Instruction> type_inst(new ir::Instruction(
+  std::unique_ptr<opt::Instruction> type_inst(new opt::Instruction(
       context(), SpvOpTypePointer, 0, resultId,
       {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
         {uint32_t(storage_class)}},
@@ -426,20 +427,20 @@ void TypeManager::AttachDecorations(uint32_t id, const Type* type) {
 void TypeManager::CreateDecoration(uint32_t target,
                                    const std::vector<uint32_t>& decoration,
                                    uint32_t element) {
-  std::vector<ir::Operand> ops;
-  ops.push_back(ir::Operand(SPV_OPERAND_TYPE_ID, {target}));
+  std::vector<opt::Operand> ops;
+  ops.push_back(opt::Operand(SPV_OPERAND_TYPE_ID, {target}));
   if (element != 0) {
-    ops.push_back(ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {element}));
+    ops.push_back(opt::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {element}));
   }
-  ops.push_back(ir::Operand(SPV_OPERAND_TYPE_DECORATION, {decoration[0]}));
+  ops.push_back(opt::Operand(SPV_OPERAND_TYPE_DECORATION, {decoration[0]}));
   for (size_t i = 1; i < decoration.size(); ++i) {
     ops.push_back(
-        ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {decoration[i]}));
+        opt::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {decoration[i]}));
   }
-  context()->AddAnnotationInst(MakeUnique<ir::Instruction>(
+  context()->AddAnnotationInst(MakeUnique<opt::Instruction>(
       context(), (element == 0 ? SpvOpDecorate : SpvOpMemberDecorate), 0, 0,
       ops));
-  ir::Instruction* inst = &*--context()->annotation_end();
+  opt::Instruction* inst = &*--context()->annotation_end();
   context()->get_def_use_mgr()->AnalyzeInstUse(inst);
 }
 
@@ -590,8 +591,8 @@ Type* TypeManager::GetRegisteredType(const Type* type) {
   return GetType(id);
 }
 
-Type* TypeManager::RecordIfTypeDefinition(const ir::Instruction& inst) {
-  if (!ir::IsTypeInst(inst.opcode())) return nullptr;
+Type* TypeManager::RecordIfTypeDefinition(const opt::Instruction& inst) {
+  if (!opt::IsTypeInst(inst.opcode())) return nullptr;
 
   Type* type = nullptr;
   switch (inst.opcode()) {
@@ -751,7 +752,7 @@ Type* TypeManager::RecordIfTypeDefinition(const ir::Instruction& inst) {
   SPIRV_ASSERT(consumer_, id != 0, "instruction without result id found");
   SPIRV_ASSERT(consumer_, type != nullptr,
                "type should not be nullptr at this point");
-  std::vector<ir::Instruction*> decorations =
+  std::vector<opt::Instruction*> decorations =
       context()->get_decoration_mgr()->GetDecorationsFor(id, true);
   for (auto dec : decorations) {
     AttachDecoration(*dec, type);
@@ -763,9 +764,9 @@ Type* TypeManager::RecordIfTypeDefinition(const ir::Instruction& inst) {
   return type;
 }
 
-void TypeManager::AttachDecoration(const ir::Instruction& inst, Type* type) {
+void TypeManager::AttachDecoration(const opt::Instruction& inst, Type* type) {
   const SpvOp opcode = inst.opcode();
-  if (!ir::IsAnnotationInst(opcode)) return;
+  if (!opt::IsAnnotationInst(opcode)) return;
 
   switch (opcode) {
     case SpvOpDecorate: {

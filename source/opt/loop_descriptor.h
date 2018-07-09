@@ -24,15 +24,13 @@
 #include <vector>
 
 #include "opt/basic_block.h"
+#include "opt/dominator_analysis.h"
 #include "opt/module.h"
 #include "opt/tree_iterator.h"
 
 namespace spvtools {
 namespace opt {
-class DominatorAnalysis;
-struct DominatorTreeNode;
-}  // namespace opt
-namespace ir {
+
 class IRContext;
 class CFG;
 class LoopDescriptor;
@@ -79,7 +77,7 @@ class Loop {
   inline void UpdateLoopMergeInst() {
     assert(GetHeaderBlock()->GetLoopMergeInst() &&
            "The loop is not structured");
-    ir::Instruction* merge_inst = GetHeaderBlock()->GetLoopMergeInst();
+    opt::Instruction* merge_inst = GetHeaderBlock()->GetLoopMergeInst();
     merge_inst->SetInOperand(0, {GetMergeBlock()->id()});
   }
 
@@ -234,20 +232,21 @@ class Loop {
   }
 
   // Returns the list of induction variables within the loop.
-  void GetInductionVariables(std::vector<ir::Instruction*>& inductions) const;
+  void GetInductionVariables(std::vector<opt::Instruction*>& inductions) const;
 
   // This function uses the |condition| to find the induction variable which is
   // used by the loop condition within the loop. This only works if the loop is
   // bound by a single condition and single induction variable.
-  ir::Instruction* FindConditionVariable(const ir::BasicBlock* condition) const;
+  opt::Instruction* FindConditionVariable(
+      const opt::BasicBlock* condition) const;
 
   // Returns the number of iterations within a loop when given the |induction|
   // variable and the loop |condition| check. It stores the found number of
   // iterations in the output parameter |iterations| and optionally, the step
   // value in |step_value| and the initial value of the induction variable in
   // |init_value|.
-  bool FindNumberOfIterations(const ir::Instruction* induction,
-                              const ir::Instruction* condition,
+  bool FindNumberOfIterations(const opt::Instruction* induction,
+                              const opt::Instruction* condition,
                               size_t* iterations,
                               int64_t* step_amount = nullptr,
                               int64_t* init_value = nullptr) const;
@@ -264,7 +263,7 @@ class Loop {
 
   // Finds the conditional block with a branch to the merge and continue blocks
   // within the loop body.
-  ir::BasicBlock* FindConditionBlock() const;
+  opt::BasicBlock* FindConditionBlock() const;
 
   // Remove the child loop form this loop.
   inline void RemoveChildLoop(Loop* loop) {
@@ -308,13 +307,13 @@ class Loop {
   // Extract the initial value from the |induction| variable and store it in
   // |value|. If the function couldn't find the initial value of |induction|
   // return false.
-  bool GetInductionInitValue(const ir::Instruction* induction,
+  bool GetInductionInitValue(const opt::Instruction* induction,
                              int64_t* value) const;
 
   // Takes in a phi instruction |induction| and the loop |header| and returns
   // the step operation of the loop.
-  ir::Instruction* GetInductionStepOperation(
-      const ir::Instruction* induction) const;
+  opt::Instruction* GetInductionStepOperation(
+      const opt::Instruction* induction) const;
 
   // Returns true if we can deduce the number of loop iterations in the step
   // operation |step|. IsSupportedCondition must also be true for the condition
@@ -332,7 +331,7 @@ class Loop {
   // exist. If |include_merge| is true, the merge block will also be included at
   // the end of the list if it exist.
   void ComputeLoopStructuredOrder(
-      std::vector<ir::BasicBlock*>* ordered_loop_blocks,
+      std::vector<opt::BasicBlock*>* ordered_loop_blocks,
       bool include_pre_header = false, bool include_merge = false) const;
 
   // Given the loop |condition|, |initial_value|, |step_value|, the trip count
@@ -346,7 +345,7 @@ class Loop {
 
   // Returns the condition instruction for entry into the loop
   // Returns nullptr if it can't be found.
-  ir::Instruction* GetConditionInst() const;
+  opt::Instruction* GetConditionInst() const;
 
   // Returns the context associated this loop.
   IRContext* GetContext() const { return context_; }
@@ -355,7 +354,7 @@ class Loop {
   // which is also dominated by the loop continue block. This block is the latch
   // block. The specification mandates that this block should exist, therefore
   // this function will assert if it is not found.
-  ir::BasicBlock* FindLatchBlock();
+  opt::BasicBlock* FindLatchBlock();
 
  private:
   IRContext* context_;
@@ -459,7 +458,7 @@ class LoopDescriptor {
 
   // Returns the loops in |this| in the order their headers appear in the
   // binary.
-  std::vector<ir::Loop*> GetLoopsInBinaryLayoutOrder();
+  std::vector<opt::Loop*> GetLoopsInBinaryLayoutOrder();
 
   // Returns the inner most loop that contains the basic block id |block_id|.
   inline Loop* operator[](uint32_t block_id) const {
@@ -502,7 +501,7 @@ class LoopDescriptor {
 
   // Mark the loop |loop_to_add| as needing to be added when the user calls
   // PostModificationCleanup. |parent| may be null.
-  inline void AddLoop(ir::Loop* loop_to_add, ir::Loop* parent) {
+  inline void AddLoop(opt::Loop* loop_to_add, opt::Loop* parent) {
     loops_to_add_.emplace_back(std::make_pair(parent, loop_to_add));
   }
 
@@ -521,12 +520,12 @@ class LoopDescriptor {
 
   // Adds the loop |new_loop| and all its nested loops to the descriptor set.
   // The object takes ownership of all the loops.
-  ir::Loop* AddLoopNest(std::unique_ptr<ir::Loop> new_loop);
+  opt::Loop* AddLoopNest(std::unique_ptr<opt::Loop> new_loop);
 
   // Remove the loop |loop|.
-  void RemoveLoop(ir::Loop* loop);
+  void RemoveLoop(opt::Loop* loop);
 
-  void SetAsTopLoop(ir::Loop* loop) {
+  void SetAsTopLoop(opt::Loop* loop) {
     assert(std::find(dummy_top_loop_.begin(), dummy_top_loop_.end(), loop) ==
                dummy_top_loop_.end() &&
            "already registered");
@@ -569,7 +568,7 @@ class LoopDescriptor {
   LoopsToAddContainerType loops_to_add_;
 };
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_LOOP_DESCRIPTORS_H_

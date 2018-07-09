@@ -41,7 +41,7 @@ bool CommonUniformElimPass::IsNonPtrAccessChain(const SpvOp opcode) const {
 }
 
 bool CommonUniformElimPass::IsSamplerOrImageType(
-    const ir::Instruction* typeInst) const {
+    const opt::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
     case SpvOpTypeSampler:
     case SpvOpTypeImage:
@@ -53,7 +53,7 @@ bool CommonUniformElimPass::IsSamplerOrImageType(
   if (typeInst->opcode() != SpvOpTypeStruct) return false;
   // Return true if any member is a sampler or image
   return !typeInst->WhileEachInId([this](const uint32_t* tid) {
-    const ir::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
+    const opt::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
     if (IsSamplerOrImageType(compTypeInst)) {
       return false;
     }
@@ -62,28 +62,28 @@ bool CommonUniformElimPass::IsSamplerOrImageType(
 }
 
 bool CommonUniformElimPass::IsSamplerOrImageVar(uint32_t varId) const {
-  const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
+  const opt::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
+  const opt::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   const uint32_t varPteTypeId =
       varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
-  ir::Instruction* varPteTypeInst = get_def_use_mgr()->GetDef(varPteTypeId);
+  opt::Instruction* varPteTypeInst = get_def_use_mgr()->GetDef(varPteTypeId);
   return IsSamplerOrImageType(varPteTypeInst);
 }
 
-ir::Instruction* CommonUniformElimPass::GetPtr(ir::Instruction* ip,
-                                               uint32_t* objId) {
+opt::Instruction* CommonUniformElimPass::GetPtr(opt::Instruction* ip,
+                                                uint32_t* objId) {
   const SpvOp op = ip->opcode();
   assert(op == SpvOpStore || op == SpvOpLoad);
   *objId = ip->GetSingleWordInOperand(op == SpvOpStore ? kStorePtrIdInIdx
                                                        : kLoadPtrIdInIdx);
-  ir::Instruction* ptrInst = get_def_use_mgr()->GetDef(*objId);
+  opt::Instruction* ptrInst = get_def_use_mgr()->GetDef(*objId);
   while (ptrInst->opcode() == SpvOpCopyObject) {
     *objId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
     ptrInst = get_def_use_mgr()->GetDef(*objId);
   }
-  ir::Instruction* objInst = ptrInst;
+  opt::Instruction* objInst = ptrInst;
   while (objInst->opcode() != SpvOpVariable &&
          objInst->opcode() != SpvOpFunctionParameter) {
     if (IsNonPtrAccessChain(objInst->opcode())) {
@@ -101,21 +101,21 @@ bool CommonUniformElimPass::IsVolatileStruct(uint32_t type_id) {
   assert(get_def_use_mgr()->GetDef(type_id)->opcode() == SpvOpTypeStruct);
   return !get_decoration_mgr()->WhileEachDecoration(
       type_id, SpvDecorationVolatile,
-      [](const ir::Instruction&) { return false; });
+      [](const opt::Instruction&) { return false; });
 }
 
 bool CommonUniformElimPass::IsAccessChainToVolatileStructType(
-    const ir::Instruction& AccessChainInst) {
+    const opt::Instruction& AccessChainInst) {
   assert(AccessChainInst.opcode() == SpvOpAccessChain);
 
   uint32_t ptr_id = AccessChainInst.GetSingleWordInOperand(0);
-  const ir::Instruction* ptr_inst = get_def_use_mgr()->GetDef(ptr_id);
+  const opt::Instruction* ptr_inst = get_def_use_mgr()->GetDef(ptr_id);
   uint32_t pointee_type_id = GetPointeeTypeId(ptr_inst);
   const uint32_t num_operands = AccessChainInst.NumOperands();
 
   // walk the type tree:
   for (uint32_t idx = 3; idx < num_operands; ++idx) {
-    ir::Instruction* pointee_type = get_def_use_mgr()->GetDef(pointee_type_id);
+    opt::Instruction* pointee_type = get_def_use_mgr()->GetDef(pointee_type_id);
 
     switch (pointee_type->opcode()) {
       case SpvOpTypeMatrix:
@@ -130,7 +130,7 @@ bool CommonUniformElimPass::IsAccessChainToVolatileStructType(
 
         if (idx < num_operands - 1) {
           const uint32_t index_id = AccessChainInst.GetSingleWordOperand(idx);
-          const ir::Instruction* index_inst =
+          const opt::Instruction* index_inst =
               get_def_use_mgr()->GetDef(index_id);
           uint32_t index_value = index_inst->GetSingleWordOperand(
               2);  // TODO: replace with GetUintValueFromConstant()
@@ -144,7 +144,7 @@ bool CommonUniformElimPass::IsAccessChainToVolatileStructType(
   return false;
 }
 
-bool CommonUniformElimPass::IsVolatileLoad(const ir::Instruction& loadInst) {
+bool CommonUniformElimPass::IsVolatileLoad(const opt::Instruction& loadInst) {
   assert(loadInst.opcode() == SpvOpLoad);
   // Check if this Load instruction has Volatile Memory Access flag
   if (loadInst.NumOperands() == 4) {
@@ -161,11 +161,11 @@ bool CommonUniformElimPass::IsVolatileLoad(const ir::Instruction& loadInst) {
 }
 
 bool CommonUniformElimPass::IsUniformVar(uint32_t varId) {
-  const ir::Instruction* varInst =
+  const opt::Instruction* varInst =
       get_def_use_mgr()->id_to_defs().find(varId)->second;
   if (varInst->opcode() != SpvOpVariable) return false;
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst =
+  const opt::Instruction* varTypeInst =
       get_def_use_mgr()->id_to_defs().find(varTypeId)->second;
   return varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) ==
              SpvStorageClassUniform ||
@@ -174,21 +174,21 @@ bool CommonUniformElimPass::IsUniformVar(uint32_t varId) {
 }
 
 bool CommonUniformElimPass::HasUnsupportedDecorates(uint32_t id) const {
-  return !get_def_use_mgr()->WhileEachUser(id, [this](ir::Instruction* user) {
+  return !get_def_use_mgr()->WhileEachUser(id, [this](opt::Instruction* user) {
     if (IsNonTypeDecorate(user->opcode())) return false;
     return true;
   });
 }
 
 bool CommonUniformElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
-  return get_def_use_mgr()->WhileEachUser(id, [this](ir::Instruction* user) {
+  return get_def_use_mgr()->WhileEachUser(id, [this](opt::Instruction* user) {
     SpvOp op = user->opcode();
     if (op != SpvOpName && !IsNonTypeDecorate(op)) return false;
     return true;
   });
 }
 
-void CommonUniformElimPass::DeleteIfUseless(ir::Instruction* inst) {
+void CommonUniformElimPass::DeleteIfUseless(opt::Instruction* inst) {
   const uint32_t resId = inst->result_id();
   assert(resId != 0);
   if (HasOnlyNamesAndDecorates(resId)) {
@@ -196,34 +196,34 @@ void CommonUniformElimPass::DeleteIfUseless(ir::Instruction* inst) {
   }
 }
 
-ir::Instruction* CommonUniformElimPass::ReplaceAndDeleteLoad(
-    ir::Instruction* loadInst, uint32_t replId, ir::Instruction* ptrInst) {
+opt::Instruction* CommonUniformElimPass::ReplaceAndDeleteLoad(
+    opt::Instruction* loadInst, uint32_t replId, opt::Instruction* ptrInst) {
   const uint32_t loadId = loadInst->result_id();
   context()->KillNamesAndDecorates(loadId);
   (void)context()->ReplaceAllUsesWith(loadId, replId);
   // remove load instruction
-  ir::Instruction* next_instruction = context()->KillInst(loadInst);
+  opt::Instruction* next_instruction = context()->KillInst(loadInst);
   // if access chain, see if it can be removed as well
   if (IsNonPtrAccessChain(ptrInst->opcode())) DeleteIfUseless(ptrInst);
   return next_instruction;
 }
 
 void CommonUniformElimPass::GenACLoadRepl(
-    const ir::Instruction* ptrInst,
-    std::vector<std::unique_ptr<ir::Instruction>>* newInsts,
+    const opt::Instruction* ptrInst,
+    std::vector<std::unique_ptr<opt::Instruction>>* newInsts,
     uint32_t* resultId) {
   // Build and append Load
   const uint32_t ldResultId = TakeNextId();
   const uint32_t varId =
       ptrInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
-  const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
+  const opt::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varPteTypeId = GetPointeeTypeId(varInst);
-  std::vector<ir::Operand> load_in_operands;
+  std::vector<opt::Operand> load_in_operands;
   load_in_operands.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{varId}));
-  std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(
+      opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+                   std::initializer_list<uint32_t>{varId}));
+  std::unique_ptr<opt::Instruction> newLoad(new opt::Instruction(
       context(), SpvOpLoad, varPteTypeId, ldResultId, load_in_operands));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newLoad);
   newInsts->emplace_back(std::move(newLoad));
@@ -231,34 +231,34 @@ void CommonUniformElimPass::GenACLoadRepl(
   // Build and append Extract
   const uint32_t extResultId = TakeNextId();
   const uint32_t ptrPteTypeId = GetPointeeTypeId(ptrInst);
-  std::vector<ir::Operand> ext_in_opnds;
+  std::vector<opt::Operand> ext_in_opnds;
   ext_in_opnds.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{ldResultId}));
+      opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+                   std::initializer_list<uint32_t>{ldResultId}));
   uint32_t iidIdx = 0;
   ptrInst->ForEachInId([&iidIdx, &ext_in_opnds, this](const uint32_t* iid) {
     if (iidIdx > 0) {
-      const ir::Instruction* cInst = get_def_use_mgr()->GetDef(*iid);
+      const opt::Instruction* cInst = get_def_use_mgr()->GetDef(*iid);
       uint32_t val = cInst->GetSingleWordInOperand(kConstantValueInIdx);
       ext_in_opnds.push_back(
-          ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                      std::initializer_list<uint32_t>{val}));
+          opt::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                       std::initializer_list<uint32_t>{val}));
     }
     ++iidIdx;
   });
-  std::unique_ptr<ir::Instruction> newExt(
-      new ir::Instruction(context(), SpvOpCompositeExtract, ptrPteTypeId,
-                          extResultId, ext_in_opnds));
+  std::unique_ptr<opt::Instruction> newExt(
+      new opt::Instruction(context(), SpvOpCompositeExtract, ptrPteTypeId,
+                           extResultId, ext_in_opnds));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newExt);
   newInsts->emplace_back(std::move(newExt));
   *resultId = extResultId;
 }
 
-bool CommonUniformElimPass::IsConstantIndexAccessChain(ir::Instruction* acp) {
+bool CommonUniformElimPass::IsConstantIndexAccessChain(opt::Instruction* acp) {
   uint32_t inIdx = 0;
   return acp->WhileEachInId([&inIdx, this](uint32_t* tid) {
     if (inIdx > 0) {
-      ir::Instruction* opInst = get_def_use_mgr()->GetDef(*tid);
+      opt::Instruction* opInst = get_def_use_mgr()->GetDef(*tid);
       if (opInst->opcode() != SpvOpConstant) return false;
     }
     ++inIdx;
@@ -266,13 +266,14 @@ bool CommonUniformElimPass::IsConstantIndexAccessChain(ir::Instruction* acp) {
   });
 }
 
-bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
+bool CommonUniformElimPass::UniformAccessChainConvert(opt::Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
-    for (ir::Instruction* inst = &*bi->begin(); inst; inst = inst->NextNode()) {
+    for (opt::Instruction* inst = &*bi->begin(); inst;
+         inst = inst->NextNode()) {
       if (inst->opcode() != SpvOpLoad) continue;
       uint32_t varId;
-      ir::Instruction* ptrInst = GetPtr(inst, &varId);
+      opt::Instruction* ptrInst = GetPtr(inst, &varId);
       if (!IsNonPtrAccessChain(ptrInst->opcode())) continue;
       // Do not convert nested access chains
       if (ptrInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx) != varId)
@@ -283,7 +284,7 @@ bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
       if (HasUnsupportedDecorates(ptrInst->result_id())) continue;
       if (IsVolatileLoad(*inst)) continue;
       if (IsAccessChainToVolatileStructType(*ptrInst)) continue;
-      std::vector<std::unique_ptr<ir::Instruction>> newInsts;
+      std::vector<std::unique_ptr<opt::Instruction>> newInsts;
       uint32_t replId;
       GenACLoadRepl(ptrInst, &newInsts, &replId);
       inst = ReplaceAndDeleteLoad(inst, replId, ptrInst);
@@ -294,7 +295,7 @@ bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
   return modified;
 }
 
-void CommonUniformElimPass::ComputeStructuredSuccessors(ir::Function* func) {
+void CommonUniformElimPass::ComputeStructuredSuccessors(opt::Function* func) {
   block2structured_succs_.clear();
   for (auto& blk : *func) {
     // If header, make merge block first successor.
@@ -315,32 +316,32 @@ void CommonUniformElimPass::ComputeStructuredSuccessors(ir::Function* func) {
 }
 
 void CommonUniformElimPass::ComputeStructuredOrder(
-    ir::Function* func, std::list<ir::BasicBlock*>* order) {
+    opt::Function* func, std::list<opt::BasicBlock*>* order) {
   // Compute structured successors and do DFS
   ComputeStructuredSuccessors(func);
   auto ignore_block = [](cbb_ptr) {};
   auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  auto get_structured_successors = [this](const ir::BasicBlock* block) {
+  auto get_structured_successors = [this](const opt::BasicBlock* block) {
     return &(block2structured_succs_[block]);
   };
   // TODO(greg-lunarg): Get rid of const_cast by making moving const
   // out of the cfa.h prototypes and into the invoking code.
   auto post_order = [&](cbb_ptr b) {
-    order->push_front(const_cast<ir::BasicBlock*>(b));
+    order->push_front(const_cast<opt::BasicBlock*>(b));
   };
 
   order->clear();
-  CFA<ir::BasicBlock>::DepthFirstTraversal(
+  CFA<opt::BasicBlock>::DepthFirstTraversal(
       &*func->begin(), get_structured_successors, ignore_block, post_order,
       ignore_edge);
 }
 
-bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
+bool CommonUniformElimPass::CommonUniformLoadElimination(opt::Function* func) {
   // Process all blocks in structured order. This is just one way (the
   // simplest?) to keep track of the most recent block outside of control
   // flow, used to copy common instructions, guaranteed to dominate all
   // following load sites.
-  std::list<ir::BasicBlock*> structuredOrder;
+  std::list<opt::BasicBlock*> structuredOrder;
   ComputeStructuredOrder(func, &structuredOrder);
   uniform2load_id_.clear();
   bool modified = false;
@@ -354,7 +355,7 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
   while (IsUniformLoadToBeRemoved(&*insertItr)) ++insertItr;
   uint32_t mergeBlockId = 0;
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
-    ir::BasicBlock* bp = *bi;
+    opt::BasicBlock* bp = *bi;
     // Check if we are exiting outermost control construct. If so, remember
     // new load insertion point. Trying to keep register pressure down.
     if (mergeBlockId == bp->id()) {
@@ -364,10 +365,11 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
       // ReplaceAndDeleteLoad() can set |insertItr| as a dangling pointer.
       while (IsUniformLoadToBeRemoved(&*insertItr)) ++insertItr;
     }
-    for (ir::Instruction* inst = &*bp->begin(); inst; inst = inst->NextNode()) {
+    for (opt::Instruction* inst = &*bp->begin(); inst;
+         inst = inst->NextNode()) {
       if (inst->opcode() != SpvOpLoad) continue;
       uint32_t varId;
-      ir::Instruction* ptrInst = GetPtr(inst, &varId);
+      opt::Instruction* ptrInst = GetPtr(inst, &varId);
       if (ptrInst->opcode() != SpvOpVariable) continue;
       if (!IsUniformVar(varId)) continue;
       if (IsSamplerOrImageVar(varId)) continue;
@@ -385,7 +387,7 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
         } else {
           // Copy load into most recent dominating block and remember it
           replId = TakeNextId();
-          std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(
+          std::unique_ptr<opt::Instruction> newLoad(new opt::Instruction(
               context(), SpvOpLoad, inst->type_id(), replId,
               {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {varId}}}));
           get_def_use_mgr()->AnalyzeInstDefUse(&*newLoad);
@@ -406,14 +408,15 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
   return modified;
 }
 
-bool CommonUniformElimPass::CommonUniformLoadElimBlock(ir::Function* func) {
+bool CommonUniformElimPass::CommonUniformLoadElimBlock(opt::Function* func) {
   bool modified = false;
   for (auto& blk : *func) {
     uniform2load_id_.clear();
-    for (ir::Instruction* inst = &*blk.begin(); inst; inst = inst->NextNode()) {
+    for (opt::Instruction* inst = &*blk.begin(); inst;
+         inst = inst->NextNode()) {
       if (inst->opcode() != SpvOpLoad) continue;
       uint32_t varId;
-      ir::Instruction* ptrInst = GetPtr(inst, &varId);
+      opt::Instruction* ptrInst = GetPtr(inst, &varId);
       if (ptrInst->opcode() != SpvOpVariable) continue;
       if (!IsUniformVar(varId)) continue;
       if (!IsSamplerOrImageVar(varId)) continue;
@@ -434,7 +437,7 @@ bool CommonUniformElimPass::CommonUniformLoadElimBlock(ir::Function* func) {
   return modified;
 }
 
-bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
+bool CommonUniformElimPass::CommonExtractElimination(opt::Function* func) {
   // Find all composite ids with duplicate extracts.
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
@@ -457,7 +460,7 @@ bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
       for (auto idxItr : cItr->second) {
         if (idxItr.second.size() < 2) continue;
         uint32_t replId = TakeNextId();
-        std::unique_ptr<ir::Instruction> newExtract(
+        std::unique_ptr<opt::Instruction> newExtract(
             idxItr.second.front()->Clone(context()));
         newExtract->SetResultId(replId);
         get_def_use_mgr()->AnalyzeInstDefUse(&*newExtract);
@@ -476,7 +479,7 @@ bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
   return modified;
 }
 
-bool CommonUniformElimPass::EliminateCommonUniform(ir::Function* func) {
+bool CommonUniformElimPass::EliminateCommonUniform(opt::Function* func) {
   bool modified = false;
   modified |= UniformAccessChainConvert(func);
   modified |= CommonUniformLoadElimination(func);
@@ -486,7 +489,7 @@ bool CommonUniformElimPass::EliminateCommonUniform(ir::Function* func) {
   return modified;
 }
 
-void CommonUniformElimPass::Initialize(ir::IRContext* c) {
+void CommonUniformElimPass::Initialize(opt::IRContext* c) {
   InitializeProcessing(c);
 
   // Clear collections.
@@ -525,12 +528,12 @@ Pass::Status CommonUniformElimPass::ProcessImpl() {
     if (ai.opcode() == SpvOpGroupDecorate) return Status::SuccessWithoutChange;
   // If non-32-bit integer type in module, terminate processing
   // TODO(): Handle non-32-bit integer constants in access chains
-  for (const ir::Instruction& inst : get_module()->types_values())
+  for (const opt::Instruction& inst : get_module()->types_values())
     if (inst.opcode() == SpvOpTypeInt &&
         inst.GetSingleWordInOperand(kTypeIntWidthInIdx) != 32)
       return Status::SuccessWithoutChange;
   // Process entry point functions
-  ProcessFunction pfn = [this](ir::Function* fp) {
+  ProcessFunction pfn = [this](opt::Function* fp) {
     return EliminateCommonUniform(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
@@ -539,7 +542,7 @@ Pass::Status CommonUniformElimPass::ProcessImpl() {
 
 CommonUniformElimPass::CommonUniformElimPass() {}
 
-Pass::Status CommonUniformElimPass::Process(ir::IRContext* c) {
+Pass::Status CommonUniformElimPass::Process(opt::IRContext* c) {
   Initialize(c);
   return ProcessImpl();
 }

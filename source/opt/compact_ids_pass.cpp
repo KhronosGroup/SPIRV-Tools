@@ -21,10 +21,10 @@
 namespace spvtools {
 namespace opt {
 
-using ir::Instruction;
-using ir::Operand;
+using opt::Instruction;
+using opt::Operand;
 
-Pass::Status CompactIdsPass::Process(ir::IRContext* c) {
+Pass::Status CompactIdsPass::Process(opt::IRContext* c) {
   InitializeProcessing(c);
 
   bool modified = false;

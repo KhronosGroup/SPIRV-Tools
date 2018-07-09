@@ -19,7 +19,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status RedundancyEliminationPass::Process(ir::IRContext* c) {
+Pass::Status RedundancyEliminationPass::Process(opt::IRContext* c) {
   InitializeProcessing(c);
 
   bool modified = false;

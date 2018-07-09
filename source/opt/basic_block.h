@@ -30,7 +30,7 @@
 #include "iterator.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 class Function;
 class IRContext;
@@ -159,14 +159,14 @@ class BasicBlock {
   void ForEachSuccessorLabel(const std::function<void(uint32_t*)>& f);
 
   // Returns true if |block| is a direct successor of |this|.
-  bool IsSuccessor(const ir::BasicBlock* block) const;
+  bool IsSuccessor(const opt::BasicBlock* block) const;
 
   // Runs the given function |f| on the merge and continue label, if any
   void ForMergeAndContinueLabel(const std::function<void(const uint32_t)>& f);
 
   // Returns true if this basic block has any Phi instructions.
   bool HasPhiInstructions() {
-    return !WhileEachPhiInst([](ir::Instruction*) { return false; });
+    return !WhileEachPhiInst([](opt::Instruction*) { return false; });
   }
 
   // Return true if this block is a loop header block.
@@ -313,7 +313,7 @@ inline void BasicBlock::ForEachPhiInst(
       run_on_debug_line_insts);
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_BASIC_BLOCK_H_

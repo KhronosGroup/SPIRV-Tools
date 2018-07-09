@@ -23,10 +23,10 @@ using namespace spvtools;
 class NopifyPass : public opt::Pass {
  public:
   const char* name() const override { return "NopifyPass"; }
-  Status Process(ir::IRContext* irContext) override {
+  Status Process(opt::IRContext* irContext) override {
     bool modified = false;
     irContext->module()->ForEachInst(
-        [&modified](ir::Instruction* inst) {
+        [&modified](opt::Instruction* inst) {
           inst->ToNop();
           modified = true;
         },

@@ -36,7 +36,7 @@
 #include <unordered_set>
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 class IRContext {
  public:
@@ -126,8 +126,8 @@ class IRContext {
   inline IteratorRange<Module::const_inst_iterator> capabilities() const;
 
   // Iterators for types, constants and global variables instructions.
-  inline ir::Module::inst_iterator types_values_begin();
-  inline ir::Module::inst_iterator types_values_end();
+  inline opt::Module::inst_iterator types_values_begin();
+  inline opt::Module::inst_iterator types_values_end();
   inline IteratorRange<Module::inst_iterator> types_values();
   inline IteratorRange<Module::const_inst_iterator> types_values() const;
 
@@ -230,7 +230,7 @@ class IRContext {
 
   // Returns the basic block for instruction |instr|. Re-builds the instruction
   // block map, if needed.
-  ir::BasicBlock* get_instr_block(ir::Instruction* instr) {
+  opt::BasicBlock* get_instr_block(opt::Instruction* instr) {
     if (!AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
       BuildInstrToBlockMapping();
     }
@@ -242,14 +242,14 @@ class IRContext {
   // needed.
   //
   // |id| must be a registered definition.
-  ir::BasicBlock* get_instr_block(uint32_t id) {
-    ir::Instruction* def = get_def_use_mgr()->GetDef(id);
+  opt::BasicBlock* get_instr_block(uint32_t id) {
+    opt::Instruction* def = get_def_use_mgr()->GetDef(id);
     return get_instr_block(def);
   }
 
   // Sets the basic block for |inst|. Re-builds the mapping if it has become
   // invalid.
-  void set_instr_block(ir::Instruction* inst, ir::BasicBlock* block) {
+  void set_instr_block(opt::Instruction* inst, opt::BasicBlock* block) {
     if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
       instr_to_block_[inst] = block;
     }
@@ -337,7 +337,7 @@ class IRContext {
   //
   // Returns a pointer to the instruction after |inst| or |nullptr| if no such
   // instruction exists.
-  Instruction* KillInst(ir::Instruction* inst);
+  Instruction* KillInst(opt::Instruction* inst);
 
   // Returns true if all of the given analyses are valid.
   bool AreAnalysesValid(Analysis set) { return (set & valid_analyses_) == set; }
@@ -371,7 +371,7 @@ class IRContext {
   void KillNamesAndDecorates(uint32_t id);
 
   // Kill all name and decorate ops targeting the result id of |inst|.
-  void KillNamesAndDecorates(ir::Instruction* inst);
+  void KillNamesAndDecorates(opt::Instruction* inst);
 
   // Returns the next unique id for use by an instruction.
   inline uint32_t TakeNextUniqueId() {
@@ -400,7 +400,7 @@ class IRContext {
   }
 
   // Returns a pointer to the CFG for all the functions in |module_|.
-  ir::CFG* cfg() {
+  opt::CFG* cfg() {
     if (!AreAnalysesValid(kAnalysisCFG)) {
       BuildCFG();
     }
@@ -408,21 +408,21 @@ class IRContext {
   }
 
   // Gets the loop descriptor for function |f|.
-  ir::LoopDescriptor* GetLoopDescriptor(const ir::Function* f);
+  opt::LoopDescriptor* GetLoopDescriptor(const opt::Function* f);
 
   // Gets the dominator analysis for function |f|.
-  opt::DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f);
+  opt::DominatorAnalysis* GetDominatorAnalysis(const opt::Function* f);
 
   // Gets the postdominator analysis for function |f|.
-  opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* f);
+  opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const opt::Function* f);
 
   // Remove the dominator tree of |f| from the cache.
-  inline void RemoveDominatorAnalysis(const ir::Function* f) {
+  inline void RemoveDominatorAnalysis(const opt::Function* f) {
     dominator_trees_.erase(f);
   }
 
   // Remove the postdominator tree of |f| from the cache.
-  inline void RemovePostDominatorAnalysis(const ir::Function* f) {
+  inline void RemovePostDominatorAnalysis(const opt::Function* f) {
     post_dominator_trees_.erase(f);
   }
 
@@ -462,7 +462,7 @@ class IRContext {
     instr_to_block_.clear();
     for (auto& fn : *module_) {
       for (auto& block : fn) {
-        block.ForEachInst([this, &block](ir::Instruction* inst) {
+        block.ForEachInst([this, &block](opt::Instruction* inst) {
           instr_to_block_[inst] = &block;
         });
       }
@@ -476,7 +476,7 @@ class IRContext {
   }
 
   void BuildCFG() {
-    cfg_.reset(new ir::CFG(module()));
+    cfg_.reset(new opt::CFG(module()));
     valid_analyses_ = valid_analyses_ | kAnalysisCFG;
   }
 
@@ -528,7 +528,7 @@ class IRContext {
   void AddCombinatorsForCapability(uint32_t capability);
 
   // Add the combinator opcode for the given extension to combinator_ops_.
-  void AddCombinatorsForExtension(ir::Instruction* extension);
+  void AddCombinatorsForExtension(opt::Instruction* extension);
 
   // Remove |inst| from |id_to_name_| if it is in map.
   void RemoveFromIdToName(const Instruction* inst);
@@ -569,7 +569,7 @@ class IRContext {
   //
   // NOTE: Do not traverse this map. Ever. Use the function and basic block
   // iterators to traverse instructions.
-  std::unordered_map<ir::Instruction*, ir::BasicBlock*> instr_to_block_;
+  std::unordered_map<opt::Instruction*, opt::BasicBlock*> instr_to_block_;
 
   // A bitset indicating which analyes are currently valid.
   Analysis valid_analyses_;
@@ -579,16 +579,17 @@ class IRContext {
   std::unordered_map<uint32_t, std::unordered_set<uint32_t>> combinator_ops_;
 
   // The CFG for all the functions in |module_|.
-  std::unique_ptr<ir::CFG> cfg_;
+  std::unique_ptr<opt::CFG> cfg_;
 
   // Each function in the module will create its own dominator tree. We cache
   // the result so it doesn't need to be rebuilt each time.
-  std::map<const ir::Function*, opt::DominatorAnalysis> dominator_trees_;
-  std::map<const ir::Function*, opt::PostDominatorAnalysis>
+  std::map<const opt::Function*, opt::DominatorAnalysis> dominator_trees_;
+  std::map<const opt::Function*, opt::PostDominatorAnalysis>
       post_dominator_trees_;
 
   // Cache of loop descriptors for each function.
-  std::unordered_map<const ir::Function*, ir::LoopDescriptor> loop_descriptors_;
+  std::unordered_map<const opt::Function*, opt::LoopDescriptor>
+      loop_descriptors_;
 
   // Constant manager for |module_|.
   std::unique_ptr<opt::analysis::ConstantManager> constant_mgr_;
@@ -610,27 +611,27 @@ class IRContext {
   std::unique_ptr<opt::InstructionFolder> inst_folder_;
 };
 
-inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,
-                                         ir::IRContext::Analysis rhs) {
-  return static_cast<ir::IRContext::Analysis>(static_cast<int>(lhs) |
-                                              static_cast<int>(rhs));
+inline opt::IRContext::Analysis operator|(opt::IRContext::Analysis lhs,
+                                          opt::IRContext::Analysis rhs) {
+  return static_cast<opt::IRContext::Analysis>(static_cast<int>(lhs) |
+                                               static_cast<int>(rhs));
 }
 
-inline ir::IRContext::Analysis& operator|=(ir::IRContext::Analysis& lhs,
-                                           ir::IRContext::Analysis rhs) {
-  lhs = static_cast<ir::IRContext::Analysis>(static_cast<int>(lhs) |
-                                             static_cast<int>(rhs));
+inline opt::IRContext::Analysis& operator|=(opt::IRContext::Analysis& lhs,
+                                            opt::IRContext::Analysis rhs) {
+  lhs = static_cast<opt::IRContext::Analysis>(static_cast<int>(lhs) |
+                                              static_cast<int>(rhs));
   return lhs;
 }
 
-inline ir::IRContext::Analysis operator<<(ir::IRContext::Analysis a,
-                                          int shift) {
-  return static_cast<ir::IRContext::Analysis>(static_cast<int>(a) << shift);
+inline opt::IRContext::Analysis operator<<(opt::IRContext::Analysis a,
+                                           int shift) {
+  return static_cast<opt::IRContext::Analysis>(static_cast<int>(a) << shift);
 }
 
-inline ir::IRContext::Analysis& operator<<=(ir::IRContext::Analysis& a,
-                                            int shift) {
-  a = static_cast<ir::IRContext::Analysis>(static_cast<int>(a) << shift);
+inline opt::IRContext::Analysis& operator<<=(opt::IRContext::Analysis& a,
+                                             int shift) {
+  a = static_cast<opt::IRContext::Analysis>(static_cast<int>(a) << shift);
   return a;
 }
 
@@ -674,11 +675,11 @@ IteratorRange<Module::const_inst_iterator> IRContext::capabilities() const {
   return ((const Module*)module())->capabilities();
 }
 
-ir::Module::inst_iterator IRContext::types_values_begin() {
+opt::Module::inst_iterator IRContext::types_values_begin() {
   return module()->types_values_begin();
 }
 
-ir::Module::inst_iterator IRContext::types_values_end() {
+opt::Module::inst_iterator IRContext::types_values_end() {
   return module()->types_values_end();
 }
 
@@ -849,7 +850,7 @@ IRContext::GetNames(uint32_t id) {
   return make_range(std::move(result.first), std::move(result.second));
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_IR_CONTEXT_H
