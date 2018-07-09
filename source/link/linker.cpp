@@ -74,8 +74,8 @@ using LinkageTable = std::vector<LinkageEntry>;
 // not be empty either. Furthermore |modules| should not contain any null
 // pointers.
 spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
-                                      std::vector<ir::Module*>* modules,
-                                      uint32_t* max_id_bound);
+                               std::vector<ir::Module*>* modules,
+                               uint32_t* max_id_bound);
 
 // Generates the header for the linked module and returns it in |header|.
 //
@@ -86,18 +86,17 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
 //                     SPIR-V? For now, use the max of all versions found in
 //                     the input modules.
 spv_result_t GenerateHeader(const MessageConsumer& consumer,
-                                   const std::vector<ir::Module*>& modules,
-                                   uint32_t max_id_bound,
-                                   ir::ModuleHeader* header);
+                            const std::vector<ir::Module*>& modules,
+                            uint32_t max_id_bound, ir::ModuleHeader* header);
 
 // Merge all the modules from |in_modules| into a single module owned by
 // |linked_context|.
 //
 // |linked_context| should not be null.
 spv_result_t MergeModules(const MessageConsumer& consumer,
-                                 const std::vector<Module*>& in_modules,
-                                 const AssemblyGrammar& grammar,
-                                 IRContext* linked_context);
+                          const std::vector<Module*>& in_modules,
+                          const AssemblyGrammar& grammar,
+                          IRContext* linked_context);
 
 // Compute all pairs of import and export and return it in |linkings_to_do|.
 //
@@ -108,20 +107,21 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
 //                     applied to a single ID.)
 // TODO(pierremoreau): What should be the proper behaviour with built-in
 //                     symbols?
-spv_result_t GetImportExportPairs(
-    const MessageConsumer& consumer, const ir::IRContext& linked_context,
-    const DefUseManager& def_use_manager,
-    const DecorationManager& decoration_manager, bool allow_partial_linkage,
-    LinkageTable* linkings_to_do);
+spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
+                                  const ir::IRContext& linked_context,
+                                  const DefUseManager& def_use_manager,
+                                  const DecorationManager& decoration_manager,
+                                  bool allow_partial_linkage,
+                                  LinkageTable* linkings_to_do);
 
 // Checks that for each pair of import and export, the import and export have
 // the same type as well as the same decorations.
 //
 // TODO(pierremoreau): Decorations on functions parameters are currently not
 // checked.
-spv_result_t CheckImportExportCompatibility(
-    const MessageConsumer& consumer, const LinkageTable& linkings_to_do,
-    ir::IRContext* context);
+spv_result_t CheckImportExportCompatibility(const MessageConsumer& consumer,
+                                            const LinkageTable& linkings_to_do,
+                                            ir::IRContext* context);
 
 // Remove linkage specific instructions, such as prototypes of imported
 // functions, declarations of imported variables, import (and export if
@@ -143,11 +143,11 @@ spv_result_t RemoveLinkageSpecificInstructions(
 // Verify that the unique ids of each instruction in |linked_context| (i.e. the
 // merged module) are truly unique. Does not check the validity of other ids
 spv_result_t VerifyIds(const MessageConsumer& consumer,
-                              ir::IRContext* linked_context);
+                       ir::IRContext* linked_context);
 
 spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
-                                      std::vector<ir::Module*>* modules,
-                                      uint32_t* max_id_bound) {
+                               std::vector<ir::Module*>* modules,
+                               uint32_t* max_id_bound) {
   spv_position_t position = {};
 
   if (modules == nullptr)
@@ -188,9 +188,8 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
 }
 
 spv_result_t GenerateHeader(const MessageConsumer& consumer,
-                                   const std::vector<ir::Module*>& modules,
-                                   uint32_t max_id_bound,
-                                   ir::ModuleHeader* header) {
+                            const std::vector<ir::Module*>& modules,
+                            uint32_t max_id_bound, ir::ModuleHeader* header) {
   spv_position_t position = {};
 
   if (modules.empty())
@@ -214,9 +213,9 @@ spv_result_t GenerateHeader(const MessageConsumer& consumer,
 }
 
 spv_result_t MergeModules(const MessageConsumer& consumer,
-                                 const std::vector<Module*>& input_modules,
-                                 const AssemblyGrammar& grammar,
-                                 IRContext* linked_context) {
+                          const std::vector<Module*>& input_modules,
+                          const AssemblyGrammar& grammar,
+                          IRContext* linked_context) {
   spv_position_t position = {};
 
   if (linked_context == nullptr)
@@ -370,11 +369,12 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
   return SPV_SUCCESS;
 }
 
-spv_result_t GetImportExportPairs(
-    const MessageConsumer& consumer, const ir::IRContext& linked_context,
-    const DefUseManager& def_use_manager,
-    const DecorationManager& decoration_manager, bool allow_partial_linkage,
-    LinkageTable* linkings_to_do) {
+spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
+                                  const ir::IRContext& linked_context,
+                                  const DefUseManager& def_use_manager,
+                                  const DecorationManager& decoration_manager,
+                                  bool allow_partial_linkage,
+                                  LinkageTable* linkings_to_do) {
   spv_position_t position = {};
 
   if (linkings_to_do == nullptr)
@@ -466,9 +466,9 @@ spv_result_t GetImportExportPairs(
   return SPV_SUCCESS;
 }
 
-spv_result_t CheckImportExportCompatibility(
-    const MessageConsumer& consumer, const LinkageTable& linkings_to_do,
-    ir::IRContext* context) {
+spv_result_t CheckImportExportCompatibility(const MessageConsumer& consumer,
+                                            const LinkageTable& linkings_to_do,
+                                            ir::IRContext* context) {
   spv_position_t position = {};
 
   // Ensure th import and export types are the same.
