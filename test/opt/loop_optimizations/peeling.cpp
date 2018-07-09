@@ -59,7 +59,9 @@ void Match(const std::string& checks, opt::IRContext* context) {
   EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())
       << match_result.message() << "\nChecking result:\n"
       << assembly;
-#endif  // ! SPIRV_EFFCEE
+#else  // ! SPIRV_EFFCEE
+  (void)checks;
+#endif
 }
 
 /*
