@@ -44,7 +44,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, SimpleFullyUnrollTest) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
             OpCapability Shader
@@ -183,7 +182,7 @@ OpBranch %27
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -228,7 +227,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, SimplePartialUnroll) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
             OpCapability Shader
@@ -344,7 +342,7 @@ OpBranch %23
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -369,7 +367,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, SimpleUnevenPartialUnroll) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
             OpCapability Shader
@@ -517,7 +514,7 @@ OpReturn
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -544,7 +541,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, SimpleLoopIterationsCheck) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
 OpCapability Shader
@@ -596,7 +592,6 @@ OpBranch %21
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
 
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
@@ -639,7 +634,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, SimpleLoopIterationsCheckSignedInit) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
 OpCapability Shader
@@ -692,7 +686,6 @@ OpBranch %22
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
 
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
@@ -739,7 +732,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, UnrollNestedLoops) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
                OpCapability Shader
@@ -964,7 +956,7 @@ OpBranch %27
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -987,7 +979,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, NegativeConditionAndInit) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
 const std::string text = R"(
                OpCapability Shader
@@ -1090,7 +1081,6 @@ OpBranch %22
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
 
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
@@ -1139,7 +1129,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, NegativeConditionAndInitResidualUnroll) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
 const std::string text = R"(
                OpCapability Shader
@@ -1313,7 +1302,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, UnrollNestedLoopsValidateDescriptor) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
                OpCapability Shader
@@ -1382,8 +1370,6 @@ TEST_F(PassClassTest, UnrollNestedLoopsValidateDescriptor) {
                OpReturn
                OpFunctionEnd
     )";
-
-  // clang-format on
 
   {  // Test fully unroll
     std::unique_ptr<ir::IRContext> context =
@@ -1479,7 +1465,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, FullyUnrollNegativeStepLoopTest) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
                OpCapability Shader
@@ -1598,7 +1583,7 @@ OpBranch %23
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -1622,7 +1607,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, FullyUnrollNegativeNonOneStepLoop) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
                OpCapability Shader
@@ -1741,7 +1725,7 @@ OpBranch %23
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -1765,7 +1749,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, FullyUnrollNonDivisibleStepLoop) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -1883,7 +1866,7 @@ OpBranch %23
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -1907,7 +1890,6 @@ void main() {
 }
 */
 TEST_F(PassClassTest, FullyUnrollNegativeNonDivisibleStepLoop) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -2038,7 +2020,7 @@ OpBranch %23
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -2051,7 +2033,6 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
-// clang-format off
 // With opt::LocalMultiStoreElimPass
 static const std::string multiple_phi_shader = R"(
                OpCapability Shader
@@ -2102,12 +2083,9 @@ static const std::string multiple_phi_shader = R"(
                OpReturnValue %37
                OpFunctionEnd
     )";
-// clang-format on
 
 TEST_F(PassClassTest, PartiallyUnrollResidualMultipleInductionVariables) {
-  // clang-format off
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -2218,7 +2196,7 @@ OpReturnValue %45
 OpReturnValue %30
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, multiple_phi_shader,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -2233,9 +2211,7 @@ OpFunctionEnd
 }
 
 TEST_F(PassClassTest, PartiallyUnrollMultipleInductionVariables) {
-  // clang-format off
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -2296,7 +2272,7 @@ OpBranch %17
 OpReturnValue %30
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, multiple_phi_shader,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -2311,9 +2287,7 @@ OpFunctionEnd
 }
 
 TEST_F(PassClassTest, FullyUnrollMultipleInductionVariables) {
-  // clang-format off
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "main"
@@ -2422,7 +2396,7 @@ OpBranch %25
 OpReturnValue %30
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, multiple_phi_shader,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -2449,7 +2423,6 @@ void main()
 }
 */
 TEST_F(PassClassTest, FullyUnrollEqualToOperations) {
-  // clang-format off
   // With opt::LocalMultiStoreElimPass
   const std::string text = R"(
                OpCapability Shader
@@ -2585,7 +2558,7 @@ OpBranch %28
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -2598,9 +2571,8 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
 }
 
-// clang-format off
-  // With opt::LocalMultiStoreElimPass
-  const std::string condition_in_header = R"(
+// With opt::LocalMultiStoreElimPass
+const std::string condition_in_header = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %main "main" %o
@@ -2637,14 +2609,9 @@ OpFunctionEnd
                OpReturn
                OpFunctionEnd
     )";
-//clang-format on
-
 
 TEST_F(PassClassTest, FullyUnrollConditionIsInHeaderBlock) {
-
-// clang-format off
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %1 "main" %2
 OpExecutionMode %1 OriginUpperLeft
@@ -2700,7 +2667,7 @@ OpBranch %18
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, condition_in_header,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -2714,9 +2681,7 @@ OpFunctionEnd
 }
 
 TEST_F(PassClassTest, PartiallyUnrollResidualConditionIsInHeaderBlock) {
-  // clang-format off
-const std::string output =
-R"(OpCapability Shader
+  const std::string output = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %1 "main" %2
 OpExecutionMode %1 OriginUpperLeft
@@ -2782,7 +2747,7 @@ OpReturn
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, condition_in_header,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -2808,7 +2773,6 @@ void main(void) {
 }
 */
 TEST_F(PassClassTest, PartiallyUnrollLatchNotContinue) {
-  // clang-format off
   const std::string text = R"(OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2967,7 +2931,7 @@ OpReturn
 OpReturn
 OpFunctionEnd
 )";
-  // clang-format on
+
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
   SinglePassRunAndCheck<PartialUnrollerTestPass<3>>(text, expected, true);
 
