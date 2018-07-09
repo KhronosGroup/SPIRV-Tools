@@ -286,7 +286,7 @@ spv_result_t VersionCheck(ValidationState_t& _,
                           const spv_parsed_instruction_t* inst) {
   const auto opcode = static_cast<SpvOp>(inst->opcode);
   spv_opcode_desc inst_desc;
-  const bool r = _.grammar().lookupOpcode(opcode, &inst_desc);
+  const spv_result_t r = _.grammar().lookupOpcode(opcode, &inst_desc);
   assert(r == SPV_SUCCESS);
   (void)r;
 
