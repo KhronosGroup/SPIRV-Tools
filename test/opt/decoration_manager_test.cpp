@@ -25,8 +25,8 @@
 namespace {
 
 using spvtest::MakeVector;
-using spvtools::opt::Instruction;
 using spvtools::opt::IRContext;
+using spvtools::opt::Instruction;
 using spvtools::opt::analysis::DecorationManager;
 
 class DecorationManagerTest : public ::testing::Test {

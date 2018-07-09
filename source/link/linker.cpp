@@ -37,8 +37,8 @@
 
 namespace spvtools {
 
-using opt::Instruction;
 using opt::IRContext;
+using opt::Instruction;
 using opt::Module;
 using opt::Operand;
 using opt::PassManager;

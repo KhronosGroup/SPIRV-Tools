@@ -25,8 +25,8 @@
 namespace {
 
 using namespace spvtools;
-using opt::Instruction;
 using opt::IRContext;
+using opt::Instruction;
 using opt::Operand;
 using spvtest::MakeInstruction;
 using ::testing::Eq;
