@@ -274,6 +274,26 @@ via setting `SPIRV_TOOLS_EXTRA_DEFINITIONS`. For example, by setting it to
 `/D_ITERATOR_DEBUG_LEVEL=0` on Windows, you can disable checked iterators and
 iterator debugging.
 
+### Android
+
+SPIR-V Tools supports building static libraries `libSPIRV-Tools.a` and
+`libSPIRV-Tools-opt.a` for Android:
+
+```
+cd <spirv-dir>
+
+export ANDROID_NDK=/path/to/your/ndk
+
+mkdir build && cd build
+mkdir libs
+mkdir app
+
+$ANDROID_NDK/ndk-build -C ../android_test     \
+                      NDK_PROJECT_PATH=.      \
+                      NDK_LIBS_OUT=`pwd`/libs \
+                      NDK_APP_OUT=`pwd`/app
+```
+
 ## Library
 
 ### Usage
