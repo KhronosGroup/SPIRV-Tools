@@ -1,18 +1,61 @@
 Revision history for SPIRV-Tools
 
-v2018.4-dev 2018-05-25
+v2018.5-dev 2018-07-08
+ - Start v2018.5 development
+
+v2018.4 2018-07-08
  - General:
+   - Support SPV_KHR_8bit_storage
+   - Add gclient and presubmit configurations
+   - Enable Kokoro build bots (#1625)
+   - Group tests into fewer executables, reduces load on CI
+   - Port test script to Python 3
+   - Symbol export tests respect SPIRV_SKIP_TESTS
+   - #1596: Operand lookup succeeds if enabled by a capability
+   - #1624: Instruction lookup succeeds if enabled by a capability
+   - Refactoring namespaces:
+     - #1678: Change libspirv to spvtools
+     - Code in source/utils moved into spvtools::utils
+     - Code in source/comp moved into spvtools::comp
  - Optimizer:
    - Remove insert-extract-elim pass. Use simplification pass instead.
    - Preserve instruction-to-block mapping in most passes, to reduce runtime.
+   - Small vector optimization for operands
+   - Add pass to move Private variables to Function. Increase opportunity to optimize.
    - Fixes:
+     #1120: Check static uses of entry point interfaces
+     #1372: Avoid merging some structs, to preserve names for reflection
+     #1577: Scalar replacement uses only undecorated types.
      #1578: Fix handling of forward-pointer types, and types embedding pointers
        to themselves.
-     #1577: Scalar replacement uses only undecorated types.
      #1591: Inliner: Callee variable with initializer should have a store at the call site.
+     #1634: Fix crash: Use type id in vector type lookup
+     #1649: Fix assert in compact-ids pass
+     Fix constant folder: ensure it uses the right type
+     #1659: Folding rules added to IRContext. Avoids leak.
  - Validator
+   - Add work-in-progress WebGPU environment. Disallows OpUndef
+   - #670, #1581: Improve error messages; disassemble instruction
+   - #491: Check structured switches
+   - #937: Check layout rules for Block and BufferBlock in Uniform, StorageBuffer, PushConstant
+   - #1281: Check invalid branches into structured constructs
+   - #1522: Disallow array-of-arrays with DescriptorSets
    - #1577: Allow duplicate pointer types.
    - #1581: Better messages: output ID names along with numbers in more cases.
+   - #1597: Check Vulkan 1.1 capabilities
+   - #1618: Check invalid exit from structured case construct
+   - #1622: Run IdPass before DataRulesPass
+   - #1632: Reduce test time by artificially lowering limits in limit test
+   - #1638: Block-decorated structs member order must respect offset order
+   - #1657: Improve CFG validation diagnostics
+   - Khronos SPIR-V #337: GLSL.std.450 Refract instruction Eta param can be any float scalar.
+   - #1606: PushConstant Blocks follow storage-buffer layout rules
+   - #1664: Check layout of StorageBuffer variables with Block decoration, using storage buffer
+     rules
+   - #1666: Layout validation should permit {vec3; float} packing
+   - #1637, #1668: Layout validation uses RowMajor, ArrayStride, MatrixStride properly
+ - Linker
+   - Avoid buffer overrun when creating OpModuleProcessed
 
 v2018.3 2018-05-25
  - General:
