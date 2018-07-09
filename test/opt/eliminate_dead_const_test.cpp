@@ -22,9 +22,9 @@
 #include <sstream>
 #include <unordered_set>
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using EliminateDeadConstantBasicTest = PassTest<::testing::Test>;
 
@@ -73,7 +73,7 @@ TEST_F(EliminateDeadConstantBasicTest, BasicAllDeadConstants) {
             });
       });
 
-  SinglePassRunAndCheck<opt::EliminateDeadConstantPass>(
+  SinglePassRunAndCheck<EliminateDeadConstantPass>(
       JoinAllInsts(text), expected_disassembly, /* skip_nop = */ true);
 }
 
@@ -129,7 +129,7 @@ TEST_F(EliminateDeadConstantBasicTest, BasicNoneDeadConstants) {
       // clang-format on
   };
   // All constants are used, so none of them should be eliminated.
-  SinglePassRunAndCheck<opt::EliminateDeadConstantPass>(
+  SinglePassRunAndCheck<EliminateDeadConstantPass>(
       JoinAllInsts(text), JoinAllInsts(text), /* skip_nop = */ true);
 }
 
@@ -191,7 +191,7 @@ TEST_P(EliminateDeadConstantTest, Custom) {
   const std::string expected = builder.GetCode();
   builder.AppendTypesConstantsGlobals(tc.dead_consts);
   const std::string assembly_with_dead_const = builder.GetCode();
-  SinglePassRunAndCheck<opt::EliminateDeadConstantPass>(
+  SinglePassRunAndCheck<EliminateDeadConstantPass>(
       assembly_with_dead_const, expected, /*  skip_nop = */ true);
 }
 
@@ -839,4 +839,7 @@ INSTANTIATE_TEST_CASE_P(
         // Long Def-Use chain with swizzle
         // clang-format on
     })));
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

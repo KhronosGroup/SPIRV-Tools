@@ -15,6 +15,7 @@
 #include "gmock/gmock.h"
 #include "linker_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using ::testing::HasSubstr;
@@ -38,7 +39,7 @@ OpDecorate %1 LinkageAttributes "bar" Export
 )";
 
   spvtest::Binary linked_binary;
-  spvtools::LinkerOptions linker_options;
+  LinkerOptions linker_options;
   linker_options.SetAllowPartialLinkage(true);
   ASSERT_EQ(SPV_SUCCESS,
             AssembleAndLink({body1, body2}, &linked_binary, linker_options));
@@ -82,4 +83,5 @@ OpDecorate %1 LinkageAttributes "bar" Export
               HasSubstr("Unresolved external reference to \"foo\"."));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

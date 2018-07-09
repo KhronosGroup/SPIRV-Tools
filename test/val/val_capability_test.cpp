@@ -27,6 +27,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using spvtest::ScopedContext;
@@ -2294,3 +2296,5 @@ OpFunctionEnd
 }
 
 }  // namespace
+}  // namespace val
+}  // namespace spvtools

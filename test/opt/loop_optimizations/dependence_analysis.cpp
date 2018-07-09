@@ -32,9 +32,10 @@
 #include "opt/pass.h"
 #include "opt/tree_iterator.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using DependencyAnalysis = ::testing::Test;
 
 /*
@@ -120,22 +121,22 @@ TEST(DependencyAnalysis, ZIV) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const opt::Function* f = spvtest::GetFunction(module, 4);
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const Function* f = spvtest::GetFunction(module, 4);
+  LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  opt::Loop* loop = &ld.GetLoopByIndex(0);
-  std::vector<const opt::Loop*> loops{loop};
-  opt::LoopDependenceAnalysis analysis{context.get(), loops};
+  Loop* loop = &ld.GetLoopByIndex(0);
+  std::vector<const Loop*> loops{loop};
+  LoopDependenceAnalysis analysis{context.get(), loops};
 
-  const opt::Instruction* store[4];
+  const Instruction* store[4];
   int stores_found = 0;
-  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 13)) {
+  for (const Instruction& inst : *spvtest::GetBasicBlock(f, 13)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -148,21 +149,21 @@ TEST(DependencyAnalysis, ZIV) {
 
   // 29 -> 30 tests looking through constants.
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(29),
                                        store[0], &distance_vector));
   }
 
   // 36 -> 37 tests looking through additions.
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(36),
                                        store[1], &distance_vector));
   }
 
   // 41 -> 42 tests looking at same index across two different arrays.
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(41),
                                        store[2], &distance_vector));
   }
@@ -170,7 +171,7 @@ TEST(DependencyAnalysis, ZIV) {
   // 48 -> 49 tests looking through additions for same index in two different
   // arrays.
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(48),
                                        store[3], &distance_vector));
   }
@@ -277,22 +278,22 @@ TEST(DependencyAnalysis, SymbolicZIV) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const opt::Function* f = spvtest::GetFunction(module, 4);
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const Function* f = spvtest::GetFunction(module, 4);
+  LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  opt::Loop* loop = &ld.GetLoopByIndex(0);
-  std::vector<const opt::Loop*> loops{loop};
-  opt::LoopDependenceAnalysis analysis{context.get(), loops};
+  Loop* loop = &ld.GetLoopByIndex(0);
+  std::vector<const Loop*> loops{loop};
+  LoopDependenceAnalysis analysis{context.get(), loops};
 
-  const opt::Instruction* store[4];
+  const Instruction* store[4];
   int stores_found = 0;
-  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 22)) {
+  for (const Instruction& inst : *spvtest::GetBasicBlock(f, 22)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -306,21 +307,21 @@ TEST(DependencyAnalysis, SymbolicZIV) {
   // independent due to loop bounds (won't enter if N <= 0).
   // 39 -> 40 tests looking through symbols and multiplicaiton.
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(39),
                                        store[0], &distance_vector));
   }
 
   // 48 -> 49 tests looking through symbols and multiplication + addition.
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(48),
                                        store[1], &distance_vector));
   }
 
   // 56 -> 57 tests looking through symbols and arithmetic on load and store.
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(56),
                                        store[2], &distance_vector));
   }
@@ -329,7 +330,7 @@ TEST(DependencyAnalysis, SymbolicZIV) {
   // 63 -> 64 tests looking through symbols and load/store from/to different
   // arrays.
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(63),
                                        store[3], &distance_vector));
   }
@@ -511,24 +512,24 @@ TEST(DependencyAnalysis, SIV) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // For the loop in function a.
   {
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[4];
+    const Instruction* store[4];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 17)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 17)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -542,66 +543,66 @@ TEST(DependencyAnalysis, SIV) {
     // = dependence
     // 33 -> 34 tests looking at SIV in same array.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(33), store[0], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::DISTANCE);
+                DistanceEntry::DependenceInformation::DISTANCE);
       EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-                opt::DistanceEntry::Directions::EQ);
+                DistanceEntry::Directions::EQ);
       EXPECT_EQ(distance_vector.GetEntries()[0].distance, 0);
     }
 
     // > -1 dependence
     // 44 -> 45 tests looking at SIV in same array with addition.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(44), store[1], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::DISTANCE);
+                DistanceEntry::DependenceInformation::DISTANCE);
       EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-                opt::DistanceEntry::Directions::GT);
+                DistanceEntry::Directions::GT);
       EXPECT_EQ(distance_vector.GetEntries()[0].distance, -1);
     }
 
     // < 1 dependence
     // 54 -> 55 tests looking at SIV in same array with subtraction.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(54), store[2], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::DISTANCE);
+                DistanceEntry::DependenceInformation::DISTANCE);
       EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-                opt::DistanceEntry::Directions::LT);
+                DistanceEntry::Directions::LT);
       EXPECT_EQ(distance_vector.GetEntries()[0].distance, 1);
     }
 
     // <=> dependence
     // 61 -> 62 tests looking at SIV in same array with multiplication.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(61), store[3], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::UNKNOWN);
+                DistanceEntry::DependenceInformation::UNKNOWN);
       EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-                opt::DistanceEntry::Directions::ALL);
+                DistanceEntry::Directions::ALL);
     }
   }
   // For the loop in function b.
   {
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[4];
+    const Instruction* store[4];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 68)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 68)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -615,52 +616,52 @@ TEST(DependencyAnalysis, SIV) {
     // = dependence
     // 78 -> 79 tests looking at SIV in same array.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(78), store[0], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::DISTANCE);
+                DistanceEntry::DependenceInformation::DISTANCE);
       EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-                opt::DistanceEntry::Directions::EQ);
+                DistanceEntry::Directions::EQ);
       EXPECT_EQ(distance_vector.GetEntries()[0].distance, 0);
     }
 
     // < 1 dependence
     // 85 -> 86 tests looking at SIV in same array with addition.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(85), store[1], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::DISTANCE);
+                DistanceEntry::DependenceInformation::DISTANCE);
       EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-                opt::DistanceEntry::Directions::LT);
+                DistanceEntry::Directions::LT);
       EXPECT_EQ(distance_vector.GetEntries()[0].distance, 1);
     }
 
     // > -1 dependence
     // 92 -> 93 tests looking at SIV in same array with subtraction.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(92), store[2], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::DISTANCE);
+                DistanceEntry::DependenceInformation::DISTANCE);
       EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-                opt::DistanceEntry::Directions::GT);
+                DistanceEntry::Directions::GT);
       EXPECT_EQ(distance_vector.GetEntries()[0].distance, -1);
     }
 
     // <=> dependence
     // 99 -> 100 tests looking at SIV in same array with multiplication.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(99), store[3], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::UNKNOWN);
+                DistanceEntry::DependenceInformation::UNKNOWN);
       EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-                opt::DistanceEntry::Directions::ALL);
+                DistanceEntry::Directions::ALL);
     }
   }
 }
@@ -905,24 +906,24 @@ TEST(DependencyAnalysis, SymbolicSIV) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // For the loop in function a.
   {
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[4];
+    const Instruction* store[4];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -936,7 +937,7 @@ TEST(DependencyAnalysis, SymbolicSIV) {
     // independent due to loop bounds (won't enter when N <= 0)
     // 49 -> 50 tests looking through SIV and symbols with multiplication
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       // Independent but not yet supported.
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(49), store[0], &distance_vector));
@@ -945,7 +946,7 @@ TEST(DependencyAnalysis, SymbolicSIV) {
     // 63 -> 66 tests looking through SIV and symbols with multiplication and +
     // C
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       // Independent.
       EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(63),
                                          store[1], &distance_vector));
@@ -953,7 +954,7 @@ TEST(DependencyAnalysis, SymbolicSIV) {
 
     // 84 -> 85 tests looking through arithmetic on SIV and symbols
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       // Independent but not yet supported.
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(84), store[2], &distance_vector));
@@ -961,7 +962,7 @@ TEST(DependencyAnalysis, SymbolicSIV) {
 
     // 101 -> 102 tests looking through symbol arithmetic on SIV and symbols
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       // Independent.
       EXPECT_TRUE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(101), store[3], &distance_vector));
@@ -969,16 +970,16 @@ TEST(DependencyAnalysis, SymbolicSIV) {
   }
   // For the loop in function b.
   {
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[4];
+    const Instruction* store[4];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 114)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 114)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -992,7 +993,7 @@ TEST(DependencyAnalysis, SymbolicSIV) {
     // independent due to loop bounds (won't enter when N <= 0).
     // 129 -> 130 tests looking through SIV and symbols with multiplication.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       // Independent but not yet supported.
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(129), store[0], &distance_vector));
@@ -1001,7 +1002,7 @@ TEST(DependencyAnalysis, SymbolicSIV) {
     // 140 -> 143 tests looking through SIV and symbols with multiplication and
     // + C.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       // Independent.
       EXPECT_TRUE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(140), store[1], &distance_vector));
@@ -1009,7 +1010,7 @@ TEST(DependencyAnalysis, SymbolicSIV) {
 
     // 157 -> 158 tests looking through arithmetic on SIV and symbols.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       // Independent but not yet supported.
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(157), store[2], &distance_vector));
@@ -1017,7 +1018,7 @@ TEST(DependencyAnalysis, SymbolicSIV) {
 
     // 174 -> 175 tests looking through symbol arithmetic on SIV and symbols.
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       // Independent.
       EXPECT_TRUE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(174), store[3], &distance_vector));
@@ -1401,10 +1402,10 @@ TEST(DependencyAnalysis, Crossing) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
@@ -1412,20 +1413,20 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests even crossing subscripts from low to high indexes.
   // 47 -> 48
   {
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store = nullptr;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
+    const Instruction* store = nullptr;
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 29)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
     }
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(47),
                                         store, &distance_vector));
   }
@@ -1433,20 +1434,20 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests even crossing subscripts from high to low indexes.
   // 67 -> 68
   {
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store = nullptr;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
+    const Instruction* store = nullptr;
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
     }
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(67),
                                         store, &distance_vector));
   }
@@ -1455,20 +1456,20 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests uneven crossing subscripts from low to high indexes.
   // 92 -> 93
   {
-    const opt::Function* f = spvtest::GetFunction(module, 10);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 10);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store = nullptr;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 75)) {
+    const Instruction* store = nullptr;
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 75)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
     }
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(92),
                                         store, &distance_vector));
   }
@@ -1476,20 +1477,20 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests uneven crossing subscripts from high to low indexes.
   // 113 -> 114
   {
-    const opt::Function* f = spvtest::GetFunction(module, 12);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 12);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store = nullptr;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 99)) {
+    const Instruction* store = nullptr;
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 99)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
     }
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(113),
                                         store, &distance_vector));
   }
@@ -1498,20 +1499,20 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests even crossing subscripts from low to high indexes.
   // 134 -> 135
   {
-    const opt::Function* f = spvtest::GetFunction(module, 14);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 14);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store = nullptr;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 121)) {
+    const Instruction* store = nullptr;
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 121)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
     }
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(134),
                                         store, &distance_vector));
   }
@@ -1519,20 +1520,20 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests even crossing subscripts from high to low indexes.
   // 154 -> 155
   {
-    const opt::Function* f = spvtest::GetFunction(module, 16);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 16);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store = nullptr;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 142)) {
+    const Instruction* store = nullptr;
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 142)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
     }
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(154),
                                         store, &distance_vector));
   }
@@ -1541,20 +1542,20 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests uneven crossing subscripts from low to high indexes.
   // 175 -> 176
   {
-    const opt::Function* f = spvtest::GetFunction(module, 18);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 18);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store = nullptr;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 162)) {
+    const Instruction* store = nullptr;
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 162)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
     }
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(175),
                                         store, &distance_vector));
   }
@@ -1562,20 +1563,20 @@ TEST(DependencyAnalysis, Crossing) {
   // Tests uneven crossing subscripts from high to low indexes.
   // 196 -> 197
   {
-    const opt::Function* f = spvtest::GetFunction(module, 20);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 20);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store = nullptr;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 183)) {
+    const Instruction* store = nullptr;
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 183)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
     }
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(196),
                                         store, &distance_vector));
   }
@@ -1829,24 +1830,24 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // For the loop in function a
   {
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[4];
+    const Instruction* store[4];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 19)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 19)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -1861,22 +1862,22 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
     // index.
     // 34 -> 35
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(34), store[0], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_first);
     }
 
     // Tests identifying peel first with weak zero with source as zero index.
     // 38 -> 39
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(38), store[1], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_first);
     }
 
@@ -1884,37 +1885,37 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
     // index.
     // 43 -> 44
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(43), store[2], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_last);
     }
 
     // Tests identifying peel first with weak zero with source as zero index.
     // 47 -> 48
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(47), store[3], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_last);
     }
   }
   // For the loop in function b
   {
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[4];
+    const Instruction* store[4];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 54)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -1929,22 +1930,22 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
     // index.
     // 66 -> 67
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(66), store[0], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_first);
     }
 
     // Tests identifying peel first with weak zero with source as zero index.
     // 70 -> 71
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(70), store[1], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_first);
     }
 
@@ -1952,36 +1953,36 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
     // index.
     // 74 -> 75
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(74), store[2], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_last);
     }
 
     // Tests identifying peel first with weak zero with source as zero index.
     // 78 -> 79
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(78), store[3], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_last);
     }
   }
   // For the loop in function c
   {
-    const opt::Function* f = spvtest::GetFunction(module, 10);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 10);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
-    const opt::Instruction* store[4];
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
+    const Instruction* store[4];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 84)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 84)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -1996,22 +1997,22 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
     // index.
     // 93 -> 94
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(93), store[0], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_first);
     }
 
     // Tests identifying peel first with weak zero with source as zero index.
     // 97 -> 98
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(97), store[1], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_first);
     }
 
@@ -2019,37 +2020,37 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
     // index.
     // 101 -> 102
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(101), store[2], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_last);
     }
 
     // Tests identifying peel first with weak zero with source as zero index.
     // 105 -> 106
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(105), store[3], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_last);
     }
   }
   // For the loop in function d
   {
-    const opt::Function* f = spvtest::GetFunction(module, 12);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 12);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[4];
+    const Instruction* store[4];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 111)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 111)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -2064,22 +2065,22 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
     // index.
     // 120 -> 121
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(120), store[0], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_first);
     }
 
     // Tests identifying peel first with weak zero with source as zero index.
     // 124 -> 125
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(124), store[1], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_first);
     }
 
@@ -2087,22 +2088,22 @@ TEST(DependencyAnalysis, WeakZeroSIV) {
     // index.
     // 128 -> 129
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(128), store[2], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_last);
     }
 
     // Tests identifying peel first with weak zero with source as zero index.
     // 132 -> 133
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(132), store[3], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::PEEL);
+                DistanceEntry::DependenceInformation::PEEL);
       EXPECT_TRUE(distance_vector.GetEntries()[0].peel_last);
     }
   }
@@ -2195,22 +2196,22 @@ TEST(DependencyAnalysis, MultipleSubscriptZIVSIV) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const opt::Function* f = spvtest::GetFunction(module, 4);
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const Function* f = spvtest::GetFunction(module, 4);
+  LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  opt::Loop* loop = &ld.GetLoopByIndex(0);
-  std::vector<const opt::Loop*> loops{loop};
-  opt::LoopDependenceAnalysis analysis{context.get(), loops};
+  Loop* loop = &ld.GetLoopByIndex(0);
+  std::vector<const Loop*> loops{loop};
+  LoopDependenceAnalysis analysis{context.get(), loops};
 
-  const opt::Instruction* store[6];
+  const Instruction* store[6];
   int stores_found = 0;
-  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 11)) {
+  for (const Instruction& inst : *spvtest::GetBasicBlock(f, 11)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -2223,57 +2224,57 @@ TEST(DependencyAnalysis, MultipleSubscriptZIVSIV) {
 
   // 30 -> 31
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(30),
                                         store[0], &distance_vector));
     EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-              opt::DistanceEntry::DependenceInformation::DISTANCE);
+              DistanceEntry::DependenceInformation::DISTANCE);
     EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-              opt::DistanceEntry::Directions::EQ);
+              DistanceEntry::Directions::EQ);
     EXPECT_EQ(distance_vector.GetEntries()[0].distance, 0);
   }
 
   // 36 -> 37
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(36),
                                        store[1], &distance_vector));
   }
 
   // 41 -> 42
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(41),
                                        store[2], &distance_vector));
   }
 
   // 46 -> 47
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(46),
                                        store[3], &distance_vector));
     EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-              opt::DistanceEntry::DependenceInformation::DISTANCE);
+              DistanceEntry::DependenceInformation::DISTANCE);
     EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-              opt::DistanceEntry::Directions::EQ);
+              DistanceEntry::Directions::EQ);
     EXPECT_EQ(distance_vector.GetEntries()[0].distance, 0);
   }
 
   // 51 -> 52
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(51),
                                        store[4], &distance_vector));
     EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-              opt::DistanceEntry::DependenceInformation::DISTANCE);
+              DistanceEntry::DependenceInformation::DISTANCE);
     EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-              opt::DistanceEntry::Directions::EQ);
+              DistanceEntry::Directions::EQ);
     EXPECT_EQ(distance_vector.GetEntries()[0].distance, 0);
   }
 
   // 54 -> 55
   {
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_TRUE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(54),
                                        store[5], &distance_vector));
   }
@@ -2426,24 +2427,24 @@ TEST(DependencyAnalysis, IrrelevantSubscripts) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // For the loop in function a
   {
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    std::vector<const opt::Loop*> loops{&ld.GetLoopByIndex(1),
-                                        &ld.GetLoopByIndex(0)};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    std::vector<const Loop*> loops{&ld.GetLoopByIndex(1),
+                                   &ld.GetLoopByIndex(0)};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[1];
+    const Instruction* store[1];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 25)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 25)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -2456,30 +2457,30 @@ TEST(DependencyAnalysis, IrrelevantSubscripts) {
 
     // 39 -> 40
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       analysis.SetDebugStream(std::cout);
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(39), store[0], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::IRRELEVANT);
+                DistanceEntry::DependenceInformation::IRRELEVANT);
       EXPECT_EQ(distance_vector.GetEntries()[1].dependence_information,
-                opt::DistanceEntry::DependenceInformation::DISTANCE);
+                DistanceEntry::DependenceInformation::DISTANCE);
       EXPECT_EQ(distance_vector.GetEntries()[1].distance, 0);
     }
   }
 
   // For the loop in function b
   {
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    std::vector<const opt::Loop*> loops{&ld.GetLoopByIndex(1),
-                                        &ld.GetLoopByIndex(0)};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    std::vector<const Loop*> loops{&ld.GetLoopByIndex(1),
+                                   &ld.GetLoopByIndex(0)};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[1];
+    const Instruction* store[1];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 56)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 56)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
@@ -2492,24 +2493,24 @@ TEST(DependencyAnalysis, IrrelevantSubscripts) {
 
     // 66 -> 67
     {
-      opt::DistanceVector distance_vector{loops.size()};
+      DistanceVector distance_vector{loops.size()};
       EXPECT_FALSE(analysis.GetDependence(
           context->get_def_use_mgr()->GetDef(66), store[0], &distance_vector));
       EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-                opt::DistanceEntry::DependenceInformation::DISTANCE);
+                DistanceEntry::DependenceInformation::DISTANCE);
       EXPECT_EQ(distance_vector.GetEntries()[0].distance, 0);
       EXPECT_EQ(distance_vector.GetEntries()[1].dependence_information,
-                opt::DistanceEntry::DependenceInformation::IRRELEVANT);
+                DistanceEntry::DependenceInformation::IRRELEVANT);
     }
   }
 }
 
-void CheckDependenceAndDirection(const opt::Instruction* source,
-                                 const opt::Instruction* destination,
+void CheckDependenceAndDirection(const Instruction* source,
+                                 const Instruction* destination,
                                  bool expected_dependence,
-                                 opt::DistanceVector expected_distance,
-                                 opt::LoopDependenceAnalysis* analysis) {
-  opt::DistanceVector dv_entry(2);
+                                 DistanceVector expected_distance,
+                                 LoopDependenceAnalysis* analysis) {
+  DistanceVector dv_entry(2);
   EXPECT_EQ(expected_dependence,
             analysis->GetDependence(source, destination, &dv_entry));
   EXPECT_EQ(expected_distance, dv_entry);
@@ -2768,30 +2769,29 @@ TEST(DependencyAnalysis, MIV) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const opt::Function* f = spvtest::GetFunction(module, 4);
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const Function* f = spvtest::GetFunction(module, 4);
+  LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  std::vector<const opt::Loop*> loops{&ld.GetLoopByIndex(0),
-                                      &ld.GetLoopByIndex(1)};
+  std::vector<const Loop*> loops{&ld.GetLoopByIndex(0), &ld.GetLoopByIndex(1)};
 
-  opt::LoopDependenceAnalysis analysis{context.get(), loops};
+  LoopDependenceAnalysis analysis{context.get(), loops};
 
   const int instructions_expected = 17;
-  const opt::Instruction* store[instructions_expected];
-  const opt::Instruction* load[instructions_expected];
+  const Instruction* store[instructions_expected];
+  const Instruction* load[instructions_expected];
   int stores_found = 0;
   int loads_found = 0;
 
   int block_id = 36;
   ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+  for (const Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -2806,12 +2806,11 @@ TEST(DependencyAnalysis, MIV) {
   EXPECT_EQ(instructions_expected, stores_found);
   EXPECT_EQ(instructions_expected, loads_found);
 
-  auto directions_all = opt::DistanceEntry(opt::DistanceEntry::Directions::ALL);
-  auto directions_none =
-      opt::DistanceEntry(opt::DistanceEntry::Directions::NONE);
+  auto directions_all = DistanceEntry(DistanceEntry::Directions::ALL);
+  auto directions_none = DistanceEntry(DistanceEntry::Directions::NONE);
 
-  auto dependent = opt::DistanceVector({directions_all, directions_all});
-  auto independent = opt::DistanceVector({directions_none, directions_none});
+  auto dependent = DistanceVector({directions_all, directions_all});
+  auto independent = DistanceVector({directions_none, directions_none});
 
   CheckDependenceAndDirection(load[0], store[0], false, dependent, &analysis);
   CheckDependenceAndDirection(load[1], store[1], false, dependent, &analysis);
@@ -2836,19 +2835,19 @@ TEST(DependencyAnalysis, MIV) {
                               &analysis);
 }
 
-void PartitionSubscripts(const opt::Instruction* instruction_0,
-                         const opt::Instruction* instruction_1,
-                         opt::LoopDependenceAnalysis* analysis,
+void PartitionSubscripts(const Instruction* instruction_0,
+                         const Instruction* instruction_1,
+                         LoopDependenceAnalysis* analysis,
                          std::vector<std::vector<int>> expected_ids) {
   auto subscripts_0 = analysis->GetSubscripts(instruction_0);
   auto subscripts_1 = analysis->GetSubscripts(instruction_1);
 
-  std::vector<std::set<std::pair<opt::Instruction*, opt::Instruction*>>>
+  std::vector<std::set<std::pair<Instruction*, Instruction*>>>
       expected_partition{};
 
   for (const auto& partition : expected_ids) {
     expected_partition.push_back(
-        std::set<std::pair<opt::Instruction*, opt::Instruction*>>{});
+        std::set<std::pair<Instruction*, Instruction*>>{});
     for (auto id : partition) {
       expected_partition.back().insert({subscripts_0[id], subscripts_1[id]});
     }
@@ -3059,30 +3058,30 @@ TEST(DependencyAnalysis, SubscriptPartitioning) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const opt::Function* f = spvtest::GetFunction(module, 4);
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  const Function* f = spvtest::GetFunction(module, 4);
+  LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-  std::vector<const opt::Loop*> loop_nest{
+  std::vector<const Loop*> loop_nest{
       &ld.GetLoopByIndex(0), &ld.GetLoopByIndex(1), &ld.GetLoopByIndex(2),
       &ld.GetLoopByIndex(3)};
-  opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+  LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
   const int instructions_expected = 13;
-  const opt::Instruction* store[instructions_expected];
-  const opt::Instruction* load[instructions_expected];
+  const Instruction* store[instructions_expected];
+  const Instruction* load[instructions_expected];
   int stores_found = 0;
   int loads_found = 0;
 
   int block_id = 37;
   ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-  for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+  for (const Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
     if (inst.opcode() == SpvOp::SpvOpStore) {
       store[stores_found] = &inst;
       ++stores_found;
@@ -3445,25 +3444,25 @@ TEST(DependencyAnalysis, Delta) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
   {
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const opt::Instruction* store = nullptr;
-    const opt::Instruction* load = nullptr;
+    const Instruction* store = nullptr;
+    const Instruction* load = nullptr;
 
     int block_id = 31;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3476,17 +3475,17 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const opt::Loop*> loop_nest{&ld.GetLoopByIndex(0),
-                                            &ld.GetLoopByIndex(1)};
-    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+    std::vector<const Loop*> loop_nest{&ld.GetLoopByIndex(0),
+                                       &ld.GetLoopByIndex(1)};
+    LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
-    opt::DistanceVector dv_entry(loop_nest.size());
+    DistanceVector dv_entry(loop_nest.size());
 
-    std::vector<opt::DistanceEntry> expected_entries{
-        opt::DistanceEntry(opt::DistanceEntry::Directions::LT, 1),
-        opt::DistanceEntry(opt::DistanceEntry::Directions::LT, 1)};
+    std::vector<DistanceEntry> expected_entries{
+        DistanceEntry(DistanceEntry::Directions::LT, 1),
+        DistanceEntry(DistanceEntry::Directions::LT, 1)};
 
-    opt::DistanceVector expected_distance_vector(expected_entries);
+    DistanceVector expected_distance_vector(expected_entries);
 
     auto is_independent = analysis.GetDependence(load, store, &dv_entry);
 
@@ -3495,16 +3494,16 @@ TEST(DependencyAnalysis, Delta) {
   }
 
   {
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const opt::Instruction* store = nullptr;
-    const opt::Instruction* load = nullptr;
+    const Instruction* store = nullptr;
+    const Instruction* load = nullptr;
 
     int block_id = 62;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3517,26 +3516,26 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const opt::Loop*> loop_nest{&ld.GetLoopByIndex(0)};
-    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+    std::vector<const Loop*> loop_nest{&ld.GetLoopByIndex(0)};
+    LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
-    opt::DistanceVector dv_entry(loop_nest.size());
+    DistanceVector dv_entry(loop_nest.size());
     auto is_independent = analysis.GetDependence(load, store, &dv_entry);
 
     EXPECT_TRUE(is_independent);
   }
 
   {
-    const opt::Function* f = spvtest::GetFunction(module, 10);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 10);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const opt::Instruction* store = nullptr;
-    const opt::Instruction* load = nullptr;
+    const Instruction* store = nullptr;
+    const Instruction* load = nullptr;
 
     int block_id = 84;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3549,29 +3548,29 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const opt::Loop*> loop_nest{&ld.GetLoopByIndex(0)};
-    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+    std::vector<const Loop*> loop_nest{&ld.GetLoopByIndex(0)};
+    LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
-    opt::DistanceVector dv_entry(loop_nest.size());
+    DistanceVector dv_entry(loop_nest.size());
     auto is_independent = analysis.GetDependence(load, store, &dv_entry);
 
-    opt::DistanceVector expected_distance_vector({opt::DistanceEntry(1, 2)});
+    DistanceVector expected_distance_vector({DistanceEntry(1, 2)});
 
     EXPECT_FALSE(is_independent);
     EXPECT_EQ(expected_distance_vector, dv_entry);
   }
 
   {
-    const opt::Function* f = spvtest::GetFunction(module, 12);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 12);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const opt::Instruction* store = nullptr;
-    const opt::Instruction* load = nullptr;
+    const Instruction* store = nullptr;
+    const Instruction* load = nullptr;
 
     int block_id = 119;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3584,18 +3583,18 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const opt::Loop*> loop_nest{
+    std::vector<const Loop*> loop_nest{
         &ld.GetLoopByIndex(0), &ld.GetLoopByIndex(1), &ld.GetLoopByIndex(2)};
-    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+    LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
-    opt::DistanceVector dv_entry(loop_nest.size());
+    DistanceVector dv_entry(loop_nest.size());
 
-    std::vector<opt::DistanceEntry> expected_entries{
-        opt::DistanceEntry(opt::DistanceEntry::Directions::LT, 1),
-        opt::DistanceEntry(opt::DistanceEntry::Directions::LT, 1),
-        opt::DistanceEntry(opt::DistanceEntry::Directions::GT, -1)};
+    std::vector<DistanceEntry> expected_entries{
+        DistanceEntry(DistanceEntry::Directions::LT, 1),
+        DistanceEntry(DistanceEntry::Directions::LT, 1),
+        DistanceEntry(DistanceEntry::Directions::GT, -1)};
 
-    opt::DistanceVector expected_distance_vector(expected_entries);
+    DistanceVector expected_distance_vector(expected_entries);
 
     auto is_independent = analysis.GetDependence(store, load, &dv_entry);
 
@@ -3604,16 +3603,16 @@ TEST(DependencyAnalysis, Delta) {
   }
 
   {
-    const opt::Function* f = spvtest::GetFunction(module, 14);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 14);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    const opt::Instruction* store = nullptr;
-    const opt::Instruction* load = nullptr;
+    const Instruction* store = nullptr;
+    const Instruction* load = nullptr;
 
     int block_id = 162;
     ASSERT_TRUE(spvtest::GetBasicBlock(f, block_id));
 
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, block_id)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store = &inst;
       }
@@ -3626,11 +3625,11 @@ TEST(DependencyAnalysis, Delta) {
     EXPECT_NE(nullptr, store);
     EXPECT_NE(nullptr, load);
 
-    std::vector<const opt::Loop*> loop_nest{&ld.GetLoopByIndex(0),
-                                            &ld.GetLoopByIndex(1)};
-    opt::LoopDependenceAnalysis analysis{context.get(), loop_nest};
+    std::vector<const Loop*> loop_nest{&ld.GetLoopByIndex(0),
+                                       &ld.GetLoopByIndex(1)};
+    LoopDependenceAnalysis analysis{context.get(), loop_nest};
 
-    opt::DistanceVector dv_entry(loop_nest.size());
+    DistanceVector dv_entry(loop_nest.size());
     auto is_independent = analysis.GetDependence(load, store, &dv_entry);
 
     EXPECT_TRUE(is_independent);
@@ -3638,15 +3637,14 @@ TEST(DependencyAnalysis, Delta) {
 }
 
 TEST(DependencyAnalysis, ConstraintIntersection) {
-  opt::LoopDependenceAnalysis analysis{nullptr,
-                                       std::vector<const opt::Loop*>{}};
+  LoopDependenceAnalysis analysis{nullptr, std::vector<const Loop*>{}};
   auto scalar_evolution = analysis.GetScalarEvolution();
   {
     // One is none. Other should be returned
-    auto none = analysis.make_constraint<opt::DependenceNone>();
+    auto none = analysis.make_constraint<DependenceNone>();
     auto x = scalar_evolution->CreateConstant(1);
     auto y = scalar_evolution->CreateConstant(10);
-    auto point = analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
+    auto point = analysis.make_constraint<DependencePoint>(x, y, nullptr);
 
     auto ret_0 = analysis.IntersectConstraints(none, point, nullptr, nullptr);
 
@@ -3668,10 +3666,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto x = scalar_evolution->CreateConstant(1);
     auto y = scalar_evolution->CreateConstant(10);
 
-    auto distance_0 =
-        analysis.make_constraint<opt::DependenceDistance>(x, nullptr);
-    auto distance_1 =
-        analysis.make_constraint<opt::DependenceDistance>(y, nullptr);
+    auto distance_0 = analysis.make_constraint<DependenceDistance>(x, nullptr);
+    auto distance_1 = analysis.make_constraint<DependenceDistance>(y, nullptr);
 
     // Equal distances
     auto ret_0 =
@@ -3692,12 +3688,9 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto x = scalar_evolution->CreateConstant(1);
     auto y = scalar_evolution->CreateConstant(10);
 
-    auto point_0 =
-        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
-    auto point_1 =
-        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
-    auto point_2 =
-        analysis.make_constraint<opt::DependencePoint>(y, y, nullptr);
+    auto point_0 = analysis.make_constraint<DependencePoint>(x, y, nullptr);
+    auto point_1 = analysis.make_constraint<DependencePoint>(x, y, nullptr);
+    auto point_2 = analysis.make_constraint<DependencePoint>(y, y, nullptr);
 
     // Equal points
     auto ret_0 =
@@ -3723,10 +3716,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto b1 = scalar_evolution->CreateConstant(12);
     auto c1 = scalar_evolution->CreateConstant(18);
 
-    auto line_0 =
-        analysis.make_constraint<opt::DependenceLine>(a0, b0, c0, nullptr);
-    auto line_1 =
-        analysis.make_constraint<opt::DependenceLine>(a1, b1, c1, nullptr);
+    auto line_0 = analysis.make_constraint<DependenceLine>(a0, b0, c0, nullptr);
+    auto line_1 = analysis.make_constraint<DependenceLine>(a1, b1, c1, nullptr);
 
     // Same line, both ways
     auto ret_0 =
@@ -3742,8 +3733,7 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
 
     // Non-intersecting parallel lines
     auto c2 = scalar_evolution->CreateConstant(12);
-    auto line_2 =
-        analysis.make_constraint<opt::DependenceLine>(a1, b1, c2, nullptr);
+    auto line_2 = analysis.make_constraint<DependenceLine>(a1, b1, c2, nullptr);
 
     auto ret_2 =
         analysis.IntersectConstraints(line_0, line_2, nullptr, nullptr);
@@ -3754,8 +3744,7 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     EXPECT_NE(nullptr, ret_3->AsDependenceEmpty());
 
     auto c3 = scalar_evolution->CreateConstant(20);
-    auto line_3 =
-        analysis.make_constraint<opt::DependenceLine>(a1, b1, c3, nullptr);
+    auto line_3 = analysis.make_constraint<DependenceLine>(a1, b1, c3, nullptr);
 
     auto ret_4 =
         analysis.IntersectConstraints(line_0, line_3, nullptr, nullptr);
@@ -3771,10 +3760,10 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto unknown = scalar_evolution->CreateCantComputeNode();
     auto constant = scalar_evolution->CreateConstant(10);
 
-    auto line_0 = analysis.make_constraint<opt::DependenceLine>(
-        constant, constant, constant, nullptr);
-    auto line_1 = analysis.make_constraint<opt::DependenceLine>(
-        unknown, unknown, unknown, nullptr);
+    auto line_0 = analysis.make_constraint<DependenceLine>(constant, constant,
+                                                           constant, nullptr);
+    auto line_1 = analysis.make_constraint<DependenceLine>(unknown, unknown,
+                                                           unknown, nullptr);
 
     auto ret_0 =
         analysis.IntersectConstraints(line_0, line_1, nullptr, nullptr);
@@ -3797,10 +3786,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto b1 = scalar_evolution->CreateConstant(2);
     auto c1 = scalar_evolution->CreateConstant(2);
 
-    auto line_0 =
-        analysis.make_constraint<opt::DependenceLine>(a0, b0, c0, nullptr);
-    auto line_1 =
-        analysis.make_constraint<opt::DependenceLine>(a1, b1, c1, nullptr);
+    auto line_0 = analysis.make_constraint<DependenceLine>(a0, b0, c0, nullptr);
+    auto line_1 = analysis.make_constraint<DependenceLine>(a1, b1, c1, nullptr);
 
     // Intersecting lines, has integer solution, in bounds
     auto ret_0 =
@@ -3839,10 +3826,8 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto b3 = scalar_evolution->CreateConstant(1);
     auto c3 = scalar_evolution->CreateConstant(4);
 
-    auto line_2 =
-        analysis.make_constraint<opt::DependenceLine>(a2, b2, c2, nullptr);
-    auto line_3 =
-        analysis.make_constraint<opt::DependenceLine>(a3, b3, c3, nullptr);
+    auto line_2 = analysis.make_constraint<DependenceLine>(a2, b2, c2, nullptr);
+    auto line_3 = analysis.make_constraint<DependenceLine>(a3, b3, c3, nullptr);
 
     // Intersecting, no integer solution
     auto ret_4 =
@@ -3872,26 +3857,26 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto constant_2 = scalar_evolution->CreateConstant(2);
     auto constant_neg_2 = scalar_evolution->CreateConstant(-2);
 
-    auto point_0_0 = analysis.make_constraint<opt::DependencePoint>(
+    auto point_0_0 = analysis.make_constraint<DependencePoint>(
         constant_0, constant_0, nullptr);
-    auto point_0_1 = analysis.make_constraint<opt::DependencePoint>(
+    auto point_0_1 = analysis.make_constraint<DependencePoint>(
         constant_0, constant_1, nullptr);
-    auto point_1_0 = analysis.make_constraint<opt::DependencePoint>(
+    auto point_1_0 = analysis.make_constraint<DependencePoint>(
         constant_1, constant_0, nullptr);
-    auto point_1_1 = analysis.make_constraint<opt::DependencePoint>(
+    auto point_1_1 = analysis.make_constraint<DependencePoint>(
         constant_1, constant_1, nullptr);
-    auto point_1_2 = analysis.make_constraint<opt::DependencePoint>(
+    auto point_1_2 = analysis.make_constraint<DependencePoint>(
         constant_1, constant_2, nullptr);
-    auto point_1_neg_1 = analysis.make_constraint<opt::DependencePoint>(
+    auto point_1_neg_1 = analysis.make_constraint<DependencePoint>(
         constant_1, constant_neg_1, nullptr);
-    auto point_neg_1_1 = analysis.make_constraint<opt::DependencePoint>(
+    auto point_neg_1_1 = analysis.make_constraint<DependencePoint>(
         constant_neg_1, constant_1, nullptr);
 
-    auto line_y_0 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_y_0 = analysis.make_constraint<DependenceLine>(
         constant_0, constant_1, constant_0, nullptr);
-    auto line_y_1 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_y_1 = analysis.make_constraint<DependenceLine>(
         constant_0, constant_1, constant_1, nullptr);
-    auto line_y_2 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_y_2 = analysis.make_constraint<DependenceLine>(
         constant_0, constant_1, constant_2, nullptr);
 
     // Parallel horizontal lines, y = 0 & y = 1, should return no intersection
@@ -3918,15 +3903,15 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
 
     EXPECT_NE(nullptr, ret_y_same_1->AsDependenceLine());
 
-    auto line_x_0 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_x_0 = analysis.make_constraint<DependenceLine>(
         constant_1, constant_0, constant_0, nullptr);
-    auto line_x_1 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_x_1 = analysis.make_constraint<DependenceLine>(
         constant_1, constant_0, constant_1, nullptr);
-    auto line_x_2 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_x_2 = analysis.make_constraint<DependenceLine>(
         constant_1, constant_0, constant_2, nullptr);
-    auto line_2x_1 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_2x_1 = analysis.make_constraint<DependenceLine>(
         constant_2, constant_0, constant_1, nullptr);
-    auto line_2x_2 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_2x_2 = analysis.make_constraint<DependenceLine>(
         constant_2, constant_0, constant_2, nullptr);
 
     // Parallel vertical lines, x = 0 & x = 1, should return no intersection
@@ -4005,9 +3990,9 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     EXPECT_NE(nullptr, ret_point_1_2);
     EXPECT_EQ(*point_1_2, *ret_point_1_2);
 
-    auto line_x_y_0 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_x_y_0 = analysis.make_constraint<DependenceLine>(
         constant_1, constant_1, constant_0, nullptr);
-    auto line_x_y_1 = analysis.make_constraint<opt::DependenceLine>(
+    auto line_x_y_1 = analysis.make_constraint<DependenceLine>(
         constant_1, constant_1, constant_1, nullptr);
 
     // x+y=0 & x=0, intersect (0, 0)
@@ -4129,13 +4114,12 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto b = scalar_evolution->CreateConstant(10);
     auto c = scalar_evolution->CreateConstant(16);
 
-    auto line = analysis.make_constraint<opt::DependenceLine>(a, b, c, nullptr);
+    auto line = analysis.make_constraint<DependenceLine>(a, b, c, nullptr);
 
     // Point on line
     auto x = scalar_evolution->CreateConstant(2);
     auto y = scalar_evolution->CreateConstant(1);
-    auto point_0 =
-        analysis.make_constraint<opt::DependencePoint>(x, y, nullptr);
+    auto point_0 = analysis.make_constraint<DependencePoint>(x, y, nullptr);
 
     auto ret_0 = analysis.IntersectConstraints(line, point_0, nullptr, nullptr);
     auto ret_1 = analysis.IntersectConstraints(point_0, line, nullptr, nullptr);
@@ -4152,8 +4136,7 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     EXPECT_EQ(*y, *ret_point_1->GetDestination());
 
     // Point not on line
-    auto point_1 =
-        analysis.make_constraint<opt::DependencePoint>(a, a, nullptr);
+    auto point_1 = analysis.make_constraint<DependencePoint>(a, a, nullptr);
 
     auto ret_2 = analysis.IntersectConstraints(line, point_1, nullptr, nullptr);
     auto ret_3 = analysis.IntersectConstraints(point_1, line, nullptr, nullptr);
@@ -4165,7 +4148,7 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     auto unknown = scalar_evolution->CreateCantComputeNode();
 
     auto point_2 =
-        analysis.make_constraint<opt::DependencePoint>(unknown, x, nullptr);
+        analysis.make_constraint<DependencePoint>(unknown, x, nullptr);
 
     auto ret_4 = analysis.IntersectConstraints(line, point_2, nullptr, nullptr);
     auto ret_5 = analysis.IntersectConstraints(point_2, line, nullptr, nullptr);
@@ -4177,13 +4160,11 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
   {
     // Distance and point
     auto d = scalar_evolution->CreateConstant(5);
-    auto distance =
-        analysis.make_constraint<opt::DependenceDistance>(d, nullptr);
+    auto distance = analysis.make_constraint<DependenceDistance>(d, nullptr);
 
     // Point on line
     auto x = scalar_evolution->CreateConstant(10);
-    auto point_0 =
-        analysis.make_constraint<opt::DependencePoint>(d, x, nullptr);
+    auto point_0 = analysis.make_constraint<DependencePoint>(d, x, nullptr);
 
     auto ret_0 =
         analysis.IntersectConstraints(distance, point_0, nullptr, nullptr);
@@ -4196,8 +4177,7 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     ASSERT_NE(nullptr, ret_point_1);
 
     // Point not on line
-    auto point_1 =
-        analysis.make_constraint<opt::DependencePoint>(x, x, nullptr);
+    auto point_1 = analysis.make_constraint<DependencePoint>(x, x, nullptr);
 
     auto ret_2 =
         analysis.IntersectConstraints(distance, point_1, nullptr, nullptr);
@@ -4210,7 +4190,7 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
     // Non-constant
     auto unknown = scalar_evolution->CreateCantComputeNode();
     auto unknown_distance =
-        analysis.make_constraint<opt::DependenceDistance>(unknown, nullptr);
+        analysis.make_constraint<DependenceDistance>(unknown, nullptr);
 
     auto ret_4 = analysis.IntersectConstraints(unknown_distance, point_1,
                                                nullptr, nullptr);
@@ -4223,3 +4203,5 @@ TEST(DependencyAnalysis, ConstraintIntersection) {
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

@@ -15,9 +15,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using ReduceLoadSizeTest = PassTest<::testing::Test>;
 
@@ -103,7 +103,7 @@ TEST_F(ReduceLoadSizeTest, cbuffer_load_extract) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<opt::ReduceLoadSize>(test, false);
+  SinglePassRunAndMatch<ReduceLoadSize>(test, false);
 }
 #endif
 
@@ -182,7 +182,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndCheck<opt::ReduceLoadSize>(test, test, true, false);
+  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false);
 }
 
 TEST_F(ReduceLoadSizeTest, cbuffer_load_5_extract) {
@@ -253,7 +253,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndCheck<opt::ReduceLoadSize>(test, test, true, false);
+  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false);
 }
 
 TEST_F(ReduceLoadSizeTest, cbuffer_load_fully_used) {
@@ -318,7 +318,9 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndCheck<opt::ReduceLoadSize>(test, test, true, false);
+  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

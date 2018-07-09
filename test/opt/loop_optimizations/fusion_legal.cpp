@@ -28,9 +28,9 @@
 #include "opt/loop_descriptor.h"
 #include "opt/loop_fusion.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using FusionLegalTest = PassTest<::testing::Test>;
 
@@ -46,7 +46,7 @@ bool Validate(const std::vector<uint32_t>& bin) {
   return error == 0;
 }
 
-void Match(const std::string& checks, opt::IRContext* context) {
+void Match(const std::string& checks, IRContext* context) {
   // Silence unused warnings with !defined(SPIRV_EFFCE)
   (void)checks;
 
@@ -162,19 +162,19 @@ TEST_F(FusionLegalTest, DifferentArraysInLoops) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
 
   EXPECT_TRUE(fusion.AreCompatible());
   EXPECT_TRUE(fusion.IsLegal());
@@ -298,19 +298,19 @@ TEST_F(FusionLegalTest, OnlyLoadsToSameArray) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
 
   EXPECT_TRUE(fusion.AreCompatible());
   EXPECT_TRUE(fusion.IsLegal());
@@ -431,19 +431,19 @@ TEST_F(FusionLegalTest, NoLoopCarriedDependences) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
 
   EXPECT_TRUE(fusion.AreCompatible());
   EXPECT_TRUE(fusion.IsLegal());
@@ -569,19 +569,19 @@ TEST_F(FusionLegalTest, ExistingLoopCarriedDependence) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
 
   EXPECT_TRUE(fusion.AreCompatible());
   EXPECT_TRUE(fusion.IsLegal());
@@ -709,21 +709,21 @@ TEST_F(FusionLegalTest, NegativeDistanceCreatedRAW) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
 
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
@@ -854,19 +854,19 @@ TEST_F(FusionLegalTest, NoLoopCarriedDependencesAdjustedIndex) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
 
   EXPECT_TRUE(fusion.AreCompatible());
   EXPECT_TRUE(fusion.IsLegal());
@@ -995,19 +995,19 @@ TEST_F(FusionLegalTest, IndependentSIV) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
 
   EXPECT_TRUE(fusion.AreCompatible());
   EXPECT_TRUE(fusion.IsLegal());
@@ -1135,19 +1135,19 @@ TEST_F(FusionLegalTest, IndependentZIV) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
 
   EXPECT_TRUE(fusion.AreCompatible());
   EXPECT_TRUE(fusion.IsLegal());
@@ -1275,19 +1275,19 @@ TEST_F(FusionLegalTest, NonOverlappingAccesses) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
 
   EXPECT_TRUE(fusion.AreCompatible());
   EXPECT_TRUE(fusion.IsLegal());
@@ -1438,21 +1438,21 @@ TEST_F(FusionLegalTest, AdjacentLoops) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 3u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[1], loops[2]);
+    LoopFusion fusion(context.get(), loops[1], loops[2]);
 
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
@@ -1483,12 +1483,12 @@ CHECK-NEXT: OpStore [[STORE_2]]
   Match(checks, context.get());
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
 
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
@@ -1640,14 +1640,14 @@ TEST_F(FusionLegalTest, InnerLoopFusion) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 3u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1657,17 +1657,17 @@ TEST_F(FusionLegalTest, InnerLoopFusion) {
   auto loop_2 = loops[2];
 
   {
-    opt::LoopFusion fusion(context.get(), loop_0, loop_1);
+    LoopFusion fusion(context.get(), loop_0, loop_1);
     EXPECT_FALSE(fusion.AreCompatible());
   }
 
   {
-    opt::LoopFusion fusion(context.get(), loop_0, loop_2);
+    LoopFusion fusion(context.get(), loop_0, loop_2);
     EXPECT_FALSE(fusion.AreCompatible());
   }
 
   {
-    opt::LoopFusion fusion(context.get(), loop_1, loop_2);
+    LoopFusion fusion(context.get(), loop_1, loop_2);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -1836,16 +1836,16 @@ TEST_F(FusionLegalTest, OuterAndInnerLoop) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 4u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1856,27 +1856,27 @@ TEST_F(FusionLegalTest, OuterAndInnerLoop) {
     auto loop_3 = loops[3];
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_1);
+      LoopFusion fusion(context.get(), loop_0, loop_1);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_2);
+      LoopFusion fusion(context.get(), loop_1, loop_2);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_2, loop_3);
+      LoopFusion fusion(context.get(), loop_2, loop_3);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_3);
+      LoopFusion fusion(context.get(), loop_1, loop_3);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_2);
+      LoopFusion fusion(context.get(), loop_0, loop_2);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
       fusion.Fuse();
@@ -1913,17 +1913,17 @@ CHECK-NEXT: OpStore [[STORE_1]]
     auto loop_2 = loops[2];
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_1);
+      LoopFusion fusion(context.get(), loop_0, loop_1);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_2);
+      LoopFusion fusion(context.get(), loop_0, loop_2);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_2);
+      LoopFusion fusion(context.get(), loop_1, loop_2);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
       fusion.Fuse();
@@ -2110,16 +2110,16 @@ TEST_F(FusionLegalTest, OuterAndInnerLoopMoreComplex) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 4u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -2130,27 +2130,27 @@ TEST_F(FusionLegalTest, OuterAndInnerLoopMoreComplex) {
     auto loop_3 = loops[3];
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_1);
+      LoopFusion fusion(context.get(), loop_0, loop_1);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_2);
+      LoopFusion fusion(context.get(), loop_1, loop_2);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_2, loop_3);
+      LoopFusion fusion(context.get(), loop_2, loop_3);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_3);
+      LoopFusion fusion(context.get(), loop_1, loop_3);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_2);
+      LoopFusion fusion(context.get(), loop_0, loop_2);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
       fusion.Fuse();
@@ -2180,7 +2180,7 @@ CHECK-NEXT: OpStore [[STORE_1]]
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 3u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -2190,17 +2190,17 @@ CHECK-NEXT: OpStore [[STORE_1]]
     auto loop_2 = loops[2];
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_1);
+      LoopFusion fusion(context.get(), loop_0, loop_1);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_2);
+      LoopFusion fusion(context.get(), loop_0, loop_2);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_2);
+      LoopFusion fusion(context.get(), loop_1, loop_2);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
       fusion.Fuse();
@@ -2228,7 +2228,7 @@ CHECK-NEXT: OpStore [[STORE_1]]
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
   }
 }
@@ -2354,16 +2354,16 @@ TEST_F(FusionLegalTest, InnerWithExistingDependenceOnOuter) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 3u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -2373,17 +2373,17 @@ TEST_F(FusionLegalTest, InnerWithExistingDependenceOnOuter) {
     auto loop_2 = loops[2];
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_1);
+      LoopFusion fusion(context.get(), loop_0, loop_1);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_2);
+      LoopFusion fusion(context.get(), loop_0, loop_2);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_2);
+      LoopFusion fusion(context.get(), loop_1, loop_2);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
 
@@ -2392,7 +2392,7 @@ TEST_F(FusionLegalTest, InnerWithExistingDependenceOnOuter) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     std::string checks = R"(
@@ -2554,16 +2554,16 @@ TEST_F(FusionLegalTest, OuterAndInnerLoopOneDimArrays) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 4u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -2574,22 +2574,22 @@ TEST_F(FusionLegalTest, OuterAndInnerLoopOneDimArrays) {
     auto loop_3 = loops[3];
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_1);
+      LoopFusion fusion(context.get(), loop_0, loop_1);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_2);
+      LoopFusion fusion(context.get(), loop_1, loop_2);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_2, loop_3);
+      LoopFusion fusion(context.get(), loop_2, loop_3);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_2);
+      LoopFusion fusion(context.get(), loop_0, loop_2);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
       fusion.Fuse();
@@ -2617,7 +2617,7 @@ CHECK-NEXT: OpStore [[STORE_1]]
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 3u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -2627,17 +2627,17 @@ CHECK-NEXT: OpStore [[STORE_1]]
     auto loop_2 = loops[2];
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_1);
+      LoopFusion fusion(context.get(), loop_0, loop_1);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_0, loop_2);
+      LoopFusion fusion(context.get(), loop_0, loop_2);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     {
-      opt::LoopFusion fusion(context.get(), loop_1, loop_2);
+      LoopFusion fusion(context.get(), loop_1, loop_2);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
 
@@ -2761,21 +2761,21 @@ TEST_F(FusionLegalTest, NegativeDistanceCreatedWAR) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -2904,21 +2904,21 @@ TEST_F(FusionLegalTest, NegativeDistanceCreatedWAW) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -2926,7 +2926,7 @@ TEST_F(FusionLegalTest, NegativeDistanceCreatedWAW) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     std::string checks = R"(
@@ -3048,21 +3048,21 @@ TEST_F(FusionLegalTest, NoLoopCarriedDependencesWAW) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -3070,7 +3070,7 @@ TEST_F(FusionLegalTest, NoLoopCarriedDependencesWAW) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     std::string checks = R"(
@@ -3257,21 +3257,21 @@ TEST_F(FusionLegalTest, OuterloopWithBreakContinueInInner) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 4u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[2]);
+    LoopFusion fusion(context.get(), loops[0], loops[2]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -3279,12 +3279,12 @@ TEST_F(FusionLegalTest, OuterloopWithBreakContinueInInner) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 3u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[1], loops[2]);
+    LoopFusion fusion(context.get(), loops[1], loops[2]);
     EXPECT_FALSE(fusion.AreCompatible());
 
     std::string checks = R"(
@@ -3405,29 +3405,29 @@ TEST_F(FusionLegalTest, DifferentArraysInLoopsNoPreheader) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     {
-      opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+      LoopFusion fusion(context.get(), loops[0], loops[1]);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     ld.CreatePreHeaderBlocksIfMissing();
 
     {
-      opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+      LoopFusion fusion(context.get(), loops[0], loops[1]);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
 
@@ -3436,7 +3436,7 @@ TEST_F(FusionLegalTest, DifferentArraysInLoopsNoPreheader) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     std::string checks = R"(
@@ -3578,29 +3578,29 @@ TEST_F(FusionLegalTest, AdjacentLoopsNoPreheaders) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 3u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
     {
-      opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+      LoopFusion fusion(context.get(), loops[0], loops[1]);
       EXPECT_FALSE(fusion.AreCompatible());
     }
 
     ld.CreatePreHeaderBlocksIfMissing();
 
     {
-      opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+      LoopFusion fusion(context.get(), loops[0], loops[1]);
       EXPECT_TRUE(fusion.AreCompatible());
       EXPECT_TRUE(fusion.IsLegal());
 
@@ -3609,7 +3609,7 @@ TEST_F(FusionLegalTest, AdjacentLoopsNoPreheaders) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     std::string checks = R"(
@@ -3636,7 +3636,7 @@ CHECK-NEXT: OpStore [[STORE_2]]
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -3644,7 +3644,7 @@ CHECK-NEXT: OpStore [[STORE_2]]
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     std::string checks = R"(
@@ -3780,21 +3780,21 @@ TEST_F(FusionLegalTest, IndependentReductions) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -3802,7 +3802,7 @@ TEST_F(FusionLegalTest, IndependentReductions) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     std::string checks = R"(
@@ -3935,24 +3935,24 @@ TEST_F(FusionLegalTest, IndependentReductionsOneLCSSA) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopUtils utils_0(context.get(), loops[0]);
+    LoopUtils utils_0(context.get(), loops[0]);
     utils_0.MakeLoopClosedSSA();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -3960,7 +3960,7 @@ TEST_F(FusionLegalTest, IndependentReductionsOneLCSSA) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     std::string checks = R"(
@@ -4093,26 +4093,26 @@ TEST_F(FusionLegalTest, IndependentReductionsBothLCSSA) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopUtils utils_0(context.get(), loops[0]);
+    LoopUtils utils_0(context.get(), loops[0]);
     utils_0.MakeLoopClosedSSA();
-    opt::LoopUtils utils_1(context.get(), loops[1]);
+    LoopUtils utils_1(context.get(), loops[1]);
     utils_1.MakeLoopClosedSSA();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -4120,7 +4120,7 @@ TEST_F(FusionLegalTest, IndependentReductionsBothLCSSA) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     std::string checks = R"(
@@ -4242,21 +4242,21 @@ TEST_F(FusionLegalTest, LoadStoreReductionAndNonLoopCarriedDependence) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     // TODO: Loop descriptor doesn't return induction variables but all OpPhi
     // in the header and LoopDependenceAnalysis falls over.
@@ -4266,7 +4266,7 @@ TEST_F(FusionLegalTest, LoadStoreReductionAndNonLoopCarriedDependence) {
   }
 
   {
-    // opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    // LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     // EXPECT_EQ(ld.NumLoops(), 1u);
 
     //       std::string checks = R"(
@@ -4387,21 +4387,21 @@ TEST_F(FusionLegalTest, ReductionAndNonLoopCarriedDependence) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -4409,7 +4409,7 @@ TEST_F(FusionLegalTest, ReductionAndNonLoopCarriedDependence) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     std::string checks = R"(
@@ -4537,21 +4537,21 @@ TEST_F(FusionLegalTest, ArrayInStruct) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
+  Function& f = *module->begin();
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-    opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+    LoopFusion fusion(context.get(), loops[0], loops[1]);
     EXPECT_TRUE(fusion.AreCompatible());
     EXPECT_TRUE(fusion.IsLegal());
 
@@ -4559,7 +4559,7 @@ TEST_F(FusionLegalTest, ArrayInStruct) {
   }
 
   {
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     // clang-format off
@@ -4582,3 +4582,5 @@ CHECK: OpStore [[TEST_2]] [[TEST_1_LOAD]]
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

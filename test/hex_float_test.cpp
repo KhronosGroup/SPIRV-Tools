@@ -48,7 +48,7 @@ using RoundTripDoubleTest = ::testing::TestWithParam<double>;
 template <typename T>
 std::string EncodeViaHexFloat(const T& value) {
   std::stringstream ss;
-  ss << spvtools::utils::HexFloat<T>(value);
+  ss << HexFloat<T>(value);
   return ss.str();
 }
 

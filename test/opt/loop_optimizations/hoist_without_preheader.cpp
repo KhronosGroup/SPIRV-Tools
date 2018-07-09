@@ -19,11 +19,11 @@
 #include "../pass_fixture.h"
 #include "opt/licm_pass.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using ::testing::UnorderedElementsAre;
-
 using PassClassTest = PassTest<::testing::Test>;
 
 /*
@@ -116,8 +116,10 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::LICMPass>(text, false);
+  SinglePassRunAndMatch<LICMPass>(text, false);
 }
 #endif
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

@@ -15,6 +15,7 @@
 #include "gmock/gmock.h"
 #include "linker_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using ::testing::HasSubstr;
@@ -87,4 +88,5 @@ OpFunctionEnd
                         "GLCompute, was already defined."));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

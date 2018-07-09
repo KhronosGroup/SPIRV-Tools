@@ -20,9 +20,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using MergeReturnPassTest = PassTest<::testing::Test>;
 
@@ -46,7 +46,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, TwoReturnsNoValue) {
@@ -96,7 +96,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, TwoReturnsWithValues) {
@@ -145,7 +145,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, UnreachableReturnsNoValue) {
@@ -199,7 +199,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, UnreachableReturnsWithValues) {
@@ -254,7 +254,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
 #ifdef SPIRV_EFFCEE
@@ -296,7 +296,7 @@ OpUnreachable
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::MergeReturnPass>(before, false);
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
 
 TEST_F(MergeReturnPassTest, StructuredControlFlowAddPhi) {
@@ -345,7 +345,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::MergeReturnPass>(before, false);
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
 #endif
 
@@ -429,7 +429,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, NestedSelectionMerge) {
@@ -519,7 +519,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
 // This is essentially the same as NestedSelectionMerge, except
@@ -612,7 +612,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, NestedSelectionMerge3) {
@@ -701,6 +701,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

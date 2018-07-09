@@ -15,6 +15,7 @@
 #include "gmock/gmock.h"
 #include "linker_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using ::testing::HasSubstr;
@@ -146,4 +147,5 @@ TEST_F(EntryPointsAmountTest, OverLimit) {
                         "65536 global values were found."));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

@@ -17,10 +17,10 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
-using ::testing::Eq;
-
+namespace spvtools {
 namespace {
 
+using ::testing::Eq;
 using RoundTripLiteralsTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
@@ -69,4 +69,5 @@ INSTANTIATE_TEST_CASE_P(
     }),);
 // clang-format on
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

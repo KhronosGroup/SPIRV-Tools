@@ -31,9 +31,10 @@
 #include "opt/scalar_analysis.h"
 #include "opt/tree_iterator.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using DependencyAnalysisHelpers = ::testing::Test;
 
 /*
@@ -155,65 +156,65 @@ TEST(DependencyAnalysisHelpers, UnsupportedLoops) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   {
     // Function a
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[1] = {nullptr};
+    const Instruction* store[1] = {nullptr};
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 16)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 16)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
       }
     }
     // 38 -> 39
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.IsSupportedLoop(loops[0]));
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(38),
                                         store[0], &distance_vector));
     EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-              opt::DistanceEntry::DependenceInformation::UNKNOWN);
+              DistanceEntry::DependenceInformation::UNKNOWN);
     EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-              opt::DistanceEntry::Directions::ALL);
+              DistanceEntry::Directions::ALL);
   }
   {
     // Function b
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* store[1] = {nullptr};
+    const Instruction* store[1] = {nullptr};
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 47)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 47)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         store[stores_found] = &inst;
         ++stores_found;
       }
     }
     // 58 -> 59
-    opt::DistanceVector distance_vector{loops.size()};
+    DistanceVector distance_vector{loops.size()};
     EXPECT_FALSE(analysis.IsSupportedLoop(loops[0]));
     EXPECT_FALSE(analysis.GetDependence(context->get_def_use_mgr()->GetDef(58),
                                         store[0], &distance_vector));
     EXPECT_EQ(distance_vector.GetEntries()[0].dependence_information,
-              opt::DistanceEntry::DependenceInformation::UNKNOWN);
+              DistanceEntry::DependenceInformation::UNKNOWN);
     EXPECT_EQ(distance_vector.GetEntries()[0].direction,
-              opt::DistanceEntry::Directions::ALL);
+              DistanceEntry::Directions::ALL);
   }
 }
 
@@ -729,19 +730,19 @@ TEST(DependencyAnalysisHelpers, loop_information) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   {
     // Function a
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -763,11 +764,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function b
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -789,11 +790,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function c
-    const opt::Function* f = spvtest::GetFunction(module, 10);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 10);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -815,11 +816,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function d
-    const opt::Function* f = spvtest::GetFunction(module, 12);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 12);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -841,11 +842,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function e
-    const opt::Function* f = spvtest::GetFunction(module, 14);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 14);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -867,11 +868,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function f
-    const opt::Function* f = spvtest::GetFunction(module, 16);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 16);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -893,11 +894,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function g
-    const opt::Function* f = spvtest::GetFunction(module, 18);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 18);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -919,11 +920,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function h
-    const opt::Function* f = spvtest::GetFunction(module, 20);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 20);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -945,11 +946,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function i
-    const opt::Function* f = spvtest::GetFunction(module, 22);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 22);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -971,11 +972,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function j
-    const opt::Function* f = spvtest::GetFunction(module, 24);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 24);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -997,11 +998,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function k
-    const opt::Function* f = spvtest::GetFunction(module, 26);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 26);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -1023,11 +1024,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function l
-    const opt::Function* f = spvtest::GetFunction(module, 28);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 28);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -1049,11 +1050,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function m
-    const opt::Function* f = spvtest::GetFunction(module, 30);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 30);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -1075,11 +1076,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function n
-    const opt::Function* f = spvtest::GetFunction(module, 32);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 32);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -1101,11 +1102,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function o
-    const opt::Function* f = spvtest::GetFunction(module, 34);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 34);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -1127,11 +1128,11 @@ TEST(DependencyAnalysisHelpers, loop_information) {
   }
   {
     // Function p
-    const opt::Function* f = spvtest::GetFunction(module, 36);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 36);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
     EXPECT_EQ(
         analysis.GetLowerBound(loop)->AsSEConstantNode()->FoldToSingleValue(),
@@ -1202,19 +1203,19 @@ TEST(DependencyAnalysisHelpers, bounds_checks) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   // We need a shader that includes a loop for this test so we can build a
   // LoopDependenceAnalaysis
-  const opt::Function* f = spvtest::GetFunction(module, 4);
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-  opt::Loop* loop = &ld.GetLoopByIndex(0);
-  std::vector<const opt::Loop*> loops{loop};
-  opt::LoopDependenceAnalysis analysis{context.get(), loops};
+  const Function* f = spvtest::GetFunction(module, 4);
+  LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  Loop* loop = &ld.GetLoopByIndex(0);
+  std::vector<const Loop*> loops{loop};
+  LoopDependenceAnalysis analysis{context.get(), loops};
 
   EXPECT_TRUE(analysis.IsWithinBounds(0, 0, 0));
   EXPECT_TRUE(analysis.IsWithinBounds(0, -1, 0));
@@ -1478,24 +1479,24 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
   {
     // Function a
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -1510,25 +1511,25 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(47)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent and supported.
@@ -1540,25 +1541,25 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(54)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
@@ -1568,15 +1569,15 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
   }
   {
     // Function b
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 65)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 65)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -1591,24 +1592,24 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(78)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
@@ -1620,24 +1621,24 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(85)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
@@ -1647,15 +1648,15 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
   }
   {
     // Function c
-    const opt::Function* f = spvtest::GetFunction(module, 10);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 10);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 96)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 96)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -1670,24 +1671,24 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(109)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
@@ -1699,24 +1700,24 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(116)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
@@ -1726,15 +1727,15 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
   }
   {
     // Function d
-    const opt::Function* f = spvtest::GetFunction(module, 12);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 12);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 126)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 126)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -1749,24 +1750,24 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(139)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
@@ -1778,24 +1779,24 @@ TEST(DependencyAnalysisHelpers, const_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(146)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
@@ -2051,23 +2052,23 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   {
     // Function a
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 30)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2082,25 +2083,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(47)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
@@ -2112,25 +2113,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(54)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
@@ -2140,15 +2141,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
   }
   {
     // Function b
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 66)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 66)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2163,25 +2164,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(78)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
@@ -2193,25 +2194,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(85)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent.
@@ -2221,15 +2222,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
   }
   {
     // Function c
-    const opt::Function* f = spvtest::GetFunction(module, 10);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 10);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 96)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 96)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2244,25 +2245,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(109)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent and supported.
@@ -2274,25 +2275,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(116)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Independent but not supported.
@@ -2302,15 +2303,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
   }
   {
     // Function d
-    const opt::Function* f = spvtest::GetFunction(module, 12);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 12);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 127)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 127)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2325,25 +2326,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(139)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent
@@ -2355,25 +2356,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_const) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(146)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       // Dependent
@@ -2689,23 +2690,23 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
                OpReturn
                OpFunctionEnd
 )";
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   {
     // Function a
-    const opt::Function* f = spvtest::GetFunction(module, 6);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 6);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 35)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 35)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2720,25 +2721,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(60)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
@@ -2749,25 +2750,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(74)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
@@ -2776,15 +2777,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
   }
   {
     // Function b
-    const opt::Function* f = spvtest::GetFunction(module, 8);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 8);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 90)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 90)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2799,25 +2800,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(110)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
@@ -2828,25 +2829,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(124)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
@@ -2855,15 +2856,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
   }
   {
     // Function c
-    const opt::Function* f = spvtest::GetFunction(module, 10);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 10);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 139)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 139)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2878,25 +2879,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(159)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
@@ -2907,25 +2908,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(173)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
@@ -2934,15 +2935,15 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
   }
   {
     // Function d
-    const opt::Function* f = spvtest::GetFunction(module, 12);
-    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
-    opt::Loop* loop = &ld.GetLoopByIndex(0);
-    std::vector<const opt::Loop*> loops{loop};
-    opt::LoopDependenceAnalysis analysis{context.get(), loops};
+    const Function* f = spvtest::GetFunction(module, 12);
+    LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+    Loop* loop = &ld.GetLoopByIndex(0);
+    std::vector<const Loop*> loops{loop};
+    LoopDependenceAnalysis analysis{context.get(), loops};
 
-    const opt::Instruction* stores[2];
+    const Instruction* stores[2];
     int stores_found = 0;
-    for (const opt::Instruction& inst : *spvtest::GetBasicBlock(f, 188)) {
+    for (const Instruction& inst : *spvtest::GetBasicBlock(f, 188)) {
       if (inst.opcode() == SpvOp::SpvOpStore) {
         stores[stores_found] = &inst;
         ++stores_found;
@@ -2957,25 +2958,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(208)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[0]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
@@ -2986,25 +2987,25 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
     {
       // Analyse and simplify the instruction behind the access chain of this
       // load.
-      opt::Instruction* load_var = context->get_def_use_mgr()->GetDef(
+      Instruction* load_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(context->get_def_use_mgr()
                            ->GetDef(222)
                            ->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* load = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(load_var));
 
       // Analyse and simplify the instruction behind the access chain of this
       // store.
-      opt::Instruction* store_var = context->get_def_use_mgr()->GetDef(
+      Instruction* store_var = context->get_def_use_mgr()->GetDef(
           context->get_def_use_mgr()
               ->GetDef(stores[1]->GetSingleWordInOperand(0))
               ->GetSingleWordInOperand(1));
-      opt::SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* store = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->AnalyzeInstruction(store_var));
 
-      opt::SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
+      SENode* delta = analysis.GetScalarEvolution()->SimplifyExpression(
           analysis.GetScalarEvolution()->CreateSubtraction(load, store));
 
       EXPECT_FALSE(analysis.IsProvablyOutsideOfLoopBounds(
@@ -3014,3 +3015,5 @@ TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

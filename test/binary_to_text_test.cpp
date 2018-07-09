@@ -21,6 +21,7 @@
 #include "source/spirv_constant.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::AutoText;
@@ -550,4 +551,5 @@ INSTANTIATE_TEST_CASE_P(GeneratorStrings, GeneratorStringTest,
 
 // TODO(dneto): Test new instructions and enums in SPIR-V 1.3
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

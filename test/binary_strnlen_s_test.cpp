@@ -14,6 +14,7 @@
 
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
 TEST(Strnlen, Samples) {
@@ -27,4 +28,5 @@ TEST(Strnlen, Samples) {
   EXPECT_EQ(1u, spv_strnlen_s("a\0c", 5));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

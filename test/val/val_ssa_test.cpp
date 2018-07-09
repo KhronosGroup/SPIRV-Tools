@@ -22,6 +22,10 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
+namespace {
+
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
@@ -29,7 +33,6 @@ using std::pair;
 using std::string;
 using std::stringstream;
 
-namespace {
 using ValidateSSA = spvtest::ValidateBase<pair<string, bool>>;
 
 TEST_F(ValidateSSA, Default) {
@@ -1435,4 +1438,7 @@ TEST_F(ValidateSSA, TypeStructForwardReference) {
 }
 
 // TODO(umar): OpGroupMemberDecorate
+
 }  // namespace
+}  // namespace val
+}  // namespace spvtools

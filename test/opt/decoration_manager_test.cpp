@@ -22,12 +22,12 @@
 #include "source/spirv_constant.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
+namespace opt {
+namespace analysis {
 namespace {
 
 using spvtest::MakeVector;
-using spvtools::opt::IRContext;
-using spvtools::opt::Instruction;
-using spvtools::opt::analysis::DecorationManager;
 
 class DecorationManagerTest : public ::testing::Test {
  public:
@@ -64,7 +64,7 @@ class DecorationManagerTest : public ::testing::Test {
   virtual void TearDown() override { error_message_.clear(); }
 
   DecorationManager* GetDecorationManager(const std::string& text) {
-    context_ = spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_2, consumer_, text);
+    context_ = BuildModule(SPV_ENV_UNIVERSAL_1_2, consumer_, text);
     if (context_.get())
       return context_->get_decoration_mgr();
     else
@@ -104,8 +104,8 @@ class DecorationManagerTest : public ::testing::Test {
   spvtools::MessageConsumer GetConsumer() { return consumer_; }
 
  private:
-  spvtools::SpirvTools
-      tools_;  // An instance for calling SPIRV-Tools functionalities.
+  // An instance for calling SPIRV-Tools functionalities.
+  spvtools::SpirvTools tools_;
   std::unique_ptr<IRContext> context_;
   spvtools::MessageConsumer consumer_;
   uint32_t disassemble_options_;
@@ -114,7 +114,7 @@ class DecorationManagerTest : public ::testing::Test {
 
 TEST_F(DecorationManagerTest,
        ComparingDecorationsWithDiffOpcodesDecorateDecorateId) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // This parameter can be interprated both as { SpvDecorationConstant }
   // and also as a list of IDs:  { 22 }
   const std::vector<uint32_t> param{SpvDecorationConstant};
@@ -133,7 +133,7 @@ TEST_F(DecorationManagerTest,
 
 TEST_F(DecorationManagerTest,
        ComparingDecorationsWithDiffOpcodesDecorateDecorateString) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // This parameter can be interprated both as { SpvDecorationConstant }
   // and also as a null-terminated string with a single character with value 22.
   const std::vector<uint32_t> param{SpvDecorationConstant};
@@ -151,7 +151,7 @@ TEST_F(DecorationManagerTest,
 }
 
 TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateParam) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -166,7 +166,7 @@ TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateParam) {
 }
 
 TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateIdParam) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(
       &ir_context, SpvOpDecorateId, 0u, 0u,
@@ -181,7 +181,7 @@ TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateIdParam) {
 }
 
 TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateStringParam) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorateStringGOOGLE, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -196,7 +196,7 @@ TEST_F(DecorationManagerTest, ComparingDecorationsWithDiffDecorateStringParam) {
 }
 
 TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetAllowed) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -211,7 +211,7 @@ TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetAllowed) {
 }
 
 TEST_F(DecorationManagerTest, ComparingSameDecorationIdsOnDiffTargetAllowed) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   Instruction inst1(
       &ir_context, SpvOpDecorateId, 0u, 0u,
       {{SPV_OPERAND_TYPE_ID, {1u}}, {SPV_OPERAND_TYPE_DECORATION, {44}}});
@@ -225,7 +225,7 @@ TEST_F(DecorationManagerTest, ComparingSameDecorationIdsOnDiffTargetAllowed) {
 
 TEST_F(DecorationManagerTest,
        ComparingSameDecorationStringsOnDiffTargetAllowed) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   Instruction inst1(&ir_context, SpvOpDecorateStringGOOGLE, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
                      {SPV_OPERAND_TYPE_LITERAL_STRING, MakeVector("hello")}});
@@ -238,7 +238,7 @@ TEST_F(DecorationManagerTest,
 }
 
 TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetDisallowed) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpDecorate %1 Constant
   Instruction inst1(&ir_context, SpvOpDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -253,7 +253,7 @@ TEST_F(DecorationManagerTest, ComparingSameDecorationsOnDiffTargetDisallowed) {
 }
 
 TEST_F(DecorationManagerTest, ComparingMemberDecorationsOnSameTypeDiffMember) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpMemberDecorate %1 0 Constant
   Instruction inst1(&ir_context, SpvOpMemberDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -271,7 +271,7 @@ TEST_F(DecorationManagerTest, ComparingMemberDecorationsOnSameTypeDiffMember) {
 
 TEST_F(DecorationManagerTest,
        ComparingSameMemberDecorationsOnDiffTargetAllowed) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpMemberDecorate %1 0 Constant
   Instruction inst1(&ir_context, SpvOpMemberDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -289,7 +289,7 @@ TEST_F(DecorationManagerTest,
 
 TEST_F(DecorationManagerTest,
        ComparingSameMemberDecorationsOnDiffTargetDisallowed) {
-  spvtools::opt::IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
+  IRContext ir_context(SPV_ENV_UNIVERSAL_1_2, GetConsumer());
   // OpMemberDecorate %1 0 Constant
   Instruction inst1(&ir_context, SpvOpMemberDecorate, 0u, 0u,
                     {{SPV_OPERAND_TYPE_ID, {1u}},
@@ -481,11 +481,10 @@ OpGroupDecorate %3 %1
 )";
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
-  decoManager->RemoveDecorationsFrom(
-      1u, [](const spvtools::opt::Instruction& inst) {
-        return inst.opcode() == SpvOpDecorate &&
-               inst.GetSingleWordInOperand(0u) == 3u;
-      });
+  decoManager->RemoveDecorationsFrom(1u, [](const Instruction& inst) {
+    return inst.opcode() == SpvOpDecorate &&
+           inst.GetSingleWordInOperand(0u) == 3u;
+  });
   auto decorations = decoManager->GetDecorationsFor(1u, false);
   EXPECT_THAT(GetErrorMessage(), "");
 
@@ -534,7 +533,7 @@ OpGroupDecorate %3 %1
   DecorationManager* decoManager = GetDecorationManager(spirv);
   EXPECT_THAT(GetErrorMessage(), "");
   decoManager->RemoveDecorationsFrom(
-      1u, [](const spvtools::opt::Instruction& inst) {
+      1u, [](const Instruction& inst) {
         return inst.opcode() == SpvOpDecorate &&
                inst.GetSingleWordInOperand(0u) == 3u &&
                inst.GetSingleWordInOperand(1u) == SpvDecorationBuiltIn;
@@ -1160,3 +1159,6 @@ OpDecorateStringGOOGLE %2 HlslSemanticGOOGLE "hello"
 }
 
 }  // namespace
+}  // namespace analysis
+}  // namespace opt
+}  // namespace spvtools

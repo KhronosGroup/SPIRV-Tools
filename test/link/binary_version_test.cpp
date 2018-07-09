@@ -15,6 +15,7 @@
 #include "gmock/gmock.h"
 #include "linker_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using BinaryVersion = spvtest::LinkerTest;
@@ -53,4 +54,5 @@ TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
   EXPECT_EQ(0x00000600u, linked_binary[1]);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

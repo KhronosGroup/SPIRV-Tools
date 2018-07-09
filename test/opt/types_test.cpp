@@ -20,10 +20,10 @@
 #include "opt/make_unique.h"
 #include "opt/types.h"
 
+namespace spvtools {
+namespace opt {
+namespace analysis {
 namespace {
-
-using namespace spvtools::opt::analysis;
-using spvtools::MakeUnique;
 
 // Fixture class providing some element types.
 class SameTypeTest : public ::testing::Test {
@@ -337,4 +337,7 @@ TEST(Types, RemoveDecorations) {
   }
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace analysis
+}  // namespace opt
+}  // namespace spvtools

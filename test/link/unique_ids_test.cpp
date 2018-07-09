@@ -15,6 +15,7 @@
 #include "gmock/gmock.h"
 #include "linker_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using UniqueIds = spvtest::LinkerTest;
@@ -128,10 +129,11 @@ TEST_F(UniqueIds, UniquelyMerged) {
   // clang-format on
 
   spvtest::Binary linked_binary;
-  spvtools::LinkerOptions options;
+  LinkerOptions options;
   options.SetVerifyIds(true);
   spv_result_t res = AssembleAndLink(bodies, &linked_binary, options);
   EXPECT_EQ(SPV_SUCCESS, res);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

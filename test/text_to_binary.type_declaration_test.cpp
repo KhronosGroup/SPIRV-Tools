@@ -20,6 +20,7 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::EnumCase;
@@ -286,4 +287,5 @@ TEST_F(OpSizeOfTest, ArgumentTypes) {
 // TODO(dneto): OpTypeReserveId
 // TODO(dneto): OpTypeQueue
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

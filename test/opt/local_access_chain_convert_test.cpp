@@ -16,9 +16,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using LocalAccessChainConvertTest = PassTest<::testing::Test>;
 
@@ -125,7 +125,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -232,7 +232,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -338,7 +338,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -392,7 +392,7 @@ OpDecorate %sampler15 DescriptorSet 0
   const std::string before =
       R"(%main = OpFunction %void None %12
 %28 = OpLabel
-%s0 = OpVariable %_ptr_Function_S_t Function 
+%s0 = OpVariable %_ptr_Function_S_t Function
 %param = OpVariable %_ptr_Function_S_t Function
 %29 = OpLoad %v2float %texCoords
 %30 = OpAccessChain %_ptr_Function_v2float %s0 %int_0
@@ -400,7 +400,7 @@ OpStore %30 %29
 %31 = OpLoad %18 %sampler15
 %32 = OpAccessChain %_ptr_Function_18 %s0 %int_2
 OpStore %32 %31
-%33 = OpLoad %S_t %s0 
+%33 = OpLoad %S_t %s0
 OpStore %param %33
 %34 = OpAccessChain %_ptr_Function_18 %param %int_2
 %35 = OpLoad %18 %34
@@ -451,7 +451,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
       predefs + before + remain, predefs + after + remain, true, true);
 }
 
@@ -569,7 +569,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -645,8 +645,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(assembly, assembly,
-                                                          false, true);
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(assembly, assembly, false,
+                                                     true);
 }
 
 TEST_F(LocalAccessChainConvertTest, SomeAccessChainsHaveNoUse) {
@@ -706,7 +706,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -719,4 +719,6 @@ OpFunctionEnd
 //    OpInBoundsAccessChain
 //    Others?
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

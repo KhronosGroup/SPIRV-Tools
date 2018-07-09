@@ -22,10 +22,10 @@
 #include "opt/instruction.h"
 #include "opt/instruction_list.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using Instruction = spvtools::opt::Instruction;
-using InstructionList = spvtools::opt::InstructionList;
 using ::testing::ContainerEq;
 using ::testing::ElementsAre;
 using InstructionListTest = ::testing::Test;
@@ -109,4 +109,7 @@ TEST(InstructionListTest, InsertBefore2) {
   }
   EXPECT_THAT(output, ContainerEq(created_instructions));
 }
+
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

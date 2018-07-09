@@ -25,11 +25,12 @@
 #include "opt/loop_unroller.h"
 #include "opt/loop_utils.h"
 #include "opt/pass.h"
+
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using ::testing::UnorderedElementsAre;
-
 using FissionClassTest = PassTest<::testing::Test>;
 
 /*
@@ -62,7 +63,7 @@ void main(void) {
 */
 TEST_F(FissionClassTest, SimpleFission) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -187,21 +188,21 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 
-// Check that the loop will NOT be split when provided with a pass-through
-// register pressure functor which just returns false.
-SinglePassRunAndCheck<opt::LoopFissionPass>(
-    source, source, true,
-    [](const opt::RegisterLiveness::RegionRegisterLiveness&) { return false; });
+  // Check that the loop will NOT be split when provided with a pass-through
+  // register pressure functor which just returns false.
+  SinglePassRunAndCheck<LoopFissionPass>(
+      source, source, true,
+      [](const RegisterLiveness::RegionRegisterLiveness&) { return false; });
 }
 
 /*
@@ -224,7 +225,7 @@ splitting the loop.
 
 TEST_F(FissionClassTest, FissionInterdependency) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
   const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -281,15 +282,15 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
 }
 
 /*
@@ -311,7 +312,7 @@ This should not be split as the load B[i] is dependent on the store B[i+1]
 */
 TEST_F(FissionClassTest, FissionInterdependency2) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -368,15 +369,15 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, source, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
 }
 
 /*
@@ -420,7 +421,7 @@ is run twice:
 
 TEST_F(FissionClassTest, FissionMultipleLoadStores) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
   const std::string source = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -680,22 +681,22 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
+std::unique_ptr<IRContext> context =
     BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
                 SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
+Module* module = context->module();
 EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 
 // By passing 1 as argument we are using the constructor which makes the
 // critera to split the loop be if the registers in the loop exceede 1. By
 // using this constructor we are also enabling multiple passes (disabled by
 // default).
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected_multiple_passes,
-                                            true, 1);
+SinglePassRunAndCheck<LoopFissionPass>(source, expected_multiple_passes, true,
+                                       1);
 }
 
 /*
@@ -731,7 +732,7 @@ void main(void) {
 */
 TEST_F(FissionClassTest, FissionWithAccumulator) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
   const std::string source = R"(OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -864,15 +865,15 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 }
 
 /*
@@ -913,7 +914,7 @@ void main(void) {
 */
 TEST_F(FissionClassTest, FissionWithPhisUsedOutwithLoop) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
   const std::string source = R"(OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1050,15 +1051,15 @@ OpFunctionEnd
 )";
 
   // clang-format on
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 }
 
 /*
@@ -1094,7 +1095,7 @@ void main(void) {
 */
 TEST_F(FissionClassTest, FissionNested) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
   const std::string source = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1264,15 +1265,15 @@ OpFunctionEnd
 )";
 
   // clang-format on
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 }
 
 /*
@@ -1304,7 +1305,7 @@ To keep the load C[i] in the same order we would need to put B[i] ahead of that
 */
 TEST_F(FissionClassTest, FissionLoad) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -1368,15 +1369,15 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, source, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
 }
 
 /*
@@ -1422,7 +1423,7 @@ void main(void) {
 */
 TEST_F(FissionClassTest, FissionControlFlow) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
   const std::string source = R"(
               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1590,15 +1591,15 @@ OpFunctionEnd
 )";
 
   // clang-format on
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 }
 
 /*
@@ -1647,7 +1648,7 @@ void main(void) {
 */
 TEST_F(FissionClassTest, FissionControlFlow2) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
   const std::string source = R"(OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1865,15 +1866,15 @@ OpFunctionEnd
 )";
 
   // clang-format on
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true, 1);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true, 1);
 }
 
 /*
@@ -1893,7 +1894,7 @@ This should not be split due to the memory barrier.
 */
 TEST_F(FissionClassTest, FissionBarrier) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -1959,15 +1960,15 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, source, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
 }
 
 /*
@@ -1987,7 +1988,7 @@ This should not be split due to the break.
 */
 TEST_F(FissionClassTest, FissionBreak) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -2051,15 +2052,15 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, source, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
 }
 
 /*
@@ -2094,7 +2095,7 @@ The continue block in the first loop is left to DCE.
 */
 TEST_F(FissionClassTest, FissionContinue) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -2242,15 +2243,15 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 }
 
 /*
@@ -2284,7 +2285,7 @@ Check that this is split into:
 */
 TEST_F(FissionClassTest, FissionDoWhile) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -2408,15 +2409,15 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 }
 
 /*
@@ -2440,7 +2441,7 @@ B[i][j].
 */
 TEST_F(FissionClassTest, FissionNestedDependency) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -2515,15 +2516,15 @@ OpFunctionEnd
 )";
 
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, source, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
 }
 
 /*
@@ -2546,7 +2547,7 @@ where split but would not get hit before the read currently.
 */
 TEST_F(FissionClassTest, FissionNestedDependency2) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -2625,15 +2626,15 @@ OpFunctionEnd
 )";
 
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, source, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
 }
 
 /*
@@ -2669,7 +2670,7 @@ for (int j = 0; j < 10; ++j) {
 */
 TEST_F(FissionClassTest, FissionMultipleLoopsNested) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2904,32 +2905,30 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
-const opt::Function* function = spvtest::GetFunction(module, 2);
-opt::LoopDescriptor& pre_pass_descriptor =
-    *context->GetLoopDescriptor(function);
-EXPECT_EQ(pre_pass_descriptor.NumLoops(), 3u);
-EXPECT_EQ(pre_pass_descriptor.pre_begin()->NumImmediateChildren(), 2u);
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
+  const Function* function = spvtest::GetFunction(module, 2);
+  LoopDescriptor& pre_pass_descriptor = *context->GetLoopDescriptor(function);
+  EXPECT_EQ(pre_pass_descriptor.NumLoops(), 3u);
+  EXPECT_EQ(pre_pass_descriptor.pre_begin()->NumImmediateChildren(), 2u);
 
-// Test that the pass transforms the ir into the expected output.
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  // Test that the pass transforms the ir into the expected output.
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 
-// Test that the loop descriptor is correctly maintained and updated by the
-// pass.
-opt::LoopFissionPass loop_fission{};
-loop_fission.Process(context.get());
+  // Test that the loop descriptor is correctly maintained and updated by the
+  // pass.
+  LoopFissionPass loop_fission{};
+  loop_fission.Process(context.get());
 
-function = spvtest::GetFunction(module, 2);
-opt::LoopDescriptor& post_pass_descriptor =
-    *context->GetLoopDescriptor(function);
-EXPECT_EQ(post_pass_descriptor.NumLoops(), 5u);
-EXPECT_EQ(post_pass_descriptor.pre_begin()->NumImmediateChildren(), 4u);
+  function = spvtest::GetFunction(module, 2);
+  LoopDescriptor& post_pass_descriptor = *context->GetLoopDescriptor(function);
+  EXPECT_EQ(post_pass_descriptor.NumLoops(), 5u);
+  EXPECT_EQ(post_pass_descriptor.pre_begin()->NumImmediateChildren(), 4u);
 }
 
 /*
@@ -2962,7 +2961,7 @@ Should be split into:
 */
 TEST_F(FissionClassTest, FissionMultipleLoops) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -3159,36 +3158,34 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 
-const opt::Function* function = spvtest::GetFunction(module, 2);
-opt::LoopDescriptor& pre_pass_descriptor =
-    *context->GetLoopDescriptor(function);
-EXPECT_EQ(pre_pass_descriptor.NumLoops(), 2u);
-EXPECT_EQ(pre_pass_descriptor.pre_begin()->NumImmediateChildren(), 0u);
+  const Function* function = spvtest::GetFunction(module, 2);
+  LoopDescriptor& pre_pass_descriptor = *context->GetLoopDescriptor(function);
+  EXPECT_EQ(pre_pass_descriptor.NumLoops(), 2u);
+  EXPECT_EQ(pre_pass_descriptor.pre_begin()->NumImmediateChildren(), 0u);
 
-// Test that the pass transforms the ir into the expected output.
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  // Test that the pass transforms the ir into the expected output.
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 
-// Test that the loop descriptor is correctly maintained and updated by the
-// pass.
-opt::LoopFissionPass loop_fission{};
-loop_fission.Process(context.get());
+  // Test that the loop descriptor is correctly maintained and updated by the
+  // pass.
+  LoopFissionPass loop_fission{};
+  loop_fission.Process(context.get());
 
-function = spvtest::GetFunction(module, 2);
-opt::LoopDescriptor& post_pass_descriptor =
-    *context->GetLoopDescriptor(function);
-EXPECT_EQ(post_pass_descriptor.NumLoops(), 4u);
-EXPECT_EQ(post_pass_descriptor.pre_begin()->NumImmediateChildren(), 0u);
+  function = spvtest::GetFunction(module, 2);
+  LoopDescriptor& post_pass_descriptor = *context->GetLoopDescriptor(function);
+  EXPECT_EQ(post_pass_descriptor.NumLoops(), 4u);
+  EXPECT_EQ(post_pass_descriptor.pre_begin()->NumImmediateChildren(), 0u);
 }
 
 /*
@@ -3209,7 +3206,7 @@ if it has side effects.
 */
 TEST_F(FissionClassTest, FissionFunctionCall) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -3275,15 +3272,15 @@ OpFunctionEnd
 )";
 
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, source, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
 }
 
 /*
@@ -3325,7 +3322,7 @@ This should be split into:
 */
 TEST_F(FissionClassTest, FissionSwitchStatement) {
   // clang-format off
-  // With opt::LocalMultiStoreElimPass
+  // With LocalMultiStoreElimPass
 const std::string source = R"(OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -3476,15 +3473,17 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<opt::IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-opt::Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPass>(source, expected, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

@@ -23,6 +23,7 @@
 #include <vector>
 
 namespace spvtools {
+namespace opt {
 
 // A simple SPIR-V assembly code builder for test uses. It builds an SPIR-V
 // assembly module from vectors of assembly strings. It allows users to add
@@ -259,6 +260,7 @@ class AssemblyBuilder {
   std::unordered_set<std::string> used_names_;
 };
 
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_TEST_OPT_ASSEMBLY_BUILDER

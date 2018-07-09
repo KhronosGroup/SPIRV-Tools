@@ -24,6 +24,10 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
+namespace {
+
 using std::function;
 using std::ostream;
 using std::ostream_iterator;
@@ -41,9 +45,6 @@ using ::testing::StrEq;
 using pred_type = function<spv_result_t(int)>;
 using ValidateLayout =
     spvtest::ValidateBase<tuple<int, tuple<string, pred_type, pred_type>>>;
-
-namespace spvtools {
-namespace {
 
 // returns true if order is equal to VAL
 template <int VAL, spv_result_t RET = SPV_ERROR_INVALID_LAYOUT>
@@ -639,5 +640,7 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidInBasicBlock) {
 }
 
 // TODO(umar): Test optional instructions
+
 }  // namespace
+}  // namespace val
 }  // namespace spvtools

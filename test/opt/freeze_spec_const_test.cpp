@@ -19,9 +19,9 @@
 #include <tuple>
 #include <vector>
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 struct FreezeSpecConstantValueTypeTestCase {
   const char* type_decl;
@@ -40,7 +40,7 @@ TEST_P(FreezeSpecConstantValueTypeTest, PrimaryType) {
   std::vector<const char*> expected = {
       "OpCapability Shader", "OpMemoryModel Logical GLSL450",
       test_case.type_decl, test_case.expected_frozen_const};
-  SinglePassRunAndCheck<opt::FreezeSpecConstantValuePass>(
+  SinglePassRunAndCheck<FreezeSpecConstantValuePass>(
       JoinAllInsts(text), JoinAllInsts(expected), /* skip_nop = */ false);
 }
 
@@ -121,8 +121,11 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
         << "replace_str:\n"
         << p.second << "\n";
   }
-  SinglePassRunAndCheck<opt::FreezeSpecConstantValuePass>(
-      JoinAllInsts(text), expected_disassembly,
-      /* skip_nop = */ true);
+  SinglePassRunAndCheck<FreezeSpecConstantValuePass>(JoinAllInsts(text),
+                                                     expected_disassembly,
+                                                     /* skip_nop = */ true);
 }
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

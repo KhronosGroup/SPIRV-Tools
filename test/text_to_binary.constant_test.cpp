@@ -23,6 +23,7 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::Concatenate;
@@ -824,4 +825,5 @@ INSTANTIATE_TEST_CASE_P(
 // TODO(dneto): OpSpecConstantComposite
 // TODO(dneto): Negative tests for OpSpecConstantOp
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

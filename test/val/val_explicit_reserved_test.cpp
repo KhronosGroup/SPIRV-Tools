@@ -19,6 +19,8 @@
 #include "gmock/gmock.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::Eq;
@@ -115,3 +117,5 @@ TEST_F(ReservedSamplingInstTest, OpImageSparseSampleProjDrefExplicitLod) {
 }
 
 }  // namespace
+}  // namespace val
+}  // namespace spvtools

@@ -19,6 +19,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::HasSubstr;
@@ -310,4 +312,6 @@ OpEndStreamPrimitive %val1
                         "expected Stream to be constant instruction"));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

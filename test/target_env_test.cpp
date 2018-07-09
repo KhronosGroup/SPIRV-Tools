@@ -18,6 +18,7 @@
 
 #include "source/spirv_target_env.h"
 
+namespace spvtools {
 namespace {
 
 using ::testing::AnyOf;
@@ -101,4 +102,5 @@ INSTANTIATE_TEST_CASE_P(
         {"abc", false, SPV_ENV_UNIVERSAL_1_0},
     }));
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools
