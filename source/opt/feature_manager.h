@@ -36,7 +36,7 @@ class FeatureManager {
   }
 
   // Analyzes |module| and records enabled extensions and capabilities.
-  void Analyze(ir::Module* module);
+  void Analyze(opt::Module* module);
 
   CapabilitySet* GetCapabilities() { return &capabilities_; }
   const CapabilitySet* GetCapabilities() const { return &capabilities_; }
@@ -47,17 +47,17 @@ class FeatureManager {
 
  private:
   // Analyzes |module| and records enabled extensions.
-  void AddExtensions(ir::Module* module);
+  void AddExtensions(opt::Module* module);
 
   // Adds the given |capability| and all implied capabilities into the current
   // FeatureManager.
   void AddCapability(SpvCapability capability);
 
   // Analyzes |module| and records enabled capabilities.
-  void AddCapabilities(ir::Module* module);
+  void AddCapabilities(opt::Module* module);
 
   // Analyzes |module| and records imported external instruction sets.
-  void AddExtInstImportIds(ir::Module* module);
+  void AddExtInstImportIds(opt::Module* module);
 
   // Auxiliary object for querying SPIR-V grammar facts.
   const AssemblyGrammar& grammar_;

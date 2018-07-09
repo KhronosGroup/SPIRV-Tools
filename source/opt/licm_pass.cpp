@@ -22,7 +22,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status LICMPass::Process(ir::IRContext* c) {
+Pass::Status LICMPass::Process(opt::IRContext* c) {
   InitializeProcessing(c);
   bool modified = false;
 
@@ -35,21 +35,21 @@ Pass::Status LICMPass::Process(ir::IRContext* c) {
 
 bool LICMPass::ProcessIRContext() {
   bool modified = false;
-  ir::Module* module = get_module();
+  opt::Module* module = get_module();
 
   // Process each function in the module
-  for (ir::Function& f : *module) {
+  for (opt::Function& f : *module) {
     modified |= ProcessFunction(&f);
   }
   return modified;
 }
 
-bool LICMPass::ProcessFunction(ir::Function* f) {
+bool LICMPass::ProcessFunction(opt::Function* f) {
   bool modified = false;
-  ir::LoopDescriptor* loop_descriptor = context()->GetLoopDescriptor(f);
+  opt::LoopDescriptor* loop_descriptor = context()->GetLoopDescriptor(f);
 
   // Process each loop in the function
-  for (ir::Loop& loop : *loop_descriptor) {
+  for (opt::Loop& loop : *loop_descriptor) {
     // Ignore nested loops, as we will process them in order in ProcessLoop
     if (loop.IsNested()) {
       continue;
@@ -59,19 +59,19 @@ bool LICMPass::ProcessFunction(ir::Function* f) {
   return modified;
 }
 
-bool LICMPass::ProcessLoop(ir::Loop* loop, ir::Function* f) {
+bool LICMPass::ProcessLoop(opt::Loop* loop, opt::Function* f) {
   bool modified = false;
 
   // Process all nested loops first
-  for (ir::Loop* nested_loop : *loop) {
+  for (opt::Loop* nested_loop : *loop) {
     modified |= ProcessLoop(nested_loop, f);
   }
 
-  std::vector<ir::BasicBlock*> loop_bbs{};
+  std::vector<opt::BasicBlock*> loop_bbs{};
   modified |= AnalyseAndHoistFromBB(loop, f, loop->GetHeaderBlock(), &loop_bbs);
 
   for (size_t i = 0; i < loop_bbs.size(); ++i) {
-    ir::BasicBlock* bb = loop_bbs[i];
+    opt::BasicBlock* bb = loop_bbs[i];
     // do not delete the element
     modified |= AnalyseAndHoistFromBB(loop, f, bb, &loop_bbs);
   }
@@ -79,12 +79,12 @@ bool LICMPass::ProcessLoop(ir::Loop* loop, ir::Function* f) {
   return modified;
 }
 
-bool LICMPass::AnalyseAndHoistFromBB(ir::Loop* loop, ir::Function* f,
-                                     ir::BasicBlock* bb,
-                                     std::vector<ir::BasicBlock*>* loop_bbs) {
+bool LICMPass::AnalyseAndHoistFromBB(opt::Loop* loop, opt::Function* f,
+                                     opt::BasicBlock* bb,
+                                     std::vector<opt::BasicBlock*>* loop_bbs) {
   bool modified = false;
-  std::function<void(ir::Instruction*)> hoist_inst =
-      [this, &loop, &modified](ir::Instruction* inst) {
+  std::function<void(opt::Instruction*)> hoist_inst =
+      [this, &loop, &modified](opt::Instruction* inst) {
         if (loop->ShouldHoistInstruction(this->context(), inst)) {
           HoistInstruction(loop, inst);
           modified = true;
@@ -108,14 +108,14 @@ bool LICMPass::AnalyseAndHoistFromBB(ir::Loop* loop, ir::Function* f,
   return modified;
 }
 
-bool LICMPass::IsImmediatelyContainedInLoop(ir::Loop* loop, ir::Function* f,
-                                            ir::BasicBlock* bb) {
-  ir::LoopDescriptor* loop_descriptor = context()->GetLoopDescriptor(f);
+bool LICMPass::IsImmediatelyContainedInLoop(opt::Loop* loop, opt::Function* f,
+                                            opt::BasicBlock* bb) {
+  opt::LoopDescriptor* loop_descriptor = context()->GetLoopDescriptor(f);
   return loop == (*loop_descriptor)[bb->id()];
 }
 
-void LICMPass::HoistInstruction(ir::Loop* loop, ir::Instruction* inst) {
-  ir::BasicBlock* pre_header_bb = loop->GetOrCreatePreHeaderBlock();
+void LICMPass::HoistInstruction(opt::Loop* loop, opt::Instruction* inst) {
+  opt::BasicBlock* pre_header_bb = loop->GetOrCreatePreHeaderBlock();
   inst->InsertBefore(std::move(&(*pre_header_bb->tail())));
   context()->set_instr_block(inst, pre_header_bb);
 }

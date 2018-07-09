@@ -23,8 +23,7 @@
 #include <ostream>
 
 namespace spvtools {
-namespace ir {
-
+namespace opt {
 namespace {
 
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
@@ -91,7 +90,7 @@ Instruction* BasicBlock::GetLoopMergeInst() {
 }
 
 void BasicBlock::KillAllInsts(bool killLabel) {
-  ForEachInst([killLabel](ir::Instruction* ip) {
+  ForEachInst([killLabel](opt::Instruction* ip) {
     if (killLabel || ip->opcode() != SpvOpLabel) {
       ip->context()->KillInst(ip);
     }
@@ -140,7 +139,7 @@ void BasicBlock::ForEachSuccessorLabel(
   }
 }
 
-bool BasicBlock::IsSuccessor(const ir::BasicBlock* block) const {
+bool BasicBlock::IsSuccessor(const opt::BasicBlock* block) const {
   uint32_t succId = block->id();
   bool isSuccessor = false;
   ForEachSuccessorLabel([&isSuccessor, succId](const uint32_t label) {
@@ -196,7 +195,7 @@ std::ostream& operator<<(std::ostream& str, const BasicBlock& block) {
 
 std::string BasicBlock::PrettyPrint(uint32_t options) const {
   std::ostringstream str;
-  ForEachInst([&str, options](const ir::Instruction* inst) {
+  ForEachInst([&str, options](const opt::Instruction* inst) {
     str << inst->PrettyPrint(options);
     if (!IsTerminatorInst(inst->opcode())) {
       str << std::endl;
@@ -210,13 +209,13 @@ BasicBlock* BasicBlock::SplitBasicBlock(IRContext* context, uint32_t label_id,
   assert(!insts_.empty());
 
   BasicBlock* new_block = new BasicBlock(MakeUnique<Instruction>(
-      context, SpvOpLabel, 0, label_id, std::initializer_list<ir::Operand>{}));
+      context, SpvOpLabel, 0, label_id, std::initializer_list<opt::Operand>{}));
 
   new_block->insts_.Splice(new_block->end(), &insts_, iter, end());
   new_block->SetParent(GetParent());
 
-  if (context->AreAnalysesValid(ir::IRContext::kAnalysisInstrToBlockMapping)) {
-    new_block->ForEachInst([new_block, context](ir::Instruction* inst) {
+  if (context->AreAnalysesValid(opt::IRContext::kAnalysisInstrToBlockMapping)) {
+    new_block->ForEachInst([new_block, context](opt::Instruction* inst) {
       context->set_instr_block(inst, new_block);
     });
   }
@@ -224,5 +223,5 @@ BasicBlock* BasicBlock::SplitBasicBlock(IRContext* context, uint32_t label_id,
   return new_block;
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools

@@ -26,7 +26,7 @@
 #include "iterator.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 class CFG;
 class IRContext;
@@ -102,7 +102,7 @@ class Function {
 
   // Returns an iterator to the basic block |id|.
   iterator FindBlock(uint32_t bb_id) {
-    return std::find_if(begin(), end(), [bb_id](const ir::BasicBlock& it_bb) {
+    return std::find_if(begin(), end(), [bb_id](const opt::BasicBlock& it_bb) {
       return bb_id == it_bb.id();
     });
   }
@@ -122,8 +122,8 @@ class Function {
   // Returns the context of the current function.
   IRContext* context() const { return def_inst_->context(); }
 
-  BasicBlock* InsertBasicBlockAfter(std::unique_ptr<ir::BasicBlock>&& new_block,
-                                    BasicBlock* position);
+  BasicBlock* InsertBasicBlockAfter(
+      std::unique_ptr<opt::BasicBlock>&& new_block, BasicBlock* position);
 
   // Pretty-prints all the basic blocks in this function into a std::string.
   //
@@ -192,7 +192,7 @@ inline void Function::SetFunctionEnd(std::unique_ptr<Instruction> end_inst) {
   end_inst_ = std::move(end_inst);
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_CONSTRUCTS_H_

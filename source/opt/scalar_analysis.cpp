@@ -48,7 +48,7 @@ namespace opt {
 
 uint32_t SENode::NumberOfNodes = 0;
 
-ScalarEvolutionAnalysis::ScalarEvolutionAnalysis(ir::IRContext* context)
+ScalarEvolutionAnalysis::ScalarEvolutionAnalysis(opt::IRContext* context)
     : context_(context), pretend_equal_{} {
   // Create and cached the CantComputeNode.
   cached_cant_compute_ =
@@ -73,14 +73,14 @@ SENode* ScalarEvolutionAnalysis::CreateConstant(int64_t integer) {
 }
 
 SENode* ScalarEvolutionAnalysis::CreateRecurrentExpression(
-    const ir::Loop* loop, SENode* offset, SENode* coefficient) {
+    const opt::Loop* loop, SENode* offset, SENode* coefficient) {
   assert(loop && "Recurrent add expressions must have a valid loop.");
 
   // If operands are can't compute then the whole graph is can't compute.
   if (offset->IsCantCompute() || coefficient->IsCantCompute())
     return CreateCantComputeNode();
 
-  const ir::Loop* loop_to_use = nullptr;
+  const opt::Loop* loop_to_use = nullptr;
   if (pretend_equal_[loop]) {
     loop_to_use = pretend_equal_[loop];
   } else {
@@ -96,7 +96,7 @@ SENode* ScalarEvolutionAnalysis::CreateRecurrentExpression(
 }
 
 SENode* ScalarEvolutionAnalysis::AnalyzeMultiplyOp(
-    const ir::Instruction* multiply) {
+    const opt::Instruction* multiply) {
   assert(multiply->opcode() == SpvOp::SpvOpIMul &&
          "Multiply node did not come from a multiply instruction");
   opt::analysis::DefUseManager* def_use = context_->get_def_use_mgr();
@@ -163,7 +163,7 @@ SENode* ScalarEvolutionAnalysis::CreateAddNode(SENode* operand_1,
 }
 
 SENode* ScalarEvolutionAnalysis::AnalyzeInstruction(
-    const ir::Instruction* inst) {
+    const opt::Instruction* inst) {
   auto itr = recurrent_node_map_.find(inst);
   if (itr != recurrent_node_map_.end()) return itr->second;
 
@@ -196,7 +196,7 @@ SENode* ScalarEvolutionAnalysis::AnalyzeInstruction(
   return output;
 }
 
-SENode* ScalarEvolutionAnalysis::AnalyzeConstant(const ir::Instruction* inst) {
+SENode* ScalarEvolutionAnalysis::AnalyzeConstant(const opt::Instruction* inst) {
   if (inst->opcode() == SpvOp::SpvOpConstantNull) return CreateConstant(0);
 
   assert(inst->opcode() == SpvOp::SpvOpConstant);
@@ -226,7 +226,7 @@ SENode* ScalarEvolutionAnalysis::AnalyzeConstant(const ir::Instruction* inst) {
 
 // Handles both addition and subtraction. If the |sub| flag is set then the
 // addition will be op1+(-op2) otherwise op1+op2.
-SENode* ScalarEvolutionAnalysis::AnalyzeAddOp(const ir::Instruction* inst) {
+SENode* ScalarEvolutionAnalysis::AnalyzeAddOp(const opt::Instruction* inst) {
   assert((inst->opcode() == SpvOp::SpvOpIAdd ||
           inst->opcode() == SpvOp::SpvOpISub) &&
          "Add node must be created from a OpIAdd or OpISub instruction");
@@ -248,7 +248,7 @@ SENode* ScalarEvolutionAnalysis::AnalyzeAddOp(const ir::Instruction* inst) {
 }
 
 SENode* ScalarEvolutionAnalysis::AnalyzePhiInstruction(
-    const ir::Instruction* phi) {
+    const opt::Instruction* phi) {
   // The phi should only have two incoming value pairs.
   if (phi->NumInOperands() != 4) {
     return CreateCantComputeNode();
@@ -257,20 +257,20 @@ SENode* ScalarEvolutionAnalysis::AnalyzePhiInstruction(
   opt::analysis::DefUseManager* def_use = context_->get_def_use_mgr();
 
   // Get the basic block this instruction belongs to.
-  ir::BasicBlock* basic_block =
-      context_->get_instr_block(const_cast<ir::Instruction*>(phi));
+  opt::BasicBlock* basic_block =
+      context_->get_instr_block(const_cast<opt::Instruction*>(phi));
 
   // And then the function that the basic blocks belongs to.
-  ir::Function* function = basic_block->GetParent();
+  opt::Function* function = basic_block->GetParent();
 
   // Use the function to get the loop descriptor.
-  ir::LoopDescriptor* loop_descriptor = context_->GetLoopDescriptor(function);
+  opt::LoopDescriptor* loop_descriptor = context_->GetLoopDescriptor(function);
 
   // We only handle phis in loops at the moment.
   if (!loop_descriptor) return CreateCantComputeNode();
 
   // Get the innermost loop which this block belongs to.
-  ir::Loop* loop = (*loop_descriptor)[basic_block->id()];
+  opt::Loop* loop = (*loop_descriptor)[basic_block->id()];
 
   // If the loop doesn't exist or doesn't have a preheader or latch block, exit
   // out.
@@ -278,7 +278,7 @@ SENode* ScalarEvolutionAnalysis::AnalyzePhiInstruction(
       loop->GetHeaderBlock() != basic_block)
     return recurrent_node_map_[phi] = CreateCantComputeNode();
 
-  const ir::Loop* loop_to_use = nullptr;
+  const opt::Loop* loop_to_use = nullptr;
   if (pretend_equal_[loop]) {
     loop_to_use = pretend_equal_[loop];
   } else {
@@ -298,7 +298,7 @@ SENode* ScalarEvolutionAnalysis::AnalyzePhiInstruction(
     uint32_t value_id = phi->GetSingleWordInOperand(i);
     uint32_t incoming_label_id = phi->GetSingleWordInOperand(i + 1);
 
-    ir::Instruction* value_inst = def_use->GetDef(value_id);
+    opt::Instruction* value_inst = def_use->GetDef(value_id);
     SENode* value_node = AnalyzeInstruction(value_inst);
 
     // If any operand is CantCompute then the whole graph is CantCompute.
@@ -352,7 +352,7 @@ SENode* ScalarEvolutionAnalysis::AnalyzePhiInstruction(
 }
 
 SENode* ScalarEvolutionAnalysis::CreateValueUnknownNode(
-    const ir::Instruction* inst) {
+    const opt::Instruction* inst) {
   std::unique_ptr<SEValueUnknown> load_node{
       new SEValueUnknown(this, inst->result_id())};
   return GetCachedOrAdd(std::move(load_node));
@@ -375,11 +375,11 @@ SENode* ScalarEvolutionAnalysis::GetCachedOrAdd(
   return raw_ptr_to_node;
 }
 
-bool ScalarEvolutionAnalysis::IsLoopInvariant(const ir::Loop* loop,
+bool ScalarEvolutionAnalysis::IsLoopInvariant(const opt::Loop* loop,
                                               const SENode* node) const {
   for (auto itr = node->graph_cbegin(); itr != node->graph_cend(); ++itr) {
     if (const SERecurrentNode* rec = itr->AsSERecurrentNode()) {
-      const ir::BasicBlock* header = rec->GetLoop()->GetHeaderBlock();
+      const opt::BasicBlock* header = rec->GetLoop()->GetHeaderBlock();
 
       // If the loop which the recurrent expression belongs to is either |loop
       // or a nested loop inside |loop| then we assume it is variant.
@@ -397,7 +397,7 @@ bool ScalarEvolutionAnalysis::IsLoopInvariant(const ir::Loop* loop,
 }
 
 SENode* ScalarEvolutionAnalysis::GetCoefficientFromRecurrentTerm(
-    SENode* node, const ir::Loop* loop) {
+    SENode* node, const opt::Loop* loop) {
   // Traverse the DAG to find the recurrent expression belonging to |loop|.
   for (auto itr = node->graph_begin(); itr != node->graph_end(); ++itr) {
     SERecurrentNode* rec = itr->AsSERecurrentNode();
@@ -434,7 +434,7 @@ SENode* ScalarEvolutionAnalysis::UpdateChildNode(SENode* parent,
 // Rebuild the |node| eliminating, if it exists, the recurrent term which
 // belongs to the |loop|.
 SENode* ScalarEvolutionAnalysis::BuildGraphWithoutRecurrentTerm(
-    SENode* node, const ir::Loop* loop) {
+    SENode* node, const opt::Loop* loop) {
   // If the node is already a recurrent expression belonging to loop then just
   // return the offset.
   SERecurrentNode* recurrent = node->AsSERecurrentNode();
@@ -468,7 +468,7 @@ SENode* ScalarEvolutionAnalysis::BuildGraphWithoutRecurrentTerm(
 // Return the recurrent term belonging to |loop| if it appears in the graph
 // starting at |node| or null if it doesn't.
 SERecurrentNode* ScalarEvolutionAnalysis::GetRecurrentTerm(
-    SENode* node, const ir::Loop* loop) {
+    SENode* node, const opt::Loop* loop) {
   for (auto itr = node->graph_begin(); itr != node->graph_end(); ++itr) {
     SERecurrentNode* rec = itr->AsSERecurrentNode();
     if (rec && rec->GetLoop() == loop) {
@@ -652,7 +652,7 @@ void SENode::DumpDot(std::ostream& out, bool recurse) const {
 namespace {
 class IsGreaterThanZero {
  public:
-  explicit IsGreaterThanZero(ir::IRContext* context) : context_(context) {}
+  explicit IsGreaterThanZero(opt::IRContext* context) : context_(context) {}
 
   // Determine if the value of |node| is always strictly greater than zero if
   // |or_equal_zero| is false or greater or equal to zero if |or_equal_zero| is
@@ -844,7 +844,7 @@ class IsGreaterThanZero {
 
   // Returns the signedness of an unknown |node| based on its type.
   Signedness Visit(const SEValueUnknown* node) {
-    ir::Instruction* insn =
+    opt::Instruction* insn =
         context_->get_def_use_mgr()->GetDef(node->ResultId());
     analysis::Type* type = context_->get_type_mgr()->GetType(insn->type_id());
     assert(type && "Can't retrieve a type for the instruction");
@@ -904,7 +904,8 @@ class IsGreaterThanZero {
       const SENode* node,
       std::function<Signedness(Signedness, Signedness)> reduce) {
     Signedness result = Visit(*node->begin());
-    for (const SENode* operand : ir::make_range(++node->begin(), node->end())) {
+    for (const SENode* operand :
+         opt::make_range(++node->begin(), node->end())) {
       if (result == Signedness::kPositiveOrNegative) {
         return Signedness::kPositiveOrNegative;
       }
@@ -913,7 +914,7 @@ class IsGreaterThanZero {
     return result;
   }
 
-  ir::IRContext* context_;
+  opt::IRContext* context_;
 };
 }  // namespace
 

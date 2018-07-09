@@ -29,46 +29,46 @@ class CCPPass : public MemPass {
  public:
   CCPPass() = default;
   const char* name() const override { return "ccp"; }
-  Status Process(ir::IRContext* c) override;
-  virtual ir::IRContext::Analysis GetPreservedAnalyses() override {
-    return ir::IRContext::kAnalysisDefUse |
-           ir::IRContext::kAnalysisInstrToBlockMapping |
-           ir::IRContext::kAnalysisDecorations |
-           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
-           ir::IRContext::kAnalysisDominatorAnalysis |
-           ir::IRContext::kAnalysisNameMap;
+  Status Process(opt::IRContext* c) override;
+  virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
+    return opt::IRContext::kAnalysisDefUse |
+           opt::IRContext::kAnalysisInstrToBlockMapping |
+           opt::IRContext::kAnalysisDecorations |
+           opt::IRContext::kAnalysisCombinators | opt::IRContext::kAnalysisCFG |
+           opt::IRContext::kAnalysisDominatorAnalysis |
+           opt::IRContext::kAnalysisNameMap;
   }
 
  private:
   // Initializes the pass.
-  void Initialize(ir::IRContext* c);
+  void Initialize(opt::IRContext* c);
 
   // Runs constant propagation on the given function |fp|. Returns true if any
   // constants were propagated and the IR modified.
-  bool PropagateConstants(ir::Function* fp);
+  bool PropagateConstants(opt::Function* fp);
 
   // Visits a single instruction |instr|.  If the instruction is a conditional
   // branch that always jumps to the same basic block, it sets the destination
   // block in |dest_bb|.
-  SSAPropagator::PropStatus VisitInstruction(ir::Instruction* instr,
-                                             ir::BasicBlock** dest_bb);
+  SSAPropagator::PropStatus VisitInstruction(opt::Instruction* instr,
+                                             opt::BasicBlock** dest_bb);
 
   // Visits an OpPhi instruction |phi|. This applies the meet operator for the
   // CCP lattice. Essentially, if all the operands in |phi| have the same
   // constant value C, the result for |phi| gets assigned the value C.
-  SSAPropagator::PropStatus VisitPhi(ir::Instruction* phi);
+  SSAPropagator::PropStatus VisitPhi(opt::Instruction* phi);
 
   // Visits an SSA assignment instruction |instr|.  If the RHS of |instr| folds
   // into a constant value C, then the LHS of |instr| is assigned the value C in
   // |values_|.
-  SSAPropagator::PropStatus VisitAssignment(ir::Instruction* instr);
+  SSAPropagator::PropStatus VisitAssignment(opt::Instruction* instr);
 
   // Visits a branch instruction |instr|. If the branch is conditional
   // (OpBranchConditional or OpSwitch), and the value of its selector is known,
   // |dest_bb| will be set to the corresponding destination block. Unconditional
   // branches always set |dest_bb| to the single destination block.
-  SSAPropagator::PropStatus VisitBranch(ir::Instruction* instr,
-                                        ir::BasicBlock** dest_bb) const;
+  SSAPropagator::PropStatus VisitBranch(opt::Instruction* instr,
+                                        opt::BasicBlock** dest_bb) const;
 
   // Replaces all operands used in |fp| with the corresponding constant values
   // in |values_|.  Returns true if any operands were replaced, and false
@@ -77,7 +77,7 @@ class CCPPass : public MemPass {
 
   // Marks |instr| as varying by registering a varying value for its result
   // into the |values_| table. Returns SSAPropagator::kVarying.
-  SSAPropagator::PropStatus MarkInstructionVarying(ir::Instruction* instr);
+  SSAPropagator::PropStatus MarkInstructionVarying(opt::Instruction* instr);
 
   // Returns true if |id| is the special SSA id that corresponds to a varying
   // value.

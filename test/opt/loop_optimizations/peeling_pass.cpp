@@ -72,8 +72,8 @@ class PeelingPassTest : public PassTest<::testing::Test> {
     opt::LoopPeelingPass::LoopPeelingStats stats = AssembleAndRunPeelingTest(
         text_head, text_tail, opcode, res_id, op1, op2);
 
-    ir::Function& f = *context()->module()->begin();
-    ir::LoopDescriptor& ld = *context()->GetLoopDescriptor(&f);
+    opt::Function& f = *context()->module()->begin();
+    opt::LoopDescriptor& ld = *context()->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), nb_of_loops);
 
     return stats;

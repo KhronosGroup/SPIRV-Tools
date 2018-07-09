@@ -2575,13 +2575,13 @@ TEST_F(InlineTest, SetParent) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   opt::InlineExhaustivePass pass;
   pass.Run(context.get());
 
-  for (ir::Function& func : *context->module()) {
-    for (ir::BasicBlock& bb : func) {
+  for (opt::Function& func : *context->module()) {
+    for (opt::BasicBlock& bb : func) {
       EXPECT_TRUE(bb.GetParent() == &func);
     }
   }

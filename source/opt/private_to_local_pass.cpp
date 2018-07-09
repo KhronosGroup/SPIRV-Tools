@@ -24,7 +24,7 @@ const uint32_t kSpvTypePointerTypeIdInIdx = 1;
 namespace spvtools {
 namespace opt {
 
-Pass::Status PrivateToLocalPass::Process(ir::IRContext* c) {
+Pass::Status PrivateToLocalPass::Process(opt::IRContext* c) {
   InitializeProcessing(c);
   bool modified = false;
 
@@ -33,7 +33,7 @@ Pass::Status PrivateToLocalPass::Process(ir::IRContext* c) {
   if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
 
-  std::vector<std::pair<ir::Instruction*, ir::Function*>> variables_to_move;
+  std::vector<std::pair<opt::Instruction*, opt::Function*>> variables_to_move;
   for (auto& inst : context()->types_values()) {
     if (inst.opcode() != SpvOpVariable) {
       continue;
@@ -44,7 +44,7 @@ Pass::Status PrivateToLocalPass::Process(ir::IRContext* c) {
       continue;
     }
 
-    ir::Function* target_function = FindLocalFunction(inst);
+    opt::Function* target_function = FindLocalFunction(inst);
     if (target_function != nullptr) {
       variables_to_move.push_back({&inst, target_function});
     }
@@ -58,14 +58,14 @@ Pass::Status PrivateToLocalPass::Process(ir::IRContext* c) {
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
 
-ir::Function* PrivateToLocalPass::FindLocalFunction(
-    const ir::Instruction& inst) const {
+opt::Function* PrivateToLocalPass::FindLocalFunction(
+    const opt::Instruction& inst) const {
   bool found_first_use = false;
-  ir::Function* target_function = nullptr;
+  opt::Function* target_function = nullptr;
   context()->get_def_use_mgr()->ForEachUser(
       inst.result_id(),
-      [&target_function, &found_first_use, this](ir::Instruction* use) {
-        ir::BasicBlock* current_block = context()->get_instr_block(use);
+      [&target_function, &found_first_use, this](opt::Instruction* use) {
+        opt::BasicBlock* current_block = context()->get_instr_block(use);
         if (current_block == nullptr) {
           return;
         }
@@ -75,7 +75,7 @@ ir::Function* PrivateToLocalPass::FindLocalFunction(
           target_function = nullptr;
           return;
         }
-        ir::Function* current_function = current_block->GetParent();
+        opt::Function* current_function = current_block->GetParent();
         if (!found_first_use) {
           found_first_use = true;
           target_function = current_function;
@@ -86,12 +86,12 @@ ir::Function* PrivateToLocalPass::FindLocalFunction(
   return target_function;
 }  // namespace opt
 
-void PrivateToLocalPass::MoveVariable(ir::Instruction* variable,
-                                      ir::Function* function) {
+void PrivateToLocalPass::MoveVariable(opt::Instruction* variable,
+                                      opt::Function* function) {
   // The variable needs to be removed from the global section, and placed in the
   // header of the function.  First step remove from the global list.
   variable->RemoveFromList();
-  std::unique_ptr<ir::Instruction> var(variable);  // Take ownership.
+  std::unique_ptr<opt::Instruction> var(variable);  // Take ownership.
   context()->ForgetUses(variable);
 
   // Update the storage class of the variable.
@@ -112,7 +112,7 @@ void PrivateToLocalPass::MoveVariable(ir::Instruction* variable,
 
 uint32_t PrivateToLocalPass::GetNewType(uint32_t old_type_id) {
   auto type_mgr = context()->get_type_mgr();
-  ir::Instruction* old_type_inst = get_def_use_mgr()->GetDef(old_type_id);
+  opt::Instruction* old_type_inst = get_def_use_mgr()->GetDef(old_type_id);
   uint32_t pointee_type_id =
       old_type_inst->GetSingleWordInOperand(kSpvTypePointerTypeIdInIdx);
   uint32_t new_type_id =
@@ -121,7 +121,7 @@ uint32_t PrivateToLocalPass::GetNewType(uint32_t old_type_id) {
   return new_type_id;
 }
 
-bool PrivateToLocalPass::IsValidUse(const ir::Instruction* inst) const {
+bool PrivateToLocalPass::IsValidUse(const opt::Instruction* inst) const {
   // The cases in this switch have to match the cases in |UpdateUse|.
   // If we don't know how to update it, it is not valid.
   switch (inst->opcode()) {
@@ -131,7 +131,7 @@ bool PrivateToLocalPass::IsValidUse(const ir::Instruction* inst) const {
       return true;
     case SpvOpAccessChain:
       return context()->get_def_use_mgr()->WhileEachUser(
-          inst, [this](const ir::Instruction* user) {
+          inst, [this](const opt::Instruction* user) {
             if (!IsValidUse(user)) return false;
             return true;
           });
@@ -142,7 +142,7 @@ bool PrivateToLocalPass::IsValidUse(const ir::Instruction* inst) const {
   }
 }
 
-void PrivateToLocalPass::UpdateUse(ir::Instruction* inst) {
+void PrivateToLocalPass::UpdateUse(opt::Instruction* inst) {
   // The cases in this switch have to match the cases in |IsValidUse|.  If we
   // don't think it is valid, the optimization will not view the variable as a
   // candidate, and therefore the use will not be updated.
@@ -170,11 +170,11 @@ void PrivateToLocalPass::UpdateUse(ir::Instruction* inst) {
   }
 }
 void PrivateToLocalPass::UpdateUses(uint32_t id) {
-  std::vector<ir::Instruction*> uses;
+  std::vector<opt::Instruction*> uses;
   this->context()->get_def_use_mgr()->ForEachUser(
-      id, [&uses](ir::Instruction* use) { uses.push_back(use); });
+      id, [&uses](opt::Instruction* use) { uses.push_back(use); });
 
-  for (ir::Instruction* use : uses) {
+  for (opt::Instruction* use : uses) {
     UpdateUse(use);
   }
 }

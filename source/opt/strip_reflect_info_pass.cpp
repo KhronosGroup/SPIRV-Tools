@@ -22,9 +22,9 @@
 namespace spvtools {
 namespace opt {
 
-using ir::Instruction;
+using opt::Instruction;
 
-Pass::Status StripReflectInfoPass::Process(ir::IRContext* irContext) {
+Pass::Status StripReflectInfoPass::Process(opt::IRContext* irContext) {
   bool modified = false;
 
   std::vector<Instruction*> to_remove;

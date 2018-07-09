@@ -41,7 +41,7 @@ bool Validate(const std::vector<uint32_t>& bin) {
   return error == 0;
 }
 
-void Match(const std::string& checks, ir::IRContext* context) {
+void Match(const std::string& checks, opt::IRContext* context) {
   // Silence unused warnings with !defined(SPIRV_EFFCE)
   (void)checks;
 
@@ -117,18 +117,18 @@ TEST_F(PeelingTest, CannotPeel) {
   // representing the loop count, if equals to 0, then the function build a 10
   // constant as loop count.
   auto test_cannot_peel = [](const std::string& text, uint32_t loop_count_id) {
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
-    ir::Instruction* loop_count = nullptr;
+    opt::Instruction* loop_count = nullptr;
     if (loop_count_id) {
       loop_count = context->get_def_use_mgr()->GetDef(loop_count_id);
     } else {
@@ -483,20 +483,20 @@ TEST_F(PeelingTest, SimplePeeling) {
   {
     SCOPED_TRACE("Peel before");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     opt::InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    ir::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+    opt::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
 
     opt::LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
@@ -537,20 +537,20 @@ CHECK-NEXT: OpLoopMerge
   {
     SCOPED_TRACE("Peel after");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     opt::InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    ir::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+    opt::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
 
     opt::LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
@@ -593,20 +593,20 @@ CHECK-NEXT: OpLoopMerge
   {
     SCOPED_TRACE("Peel before with IV reuse");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     opt::InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    ir::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+    opt::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
 
     opt::LoopPeeling peel(&*ld.begin(), ten_cst,
                           context->get_def_use_mgr()->GetDef(22));
@@ -646,20 +646,20 @@ CHECK-NEXT: OpLoopMerge
   {
     SCOPED_TRACE("Peel after IV reuse");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     opt::InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    ir::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+    opt::Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
 
     opt::LoopPeeling peel(&*ld.begin(), ten_cst,
                           context->get_def_use_mgr()->GetDef(22));
@@ -755,18 +755,18 @@ TEST_F(PeelingTest, PeelingUncountable) {
   {
     SCOPED_TRACE("Peel before");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
-    ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(16);
+    opt::Instruction* loop_count = context->get_def_use_mgr()->GetDef(16);
     EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
 
     opt::LoopPeeling peel(&*ld.begin(), loop_count);
@@ -807,18 +807,18 @@ CHECK-NEXT: OpLoopMerge
   {
     SCOPED_TRACE("Peel after");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
-    ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(16);
+    opt::Instruction* loop_count = context->get_def_use_mgr()->GetDef(16);
     EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
 
     opt::LoopPeeling peel(&*ld.begin(), loop_count);
@@ -908,19 +908,19 @@ TEST_F(PeelingTest, DoWhilePeeling) {
   {
     SCOPED_TRACE("Peel before");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
     opt::InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    ir::Instruction* ten_cst = builder.Add32BitUnsignedIntegerConstant(10);
+    opt::Instruction* ten_cst = builder.Add32BitUnsignedIntegerConstant(10);
 
     opt::LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
@@ -957,20 +957,20 @@ CHECK-NEXT: OpLoopMerge
   {
     SCOPED_TRACE("Peel after");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
     opt::InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    ir::Instruction* ten_cst = builder.Add32BitUnsignedIntegerConstant(10);
+    opt::Instruction* ten_cst = builder.Add32BitUnsignedIntegerConstant(10);
 
     opt::LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
@@ -1080,18 +1080,18 @@ TEST_F(PeelingTest, PeelingLoopWithStore) {
   {
     SCOPED_TRACE("Peel before");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
-    ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(15);
+    opt::Instruction* loop_count = context->get_def_use_mgr()->GetDef(15);
     EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
 
     opt::LoopPeeling peel(&*ld.begin(), loop_count);
@@ -1132,18 +1132,18 @@ CHECK-NEXT: OpLoopMerge
   {
     SCOPED_TRACE("Peel after");
 
-    std::unique_ptr<ir::IRContext> context =
+    std::unique_ptr<opt::IRContext> context =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-    ir::Module* module = context->module();
+    opt::Module* module = context->module();
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << text << std::endl;
-    ir::Function& f = *module->begin();
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::Function& f = *module->begin();
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
 
     EXPECT_EQ(ld.NumLoops(), 1u);
 
-    ir::Instruction* loop_count = context->get_def_use_mgr()->GetDef(15);
+    opt::Instruction* loop_count = context->get_def_use_mgr()->GetDef(15);
     EXPECT_EQ(loop_count->opcode(), SpvOpLoad);
 
     opt::LoopPeeling peel(&*ld.begin(), loop_count);

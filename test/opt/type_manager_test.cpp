@@ -43,7 +43,7 @@ bool Validate(const std::vector<uint32_t>& bin) {
   return error == 0;
 }
 
-void Match(const std::string& original, ir::IRContext* context,
+void Match(const std::string& original, opt::IRContext* context,
            bool do_validation = true) {
   std::vector<uint32_t> bin;
   context->module()->ToBinary(&bin, true);
@@ -235,7 +235,7 @@ TEST(TypeManager, TypeStrings) {
       {28, "named_barrier"},
   };
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   opt::analysis::TypeManager manager(nullptr, context.get());
 
@@ -271,7 +271,7 @@ TEST(TypeManager, StructWithFwdPtr) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   opt::analysis::TypeManager manager(nullptr, context.get());
@@ -315,7 +315,7 @@ TEST(TypeManager, CircularFwdPtr) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   opt::analysis::TypeManager manager(nullptr, context.get());
@@ -365,7 +365,7 @@ TEST(TypeManager, IsomorphicStructWithFwdPtr) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   opt::analysis::TypeManager manager(nullptr, context.get());
@@ -408,7 +408,7 @@ TEST(TypeManager, IsomorphicCircularFwdPtr) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   opt::analysis::TypeManager manager(nullptr, context.get());
@@ -457,7 +457,7 @@ TEST(TypeManager, PartialIsomorphicFwdPtr) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   opt::analysis::TypeManager manager(nullptr, context.get());
@@ -483,7 +483,7 @@ TEST(TypeManager, DecorationOnStruct) {
     %struct4 = OpTypeStruct %u32 %f32 ; the same
     %struct7 = OpTypeStruct %f32      ; no decoration
   )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   opt::analysis::TypeManager manager(nullptr, context.get());
 
@@ -532,7 +532,7 @@ TEST(TypeManager, DecorationOnMember) {
     %struct7  = OpTypeStruct %u32 %f32 ; extra decoration on the struct
     %struct10 = OpTypeStruct %u32 %f32 ; no member decoration
   )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   opt::analysis::TypeManager manager(nullptr, context.get());
 
@@ -569,7 +569,7 @@ TEST(TypeManager, DecorationEmpty) {
     %struct2  = OpTypeStruct %f32 %u32
     %struct5  = OpTypeStruct %f32
   )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   opt::analysis::TypeManager manager(nullptr, context.get());
 
@@ -590,7 +590,7 @@ TEST(TypeManager, DecorationEmpty) {
 
 TEST(TypeManager, BeginEndForEmptyModule) {
   const std::string text = "";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   opt::analysis::TypeManager manager(nullptr, context.get());
   ASSERT_EQ(0u, manager.NumTypes());
@@ -606,7 +606,7 @@ TEST(TypeManager, BeginEnd) {
     %u32     = OpTypeInt 32 0
     %f64     = OpTypeFloat 64
   )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   opt::analysis::TypeManager manager(nullptr, context.get());
   ASSERT_EQ(5u, manager.NumTypes());
@@ -642,7 +642,7 @@ TEST(TypeManager, LookupType) {
 %vec2 = OpTypeVector %int 2
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(context, nullptr);
   TypeManager manager(nullptr, context.get());
@@ -670,7 +670,7 @@ OpMemoryModel Logical GLSL450
 %2 = OpTypeInt 32 1
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -693,7 +693,7 @@ OpMemoryModel Logical GLSL450
 %2 = OpTypeStruct %1
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -716,7 +716,7 @@ OpMemoryModel Logical GLSL450
 %3 = OpTypeStruct %1
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -741,7 +741,7 @@ OpMemoryModel Logical GLSL450
 %3 = OpTypeStruct %1
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -768,7 +768,7 @@ OpMemoryModel Logical GLSL450
 %2 = OpTypeStruct %1
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -802,7 +802,7 @@ OpMemoryModel Logical GLSL450
 %2 = OpTypeInt 32 0
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -824,7 +824,7 @@ OpDecorate %3 Constant
 %3 = OpTypeStruct %1
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -844,7 +844,7 @@ OpMemoryModel Logical GLSL450
 %2 = OpTypeStruct %1
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -864,7 +864,7 @@ OpMemoryModel Logical GLSL450
 %1 = OpTypeInt 32 0
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -887,7 +887,7 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -913,7 +913,7 @@ OpMemoryModel Logical GLSL450
 %1 = OpTypeInt 32 0
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -946,7 +946,7 @@ OpCapability Linkage
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(context, nullptr);
 
@@ -968,7 +968,7 @@ OpCapability Linkage
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   EXPECT_NE(context, nullptr);
 
@@ -1051,7 +1051,7 @@ OpMemoryModel Logical GLSL450
 %100 = OpConstant %uint 100
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -1077,7 +1077,7 @@ OpMemoryModel Logical GLSL450
 %uint = OpTypeInt 32 0
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -1108,7 +1108,7 @@ OpMemoryModel Logical GLSL450
 %3 = OpTypePointer Function %2
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);
@@ -1133,7 +1133,7 @@ OpMemoryModel Logical GLSL450
 %3 = OpTypePointer Function %1
   )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(context, nullptr);

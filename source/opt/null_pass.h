@@ -25,7 +25,7 @@ namespace opt {
 class NullPass : public Pass {
  public:
   const char* name() const override { return "null"; }
-  Status Process(ir::IRContext*) override {
+  Status Process(opt::IRContext*) override {
     return Status::SuccessWithoutChange;
   }
 };

@@ -21,7 +21,7 @@
 #include <cstring>
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisDefUse) {
@@ -92,7 +92,7 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
 }
 
-Instruction* IRContext::KillInst(ir::Instruction* inst) {
+Instruction* IRContext::KillInst(opt::Instruction* inst) {
   if (!inst) {
     return nullptr;
   }
@@ -114,11 +114,11 @@ Instruction* IRContext::KillInst(ir::Instruction* inst) {
     }
   }
 
-  if (type_mgr_ && ir::IsTypeInst(inst->opcode())) {
+  if (type_mgr_ && opt::IsTypeInst(inst->opcode())) {
     type_mgr_->RemoveId(inst->result_id());
   }
 
-  if (constant_mgr_ && ir::IsConstantInst(inst->opcode())) {
+  if (constant_mgr_ && opt::IsConstantInst(inst->opcode())) {
     constant_mgr_->RemoveId(inst->result_id());
   }
 
@@ -138,7 +138,7 @@ Instruction* IRContext::KillInst(ir::Instruction* inst) {
 }
 
 bool IRContext::KillDef(uint32_t id) {
-  ir::Instruction* def = get_def_use_mgr()->GetDef(id);
+  opt::Instruction* def = get_def_use_mgr()->GetDef(id);
   if (def != nullptr) {
     KillInst(def);
     return true;
@@ -153,15 +153,15 @@ bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   assert(get_def_use_mgr()->GetDef(after) &&
          "'after' is not a registered def.");
 
-  std::vector<std::pair<ir::Instruction*, uint32_t>> uses_to_update;
+  std::vector<std::pair<opt::Instruction*, uint32_t>> uses_to_update;
   get_def_use_mgr()->ForEachUse(
-      before, [&uses_to_update](ir::Instruction* user, uint32_t index) {
+      before, [&uses_to_update](opt::Instruction* user, uint32_t index) {
         uses_to_update.emplace_back(user, index);
       });
 
-  ir::Instruction* prev = nullptr;
+  opt::Instruction* prev = nullptr;
   for (auto p : uses_to_update) {
-    ir::Instruction* user = p.first;
+    opt::Instruction* user = p.first;
     uint32_t index = p.second;
     if (prev == nullptr || prev != user) {
       ForgetUses(user);
@@ -211,7 +211,7 @@ bool IRContext::IsConsistent() {
   if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
     for (auto& func : *module()) {
       for (auto& block : func) {
-        if (!block.WhileEachInst([this, &block](ir::Instruction* inst) {
+        if (!block.WhileEachInst([this, &block](opt::Instruction* inst) {
               if (get_instr_block(inst) != &block) {
                 return false;
               }
@@ -257,18 +257,18 @@ void IRContext::AnalyzeUses(Instruction* inst) {
 }
 
 void IRContext::KillNamesAndDecorates(uint32_t id) {
-  std::vector<ir::Instruction*> decorations =
+  std::vector<opt::Instruction*> decorations =
       get_decoration_mgr()->GetDecorationsFor(id, true);
 
   for (Instruction* inst : decorations) {
     KillInst(inst);
   }
 
-  std::vector<ir::Instruction*> name_to_kill;
+  std::vector<opt::Instruction*> name_to_kill;
   for (auto name : GetNames(id)) {
     name_to_kill.push_back(name.second);
   }
-  for (ir::Instruction* name_inst : name_to_kill) {
+  for (opt::Instruction* name_inst : name_to_kill) {
     KillInst(name_inst);
   }
 }
@@ -442,7 +442,7 @@ void IRContext::AddCombinatorsForCapability(uint32_t capability) {
   }
 }
 
-void IRContext::AddCombinatorsForExtension(ir::Instruction* extension) {
+void IRContext::AddCombinatorsForExtension(opt::Instruction* extension) {
   assert(extension->opcode() == SpvOpExtInstImport &&
          "Expecting an import of an extension's instruction set.");
   const char* extension_name =
@@ -557,15 +557,15 @@ void IRContext::RemoveFromIdToName(const Instruction* inst) {
   }
 }
 
-ir::LoopDescriptor* IRContext::GetLoopDescriptor(const ir::Function* f) {
+opt::LoopDescriptor* IRContext::GetLoopDescriptor(const opt::Function* f) {
   if (!AreAnalysesValid(kAnalysisLoopAnalysis)) {
     ResetLoopAnalysis();
   }
 
-  std::unordered_map<const ir::Function*, ir::LoopDescriptor>::iterator it =
+  std::unordered_map<const opt::Function*, opt::LoopDescriptor>::iterator it =
       loop_descriptors_.find(f);
   if (it == loop_descriptors_.end()) {
-    return &loop_descriptors_.emplace(std::make_pair(f, ir::LoopDescriptor(f)))
+    return &loop_descriptors_.emplace(std::make_pair(f, opt::LoopDescriptor(f)))
                 .first->second;
   }
 
@@ -573,7 +573,8 @@ ir::LoopDescriptor* IRContext::GetLoopDescriptor(const ir::Function* f) {
 }
 
 // Gets the dominator analysis for function |f|.
-opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(const ir::Function* f) {
+opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(
+    const opt::Function* f) {
   if (!AreAnalysesValid(kAnalysisDominatorAnalysis)) {
     ResetDominatorAnalysis();
   }
@@ -587,7 +588,7 @@ opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(const ir::Function* f) {
 
 // Gets the postdominator analysis for function |f|.
 opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
-    const ir::Function* f) {
+    const opt::Function* f) {
   if (!AreAnalysesValid(kAnalysisDominatorAnalysis)) {
     ResetDominatorAnalysis();
   }
@@ -599,13 +600,13 @@ opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
   return &post_dominator_trees_[f];
 }
 
-bool ir::IRContext::CheckCFG() {
+bool opt::IRContext::CheckCFG() {
   std::unordered_map<uint32_t, std::vector<uint32_t>> real_preds;
   if (!AreAnalysesValid(kAnalysisCFG)) {
     return true;
   }
 
-  for (ir::Function& function : *module()) {
+  for (opt::Function& function : *module()) {
     for (const auto& bb : function) {
       bb.ForEachSuccessorLabel([&bb, &real_preds](const uint32_t lab_id) {
         real_preds[lab_id].push_back(bb.id());
@@ -650,5 +651,5 @@ bool ir::IRContext::CheckCFG() {
 
   return true;
 }
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools

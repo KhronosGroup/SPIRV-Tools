@@ -24,7 +24,7 @@
 namespace {
 
 using namespace spvtools;
-using ir::IRContext;
+using opt::IRContext;
 using Analysis = IRContext::Analysis;
 using ::testing::Each;
 
@@ -61,7 +61,7 @@ class DummyPassPreservesFirst : public opt::Pass {
 using IRContextTest = PassTest<::testing::Test>;
 
 TEST_F(IRContextTest, IndividualValidAfterBuild) {
-  std::unique_ptr<ir::Module> module(new ir::Module());
+  std::unique_ptr<opt::Module> module(new opt::Module());
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
                          spvtools::MessageConsumer());
 
@@ -73,7 +73,7 @@ TEST_F(IRContextTest, IndividualValidAfterBuild) {
 }
 
 TEST_F(IRContextTest, AllValidAfterBuild) {
-  std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
+  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
                          spvtools::MessageConsumer());
 
@@ -87,7 +87,7 @@ TEST_F(IRContextTest, AllValidAfterBuild) {
 }
 
 TEST_F(IRContextTest, AllValidAfterPassNoChange) {
-  std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
+  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
                          spvtools::MessageConsumer());
 
@@ -105,7 +105,7 @@ TEST_F(IRContextTest, AllValidAfterPassNoChange) {
 }
 
 TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
-  std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
+  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
                          spvtools::MessageConsumer());
 
@@ -124,7 +124,7 @@ TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
 }
 
 TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
-  std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
+  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
                          spvtools::MessageConsumer());
 
@@ -143,7 +143,7 @@ TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
 }
 
 TEST_F(IRContextTest, PreserveFirstOnlyAfterPassWithChange) {
-  std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
+  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
                          spvtools::MessageConsumer());
 
@@ -184,7 +184,7 @@ TEST_F(IRContextTest, KillMemberName) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
 
   // Build the decoration manager.

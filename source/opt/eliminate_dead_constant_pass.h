@@ -26,7 +26,7 @@ namespace opt {
 class EliminateDeadConstantPass : public Pass {
  public:
   const char* name() const override { return "eliminate-dead-const"; }
-  Status Process(ir::IRContext*) override;
+  Status Process(opt::IRContext*) override;
 };
 
 }  // namespace opt

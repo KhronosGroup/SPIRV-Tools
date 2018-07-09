@@ -30,13 +30,13 @@
 namespace spvtools {
 namespace opt {
 
-using ir::Instruction;
-using ir::Module;
-using ir::Operand;
+using opt::Instruction;
+using opt::Module;
+using opt::Operand;
 using opt::analysis::DecorationManager;
 using opt::analysis::DefUseManager;
 
-Pass::Status RemoveDuplicatesPass::Process(ir::IRContext* ir_context) {
+Pass::Status RemoveDuplicatesPass::Process(opt::IRContext* ir_context) {
   bool modified = RemoveDuplicateCapabilities(ir_context);
   modified |= RemoveDuplicatesExtInstImports(ir_context);
   modified |= RemoveDuplicateTypes(ir_context);
@@ -46,7 +46,7 @@ Pass::Status RemoveDuplicatesPass::Process(ir::IRContext* ir_context) {
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
-    ir::IRContext* ir_context) const {
+    opt::IRContext* ir_context) const {
   bool modified = false;
 
   if (ir_context->capabilities().empty()) {
@@ -71,7 +71,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
-    ir::IRContext* ir_context) const {
+    opt::IRContext* ir_context) const {
   bool modified = false;
 
   if (ir_context->ext_inst_imports().empty()) {
@@ -98,7 +98,7 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateTypes(
-    ir::IRContext* ir_context) const {
+    opt::IRContext* ir_context) const {
   bool modified = false;
 
   if (ir_context->types_values().empty()) {
@@ -154,7 +154,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
 //     OpGroupDecorate %2 %4
 // group %2 could be removed.
 bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
-    ir::IRContext* ir_context) const {
+    opt::IRContext* ir_context) const {
   bool modified = false;
 
   std::vector<const Instruction*> visited_decorations;
@@ -189,9 +189,9 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
 
 bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
                                          const Instruction& inst2,
-                                         ir::IRContext* context) {
+                                         opt::IRContext* context) {
   if (inst1.opcode() != inst2.opcode()) return false;
-  if (!ir::IsTypeInst(inst1.opcode())) return false;
+  if (!opt::IsTypeInst(inst1.opcode())) return false;
 
   const analysis::Type* type1 =
       context->get_type_mgr()->GetType(inst1.result_id());

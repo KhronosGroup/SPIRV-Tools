@@ -31,9 +31,9 @@ using ::testing::UnorderedElementsAre;
 
 using PassClassTest = PassTest<::testing::Test>;
 
-static void CompareSets(const std::unordered_set<ir::Instruction*>& computed,
+static void CompareSets(const std::unordered_set<opt::Instruction*>& computed,
                         const std::unordered_set<uint32_t>& expected) {
-  for (ir::Instruction* insn : computed) {
+  for (opt::Instruction* insn : computed) {
     EXPECT_TRUE(expected.count(insn->result_id()))
         << "Unexpected instruction in live set: " << *insn;
   }
@@ -111,13 +111,13 @@ TEST_F(PassClassTest, LivenessWithIf) {
                OpReturn
                OpFunctionEnd
   )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function* f = &*module->begin();
+  opt::Function* f = &*module->begin();
   opt::LivenessAnalysis* liveness_analysis = context->GetLivenessAnalysis();
   const opt::RegisterLiveness* register_liveness = liveness_analysis->Get(f);
   {
@@ -411,16 +411,16 @@ TEST_F(PassClassTest, RegisterLiveness) {
                OpReturn
                OpFunctionEnd
   )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function* f = &*module->begin();
+  opt::Function* f = &*module->begin();
   opt::LivenessAnalysis* liveness_analysis = context->GetLivenessAnalysis();
   const opt::RegisterLiveness* register_liveness = liveness_analysis->Get(f);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
 
   {
     SCOPED_TRACE("Block 5");
@@ -1211,25 +1211,25 @@ TEST_F(PassClassTest, FissionSimulation) {
                OpReturn
                OpFunctionEnd
     )";
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << source << std::endl;
-  ir::Function* f = &*module->begin();
+  opt::Function* f = &*module->begin();
   opt::LivenessAnalysis* liveness_analysis = context->GetLivenessAnalysis();
   const opt::RegisterLiveness* register_liveness = liveness_analysis->Get(f);
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(f);
   opt::analysis::DefUseManager& def_use_mgr = *context->get_def_use_mgr();
 
   {
     opt::RegisterLiveness::RegionRegisterLiveness l1_sim_resut;
     opt::RegisterLiveness::RegionRegisterLiveness l2_sim_resut;
-    std::unordered_set<ir::Instruction*> moved_instructions{
+    std::unordered_set<opt::Instruction*> moved_instructions{
         def_use_mgr.GetDef(29), def_use_mgr.GetDef(30), def_use_mgr.GetDef(31),
         def_use_mgr.GetDef(31)->NextNode()};
-    std::unordered_set<ir::Instruction*> copied_instructions{
+    std::unordered_set<opt::Instruction*> copied_instructions{
         def_use_mgr.GetDef(22), def_use_mgr.GetDef(27),
         def_use_mgr.GetDef(27)->NextNode(), def_use_mgr.GetDef(23)};
 

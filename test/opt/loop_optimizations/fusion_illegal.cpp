@@ -130,14 +130,14 @@ TEST_F(FusionIllegalTest, PositiveDistanceCreatedRAW) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  opt::Function& f = *module->begin();
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -249,14 +249,14 @@ TEST_F(FusionIllegalTest, FunctionCall) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
-  ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  opt::Function& f = *module->begin();
+  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -408,16 +408,16 @@ TEST_F(FusionIllegalTest, PositiveDistanceCreatedRAWOuterLoop) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 4u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -548,16 +548,16 @@ TEST_F(FusionIllegalTest, PositiveDistanceCreatedWAR) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -669,16 +669,16 @@ TEST_F(FusionIllegalTest, PositiveDistanceCreatedWAW) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -790,16 +790,16 @@ TEST_F(FusionIllegalTest, SameReductionVariable) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -911,16 +911,16 @@ TEST_F(FusionIllegalTest, SameReductionVariableLCSSA) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1033,16 +1033,16 @@ TEST_F(FusionIllegalTest, UnknownIndexVariable) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1158,16 +1158,16 @@ TEST_F(FusionIllegalTest, AccumulatorIndexing) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1279,16 +1279,16 @@ TEST_F(FusionIllegalTest, Barrier) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1396,16 +1396,16 @@ TEST_F(FusionIllegalTest, ArrayInStruct) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1568,16 +1568,16 @@ TEST_F(FusionIllegalTest, NestedAccessChain) {
                OpFunctionEnd
     )";
 
-  std::unique_ptr<ir::IRContext> context =
+  std::unique_ptr<opt::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ir::Module* module = context->module();
+  opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::Function& f = *module->begin();
+  opt::Function& f = *module->begin();
 
   {
-    ir::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
     EXPECT_EQ(ld.NumLoops(), 2u);
 
     auto loops = ld.GetLoopsInBinaryLayoutOrder();

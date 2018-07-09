@@ -22,8 +22,8 @@
 namespace {
 
 using namespace spvtools;
-using ir::Instruction;
-using ir::IRContext;
+using opt::IRContext;
+using opt::Instruction;
 using opt::PassManager;
 
 using CopyPropArrayPassTest = PassTest<::testing::Test>;

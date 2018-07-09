@@ -18,7 +18,7 @@
 #include <sstream>
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
 Function* Function::Clone(IRContext* ctx) const {
   Function* clone =
@@ -96,7 +96,7 @@ std::ostream& operator<<(std::ostream& str, const Function& func) {
 
 std::string Function::PrettyPrint(uint32_t options) const {
   std::ostringstream str;
-  ForEachInst([&str, options](const ir::Instruction* inst) {
+  ForEachInst([&str, options](const opt::Instruction* inst) {
     str << inst->PrettyPrint(options);
     if (inst->opcode() != SpvOpFunctionEnd) {
       str << std::endl;
@@ -105,5 +105,5 @@ std::string Function::PrettyPrint(uint32_t options) const {
   return str.str();
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools

@@ -23,7 +23,7 @@
 namespace spvtools {
 namespace opt {
 
-void LocalMultiStoreElimPass::Initialize(ir::IRContext* c) {
+void LocalMultiStoreElimPass::Initialize(opt::IRContext* c) {
   InitializeProcessing(c);
 
   // Initialize extension whitelist
@@ -54,7 +54,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
   // Process functions
-  ProcessFunction pfn = [this](ir::Function* fp) {
+  ProcessFunction pfn = [this](opt::Function* fp) {
     return SSARewriter(this).RewriteFunctionIntoSSA(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
@@ -63,7 +63,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
 
 LocalMultiStoreElimPass::LocalMultiStoreElimPass() {}
 
-Pass::Status LocalMultiStoreElimPass::Process(ir::IRContext* c) {
+Pass::Status LocalMultiStoreElimPass::Process(opt::IRContext* c) {
   Initialize(c);
   return ProcessImpl();
 }
