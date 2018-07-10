@@ -280,10 +280,12 @@ inline SExpression operator+(SENode* lhs, SExpression rhs) { return rhs + lhs; }
 template <typename T,
           typename std::enable_if<std::is_integral<T>::value, int>::type>
 inline SExpression operator-(T lhs, SExpression rhs) {
+  // NOLINTNEXTLINE(whitespace/braces)
   return SExpression{rhs.GetScalarEvolutionAnalysis()->CreateConstant(lhs)} -
          rhs;
 }
 inline SExpression operator-(SENode* lhs, SExpression rhs) {
+  // NOLINTNEXTLINE(whitespace/braces)
   return SExpression{lhs} - rhs;
 }
 
@@ -297,10 +299,12 @@ inline SExpression operator*(SENode* lhs, SExpression rhs) { return rhs * lhs; }
 template <typename T,
           typename std::enable_if<std::is_integral<T>::value, int>::type>
 inline std::pair<SExpression, int64_t> operator/(T lhs, SExpression rhs) {
+  // NOLINTNEXTLINE(whitespace/braces)
   return SExpression{rhs.GetScalarEvolutionAnalysis()->CreateConstant(lhs)} /
          rhs;
 }
 inline std::pair<SExpression, int64_t> operator/(SENode* lhs, SExpression rhs) {
+  // NOLINTNEXTLINE(whitespace/braces)
   return SExpression{lhs} / rhs;
 }
 

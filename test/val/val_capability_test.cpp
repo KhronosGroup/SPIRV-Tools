@@ -959,16 +959,16 @@ make_pair(string(kGLSL450MemoryModel) +
           vector<string>{"LiteralSampler"})
 )),);
 
-//TODO(umar): Sampler Filter Mode
-//TODO(umar): Image Format
-//TODO(umar): Image Channel Order
-//TODO(umar): Image Channel Data Type
-//TODO(umar): Image Operands
-//TODO(umar): FP Fast Math Mode
-//TODO(umar): FP Rounding Mode
-//TODO(umar): Linkage Type
-//TODO(umar): Access Qualifier
-//TODO(umar): Function Parameter Attribute
+// TODO(umar): Sampler Filter Mode
+// TODO(umar): Image Format
+// TODO(umar): Image Channel Order
+// TODO(umar): Image Channel Data Type
+// TODO(umar): Image Operands
+// TODO(umar): FP Fast Math Mode
+// TODO(umar): FP Rounding Mode
+// TODO(umar): Linkage Type
+// TODO(umar): Access Qualifier
+// TODO(umar): Function Parameter Attribute
 
 INSTANTIATE_TEST_CASE_P(Decoration, ValidateCapability,
                         Combine(
