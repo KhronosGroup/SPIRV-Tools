@@ -101,45 +101,45 @@ void UpgradeMemoryModel::UpgradeInstructions() {
 
       switch (inst->opcode()) {
         case SpvOpLoad:
-          UpgradeFlags(inst, 1u, is_coherent, is_volatile, false, true);
-          if (is_coherent) {
-            inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
-          }
+          UpgradeFlags(inst, 1u, is_coherent, is_volatile, /* visible */ false,
+                       /* is_memory */ true);
           break;
         case SpvOpStore:
-          UpgradeFlags(inst, 2u, is_coherent, is_volatile, true, true);
-          if (is_coherent) {
-            inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
-          }
+          UpgradeFlags(inst, 2u, is_coherent, is_volatile, /* visible */ true,
+                       /* is_memory */ true);
           break;
         case SpvOpCopyMemory:
-          UpgradeFlags(inst, 2u, dst_coherent, dst_volatile, false, true);
-          UpgradeFlags(inst, 2u, src_coherent, src_volatile, true, true);
-          if (src_coherent) {
-            inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(src_scope)}});
-          }
-          if (dst_coherent) {
-            inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(dst_scope)}});
-          }
+          UpgradeFlags(inst, 2u, dst_coherent, dst_volatile,
+                       /* visible */ false, /* is_memory */ true);
+          UpgradeFlags(inst, 2u, src_coherent, src_volatile, /* visible */ true,
+                       /* is_memory */ true);
           break;
         case SpvOpCopyMemorySized:
-          UpgradeFlags(inst, 3u, dst_coherent, dst_volatile, false, true);
-          UpgradeFlags(inst, 3u, src_coherent, src_volatile, true, true);
-          if (src_coherent) {
-            inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(src_scope)}});
-          }
-          if (dst_coherent) {
-            inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(dst_scope)}});
-          }
+          UpgradeFlags(inst, 3u, dst_coherent, dst_volatile,
+                       /* visible */ false, /* is_memory */ true);
+          UpgradeFlags(inst, 3u, src_coherent, src_volatile, /* visible */ true,
+                       /* is_memory */ true);
           break;
         default:
           break;
+      }
+
+      // |is_coherent| is mutually exclusive with |src_coherent| and
+      // |dst_coherent|.
+      if (is_coherent) {
+        inst->AddOperand(
+            {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+      }
+      // According to SPV_KHR_vulkan_memory_model, if both available and
+      // visible flags are used the first scope operand is for availability
+      // (reads) and the second is for visibiity (writes).
+      if (src_coherent) {
+        inst->AddOperand(
+            {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(src_scope)}});
+      }
+      if (dst_coherent) {
+        inst->AddOperand(
+            {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(dst_scope)}});
       }
     });
   }
@@ -375,6 +375,8 @@ void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,
                                       uint32_t in_operand, bool is_coherent,
                                       bool is_volatile, bool visible,
                                       bool is_memory) {
+  if (!is_coherent && !is_volatile) return;
+
   uint32_t flags = 0;
   if (inst->NumInOperands() > in_operand) {
     flags |= inst->GetSingleWordInOperand(in_operand);
