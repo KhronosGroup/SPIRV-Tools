@@ -261,8 +261,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Runs the given function |f| on all operand ids.
   //
   // |f| should not transform an ID into 0, as 0 is an invalid ID.
-  inline void ForEachId(const std::function<void(uint32_t*)>& f);
-  inline void ForEachId(const std::function<void(const uint32_t*)>& f) const;
+  inline void ForEachIdUpdateId(const std::function<void(uint32_t*)>& f);
 
   // Runs the given function |f| on all "in" operand ids.
   inline void ForEachInId(const std::function<void(uint32_t*)>& f);
@@ -573,18 +572,13 @@ inline void Instruction::ForEachInst(
       run_on_debug_line_insts);
 }
 
-inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
+inline void Instruction::ForEachIdUpdateId(
+    const std::function<void(uint32_t*)>& f) {
   for (auto& opnd : operands_)
     if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
   if (type_id_ != 0u) type_id_ = GetSingleWordOperand(0u);
   if (result_id_ != 0u)
     result_id_ = GetSingleWordOperand(type_id_ == 0u ? 0u : 1u);
-}
-
-inline void Instruction::ForEachId(
-    const std::function<void(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_)
-    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
 }
 
 inline bool Instruction::WhileEachInId(
