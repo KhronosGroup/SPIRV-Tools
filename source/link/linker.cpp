@@ -165,7 +165,7 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
        ++module_iter) {
     Module* module = *module_iter;
     module->ForEachInst([&id_bound](Instruction* insn) {
-      insn->ForEachId([&id_bound](uint32_t* id) { *id += id_bound; });
+      insn->ForEachIdUpdateId([&id_bound](uint32_t* id) { *id += id_bound; });
     });
     id_bound += module->IdBound() - 1u;
     if (id_bound > 0x3FFFFF)
