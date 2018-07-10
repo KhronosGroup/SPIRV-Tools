@@ -30,8 +30,9 @@ using std::unordered_map;
 using std::vector;
 
 namespace spvtools {
-
+namespace val {
 namespace {
+
 bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
   // See Section 2.4
   bool out = false;
@@ -139,7 +140,7 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
   return out;
 }
 
-}  // anonymous namespace
+}  // namespace
 
 ValidationState_t::ValidationState_t(const spv_const_context ctx,
                                      const spv_const_validator_options opt,
@@ -878,4 +879,5 @@ std::string ValidationState_t::Disassemble(const uint32_t* words,
                                     words_, num_words_, disassembly_options);
 }
 
+}  // namespace val
 }  // namespace spvtools

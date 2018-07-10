@@ -35,6 +35,7 @@
 #include "val/instruction.h"
 
 namespace spvtools {
+namespace val {
 
 /// This enum represents the sections of a SPIRV module. See section 2.4
 /// of the SPIRV spec for additional details of the order. The enumerant values
@@ -597,6 +598,7 @@ class ValidationState_t {
   const std::vector<uint32_t> empty_ids_;
 };
 
+}  // namespace val
 }  // namespace spvtools
 
 #endif  /// LIBSPIRV_VAL_VALIDATIONSTATE_H_

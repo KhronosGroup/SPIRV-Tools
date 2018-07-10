@@ -29,6 +29,7 @@
 #include "val/construct.h"
 
 namespace spvtools {
+namespace val {
 
 struct bb_constr_type_pair_hash {
   std::size_t operator()(
@@ -351,6 +352,7 @@ class Function {
   std::set<uint32_t> function_call_targets_;
 };
 
+}  // namespace val
 }  // namespace spvtools
 
 #endif  /// LIBSPIRV_VAL_FUNCTION_H_

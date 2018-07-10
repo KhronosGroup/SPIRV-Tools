@@ -22,6 +22,7 @@
 #include <vector>
 
 namespace spvtools {
+namespace val {
 
 /// Functor for ordering BasicBlocks. BasicBlock pointers must not be null.
 struct less_than_id {
@@ -144,6 +145,7 @@ class Construct {
   BasicBlock* exit_block_;
 };
 
+}  // namespace val
 }  // namespace spvtools
 
 #endif  /// LIBSPIRV_VAL_CONSTRUCT_H_

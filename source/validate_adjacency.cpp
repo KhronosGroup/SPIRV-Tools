@@ -25,6 +25,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 
 spv_result_t ValidateAdjacency(ValidationState_t& _) {
   const auto& instructions = _.ordered_instructions();
@@ -81,4 +82,5 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools
