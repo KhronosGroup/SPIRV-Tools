@@ -141,6 +141,7 @@ std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
   if (!visited->insert(inst->result_id()).second)
     return std::make_pair(false, false);
 
+  // Initialize the cache before |indices| is (potentially) modified.
   auto& cached_result = cache_[std::make_pair(inst->result_id(), indices)];
   cached_result.first = false;
   cached_result.second = false;
@@ -186,6 +187,8 @@ std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
     return std::make_pair(true, true);
   }
 
+  // Variables and function parameters are sources. Continue searching until we
+  // reach them.
   if (inst->opcode() != SpvOpVariable &&
       inst->opcode() != SpvOpFunctionParameter) {
     inst->ForEachInId([this, &is_coherent, &is_volatile, &indices,
