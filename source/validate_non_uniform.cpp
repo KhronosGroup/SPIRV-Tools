@@ -29,9 +29,8 @@ namespace val {
 namespace {
 
 spv_result_t ValidateExecutionScope(ValidationState_t& _,
-                                    const spv_parsed_instruction_t* inst,
-                                    uint32_t scope) {
-  SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+                                    const Instruction* inst, uint32_t scope) {
+  SpvOp opcode = inst->opcode();
   bool is_int32 = false, is_const_int32 = false;
   uint32_t value = 0;
   std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(scope);
@@ -67,12 +66,11 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
 }  // namespace
 
 // Validates correctness of non-uniform group instructions.
-spv_result_t NonUniformPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+spv_result_t NonUniformPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
 
   if (spvOpcodeIsNonUniformGroupOperation(opcode)) {
-    const uint32_t execution_scope = inst->words[3];
+    const uint32_t execution_scope = inst->word(3);
     if (auto error = ValidateExecutionScope(_, inst, execution_scope)) {
       return error;
     }

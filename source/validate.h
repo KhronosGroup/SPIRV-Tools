@@ -106,8 +106,7 @@ void printDominatorList(BasicBlock& block);
 
 /// Performs logical layout validation as described in section 2.4 of the SPIR-V
 /// spec.
-spv_result_t ModuleLayoutPass(ValidationState_t& _,
-                              const spv_parsed_instruction_t* inst);
+spv_result_t ModuleLayoutPass(ValidationState_t& _, const Instruction* inst);
 
 /// Performs Control Flow Graph validation of a module
 spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst);
@@ -118,12 +117,10 @@ spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst);
 /// Performs validation of the Data Rules subsection of 2.16.1 Universal
 /// Validation Rules.
 /// TODO(ehsann): add more comments here as more validation code is added.
-spv_result_t DataRulesPass(ValidationState_t& _,
-                           const spv_parsed_instruction_t* inst);
+spv_result_t DataRulesPass(ValidationState_t& _, const Instruction* inst);
 
 /// Performs instruction validation.
-spv_result_t InstructionPass(ValidationState_t& _,
-                             const spv_parsed_instruction_t* inst);
+spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst);
 
 /// Performs decoration validation.
 spv_result_t ValidateDecorations(ValidationState_t& _);
@@ -134,56 +131,43 @@ spv_result_t ValidateBuiltIns(const ValidationState_t& _);
 /// Validates that type declarations are unique, unless multiple declarations
 /// of the same data type are allowed by the specification.
 /// (see section 2.8 Types and Variables)
-spv_result_t TypeUniquePass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst);
+spv_result_t TypeUniquePass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of arithmetic instructions.
-spv_result_t ArithmeticsPass(ValidationState_t& _,
-                             const spv_parsed_instruction_t* inst);
+spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of composite instructions.
-spv_result_t CompositesPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst);
+spv_result_t CompositesPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of conversion instructions.
-spv_result_t ConversionPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst);
+spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of derivative instructions.
-spv_result_t DerivativesPass(ValidationState_t& _,
-                             const spv_parsed_instruction_t* inst);
+spv_result_t DerivativesPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of logical instructions.
-spv_result_t LogicalsPass(ValidationState_t& _,
-                          const spv_parsed_instruction_t* inst);
+spv_result_t LogicalsPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of bitwise instructions.
-spv_result_t BitwisePass(ValidationState_t& _,
-                         const spv_parsed_instruction_t* inst);
+spv_result_t BitwisePass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of image instructions.
-spv_result_t ImagePass(ValidationState_t& _,
-                       const spv_parsed_instruction_t* inst);
+spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of atomic instructions.
-spv_result_t AtomicsPass(ValidationState_t& _,
-                         const spv_parsed_instruction_t* inst);
+spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of barrier instructions.
-spv_result_t BarriersPass(ValidationState_t& _,
-                          const spv_parsed_instruction_t* inst);
+spv_result_t BarriersPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of literal numbers.
-spv_result_t LiteralsPass(ValidationState_t& _,
-                          const spv_parsed_instruction_t* inst);
+spv_result_t LiteralsPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of ExtInst instructions.
-spv_result_t ExtInstPass(ValidationState_t& _,
-                         const spv_parsed_instruction_t* inst);
+spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of non-uniform group instructions.
-spv_result_t NonUniformPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst);
+spv_result_t NonUniformPass(ValidationState_t& _, const Instruction* inst);
 
 // Validates that capability declarations use operands allowed in the current
 // context.
@@ -191,8 +175,7 @@ spv_result_t CapabilityPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
 
 /// Validates correctness of primitive instructions.
-spv_result_t PrimitivesPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst);
+spv_result_t PrimitivesPass(ValidationState_t& _, const Instruction* inst);
 
 /// @brief Validate the ID usage of the instruction stream
 ///

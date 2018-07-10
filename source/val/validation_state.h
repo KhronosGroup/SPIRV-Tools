@@ -400,7 +400,7 @@ class ValidationState_t {
 
   /// Adds the instruction data to unique_type_declarations_.
   /// Returns false if an identical type declaration already exists.
-  bool RegisterUniqueTypeDeclaration(const spv_parsed_instruction_t& inst);
+  bool RegisterUniqueTypeDeclaration(const Instruction* inst);
 
   // Returns type_id of the scalar component of |id|.
   // |id| can be either
@@ -466,7 +466,7 @@ class ValidationState_t {
   // Returns type_id for given id operand if it has a type or zero otherwise.
   // |operand_index| is expected to be pointing towards an operand which is an
   // id.
-  uint32_t GetOperandTypeId(const spv_parsed_instruction_t* inst,
+  uint32_t GetOperandTypeId(const Instruction* inst,
                             size_t operand_index) const;
 
   // Provides information on pointer type. Returns false iff not pointer type.

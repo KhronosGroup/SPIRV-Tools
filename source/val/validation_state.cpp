@@ -487,20 +487,20 @@ uint32_t ValidationState_t::getIdBound() const { return id_bound_; }
 
 void ValidationState_t::setIdBound(const uint32_t bound) { id_bound_ = bound; }
 
-bool ValidationState_t::RegisterUniqueTypeDeclaration(
-    const spv_parsed_instruction_t& inst) {
+bool ValidationState_t::RegisterUniqueTypeDeclaration(const Instruction* inst) {
   std::vector<uint32_t> key;
-  key.push_back(static_cast<uint32_t>(inst.opcode));
-  for (int index = 0; index < inst.num_operands; ++index) {
-    const spv_parsed_operand_t& operand = inst.operands[index];
+  key.push_back(static_cast<uint32_t>(inst->opcode()));
+  for (size_t index = 0; index < inst->operands().size(); ++index) {
+    const spv_parsed_operand_t& operand = inst->operand(index);
 
     if (operand.type == SPV_OPERAND_TYPE_RESULT_ID) continue;
 
     const int words_begin = operand.offset;
     const int words_end = words_begin + operand.num_words;
-    assert(words_end <= static_cast<int>(inst.num_words));
+    assert(words_end <= static_cast<int>(inst->words().size()));
 
-    key.insert(key.end(), inst.words + words_begin, inst.words + words_end);
+    key.insert(key.end(), inst->words().begin() + words_begin,
+               inst->words().begin() + words_end);
   }
 
   return unique_type_declarations_.insert(std::move(key)).second;
@@ -784,12 +784,9 @@ bool ValidationState_t::GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
   return true;
 }
 
-uint32_t ValidationState_t::GetOperandTypeId(
-    const spv_parsed_instruction_t* inst, size_t operand_index) const {
-  assert(operand_index < inst->num_operands);
-  const spv_parsed_operand_t& operand = inst->operands[operand_index];
-  assert(operand.num_words == 1);
-  return GetTypeId(inst->words[operand.offset]);
+uint32_t ValidationState_t::GetOperandTypeId(const Instruction* inst,
+                                             size_t operand_index) const {
+  return GetTypeId(inst->GetOperandAs<uint32_t>(operand_index));
 }
 
 bool ValidationState_t::GetConstantValUint64(uint32_t id, uint64_t* val) const {

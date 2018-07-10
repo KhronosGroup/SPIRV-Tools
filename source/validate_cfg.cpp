@@ -549,7 +549,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
 }
 
 spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
-  SpvOp opcode = static_cast<SpvOp>(inst->opcode());
+  SpvOp opcode = inst->opcode();
   switch (opcode) {
     case SpvOpLabel:
       if (auto error = _.current_function().RegisterBlock(inst->id()))
