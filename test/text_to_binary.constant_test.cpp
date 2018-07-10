@@ -574,8 +574,8 @@ INSTANTIATE_TEST_CASE_P(
   "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.0018p+128\n",     // +nan
   "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.01ep+128\n",      // +nan
   "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.fffffep+128\n",   // +nan
-  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1p+1024\n",                //-inf
-  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1p+1024\n",                 //+inf
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1p+1024\n",                // -inf
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1p+1024\n",                 // +inf
   "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.8p+1024\n",              // -nan
   "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.0fp+1024\n",             // -nan
   "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.0000000000001p+1024\n",  // -nan

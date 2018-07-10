@@ -446,9 +446,8 @@ bool AggressiveDCEPass::AggressiveDCE(opt::Function* func) {
       if (varId != 0) {
         ProcessLoad(varId);
       }
-    }
     // If function call, treat as if it loads from all pointer arguments
-    else if (liveInst->opcode() == SpvOpFunctionCall) {
+    } else if (liveInst->opcode() == SpvOpFunctionCall) {
       liveInst->ForEachInId([this](const uint32_t* iid) {
         // Skip non-ptr args
         if (!IsPtr(*iid)) return;
@@ -456,14 +455,12 @@ bool AggressiveDCEPass::AggressiveDCE(opt::Function* func) {
         (void)GetPtr(*iid, &varId);
         ProcessLoad(varId);
       });
-    }
     // If function parameter, treat as if it's result id is loaded from
-    else if (liveInst->opcode() == SpvOpFunctionParameter) {
+    } else if (liveInst->opcode() == SpvOpFunctionParameter) {
       ProcessLoad(liveInst->result_id());
-    }
     // We treat an OpImageTexelPointer as a load of the pointer, and
     // that value is manipulated to get the result.
-    else if (liveInst->opcode() == SpvOpImageTexelPointer) {
+    } else if (liveInst->opcode() == SpvOpImageTexelPointer) {
       uint32_t varId;
       (void)GetPtr(liveInst, &varId);
       if (varId != 0) {

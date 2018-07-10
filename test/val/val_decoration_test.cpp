@@ -1615,7 +1615,7 @@ TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
 TEST_F(ValidateDecorations, PushConstantArrayBaseAlignmentGood) {
   // Tests https://github.com/KhronosGroup/SPIRV-Tools/issues/1664
   // From GLSL vertex shader:
-  //#version 450
+  // #version 450
   // layout(push_constant) uniform S { vec2 v; float arr[2]; } u;
   // void main() { }
 

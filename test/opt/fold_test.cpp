@@ -5618,7 +5618,7 @@ TEST_P(MatchingInstructionWithNoResultFoldingTest, Case) {
   // Fold the instruction to test.
   opt::Instruction* inst = nullptr;
   opt::Function* func = &*context->module()->begin();
-  for(auto& bb : *func) {
+  for (auto& bb : *func) {
     opt::Instruction* terminator = bb.terminator();
     if (terminator->IsReturnOrAbort()) {
       inst = terminator->PreviousNode();
