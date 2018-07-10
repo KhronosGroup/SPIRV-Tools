@@ -321,14 +321,13 @@ void DominatorTree::GetDominatorEdges(
       CFA<opt::BasicBlock>::CalculateDominators(postorder, predecessor_functor);
 }
 
-void DominatorTree::InitializeTree(const opt::Function* f) {
+void DominatorTree::InitializeTree(const CFG& cfg, const opt::Function* f) {
   ClearTree();
 
   // Skip over empty functions.
   if (f->cbegin() == f->cend()) {
     return;
   }
-  const opt::CFG& cfg = *f->context()->cfg();
 
   const opt::BasicBlock* dummy_start_node =
       postdominator_ ? cfg.pseudo_exit_block() : cfg.pseudo_entry_block();

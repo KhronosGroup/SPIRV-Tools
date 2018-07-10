@@ -158,7 +158,7 @@ class DominatorTree {
 
   // Build the (post-)dominator tree for the function |f|
   // Any existing data will be overwritten
-  void InitializeTree(const opt::Function* f);
+  void InitializeTree(const CFG& cfg, const opt::Function* f);
 
   // Check if the basic block |a| dominates the basic block |b|.
   bool Dominates(const opt::BasicBlock* a, const opt::BasicBlock* b) const;

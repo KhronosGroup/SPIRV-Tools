@@ -580,7 +580,7 @@ opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(
   }
 
   if (dominator_trees_.find(f) == dominator_trees_.end()) {
-    dominator_trees_[f].InitializeTree(f);
+    dominator_trees_[f].InitializeTree(*cfg(), f);
   }
 
   return &dominator_trees_[f];
@@ -594,7 +594,7 @@ opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
   }
 
   if (post_dominator_trees_.find(f) == post_dominator_trees_.end()) {
-    post_dominator_trees_[f].InitializeTree(f);
+    post_dominator_trees_[f].InitializeTree(*cfg(), f);
   }
 
   return &post_dominator_trees_[f];
