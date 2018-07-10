@@ -21,13 +21,15 @@
 
 // Appends the content from the file named as |filename| to |data|, assuming
 // each element in the file is of type |T|. The file is opened with the given
-// |mode|. If |filename| is nullptr or "-", reads from the standard input. If
-// any error occurs, writes error messages to standard error and returns false.
+// |mode|. If |filename| is nullptr or "-", reads from the standard input, but
+// reopened with the given mode. If any error occurs, writes error messages to
+// standard error and returns false.
 template <typename T>
 bool ReadFile(const char* filename, const char* mode, std::vector<T>* data) {
   const int buf_size = 1024;
   const bool use_file = filename && strcmp("-", filename);
-  if (FILE* fp = (use_file ? fopen(filename, mode) : stdin)) {
+  if (FILE* fp =
+          (use_file ? fopen(filename, mode) : freopen(nullptr, mode, stdin))) {
     T buf[buf_size];
     while (size_t len = fread(buf, sizeof(T), buf_size, fp)) {
       data->insert(data->end(), buf, buf + len);
