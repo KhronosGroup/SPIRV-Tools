@@ -31,6 +31,7 @@
 #include "latest_version_spirv_header.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv_definition.h"
+#include "spirv_validator_options.h"
 #include "val/function.h"
 #include "val/instruction.h"
 
@@ -85,6 +86,10 @@ class ValidationState_t {
     // Allow non-monotonic offsets for struct members?
     // Vulkan permits this.
     bool non_monotonic_struct_member_offsets = false;
+
+    // Target environment uses relaxed block layout.
+    // This is true for Vulkan 1.1 or later.
+    bool env_relaxed_block_layout = false;
   };
 
   ValidationState_t(const spv_const_context context,
@@ -378,6 +383,12 @@ class ValidationState_t {
 
   /// Inserts a new <id> to the set of Local Variables.
   void registerLocalVariable(const uint32_t id) { local_vars_.insert(id); }
+
+  // Returns true if using relaxed block layout, equivalent to
+  // VK_KHR_relaxed_block_layout.
+  bool IsRelaxedBlockLayout() const {
+    return features_.env_relaxed_block_layout || options()->relax_block_layout;
+  }
 
   /// Sets the struct nesting depth for a given struct ID
   void set_struct_nesting_depth(uint32_t id, uint32_t depth) {

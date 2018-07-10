@@ -342,7 +342,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                   << " layout rules: member " << member_idx << " ");
     return ds;
   };
-  if (vstate.options()->relax_block_layout) return SPV_SUCCESS;
+  const bool relaxed_block_layout = vstate.IsRelaxedBlockLayout();
   const auto& members = getStructMembers(struct_id, vstate);
 
   // To check for member overlaps, we want to traverse the members in
@@ -396,9 +396,25 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
     // Check offset.
     if (offset == 0xffffffff)
       return fail(memberIdx) << "is missing an Offset decoration";
-    if (!IsAlignedTo(offset, alignment))
-      return fail(memberIdx)
-             << "at offset " << offset << " is not aligned to " << alignment;
+    if (relaxed_block_layout && opcode == SpvOpTypeVector) {
+      // In relaxed block layout, the vector offset must be aligned to the
+      // vector's scalar element type.
+      const auto componentId = inst->words()[2];
+      const auto scalar_alignment = getBaseAlignment(
+          componentId, blockRules, constraint, constraints, vstate);
+      if (!IsAlignedTo(offset, scalar_alignment)) {
+        return fail(memberIdx)
+               << "at offset " << offset
+               << " is not aligned to scalar element size " << scalar_alignment;
+      }
+    } else {
+      // Without relaxed block layout, the offset must be divisible by the
+      // base alignment.
+      if (!IsAlignedTo(offset, alignment)) {
+        return fail(memberIdx)
+               << "at offset " << offset << " is not aligned to " << alignment;
+      }
+    }
     // SPIR-V requires struct members to be specified in memory address order,
     // and they should not overlap.  Vulkan relaxes that rule.
     if (!permit_non_monotonic_member_offsets) {
@@ -416,11 +432,13 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       return fail(memberIdx) << "at offset " << offset
                              << " overlaps previous member ending at offset "
                              << nextValidOffset - 1;
-    // Check improper straddle of vectors.
-    if (SpvOpTypeVector == opcode &&
-        hasImproperStraddle(id, offset, constraint, constraints, vstate))
-      return fail(memberIdx)
-             << "is an improperly straddling vector at offset " << offset;
+    if (relaxed_block_layout) {
+      // Check improper straddle of vectors.
+      if (SpvOpTypeVector == opcode &&
+          hasImproperStraddle(id, offset, constraint, constraints, vstate))
+        return fail(memberIdx)
+               << "is an improperly straddling vector at offset " << offset;
+    }
     // Check struct members recursively.
     spv_result_t recursive_status = SPV_SUCCESS;
     if (SpvOpTypeStruct == opcode &&

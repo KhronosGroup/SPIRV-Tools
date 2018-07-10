@@ -169,9 +169,18 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       in_function_(false) {
   assert(opt && "Validator options may not be Null.");
 
-  features_.non_monotonic_struct_member_offsets =
-      spvIsVulkanEnv(context_->target_env);
-  switch (context_->target_env) {
+  const auto env = context_->target_env;
+
+  if (spvIsVulkanEnv(env)) {
+    features_.non_monotonic_struct_member_offsets = true;
+
+    // Vulkan 1.1 includes VK_KHR_relaxed_block_layout in core.
+    if (env != SPV_ENV_VULKAN_1_0) {
+      features_.env_relaxed_block_layout = true;
+    }
+  }
+
+  switch (env) {
     case SPV_ENV_WEBGPU_0:
       features_.bans_op_undef = true;
       break;
