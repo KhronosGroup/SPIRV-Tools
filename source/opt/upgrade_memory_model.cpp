@@ -71,6 +71,10 @@ void UpgradeMemoryModel::UpgradeInstructions() {
     func.ForEachInst([this](ir::Instruction* inst) {
       bool is_coherent = false;
       bool is_volatile = false;
+      bool src_coherent = false;
+      bool src_volatile = false;
+      bool dst_coherent = false;
+      bool dst_volatile = false;
       SpvScope scope = SpvScopeDevice;
       switch (inst->opcode()) {
         case SpvOpLoad:
@@ -84,23 +88,53 @@ void UpgradeMemoryModel::UpgradeInstructions() {
           break;
         case SpvOpCopyMemory:
         case SpvOpCopyMemorySized:
+          std::tie(dst_coherent, dst_volatile, scope) =
+              GetInstructionAttributes(inst->GetSingleWordInOperand(0u));
+          std::tie(src_coherent, src_volatile, scope) =
+              GetInstructionAttributes(inst->GetSingleWordInOperand(1u));
           break;
         default:
           break;
       }
 
-      if (!is_coherent && !is_volatile) return;
-
       switch (inst->opcode()) {
         case SpvOpLoad:
           UpgradeFlags(inst, 1u, is_coherent, is_volatile, false, true);
-          inst->AddOperand(
-              {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          if (is_coherent) {
+            inst->AddOperand(
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          }
           break;
         case SpvOpStore:
           UpgradeFlags(inst, 2u, is_coherent, is_volatile, true, true);
-          inst->AddOperand(
-              {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          if (is_coherent) {
+            inst->AddOperand(
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          }
+          break;
+        case SpvOpCopyMemory:
+          UpgradeFlags(inst, 2u, dst_coherent, dst_volatile, false, true);
+          UpgradeFlags(inst, 2u, src_coherent, src_volatile, true, true);
+          if (src_coherent) {
+            inst->AddOperand(
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          }
+          if (dst_coherent) {
+            inst->AddOperand(
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          }
+          break;
+        case SpvOpCopyMemorySized:
+          UpgradeFlags(inst, 3u, dst_coherent, dst_volatile, false, true);
+          UpgradeFlags(inst, 3u, src_coherent, src_volatile, true, true);
+          if (src_coherent) {
+            inst->AddOperand(
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          }
+          if (dst_coherent) {
+            inst->AddOperand(
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+          }
           break;
         default:
           break;
@@ -271,6 +305,8 @@ std::pair<bool, bool> UpgradeMemoryModel::CheckAllTypes(
     if (!visited.insert(def).second) continue;
 
     if (def->opcode() == SpvOpTypeStruct) {
+      // Any member decorated with coherent and/or volatile is enough to have
+      // the related operation be flagged as coherent and/or volatile.
       is_coherent |= HasDecoration(def, std::numeric_limits<uint32_t>::max(),
                                    SpvDecorationCoherent);
       is_volatile |= HasDecoration(def, std::numeric_limits<uint32_t>::max(),
@@ -278,6 +314,7 @@ std::pair<bool, bool> UpgradeMemoryModel::CheckAllTypes(
       if (is_coherent && is_volatile)
         return std::make_pair(is_coherent, is_volatile);
 
+      // Check the subtypes.
       for (uint32_t i = 0; i < def->NumInOperands(); ++i) {
         stack.push_back(context()->get_def_use_mgr()->GetDef(
             def->GetSingleWordInOperand(i)));
@@ -316,6 +353,8 @@ uint64_t UpgradeMemoryModel::GetIndexValue(ir::Instruction* index_inst) {
 bool UpgradeMemoryModel::HasDecoration(const ir::Instruction* inst,
                                        uint32_t value,
                                        SpvDecoration decoration) {
+  // If the iteration was terminated early then an appropriate decoration was
+  // found.
   return !context()->get_decoration_mgr()->WhileEachDecoration(
       inst->result_id(), decoration, [value](const ir::Instruction& i) {
         if (i.opcode() == SpvOpDecorate || i.opcode() == SpvOpDecorateId) {
