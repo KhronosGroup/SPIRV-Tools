@@ -193,7 +193,7 @@ bool InstructionFolder::FoldInstructionInternal(opt::Instruction* inst) const {
   std::vector<const analysis::Constant*> constants =
       const_manager->GetOperandConstants(inst);
 
-  for (FoldingRule rule : GetFoldingRules().GetRulesForOpcode(opcode)) {
+  for (const FoldingRule& rule : GetFoldingRules().GetRulesForOpcode(opcode)) {
     if (rule(inst, constants)) {
       return true;
     }
@@ -230,7 +230,7 @@ uint32_t InstructionFolder::FoldScalars(
 }
 
 bool InstructionFolder::FoldBinaryIntegerOpToConstant(
-    opt::Instruction* inst, std::function<uint32_t(uint32_t)> id_map,
+    opt::Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
     uint32_t* result) const {
   SpvOp opcode = inst->opcode();
   opt::IRContext* context = inst->context();
@@ -414,7 +414,7 @@ bool InstructionFolder::FoldBinaryIntegerOpToConstant(
 }
 
 bool InstructionFolder::FoldBinaryBooleanOpToConstant(
-    opt::Instruction* inst, std::function<uint32_t(uint32_t)> id_map,
+    opt::Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
     uint32_t* result) const {
   SpvOp opcode = inst->opcode();
   opt::IRContext* context = inst->context();
@@ -463,7 +463,7 @@ bool InstructionFolder::FoldBinaryBooleanOpToConstant(
 }
 
 bool InstructionFolder::FoldIntegerOpToConstant(
-    opt::Instruction* inst, std::function<uint32_t(uint32_t)> id_map,
+    opt::Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
     uint32_t* result) const {
   assert(IsFoldableOpcode(inst->opcode()) &&
          "Unhandled instruction opcode in FoldScalars");

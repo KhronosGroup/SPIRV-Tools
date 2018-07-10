@@ -134,24 +134,24 @@ class InstructionFolder {
   // folded, the resulting value is returned in |*result|.  Valid result types
   // for the instruction are any integer (signed or unsigned) with 32-bits or
   // less, or a boolean value.
-  bool FoldBinaryIntegerOpToConstant(opt::Instruction* inst,
-                                     std::function<uint32_t(uint32_t)> id_map,
-                                     uint32_t* result) const;
+  bool FoldBinaryIntegerOpToConstant(
+      Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
+      uint32_t* result) const;
 
   // Returns true if |inst| is a binary operation on two boolean values, and
   // folds
   // to a constant boolean value when the ids have been replaced using |id_map|.
   // If |inst| can be folded, the result value is returned in |*result|.
-  bool FoldBinaryBooleanOpToConstant(opt::Instruction* inst,
-                                     std::function<uint32_t(uint32_t)> id_map,
-                                     uint32_t* result) const;
+  bool FoldBinaryBooleanOpToConstant(
+      Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
+      uint32_t* result) const;
 
   // Returns true if |inst| can be folded to an constant when the ids have been
   // substituted using id_map.  If it can, the value is returned in |result|. If
   // not, |result| is unchanged.  It is assumed that not all operands are
   // constant.  Those cases are handled by |FoldScalar|.
-  bool FoldIntegerOpToConstant(opt::Instruction* inst,
-                               std::function<uint32_t(uint32_t)> id_map,
+  bool FoldIntegerOpToConstant(Instruction* inst,
+                               const std::function<uint32_t(uint32_t)>& id_map,
                                uint32_t* result) const;
 
   // Folding rules used by |FoldInstructionToConstant| and |FoldInstruction|.
