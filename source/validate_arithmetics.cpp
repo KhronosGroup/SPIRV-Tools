@@ -23,33 +23,11 @@
 
 namespace spvtools {
 namespace val {
-namespace {
-
-// Returns operand word for given instruction and operand index.
-// The operand is expected to only have one word.
-inline uint32_t GetOperandWord(const spv_parsed_instruction_t* inst,
-                               size_t operand_index) {
-  assert(operand_index < inst->num_operands);
-  const spv_parsed_operand_t& operand = inst->operands[operand_index];
-  assert(operand.num_words == 1);
-  return inst->words[operand.offset];
-}
-
-// Returns the type id of instruction operand at |operand_index|.
-// The operand is expected to be an id.
-inline uint32_t GetOperandTypeId(ValidationState_t& _,
-                                 const spv_parsed_instruction_t* inst,
-                                 size_t operand_index) {
-  return _.GetTypeId(GetOperandWord(inst, operand_index));
-}
-
-}  // namespace
 
 // Validates correctness of arithmetic instructions.
-spv_result_t ArithmeticsPass(ValidationState_t& _,
-                             const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
+spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
 
   switch (opcode) {
     case SpvOpFAdd:
@@ -65,9 +43,9 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
                << "Expected floating scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      for (size_t operand_index = 2; operand_index < inst->num_operands;
+      for (size_t operand_index = 2; operand_index < inst->operands().size();
            ++operand_index) {
-        if (GetOperandTypeId(_, inst, operand_index) != result_type)
+        if (_.GetOperandTypeId(inst, operand_index) != result_type)
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << "Expected arithmetic operands to be of Result Type: "
                  << spvOpcodeString(opcode) << " operand index "
@@ -84,9 +62,9 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
                << "Expected unsigned int scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      for (size_t operand_index = 2; operand_index < inst->num_operands;
+      for (size_t operand_index = 2; operand_index < inst->operands().size();
            ++operand_index) {
-        if (GetOperandTypeId(_, inst, operand_index) != result_type)
+        if (_.GetOperandTypeId(inst, operand_index) != result_type)
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << "Expected arithmetic operands to be of Result Type: "
                  << spvOpcodeString(opcode) << " operand index "
@@ -110,9 +88,9 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
       const uint32_t dimension = _.GetDimension(result_type);
       const uint32_t bit_width = _.GetBitWidth(result_type);
 
-      for (size_t operand_index = 2; operand_index < inst->num_operands;
+      for (size_t operand_index = 2; operand_index < inst->operands().size();
            ++operand_index) {
-        const uint32_t type_id = GetOperandTypeId(_, inst, operand_index);
+        const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
         if (!type_id ||
             (!_.IsIntScalarType(type_id) && !_.IsIntVectorType(type_id)))
           return _.diag(SPV_ERROR_INVALID_DATA)
@@ -143,9 +121,9 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
 
       uint32_t first_vector_num_components = 0;
 
-      for (size_t operand_index = 2; operand_index < inst->num_operands;
+      for (size_t operand_index = 2; operand_index < inst->operands().size();
            ++operand_index) {
-        const uint32_t type_id = GetOperandTypeId(_, inst, operand_index);
+        const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
 
         if (!type_id || !_.IsFloatVectorType(type_id))
           return _.diag(SPV_ERROR_INVALID_DATA)
@@ -178,7 +156,7 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
                << "Expected float vector type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t vector_type_id = GetOperandTypeId(_, inst, 2);
+      const uint32_t vector_type_id = _.GetOperandTypeId(inst, 2);
       if (result_type != vector_type_id)
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected vector operand type to be equal to Result Type: "
@@ -186,7 +164,7 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
 
       const uint32_t component_type = _.GetComponentType(vector_type_id);
 
-      const uint32_t scalar_type_id = GetOperandTypeId(_, inst, 3);
+      const uint32_t scalar_type_id = _.GetOperandTypeId(inst, 3);
       if (component_type != scalar_type_id)
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected scalar operand type to be equal to the component "
@@ -201,7 +179,7 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
                << "Expected float matrix type as Result Type: "
                << spvOpcodeString(opcode);
 
-      const uint32_t matrix_type_id = GetOperandTypeId(_, inst, 2);
+      const uint32_t matrix_type_id = _.GetOperandTypeId(inst, 2);
       if (result_type != matrix_type_id)
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected matrix operand type to be equal to Result Type: "
@@ -209,7 +187,7 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
 
       const uint32_t component_type = _.GetComponentType(matrix_type_id);
 
-      const uint32_t scalar_type_id = GetOperandTypeId(_, inst, 3);
+      const uint32_t scalar_type_id = _.GetOperandTypeId(inst, 3);
       if (component_type != scalar_type_id)
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected scalar operand type to be equal to the component "
@@ -219,8 +197,8 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
     }
 
     case SpvOpVectorTimesMatrix: {
-      const uint32_t vector_type_id = GetOperandTypeId(_, inst, 2);
-      const uint32_t matrix_type_id = GetOperandTypeId(_, inst, 3);
+      const uint32_t vector_type_id = _.GetOperandTypeId(inst, 2);
+      const uint32_t matrix_type_id = _.GetOperandTypeId(inst, 3);
 
       if (!_.IsFloatVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -269,8 +247,8 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
     }
 
     case SpvOpMatrixTimesVector: {
-      const uint32_t matrix_type_id = GetOperandTypeId(_, inst, 2);
-      const uint32_t vector_type_id = GetOperandTypeId(_, inst, 3);
+      const uint32_t matrix_type_id = _.GetOperandTypeId(inst, 2);
+      const uint32_t vector_type_id = _.GetOperandTypeId(inst, 3);
 
       if (!_.IsFloatVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -313,8 +291,8 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
     }
 
     case SpvOpMatrixTimesMatrix: {
-      const uint32_t left_type_id = GetOperandTypeId(_, inst, 2);
-      const uint32_t right_type_id = GetOperandTypeId(_, inst, 3);
+      const uint32_t left_type_id = _.GetOperandTypeId(inst, 2);
+      const uint32_t right_type_id = _.GetOperandTypeId(inst, 3);
 
       uint32_t res_num_rows = 0;
       uint32_t res_num_cols = 0;
@@ -379,8 +357,8 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
     }
 
     case SpvOpOuterProduct: {
-      const uint32_t left_type_id = GetOperandTypeId(_, inst, 2);
-      const uint32_t right_type_id = GetOperandTypeId(_, inst, 3);
+      const uint32_t left_type_id = _.GetOperandTypeId(inst, 2);
+      const uint32_t right_type_id = _.GetOperandTypeId(inst, 3);
 
       uint32_t res_num_rows = 0;
       uint32_t res_num_cols = 0;
@@ -451,8 +429,8 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
                << "Expected Result Type struct member types to be identical: "
                << spvOpcodeString(opcode);
 
-      const uint32_t left_type_id = GetOperandTypeId(_, inst, 2);
-      const uint32_t right_type_id = GetOperandTypeId(_, inst, 3);
+      const uint32_t left_type_id = _.GetOperandTypeId(inst, 2);
+      const uint32_t right_type_id = _.GetOperandTypeId(inst, 3);
 
       if (left_type_id != result_types[0] || right_type_id != result_types[0])
         return _.diag(SPV_ERROR_INVALID_DATA)
