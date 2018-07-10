@@ -42,6 +42,7 @@ using std::unordered_set;
 using std::vector;
 
 namespace spvtools {
+namespace val {
 namespace {
 
 class idUsage {
@@ -2796,18 +2797,18 @@ spv_result_t IdPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // namespace spvtools
-
 spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const uint64_t instCount,
-                                       const spvtools::ValidationState_t& state,
+                                       const ValidationState_t& state,
                                        spv_position position) {
-  spvtools::idUsage idUsage(state.context(), pInsts, instCount,
-                            state.memory_model(), state.addressing_model(),
-                            state, state.entry_points(), position,
-                            state.context()->consumer);
+  idUsage idUsage(state.context(), pInsts, instCount, state.memory_model(),
+                  state.addressing_model(), state, state.entry_points(),
+                  position, state.context()->consumer);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
     if (!idUsage.isValid(&pInsts[instIndex])) return SPV_ERROR_INVALID_ID;
   }
   return SPV_SUCCESS;
 }
+
+}  // namespace val
+}  // namespace spvtools

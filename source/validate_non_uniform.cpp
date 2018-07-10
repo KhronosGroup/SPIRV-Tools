@@ -25,6 +25,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 spv_result_t ValidateExecutionScope(ValidationState_t& _,
@@ -80,4 +81,5 @@ spv_result_t NonUniformPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

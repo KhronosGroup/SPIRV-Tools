@@ -22,6 +22,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 // Returns true if \c inst is an input or output variable.
@@ -108,4 +109,5 @@ spv_result_t ValidateInterfaces(ValidationState_t& _) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

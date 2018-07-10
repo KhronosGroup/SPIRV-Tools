@@ -29,6 +29,7 @@
 #include "validate.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 using std::vector;
@@ -136,4 +137,5 @@ TEST_F(ValidationState_HasAnyOfExtensions, MultiCapMask) {
 }
 
 }  // namespace
+}  // namespace val
 }  // namespace spvtools

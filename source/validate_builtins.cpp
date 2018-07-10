@@ -33,6 +33,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 // Returns a short textual description of the id defined by the given
@@ -2535,7 +2536,7 @@ spv_result_t BuiltInsValidator::Run() {
   return SPV_SUCCESS;
 }
 
-}  // anonymous namespace
+}  // namespace
 
 // Validates correctness of built-in variables.
 spv_result_t ValidateBuiltIns(const ValidationState_t& _) {
@@ -2554,4 +2555,5 @@ spv_result_t ValidateBuiltIns(const ValidationState_t& _) {
   return validator.Run();
 }
 
+}  // namespace val
 }  // namespace spvtools

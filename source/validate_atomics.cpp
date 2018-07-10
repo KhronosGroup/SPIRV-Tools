@@ -24,6 +24,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 
 // Validates Memory Scope operand.
 spv_result_t ValidateMemoryScope(ValidationState_t& _,
@@ -318,4 +319,5 @@ spv_result_t AtomicsPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

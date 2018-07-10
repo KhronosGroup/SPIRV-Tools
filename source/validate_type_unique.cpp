@@ -22,6 +22,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 
 // Validates that type declarations are unique, unless multiple declarations
 // of the same data type are allowed by the specification.
@@ -53,4 +54,5 @@ spv_result_t TypeUniquePass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

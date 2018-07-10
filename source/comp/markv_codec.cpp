@@ -17,7 +17,7 @@
 //   - MARK-V to SPIR-V decoder
 //
 // MARK-V is a compression format for SPIR-V binaries. It strips away
-// non-essential information (such as result ids which can be regenerated) and
+// non-essential information (such as result IDs which can be regenerated) and
 // uses various bit reduction techiniques to reduce the size of the binary.
 
 #include <algorithm>
@@ -388,7 +388,7 @@ class MarkvCodecBase {
 
   // Returns instruction which created |id| or nullptr if such instruction was
   // not registered.
-  const Instruction* FindDef(uint32_t id) const {
+  const val::Instruction* FindDef(uint32_t id) const {
     const auto it = id_to_def_instruction_.find(id);
     if (it == id_to_def_instruction_.end()) return nullptr;
     return it->second;
@@ -396,7 +396,7 @@ class MarkvCodecBase {
 
   // Returns type id of vector type component.
   uint32_t GetVectorComponentType(uint32_t vector_type_id) const {
-    const Instruction* type_inst = FindDef(vector_type_id);
+    const val::Instruction* type_inst = FindDef(vector_type_id);
     assert(type_inst);
     assert(type_inst->opcode() == SpvOpTypeVector);
 
@@ -546,7 +546,7 @@ class MarkvCodecBase {
   std::vector<uint32_t> ids_local_to_cur_function_;
 
   // List of instructions in the order they are given in the module.
-  std::vector<std::unique_ptr<const Instruction>> instructions_;
+  std::vector<std::unique_ptr<const val::Instruction>> instructions_;
 
   // Container/computer for long (32-bit) id descriptors.
   IdDescriptorCollection long_id_descriptors_;
@@ -575,7 +575,7 @@ class MarkvCodecBase {
 
  private:
   // Maps result id to the instruction which defined it.
-  std::unordered_map<uint32_t, const Instruction*> id_to_def_instruction_;
+  std::unordered_map<uint32_t, const val::Instruction*> id_to_def_instruction_;
 
   uint32_t id_bound_ = 1;
 };
@@ -859,7 +859,7 @@ class MarkvDecoder : public MarkvCodecBase {
 };
 
 void MarkvCodecBase::ProcessCurInstruction() {
-  instructions_.emplace_back(new Instruction(&inst_));
+  instructions_.emplace_back(new val::Instruction(&inst_));
 
   const SpvOp opcode = SpvOp(inst_.opcode);
 
@@ -883,7 +883,7 @@ void MarkvCodecBase::ProcessCurInstruction() {
 
       // Store function parameter types in a queue, so that we know which types
       // to expect in the following OpFunctionParameter instructions.
-      const Instruction* def_inst = FindDef(inst_.words[4]);
+      const val::Instruction* def_inst = FindDef(inst_.words[4]);
       assert(def_inst);
       assert(def_inst->opcode() == SpvOpTypeFunction);
       for (uint32_t i = 3; i < def_inst->words().size(); ++i) {
@@ -982,7 +982,7 @@ void MarkvCodecBase::ProcessCurInstruction() {
     }
 
     if (inst_.type_id) {
-      const Instruction* type_inst = FindDef(inst_.type_id);
+      const val::Instruction* type_inst = FindDef(inst_.type_id);
       assert(type_inst);
 
       multi_mtf_.Insert(kMtfObject, inst_.result_id);
@@ -1225,7 +1225,7 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf() {
       if (operand_index_ == 1) {
         const uint32_t pointer_id = GetInstWords()[1];
         const uint32_t pointer_type = id_to_type_id_.at(pointer_id);
-        const Instruction* pointer_inst = FindDef(pointer_type);
+        const val::Instruction* pointer_inst = FindDef(pointer_type);
         assert(pointer_inst);
         assert(pointer_inst->opcode() == SpvOpTypePointer);
         const uint32_t data_type =
@@ -1272,7 +1272,7 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf() {
     case SpvOpConstantComposite: {
       if (operand_index_ == 0) return kMtfTypeComposite;
       if (operand_index_ >= 2) {
-        const Instruction* composite_type_inst = FindDef(inst_.type_id);
+        const val::Instruction* composite_type_inst = FindDef(inst_.type_id);
         assert(composite_type_inst);
         if (composite_type_inst->opcode() == SpvOpTypeVector) {
           return GetMtfIdOfType(composite_type_inst->word(2));
@@ -1406,13 +1406,13 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf() {
 
       if (operand_index_ >= 3) {
         const uint32_t function_id = GetInstWords()[3];
-        const Instruction* function_inst = FindDef(function_id);
+        const val::Instruction* function_inst = FindDef(function_id);
         if (!function_inst) return kMtfObject;
 
         assert(function_inst->opcode() == SpvOpFunction);
 
         const uint32_t function_type_id = function_inst->word(4);
-        const Instruction* function_type_inst = FindDef(function_type_id);
+        const val::Instruction* function_type_inst = FindDef(function_type_id);
         assert(function_type_inst);
         assert(function_type_inst->opcode() == SpvOpTypeFunction);
 

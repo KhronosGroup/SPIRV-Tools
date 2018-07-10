@@ -27,6 +27,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 uint32_t GetSizeTBitWidth(const ValidationState_t& _) {
@@ -1984,4 +1985,5 @@ spv_result_t ExtInstPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

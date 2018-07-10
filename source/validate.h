@@ -25,6 +25,7 @@
 #include "table.h"
 
 namespace spvtools {
+namespace val {
 
 class ValidationState_t;
 class BasicBlock;
@@ -193,8 +194,6 @@ spv_result_t CapabilityPass(ValidationState_t& _,
 spv_result_t PrimitivesPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
 
-}  // namespace spvtools
-
 /// @brief Validate the ID usage of the instruction stream
 ///
 /// @param[in] pInsts stream of instructions
@@ -205,7 +204,7 @@ spv_result_t PrimitivesPass(ValidationState_t& _,
 /// @return result code
 spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const uint64_t instCount,
-                                       const spvtools::ValidationState_t& state,
+                                       const ValidationState_t& state,
                                        spv_position position);
 
 /// @brief Validate the ID's within a SPIR-V binary
@@ -220,9 +219,8 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
 spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
                             const uint64_t count, const uint32_t bound,
                             spv_position position,
-                            const spvtools::MessageConsumer& consumer);
+                            const MessageConsumer& consumer);
 
-namespace spvtools {
 // Performs validation for the SPIRV-V module binary.
 // The main difference between this API and spvValidateBinary is that the
 // "Validation State" is not destroyed upon function return; it lives on and is
@@ -230,13 +228,14 @@ namespace spvtools {
 spv_result_t ValidateBinaryAndKeepValidationState(
     const spv_const_context context, spv_const_validator_options options,
     const uint32_t* words, const size_t num_words, spv_diagnostic* pDiagnostic,
-    std::unique_ptr<spvtools::ValidationState_t>* vstate);
+    std::unique_ptr<ValidationState_t>* vstate);
 
 // Performs validation for a single instruction and updates given validation
 // state.
 spv_result_t ValidateInstructionAndUpdateValidationState(
-    spvtools::ValidationState_t* vstate, const spv_parsed_instruction_t* inst);
+    ValidationState_t* vstate, const spv_parsed_instruction_t* inst);
 
+}  // namespace val
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_VALIDATE_H_

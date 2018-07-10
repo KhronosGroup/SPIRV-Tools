@@ -50,13 +50,7 @@ using std::unordered_set;
 using std::vector;
 
 namespace spvtools {
-namespace {
-
-using bb_ptr = BasicBlock*;
-using cbb_ptr = const BasicBlock*;
-using bb_iter = vector<BasicBlock*>::const_iterator;
-
-}  // namespace
+namespace val {
 
 void printDominatorList(const BasicBlock& b) {
   std::cout << b.id() << " is dominated by: ";
@@ -476,13 +470,13 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     vector<const BasicBlock*> postorder;
     vector<const BasicBlock*> postdom_postorder;
     vector<pair<uint32_t, uint32_t>> back_edges;
-    auto ignore_block = [](cbb_ptr) {};
-    auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
+    auto ignore_block = [](const BasicBlock*) {};
+    auto ignore_edge = [](const BasicBlock*, const BasicBlock*) {};
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
       CFA<BasicBlock>::DepthFirstTraversal(
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
-          ignore_block, [&](cbb_ptr b) { postorder.push_back(b); },
+          ignore_block, [&](const BasicBlock* b) { postorder.push_back(b); },
           ignore_edge);
       auto edges = CFA<BasicBlock>::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
@@ -494,7 +488,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       CFA<BasicBlock>::DepthFirstTraversal(
           function.pseudo_exit_block(),
           function.AugmentedCFGPredecessorsFunction(), ignore_block,
-          [&](cbb_ptr b) { postdom_postorder.push_back(b); }, ignore_edge);
+          [&](const BasicBlock* b) { postdom_postorder.push_back(b); },
+          ignore_edge);
       auto postdom_edges = CFA<BasicBlock>::CalculateDominators(
           postdom_postorder, function.AugmentedCFGSuccessorsFunction());
       for (auto edge : postdom_edges) {
@@ -505,7 +500,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           function.pseudo_entry_block(),
           function
               .AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge(),
-          ignore_block, ignore_block, [&](cbb_ptr from, cbb_ptr to) {
+          ignore_block, ignore_block,
+          [&](const BasicBlock* from, const BasicBlock* to) {
             back_edges.emplace_back(from->id(), to->id());
           });
     }
@@ -630,4 +626,5 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools
