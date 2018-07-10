@@ -408,7 +408,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
     }
     // Check arrays.
     if (SpvOpTypeArray == opcode) {
-      const auto typeId = inst->words()[2];
+      const auto typeId = inst->word(2);
       const auto arrayInst = vstate.FindDef(typeId);
       if (SpvOpTypeStruct == arrayInst->opcode() &&
           SPV_SUCCESS != (recursive_status = checkLayout(
@@ -549,8 +549,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
           return vstate.diag(SPV_ERROR_INVALID_ID)
                  << "Interfaces passed to OpEntryPoint must be of type "
                     "OpTypeVariable. Found Op"
-                 << spvOpcodeString(static_cast<SpvOp>(var_instr->opcode()))
-                 << ".";
+                 << spvOpcodeString(var_instr->opcode()) << ".";
         }
         const uint32_t ptr_id = var_instr->word(1);
         Instruction* ptr_instr = vstate.FindDef(ptr_id);
@@ -622,19 +621,18 @@ spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
     }
     if (!has_descriptor_set) continue;
 
-    const auto& words = inst->words();
-    const auto* ptrInst = vstate.FindDef(words[1]);
+    const auto* ptrInst = vstate.FindDef(inst->word(1));
     assert(SpvOpTypePointer == ptrInst->opcode());
 
     // Check for a first level array
-    const auto typePtr = vstate.FindDef(ptrInst->words()[3]);
+    const auto typePtr = vstate.FindDef(ptrInst->word(3));
     if (SpvOpTypeRuntimeArray != typePtr->opcode() &&
         SpvOpTypeArray != typePtr->opcode()) {
       continue;
     }
 
     // Check for a second level array
-    const auto secondaryTypePtr = vstate.FindDef(typePtr->words()[2]);
+    const auto secondaryTypePtr = vstate.FindDef(typePtr->word(2));
     if (SpvOpTypeRuntimeArray == secondaryTypePtr->opcode() ||
         SpvOpTypeArray == secondaryTypePtr->opcode()) {
       return vstate.diag(SPV_ERROR_INVALID_ID)

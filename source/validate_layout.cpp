@@ -23,6 +23,7 @@
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
 #include "val/function.h"
+#include "val/instruction.h"
 #include "val/validation_state.h"
 
 namespace spvtools {
@@ -33,8 +34,7 @@ namespace {
 // is part of the current layout section. If it is not then the next sections is
 // checked.
 spv_result_t ModuleScopedInstructions(ValidationState_t& _,
-                                      const spv_parsed_instruction_t* inst,
-                                      SpvOp opcode) {
+                                      const Instruction* inst, SpvOp opcode) {
   while (_.IsOpcodeInCurrentLayoutSection(opcode) == false) {
     _.ProgressToNextLayoutSectionOrder();
 
@@ -63,8 +63,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
 // inside of another function. This stage ends when the first label is
 // encountered inside of a function.
 spv_result_t FunctionScopedInstructions(ValidationState_t& _,
-                                        const spv_parsed_instruction_t* inst,
-                                        SpvOp opcode) {
+                                        const Instruction* inst, SpvOp opcode) {
   if (_.IsOpcodeInCurrentLayoutSection(opcode)) {
     switch (opcode) {
       case SpvOpFunction: {
@@ -72,11 +71,10 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "Cannot declare a function in a function body";
         }
-        auto control_mask = static_cast<SpvFunctionControlMask>(
-            inst->words[inst->operands[2].offset]);
+        auto control_mask = inst->GetOperandAs<SpvFunctionControlMask>(2);
         if (auto error =
-                _.RegisterFunction(inst->result_id, inst->type_id, control_mask,
-                                   inst->words[inst->operands[3].offset]))
+                _.RegisterFunction(inst->id(), inst->type_id(), control_mask,
+                                   inst->GetOperandAs<uint32_t>(3)))
           return error;
         if (_.current_layout_section() == kLayoutFunctionDefinitions) {
           if (auto error = _.current_function().RegisterSetFunctionDeclType(
@@ -97,7 +95,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
                     "the function definition";
         }
         if (auto error = _.current_function().RegisterFunctionParameter(
-                inst->result_id, inst->type_id))
+                inst->id(), inst->type_id()))
           return error;
         break;
 
@@ -174,9 +172,8 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
 // TODO(umar): Better error messages
 // NOTE: This function does not handle CFG related validation
 // Performs logical layout validation. See Section 2.4
-spv_result_t ModuleLayoutPass(ValidationState_t& _,
-                              const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+spv_result_t ModuleLayoutPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
 
   switch (_.current_layout_section()) {
     case kLayoutCapabilities:

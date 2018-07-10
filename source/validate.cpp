@@ -174,24 +174,24 @@ spv_result_t ProcessInstruction(void* user_data,
 
   const Instruction* instruction = &(_.ordered_instructions().back());
 
-  if (auto error = DataRulesPass(_, inst)) return error;
-  if (auto error = ModuleLayoutPass(_, inst)) return error;
+  if (auto error = DataRulesPass(_, instruction)) return error;
+  if (auto error = ModuleLayoutPass(_, instruction)) return error;
   if (auto error = CfgPass(_, instruction)) return error;
-  if (auto error = InstructionPass(_, inst)) return error;
-  if (auto error = TypeUniquePass(_, inst)) return error;
-  if (auto error = ArithmeticsPass(_, inst)) return error;
-  if (auto error = CompositesPass(_, inst)) return error;
-  if (auto error = ConversionPass(_, inst)) return error;
-  if (auto error = DerivativesPass(_, inst)) return error;
-  if (auto error = LogicalsPass(_, inst)) return error;
-  if (auto error = BitwisePass(_, inst)) return error;
-  if (auto error = ExtInstPass(_, inst)) return error;
-  if (auto error = ImagePass(_, inst)) return error;
-  if (auto error = AtomicsPass(_, inst)) return error;
-  if (auto error = BarriersPass(_, inst)) return error;
-  if (auto error = PrimitivesPass(_, inst)) return error;
-  if (auto error = LiteralsPass(_, inst)) return error;
-  if (auto error = NonUniformPass(_, inst)) return error;
+  if (auto error = InstructionPass(_, instruction)) return error;
+  if (auto error = TypeUniquePass(_, instruction)) return error;
+  if (auto error = ArithmeticsPass(_, instruction)) return error;
+  if (auto error = CompositesPass(_, instruction)) return error;
+  if (auto error = ConversionPass(_, instruction)) return error;
+  if (auto error = DerivativesPass(_, instruction)) return error;
+  if (auto error = LogicalsPass(_, instruction)) return error;
+  if (auto error = BitwisePass(_, instruction)) return error;
+  if (auto error = ExtInstPass(_, instruction)) return error;
+  if (auto error = ImagePass(_, instruction)) return error;
+  if (auto error = AtomicsPass(_, instruction)) return error;
+  if (auto error = BarriersPass(_, instruction)) return error;
+  if (auto error = PrimitivesPass(_, instruction)) return error;
+  if (auto error = LiteralsPass(_, instruction)) return error;
+  if (auto error = NonUniformPass(_, instruction)) return error;
 
   return SPV_SUCCESS;
 }
