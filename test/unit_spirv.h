@@ -28,7 +28,7 @@
 #include "source/spirv_endian.h"
 #include "source/text.h"
 #include "source/text_handler.h"
-#include "source/validate.h"
+#include "source/val/validate.h"
 #include "spirv-tools/libspirv.h"
 
 #include <gtest/gtest.h>

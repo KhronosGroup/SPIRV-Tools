@@ -252,7 +252,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/table.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate.h
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_stream.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_vector.cpp
@@ -281,31 +281,31 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/table.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_adjacency.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_arithmetics.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_atomics.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_barriers.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_bitwise.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_builtins.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_capability.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_cfg.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_composites.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_conversion.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_datarules.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_decorations.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_derivatives.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_ext_inst.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_image.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_interfaces.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_literals.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_logicals.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_non_uniform.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_primitives.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_type_unique.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_adjacency.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_arithmetics.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_atomics.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_barriers.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_bitwise.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_builtins.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_capability.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_cfg.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_composites.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_conversion.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_datarules.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_decorations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_derivatives.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_ext_inst.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_id.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_image.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_interfaces.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_instruction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_layout.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_literals.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_logicals.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_non_uniform.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_primitives.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_type_unique.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/decoration.h
   ${CMAKE_CURRENT_SOURCE_DIR}/val/basic_block.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/construct.cpp
