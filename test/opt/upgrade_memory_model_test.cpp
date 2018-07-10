@@ -763,9 +763,9 @@ OpFunctionEnd
 TEST_F(UpgradeMemoryModelTest, CopyMemory) {
   const std::string text = R"(
 ; CHECK-NOT: OpDecorate
-; CHECK-DAG: [[device:%\w+]] = OpConstant {{%\w+}} 1
-; CHECK-DAG: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
-; CHECK: OpCopyMemoryn {{%\w+}} {{%\w+}} Volatile|MakePointerAvailableKHR|NonPrivatePointerKHR [[device]] [[workgroup]]
+; CHECK: [[device:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpCopyMemory {{%\w+}} {{%\w+}} Volatile|MakePointerVisibleKHR|NonPrivatePointerKHR [[device]]
+; CHECK-NOT: [[device]]
 OpCapability Shader
 OpCapability Linkage
 OpExtension "SPV_KHR_storage_buffer_storage_class"
@@ -774,10 +774,9 @@ OpDecorate %in_var Coherent
 OpDecorate %out_var Volatile
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
-%ptr_int_Workgroup = OpTypePointer Workgroup %int
 %ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
 %in_var = OpVariable %ptr_int_StorageBuffer StorageBuffer
-%out_var = OpVariable %ptr_int_Workgroup Workgroup
+%out_var = OpVariable %ptr_int_StorageBuffer StorageBuffer
 %func_ty = OpTypeFunction %void
 %func = OpFunction %void None %func_ty
 %1 = OpLabel
@@ -792,11 +791,12 @@ OpFunctionEnd
 TEST_F(UpgradeMemoryModelTest, CopyMemorySized) {
   const std::string text = R"(
 ; CHECK-NOT: OpDecorate
-; CHECK-DAG: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
-; CHECK-DAG: [[device:%\w+]] = OpConstant {{%\w+}} 1
-; CHECK: OpCopyMemorySized {{%\w+}} {{%\w+}} Volatile|MakePointerVisibleKHR|NonPrivatePointerKHR [[workgroup]] [[device]]
+; CHECK: [[device:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpCopyMemorySized {{%\w+}} {{%\w+}} {{%\w+}} Volatile|MakePointerAvailableKHR|NonPrivatePointerKHR [[device]]
+; CHECK-NOT: [[device]]
 OpCapability Shader
 OpCapability Linkage
+OpCapability Addresses
 OpExtension "SPV_KHR_storage_buffer_storage_class"
 OpMemoryModel Logical GLSL450
 OpDecorate %out_param Coherent
@@ -804,14 +804,42 @@ OpDecorate %in_param Volatile
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int4 = OpConstant %int 4
-%ptr_int_Workgroup = OpTypePointer Workgroup %int
 %ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
-%func_ty = OpTypeFunction %void %ptr_int_Workgroup %ptr_int_StorageBuffer
+%func_ty = OpTypeFunction %void %ptr_int_StorageBuffer %ptr_int_StorageBuffer
 %func = OpFunction %void None %func_ty
-%in_param = OpFunctionParameter %ptr_int_Workgroup
+%in_param = OpFunctionParameter %ptr_int_StorageBuffer
 %out_param = OpFunctionParameter %ptr_int_StorageBuffer
 %1 = OpLabel
 OpCopyMemorySized %out_param %in_param %int4
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CopyMemoryTwoScopes) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK-DAG: [[device:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK-DAG: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: OpCopyMemory {{%\w+}} {{%\w+}} MakePointerAvailableKHR|MakePointerVisibleKHR|NonPrivatePointerKHR [[device]] [[workgroup]]
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %in_var Coherent
+OpDecorate %out_var Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr_int_Workgroup = OpTypePointer Workgroup %int
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%in_var = OpVariable %ptr_int_StorageBuffer StorageBuffer
+%out_var = OpVariable %ptr_int_Workgroup Workgroup
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+OpCopyMemory %out_var %in_var
 OpReturn
 OpFunctionEnd
 )";

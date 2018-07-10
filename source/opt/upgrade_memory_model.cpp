@@ -76,6 +76,8 @@ void UpgradeMemoryModel::UpgradeInstructions() {
       bool dst_coherent = false;
       bool dst_volatile = false;
       SpvScope scope = SpvScopeDevice;
+      SpvScope src_scope = SpvScopeDevice;
+      SpvScope dst_scope = SpvScopeDevice;
       switch (inst->opcode()) {
         case SpvOpLoad:
         case SpvOpStore:
@@ -88,9 +90,9 @@ void UpgradeMemoryModel::UpgradeInstructions() {
           break;
         case SpvOpCopyMemory:
         case SpvOpCopyMemorySized:
-          std::tie(dst_coherent, dst_volatile, scope) =
+          std::tie(dst_coherent, dst_volatile, dst_scope) =
               GetInstructionAttributes(inst->GetSingleWordInOperand(0u));
-          std::tie(src_coherent, src_volatile, scope) =
+          std::tie(src_coherent, src_volatile, src_scope) =
               GetInstructionAttributes(inst->GetSingleWordInOperand(1u));
           break;
         default:
@@ -117,11 +119,11 @@ void UpgradeMemoryModel::UpgradeInstructions() {
           UpgradeFlags(inst, 2u, src_coherent, src_volatile, true, true);
           if (src_coherent) {
             inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(src_scope)}});
           }
           if (dst_coherent) {
             inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(dst_scope)}});
           }
           break;
         case SpvOpCopyMemorySized:
@@ -129,11 +131,11 @@ void UpgradeMemoryModel::UpgradeInstructions() {
           UpgradeFlags(inst, 3u, src_coherent, src_volatile, true, true);
           if (src_coherent) {
             inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(src_scope)}});
           }
           if (dst_coherent) {
             inst->AddOperand(
-                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
+                {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(dst_scope)}});
           }
           break;
         default:
@@ -375,7 +377,7 @@ void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,
                                       bool is_memory) {
   uint32_t flags = 0;
   if (inst->NumInOperands() > in_operand) {
-    inst->GetSingleWordInOperand(in_operand);
+    flags |= inst->GetSingleWordInOperand(in_operand);
   }
   if (is_coherent) {
     if (is_memory) {
