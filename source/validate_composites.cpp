@@ -32,12 +32,12 @@ namespace {
 // fails (encountered non-composite, out of bounds, nesting too deep).
 // Returns the type of Composite operand if the instruction has no indices.
 spv_result_t GetExtractInsertValueType(ValidationState_t& _,
-                                       const spv_parsed_instruction_t& inst,
+                                       const Instruction* inst,
                                        uint32_t* member_type) {
-  const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
+  const SpvOp opcode = inst->opcode();
   assert(opcode == SpvOpCompositeExtract || opcode == SpvOpCompositeInsert);
   uint32_t word_index = opcode == SpvOpCompositeExtract ? 4 : 5;
-  const uint32_t num_words = static_cast<uint32_t>(inst.num_words);
+  const uint32_t num_words = static_cast<uint32_t>(inst->words().size());
   const uint32_t composite_id_index = word_index - 1;
 
   const uint32_t num_indices = num_words - word_index;
@@ -49,7 +49,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
            << ". Found " << num_indices << " indexes.";
   }
 
-  *member_type = _.GetTypeId(inst.words[composite_id_index]);
+  *member_type = _.GetTypeId(inst->word(composite_id_index));
   if (*member_type == 0) {
     return _.diag(SPV_ERROR_INVALID_DATA)
            << spvOpcodeString(opcode)
@@ -57,7 +57,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
   }
 
   for (; word_index < num_words; ++word_index) {
-    const uint32_t component_index = inst.words[word_index];
+    const uint32_t component_index = inst->word(word_index);
     const Instruction* const type_inst = _.FindDef(*member_type);
     assert(type_inst);
     switch (type_inst->opcode()) {
@@ -136,11 +136,10 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
 }  // anonymous namespace
 
 // Validates correctness of composite instructions.
-spv_result_t CompositesPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  const uint32_t result_type = inst->type_id;
-  const uint32_t num_operands = static_cast<uint32_t>(inst->num_operands);
+spv_result_t CompositesPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
+  const uint32_t num_operands = static_cast<uint32_t>(inst->operands().size());
 
   switch (opcode) {
     case SpvOpVectorExtractDynamic: {
@@ -367,7 +366,7 @@ spv_result_t CompositesPass(ValidationState_t& _,
     case SpvOpCompositeExtract: {
       uint32_t member_type = 0;
       if (spv_result_t error =
-              GetExtractInsertValueType(_, *inst, &member_type)) {
+              GetExtractInsertValueType(_, inst, &member_type)) {
         return error;
       }
 
@@ -396,7 +395,7 @@ spv_result_t CompositesPass(ValidationState_t& _,
 
       uint32_t member_type = 0;
       if (spv_result_t error =
-              GetExtractInsertValueType(_, *inst, &member_type)) {
+              GetExtractInsertValueType(_, inst, &member_type)) {
         return error;
       }
 

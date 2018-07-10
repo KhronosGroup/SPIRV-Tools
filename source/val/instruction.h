@@ -67,6 +67,11 @@ class Instruction {
   /// The words used to define the Instruction
   const std::vector<uint32_t>& words() const { return words_; }
 
+  /// Returns the operand at |idx|.
+  const spv_parsed_operand_t& operand(size_t idx) const {
+    return operands_[idx];
+  }
+
   /// The operands of the Instruction
   const std::vector<spv_parsed_operand_t>& operands() const {
     return operands_;
@@ -75,13 +80,18 @@ class Instruction {
   /// Provides direct access to the stored C instruction object.
   const spv_parsed_instruction_t& c_inst() const { return inst_; }
 
+  /// Provides direct access to instructions spv_ext_inst_type_t object.
+  const spv_ext_inst_type_t& ext_inst_type() const {
+    return inst_.ext_inst_type;
+  }
+
   // Casts the words belonging to the operand under |index| to |T| and returns.
   template <typename T>
   T GetOperandAs(size_t index) const {
-    const spv_parsed_operand_t& operand = operands_.at(index);
-    assert(operand.num_words * 4 >= sizeof(T));
-    assert(operand.offset + operand.num_words <= inst_.num_words);
-    return *reinterpret_cast<const T*>(&words_[operand.offset]);
+    const spv_parsed_operand_t& o = operands_.at(index);
+    assert(o.num_words * 4 >= sizeof(T));
+    assert(o.offset + o.num_words <= inst_.num_words);
+    return *reinterpret_cast<const T*>(&words_[o.offset]);
   }
 
   int InstructionPosition() const { return instruction_position_; }
