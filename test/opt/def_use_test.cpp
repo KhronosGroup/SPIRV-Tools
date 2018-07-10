@@ -483,8 +483,8 @@ INSTANTIATE_TEST_CASE_P(
               {6,
                 {
                   // Can't check constants properly
-                  //"%8 = OpConstant %6 0",
-                  //"%18 = OpConstant %6 1",
+                  // "%8 = OpConstant %6 0",
+                  // "%18 = OpConstant %6 1",
                   "%7 = OpPhi %6 %8 %4 %9 %5",
                   "%9 = OpIAdd %6 %7 %8",
                 }
@@ -504,7 +504,7 @@ INSTANTIATE_TEST_CASE_P(
               {9, {"%7 = OpPhi %6 %8 %4 %9 %5"}},
               {10,
                 {
-                  //"%12 = OpConstant %10 1.0",
+                  // "%12 = OpConstant %10 1.0",
                   "%11 = OpPhi %10 %12 %4 %13 %5",
                   "%13 = OpFAdd %10 %11 %12",
                 }
@@ -831,8 +831,8 @@ INSTANTIATE_TEST_CASE_P(
             {6,
               {
                 // Can't properly check constants
-                //"%8 = OpConstant %6 0",
-                //"%18 = OpConstant %6 1",
+                // "%8 = OpConstant %6 0",
+                // "%18 = OpConstant %6 1",
                 "%7 = OpPhi %6 %8 %4 %13 %5",
                 "%9 = OpIAdd %6 %7 %8"
               }
@@ -853,7 +853,7 @@ INSTANTIATE_TEST_CASE_P(
             {10,
               {
                 "%11 = OpPhi %10 %12 %4 %13 %5",
-                //"%12 = OpConstant %10 1",
+                // "%12 = OpConstant %10 1",
                 "%13 = OpFAdd %10 %9 %12"
               }
             },
@@ -1085,14 +1085,14 @@ INSTANTIATE_TEST_CASE_P(
             {4,
               {
                 "%7 = OpPhi %6 %8 %4 %9 %5",
-                //"%11 = OpPhi %10 %12 %4 %13 %5",
+                // "%11 = OpPhi %10 %12 %4 %13 %5",
               }
             },
             {5,
               {
                 "OpBranch %5",
                 "%7 = OpPhi %6 %8 %4 %9 %5",
-                //"%11 = OpPhi %10 %12 %4 %13 %5",
+                // "%11 = OpPhi %10 %12 %4 %13 %5",
                 "OpLoopMerge %19 %5 None",
                 "OpBranchConditional %17 %5 %19",
               }
@@ -1100,35 +1100,35 @@ INSTANTIATE_TEST_CASE_P(
             {6,
               {
                 // Can't properly check constants
-                //"%8 = OpConstant %6 0",
-                //"%18 = OpConstant %6 1",
+                // "%8 = OpConstant %6 0",
+                // "%18 = OpConstant %6 1",
                 "%7 = OpPhi %6 %8 %4 %9 %5",
-                //"%9 = OpIAdd %6 %7 %8"
+                // "%9 = OpIAdd %6 %7 %8"
               }
             },
             {7, {"%17 = OpSLessThan %16 %7 %18"}},
             {8,
               {
                 "%7 = OpPhi %6 %8 %4 %9 %5",
-                //"%9 = OpIAdd %6 %7 %8",
+                // "%9 = OpIAdd %6 %7 %8",
               }
             },
             // {9, {"%7 = OpPhi %6 %8 %4 %13 %5"}},
             {10,
               {
-                //"%11 = OpPhi %10 %12 %4 %13 %5",
-                //"%12 = OpConstant %10 1",
+                // "%11 = OpPhi %10 %12 %4 %13 %5",
+                // "%12 = OpConstant %10 1",
                 "%13 = OpFAdd %10 %11 %12"
               }
             },
             // {11, {"%13 = OpFAdd %10 %11 %12"}},
             {12,
               {
-                //"%11 = OpPhi %10 %12 %4 %13 %5",
+                // "%11 = OpPhi %10 %12 %4 %13 %5",
                 "%13 = OpFAdd %10 %11 %12"
               }
             },
-            //{13, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
+            // {13, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
             {16, {"%17 = OpSLessThan %16 %7 %18"}},
             {17, {"OpBranchConditional %17 %5 %19"}},
             {18, {"%17 = OpSLessThan %16 %7 %18"}},
