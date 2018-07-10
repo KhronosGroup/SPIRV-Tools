@@ -8,14 +8,14 @@ version: "{build}"
 # Put it first so we get its feedback first.
 os:
   - Visual Studio 2017
-  - Visual Studio 2013
+  #- Visual Studio 2013
 
 platform:
   - x64
 
 configuration:
   - Debug
-  - Release
+  #- Release
 
 branches:
   only:
@@ -32,9 +32,9 @@ clone_depth: 1
 
 matrix:
   fast_finish: true # Show final status immediately if a test fails.
-  exclude:
-    - os: Visual Studio 2013
-      configuration: Debug
+  #exclude:
+  #  - os: Visual Studio 2013
+  #    configuration: Debug
 
 # scripts that run after cloning repository
 install:
