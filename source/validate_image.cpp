@@ -24,6 +24,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 // Performs compile time check that all SpvImageOperandsXXX cases are handled in
@@ -1663,4 +1664,5 @@ spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

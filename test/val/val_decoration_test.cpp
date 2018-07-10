@@ -20,6 +20,7 @@
 #include "val_fixtures.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 using std::string;
@@ -2664,4 +2665,5 @@ TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackBad) {
 }
 
 }  // namespace
+}  // namespace val
 }  // namespace spvtools

@@ -50,15 +50,9 @@ using std::transform;
 using std::vector;
 using std::placeholders::_1;
 
-using spvtools::CfgPass;
-using spvtools::DataRulesPass;
-using spvtools::Extension;
-using spvtools::IdPass;
-using spvtools::Instruction;
-using spvtools::InstructionPass;
-using spvtools::LiteralsPass;
-using spvtools::ModuleLayoutPass;
-using spvtools::ValidationState_t;
+namespace spvtools {
+namespace val {
+namespace {
 
 spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
                             const uint64_t count,
@@ -69,8 +63,6 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
     return error;
   return SPV_SUCCESS;
 }
-
-namespace {
 
 // TODO(umar): Validate header
 // TODO(umar): The binary parser validates the magic word, and the length of the
@@ -204,7 +196,7 @@ spv_result_t ProcessInstruction(void* user_data,
   return SPV_SUCCESS;
 }
 
-void printDot(const ValidationState_t& _, const spvtools::BasicBlock& other) {
+void printDot(const ValidationState_t& _, const BasicBlock& other) {
   string block_string;
   if (other.successors()->empty()) {
     block_string += "end ";
@@ -217,7 +209,7 @@ void printDot(const ValidationState_t& _, const spvtools::BasicBlock& other) {
          block_string.c_str());
 }
 
-void PrintBlocks(ValidationState_t& _, spvtools::Function func) {
+void PrintBlocks(ValidationState_t& _, Function func) {
   assert(func.first_block());
 
   printf("%10s -> %s\n", _.getIdOrName(func.id()).c_str(),
@@ -237,7 +229,7 @@ void PrintBlocks(ValidationState_t& _, spvtools::Function func) {
 #define UNUSED(func) func
 #endif
 
-UNUSED(void PrintDotGraph(ValidationState_t& _, spvtools::Function func)) {
+UNUSED(void PrintDotGraph(ValidationState_t& _, Function func)) {
   if (func.first_block()) {
     string func_name(_.getIdOrName(func.id()));
     printf("digraph %s {\n", func_name.c_str());
@@ -255,21 +247,21 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   spv_endianness_t endian;
   spv_position_t position = {};
   if (spvBinaryEndianness(binary.get(), &endian)) {
-    return spvtools::DiagnosticStream(position, context.consumer, "",
-                                      SPV_ERROR_INVALID_BINARY)
+    return DiagnosticStream(position, context.consumer, "",
+                            SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V magic number.";
   }
 
   spv_header_t header;
   if (spvBinaryHeaderGet(binary.get(), endian, &header)) {
-    return spvtools::DiagnosticStream(position, context.consumer, "",
-                                      SPV_ERROR_INVALID_BINARY)
+    return DiagnosticStream(position, context.consumer, "",
+                            SPV_ERROR_INVALID_BINARY)
            << "Invalid SPIR-V header.";
   }
 
   if (header.version > spvVersionForTargetEnv(context.target_env)) {
-    return spvtools::DiagnosticStream(position, context.consumer, "",
-                                      SPV_ERROR_WRONG_VERSION)
+    return DiagnosticStream(position, context.consumer, "",
+                            SPV_ERROR_WRONG_VERSION)
            << "Invalid SPIR-V binary version "
            << SPV_SPIRV_VERSION_MAJOR_PART(header.version) << "."
            << SPV_SPIRV_VERSION_MINOR_PART(header.version)
@@ -374,7 +366,33 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   return SPV_SUCCESS;
 }
-}  // anonymous namespace
+
+}  // namespace
+
+spv_result_t ValidateBinaryAndKeepValidationState(
+    const spv_const_context context, spv_const_validator_options options,
+    const uint32_t* words, const size_t num_words, spv_diagnostic* pDiagnostic,
+    std::unique_ptr<ValidationState_t>* vstate) {
+  spv_context_t hijack_context = *context;
+  if (pDiagnostic) {
+    *pDiagnostic = nullptr;
+    UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
+  }
+
+  vstate->reset(
+      new ValidationState_t(&hijack_context, options, words, num_words));
+
+  return ValidateBinaryUsingContextAndValidationState(
+      hijack_context, words, num_words, pDiagnostic, vstate->get());
+}
+
+spv_result_t ValidateInstructionAndUpdateValidationState(
+    ValidationState_t* vstate, const spv_parsed_instruction_t* inst) {
+  return ProcessInstruction(vstate, inst);
+}
+
+}  // namespace val
+}  // namespace spvtools
 
 spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary,
@@ -396,10 +414,12 @@ spv_result_t spvValidateBinary(const spv_const_context context,
   spv_validator_options default_options = spvValidatorOptionsCreate();
 
   // Create the ValidationState using the context and default options.
-  ValidationState_t vstate(&hijack_context, default_options, words, num_words);
+  spvtools::val::ValidationState_t vstate(&hijack_context, default_options,
+                                          words, num_words);
 
-  spv_result_t result = ValidateBinaryUsingContextAndValidationState(
-      hijack_context, words, num_words, pDiagnostic, &vstate);
+  spv_result_t result =
+      spvtools::val::ValidateBinaryUsingContextAndValidationState(
+          hijack_context, words, num_words, pDiagnostic, &vstate);
 
   spvValidatorOptionsDestroy(default_options);
   return result;
@@ -416,35 +436,9 @@ spv_result_t spvValidateWithOptions(const spv_const_context context,
   }
 
   // Create the ValidationState using the context.
-  ValidationState_t vstate(&hijack_context, options, binary->code,
-                           binary->wordCount);
+  spvtools::val::ValidationState_t vstate(&hijack_context, options,
+                                          binary->code, binary->wordCount);
 
-  return ValidateBinaryUsingContextAndValidationState(
+  return spvtools::val::ValidateBinaryUsingContextAndValidationState(
       hijack_context, binary->code, binary->wordCount, pDiagnostic, &vstate);
 }
-
-namespace spvtools {
-
-spv_result_t ValidateBinaryAndKeepValidationState(
-    const spv_const_context context, spv_const_validator_options options,
-    const uint32_t* words, const size_t num_words, spv_diagnostic* pDiagnostic,
-    std::unique_ptr<ValidationState_t>* vstate) {
-  spv_context_t hijack_context = *context;
-  if (pDiagnostic) {
-    *pDiagnostic = nullptr;
-    spvtools::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
-  }
-
-  vstate->reset(
-      new ValidationState_t(&hijack_context, options, words, num_words));
-
-  return ValidateBinaryUsingContextAndValidationState(
-      hijack_context, words, num_words, pDiagnostic, vstate->get());
-}
-
-spv_result_t ValidateInstructionAndUpdateValidationState(
-    ValidationState_t* vstate, const spv_parsed_instruction_t* inst) {
-  return ProcessInstruction(vstate, inst);
-}
-
-}  // namespace spvtools

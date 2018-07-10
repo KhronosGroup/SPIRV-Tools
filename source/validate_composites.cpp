@@ -22,6 +22,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 // Returns the type of the value accessed by OpCompositeExtract or
@@ -476,4 +477,5 @@ spv_result_t CompositesPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

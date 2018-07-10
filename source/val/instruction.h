@@ -25,6 +25,7 @@
 #include "table.h"
 
 namespace spvtools {
+namespace val {
 
 class BasicBlock;
 class Function;
@@ -123,18 +124,20 @@ OPERATOR(<);
 OPERATOR(==);
 #undef OPERATOR
 
+}  // namespace val
 }  // namespace spvtools
 
 // custom specialization of std::hash for Instruction
 namespace std {
 template <>
-struct hash<spvtools::Instruction> {
-  typedef spvtools::Instruction argument_type;
+struct hash<spvtools::val::Instruction> {
+  typedef spvtools::val::Instruction argument_type;
   typedef std::size_t result_type;
   result_type operator()(const argument_type& inst) const {
     return hash<uint32_t>()(inst.id());
   }
 };
+
 }  // namespace std
 
 #endif  // LIBSPIRV_VAL_INSTRUCTION_H_

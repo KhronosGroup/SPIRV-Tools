@@ -22,6 +22,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 
 // Validates correctness of arithmetic instructions.
 spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
@@ -446,4 +447,5 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

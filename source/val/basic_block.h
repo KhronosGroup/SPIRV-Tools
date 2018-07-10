@@ -25,6 +25,7 @@
 #include <vector>
 
 namespace spvtools {
+namespace val {
 
 enum BlockType : uint32_t {
   kBlockTypeUndefined,
@@ -241,6 +242,7 @@ bool operator==(const BasicBlock::DominatorIterator& lhs,
 bool operator!=(const BasicBlock::DominatorIterator& lhs,
                 const BasicBlock::DominatorIterator& rhs);
 
+}  // namespace val
 }  // namespace spvtools
 
 #endif  /// LIBSPIRV_VAL_BASICBLOCK_H_

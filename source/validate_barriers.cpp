@@ -25,6 +25,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 // Validates Execution Scope operand.
@@ -186,7 +187,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-}  // anonymous namespace
+}  // namespace
 
 // Validates correctness of barrier instructions.
 spv_result_t BarriersPass(ValidationState_t& _, const Instruction* inst) {
@@ -291,4 +292,5 @@ spv_result_t BarriersPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

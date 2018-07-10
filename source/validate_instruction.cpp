@@ -38,6 +38,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 std::string ToString(const CapabilitySet& capabilities,
@@ -590,4 +591,6 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
   // All instruction checks have passed.
   return SPV_SUCCESS;
 }
+
+}  // namespace val
 }  // namespace spvtools

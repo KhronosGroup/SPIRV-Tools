@@ -22,6 +22,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 
 // Validates correctness of conversion instructions.
 spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
@@ -408,4 +409,5 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

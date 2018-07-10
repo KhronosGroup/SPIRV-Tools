@@ -27,6 +27,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 // Validates that the number of components in the vector is valid.
@@ -262,4 +263,5 @@ spv_result_t DataRulesPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

@@ -35,6 +35,7 @@ using std::tie;
 using std::vector;
 
 namespace spvtools {
+namespace val {
 
 // Universal Limit of ResultID + 1
 static const uint32_t kInvalidId = 0x400000;
@@ -386,4 +387,5 @@ bool Function::IsCompatibleWithExecutionModel(SpvExecutionModel model,
   return return_value;
 }
 
+}  // namespace val
 }  // namespace spvtools

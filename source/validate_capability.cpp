@@ -25,6 +25,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 bool IsSupportGuaranteedVulkan_1_0(uint32_t capability) {
@@ -305,4 +306,5 @@ spv_result_t CapabilityPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools

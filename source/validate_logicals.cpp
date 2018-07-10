@@ -22,6 +22,7 @@
 #include "val/validation_state.h"
 
 namespace spvtools {
+namespace val {
 
 // Validates correctness of logical instructions.
 spv_result_t LogicalsPass(ValidationState_t& _, const Instruction* inst) {
@@ -259,4 +260,5 @@ spv_result_t LogicalsPass(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+}  // namespace val
 }  // namespace spvtools
