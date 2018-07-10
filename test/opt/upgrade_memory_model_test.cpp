@@ -409,6 +409,330 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
 }
+
+TEST_F(UpgradeMemoryModelTest, CoherentStructElement) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %struct 0 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%struct = OpTypeStruct %int
+%ptr_struct_StorageBuffer = OpTypePointer StorageBuffer %struct
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%func_ty = OpTypeFunction %void %ptr_struct_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_struct_StorageBuffer
+%1 = OpLabel
+%gep = OpAccessChain %ptr_int_StorageBuffer %param %int0
+%ld = OpLoad %int %gep
+OpStore %gep %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CoherentElementFullStructAccess) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %struct 0 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr_struct_StorageBuffer = OpTypePointer StorageBuffer %struct
+%func_ty = OpTypeFunction %void %ptr_struct_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_struct_StorageBuffer
+%1 = OpLabel
+%ld = OpLoad %struct %param
+OpStore %param %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CoherentElementNotAccessed) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK-NOT: MakePointerAvailableKHR
+; CHECK-NOT: NonPrivatePointerKHR
+; CHECK-NOT: MakePointerVisibleKHR
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %struct 1 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%struct = OpTypeStruct %int %int
+%ptr_struct_StorageBuffer = OpTypePointer StorageBuffer %struct
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%func_ty = OpTypeFunction %void %ptr_struct_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_struct_StorageBuffer
+%1 = OpLabel
+%gep = OpAccessChain %ptr_int_StorageBuffer %param %int0
+%ld = OpLoad %int %gep
+OpStore %gep %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, MultiIndexAccessCoherent) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %inner 1 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%int1 = OpConstant %int 1
+%inner = OpTypeStruct %int %int
+%middle = OpTypeStruct %inner
+%outer = OpTypeStruct %middle %middle
+%ptr_outer_StorageBuffer = OpTypePointer StorageBuffer %outer
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%func_ty = OpTypeFunction %void %ptr_outer_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_outer_StorageBuffer
+%1 = OpLabel
+%ld_gep = OpInBoundsAccessChain %ptr_int_StorageBuffer %param %int0 %int0 %int1
+%ld = OpLoad %int %ld_gep
+%st_gep = OpInBoundsAccessChain %ptr_int_StorageBuffer %param %int1 %int0 %int1
+OpStore %st_gep %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, MultiIndexAccessNonCoherent) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK-NOT: MakePointerAvailableKHR
+; CHECK-NOT: NonPrivatePointerKHR
+; CHECK-NOT: MakePointerVisibleKHR
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %inner 1 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%int1 = OpConstant %int 1
+%inner = OpTypeStruct %int %int
+%middle = OpTypeStruct %inner
+%outer = OpTypeStruct %middle %middle
+%ptr_outer_StorageBuffer = OpTypePointer StorageBuffer %outer
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%func_ty = OpTypeFunction %void %ptr_outer_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_outer_StorageBuffer
+%1 = OpLabel
+%ld_gep = OpInBoundsAccessChain %ptr_int_StorageBuffer %param %int0 %int0 %int0
+%ld = OpLoad %int %ld_gep
+%st_gep = OpInBoundsAccessChain %ptr_int_StorageBuffer %param %int1 %int0 %int0
+OpStore %st_gep %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, ConsecutiveAccessChainCoherent) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %inner 1 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%int1 = OpConstant %int 1
+%inner = OpTypeStruct %int %int
+%middle = OpTypeStruct %inner
+%outer = OpTypeStruct %middle %middle
+%ptr_outer_StorageBuffer = OpTypePointer StorageBuffer %outer
+%ptr_middle_StorageBuffer = OpTypePointer StorageBuffer %middle
+%ptr_inner_StorageBuffer = OpTypePointer StorageBuffer %inner
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%func_ty = OpTypeFunction %void %ptr_outer_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_outer_StorageBuffer
+%1 = OpLabel
+%ld_gep1 = OpInBoundsAccessChain %ptr_middle_StorageBuffer %param %int0
+%ld_gep2 = OpInBoundsAccessChain %ptr_inner_StorageBuffer %ld_gep1 %int0
+%ld_gep3 = OpInBoundsAccessChain %ptr_int_StorageBuffer %ld_gep2 %int1
+%ld = OpLoad %int %ld_gep3
+%st_gep1 = OpInBoundsAccessChain %ptr_middle_StorageBuffer %param %int1
+%st_gep2 = OpInBoundsAccessChain %ptr_inner_StorageBuffer %st_gep1 %int0
+%st_gep3 = OpInBoundsAccessChain %ptr_int_StorageBuffer %st_gep2 %int1
+OpStore %st_gep3 %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, ConsecutiveAccessChainNonCoherent) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK-NOT: MakePointerAvailableKHR
+; CHECK-NOT: NonPrivatePointerKHR
+; CHECK-NOT: MakePointerVisibleKHR
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %inner 1 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%int1 = OpConstant %int 1
+%inner = OpTypeStruct %int %int
+%middle = OpTypeStruct %inner
+%outer = OpTypeStruct %middle %middle
+%ptr_outer_StorageBuffer = OpTypePointer StorageBuffer %outer
+%ptr_middle_StorageBuffer = OpTypePointer StorageBuffer %middle
+%ptr_inner_StorageBuffer = OpTypePointer StorageBuffer %inner
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%func_ty = OpTypeFunction %void %ptr_outer_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_outer_StorageBuffer
+%1 = OpLabel
+%ld_gep1 = OpInBoundsAccessChain %ptr_middle_StorageBuffer %param %int0
+%ld_gep2 = OpInBoundsAccessChain %ptr_inner_StorageBuffer %ld_gep1 %int0
+%ld_gep3 = OpInBoundsAccessChain %ptr_int_StorageBuffer %ld_gep2 %int0
+%ld = OpLoad %int %ld_gep3
+%st_gep1 = OpInBoundsAccessChain %ptr_middle_StorageBuffer %param %int1
+%st_gep2 = OpInBoundsAccessChain %ptr_inner_StorageBuffer %st_gep1 %int0
+%st_gep3 = OpInBoundsAccessChain %ptr_int_StorageBuffer %st_gep2 %int0
+OpStore %st_gep3 %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CoherentStructElementAccess) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpStore {{%\w+}} {{%\w+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %middle 0 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%int1 = OpConstant %int 1
+%inner = OpTypeStruct %int %int
+%middle = OpTypeStruct %inner
+%outer = OpTypeStruct %middle %middle
+%ptr_outer_StorageBuffer = OpTypePointer StorageBuffer %outer
+%ptr_middle_StorageBuffer = OpTypePointer StorageBuffer %middle
+%ptr_inner_StorageBuffer = OpTypePointer StorageBuffer %inner
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%func_ty = OpTypeFunction %void %ptr_outer_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_outer_StorageBuffer
+%1 = OpLabel
+%ld_gep1 = OpInBoundsAccessChain %ptr_middle_StorageBuffer %param %int0
+%ld_gep2 = OpInBoundsAccessChain %ptr_inner_StorageBuffer %ld_gep1 %int0
+%ld_gep3 = OpInBoundsAccessChain %ptr_int_StorageBuffer %ld_gep2 %int1
+%ld = OpLoad %int %ld_gep3
+%st_gep1 = OpInBoundsAccessChain %ptr_middle_StorageBuffer %param %int1
+%st_gep2 = OpInBoundsAccessChain %ptr_inner_StorageBuffer %st_gep1 %int0
+%st_gep3 = OpInBoundsAccessChain %ptr_int_StorageBuffer %st_gep2 %int1
+OpStore %st_gep3 %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, NonCoherentLoadCoherentStore) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK-NOT: MakePointerAvailableKHR
+; CHECK: OpStore {{%\w+}} {{%\w+}} MakePointerVisibleKHR|NonPrivatePointerKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpMemberDecorate %outer 1 Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int0 = OpConstant %int 0
+%int1 = OpConstant %int 1
+%inner = OpTypeStruct %int %int
+%middle = OpTypeStruct %inner
+%outer = OpTypeStruct %middle %middle
+%ptr_outer_StorageBuffer = OpTypePointer StorageBuffer %outer
+%ptr_middle_StorageBuffer = OpTypePointer StorageBuffer %middle
+%ptr_inner_StorageBuffer = OpTypePointer StorageBuffer %inner
+%ptr_int_StorageBuffer = OpTypePointer StorageBuffer %int
+%func_ty = OpTypeFunction %void %ptr_outer_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_outer_StorageBuffer
+%1 = OpLabel
+%ld_gep1 = OpInBoundsAccessChain %ptr_middle_StorageBuffer %param %int0
+%ld_gep2 = OpInBoundsAccessChain %ptr_inner_StorageBuffer %ld_gep1 %int0
+%ld_gep3 = OpInBoundsAccessChain %ptr_int_StorageBuffer %ld_gep2 %int1
+%ld = OpLoad %int %ld_gep3
+%st_gep1 = OpInBoundsAccessChain %ptr_middle_StorageBuffer %param %int1
+%st_gep2 = OpInBoundsAccessChain %ptr_inner_StorageBuffer %st_gep1 %int0
+%st_gep3 = OpInBoundsAccessChain %ptr_int_StorageBuffer %st_gep2 %int1
+OpStore %st_gep3 %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
 #endif
 
 }  // namespace

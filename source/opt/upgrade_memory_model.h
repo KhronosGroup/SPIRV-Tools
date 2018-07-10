@@ -17,10 +17,21 @@
 
 #include "pass.h"
 
+#include <functional>
 #include <tuple>
 
 namespace spvtools {
 namespace opt {
+
+struct CacheHash {
+  size_t operator()(
+      const std::pair<uint32_t, std::vector<uint32_t>>& item) const {
+    std::u32string to_hash;
+    to_hash.push_back(item.first);
+    for (auto i : item.second) to_hash.push_back(i);
+    return std::hash<std::u32string>()(to_hash);
+  }
+};
 
 class UpgradeMemoryModel : public Pass {
  public:
@@ -31,14 +42,24 @@ class UpgradeMemoryModel : public Pass {
   void UpgradeMemoryModelInstruction();
   void UpgradeInstructions();
   std::tuple<bool, bool, SpvScope> GetInstructionAttributes(uint32_t id);
-  bool HasDecoration(const ir::Instruction* inst,
-                     const std::vector<uint32_t>& indices,
+  std::pair<bool, bool> TraceInstruction(ir::Instruction* inst,
+                                         std::vector<uint32_t> indices,
+                                         std::unordered_set<uint32_t>* visited);
+  bool HasDecoration(const ir::Instruction* inst, uint32_t value,
                      SpvDecoration decoration);
+  std::pair<bool, bool> CheckType(uint32_t type_id,
+                                  const std::vector<uint32_t>& indices);
+  std::pair<bool, bool> CheckAllTypes(const ir::Instruction* inst);
   void UpgradeFlags(ir::Instruction* inst, uint32_t in_operand,
                     bool is_coherent, bool is_volatile, bool visible,
                     bool is_memory);
   uint32_t GetScopeConstant(SpvScope scope);
+  uint64_t GetIndexValue(ir::Instruction* index_inst);
   void CleanupDecorations();
+
+  std::unordered_map<std::pair<uint32_t, std::vector<uint32_t>>,
+                     std::pair<bool, bool>, CacheHash>
+      cache_;
 };
 }  // namespace opt
 }  // namespace spvtools

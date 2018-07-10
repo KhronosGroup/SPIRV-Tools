@@ -124,58 +124,203 @@ std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
 
   bool is_coherent = false;
   bool is_volatile = false;
-  std::unordered_set<ir::Instruction*> visited;
-  std::vector<std::pair<ir::Instruction*, std::vector<uint32_t>>> stack;
-  stack.push_back(std::make_pair(context()->get_def_use_mgr()->GetDef(id),
-                                 std::vector<uint32_t>()));
-  while (!stack.empty()) {
-    ir::Instruction* def = stack.back().first;
-    std::vector<uint32_t> indices = stack.back().second;
-    stack.pop_back();
-
-    if (!visited.insert(def).second) continue;
-
-    switch (def->opcode()) {
-      case SpvOpVariable:
-      case SpvOpFunctionParameter:
-        is_coherent |= HasDecoration(def, indices, SpvDecorationCoherent);
-        is_volatile |= HasDecoration(def, indices, SpvDecorationVolatile);
-        break;
-      case SpvOpAccessChain:
-      case SpvOpInBoundsAccessChain:
-        break;
-      case SpvOpPtrAccessChain:
-        break;
-      default:
-        break;
-    }
-
-    if (inst->opcode() != SpvOpVariable &&
-        inst->opcode() != SpvOpFunctionParameter) {
-      def->ForEachInId([this, &stack, &indices](const uint32_t* id_ptr) {
-        ir::Instruction* op_inst =
-            context()->get_def_use_mgr()->GetDef(*id_ptr);
-        const analysis::Type* type =
-            context()->get_type_mgr()->GetType(op_inst->type_id());
-        if (type && type->AsPointer()) {
-          stack.push_back(std::make_pair(op_inst, indices));
-        }
-      });
-    }
-  }
+  std::unordered_set<uint32_t> visited;
+  std::tie(is_coherent, is_volatile) =
+      TraceInstruction(context()->get_def_use_mgr()->GetDef(id),
+                       std::vector<uint32_t>(), &visited);
 
   return std::make_tuple(is_coherent, is_volatile, SpvScopeDevice);
 }
 
+std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
+    ir::Instruction* inst, std::vector<uint32_t> indices,
+    std::unordered_set<uint32_t>* visited) {
+  auto iter = cache_.find(std::make_pair(inst->result_id(), indices));
+  if (iter != cache_.end()) return iter->second;
+
+  if (!visited->insert(inst->result_id()).second)
+    return std::make_pair(false, false);
+
+  auto& cached_result = cache_[std::make_pair(inst->result_id(), indices)];
+  cached_result.first = false;
+  cached_result.second = false;
+
+  bool is_coherent = false;
+  bool is_volatile = false;
+  switch (inst->opcode()) {
+    case SpvOpVariable:
+    case SpvOpFunctionParameter:
+      is_coherent |= HasDecoration(inst, 0, SpvDecorationCoherent);
+      is_volatile |= HasDecoration(inst, 0, SpvDecorationVolatile);
+      if (!is_coherent || !is_volatile) {
+        bool type_coherent = false;
+        bool type_volatile = false;
+        std::tie(type_coherent, type_volatile) =
+            CheckType(inst->type_id(), indices);
+        is_coherent |= type_coherent;
+        is_volatile |= type_volatile;
+      }
+      break;
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+      // Store indices in reverse order.
+      for (uint32_t i = inst->NumInOperands() - 1; i > 0; --i) {
+        indices.push_back(inst->GetSingleWordInOperand(i));
+      }
+      break;
+    case SpvOpPtrAccessChain:
+      // Store indices in reverse order. Skip the |Element| operand.
+      for (uint32_t i = inst->NumInOperands() - 1; i > 1; --i) {
+        indices.push_back(inst->GetSingleWordInOperand(i));
+      }
+      break;
+    default:
+      break;
+  }
+
+  // No point searching further.
+  if (is_coherent && is_volatile) {
+    // |indices| was not modified in this case.
+    cache_[std::make_pair(inst->result_id(), indices)] =
+        std::make_pair(true, true);
+    return std::make_pair(true, true);
+  }
+
+  if (inst->opcode() != SpvOpVariable &&
+      inst->opcode() != SpvOpFunctionParameter) {
+    inst->ForEachInId([this, &is_coherent, &is_volatile, &indices,
+                       &visited](const uint32_t* id_ptr) {
+      ir::Instruction* op_inst = context()->get_def_use_mgr()->GetDef(*id_ptr);
+      const analysis::Type* type =
+          context()->get_type_mgr()->GetType(op_inst->type_id());
+      if (type && type->AsPointer()) {
+        bool operand_coherent = false;
+        bool operand_volatile = false;
+        std::tie(operand_coherent, operand_volatile) =
+            TraceInstruction(op_inst, indices, visited);
+        is_coherent |= operand_coherent;
+        is_volatile |= operand_volatile;
+      }
+    });
+  }
+
+  cached_result.first = is_coherent;
+  cached_result.second = is_volatile;
+  return std::make_pair(is_coherent, is_volatile);
+}
+
+std::pair<bool, bool> UpgradeMemoryModel::CheckType(
+    uint32_t type_id, const std::vector<uint32_t>& indices) {
+  bool is_coherent = false;
+  bool is_volatile = false;
+  ir::Instruction* type_inst = context()->get_def_use_mgr()->GetDef(type_id);
+  assert(type_inst->opcode() == SpvOpTypePointer);
+  ir::Instruction* element_inst = context()->get_def_use_mgr()->GetDef(
+      type_inst->GetSingleWordInOperand(1u));
+  for (int i = (int)indices.size() - 1; i >= 0; --i) {
+    if (is_coherent && is_volatile) break;
+
+    if (element_inst->opcode() == SpvOpTypePointer) {
+      element_inst = context()->get_def_use_mgr()->GetDef(
+          element_inst->GetSingleWordInOperand(1u));
+    } else if (element_inst->opcode() == SpvOpTypeStruct) {
+      uint32_t index = indices.at(i);
+      ir::Instruction* index_inst = context()->get_def_use_mgr()->GetDef(index);
+      assert(index_inst->opcode() == SpvOpConstant);
+      uint64_t value = GetIndexValue(index_inst);
+      is_coherent |= HasDecoration(element_inst, static_cast<uint32_t>(value),
+                                   SpvDecorationCoherent);
+      is_volatile |= HasDecoration(element_inst, static_cast<uint32_t>(value),
+                                   SpvDecorationVolatile);
+      element_inst = context()->get_def_use_mgr()->GetDef(
+          element_inst->GetSingleWordInOperand(static_cast<uint32_t>(value)));
+    } else {
+      assert(spvOpcodeIsComposite(element_inst->opcode()));
+      element_inst = context()->get_def_use_mgr()->GetDef(
+          element_inst->GetSingleWordInOperand(1u));
+    }
+  }
+
+  if (!is_coherent || !is_volatile) {
+    bool remaining_coherent = false;
+    bool remaining_volatile = false;
+    std::tie(remaining_coherent, remaining_volatile) =
+        CheckAllTypes(element_inst);
+    is_coherent |= remaining_coherent;
+    is_volatile |= remaining_volatile;
+  }
+
+  return std::make_pair(is_coherent, is_volatile);
+}
+
+std::pair<bool, bool> UpgradeMemoryModel::CheckAllTypes(
+    const ir::Instruction* inst) {
+  std::unordered_set<const ir::Instruction*> visited;
+  std::vector<const ir::Instruction*> stack;
+  stack.push_back(inst);
+
+  bool is_coherent = false;
+  bool is_volatile = false;
+  while (!stack.empty()) {
+    const ir::Instruction* def = stack.back();
+    stack.pop_back();
+
+    if (!visited.insert(def).second) continue;
+
+    if (def->opcode() == SpvOpTypeStruct) {
+      is_coherent |= HasDecoration(def, std::numeric_limits<uint32_t>::max(),
+                                   SpvDecorationCoherent);
+      is_volatile |= HasDecoration(def, std::numeric_limits<uint32_t>::max(),
+                                   SpvDecorationVolatile);
+      if (is_coherent && is_volatile)
+        return std::make_pair(is_coherent, is_volatile);
+
+      for (uint32_t i = 0; i < def->NumInOperands(); ++i) {
+        stack.push_back(context()->get_def_use_mgr()->GetDef(
+            def->GetSingleWordInOperand(i)));
+      }
+    } else if (spvOpcodeIsComposite(def->opcode())) {
+      stack.push_back(context()->get_def_use_mgr()->GetDef(
+          def->GetSingleWordInOperand(0u)));
+    } else if (def->opcode() == SpvOpTypePointer) {
+      stack.push_back(context()->get_def_use_mgr()->GetDef(
+          def->GetSingleWordInOperand(1u)));
+    }
+  }
+
+  return std::make_pair(is_coherent, is_volatile);
+}
+
+uint64_t UpgradeMemoryModel::GetIndexValue(ir::Instruction* index_inst) {
+  const analysis::Constant* index_constant =
+      context()->get_constant_mgr()->GetConstantFromInst(index_inst);
+  assert(index_constant->AsIntConstant());
+  if (index_constant->type()->AsInteger()->IsSigned()) {
+    if (index_constant->type()->AsInteger()->width() == 32) {
+      return index_constant->GetS32();
+    } else {
+      return index_constant->GetS64();
+    }
+  } else {
+    if (index_constant->type()->AsInteger()->width() == 32) {
+      return index_constant->GetU32();
+    } else {
+      return index_constant->GetU64();
+    }
+  }
+}
+
 bool UpgradeMemoryModel::HasDecoration(const ir::Instruction* inst,
-                                       const std::vector<uint32_t>& indices,
+                                       uint32_t value,
                                        SpvDecoration decoration) {
-  (void)indices;
   return !context()->get_decoration_mgr()->WhileEachDecoration(
-      inst->result_id(), decoration, [](const ir::Instruction& i) {
+      inst->result_id(), decoration, [value](const ir::Instruction& i) {
         if (i.opcode() == SpvOpDecorate || i.opcode() == SpvOpDecorateId) {
           return false;
         } else if (i.opcode() == SpvOpMemberDecorate) {
+          if (value == i.GetSingleWordInOperand(1u) ||
+              value == std::numeric_limits<uint32_t>::max())
+            return false;
         }
 
         return true;
