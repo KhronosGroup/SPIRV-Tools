@@ -950,7 +950,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, false);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchInBoundsPtrAccessChain) {
@@ -984,7 +984,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, false);
 }
 
 TEST_F(ScalarReplacementTest, DonTouchAliasedDecoration) {

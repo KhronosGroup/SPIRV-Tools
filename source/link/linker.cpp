@@ -735,31 +735,36 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   if (res != SPV_SUCCESS) return res;
 
   // Phase 6: Remove duplicates
-  PassManager manager;
-  manager.SetMessageConsumer(consumer);
-  manager.AddPassToken<opt::RemoveDuplicatesPassToken>();
-  opt::Pass::Status pass_res = manager.Run(&linked_context);
-  if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
+  {
+    PassManager manager;
+    manager.SetMessageConsumer(consumer);
+    manager.AddPassToken<opt::RemoveDuplicatesPassToken>();
+    opt::Pass::Status pass_res = manager.Run(&linked_context);
+    if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 7: Rematch import variables/functions to export variables/functions
-  for (const auto& linking_entry : linkings_to_do)
-    linked_context.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
-                                      linking_entry.exported_symbol.id);
+    // Phase 7: Rematch import variables/functions to export variables/functions
+    for (const auto& linking_entry : linkings_to_do)
+      linked_context.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
+                                        linking_entry.exported_symbol.id);
 
-  // Phase 8: Remove linkage specific instructions, such as import/export
-  // attributes, linkage capability, etc. if applicable
-  res = RemoveLinkageSpecificInstructions(consumer, options, linkings_to_do,
-                                          linked_context.get_decoration_mgr(),
-                                          &linked_context);
-  if (res != SPV_SUCCESS) return res;
+    // Phase 8: Remove linkage specific instructions, such as import/export
+    // attributes, linkage capability, etc. if applicable
+    res = RemoveLinkageSpecificInstructions(consumer, options, linkings_to_do,
+                                            linked_context.get_decoration_mgr(),
+                                            &linked_context);
+    if (res != SPV_SUCCESS) return res;
+  }
 
   // Phase 9: Compact the IDs used in the module
-  manager.AddPassToken<opt::CompactIdsPassToken>();
-  pass_res = manager.Run(&linked_context);
-  if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
+  {
+    PassManager manager;
+    manager.AddPassToken<opt::CompactIdsPassToken>();
+    opt::Pass::Status pass_res = manager.Run(&linked_context);
+    if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 10: Output the module
-  linked_context.module()->ToBinary(linked_binary, true);
+    // Phase 10: Output the module
+    linked_context.module()->ToBinary(linked_binary, true);
+  }
 
   return SPV_SUCCESS;
 }
