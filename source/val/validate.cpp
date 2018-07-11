@@ -25,12 +25,12 @@
 #include <string>
 #include <vector>
 
+#include "source/opcode.h"
 #include "source/binary.h"
 #include "source/diagnostic.h"
 #include "source/enum_string_mapping.h"
 #include "source/extensions.h"
 #include "source/instruction.h"
-#include "source/opcode.h"
 #include "source/operand.h"
 #include "source/spirv_constant.h"
 #include "source/spirv_endian.h"
@@ -50,14 +50,16 @@ using std::transform;
 using std::vector;
 using std::placeholders::_1;
 
+
+
 namespace spvtools {
 namespace val {
 namespace {
 
 spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
-                            const uint64_t count,
-                            const ValidationState_t& state,
-                            spv_position position) {
+                              const uint64_t count,
+                             const ValidationState_t& state,
+                                 spv_position position) {
   position->index = SPV_INDEX_INSTRUCTION;
   if (auto error = spvValidateInstructionIDs(pInsts, count, state, position))
     return error;
