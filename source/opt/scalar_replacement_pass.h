@@ -219,15 +219,16 @@ class ScalarReplacementPass : public Pass {
 
 class ScalarReplacementPassToken : public PassToken {
  public:
-  static constexpr uint32_t kDefaultLimit = 100;
+  static const uint32_t kDefaultLimit = 100;
 
   ScalarReplacementPassToken(uint32_t limit = kDefaultLimit)
-      : max_num_elements_(limit),
-        name_("scalar-replacement=" + std::to_string(limit)) {}
+      : max_num_elements_(limit) {
+    snprintf(name_, 55, "scalar-replacement=%d", max_num_elements_);
+  }
 
   ~ScalarReplacementPassToken() override = default;
 
-  const char* name() const override { return name_.data(); }
+  const char* name() const override { return name_; }
 
   std::unique_ptr<Pass> CreatePass() const override {
     return MakeUnique<ScalarReplacementPass>(max_num_elements_);
@@ -235,7 +236,7 @@ class ScalarReplacementPassToken : public PassToken {
 
  private:
   uint32_t max_num_elements_;
-  std::string name_;
+  char name_[55];
 };
 
 }  // namespace opt
