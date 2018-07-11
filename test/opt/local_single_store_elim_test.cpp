@@ -16,9 +16,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using LocalSingleStoreElimTest = PassTest<::testing::Test>;
 
@@ -120,7 +120,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -186,7 +186,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
       predefs + before, predefs + before, true, true);
 }
 
@@ -290,7 +290,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -368,7 +368,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -423,8 +423,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(assembly, assembly,
-                                                            true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(assembly, assembly, true,
+                                                       true);
 }
 
 TEST_F(LocalSingleStoreElimTest, ElimIfCopyObjectInFunction) {
@@ -526,7 +526,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -606,8 +606,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(assembly, assembly,
-                                                            true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(assembly, assembly, true,
+                                                       true);
 }
 
 TEST_F(LocalSingleStoreElimTest, OptInitializedVariableLikeStore) {
@@ -665,7 +665,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -766,8 +766,8 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(before, after, true,
-                                                            true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(before, after, true,
+                                                       true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
@@ -775,4 +775,6 @@ OpFunctionEnd
 //    Other types
 //    Others?
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

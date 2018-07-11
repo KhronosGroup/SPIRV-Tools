@@ -16,9 +16,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using DeadInsertElimTest = PassTest<::testing::Test>;
 
@@ -164,7 +164,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 
@@ -343,7 +343,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 
@@ -557,11 +557,13 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

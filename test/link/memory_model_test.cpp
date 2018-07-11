@@ -15,10 +15,10 @@
 #include "gmock/gmock.h"
 #include "linker_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using ::testing::HasSubstr;
-
 using MemoryModel = spvtest::LinkerTest;
 
 TEST_F(MemoryModel, Default) {
@@ -68,4 +68,5 @@ OpMemoryModel Logical GLSL450
               HasSubstr("Conflicting memory models: Simple vs GLSL450."));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

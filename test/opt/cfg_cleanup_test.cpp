@@ -15,9 +15,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using CFGCleanupTest = PassTest<::testing::Test>;
 
@@ -79,7 +79,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CFGCleanupPassToken>(
+  SinglePassRunAndCheck<CFGCleanupPassToken>(
       declarations + body_before, declarations + body_after, true, true);
 }
 
@@ -142,7 +142,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CFGCleanupPassToken>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 TEST_F(CFGCleanupTest, UpdatePhis) {
@@ -226,7 +226,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CFGCleanupPassToken>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 TEST_F(CFGCleanupTest, RemoveNamedLabels) {
@@ -261,7 +261,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CFGCleanupPassToken>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 TEST_F(CFGCleanupTest, RemovePhiArgsFromFarBlocks) {
@@ -359,7 +359,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CFGCleanupPassToken>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 TEST_F(CFGCleanupTest, RemovePhiConstantArgs) {
@@ -438,6 +438,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CFGCleanupPassToken>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

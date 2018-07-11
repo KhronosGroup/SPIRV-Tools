@@ -16,9 +16,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using InlineOpaqueTest = PassTest<::testing::Test>;
 
@@ -124,7 +124,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineOpaquePassToken>(
+  SinglePassRunAndCheck<InlineOpaquePassToken>(
       predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
@@ -214,7 +214,7 @@ OpReturnValue %33
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineOpaquePassToken>(
+  SinglePassRunAndCheck<InlineOpaquePassToken>(
       predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
@@ -328,7 +328,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineOpaquePassToken>(
+  SinglePassRunAndCheck<InlineOpaquePassToken>(
       predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
@@ -402,8 +402,9 @@ OpReturnValue %31
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineOpaquePassToken>(assembly, assembly, true,
-                                                    true);
+  SinglePassRunAndCheck<InlineOpaquePassToken>(assembly, assembly, true, true);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

@@ -30,6 +30,10 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
+namespace {
+
 using std::array;
 using std::make_pair;
 using std::pair;
@@ -42,9 +46,6 @@ using ::testing::MatchesRegex;
 
 using ValidateCFG = spvtest::ValidateBase<SpvCapability>;
 using spvtest::ScopedContext;
-
-namespace spvtools {
-namespace {
 
 string nameOps() { return ""; }
 
@@ -1822,4 +1823,5 @@ OpFunctionEnd
 /// TODO(umar): Nested CFG constructs
 
 }  // namespace
+}  // namespace val
 }  // namespace spvtools

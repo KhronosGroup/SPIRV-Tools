@@ -24,9 +24,9 @@
 #include "opt/loop_descriptor.h"
 #include "opt/loop_fusion.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using FusionCompatibilityTest = PassTest<::testing::Test>;
 
@@ -96,19 +96,19 @@ TEST_F(FusionCompatibilityTest, SameInductionVariableDifferentBounds) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_FALSE(fusion.AreCompatible());
 }
 
@@ -181,19 +181,19 @@ TEST_F(FusionCompatibilityTest, Compatible) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_TRUE(fusion.AreCompatible());
 }
 
@@ -267,19 +267,19 @@ TEST_F(FusionCompatibilityTest, DifferentName) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_TRUE(fusion.AreCompatible());
 }
 
@@ -354,19 +354,19 @@ TEST_F(FusionCompatibilityTest, SameBoundsDifferentStep) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_FALSE(fusion.AreCompatible());
 }
 
@@ -442,19 +442,19 @@ TEST_F(FusionCompatibilityTest, DifferentUpperBound) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_FALSE(fusion.AreCompatible());
 }
 
@@ -530,19 +530,19 @@ TEST_F(FusionCompatibilityTest, DifferentLowerBound) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_FALSE(fusion.AreCompatible());
 }
 
@@ -628,19 +628,19 @@ TEST_F(FusionCompatibilityTest, Break) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_FALSE(fusion.AreCompatible());
 }
 
@@ -729,19 +729,19 @@ TEST_F(FusionCompatibilityTest, UnknownButSameUpperBound) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_TRUE(fusion.AreCompatible());
 }
 
@@ -829,19 +829,19 @@ TEST_F(FusionCompatibilityTest, UnknownButSameUpperBoundReverseCondition) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_TRUE(fusion.AreCompatible());
 }
 
@@ -932,19 +932,19 @@ TEST_F(FusionCompatibilityTest, UnknownUpperBoundAddition) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  opt::LoopFusion fusion(context.get(), loops[0], loops[1]);
+  LoopFusion fusion(context.get(), loops[0], loops[1]);
   EXPECT_FALSE(fusion.AreCompatible());
 }
 
@@ -1037,14 +1037,14 @@ TEST_F(FusionCompatibilityTest, SeveralAdjacentLoops) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 3u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1053,11 +1053,11 @@ TEST_F(FusionCompatibilityTest, SeveralAdjacentLoops) {
   auto loop_1 = loops[1];
   auto loop_2 = loops[2];
 
-  EXPECT_FALSE(opt::LoopFusion(context.get(), loop_0, loop_0).AreCompatible());
-  EXPECT_FALSE(opt::LoopFusion(context.get(), loop_0, loop_2).AreCompatible());
-  EXPECT_FALSE(opt::LoopFusion(context.get(), loop_1, loop_0).AreCompatible());
-  EXPECT_TRUE(opt::LoopFusion(context.get(), loop_0, loop_1).AreCompatible());
-  EXPECT_TRUE(opt::LoopFusion(context.get(), loop_1, loop_2).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loop_0, loop_0).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loop_0, loop_2).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loop_1, loop_0).AreCompatible());
+  EXPECT_TRUE(LoopFusion(context.get(), loop_0, loop_1).AreCompatible());
+  EXPECT_TRUE(LoopFusion(context.get(), loop_1, loop_2).AreCompatible());
 }
 
 /*
@@ -1170,14 +1170,14 @@ TEST_F(FusionCompatibilityTest, NonAdjacentLoops) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 3u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
@@ -1186,10 +1186,10 @@ TEST_F(FusionCompatibilityTest, NonAdjacentLoops) {
   auto loop_1 = loops[1];
   auto loop_2 = loops[2];
 
-  EXPECT_FALSE(opt::LoopFusion(context.get(), loop_0, loop_0).AreCompatible());
-  EXPECT_FALSE(opt::LoopFusion(context.get(), loop_0, loop_2).AreCompatible());
-  EXPECT_FALSE(opt::LoopFusion(context.get(), loop_0, loop_1).AreCompatible());
-  EXPECT_TRUE(opt::LoopFusion(context.get(), loop_1, loop_2).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loop_0, loop_0).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loop_0, loop_2).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loop_0, loop_1).AreCompatible());
+  EXPECT_TRUE(LoopFusion(context.get(), loop_1, loop_2).AreCompatible());
 }
 
 /*
@@ -1264,20 +1264,19 @@ TEST_F(FusionCompatibilityTest, CompatibleInitDeclaredBeforeLoops) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  EXPECT_TRUE(
-      opt::LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
+  EXPECT_TRUE(LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
 }
 
 /*
@@ -1377,20 +1376,19 @@ TEST_F(FusionCompatibilityTest, SeveralInductionVariables) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  EXPECT_FALSE(
-      opt::LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
 }
 
 /*
@@ -1470,20 +1468,19 @@ TEST_F(FusionCompatibilityTest, CompatibleNonIncrementStep) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  EXPECT_TRUE(
-      opt::LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
+  EXPECT_TRUE(LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
 }
 
 /*
@@ -1562,20 +1559,19 @@ TEST_F(FusionCompatibilityTest, UnknonInitForSecondLoop) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  EXPECT_FALSE(
-      opt::LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
 }
 
 /*
@@ -1661,20 +1657,19 @@ TEST_F(FusionCompatibilityTest, Continue) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  EXPECT_FALSE(
-      opt::LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
+  EXPECT_FALSE(LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
 }
 
 /*
@@ -1771,20 +1766,21 @@ TEST_F(FusionCompatibilityTest, IfElseInLoop) {
                OpFunctionEnd
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::Function& f = *module->begin();
-  opt::LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
+  Function& f = *module->begin();
+  LoopDescriptor& ld = *context->GetLoopDescriptor(&f);
   EXPECT_EQ(ld.NumLoops(), 2u);
 
   auto loops = ld.GetLoopsInBinaryLayoutOrder();
 
-  EXPECT_TRUE(
-      opt::LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
+  EXPECT_TRUE(LoopFusion(context.get(), loops[0], loops[1]).AreCompatible());
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

@@ -26,9 +26,7 @@ namespace val {
 namespace {
 
 using ::testing::HasSubstr;
-
 using ValidateStorage = spvtest::ValidateBase<std::string>;
-
 
 TEST_F(ValidateStorage, FunctionStorageInsideFunction) {
   char str[] = R"(

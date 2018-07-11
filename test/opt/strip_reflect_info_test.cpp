@@ -15,9 +15,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using StripLineReflectInfoTest = PassTest<::testing::Test>;
 
@@ -40,7 +40,7 @@ OpMemoryModel Logical Simple
 %float = OpTypeFloat 32
 )";
 
-  SinglePassRunAndCheck<opt::StripReflectInfoPassToken>(before, after, false);
+  SinglePassRunAndCheck<StripReflectInfoPassToken>(before, after, false);
 }
 
 TEST_F(StripLineReflectInfoTest, StripHlslCounterBuffer) {
@@ -59,7 +59,9 @@ OpMemoryModel Logical Simple
 %float = OpTypeFloat 32
 )";
 
-  SinglePassRunAndCheck<opt::StripReflectInfoPassToken>(before, after, false);
+  SinglePassRunAndCheck<StripReflectInfoPassToken>(before, after, false);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

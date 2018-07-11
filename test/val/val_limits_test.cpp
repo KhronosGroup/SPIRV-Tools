@@ -22,6 +22,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using std::string;
@@ -712,4 +714,6 @@ TEST_F(ValidateLimits, ControlFlowNoEntryToLoopGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

@@ -24,11 +24,11 @@
 #include "opt/dominator_analysis.h"
 #include "opt/pass.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using ::testing::UnorderedElementsAre;
-
 using PassClassTest = PassTest<::testing::Test>;
 
 /*
@@ -81,15 +81,15 @@ TEST_F(PassClassTest, UnreachableNestedIfs) {
          OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  const opt::Function* f = spvtest::GetFunction(module, 4);
-  opt::DominatorAnalysis* analysis = context->GetDominatorAnalysis(f);
+  const Function* f = spvtest::GetFunction(module, 4);
+  DominatorAnalysis* analysis = context->GetDominatorAnalysis(f);
   EXPECT_TRUE(analysis->Dominates(5, 5));
   EXPECT_TRUE(analysis->Dominates(5, 10));
   EXPECT_TRUE(analysis->Dominates(5, 14));
@@ -117,3 +117,5 @@ TEST_F(PassClassTest, UnreachableNestedIfs) {
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

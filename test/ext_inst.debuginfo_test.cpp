@@ -24,6 +24,7 @@
 //
 // See https://www.khronos.org/registry/spir-v/specs/1.0/DebugInfo.html
 
+namespace spvtools {
 namespace {
 
 using spvtest::Concatenate;
@@ -805,4 +806,5 @@ INSTANTIATE_TEST_CASE_P(DebugInfoDebugMacroUndef, ExtInstDebugInfoRoundTripTest,
 #undef CASE_EL
 #undef CASE_ELL
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

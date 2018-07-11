@@ -14,6 +14,7 @@
 
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
 TEST(BinaryEndianness, InvalidCode) {
@@ -49,4 +50,5 @@ TEST(BinaryEndianness, Big) {
   ASSERT_EQ(SPV_ENDIANNESS_BIG, endian);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

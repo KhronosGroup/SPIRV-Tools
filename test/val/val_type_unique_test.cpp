@@ -20,6 +20,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::HasSubstr;
@@ -264,4 +266,6 @@ OpMemoryModel Logical GLSL450
               Not(HasSubstr(GetErrorString(SpvOpTypePointer))));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

@@ -15,17 +15,17 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
-
 // A pass turning all none debug line instructions into Nop.
-class NopifyPass : public opt::Pass {
+class NopifyPass : public Pass {
  public:
-  Status Process(opt::IRContext* irContext) override {
+  Status Process(IRContext* irContext) override {
     bool modified = false;
     irContext->module()->ForEachInst(
-        [&modified](opt::Instruction* inst) {
+        [&modified](Instruction* inst) {
           inst->ToNop();
           modified = true;
         },
@@ -34,14 +34,14 @@ class NopifyPass : public opt::Pass {
   }
 };
 
-class NopifyPassToken : public opt::PassToken {
+class NopifyPassToken : public PassToken {
  public:
   NopifyPassToken() = default;
   ~NopifyPassToken() = default;
 
   const char* name() const override { return "NopifyPass"; }
 
-  std::unique_ptr<opt::Pass> CreatePass() const override {
+  std::unique_ptr<Pass> CreatePass() const override {
     return MakeUnique<NopifyPass>();
   }
 };
@@ -119,4 +119,6 @@ TEST_F(PassTestForLineDebugInfo, KeepLineDebugInfo) {
                                          /* skip_nop = */ true);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

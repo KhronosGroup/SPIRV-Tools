@@ -20,13 +20,12 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
-
 using LocalRedundancyEliminationTest = PassTest<::testing::Test>;
 
 #ifdef SPIRV_EFFCEE
@@ -54,7 +53,7 @@ TEST_F(LocalRedundancyEliminationTest, RemoveRedundantAdd) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<opt::LocalRedundancyEliminationPassToken>(text, false);
+  SinglePassRunAndMatch<LocalRedundancyEliminationPassToken>(text, false);
 }
 
 // Make sure we keep instruction that are different, but look similar.
@@ -85,7 +84,7 @@ TEST_F(LocalRedundancyEliminationTest, KeepDifferentAdd) {
                OpFunctionEnd
   )";
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<opt::LocalRedundancyEliminationPassToken>(text, false);
+  SinglePassRunAndMatch<LocalRedundancyEliminationPassToken>(text, false);
 }
 
 // This test is check that the values are being propagated properly, and that
@@ -123,7 +122,7 @@ TEST_F(LocalRedundancyEliminationTest, RemoveMultipleInstructions) {
                OpFunctionEnd
   )";
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<opt::LocalRedundancyEliminationPassToken>(text, false);
+  SinglePassRunAndMatch<LocalRedundancyEliminationPassToken>(text, false);
 }
 
 // Redundant instructions in different blocks should be kept.
@@ -152,7 +151,10 @@ TEST_F(LocalRedundancyEliminationTest, KeepInstructionsInDifferentBlocks) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<opt::LocalRedundancyEliminationPassToken>(text, false);
+  SinglePassRunAndMatch<LocalRedundancyEliminationPassToken>(text, false);
 }
 #endif
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

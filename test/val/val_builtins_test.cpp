@@ -25,6 +25,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 struct TestResult {
@@ -2109,4 +2111,6 @@ OpFunctionEnd
                         "be declared when using BuiltIn FragDepth"));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

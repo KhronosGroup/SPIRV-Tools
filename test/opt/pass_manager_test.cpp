@@ -20,14 +20,15 @@
 #include "opt/make_unique.h"
 #include "pass_fixture.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using spvtest::GetIdBound;
 using ::testing::Eq;
 
 // A null pass whose constructors accept arguments
-class NullPassWithArgsToken : public opt::NullPassToken {
+class NullPassWithArgsToken : public NullPassToken {
  public:
   NullPassWithArgsToken(uint32_t) {}
   NullPassWithArgsToken(std::string) {}
@@ -38,19 +39,19 @@ class NullPassWithArgsToken : public opt::NullPassToken {
 };
 
 TEST(PassManager, Interface) {
-  opt::PassManager manager;
+  PassManager manager;
   EXPECT_EQ(0u, manager.NumPasses());
 
-  manager.AddPassToken<opt::StripDebugInfoPassToken>();
+  manager.AddPassToken<StripDebugInfoPassToken>();
   EXPECT_EQ(1u, manager.NumPasses());
   EXPECT_STREQ("strip-debug", manager.GetPassToken(0)->name());
 
-  manager.AddPassToken(MakeUnique<opt::NullPassToken>());
+  manager.AddPassToken(MakeUnique<NullPassToken>());
   EXPECT_EQ(2u, manager.NumPasses());
   EXPECT_STREQ("strip-debug", manager.GetPassToken(0)->name());
   EXPECT_STREQ("null", manager.GetPassToken(1)->name());
 
-  manager.AddPassToken<opt::StripDebugInfoPassToken>();
+  manager.AddPassToken<StripDebugInfoPassToken>();
   EXPECT_EQ(3u, manager.NumPasses());
   EXPECT_STREQ("strip-debug", manager.GetPassToken(0)->name());
   EXPECT_STREQ("null", manager.GetPassToken(1)->name());
@@ -72,35 +73,35 @@ TEST(PassManager, Interface) {
 }
 
 // A pass that appends an OpNop instruction to the debug1 section.
-class AppendOpNopPass : public opt::Pass {
+class AppendOpNopPass : public Pass {
  public:
-  Status Process(opt::IRContext* irContext) override {
-    irContext->AddDebug1Inst(MakeUnique<opt::Instruction>(irContext));
+  Status Process(IRContext* irContext) override {
+    irContext->AddDebug1Inst(MakeUnique<Instruction>(irContext));
     return Status::SuccessWithChange;
   }
 };
 
-class AppendOpNopPassToken : public opt::PassToken {
+class AppendOpNopPassToken : public PassToken {
  public:
   AppendOpNopPassToken() = default;
   ~AppendOpNopPassToken() = default;
 
   const char* name() const override { return "AppendOpNop"; }
 
-  std::unique_ptr<opt::Pass> CreatePass() const override {
+  std::unique_ptr<Pass> CreatePass() const override {
     return MakeUnique<AppendOpNopPass>();
   }
 };
 
 // A pass that appends specified number of OpNop instructions to the debug1
 // section.
-class AppendMultipleOpNopPass : public opt::Pass {
+class AppendMultipleOpNopPass : public Pass {
  public:
   explicit AppendMultipleOpNopPass(uint32_t num_nop) : num_nop_(num_nop) {}
 
-  Status Process(opt::IRContext* irContext) override {
+  Status Process(IRContext* irContext) override {
     for (uint32_t i = 0; i < num_nop_; i++) {
-      irContext->AddDebug1Inst(MakeUnique<opt::Instruction>(irContext));
+      irContext->AddDebug1Inst(MakeUnique<Instruction>(irContext));
     }
     return Status::SuccessWithChange;
   }
@@ -109,14 +110,14 @@ class AppendMultipleOpNopPass : public opt::Pass {
   uint32_t num_nop_;
 };
 
-class AppendMultipleOpNopPassToken : public opt::PassToken {
+class AppendMultipleOpNopPassToken : public PassToken {
  public:
   explicit AppendMultipleOpNopPassToken(uint32_t num_nop) : num_nop_(num_nop) {}
   ~AppendMultipleOpNopPassToken() = default;
 
   const char* name() const override { return "AppendOpNop"; }
 
-  std::unique_ptr<opt::Pass> CreatePass() const override {
+  std::unique_ptr<Pass> CreatePass() const override {
     return MakeUnique<AppendMultipleOpNopPass>(num_nop_);
   }
 
@@ -125,24 +126,24 @@ class AppendMultipleOpNopPassToken : public opt::PassToken {
 };
 
 // A pass that duplicates the last instruction in the debug1 section.
-class DuplicateInstPass : public opt::Pass {
+class DuplicateInstPass : public Pass {
  public:
-  Status Process(opt::IRContext* irContext) override {
-    auto inst = MakeUnique<opt::Instruction>(
-        *(--irContext->debug1_end())->Clone(irContext));
+  Status Process(IRContext* irContext) override {
+    auto inst =
+        MakeUnique<Instruction>(*(--irContext->debug1_end())->Clone(irContext));
     irContext->AddDebug1Inst(std::move(inst));
     return Status::SuccessWithChange;
   }
 };
 
-class DuplicateInstPassToken : public opt::PassToken {
+class DuplicateInstPassToken : public PassToken {
  public:
   DuplicateInstPassToken() = default;
   ~DuplicateInstPassToken() = default;
 
   const char* name() const override { return "DuplicateInst"; }
 
-  std::unique_ptr<opt::Pass> CreatePass() const override {
+  std::unique_ptr<Pass> CreatePass() const override {
     return MakeUnique<DuplicateInstPass>();
   }
 };
@@ -172,13 +173,13 @@ TEST_F(PassManagerTest, Run) {
 }
 
 // A pass that appends an OpTypeVoid instruction that uses a given id.
-class AppendTypeVoidInstPass : public opt::Pass {
+class AppendTypeVoidInstPass : public Pass {
  public:
   explicit AppendTypeVoidInstPass(uint32_t result_id) : result_id_(result_id) {}
 
-  Status Process(opt::IRContext* irContext) override {
-    auto inst = MakeUnique<opt::Instruction>(
-        irContext, SpvOpTypeVoid, 0, result_id_, std::vector<opt::Operand>{});
+  Status Process(IRContext* irContext) override {
+    auto inst = MakeUnique<Instruction>(irContext, SpvOpTypeVoid, 0, result_id_,
+                                        std::vector<Operand>{});
     irContext->AddType(std::move(inst));
     return Status::SuccessWithChange;
   }
@@ -187,14 +188,14 @@ class AppendTypeVoidInstPass : public opt::Pass {
   uint32_t result_id_;
 };
 
-class AppendTypeVoidInstPassToken : public opt::PassToken {
+class AppendTypeVoidInstPassToken : public PassToken {
  public:
   AppendTypeVoidInstPassToken(uint32_t result_id) : result_id_(result_id) {}
   ~AppendTypeVoidInstPassToken() = default;
 
   const char* name() const override { return "AppendTypeVoidInstPass"; }
 
-  std::unique_ptr<opt::Pass> CreatePass() const override {
+  std::unique_ptr<Pass> CreatePass() const override {
     return MakeUnique<AppendTypeVoidInstPass>(result_id_);
   }
 
@@ -203,10 +204,10 @@ class AppendTypeVoidInstPassToken : public opt::PassToken {
 };
 
 TEST(PassManager, RecomputeIdBoundAutomatically) {
-  opt::PassManager manager;
-  std::unique_ptr<opt::Module> module(new opt::Module());
-  opt::IRContext context(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         manager.consumer());
+  PassManager manager;
+  std::unique_ptr<Module> module(new Module());
+  IRContext context(SPV_ENV_UNIVERSAL_1_2, std::move(module),
+                    manager.consumer());
   EXPECT_THAT(GetIdBound(*context.module()), Eq(0u));
 
   manager.Run(&context);
@@ -235,3 +236,5 @@ TEST(PassManager, RecomputeIdBoundAutomatically) {
 }
 
 }  // anonymous namespace
+}  // namespace opt
+}  // namespace spvtools

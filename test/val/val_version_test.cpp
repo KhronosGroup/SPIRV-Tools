@@ -15,12 +15,15 @@
 #include "gmock/gmock.h"
 #include "val_fixtures.h"
 
-using namespace spvtest;
+namespace spvtools {
+namespace val {
+namespace {
+
 using ::testing::HasSubstr;
 using std::make_tuple;
 
-using ValidateVersion =
-    ValidateBase<std::tuple<spv_target_env, spv_target_env, std::string, bool>>;
+using ValidateVersion = spvtest::ValidateBase<
+    std::tuple<spv_target_env, spv_target_env, std::string, bool>>;
 
 const std::string vulkan_spirv = R"(
 OpCapability Shader
@@ -267,3 +270,7 @@ INSTANTIATE_TEST_CASE_P(OpenCLEmbedded, ValidateVersion,
   )
 );
 // clang-format on
+
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

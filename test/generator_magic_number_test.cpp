@@ -18,11 +18,11 @@
 
 #include "source/opcode.h"
 
-using ::spvtest::EnumCase;
-using ::testing::Eq;
-
+namespace spvtools {
 namespace {
 
+using ::spvtest::EnumCase;
+using ::testing::Eq;
 using GeneratorMagicNumberTest =
     ::testing::TestWithParam<EnumCase<spv_generator_t>>;
 
@@ -54,4 +54,6 @@ INSTANTIATE_TEST_CASE_P(
         {spv_generator_t(1000), "Unknown"},
         {spv_generator_t(9999), "Unknown"},
     }), );
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace spvtools

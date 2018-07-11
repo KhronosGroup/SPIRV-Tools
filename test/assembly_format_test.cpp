@@ -14,6 +14,7 @@
 
 #include "test_fixture.h"
 
+namespace svptools {
 namespace {
 
 using spvtest::ScopedContext;
@@ -32,4 +33,5 @@ TEST_F(TextToBinaryTest, NotPlacingResultIDAtTheBeginning) {
   EXPECT_EQ(0u, diagnostic->position.line);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace svptools

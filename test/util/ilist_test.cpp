@@ -18,10 +18,10 @@
 
 #include "util/ilist.h"
 
+namespace spvtools {
+namespace utils {
 namespace {
 
-using spvtools::utils::IntrusiveList;
-using spvtools::utils::IntrusiveNodeBase;
 using ::testing::ElementsAre;
 using IListTest = ::testing::Test;
 
@@ -319,4 +319,7 @@ TEST(IListTest, MoveBefore4) {
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5));
 }
+
 }  // namespace
+}  // namespace utils
+}  // namespace spvtools

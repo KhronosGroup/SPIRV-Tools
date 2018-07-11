@@ -20,9 +20,9 @@
 
 #include "../pass_fixture.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using UnswitchTest = PassTest<::testing::Test>;
 
@@ -151,7 +151,7 @@ TEST_F(UnswitchTest, SimpleUnswitch) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
+  SinglePassRunAndMatch<LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -257,7 +257,7 @@ TEST_F(UnswitchTest, UnswitchExit) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
+  SinglePassRunAndMatch<LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -373,7 +373,7 @@ TEST_F(UnswitchTest, UnswitchContinue) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
+  SinglePassRunAndMatch<LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -479,7 +479,7 @@ TEST_F(UnswitchTest, UnswitchKillLoop) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
+  SinglePassRunAndMatch<LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -605,7 +605,7 @@ TEST_F(UnswitchTest, UnswitchSwitch) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
+  SinglePassRunAndMatch<LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -806,7 +806,7 @@ TEST_F(UnswitchTest, UnSwitchNested) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
+  SinglePassRunAndMatch<LoopUnswitchPassToken>(text, true);
 }
 #endif  // SPIRV_EFFCEE
 
@@ -905,10 +905,12 @@ TEST_F(UnswitchTest, UnswitchNotUniform) {
                OpFunctionEnd
   )";
 
-  auto result = SinglePassRunAndDisassemble<opt::LoopUnswitchPassToken>(
-      text, true, false);
+  auto result =
+      SinglePassRunAndDisassemble<LoopUnswitchPassToken>(text, true, false);
 
-  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

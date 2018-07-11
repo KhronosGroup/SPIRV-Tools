@@ -16,6 +16,7 @@
 
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::ScopedContext;
@@ -39,4 +40,5 @@ TEST_F(BinaryDestroySomething, Default) {
   spvBinaryDestroy(my_binary);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

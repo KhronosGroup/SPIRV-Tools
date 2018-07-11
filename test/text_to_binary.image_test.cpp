@@ -20,6 +20,7 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::MakeInstruction;
@@ -269,4 +270,5 @@ TEST_F(OpImageSparseReadTest, InvalidCoordinateOperand) {
 // TODO(dneto): OpImageSparseDrefGather
 // TODO(dneto): OpImageSparseTexelsResident
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

@@ -25,12 +25,12 @@
 
 #include "module_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
 using ::testing::Eq;
 using spvtest::GetIdBound;
-using spvtools::opt::IRContext;
-using spvtools::opt::Module;
 
 TEST(ModuleTest, SetIdBound) {
   Module m;
@@ -46,34 +46,37 @@ TEST(ModuleTest, SetIdBound) {
 
 // Returns an IRContext owning the module formed by assembling the given text,
 // then loading the result.
-inline std::unique_ptr<IRContext> BuildModule(std::string text) {
-  return spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
-                               SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+inline std::unique_ptr<IRContext> BuildModuleForTest(std::string text) {
+  return BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
 }
 
 TEST(ModuleTest, ComputeIdBound) {
   // Emtpy module case.
-  EXPECT_EQ(1u, BuildModule("")->module()->ComputeIdBound());
+  EXPECT_EQ(1u, BuildModuleForTest("")->module()->ComputeIdBound());
   // Sensitive to result id
-  EXPECT_EQ(2u, BuildModule("%void = OpTypeVoid")->module()->ComputeIdBound());
+  EXPECT_EQ(
+      2u, BuildModuleForTest("%void = OpTypeVoid")->module()->ComputeIdBound());
   // Sensitive to type id
-  EXPECT_EQ(1000u,
-            BuildModule("%a = OpTypeArray !999 3")->module()->ComputeIdBound());
+  EXPECT_EQ(1000u, BuildModuleForTest("%a = OpTypeArray !999 3")
+                       ->module()
+                       ->ComputeIdBound());
   // Sensitive to a regular Id parameter
-  EXPECT_EQ(2000u,
-            BuildModule("OpDecorate !1999 0")->module()->ComputeIdBound());
+  EXPECT_EQ(
+      2000u,
+      BuildModuleForTest("OpDecorate !1999 0")->module()->ComputeIdBound());
   // Sensitive to a scope Id parameter.
-  EXPECT_EQ(3000u,
-            BuildModule("%f = OpFunction %void None %fntype %a = OpLabel "
-                        "OpMemoryBarrier !2999 %b\n")
-                ->module()
-                ->ComputeIdBound());
+  EXPECT_EQ(3000u, BuildModuleForTest(
+                       "%f = OpFunction %void None %fntype %a = OpLabel "
+                       "OpMemoryBarrier !2999 %b\n")
+                       ->module()
+                       ->ComputeIdBound());
   // Sensitive to a semantics Id parameter
-  EXPECT_EQ(4000u,
-            BuildModule("%f = OpFunction %void None %fntype %a = OpLabel "
-                        "OpMemoryBarrier %b !3999\n")
-                ->module()
-                ->ComputeIdBound());
+  EXPECT_EQ(4000u, BuildModuleForTest(
+                       "%f = OpFunction %void None %fntype %a = OpLabel "
+                       "OpMemoryBarrier %b !3999\n")
+                       ->module()
+                       ->ComputeIdBound());
 }
 
 TEST(ModuleTest, OstreamOperator) {
@@ -102,7 +105,7 @@ OpFunctionEnd)";
 
   std::string s;
   std::ostringstream str(s);
-  str << *BuildModule(text)->module();
+  str << *BuildModuleForTest(text)->module();
   EXPECT_EQ(text, str.str());
 }
 
@@ -136,8 +139,10 @@ OpFunctionEnd)";
 
   std::string s;
   std::ostringstream str(s);
-  str << *BuildModule(text)->module();
+  str << *BuildModuleForTest(text)->module();
   EXPECT_EQ(text, str.str());
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

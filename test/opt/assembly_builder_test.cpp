@@ -17,9 +17,10 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using AssemblyBuilderTest = PassTest<::testing::Test>;
 
 TEST_F(AssemblyBuilderTest, MinimalShader) {
@@ -44,9 +45,9 @@ TEST_F(AssemblyBuilderTest, MinimalShader) {
       // clang-format on
   };
 
-  SinglePassRunAndCheck<opt::NullPassToken>(builder.GetCode(),
-                                            JoinAllInsts(expected),
-                                            /* skip_nop = */ false);
+  SinglePassRunAndCheck<NullPassToken>(builder.GetCode(),
+                                       JoinAllInsts(expected),
+                                       /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, ShaderWithConstants) {
@@ -158,9 +159,9 @@ TEST_F(AssemblyBuilderTest, ShaderWithConstants) {
                 "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::NullPassToken>(builder.GetCode(),
-                                            JoinAllInsts(expected),
-                                            /* skip_nop = */ false);
+  SinglePassRunAndCheck<NullPassToken>(builder.GetCode(),
+                                       JoinAllInsts(expected),
+                                       /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, SpecConstants) {
@@ -242,9 +243,9 @@ TEST_F(AssemblyBuilderTest, SpecConstants) {
       // clang-format on
   };
 
-  SinglePassRunAndCheck<opt::NullPassToken>(builder.GetCode(),
-                                            JoinAllInsts(expected),
-                                            /* skip_nop = */ false);
+  SinglePassRunAndCheck<NullPassToken>(builder.GetCode(),
+                                       JoinAllInsts(expected),
+                                       /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, AppendNames) {
@@ -276,9 +277,11 @@ TEST_F(AssemblyBuilderTest, AppendNames) {
       // clang-format on
   };
 
-  SinglePassRunAndCheck<opt::NullPassToken>(builder.GetCode(),
-                                            JoinAllInsts(expected),
-                                            /* skip_nop = */ false);
+  SinglePassRunAndCheck<NullPassToken>(builder.GetCode(),
+                                       JoinAllInsts(expected),
+                                       /* skip_nop = */ false);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

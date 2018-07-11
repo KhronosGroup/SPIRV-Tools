@@ -19,6 +19,7 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using ::spvtest::MakeInstruction;
@@ -58,3 +59,4 @@ TEST_F(ReservedSamplingInstTest, OpImageSparseSampleProjDrefExplicitLod) {
 }
 
 }  // namespace
+}  // namespace spvtools

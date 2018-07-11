@@ -21,23 +21,23 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
-using opt::IRContext;
 using Analysis = IRContext::Analysis;
 using ::testing::Each;
 
-class DummyPassPreservesNothing : public opt::Pass {
+class DummyPassPreservesNothing : public Pass {
  public:
-  DummyPassPreservesNothing(Status s) : opt::Pass(), status_to_return_(s) {}
+  DummyPassPreservesNothing(Status s) : Pass(), status_to_return_(s) {}
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
 };
 
-class DummyPassPreservesAll : public opt::Pass {
+class DummyPassPreservesAll : public Pass {
  public:
-  DummyPassPreservesAll(Status s) : opt::Pass(), status_to_return_(s) {}
+  DummyPassPreservesAll(Status s) : Pass(), status_to_return_(s) {}
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
   virtual Analysis GetPreservedAnalyses() override {
@@ -45,9 +45,9 @@ class DummyPassPreservesAll : public opt::Pass {
   }
 };
 
-class DummyPassPreservesFirst : public opt::Pass {
+class DummyPassPreservesFirst : public Pass {
  public:
-  DummyPassPreservesFirst(Status s) : opt::Pass(), status_to_return_(s) {}
+  DummyPassPreservesFirst(Status s) : Pass(), status_to_return_(s) {}
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
   virtual Analysis GetPreservedAnalyses() override {
@@ -58,9 +58,9 @@ class DummyPassPreservesFirst : public opt::Pass {
 using IRContextTest = PassTest<::testing::Test>;
 
 TEST_F(IRContextTest, IndividualValidAfterBuild) {
-  std::unique_ptr<opt::Module> module(new opt::Module());
+  std::unique_ptr<Module> module(new Module());
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -70,9 +70,9 @@ TEST_F(IRContextTest, IndividualValidAfterBuild) {
 }
 
 TEST_F(IRContextTest, AllValidAfterBuild) {
-  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
+  std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   Analysis built_analyses = IRContext::kAnalysisNone;
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
@@ -84,9 +84,9 @@ TEST_F(IRContextTest, AllValidAfterBuild) {
 }
 
 TEST_F(IRContextTest, AllValidAfterPassNoChange) {
-  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
+  std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   Analysis built_analyses = IRContext::kAnalysisNone;
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
@@ -95,25 +95,25 @@ TEST_F(IRContextTest, AllValidAfterPassNoChange) {
     built_analyses |= i;
   }
 
-  DummyPassPreservesNothing pass(opt::Pass::Status::SuccessWithoutChange);
-  opt::Pass::Status s = pass.Run(&localContext);
-  EXPECT_EQ(s, opt::Pass::Status::SuccessWithoutChange);
+  DummyPassPreservesNothing pass(Pass::Status::SuccessWithoutChange);
+  Pass::Status s = pass.Run(&localContext);
+  EXPECT_EQ(s, Pass::Status::SuccessWithoutChange);
   EXPECT_TRUE(localContext.AreAnalysesValid(built_analyses));
 }
 
 TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
-  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
+  std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
     localContext.BuildInvalidAnalyses(i);
   }
 
-  DummyPassPreservesNothing pass(opt::Pass::Status::SuccessWithChange);
-  opt::Pass::Status s = pass.Run(&localContext);
-  EXPECT_EQ(s, opt::Pass::Status::SuccessWithChange);
+  DummyPassPreservesNothing pass(Pass::Status::SuccessWithChange);
+  Pass::Status s = pass.Run(&localContext);
+  EXPECT_EQ(s, Pass::Status::SuccessWithChange);
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
     EXPECT_FALSE(localContext.AreAnalysesValid(i));
@@ -121,18 +121,18 @@ TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
 }
 
 TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
-  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
+  std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
     localContext.BuildInvalidAnalyses(i);
   }
 
-  DummyPassPreservesAll pass(opt::Pass::Status::SuccessWithChange);
-  opt::Pass::Status s = pass.Run(&localContext);
-  EXPECT_EQ(s, opt::Pass::Status::SuccessWithChange);
+  DummyPassPreservesAll pass(Pass::Status::SuccessWithChange);
+  Pass::Status s = pass.Run(&localContext);
+  EXPECT_EQ(s, Pass::Status::SuccessWithChange);
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
     EXPECT_TRUE(localContext.AreAnalysesValid(i));
@@ -140,18 +140,18 @@ TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
 }
 
 TEST_F(IRContextTest, PreserveFirstOnlyAfterPassWithChange) {
-  std::unique_ptr<opt::Module> module = MakeUnique<opt::Module>();
+  std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
     localContext.BuildInvalidAnalyses(i);
   }
 
-  DummyPassPreservesFirst pass(opt::Pass::Status::SuccessWithChange);
-  opt::Pass::Status s = pass.Run(&localContext);
-  EXPECT_EQ(s, opt::Pass::Status::SuccessWithChange);
+  DummyPassPreservesFirst pass(Pass::Status::SuccessWithChange);
+  Pass::Status s = pass.Run(&localContext);
+  EXPECT_EQ(s, Pass::Status::SuccessWithChange);
   EXPECT_TRUE(localContext.AreAnalysesValid(IRContext::kAnalysisBegin));
   for (Analysis i = IRContext::kAnalysisBegin << 1; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -181,7 +181,7 @@ TEST_F(IRContextTest, KillMemberName) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
 
   // Build the decoration manager.
@@ -209,4 +209,6 @@ TEST_F(IRContextTest, TakeNextUniqueIdIncrementing) {
     EXPECT_EQ(i, localContext.TakeNextUniqueId());
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

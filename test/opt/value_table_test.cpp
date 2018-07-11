@@ -19,13 +19,12 @@
 #include "opt/build_module.h"
 #include "pass_fixture.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
-
 using ValueTableTest = PassTest<::testing::Test>;
 
 TEST_F(ValueTableTest, SameInstructionSameValue) {
@@ -49,8 +48,8 @@ TEST_F(ValueTableTest, SameInstructionSameValue) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst = context->get_def_use_mgr()->GetDef(10);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst = context->get_def_use_mgr()->GetDef(10);
   EXPECT_EQ(vtable.GetValueNumber(inst), vtable.GetValueNumber(inst));
 }
 
@@ -76,9 +75,9 @@ TEST_F(ValueTableTest, DifferentInstructionSameValue) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(11);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(11);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -106,9 +105,9 @@ TEST_F(ValueTableTest, SameValueDifferentBlock) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(12);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(12);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -134,9 +133,9 @@ TEST_F(ValueTableTest, DifferentValue) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(11);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(11);
   EXPECT_NE(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -164,9 +163,9 @@ TEST_F(ValueTableTest, DifferentValueDifferentBlock) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(12);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(12);
   EXPECT_NE(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -190,8 +189,8 @@ TEST_F(ValueTableTest, SameLoad) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst = context->get_def_use_mgr()->GetDef(9);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst = context->get_def_use_mgr()->GetDef(9);
   EXPECT_EQ(vtable.GetValueNumber(inst), vtable.GetValueNumber(inst));
 }
 
@@ -218,9 +217,9 @@ TEST_F(ValueTableTest, DifferentFunctionLoad) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
   EXPECT_NE(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -245,9 +244,9 @@ TEST_F(ValueTableTest, DifferentUniformLoad) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -272,9 +271,9 @@ TEST_F(ValueTableTest, DifferentInputLoad) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -299,9 +298,9 @@ TEST_F(ValueTableTest, DifferentUniformConstantLoad) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -326,9 +325,9 @@ TEST_F(ValueTableTest, DifferentPushConstantLoad) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -358,8 +357,8 @@ TEST_F(ValueTableTest, SameCall) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst = context->get_def_use_mgr()->GetDef(10);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst = context->get_def_use_mgr()->GetDef(10);
   EXPECT_EQ(vtable.GetValueNumber(inst), vtable.GetValueNumber(inst));
 }
 
@@ -391,9 +390,9 @@ TEST_F(ValueTableTest, DifferentCall) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(12);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(10);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(12);
   EXPECT_NE(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -422,9 +421,9 @@ TEST_F(ValueTableTest, DifferentTypes) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(11);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(12);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(11);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(12);
   EXPECT_NE(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -449,9 +448,9 @@ TEST_F(ValueTableTest, CopyObject) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(9);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(10);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 }
 
@@ -487,10 +486,10 @@ TEST_F(ValueTableTest, PhiTest1) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(13);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(15);
-  opt::Instruction* phi = context->get_def_use_mgr()->GetDef(16);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(13);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(15);
+  Instruction* phi = context->get_def_use_mgr()->GetDef(16);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(phi));
 }
@@ -528,10 +527,10 @@ TEST_F(ValueTableTest, PhiTest2) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(14);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(16);
-  opt::Instruction* phi = context->get_def_use_mgr()->GetDef(17);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(14);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(16);
+  Instruction* phi = context->get_def_use_mgr()->GetDef(17);
   EXPECT_NE(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
   EXPECT_NE(vtable.GetValueNumber(inst1), vtable.GetValueNumber(phi));
   EXPECT_NE(vtable.GetValueNumber(inst2), vtable.GetValueNumber(phi));
@@ -573,16 +572,19 @@ TEST_F(ValueTableTest, PhiLoopTest) {
                OpFunctionEnd
   )";
   auto context = BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::ValueNumberTable vtable(context.get());
-  opt::Instruction* inst1 = context->get_def_use_mgr()->GetDef(12);
-  opt::Instruction* inst2 = context->get_def_use_mgr()->GetDef(16);
+  ValueNumberTable vtable(context.get());
+  Instruction* inst1 = context->get_def_use_mgr()->GetDef(12);
+  Instruction* inst2 = context->get_def_use_mgr()->GetDef(16);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(inst2));
 
-  opt::Instruction* phi1 = context->get_def_use_mgr()->GetDef(15);
+  Instruction* phi1 = context->get_def_use_mgr()->GetDef(15);
   EXPECT_NE(vtable.GetValueNumber(inst1), vtable.GetValueNumber(phi1));
 
-  opt::Instruction* phi2 = context->get_def_use_mgr()->GetDef(18);
+  Instruction* phi2 = context->get_def_use_mgr()->GetDef(18);
   EXPECT_EQ(vtable.GetValueNumber(inst1), vtable.GetValueNumber(phi2));
   EXPECT_NE(vtable.GetValueNumber(phi1), vtable.GetValueNumber(phi2));
 }
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

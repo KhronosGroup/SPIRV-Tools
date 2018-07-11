@@ -19,6 +19,8 @@
 #include "../pass_fixture.h"
 #include "opt/licm_pass.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
 using namespace spvtools;
@@ -155,7 +157,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LICMPassToken>(before_hoist, after_hoist, true);
+  SinglePassRunAndCheck<LICMPassToken>(before_hoist, after_hoist, true);
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

@@ -22,12 +22,10 @@
 #include "spirv-tools/libspirv.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
-using opt::IRContext;
-using opt::Instruction;
-using opt::Operand;
 using spvtest::MakeInstruction;
 using ::testing::Eq;
 using DescriptorTypeTest = PassTest<::testing::Test>;
@@ -316,7 +314,7 @@ TEST_F(DescriptorTypeTest, StorageImage) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* type = context->get_def_use_mgr()->GetDef(8);
   EXPECT_TRUE(type->IsVulkanStorageImage());
@@ -352,7 +350,7 @@ TEST_F(DescriptorTypeTest, SampledImage) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* type = context->get_def_use_mgr()->GetDef(8);
   EXPECT_FALSE(type->IsVulkanStorageImage());
@@ -388,7 +386,7 @@ TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* type = context->get_def_use_mgr()->GetDef(8);
   EXPECT_FALSE(type->IsVulkanStorageImage());
@@ -427,7 +425,7 @@ TEST_F(DescriptorTypeTest, StorageBuffer) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* type = context->get_def_use_mgr()->GetDef(10);
   EXPECT_FALSE(type->IsVulkanStorageImage());
@@ -466,7 +464,7 @@ TEST_F(DescriptorTypeTest, UniformBuffer) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* type = context->get_def_use_mgr()->GetDef(10);
   EXPECT_FALSE(type->IsVulkanStorageImage());
@@ -506,7 +504,7 @@ TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyVariable());
@@ -533,7 +531,7 @@ TEST_F(OpaqueTypeTest, BaseOpaqueTypesShader) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* image_type = context->get_def_use_mgr()->GetDef(6);
   EXPECT_TRUE(image_type->IsOpaqueType());
@@ -571,7 +569,7 @@ TEST_F(OpaqueTypeTest, OpaqueStructTypes) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   for (int i = 7; i <= 10; i++) {
     Instruction* type = context->get_def_use_mgr()->GetDef(i);
@@ -614,7 +612,7 @@ TEST_F(GetBaseTest, SampleImage) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* load = context->get_def_use_mgr()->GetDef(21);
   Instruction* base = context->get_def_use_mgr()->GetDef(20);
@@ -649,10 +647,13 @@ TEST_F(GetBaseTest, ImageRead) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* load = context->get_def_use_mgr()->GetDef(14);
   Instruction* base = context->get_def_use_mgr()->GetDef(13);
   EXPECT_TRUE(load->GetBaseAddress() == base);
 }
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

@@ -18,9 +18,9 @@
 #include "gmock/gmock.h"
 #include "pass_fixture.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using SimplificationTest = PassTest<::testing::Test>;
 
@@ -68,7 +68,7 @@ TEST_F(SimplificationTest, StraightLineTest) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::SimplificationPassToken>(text, false);
+  SinglePassRunAndMatch<SimplificationPassToken>(text, false);
 }
 
 TEST_F(SimplificationTest, AcrossBasicBlocks) {
@@ -132,7 +132,7 @@ TEST_F(SimplificationTest, AcrossBasicBlocks) {
 
 )";
 
-  SinglePassRunAndMatch<opt::SimplificationPassToken>(text, false);
+  SinglePassRunAndMatch<SimplificationPassToken>(text, false);
 }
 
 TEST_F(SimplificationTest, ThroughLoops) {
@@ -199,7 +199,11 @@ TEST_F(SimplificationTest, ThroughLoops) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::SimplificationPassToken>(text, false);
+  SinglePassRunAndMatch<SimplificationPassToken>(text, false);
 }
+
 #endif
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

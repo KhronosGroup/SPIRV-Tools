@@ -18,6 +18,7 @@
 #include <stack>
 
 #include "opcode.h"
+#include "spirv_target_env.h"
 #include "val/basic_block.h"
 #include "val/construct.h"
 #include "val/function.h"
@@ -168,6 +169,8 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       in_function_(false) {
   assert(opt && "Validator options may not be Null.");
 
+  features_.non_monotonic_struct_member_offsets =
+      spvIsVulkanEnv(context_->target_env);
   switch (context_->target_env) {
     case SPV_ENV_WEBGPU_0:
       features_.bans_op_undef = true;

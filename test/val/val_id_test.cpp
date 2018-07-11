@@ -26,6 +26,8 @@
 // in stages, ID validation is only one of these stages. All validation stages
 // are stand alone.
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using spvtest::ScopedContext;
@@ -4768,4 +4770,6 @@ OpFunctionEnd
 // TODO: OpGroupCommitReadPipe
 // TODO: OpGroupCommitWritePipe
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

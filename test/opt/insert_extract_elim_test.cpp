@@ -17,9 +17,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using InsertExtractElimTest = PassTest<::testing::Test>;
 
@@ -100,8 +100,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeAcrossNonConflictingInsert) {
@@ -185,8 +185,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeOpaque) {
@@ -267,8 +267,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeNestedStruct) {
@@ -396,8 +396,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization) {
@@ -464,8 +464,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(assembly, assembly, true,
-                                                      true);
+  SinglePassRunAndCheck<SimplificationPassToken>(assembly, assembly, true,
+                                                 true);
 }
 
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization2) {
@@ -588,7 +588,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(
+  SinglePassRunAndCheck<SimplificationPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 
@@ -690,8 +690,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, VectorShuffle1) {
@@ -774,7 +774,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(
+  SinglePassRunAndCheck<SimplificationPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -887,11 +887,13 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(
+  SinglePassRunAndCheck<SimplificationPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

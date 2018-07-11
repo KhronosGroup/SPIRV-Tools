@@ -15,9 +15,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using VectorDCETest = PassTest<::testing::Test>;
 
@@ -167,8 +167,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::VectorDCEToken>(before_predefs + before,
-                                             after_predefs + after, true, true);
+  SinglePassRunAndCheck<VectorDCEToken>(before_predefs + before,
+                                        after_predefs + after, true, true);
 }
 
 TEST_F(VectorDCETest, DeadInsertInChainWithPhi) {
@@ -350,8 +350,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::VectorDCEToken>(before_predefs + before,
-                                             after_predefs + after, true, true);
+  SinglePassRunAndCheck<VectorDCEToken>(before_predefs + before,
+                                        after_predefs + after, true, true);
 }
 
 TEST_F(VectorDCETest, DeadInsertWithScalars) {
@@ -564,7 +564,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 
@@ -606,8 +606,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(before, before, true,
-                                                      true);
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(before, before, true, true);
 }
 
 #ifdef SPIRV_EFFCEE
@@ -730,7 +729,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::VectorDCEToken>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 
 TEST_F(VectorDCETest, DeadLoadFeedingCompositeConstruct) {
@@ -811,7 +810,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::VectorDCEToken>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 
 TEST_F(VectorDCETest, DeadLoadFeedingVectorShuffle) {
@@ -895,7 +894,7 @@ TEST_F(VectorDCETest, DeadLoadFeedingVectorShuffle) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::VectorDCEToken>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 
 TEST_F(VectorDCETest, DeadInstThroughShuffle) {
@@ -985,7 +984,7 @@ TEST_F(VectorDCETest, DeadInstThroughShuffle) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::VectorDCEToken>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 
 TEST_F(VectorDCETest, DeadInsertThroughOtherInst) {
@@ -1075,7 +1074,7 @@ TEST_F(VectorDCETest, DeadInsertThroughOtherInst) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::VectorDCEToken>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 #endif
 
@@ -1149,7 +1148,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(text, text, true, true);
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(text, text, true, true);
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

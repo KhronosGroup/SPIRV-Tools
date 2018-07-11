@@ -16,9 +16,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using LocalAccessChainConvertTest = PassTest<::testing::Test>;
 
@@ -125,7 +125,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -232,7 +232,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -338,7 +338,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -451,7 +451,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs + before + remain, predefs + after + remain, true, true);
 }
 
@@ -569,7 +569,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -645,8 +645,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(
-      assembly, assembly, false, true);
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(assembly, assembly,
+                                                          false, true);
 }
 
 TEST_F(LocalAccessChainConvertTest, SomeAccessChainsHaveNoUse) {
@@ -706,7 +706,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -719,4 +719,6 @@ OpFunctionEnd
 //    OpInBoundsAccessChain
 //    Others?
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

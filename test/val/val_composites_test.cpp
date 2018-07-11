@@ -19,6 +19,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::HasSubstr;
@@ -1494,4 +1496,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

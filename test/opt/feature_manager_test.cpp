@@ -20,6 +20,8 @@
 #include "opt/ir_context.h"
 
 namespace spvtools {
+namespace opt {
+namespace {
 
 using FeatureManagerTest = ::testing::Test;
 
@@ -29,7 +31,7 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -44,7 +46,7 @@ OpMemoryModel Logical GLSL450
 OpExtension "SPV_KHR_variable_pointers"
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -59,7 +61,7 @@ OpMemoryModel Logical GLSL450
 OpExtension "SPV_KHR_variable_pointers"
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -75,7 +77,7 @@ OpExtension "SPV_KHR_variable_pointers"
 OpExtension "SPV_KHR_storage_buffer_storage_class"
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -92,7 +94,7 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -106,7 +108,7 @@ OpCapability Kernel
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -120,7 +122,7 @@ OpCapability Tessellation
 OpMemoryModel Logical GLSL450
   )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   ASSERT_NE(context, nullptr);
 
@@ -133,4 +135,6 @@ OpMemoryModel Logical GLSL450
   EXPECT_FALSE(context->get_feature_mgr()->HasCapability(SpvCapabilityKernel));
 }
 
+}  // namespace
+}  // namespace opt
 }  // namespace spvtools
