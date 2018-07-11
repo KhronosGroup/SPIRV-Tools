@@ -223,7 +223,8 @@ class ScalarReplacementPassToken : public PassToken {
 
   ScalarReplacementPassToken(uint32_t limit = kDefaultLimit)
       : max_num_elements_(limit) {
-    snprintf(name_, 55, "scalar-replacement=%d", max_num_elements_);
+    name_[0] = '\0';
+    sprintf(&name_[0], "scalar-replacement=%d", max_num_elements_);
   }
 
   ~ScalarReplacementPassToken() override = default;
