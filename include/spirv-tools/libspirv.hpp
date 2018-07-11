@@ -81,8 +81,15 @@ class ValidatorOptions {
     spvValidatorOptionsSetRelaxStoreStruct(options_, val);
   }
 
+  // Enables VK_KHR_relaxed_block_layout when validating standard
+  // uniform/storage buffer layout.
   void SetRelaxBlockLayout(bool val) {
     spvValidatorOptionsSetRelaxBlockLayout(options_, val);
+  }
+
+  // Skips validating standard uniform/storage buffer layout.
+  void SetSkipBlockLayout(bool val) {
+    spvValidatorOptionsSetSkipBlockLayout(options_, val);
   }
 
   // Records whether or not the validator should relax the rules on pointer
