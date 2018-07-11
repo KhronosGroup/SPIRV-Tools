@@ -22,6 +22,8 @@ set -x
 
 BUILD_ROOT=$PWD
 SRC=$PWD/github/SPIRV-Tools
+alias python=/usr/bin/python3
+python --version
 
 cd $SRC
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
