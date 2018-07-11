@@ -91,3 +91,8 @@ void spvValidatorOptionsSetRelaxBlockLayout(spv_validator_options options,
                                             bool val) {
   options->relax_block_layout = val;
 }
+
+void spvValidatorOptionsSetSkipBlockLayout(spv_validator_options options,
+                                           bool val) {
+  options->skip_block_layout = val;
+}

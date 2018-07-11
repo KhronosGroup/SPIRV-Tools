@@ -46,7 +46,9 @@ Options:
   --max-access-chain-indexes       <maximum number of indexes allowed to use for Access Chain instructions>
   --relax-logical-pointer          Allow allocating an object of a pointer type and returning
                                    a pointer value from a function in logical addressing mode
-  --relax-block-layout             Skips checking of standard uniform/storage buffer layout
+  --relax-block-layout             Enable VK_HR_relaxed_block_layout when checking standard
+                                   uniform/storage buffer layout
+  --skip-block-layout              Skip checking standard uniform/storage buffer layout
   --relax-struct-store             Allow store from one struct type to a
                                    different type with compatible layout and
                                    members.
@@ -124,6 +126,8 @@ int main(int argc, char** argv) {
         options.SetRelaxLogicalPointer(true);
       } else if (0 == strcmp(cur_arg, "--relax-block-layout")) {
         options.SetRelaxBlockLayout(true);
+      } else if (0 == strcmp(cur_arg, "--skip-block-layout")) {
+        options.SetSkipBlockLayout(true);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options.SetRelaxStructStore(true);
       } else if (0 == cur_arg[1]) {
