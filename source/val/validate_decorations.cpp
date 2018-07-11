@@ -331,6 +331,8 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                          const char* decoration_str, bool blockRules,
                          MemberConstraints& constraints,
                          ValidationState_t& vstate) {
+  if (vstate.options()->skip_block_layout) return SPV_SUCCESS;
+
   auto fail = [&vstate, struct_id, storage_class_str, decoration_str,
                blockRules](uint32_t member_idx) -> DiagnosticStream {
     DiagnosticStream ds =
@@ -342,6 +344,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                   << " layout rules: member " << member_idx << " ");
     return ds;
   };
+
   const bool relaxed_block_layout = vstate.IsRelaxedBlockLayout();
   const auto& members = getStructMembers(struct_id, vstate);
 
