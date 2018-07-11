@@ -20,10 +20,10 @@
 
 #include <string>
 
-using ::testing::Eq;
-
 namespace spvtools {
 namespace {
+
+using ::testing::Eq;
 
 TEST(TextLiteral, GoodI32) {
   spv_literal_t l;

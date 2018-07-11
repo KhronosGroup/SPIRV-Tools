@@ -25,6 +25,7 @@
 #include "val_fixtures.h"
 
 namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::HasSubstr;
@@ -316,4 +317,5 @@ INSTANTIATE_TEST_CASE_P(
 // clang-format on
 
 }  // namespace
+}  // namespace val
 }  // namespace spvtools

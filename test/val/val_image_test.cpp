@@ -21,6 +21,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::HasSubstr;
@@ -4026,4 +4028,6 @@ TEST_F(ValidateImage, SparseTexelsResidentResultTypeNotBool) {
                         "expected Result Type to be bool scalar type"));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

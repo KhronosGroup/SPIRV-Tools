@@ -16,9 +16,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using InlineTest = PassTest<::testing::Test>;
 
@@ -126,7 +126,7 @@ TEST_F(InlineTest, Simple) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  SinglePassRunAndCheck<InlineExhaustivePass>(
       JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -276,7 +276,7 @@ TEST_F(InlineTest, Nested) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  SinglePassRunAndCheck<InlineExhaustivePass>(
       JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -405,7 +405,7 @@ TEST_F(InlineTest, InOutParameter) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  SinglePassRunAndCheck<InlineExhaustivePass>(
       JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -541,7 +541,7 @@ TEST_F(InlineTest, BranchInCallee) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  SinglePassRunAndCheck<InlineExhaustivePass>(
       JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -736,7 +736,7 @@ TEST_F(InlineTest, PhiAfterCall) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  SinglePassRunAndCheck<InlineExhaustivePass>(
       JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -933,7 +933,7 @@ TEST_F(InlineTest, OpSampledImageOutOfBlock) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  SinglePassRunAndCheck<InlineExhaustivePass>(
       JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -1139,7 +1139,7 @@ TEST_F(InlineTest, OpImageOutOfBlock) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  SinglePassRunAndCheck<InlineExhaustivePass>(
       JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -1345,7 +1345,7 @@ TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  SinglePassRunAndCheck<InlineExhaustivePass>(
       JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -1473,9 +1473,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + before + nonEntryFuncs, predefs + after + nonEntryFuncs, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + before + nonEntryFuncs,
+                                              predefs + after + nonEntryFuncs,
+                                              false, true);
 }
 
 TEST_F(InlineTest, EarlyReturnNotAppearingLastInFunctionInlined) {
@@ -1543,9 +1543,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
+                                              predefs + nonEntryFuncs + after,
+                                              false, true);
 }
 
 TEST_F(InlineTest, ForwardReferencesInPhiInlined) {
@@ -1632,9 +1632,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
+                                              predefs + nonEntryFuncs + after,
+                                              false, true);
 }
 
 TEST_F(InlineTest, EarlyReturnInLoopIsNotInlined) {
@@ -1729,8 +1729,7 @@ OpReturnValue %41
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(assembly, assembly, false,
-                                                   true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(assembly, assembly, false, true);
 }
 
 TEST_F(InlineTest, ExternalFunctionIsNotInlined) {
@@ -1754,8 +1753,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(assembly, assembly, false,
-                                                   true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(assembly, assembly, false, true);
 }
 
 TEST_F(InlineTest, SingleBlockLoopCallsMultiBlockCallee) {
@@ -1826,9 +1824,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
+                                              predefs + nonEntryFuncs + after,
+                                              false, true);
 }
 
 TEST_F(InlineTest, MultiBlockLoopHeaderCallsMultiBlockCallee) {
@@ -1903,9 +1901,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
+                                              predefs + nonEntryFuncs + after,
+                                              false, true);
 }
 
 TEST_F(InlineTest, SingleBlockLoopCallsMultiBlockCalleeHavingSelectionMerge) {
@@ -1992,9 +1990,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
+                                              predefs + nonEntryFuncs + after,
+                                              false, true);
 }
 
 TEST_F(InlineTest,
@@ -2073,9 +2071,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
+                                              predefs + nonEntryFuncs + after,
+                                              false, true);
 }
 
 TEST_F(
@@ -2164,9 +2162,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
+                                              predefs + nonEntryFuncs + after,
+                                              false, true);
 }
 
 TEST_F(InlineTest, CalleeWithMultiReturnAndPhiRequiresEntryBlockRemapping) {
@@ -2246,9 +2244,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + nonEntryFuncs + before,
+                                              predefs + nonEntryFuncs + after,
+                                              false, true);
 }
 
 TEST_F(InlineTest, Decorated1) {
@@ -2370,9 +2368,9 @@ OpFunctionEnd
 OpReturnValue %9
 OpFunctionEnd
 )";
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + before + nonEntryFuncs, predefs + after + nonEntryFuncs, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + before + nonEntryFuncs,
+                                              predefs + after + nonEntryFuncs,
+                                              false, true);
 }
 
 TEST_F(InlineTest, Decorated2) {
@@ -2494,9 +2492,9 @@ OpFunctionEnd
 OpReturnValue %31
 OpFunctionEnd
 )";
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      predefs + before + nonEntryFuncs, predefs + after + nonEntryFuncs, false,
-      true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + before + nonEntryFuncs,
+                                              predefs + after + nonEntryFuncs,
+                                              false, true);
 }
 
 TEST_F(InlineTest, DeleteName) {
@@ -2546,7 +2544,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePass>(before, after, false, true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
 }
 
 TEST_F(InlineTest, SetParent) {
@@ -2575,13 +2573,13 @@ TEST_F(InlineTest, SetParent) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  opt::InlineExhaustivePass pass;
+  InlineExhaustivePass pass;
   pass.Run(context.get());
 
-  for (opt::Function& func : *context->module()) {
-    for (opt::BasicBlock& bb : func) {
+  for (Function& func : *context->module()) {
+    for (BasicBlock& bb : func) {
       EXPECT_TRUE(bb.GetParent() == &func);
     }
   }
@@ -2612,7 +2610,7 @@ OpKill
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::InlineExhaustivePass>(text, true);
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 
 TEST_F(InlineTest, OpKillWithTrailingInstructions) {
@@ -2646,7 +2644,7 @@ OpKill
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::InlineExhaustivePass>(text, true);
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 
 TEST_F(InlineTest, OpKillInIf) {
@@ -2703,7 +2701,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::InlineExhaustivePass>(text, true);
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 
 TEST_F(InlineTest, OpKillInLoop) {
@@ -2757,7 +2755,7 @@ OpBranch %10
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::InlineExhaustivePass>(text, true);
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 
 TEST_F(InlineTest, OpVariableWithInit) {
@@ -2836,7 +2834,7 @@ TEST_F(InlineTest, OpVariableWithInit) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::InlineExhaustivePass>(text, true);
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 #endif
 
@@ -2862,4 +2860,6 @@ TEST_F(InlineTest, OpVariableWithInit) {
 //      behaviour.
 //    SampledImage after function call. It is not cloned or changed.
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

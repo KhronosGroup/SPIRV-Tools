@@ -23,6 +23,7 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::EnumCase;
@@ -501,4 +502,5 @@ TEST_F(OpMemberDecorateSimpleTest, ExtraOperandsOnDecorationExpectingTwo) {
 // TODO(dneto): OpDecorationGroup
 // TODO(dneto): OpGroupDecorate
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

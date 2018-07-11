@@ -15,9 +15,9 @@
 
 #include "pass_fixture.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using CommonUniformElimTest = PassTest<::testing::Test>;
 
@@ -165,8 +165,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
+                                               predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Basic2) {
@@ -329,8 +329,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
+                                               predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Basic3) {
@@ -448,8 +448,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
+                                               predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Loop) {
@@ -659,8 +659,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
+                                               predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Volatile1) {
@@ -809,8 +809,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
+                                               predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Volatile2) {
@@ -918,10 +918,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  opt::Pass::Status res =
-      std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(
-          text, true, false));
-  EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
+  Pass::Status res = std::get<1>(
+      SinglePassRunAndDisassemble<CommonUniformElimPass>(text, true, false));
+  EXPECT_EQ(res, Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(CommonUniformElimTest, Volatile3) {
@@ -1036,10 +1035,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  opt::Pass::Status res =
-      std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(
-          text, true, false));
-  EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
+  Pass::Status res = std::get<1>(
+      SinglePassRunAndDisassemble<CommonUniformElimPass>(text, true, false));
+  EXPECT_EQ(res, Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(CommonUniformElimTest, IteratorDanglingPointer) {
@@ -1215,8 +1213,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
+                                               predefs + after, true, true);
 }
 
 #ifdef SPIRV_EFFCEE
@@ -1327,7 +1325,7 @@ TEST_F(CommonUniformElimTest, MixedConstantAndNonConstantIndexes) {
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<opt::CommonUniformElimPass>(text, true);
+  SinglePassRunAndMatch<CommonUniformElimPass>(text, true);
 }
 #endif  //  SPIRV_EFFCEE
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
@@ -1336,4 +1334,6 @@ TEST_F(CommonUniformElimTest, MixedConstantAndNonConstantIndexes) {
 //      non-structured control flow
 //    Others?
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

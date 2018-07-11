@@ -24,6 +24,7 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::Concatenate;
@@ -392,4 +393,5 @@ INSTANTIATE_TEST_CASE_P(
 // TODO(dneto): OpLifetimeStart
 // TODO(dneto): OpLifetimeStop
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

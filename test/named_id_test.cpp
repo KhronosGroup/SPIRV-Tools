@@ -17,6 +17,7 @@
 #include "test_fixture.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
 using NamedIdTest = spvtest::TextToBinaryTest;
@@ -81,4 +82,5 @@ INSTANTIATE_TEST_CASE_P(
          {"5", false},          {"32", false},     {"foo", false},
          {"a%bar", false}})), );
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

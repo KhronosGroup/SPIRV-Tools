@@ -18,6 +18,8 @@
 
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using std::string;
@@ -44,4 +46,6 @@ TEST_F(ValidateWebGPU, OpUndefIsDisallowed) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("OpUndef is disallowed"));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

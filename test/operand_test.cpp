@@ -14,6 +14,7 @@
 
 #include "unit_spirv.h"
 
+namespace spvtools {
 namespace {
 
 using GetTargetTest = ::testing::TestWithParam<spv_target_env>;
@@ -69,4 +70,5 @@ TEST(OperandIsConcreteMask, Sample) {
       spvOperandIsConcreteMask(SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

@@ -18,9 +18,10 @@
 #include "opt/build_module.h"
 #include "opt/ir_context.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using CommonDominatorsTest = ::testing::Test;
 
 const std::string text = R"(
@@ -59,18 +60,17 @@ OpReturn
 OpFunctionEnd
 )";
 
-opt::BasicBlock* GetBlock(uint32_t id,
-                          std::unique_ptr<opt::IRContext>& context) {
+BasicBlock* GetBlock(uint32_t id, std::unique_ptr<IRContext>& context) {
   return context->get_instr_block(context->get_def_use_mgr()->GetDef(id));
 }
 
 TEST(CommonDominatorsTest, SameBlock) {
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  opt::DominatorAnalysis* analysis =
+  DominatorAnalysis* analysis =
       context->GetDominatorAnalysis(&*context->module()->begin());
 
   for (auto& block : *context->module()->begin()) {
@@ -79,12 +79,12 @@ TEST(CommonDominatorsTest, SameBlock) {
 }
 
 TEST(CommonDominatorsTest, ParentAndChild) {
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  opt::DominatorAnalysis* analysis =
+  DominatorAnalysis* analysis =
       context->GetDominatorAnalysis(&*context->module()->begin());
 
   EXPECT_EQ(
@@ -99,12 +99,12 @@ TEST(CommonDominatorsTest, ParentAndChild) {
 }
 
 TEST(CommonDominatorsTest, BranchSplit) {
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  opt::DominatorAnalysis* analysis =
+  DominatorAnalysis* analysis =
       context->GetDominatorAnalysis(&*context->module()->begin());
 
   EXPECT_EQ(
@@ -116,12 +116,12 @@ TEST(CommonDominatorsTest, BranchSplit) {
 }
 
 TEST(CommonDominatorsTest, LoopContinueAndMerge) {
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  opt::DominatorAnalysis* analysis =
+  DominatorAnalysis* analysis =
       context->GetDominatorAnalysis(&*context->module()->begin());
 
   EXPECT_EQ(
@@ -130,12 +130,12 @@ TEST(CommonDominatorsTest, LoopContinueAndMerge) {
 }
 
 TEST(CommonDominatorsTest, NoCommonDominator) {
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, context);
 
-  opt::DominatorAnalysis* analysis =
+  DominatorAnalysis* analysis =
       context->GetDominatorAnalysis(&*context->module()->begin());
 
   EXPECT_EQ(nullptr, analysis->CommonDominator(GetBlock(10u, context),
@@ -144,4 +144,6 @@ TEST(CommonDominatorsTest, NoCommonDominator) {
                                                GetBlock(6u, context)));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

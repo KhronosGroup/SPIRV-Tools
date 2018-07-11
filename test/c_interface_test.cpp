@@ -27,7 +27,7 @@ void SetContextMessageConsumer(spv_context context, MessageConsumer consumer) {
   spvtools::SetContextMessageConsumer(context, consumer);
 }
 #else
-void SetContextMessageConsumer(spv_context, spvtools::MessageConsumer) {}
+void SetContextMessageConsumer(spv_context, MessageConsumer) {}
 #endif
 
 // The default consumer is a null std::function.

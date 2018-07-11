@@ -23,6 +23,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::Eq;
@@ -5811,4 +5813,6 @@ INSTANTIATE_TEST_CASE_P(AllUpsampleLike, ValidateOpenCLStdUpsampleLike,
                             "s_upsample",
                         }), );
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

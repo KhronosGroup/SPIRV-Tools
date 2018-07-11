@@ -30,6 +30,9 @@
 
 namespace spvtools {
 namespace opt {
+
+class IRContext;
+
 namespace analysis {
 
 // Class hierarchy to represent the normal constants defined through
@@ -430,8 +433,6 @@ class NullConstant : public Constant {
   }
   bool IsZero() const override { return true; };
 };
-
-class IRContext;
 
 // Hash function for Constant instances. Use the structure of the constant as
 // the key.
