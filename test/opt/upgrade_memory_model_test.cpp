@@ -846,6 +846,333 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
 }
+
+TEST_F(UpgradeMemoryModelTest, VolatileImageRead) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: OpLoad {{%\w+}} {{%\w+}} Volatile
+; CHECK: OpImageRead {{%\w+}} {{%\w+}} {{%\w+}} VolatileTexelKHR
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageReadWithoutFormat
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %var Volatile
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%int0 = OpConstant %int 0
+%v2int_0 = OpConstantComposite %v2int %int0 %int0
+%image = OpTypeImage %float 2D 0 0 0 2 Unknown
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%var = OpVariable %ptr_image_StorageBuffer StorageBuffer
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %image %var
+%rd = OpImageRead %float %ld %v2int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CoherentImageRead) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpImageRead {{%\w+}} {{%\w+}} {{%\w+}} MakeTexelAvailableKHR|NonPrivateTexelKHR [[scope]] 
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageReadWithoutFormat
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %var Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%int0 = OpConstant %int 0
+%v2int_0 = OpConstantComposite %v2int %int0 %int0
+%image = OpTypeImage %float 2D 0 0 0 2 Unknown
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%var = OpVariable %ptr_image_StorageBuffer StorageBuffer
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %image %var
+%rd = OpImageRead %float %ld %v2int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CoherentImageReadExtractedFromSampledImage) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: [[image:%\w+]] = OpTypeImage
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad [[image]] {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK-NOT: NonPrivatePointerKHR
+; CHECK: OpImageRead {{%\w+}} {{%\w+}} {{%\w+}} MakeTexelAvailableKHR|NonPrivateTexelKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageReadWithoutFormat
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %var Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%int0 = OpConstant %int 0
+%v2int_0 = OpConstantComposite %v2int %int0 %int0
+%image = OpTypeImage %float 2D 0 0 0 0 Unknown
+%sampled_image = OpTypeSampledImage %image
+%sampler = OpTypeSampler
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%ptr_sampler_StorageBuffer = OpTypePointer StorageBuffer %sampler
+%var = OpVariable %ptr_image_StorageBuffer StorageBuffer
+%sampler_var = OpVariable %ptr_sampler_StorageBuffer StorageBuffer
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %image %var
+%ld_sampler = OpLoad %sampler %sampler_var
+%sample = OpSampledImage %sampled_image %ld %ld_sampler
+%extract = OpImage %image %sample
+%rd = OpImageRead %float %extract %v2int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, VolatileImageWrite) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: OpLoad {{%\w+}} {{%\w+}} Volatile
+; CHECK: OpImageWrite {{%\w+}} {{%\w+}} {{%\w+}} VolatileTexelKHR
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageWriteWithoutFormat
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %param Volatile
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%float0 = OpConstant %float 0
+%v2int_null = OpConstantNull %v2int
+%image = OpTypeImage %float 2D 0 0 0 0 Unknown
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%func_ty = OpTypeFunction %void %ptr_image_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_image_StorageBuffer
+%1 = OpLabel
+%ld = OpLoad %image %param
+OpImageWrite %ld %v2int_null %float0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CoherentImageWrite) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR
+; CHECK: OpImageWrite {{%\w+}} {{%\w+}} {{%\w+}} MakeTexelVisibleKHR|NonPrivateTexelKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageWriteWithoutFormat
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %param Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%float0 = OpConstant %float 0
+%v2int_null = OpConstantNull %v2int
+%image = OpTypeImage %float 2D 0 0 0 0 Unknown
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%func_ty = OpTypeFunction %void %ptr_image_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_image_StorageBuffer
+%1 = OpLabel
+%ld = OpLoad %image %param
+OpImageWrite %ld %v2int_null %float0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CoherentImageWriteExtractFromSampledImage) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR
+; CHECK-NOT: NonPrivatePointerKHR
+; CHECK: OpImageWrite {{%\w+}} {{%\w+}} {{%\w+}} MakeTexelVisibleKHR|NonPrivateTexelKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageWriteWithoutFormat
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %param Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%float0 = OpConstant %float 0
+%v2int_null = OpConstantNull %v2int
+%image = OpTypeImage %float 2D 0 0 0 0 Unknown
+%sampled_image = OpTypeSampledImage %image
+%sampler = OpTypeSampler
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%ptr_sampler_StorageBuffer = OpTypePointer StorageBuffer %sampler
+%func_ty = OpTypeFunction %void %ptr_image_StorageBuffer %ptr_sampler_StorageBuffer
+%func = OpFunction %void None %func_ty
+%param = OpFunctionParameter %ptr_image_StorageBuffer
+%sampler_param = OpFunctionParameter %ptr_sampler_StorageBuffer
+%1 = OpLabel
+%ld = OpLoad %image %param
+%ld_sampler = OpLoad %sampler %sampler_param
+%sample = OpSampledImage %sampled_image %ld %ld_sampler
+%extract = OpImage %image %sample
+OpImageWrite %extract %v2int_null %float0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, VolatileImageSparseRead) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: OpLoad {{%\w+}} {{%\w+}} Volatile
+; CHECK: OpImageSparseRead {{%\w+}} {{%\w+}} {{%\w+}} VolatileTexelKHR
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageReadWithoutFormat
+OpCapability SparseResidency
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %var Volatile
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%int0 = OpConstant %int 0
+%v2int_0 = OpConstantComposite %v2int %int0 %int0
+%image = OpTypeImage %float 2D 0 0 0 2 Unknown
+%struct = OpTypeStruct %int %float
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%var = OpVariable %ptr_image_StorageBuffer StorageBuffer
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %image %var
+%rd = OpImageSparseRead %struct %ld %v2int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, CoherentImageSparseRead) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad {{%\w+}} {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK: OpImageSparseRead {{%\w+}} {{%\w+}} {{%\w+}} MakeTexelAvailableKHR|NonPrivateTexelKHR [[scope]] 
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageReadWithoutFormat
+OpCapability SparseResidency
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %var Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%int0 = OpConstant %int 0
+%v2int_0 = OpConstantComposite %v2int %int0 %int0
+%image = OpTypeImage %float 2D 0 0 0 2 Unknown
+%struct = OpTypeStruct %int %float
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%var = OpVariable %ptr_image_StorageBuffer StorageBuffer
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %image %var
+%rd = OpImageSparseRead %struct %ld %v2int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest,
+       CoherentImageSparseReadExtractedFromSampledImage) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate
+; CHECK: [[image:%\w+]] = OpTypeImage
+; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 1
+; CHECK: OpLoad [[image]] {{%\w+}} MakePointerAvailableKHR|NonPrivatePointerKHR [[scope]]
+; CHECK-NOT: NonPrivatePointerKHR
+; CHECK: OpImageSparseRead {{%\w+}} {{%\w+}} {{%\w+}} MakeTexelAvailableKHR|NonPrivateTexelKHR [[scope]]
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageImageReadWithoutFormat
+OpCapability SparseResidency
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %var Coherent
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%v2int = OpTypeVector %int 2
+%float = OpTypeFloat 32
+%int0 = OpConstant %int 0
+%v2int_0 = OpConstantComposite %v2int %int0 %int0
+%image = OpTypeImage %float 2D 0 0 0 0 Unknown
+%struct = OpTypeStruct %int %float
+%sampled_image = OpTypeSampledImage %image
+%sampler = OpTypeSampler
+%ptr_image_StorageBuffer = OpTypePointer StorageBuffer %image
+%ptr_sampler_StorageBuffer = OpTypePointer StorageBuffer %sampler
+%var = OpVariable %ptr_image_StorageBuffer StorageBuffer
+%sampler_var = OpVariable %ptr_sampler_StorageBuffer StorageBuffer
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %image %var
+%ld_sampler = OpLoad %sampler %sampler_var
+%sample = OpSampledImage %sampled_image %ld %ld_sampler
+%extract = OpImage %image %sample
+%rd = OpImageSparseRead %struct %extract %v2int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
 #endif
 
 }  // namespace

@@ -87,6 +87,8 @@ void UpgradeMemoryModel::UpgradeInstructions() {
         case SpvOpImageRead:
         case SpvOpImageSparseRead:
         case SpvOpImageWrite:
+          std::tie(is_coherent, is_volatile, scope) =
+              GetInstructionAttributes(inst->GetSingleWordInOperand(0u));
           break;
         case SpvOpCopyMemory:
         case SpvOpCopyMemorySized:
@@ -101,31 +103,39 @@ void UpgradeMemoryModel::UpgradeInstructions() {
 
       switch (inst->opcode()) {
         case SpvOpLoad:
-          UpgradeFlags(inst, 1u, is_coherent, is_volatile, /* visible */ false,
-                       /* is_memory */ true);
+          UpgradeFlags(inst, 1u, is_coherent, is_volatile, kAvailability,
+                       kMemory);
           break;
         case SpvOpStore:
-          UpgradeFlags(inst, 2u, is_coherent, is_volatile, /* visible */ true,
-                       /* is_memory */ true);
+          UpgradeFlags(inst, 2u, is_coherent, is_volatile, kVisibility,
+                       kMemory);
           break;
         case SpvOpCopyMemory:
-          UpgradeFlags(inst, 2u, dst_coherent, dst_volatile,
-                       /* visible */ false, /* is_memory */ true);
-          UpgradeFlags(inst, 2u, src_coherent, src_volatile, /* visible */ true,
-                       /* is_memory */ true);
+          UpgradeFlags(inst, 2u, dst_coherent, dst_volatile, kAvailability,
+                       kMemory);
+          UpgradeFlags(inst, 2u, src_coherent, src_volatile, kVisibility,
+                       kMemory);
           break;
         case SpvOpCopyMemorySized:
-          UpgradeFlags(inst, 3u, dst_coherent, dst_volatile,
-                       /* visible */ false, /* is_memory */ true);
-          UpgradeFlags(inst, 3u, src_coherent, src_volatile, /* visible */ true,
-                       /* is_memory */ true);
+          UpgradeFlags(inst, 3u, dst_coherent, dst_volatile, kAvailability,
+                       kMemory);
+          UpgradeFlags(inst, 3u, src_coherent, src_volatile, kVisibility,
+                       kMemory);
+          break;
+        case SpvOpImageRead:
+        case SpvOpImageSparseRead:
+          UpgradeFlags(inst, 2u, is_coherent, is_volatile, kAvailability,
+                       kImage);
+          break;
+        case SpvOpImageWrite:
+          UpgradeFlags(inst, 3u, is_coherent, is_volatile, kVisibility, kImage);
           break;
         default:
           break;
       }
 
-      // |is_coherent| is mutually exclusive with |src_coherent| and
-      // |dst_coherent|.
+      // |is_coherent| is never used for the same instructions as
+      // |src_coherent| and |dst_coherent|.
       if (is_coherent) {
         inst->AddOperand(
             {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(scope)}});
@@ -153,8 +163,8 @@ std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
   // short circuit that case.
   ir::Instruction* inst = context()->get_def_use_mgr()->GetDef(id);
   analysis::Type* type = context()->get_type_mgr()->GetType(inst->type_id());
-  assert(type->AsPointer());
-  if (type->AsPointer()->storage_class() == SpvStorageClassWorkgroup) {
+  if (type->AsPointer() &&
+      type->AsPointer()->storage_class() == SpvStorageClassWorkgroup) {
     return std::make_tuple(true, false, SpvScopeWorkgroup);
   }
 
@@ -172,10 +182,13 @@ std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
     ir::Instruction* inst, std::vector<uint32_t> indices,
     std::unordered_set<uint32_t>* visited) {
   auto iter = cache_.find(std::make_pair(inst->result_id(), indices));
-  if (iter != cache_.end()) return iter->second;
+  if (iter != cache_.end()) {
+    return iter->second;
+  }
 
-  if (!visited->insert(inst->result_id()).second)
+  if (!visited->insert(inst->result_id()).second) {
     return std::make_pair(false, false);
+  }
 
   // Initialize the cache before |indices| is (potentially) modified.
   auto& cached_result = cache_[std::make_pair(inst->result_id(), indices)];
@@ -217,9 +230,8 @@ std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
 
   // No point searching further.
   if (is_coherent && is_volatile) {
-    // |indices| was not modified in this case.
-    cache_[std::make_pair(inst->result_id(), indices)] =
-        std::make_pair(true, true);
+    cached_result.first = true;
+    cached_result.second = true;
     return std::make_pair(true, true);
   }
 
@@ -232,7 +244,8 @@ std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
       ir::Instruction* op_inst = context()->get_def_use_mgr()->GetDef(*id_ptr);
       const analysis::Type* type =
           context()->get_type_mgr()->GetType(op_inst->type_id());
-      if (type && type->AsPointer()) {
+      if (type &&
+          (type->AsPointer() || type->AsImage() || type->AsSampledImage())) {
         bool operand_coherent = false;
         bool operand_volatile = false;
         std::tie(operand_coherent, operand_volatile) =
@@ -373,8 +386,9 @@ bool UpgradeMemoryModel::HasDecoration(const ir::Instruction* inst,
 
 void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,
                                       uint32_t in_operand, bool is_coherent,
-                                      bool is_volatile, bool visible,
-                                      bool is_memory) {
+                                      bool is_volatile,
+                                      OperationType operation_type,
+                                      InstructionType inst_type) {
   if (!is_coherent && !is_volatile) return;
 
   uint32_t flags = 0;
@@ -382,16 +396,16 @@ void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,
     flags |= inst->GetSingleWordInOperand(in_operand);
   }
   if (is_coherent) {
-    if (is_memory) {
+    if (inst_type == kMemory) {
       flags |= SpvMemoryAccessNonPrivatePointerKHRMask;
-      if (visible) {
+      if (operation_type == kVisibility) {
         flags |= SpvMemoryAccessMakePointerVisibleKHRMask;
       } else {
         flags |= SpvMemoryAccessMakePointerAvailableKHRMask;
       }
     } else {
       flags |= SpvImageOperandsNonPrivateTexelKHRMask;
-      if (visible) {
+      if (operation_type == kVisibility) {
         flags |= SpvImageOperandsMakeTexelVisibleKHRMask;
       } else {
         flags |= SpvImageOperandsMakeTexelAvailableKHRMask;
@@ -400,7 +414,7 @@ void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,
   }
 
   if (is_volatile) {
-    if (is_memory) {
+    if (inst_type == kMemory) {
       flags |= SpvMemoryAccessVolatileMask;
     } else {
       flags |= SpvImageOperandsVolatileTexelKHRMask;
@@ -409,7 +423,7 @@ void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,
 
   if (inst->NumInOperands() > in_operand) {
     inst->SetInOperand(in_operand, {flags});
-  } else if (is_memory) {
+  } else if (inst_type == kMemory) {
     inst->AddOperand({SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS, {flags}});
   } else {
     inst->AddOperand({SPV_OPERAND_TYPE_OPTIONAL_IMAGE, {flags}});

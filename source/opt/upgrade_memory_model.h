@@ -23,6 +23,7 @@
 namespace spvtools {
 namespace opt {
 
+// Hashing functor for the memoized result store.
 struct CacheHash {
   size_t operator()(
       const std::pair<uint32_t, std::vector<uint32_t>>& item) const {
@@ -39,6 +40,13 @@ class UpgradeMemoryModel : public Pass {
   Status Process(ir::IRContext* context) override;
 
  private:
+  // Used to indicate whether the operation performs an availability or
+  // visibility operation.
+  enum OperationType { kVisibility, kAvailability };
+
+  // Used to indicate whether the instruction is a memory or image instruction.
+  enum InstructionType { kMemory, kImage };
+
   // Modifies the OpMemoryModel to use VulkanKHR. Adds the Vulkan memory model
   // capability and extension.
   void UpgradeMemoryModelInstruction();
@@ -74,12 +82,12 @@ class UpgradeMemoryModel : public Pass {
   std::pair<bool, bool> CheckAllTypes(const ir::Instruction* inst);
 
   // Modifies the flags of |inst| to include the new flags for the Vulkan
-  // memory model. |visible| indicates whether flags should use MakeVisible
-  // variants. |is_memory| indicates whether the Pointer variants of flags
-  // should be used.
+  // memory model. |operation_type| indicates whether flags should use
+  // MakeVisible or MakeAvailable variants. |inst_type| indicates whether the
+  // Pointer or Texel variants of flags should be used.
   void UpgradeFlags(ir::Instruction* inst, uint32_t in_operand,
-                    bool is_coherent, bool is_volatile, bool visible,
-                    bool is_memory);
+                    bool is_coherent, bool is_volatile,
+                    OperationType operation_type, InstructionType inst_type);
 
   // Returns the result id for a constant for |scope|.
   uint32_t GetScopeConstant(SpvScope scope);
