@@ -16,6 +16,7 @@
 #define SOURCE_OPT_SCALAR_REPLACEMENT_PASS_H_
 
 #include <cstdio>
+#include <string>
 #include <queue>
 
 #include "source/opt/function.h"
