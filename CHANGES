@@ -1,7 +1,18 @@
 Revision history for SPIRV-Tools
 
 v2018.5-dev 2018-07-08
- - Start v2018.5 development
+ - General:
+   - Reorganize source files and namespaces
+   - Fixes for ClangTidy, and whitespace (passes 'git cl presumit --all -uf')
+   - Fix unused param compile warnings/errors when Effcee not present
+   - WIP: Use Kokoro bots:
+     - Disable Travis-CI bots
+     - Disable AppVeyor VisualStudio Release builds. Keep VS 2017 Debug build
+   - #1688: Use binary mode on stdin; fixes "spirv-dis <foo.spv" on Windows
+ - Validator
+   - Use libspirv::Instruction where possible
+   - #1685: Vulkan permits non-monotonic offsets for block members
+   - #1697: Enforce block layout rules even when using relaxed block layout option
 
 v2018.4 2018-07-08
  - General:
