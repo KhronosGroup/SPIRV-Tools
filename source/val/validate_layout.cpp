@@ -14,17 +14,16 @@
 
 // Source code for logical layout validation as described in section 2.4
 
-#include "validate.h"
+#include "source/val/validate.h"
 
 #include <cassert>
 
-#include "diagnostic.h"
-#include "opcode.h"
-#include "operand.h"
-#include "spirv-tools/libspirv.h"
-#include "val/function.h"
-#include "val/instruction.h"
-#include "val/validation_state.h"
+#include "source/diagnostic.h"
+#include "source/opcode.h"
+#include "source/operand.h"
+#include "source/val/function.h"
+#include "source/val/instruction.h"
+#include "source/val/validation_state.h"
 
 namespace spvtools {
 namespace val {

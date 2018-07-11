@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "validate.h"
+#include "source/val/validate.h"
 
 #include <cassert>
 #include <cstdio>
@@ -25,22 +25,22 @@
 #include <string>
 #include <vector>
 
-#include "binary.h"
-#include "diagnostic.h"
-#include "enum_string_mapping.h"
-#include "extensions.h"
-#include "instruction.h"
-#include "opcode.h"
-#include "operand.h"
+#include "source/binary.h"
+#include "source/diagnostic.h"
+#include "source/enum_string_mapping.h"
+#include "source/extensions.h"
+#include "source/instruction.h"
+#include "source/opcode.h"
+#include "source/operand.h"
+#include "source/spirv_constant.h"
+#include "source/spirv_endian.h"
+#include "source/spirv_target_env.h"
+#include "source/spirv_validator_options.h"
+#include "source/val/construct.h"
+#include "source/val/function.h"
+#include "source/val/instruction.h"
+#include "source/val/validation_state.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv_constant.h"
-#include "spirv_endian.h"
-#include "spirv_target_env.h"
-#include "spirv_validator_options.h"
-#include "val/construct.h"
-#include "val/function.h"
-#include "val/instruction.h"
-#include "val/validation_state.h"
 
 using std::function;
 using std::ostream_iterator;
