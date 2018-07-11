@@ -38,8 +38,9 @@ class LocalSingleStoreElimPass : public Pass {
 
  public:
   LocalSingleStoreElimPass();
+
   const char* name() const override { return "eliminate-local-single-store"; }
-  Status Process(opt::IRContext* irContext) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -59,7 +60,6 @@ class LocalSingleStoreElimPass : public Pass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(opt::IRContext* irContext);
   Pass::Status ProcessImpl();
 
   // If there is a single store to |var_inst|, and it covers the entire

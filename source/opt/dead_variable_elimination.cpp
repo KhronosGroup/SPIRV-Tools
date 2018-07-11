@@ -22,14 +22,11 @@ namespace opt {
 
 // This optimization removes global variables that are not needed because they
 // are definitely not accessed.
-Pass::Status DeadVariableElimination::Process(opt::IRContext* c) {
+Pass::Status DeadVariableElimination::Process() {
   // The algorithm will compute the reference count for every global variable.
   // Anything with a reference count of 0 will then be deleted.  For variables
   // that might have references that are not explicit in this context, we use
-  // the
-  // value kMustKeep as the reference count.
-  InitializeProcessing(c);
-
+  // the value kMustKeep as the reference count.
   std::vector<uint32_t> ids_to_remove;
 
   // Get the reference count for all of the global OpVariable instructions.

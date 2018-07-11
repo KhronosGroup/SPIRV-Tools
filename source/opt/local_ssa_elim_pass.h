@@ -41,8 +41,9 @@ class LocalMultiStoreElimPass : public MemPass {
       std::function<std::vector<opt::BasicBlock*>*(const opt::BasicBlock*)>;
 
   LocalMultiStoreElimPass();
+
   const char* name() const override { return "eliminate-local-multi-store"; }
-  Status Process(opt::IRContext* c) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -56,7 +57,6 @@ class LocalMultiStoreElimPass : public MemPass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(opt::IRContext* c);
   Pass::Status ProcessImpl();
 
   // Extensions supported by this pass.

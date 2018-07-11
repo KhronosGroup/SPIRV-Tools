@@ -38,7 +38,6 @@ namespace opt {
 // utility functions and supporting state.
 class MemPass : public Pass {
  public:
-  MemPass();
   virtual ~MemPass() = default;
 
   // Returns an undef value for the given |var_id|'s type.
@@ -69,6 +68,8 @@ class MemPass : public Pass {
   void CollectTargetVars(opt::Function* func);
 
  protected:
+  MemPass();
+
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
   bool IsBaseTargetType(const opt::Instruction* typeInst) const;

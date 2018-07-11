@@ -489,9 +489,7 @@ bool CommonUniformElimPass::EliminateCommonUniform(opt::Function* func) {
   return modified;
 }
 
-void CommonUniformElimPass::Initialize(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+void CommonUniformElimPass::Initialize() {
   // Clear collections.
   comp2idx2inst_.clear();
 
@@ -540,10 +538,10 @@ Pass::Status CommonUniformElimPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-CommonUniformElimPass::CommonUniformElimPass() {}
+CommonUniformElimPass::CommonUniformElimPass() = default;
 
-Pass::Status CommonUniformElimPass::Process(opt::IRContext* c) {
-  Initialize(c);
+Pass::Status CommonUniformElimPass::Process() {
+  Initialize();
   return ProcessImpl();
 }
 

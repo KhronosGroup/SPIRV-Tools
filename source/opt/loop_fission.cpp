@@ -445,17 +445,17 @@ bool LoopFissionPass::ShouldSplitLoop(const opt::Loop& loop,
   return split_criteria_(liveness);
 }
 
-Pass::Status LoopFissionPass::Process(opt::IRContext* c) {
+Pass::Status LoopFissionPass::Process() {
   bool changed = false;
 
-  for (opt::Function& f : *c->module()) {
+  for (opt::Function& f : *context()->module()) {
     // We collect all the inner most loops in the function and run the loop
     // splitting util on each. The reason we do this is to allow us to iterate
     // over each, as creating new loops will invalidate the the loop iterator.
     std::vector<opt::Loop*> inner_most_loops{};
-    opt::LoopDescriptor& loop_descriptor = *c->GetLoopDescriptor(&f);
+    opt::LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(&f);
     for (opt::Loop& loop : loop_descriptor) {
-      if (!loop.HasChildren() && ShouldSplitLoop(loop, c)) {
+      if (!loop.HasChildren() && ShouldSplitLoop(loop, context())) {
         inner_most_loops.push_back(&loop);
       }
     }
@@ -465,7 +465,7 @@ Pass::Status LoopFissionPass::Process(opt::IRContext* c) {
 
     while (!inner_most_loops.empty()) {
       for (opt::Loop* loop : inner_most_loops) {
-        LoopFissionImpl impl{c, loop};
+        LoopFissionImpl impl{context(), loop};
 
         // Group the instructions in the loop into two different sets of related
         // instructions. If we can't group the instructions into the two sets
@@ -477,16 +477,18 @@ Pass::Status LoopFissionPass::Process(opt::IRContext* c) {
         if (impl.CanPerformSplit()) {
           opt::Loop* second_loop = impl.SplitLoop();
           changed = true;
-          c->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisLoopAnalysis);
+          context()->InvalidateAnalysesExceptFor(
+              opt::IRContext::kAnalysisLoopAnalysis);
 
           // If the newly created loop meets the criteria to be split, split it
           // again.
-          if (ShouldSplitLoop(*second_loop, c))
+          if (ShouldSplitLoop(*second_loop, context()))
             new_loops_to_split.push_back(second_loop);
 
           // If the original loop (now split) still meets the criteria to be
           // split, split it again.
-          if (ShouldSplitLoop(*loop, c)) new_loops_to_split.push_back(loop);
+          if (ShouldSplitLoop(*loop, context()))
+            new_loops_to_split.push_back(loop);
         }
       }
 

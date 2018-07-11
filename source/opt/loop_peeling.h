@@ -262,7 +262,7 @@ class LoopPeelingPass : public Pass {
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes have been made to the modue.
-  Pass::Status Process(opt::IRContext* context) override;
+  Pass::Status Process() override;
 
  private:
   // Describes the peeling direction.

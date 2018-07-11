@@ -23,13 +23,6 @@
 namespace spvtools {
 namespace opt {
 
-void LocalMultiStoreElimPass::Initialize(opt::IRContext* c) {
-  InitializeProcessing(c);
-
-  // Initialize extension whitelist
-  InitExtensions();
-}
-
 bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : get_module()->extensions()) {
@@ -61,10 +54,11 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalMultiStoreElimPass::LocalMultiStoreElimPass() {}
+LocalMultiStoreElimPass::LocalMultiStoreElimPass() = default;
 
-Pass::Status LocalMultiStoreElimPass::Process(opt::IRContext* c) {
-  Initialize(c);
+Pass::Status LocalMultiStoreElimPass::Process() {
+  // Initialize extension whitelist
+  InitExtensions();
   return ProcessImpl();
 }
 

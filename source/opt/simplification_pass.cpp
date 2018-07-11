@@ -23,8 +23,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status SimplificationPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
+Pass::Status SimplificationPass::Process() {
   bool modified = false;
 
   for (opt::Function& function : *get_module()) {

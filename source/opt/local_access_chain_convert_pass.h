@@ -36,8 +36,9 @@ namespace opt {
 class LocalAccessChainConvertPass : public MemPass {
  public:
   LocalAccessChainConvertPass();
+
   const char* name() const override { return "convert-local-access-chains"; }
-  Status Process(opt::IRContext* c) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse;
@@ -109,7 +110,7 @@ class LocalAccessChainConvertPass : public MemPass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(opt::IRContext* c);
+  void Initialize();
   Pass::Status ProcessImpl();
 
   // Variables with only supported references, ie. loads and stores using

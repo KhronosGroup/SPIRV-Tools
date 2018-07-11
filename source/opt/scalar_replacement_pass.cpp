@@ -26,9 +26,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status ScalarReplacementPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+Pass::Status ScalarReplacementPass::Process() {
   Status status = Status::SuccessWithoutChange;
   for (auto& f : *get_module()) {
     Status functionStatus = ProcessFunction(&f);

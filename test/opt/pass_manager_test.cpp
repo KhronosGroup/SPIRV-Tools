@@ -75,8 +75,8 @@ TEST(PassManager, Interface) {
 class AppendOpNopPass : public Pass {
  public:
   const char* name() const override { return "AppendOpNop"; }
-  Status Process(IRContext* irContext) override {
-    irContext->AddDebug1Inst(MakeUnique<Instruction>(irContext));
+  Status Process() override {
+    context()->AddDebug1Inst(MakeUnique<Instruction>(context()));
     return Status::SuccessWithChange;
   }
 };
@@ -88,9 +88,9 @@ class AppendMultipleOpNopPass : public Pass {
   explicit AppendMultipleOpNopPass(uint32_t num_nop) : num_nop_(num_nop) {}
 
   const char* name() const override { return "AppendOpNop"; }
-  Status Process(IRContext* irContext) override {
+  Status Process() override {
     for (uint32_t i = 0; i < num_nop_; i++) {
-      irContext->AddDebug1Inst(MakeUnique<Instruction>(irContext));
+      context()->AddDebug1Inst(MakeUnique<Instruction>(context()));
     }
     return Status::SuccessWithChange;
   }
@@ -103,10 +103,10 @@ class AppendMultipleOpNopPass : public Pass {
 class DuplicateInstPass : public Pass {
  public:
   const char* name() const override { return "DuplicateInst"; }
-  Status Process(IRContext* irContext) override {
+  Status Process() override {
     auto inst =
-        MakeUnique<Instruction>(*(--irContext->debug1_end())->Clone(irContext));
-    irContext->AddDebug1Inst(std::move(inst));
+        MakeUnique<Instruction>(*(--context()->debug1_end())->Clone(context()));
+    context()->AddDebug1Inst(std::move(inst));
     return Status::SuccessWithChange;
   }
 };
@@ -141,10 +141,10 @@ class AppendTypeVoidInstPass : public Pass {
   explicit AppendTypeVoidInstPass(uint32_t result_id) : result_id_(result_id) {}
 
   const char* name() const override { return "AppendTypeVoidInstPass"; }
-  Status Process(IRContext* irContext) override {
-    auto inst = MakeUnique<Instruction>(irContext, SpvOpTypeVoid, 0, result_id_,
+  Status Process() override {
+    auto inst = MakeUnique<Instruction>(context(), SpvOpTypeVoid, 0, result_id_,
                                         std::vector<Operand>{});
-    irContext->AddType(std::move(inst));
+    context()->AddType(std::move(inst));
     return Status::SuccessWithChange;
   }
 

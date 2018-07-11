@@ -145,21 +145,14 @@ bool BlockMergePass::IsMerge(opt::BasicBlock* block) {
   return IsMerge(block->id());
 }
 
-void BlockMergePass::Initialize(opt::IRContext* c) { InitializeProcessing(c); }
-
-Pass::Status BlockMergePass::ProcessImpl() {
+Pass::Status BlockMergePass::Process() {
   // Process all entry point functions.
   ProcessFunction pfn = [this](opt::Function* fp) { return MergeBlocks(fp); };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-BlockMergePass::BlockMergePass() {}
-
-Pass::Status BlockMergePass::Process(opt::IRContext* c) {
-  Initialize(c);
-  return ProcessImpl();
-}
+BlockMergePass::BlockMergePass() = default;
 
 }  // namespace opt
 }  // namespace spvtools

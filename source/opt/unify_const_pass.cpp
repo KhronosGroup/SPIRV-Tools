@@ -103,8 +103,7 @@ class ResultIdTrie {
 };
 }  // anonymous namespace
 
-Pass::Status UnifyConstantPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
+Pass::Status UnifyConstantPass::Process() {
   bool modified = false;
   ResultIdTrie defined_constants;
 

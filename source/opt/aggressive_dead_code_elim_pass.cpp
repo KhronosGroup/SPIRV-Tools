@@ -500,13 +500,6 @@ bool AggressiveDCEPass::AggressiveDCE(opt::Function* func) {
   return modified;
 }
 
-void AggressiveDCEPass::Initialize(opt::IRContext* c) {
-  InitializeProcessing(c);
-
-  // Initialize extensions whitelist
-  InitExtensions();
-}
-
 void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
   // Keep all execution modes.
   for (auto& exec : get_module()->execution_modes()) {
@@ -706,10 +699,11 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
   return modified;
 }
 
-AggressiveDCEPass::AggressiveDCEPass() {}
+AggressiveDCEPass::AggressiveDCEPass() = default;
 
-Pass::Status AggressiveDCEPass::Process(opt::IRContext* c) {
-  Initialize(c);
+Pass::Status AggressiveDCEPass::Process() {
+  // Initialize extensions whitelist
+  InitExtensions();
   return ProcessImpl();
 }
 

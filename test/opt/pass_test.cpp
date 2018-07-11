@@ -29,9 +29,7 @@ namespace {
 class DummyPass : public Pass {
  public:
   const char* name() const override { return "dummy-pass"; }
-  Status Process(IRContext* irContext) override {
-    return irContext ? Status::SuccessWithoutChange : Status::Failure;
-  }
+  Status Process() override { return Status::SuccessWithoutChange; }
 };
 
 using ::testing::UnorderedElementsAre;

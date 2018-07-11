@@ -26,7 +26,7 @@ namespace opt {
 class FreezeSpecConstantValuePass : public Pass {
  public:
   const char* name() const override { return "freeze-spec-const"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 };
 
 }  // namespace opt

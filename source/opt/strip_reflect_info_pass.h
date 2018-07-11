@@ -26,7 +26,7 @@ namespace opt {
 class StripReflectInfoPass : public Pass {
  public:
   const char* name() const override { return "strip-reflect"; }
-  Status Process(opt::IRContext* irContext) override;
+  Status Process() override;
 
   // Return the mask of preserved Analyses.
   opt::IRContext::Analysis GetPreservedAnalyses() override {

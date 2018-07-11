@@ -565,11 +565,7 @@ bool SSARewriter::RewriteFunctionIntoSSA(opt::Function* fp) {
   return modified;
 }
 
-void SSARewritePass::Initialize(opt::IRContext* c) { InitializeProcessing(c); }
-
-Pass::Status SSARewritePass::Process(opt::IRContext* c) {
-  Initialize(c);
-
+Pass::Status SSARewritePass::Process() {
   bool modified = false;
   for (auto& fn : *get_module()) {
     modified |= SSARewriter(this).RewriteFunctionIntoSSA(&fn);

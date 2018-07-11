@@ -24,8 +24,7 @@ const uint32_t kSpvTypePointerTypeIdInIdx = 1;
 namespace spvtools {
 namespace opt {
 
-Pass::Status PrivateToLocalPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
+Pass::Status PrivateToLocalPass::Process() {
   bool modified = false;
 
   // Private variables require the shader capability.  If this is not a shader,

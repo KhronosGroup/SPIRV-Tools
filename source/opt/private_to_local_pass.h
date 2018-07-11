@@ -28,7 +28,8 @@ namespace opt {
 class PrivateToLocalPass : public Pass {
  public:
   const char* name() const override { return "private-to-local"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
+
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
            opt::IRContext::kAnalysisInstrToBlockMapping |

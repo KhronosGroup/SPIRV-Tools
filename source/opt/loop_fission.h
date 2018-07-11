@@ -57,7 +57,7 @@ class LoopFissionPass : public Pass {
 
   const char* name() const override { return "Loop Fission"; }
 
-  Pass::Status Process(opt::IRContext* context) override;
+  Pass::Status Process() override;
 
   // Checks if |loop| meets the register pressure criteria to be split.
   bool ShouldSplitLoop(const opt::Loop& loop, opt::IRContext* context);

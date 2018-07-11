@@ -43,7 +43,7 @@ class ScalarReplacementPass : public Pass {
 
   // Attempts to scalarize all appropriate function scope variables. Returns
   // SuccessWithChange if any change is made.
-  Status Process(opt::IRContext* c) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |

@@ -34,7 +34,7 @@ class LoopFusionPass : public Pass {
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes have been made to the modue.
-  Status Process(opt::IRContext* c) override;
+  Status Process() override;
 
  private:
   // Fuse loops in |function| if compatible, legal and the fused loop won't use

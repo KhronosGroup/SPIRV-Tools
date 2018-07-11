@@ -29,9 +29,7 @@ using opt::Operand;
 using Words = std::vector<uint32_t>;
 using OrderedUsesMap = std::unordered_map<uint32_t, Words>;
 
-Pass::Status FlattenDecorationPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+Pass::Status FlattenDecorationPass::Process() {
   bool modified = false;
 
   // The target Id of OpDecorationGroup instructions.

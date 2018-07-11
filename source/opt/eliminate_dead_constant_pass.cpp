@@ -26,17 +26,17 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status EliminateDeadConstantPass::Process(opt::IRContext* irContext) {
+Pass::Status EliminateDeadConstantPass::Process() {
   std::unordered_set<opt::Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
   // working list and count number of real uses for constants. Uses in
   // annotation instructions do not count.
   std::unordered_map<opt::Instruction*, size_t> use_counts;
-  std::vector<opt::Instruction*> constants = irContext->GetConstants();
+  std::vector<opt::Instruction*> constants = context()->GetConstants();
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
     size_t count = 0;
-    irContext->get_def_use_mgr()->ForEachUse(
+    context()->get_def_use_mgr()->ForEachUse(
         const_id, [&count](opt::Instruction* user, uint32_t index) {
           (void)index;
           SpvOp op = user->opcode();
@@ -69,7 +69,7 @@ Pass::Status EliminateDeadConstantPass::Process(opt::IRContext* irContext) {
           }
           uint32_t operand_id = inst->GetSingleWordInOperand(i);
           opt::Instruction* def_inst =
-              irContext->get_def_use_mgr()->GetDef(operand_id);
+              context()->get_def_use_mgr()->GetDef(operand_id);
           // If the use_count does not have any count for the def_inst,
           // def_inst must not be a constant, and should be ignored here.
           if (!use_counts.count(def_inst)) {
@@ -93,7 +93,7 @@ Pass::Status EliminateDeadConstantPass::Process(opt::IRContext* irContext) {
 
   // Turn all dead instructions and uses of them to nop
   for (auto* dc : dead_consts) {
-    irContext->KillDef(dc->result_id());
+    context()->KillDef(dc->result_id());
   }
   return dead_consts.empty() ? Status::SuccessWithoutChange
                              : Status::SuccessWithChange;
