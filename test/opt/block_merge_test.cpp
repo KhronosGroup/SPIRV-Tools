@@ -84,8 +84,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before, predefs + after,
-                                             true, true);
+  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before,
+                                                  predefs + after, true, true);
 }
 
 TEST_F(BlockMergeTest, EmptyBlock) {
@@ -154,8 +154,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before, predefs + after,
-                                             true, true);
+  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before,
+                                                  predefs + after, true, true);
 }
 
 TEST_F(BlockMergeTest, NestedInControlFlow) {
@@ -267,8 +267,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before, predefs + after,
-                                             true, true);
+  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before,
+                                                  predefs + after, true, true);
 }
 
 #ifdef SPIRV_EFFCEE

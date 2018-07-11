@@ -1729,8 +1729,8 @@ OpReturnValue %41
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePassToken>(assembly, assembly, false,
-                                                   true);
+  SinglePassRunAndCheck<opt::InlineExhaustivePassToken>(assembly, assembly,
+                                                        false, true);
 }
 
 TEST_F(InlineTest, ExternalFunctionIsNotInlined) {
@@ -1754,8 +1754,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePassToken>(assembly, assembly, false,
-                                                   true);
+  SinglePassRunAndCheck<opt::InlineExhaustivePassToken>(assembly, assembly,
+                                                        false, true);
 }
 
 TEST_F(InlineTest, SingleBlockLoopCallsMultiBlockCallee) {
@@ -2546,7 +2546,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineExhaustivePassToken>(before, after, false, true);
+  SinglePassRunAndCheck<opt::InlineExhaustivePassToken>(before, after, false,
+                                                        true);
 }
 
 TEST_F(InlineTest, SetParent) {

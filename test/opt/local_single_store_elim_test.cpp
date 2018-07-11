@@ -423,8 +423,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(assembly, assembly, true,
-                                                       true);
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(assembly, assembly,
+                                                            true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, ElimIfCopyObjectInFunction) {
@@ -606,8 +606,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(assembly, assembly, true,
-                                                       true);
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(assembly, assembly,
+                                                            true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, OptInitializedVariableLikeStore) {
@@ -767,7 +767,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(before, after, true,
-                                                       true);
+                                                            true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

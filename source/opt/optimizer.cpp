@@ -235,7 +235,8 @@ std::vector<const char*> Optimizer::GetPassNames() const {
 }
 
 Optimizer::PassToken CreateNullPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::NullPassToken>());
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::NullPassToken>());
 }
 
 Optimizer::PassToken CreateStripDebugInfoPass() {
@@ -391,7 +392,8 @@ Optimizer::PassToken CreateLoopFusionPass(size_t max_registers_per_loop) {
 }
 
 Optimizer::PassToken CreateLoopInvariantCodeMotionPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::LICMPassToken>());
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LICMPassToken>());
 }
 
 Optimizer::PassToken CreateLoopPeelingPass() {
@@ -425,7 +427,8 @@ Optimizer::PassToken CreatePrivateToLocalPass() {
 }
 
 Optimizer::PassToken CreateCCPPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::CCPPassToken>());
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::CCPPassToken>());
 }
 
 Optimizer::PassToken CreateWorkaround1209Pass() {
@@ -464,7 +467,8 @@ Optimizer::PassToken CreateCopyPropagateArraysPass() {
 }
 
 Optimizer::PassToken CreateVectorDCEPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::VectorDCEToken>());
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::VectorDCEToken>());
 }
 
 Optimizer::PassToken CreateReduceLoadSizePass() {

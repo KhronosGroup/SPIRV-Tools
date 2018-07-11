@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "include/spirv-tools/libspirv.hpp"
 #include "source/assembly_grammar.h"
 #include "source/diagnostic.h"
 #include "source/opt/build_module.h"
@@ -32,7 +33,6 @@
 #include "source/opt/pass_manager.h"
 #include "source/opt/remove_duplicates_pass.h"
 #include "source/spirv_target_env.h"
-#include "include/spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace {

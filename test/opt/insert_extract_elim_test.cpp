@@ -100,8 +100,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeAcrossNonConflictingInsert) {
@@ -185,8 +185,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeOpaque) {
@@ -267,8 +267,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeNestedStruct) {
@@ -396,8 +396,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization) {
@@ -465,7 +465,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::SimplificationPassToken>(assembly, assembly, true,
-                                                 true);
+                                                      true);
 }
 
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization2) {
@@ -690,8 +690,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, VectorShuffle1) {

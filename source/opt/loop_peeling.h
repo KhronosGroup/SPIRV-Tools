@@ -246,9 +246,7 @@ class LoopPeelingPass : public Pass {
         peeled_loops_;
   };
 
-  LoopPeelingPass(LoopPeelingStats* stats) : stats_(stats) {}
-
-  LoopPeelingPass() = default;
+  LoopPeelingPass(LoopPeelingStats* stats = nullptr) : stats_(stats) {}
 
   // Sets the loop peeling growth threshold. If the code size increase is above
   // |code_grow_threshold|, the loop will not be peeled. The code size is

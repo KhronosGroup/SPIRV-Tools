@@ -102,7 +102,7 @@ TEST_F(PassTestForLineDebugInfo, KeepLineDebugInfo) {
       "OpNoLine\n"
       "OpNop\n";
   SinglePassRunAndCheck<NopifyPassToken>(text, result_keep_nop,
-                                    /* skip_nop = */ false);
+                                         /* skip_nop = */ false);
   const char* result_skip_nop =
       "OpNoLine\n"
       "OpLine %3 10 10\n"
@@ -116,7 +116,7 @@ TEST_F(PassTestForLineDebugInfo, KeepLineDebugInfo) {
       "OpLine %3 4 4\n"
       "OpNoLine\n";
   SinglePassRunAndCheck<NopifyPassToken>(text, result_skip_nop,
-                                    /* skip_nop = */ true);
+                                         /* skip_nop = */ true);
 }
 
 }  // anonymous namespace

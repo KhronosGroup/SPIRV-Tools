@@ -30,14 +30,16 @@ Pass::Status PassManager::Run(opt::IRContext* context) {
 
   // If print_all_stream_ is not null, prints the disassembly of the module
   // to that stream, with the given preamble and optionally the pass name.
-  auto print_disassembly = [&context, this](const char* preamble, PassToken* pass_token) {
+  auto print_disassembly = [&context, this](const char* preamble,
+                                            PassToken* pass_token) {
     if (print_all_stream_) {
       std::vector<uint32_t> binary;
       context->module()->ToBinary(&binary, false);
       SpirvTools t(SPV_ENV_UNIVERSAL_1_2);
       std::string disassembly;
       t.Disassemble(binary, &disassembly, 0);
-      *print_all_stream_ << preamble << (pass_token ? pass_token->name() : "") << "\n"
+      *print_all_stream_ << preamble << (pass_token ? pass_token->name() : "")
+                         << "\n"
                          << disassembly << std::endl;
     }
   };
@@ -46,7 +48,8 @@ Pass::Status PassManager::Run(opt::IRContext* context) {
   for (auto& pass_token : pass_tokens_) {
     print_disassembly("; IR before pass ", pass_token.get());
 
-    SPIRV_TIMER_SCOPED(time_report_stream_, (pass_token ? pass_token->name() : ""), true);
+    SPIRV_TIMER_SCOPED(time_report_stream_,
+                       (pass_token ? pass_token->name() : ""), true);
 
     std::unique_ptr<Pass> pass = pass_token->CreatePass();
     pass->SetMessageConsumer(consumer_);

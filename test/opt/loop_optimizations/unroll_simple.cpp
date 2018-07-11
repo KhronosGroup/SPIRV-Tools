@@ -190,7 +190,7 @@ OpFunctionEnd
                              << text << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false);
 }
 
 class PartialUnrollerTestPass : public opt::Pass {
@@ -972,7 +972,7 @@ OpFunctionEnd
                              << text << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false);
 }
 
 /*
@@ -1097,7 +1097,7 @@ OpFunctionEnd
                              << text << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  // SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, expected, false, false, true, 0);
+  // SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, expected, false);
 
   opt::Function* f = spvtest::GetFunction(module, 4);
 
@@ -1121,7 +1121,7 @@ OpFunctionEnd
   EXPECT_TRUE(loop.FindNumberOfIterations(induction, &*condition->ctail(),
                                           &iterations));
   EXPECT_EQ(iterations, 2u);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, expected, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, expected, false);
 }
 
 /*
@@ -1596,7 +1596,7 @@ OpFunctionEnd
                              << text << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false);
 }
 
 /*
@@ -1736,7 +1736,7 @@ OpFunctionEnd
                              << text << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false);
 }
 
 /*
@@ -1875,7 +1875,7 @@ OpFunctionEnd
                              << text << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false);
 }
 
 /*
@@ -2027,7 +2027,7 @@ OpFunctionEnd
                              << text << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false);
 }
 
 // With opt::LocalMultiStoreElimPass
@@ -2202,8 +2202,8 @@ OpFunctionEnd
                              << multiple_phi_shader << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<PartialUnrollerTestPassToken<4>>(multiple_phi_shader, output,
-                                                    false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<4>>(multiple_phi_shader,
+                                                         output, false);
 }
 
 TEST_F(PassClassTest, PartiallyUnrollMultipleInductionVariables) {
@@ -2277,8 +2277,8 @@ OpFunctionEnd
                              << multiple_phi_shader << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(multiple_phi_shader, output,
-                                                    false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(multiple_phi_shader,
+                                                         output, false);
 }
 
 TEST_F(PassClassTest, FullyUnrollMultipleInductionVariables) {
@@ -2400,7 +2400,8 @@ OpFunctionEnd
                              << multiple_phi_shader << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(multiple_phi_shader, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(multiple_phi_shader, output,
+                                                false);
 }
 
 /*
@@ -2560,7 +2561,7 @@ OpFunctionEnd
                              << text << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false);
 }
 
 // With opt::LocalMultiStoreElimPass
@@ -2668,7 +2669,8 @@ OpFunctionEnd
                              << condition_in_header << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnrollerToken>(condition_in_header, output, false, false, true, 0);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(condition_in_header, output,
+                                                false);
 }
 
 TEST_F(PassClassTest, PartiallyUnrollResidualConditionIsInHeaderBlock) {
@@ -2747,8 +2749,8 @@ OpFunctionEnd
                              << condition_in_header << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(condition_in_header, output,
-                                                    false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(condition_in_header,
+                                                         output, false);
 }
 
 /*

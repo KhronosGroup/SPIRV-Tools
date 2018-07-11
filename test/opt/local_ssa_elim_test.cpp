@@ -1329,7 +1329,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(before, before, true,
-                                                      true);
+                                                           true);
 }
 
 TEST_F(LocalSSAElimTest, OptInitializedVariableLikeStore) {
@@ -1528,7 +1528,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(before, after, true,
-                                                      true);
+                                                           true);
 }
 
 TEST_F(LocalSSAElimTest, VerifyInstToBlockMap) {

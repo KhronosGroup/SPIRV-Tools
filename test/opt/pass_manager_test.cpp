@@ -59,7 +59,8 @@ TEST(PassManager, Interface) {
   manager.AddPassToken<NullPassWithArgsToken>(1u);
   manager.AddPassToken<NullPassWithArgsToken>("null pass args");
   manager.AddPassToken<NullPassWithArgsToken>(std::initializer_list<int>{1, 2});
-  manager.AddPassToken<NullPassWithArgsToken>(std::initializer_list<int>{1, 2}, 3);
+  manager.AddPassToken<NullPassWithArgsToken>(std::initializer_list<int>{1, 2},
+                                              3);
   EXPECT_EQ(7u, manager.NumPasses());
   EXPECT_STREQ("strip-debug", manager.GetPassToken(0)->name());
   EXPECT_STREQ("null", manager.GetPassToken(1)->name());

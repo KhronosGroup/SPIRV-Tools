@@ -16,8 +16,8 @@
 #define SOURCE_OPT_SCALAR_REPLACEMENT_PASS_H_
 
 #include <cstdio>
-#include <string>
 #include <queue>
+#include <string>
 
 #include "source/opt/function.h"
 #include "source/opt/pass.h"
@@ -219,7 +219,9 @@ class ScalarReplacementPass : public Pass {
 
 class ScalarReplacementPassToken : public PassToken {
  public:
-  ScalarReplacementPassToken(uint32_t limit)
+  static constexpr uint32_t kDefaultLimit = 100;
+
+  ScalarReplacementPassToken(uint32_t limit = kDefaultLimit)
       : max_num_elements_(limit),
         name_("scalar-replacement=" + std::to_string(limit)) {}
 

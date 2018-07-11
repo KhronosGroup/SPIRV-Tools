@@ -61,20 +61,36 @@ void main(void) {
 }
 */
 
-class LoopFissionPassTokenForTest : public opt::PassToken {
+class LoopFissionWithoutParamsPassToken : public opt::PassToken {
  public:
-  LoopFissionPassTokenForTest(spvtools::opt::LoopFissionPass::FissionCriteriaFunction functor)
-      : functor_(functor) {}
-  ~LoopFissionPassTokenForTest() override = default;
+  LoopFissionWithoutParamsPassToken() = default;
+  ~LoopFissionWithoutParamsPassToken() override = default;
 
   const char* name() const override { return "Loop Fission"; }
 
   std::unique_ptr<spvtools::opt::Pass> CreatePass() const override {
-    return MakeUnique<spvtools::opt::LoopFissionPass>(functor_);
+    return MakeUnique<spvtools::opt::LoopFissionPass>();
+  }
+};
+
+class LoopFissionWithFunctorPassToken : public opt::PassToken {
+ public:
+  LoopFissionWithFunctorPassToken(
+      spvtools::opt::LoopFissionPass::FissionCriteriaFunction functor,
+      bool split_multiple_times = true)
+      : functor_(functor), split_multiple_times_(split_multiple_times) {}
+  ~LoopFissionWithFunctorPassToken() override = default;
+
+  const char* name() const override { return "Loop Fission"; }
+
+  std::unique_ptr<spvtools::opt::Pass> CreatePass() const override {
+    return MakeUnique<spvtools::opt::LoopFissionPass>(functor_,
+                                                      split_multiple_times_);
   }
 
  private:
   spvtools::opt::LoopFissionPass::FissionCriteriaFunction functor_;
+  bool split_multiple_times_;
 };
 
 TEST_F(FissionClassTest, SimpleFission) {
@@ -212,11 +228,12 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 
 // Check that the loop will NOT be split when provided with a pass-through
 // register pressure functor which just returns false.
-SinglePassRunAndCheck<LoopFissionPassTokenForTest>(
+SinglePassRunAndCheck<LoopFissionWithFunctorPassToken>(
     source, source, true,
     [](const opt::RegisterLiveness::RegionRegisterLiveness&) { return false; });
 }
@@ -306,7 +323,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, source, true, false, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -393,7 +411,7 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, source, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source, true);
 }
 
 /*
@@ -705,14 +723,15 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 
 // By passing 1 as argument we are using the constructor which makes the
 // critera to split the loop be if the registers in the loop exceede 1. By
 // using this constructor we are also enabling multiple passes (disabled by
 // default).
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected_multiple_passes,
-                                            true, 1);
+SinglePassRunAndCheck<opt::LoopFissionPassToken>(
+    source, expected_multiple_passes, true, 1);
 }
 
 /*
@@ -889,7 +908,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -1075,7 +1095,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -1289,7 +1310,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -1393,7 +1415,7 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, source, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source, true);
 }
 
 /*
@@ -1615,7 +1637,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -1984,7 +2007,7 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, source, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source, true);
 }
 
 /*
@@ -2076,7 +2099,7 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, source, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source, true);
 }
 
 /*
@@ -2267,7 +2290,8 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 }
 
 /*
@@ -2433,7 +2457,8 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 }
 
 /*
@@ -2540,7 +2565,7 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, source, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source, true);
 }
 
 /*
@@ -2650,7 +2675,7 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, source, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source, true);
 }
 
 /*
@@ -2935,7 +2960,8 @@ EXPECT_EQ(pre_pass_descriptor.pre_begin()->NumImmediateChildren(), 2u);
 
 // Test that the pass transforms the ir into the expected output.
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 
 // Test that the loop descriptor is correctly maintained and updated by the
 // pass.
@@ -3184,7 +3210,8 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 
 const opt::Function* function = spvtest::GetFunction(module, 2);
 opt::LoopDescriptor& pre_pass_descriptor =
@@ -3194,7 +3221,8 @@ EXPECT_EQ(pre_pass_descriptor.pre_begin()->NumImmediateChildren(), 0u);
 
 // Test that the pass transforms the ir into the expected output.
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 
 // Test that the loop descriptor is correctly maintained and updated by the
 // pass.
@@ -3300,7 +3328,7 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, source, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source, true);
 }
 
 /*
@@ -3501,7 +3529,8 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<opt::LoopFissionPassToken>(source, expected, true, false, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 }
 
 }  // namespace

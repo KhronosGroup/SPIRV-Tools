@@ -19,11 +19,11 @@
 #include <ostream>
 #include <vector>
 
+#include "source/opt/ir_context.h"
 #include "source/opt/log.h"
 #include "source/opt/module.h"
 #include "source/opt/pass.h"
 #include "source/opt/pass_token.h"
-#include "source/opt/ir_context.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {

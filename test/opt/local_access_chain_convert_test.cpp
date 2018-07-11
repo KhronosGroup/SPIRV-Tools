@@ -645,8 +645,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(assembly, assembly,
-                                                          false, true);
+  SinglePassRunAndCheck<opt::LocalAccessChainConvertPassToken>(
+      assembly, assembly, false, true);
 }
 
 TEST_F(LocalAccessChainConvertTest, SomeAccessChainsHaveNoUse) {

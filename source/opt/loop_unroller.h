@@ -36,8 +36,9 @@ class LoopUnroller : public Pass {
 
 class LoopUnrollerToken : public PassToken {
  public:
+  LoopUnrollerToken() : fully_unroll_(true), unroll_factor_(0) {}
   LoopUnrollerToken(bool fully_unroll, int unroll_factor)
-    : fully_unroll_(fully_unroll), unroll_factor_(unroll_factor) {}
+      : fully_unroll_(fully_unroll), unroll_factor_(unroll_factor) {}
 
   ~LoopUnrollerToken() override = default;
 

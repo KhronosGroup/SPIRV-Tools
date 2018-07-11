@@ -864,8 +864,8 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(before, after,
-                                                                true, true);
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
+      before, after, true, true);
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, RedundantStore) {

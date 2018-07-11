@@ -45,8 +45,8 @@ TEST_F(AssemblyBuilderTest, MinimalShader) {
   };
 
   SinglePassRunAndCheck<opt::NullPassToken>(builder.GetCode(),
-                                       JoinAllInsts(expected),
-                                       /* skip_nop = */ false);
+                                            JoinAllInsts(expected),
+                                            /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, ShaderWithConstants) {
@@ -159,8 +159,8 @@ TEST_F(AssemblyBuilderTest, ShaderWithConstants) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::NullPassToken>(builder.GetCode(),
-                                       JoinAllInsts(expected),
-                                       /* skip_nop = */ false);
+                                            JoinAllInsts(expected),
+                                            /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, SpecConstants) {
@@ -243,8 +243,8 @@ TEST_F(AssemblyBuilderTest, SpecConstants) {
   };
 
   SinglePassRunAndCheck<opt::NullPassToken>(builder.GetCode(),
-                                       JoinAllInsts(expected),
-                                       /* skip_nop = */ false);
+                                            JoinAllInsts(expected),
+                                            /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, AppendNames) {
@@ -277,8 +277,8 @@ TEST_F(AssemblyBuilderTest, AppendNames) {
   };
 
   SinglePassRunAndCheck<opt::NullPassToken>(builder.GetCode(),
-                                       JoinAllInsts(expected),
-                                       /* skip_nop = */ false);
+                                            JoinAllInsts(expected),
+                                            /* skip_nop = */ false);
 }
 
 }  // anonymous namespace

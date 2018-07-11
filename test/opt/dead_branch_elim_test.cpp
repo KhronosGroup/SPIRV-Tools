@@ -99,8 +99,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenElseFalse) {
@@ -180,8 +180,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenTrue) {
@@ -262,8 +262,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenFalse) {
@@ -339,8 +339,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenElsePhiTrue) {
@@ -412,8 +412,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenElsePhiFalse) {
@@ -485,8 +485,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, CompoundIfThenElseFalse) {
@@ -620,8 +620,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, PreventOrphanMerge) {
@@ -684,8 +684,8 @@ OpKill
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, HandleOrphanMerge) {
@@ -745,8 +745,8 @@ OpReturnValue %13
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, KeepContinueTargetWhenKillAfterMerge) {
@@ -843,8 +843,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, DecorateDeleted) {
@@ -1053,8 +1053,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, SwitchLiveCase) {
@@ -1146,8 +1146,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, SwitchLiveDefault) {
@@ -1239,8 +1239,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, SwitchLiveCaseBreakFromLoop) {
@@ -1342,8 +1342,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 #ifdef SPIRV_EFFCEE

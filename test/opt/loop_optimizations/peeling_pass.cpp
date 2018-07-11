@@ -1100,8 +1100,8 @@ TEST_F(PeelingPassTest, PeelingNoChanges) {
   )";
 
   {
-    auto result =
-        SinglePassRunAndDisassemble<opt::LoopPeelingPassToken>(text, true, false);
+    auto result = SinglePassRunAndDisassemble<opt::LoopPeelingPassToken>(
+        text, true, false);
 
     EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
   }

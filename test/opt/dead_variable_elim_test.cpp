@@ -65,7 +65,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, after, true,
-                                                      true);
+                                                           true);
 }
 
 // Since %dead is exported, make sure we keep it.  It could be referenced
@@ -95,7 +95,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, before, true,
-                                                      true);
+                                                           true);
 }
 
 // Delete %dead because it is unreferenced.  Then %initializer becomes
@@ -145,7 +145,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, after, true,
-                                                      true);
+                                                           true);
 }
 
 // Delete %dead because it is unreferenced.  In this case, the initialized has
@@ -199,7 +199,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, after, true,
-                                                      true);
+                                                           true);
 }
 
 // Keep %live because it is used, and its initializer.
@@ -230,7 +230,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, before, true,
-                                                      true);
+                                                           true);
 }
 
 // This test that the decoration associated with a variable are removed when the
@@ -294,6 +294,6 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, after, true,
-                                                      true);
+                                                           true);
 }
 }  // namespace

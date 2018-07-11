@@ -48,11 +48,13 @@ class LoopFissionPass : public Pass {
   // |register_threshold_to_split|. |split_multiple_times| flag determines
   // whether or not the pass should split loops after already splitting them
   // once.
-  LoopFissionPass(size_t register_threshold_to_split);
+  LoopFissionPass(size_t register_threshold_to_split,
+                  bool split_multiple_times = true);
 
   // Split loops whose register pressure meets the criteria of |functor|.
-  LoopFissionPass(FissionCriteriaFunction functor)
-      : split_criteria_(functor), split_multiple_times_(false) {}
+  LoopFissionPass(FissionCriteriaFunction functor,
+                  bool split_multiple_times = true)
+      : split_criteria_(functor), split_multiple_times_(split_multiple_times) {}
 
   Pass::Status Process(opt::IRContext* context) override;
 
@@ -66,23 +68,27 @@ class LoopFissionPass : public Pass {
 
   // Flag designating whether or not we should also split the result of
   // previously split loops if they meet the register presure criteria.
-  bool split_multiple_times_ = true;
+  bool split_multiple_times_;
 };
 
 class LoopFissionPassToken : public PassToken {
  public:
-  LoopFissionPassToken(size_t register_threshold_to_split)
-      : register_threshold_to_split_(register_threshold_to_split) {}
+  LoopFissionPassToken(size_t register_threshold_to_split,
+                       bool split_multiple_times = true)
+      : register_threshold_to_split_(register_threshold_to_split),
+        split_multiple_times_(split_multiple_times) {}
   ~LoopFissionPassToken() override = default;
 
   const char* name() const override { return "Loop Fission"; }
 
   std::unique_ptr<Pass> CreatePass() const override {
-    return MakeUnique<LoopFissionPass>(register_threshold_to_split_);
+    return MakeUnique<LoopFissionPass>(register_threshold_to_split_,
+                                       split_multiple_times_);
   }
 
  private:
   size_t register_threshold_to_split_;
+  bool split_multiple_times_;
 };
 
 }  // namespace opt

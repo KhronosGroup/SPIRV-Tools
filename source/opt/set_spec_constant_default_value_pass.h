@@ -101,13 +101,15 @@ class SetSpecConstantDefaultValuePass : public Pass {
 class SetSpecConstantDefaultValuePassToken : public PassToken {
  public:
   explicit SetSpecConstantDefaultValuePassToken(
-      const SetSpecConstantDefaultValuePass::SpecIdToValueStrMap& default_values)
+      const SetSpecConstantDefaultValuePass::SpecIdToValueStrMap&
+          default_values)
       : spec_id_to_value_str_(default_values),
         spec_id_to_value_bit_pattern_(),
         have_string_values_(true) {}
 
   explicit SetSpecConstantDefaultValuePassToken(
-      const SetSpecConstantDefaultValuePass::SpecIdToValueBitPatternMap& default_values)
+      const SetSpecConstantDefaultValuePass::SpecIdToValueBitPatternMap&
+          default_values)
       : spec_id_to_value_str_(),
         spec_id_to_value_bit_pattern_(default_values),
         have_string_values_(false) {}
@@ -119,12 +121,15 @@ class SetSpecConstantDefaultValuePassToken : public PassToken {
   std::unique_ptr<Pass> CreatePass() const override {
     if (have_string_values_)
       return MakeUnique<SetSpecConstantDefaultValuePass>(spec_id_to_value_str_);
-    return MakeUnique<SetSpecConstantDefaultValuePass>(spec_id_to_value_bit_pattern_);
+    return MakeUnique<SetSpecConstantDefaultValuePass>(
+        spec_id_to_value_bit_pattern_);
   }
 
  private:
-  const SetSpecConstantDefaultValuePass::SpecIdToValueStrMap spec_id_to_value_str_;
-  const SetSpecConstantDefaultValuePass::SpecIdToValueBitPatternMap spec_id_to_value_bit_pattern_;
+  const SetSpecConstantDefaultValuePass::SpecIdToValueStrMap
+      spec_id_to_value_str_;
+  const SetSpecConstantDefaultValuePass::SpecIdToValueBitPatternMap
+      spec_id_to_value_bit_pattern_;
   bool have_string_values_;
 };
 

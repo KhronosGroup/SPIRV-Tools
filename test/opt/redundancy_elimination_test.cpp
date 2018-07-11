@@ -230,8 +230,9 @@ TEST_F(RedundancyEliminationTest, KeepPartiallyRedundantAdd) {
                OpFunctionEnd
 
   )";
-  auto result = SinglePassRunAndDisassemble<opt::RedundancyEliminationPassToken>(
-      text, /* skip_nop = */ true, /* do_validation = */ false);
+  auto result =
+      SinglePassRunAndDisassemble<opt::RedundancyEliminationPassToken>(
+          text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
@@ -268,8 +269,9 @@ TEST_F(RedundancyEliminationTest, KeepRedundantAddWithoutPhi) {
                OpFunctionEnd
 
   )";
-  auto result = SinglePassRunAndDisassemble<opt::RedundancyEliminationPassToken>(
-      text, /* skip_nop = */ true, /* do_validation = */ false);
+  auto result =
+      SinglePassRunAndDisassemble<opt::RedundancyEliminationPassToken>(
+          text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 #endif

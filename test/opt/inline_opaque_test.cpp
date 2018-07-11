@@ -402,7 +402,8 @@ OpReturnValue %31
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineOpaquePassToken>(assembly, assembly, true, true);
+  SinglePassRunAndCheck<opt::InlineOpaquePassToken>(assembly, assembly, true,
+                                                    true);
 }
 
 }  // anonymous namespace

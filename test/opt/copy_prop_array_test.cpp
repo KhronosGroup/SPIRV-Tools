@@ -1266,6 +1266,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::CopyPropagateArraysToken>(before, after, true, true);
+  SinglePassRunAndCheck<opt::CopyPropagateArraysToken>(before, after, true,
+                                                       true);
 }
 }  // namespace

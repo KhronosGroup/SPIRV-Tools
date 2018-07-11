@@ -168,7 +168,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::VectorDCEToken>(before_predefs + before,
-                                        after_predefs + after, true, true);
+                                             after_predefs + after, true, true);
 }
 
 TEST_F(VectorDCETest, DeadInsertInChainWithPhi) {
@@ -351,7 +351,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::VectorDCEToken>(before_predefs + before,
-                                        after_predefs + after, true, true);
+                                             after_predefs + after, true, true);
 }
 
 TEST_F(VectorDCETest, DeadInsertWithScalars) {
@@ -606,7 +606,8 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(before, before, true, true);
+  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(before, before, true,
+                                                      true);
 }
 
 #ifdef SPIRV_EFFCEE
