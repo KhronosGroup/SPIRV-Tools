@@ -21,9 +21,9 @@
 #include <cstdlib>
 
 #include "instruction.h"
-#include "macro.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
+#include "macro.h"
 #include "spirv_endian.h"
 #include "spirv_target_env.h"
 
@@ -35,8 +35,8 @@ struct OpcodeDescPtrLen {
 
 #include "core.insts-unified1.inc"  // defines kOpcodeTableEntries_1_3
 
-static const spv_opcode_table_t kOpcodeTable = {ARRAY_SIZE(kOpcodeTableEntries),
-                                                kOpcodeTableEntries};
+static const spv_opcode_table_t kOpcodeTable={ARRAY_SIZE(kOpcodeTableEntries),
+                                                  kOpcodeTableEntries};
 
 // Represents a vendor tool entry in the SPIR-V XML Regsitry.
 struct VendorTool {
