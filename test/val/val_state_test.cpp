@@ -26,7 +26,7 @@
 #include "val/construct.h"
 #include "val/function.h"
 #include "val/validation_state.h"
-#include "validate.h"
+#include "val/validate.h"
 
 namespace spvtools {
 namespace val {

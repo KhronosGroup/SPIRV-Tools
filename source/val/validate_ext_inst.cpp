@@ -14,17 +14,16 @@
 
 // Validates correctness of ExtInst SPIR-V instructions.
 
-#include "validate.h"
+#include "source/val/validate.h"
 
 #include <sstream>
 
-#include "latest_version_glsl_std_450_header.h"
-#include "latest_version_opencl_std_header.h"
-
-#include "diagnostic.h"
-#include "opcode.h"
-#include "val/instruction.h"
-#include "val/validation_state.h"
+#include "source/diagnostic.h"
+#include "source/latest_version_glsl_std_450_header.h"
+#include "source/latest_version_opencl_std_header.h"
+#include "source/opcode.h"
+#include "source/val/instruction.h"
+#include "source/val/validation_state.h"
 
 namespace spvtools {
 namespace val {

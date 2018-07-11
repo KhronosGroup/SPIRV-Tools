@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "cfa.h"
-#include "validate.h"
+#include "source/val/validate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -27,11 +26,12 @@
 #include <utility>
 #include <vector>
 
-#include "spirv_validator_options.h"
-#include "val/basic_block.h"
-#include "val/construct.h"
-#include "val/function.h"
-#include "val/validation_state.h"
+#include "source/cfa.h"
+#include "source/spirv_validator_options.h"
+#include "source/val/basic_block.h"
+#include "source/val/construct.h"
+#include "source/val/function.h"
+#include "source/val/validation_state.h"
 
 using std::find;
 using std::function;

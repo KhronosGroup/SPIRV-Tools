@@ -34,31 +34,31 @@ SPVTOOLS_SRC_FILES := \
 		source/val/function.cpp \
 		source/val/instruction.cpp \
 		source/val/validation_state.cpp \
-		source/validate.cpp \
-		source/validate_adjacency.cpp \
-		source/validate_arithmetics.cpp \
-		source/validate_atomics.cpp \
-		source/validate_barriers.cpp \
-		source/validate_bitwise.cpp \
-		source/validate_builtins.cpp \
-		source/validate_capability.cpp \
-		source/validate_cfg.cpp \
-		source/validate_composites.cpp \
-		source/validate_conversion.cpp \
-		source/validate_datarules.cpp \
-		source/validate_decorations.cpp \
-		source/validate_derivatives.cpp \
-		source/validate_ext_inst.cpp \
-		source/validate_id.cpp \
-		source/validate_image.cpp \
-		source/validate_interfaces.cpp \
-		source/validate_instruction.cpp \
-		source/validate_layout.cpp \
-		source/validate_literals.cpp \
-		source/validate_logicals.cpp \
-		source/validate_non_uniform.cpp \
-		source/validate_primitives.cpp \
-		source/validate_type_unique.cpp
+		source/val/validate.cpp \
+		source/val/validate_adjacency.cpp \
+		source/val/validate_arithmetics.cpp \
+		source/val/validate_atomics.cpp \
+		source/val/validate_barriers.cpp \
+		source/val/validate_bitwise.cpp \
+		source/val/validate_builtins.cpp \
+		source/val/validate_capability.cpp \
+		source/val/validate_cfg.cpp \
+		source/val/validate_composites.cpp \
+		source/val/validate_conversion.cpp \
+		source/val/validate_datarules.cpp \
+		source/val/validate_decorations.cpp \
+		source/val/validate_derivatives.cpp \
+		source/val/validate_ext_inst.cpp \
+		source/val/validate_id.cpp \
+		source/val/validate_image.cpp \
+		source/val/validate_interfaces.cpp \
+		source/val/validate_instruction.cpp \
+		source/val/validate_layout.cpp \
+		source/val/validate_literals.cpp \
+		source/val/validate_logicals.cpp \
+		source/val/validate_non_uniform.cpp \
+		source/val/validate_primitives.cpp \
+		source/val/validate_type_unique.cpp
 
 SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/aggressive_dead_code_elim_pass.cpp \

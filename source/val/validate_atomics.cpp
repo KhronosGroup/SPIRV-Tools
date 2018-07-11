@@ -14,14 +14,14 @@
 
 // Validates correctness of atomic SPIR-V instructions.
 
-#include "validate.h"
+#include "source/val/validate.h"
 
-#include "diagnostic.h"
-#include "opcode.h"
-#include "spirv_target_env.h"
-#include "util/bitutils.h"
-#include "val/instruction.h"
-#include "val/validation_state.h"
+#include "source/diagnostic.h"
+#include "source/opcode.h"
+#include "source/spirv_target_env.h"
+#include "source/util/bitutils.h"
+#include "source/val/instruction.h"
+#include "source/val/validation_state.h"
 
 namespace spvtools {
 namespace val {

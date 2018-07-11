@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "validate.h"
+#include "source/val/validate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -20,11 +20,11 @@
 #include <unordered_map>
 #include <utility>
 
-#include "diagnostic.h"
-#include "opcode.h"
-#include "spirv_target_env.h"
-#include "spirv_validator_options.h"
-#include "val/validation_state.h"
+#include "source/diagnostic.h"
+#include "source/opcode.h"
+#include "source/spirv_target_env.h"
+#include "source/spirv_validator_options.h"
+#include "source/val/validation_state.h"
 
 namespace spvtools {
 namespace val {

@@ -25,7 +25,7 @@
 #include "gmock/gmock.h"
 
 #include "source/diagnostic.h"
-#include "source/validate.h"
+#include "source/val/validate.h"
 #include "test_fixture.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
