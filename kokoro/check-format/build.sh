@@ -23,6 +23,12 @@ set -x
 BUILD_ROOT=$PWD
 SRC=$PWD/github/SPIRV-Tools
 
+# Get clang-format-5.0.0.
+# Once kokoro upgrades the Ubuntu VMs, we can use 'apt-get install clang-format'
+curl -L http://releases.llvm.org/5.0.0/clang+llvm-5.0.0-linux-x86_64-ubuntu14.04.tar.xz -o clang-llvm.tar.xz
+tar xf clang-llvm.tar.xz
+export PATH=$PWD/clang+llvm-5.0.0-linux-x86_64-ubuntu14.04/bin:$PATH
+
 cd $SRC
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
 git clone --depth=1 https://github.com/google/googletest          external/googletest
