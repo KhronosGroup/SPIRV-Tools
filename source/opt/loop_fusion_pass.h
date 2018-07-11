@@ -15,7 +15,8 @@
 #ifndef SOURCE_OPT_LOOP_FUSION_PASS_H_
 #define SOURCE_OPT_LOOP_FUSION_PASS_H_
 
-#include "opt/pass.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -29,8 +30,6 @@ class LoopFusionPass : public Pass {
   explicit LoopFusionPass(size_t max_registers_per_loop)
       : Pass(), max_registers_per_loop_(max_registers_per_loop) {}
 
-  const char* name() const override { return "loop-fusion"; }
-
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes have been made to the modue.
@@ -42,6 +41,23 @@ class LoopFusionPass : public Pass {
   bool ProcessFunction(opt::Function* function);
 
   // The maximum number of registers a fused loop is allowed to use.
+  size_t max_registers_per_loop_;
+};
+
+class LoopFusionPassToken : public PassToken {
+ public:
+  LoopFusionPassToken(size_t max_registers_per_loop)
+      : max_registers_per_loop_(max_registers_per_loop) {}
+
+  ~LoopFusionPassToken() override = default;
+
+  const char* name() const override { return "loop-fusion"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LoopFusionPass>(max_registers_per_loop_);
+  }
+
+ private:
   size_t max_registers_per_loop_;
 };
 

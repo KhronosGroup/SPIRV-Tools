@@ -164,8 +164,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<DeadInsertElimPass>(before_predefs + before,
-                                            after_predefs + after, true, true);
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(
+      before_predefs + before, after_predefs + after, true, true);
 }
 
 TEST_F(DeadInsertElimTest, DeadInsertInChainWithPhi) {
@@ -343,8 +343,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<DeadInsertElimPass>(before_predefs + before,
-                                            after_predefs + after, true, true);
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(
+      before_predefs + before, after_predefs + after, true, true);
 }
 
 TEST_F(DeadInsertElimTest, DeadInsertTwoPasses) {
@@ -557,8 +557,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<DeadInsertElimPass>(before_predefs + before,
-                                            after_predefs + after, true, true);
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(
+      before_predefs + before, after_predefs + after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

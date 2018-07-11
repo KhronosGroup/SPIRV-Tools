@@ -73,7 +73,7 @@ TEST_F(EliminateDeadConstantBasicTest, BasicAllDeadConstants) {
             });
       });
 
-  SinglePassRunAndCheck<EliminateDeadConstantPass>(
+  SinglePassRunAndCheck<EliminateDeadConstantPassToken>(
       JoinAllInsts(text), expected_disassembly, /* skip_nop = */ true);
 }
 
@@ -129,7 +129,7 @@ TEST_F(EliminateDeadConstantBasicTest, BasicNoneDeadConstants) {
       // clang-format on
   };
   // All constants are used, so none of them should be eliminated.
-  SinglePassRunAndCheck<EliminateDeadConstantPass>(
+  SinglePassRunAndCheck<EliminateDeadConstantPassToken>(
       JoinAllInsts(text), JoinAllInsts(text), /* skip_nop = */ true);
 }
 
@@ -191,7 +191,7 @@ TEST_P(EliminateDeadConstantTest, Custom) {
   const std::string expected = builder.GetCode();
   builder.AppendTypesConstantsGlobals(tc.dead_consts);
   const std::string assembly_with_dead_const = builder.GetCode();
-  SinglePassRunAndCheck<EliminateDeadConstantPass>(
+  SinglePassRunAndCheck<EliminateDeadConstantPassToken>(
       assembly_with_dead_const, expected, /*  skip_nop = */ true);
 }
 

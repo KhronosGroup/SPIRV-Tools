@@ -61,7 +61,7 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicDeleteDeadFunction) {
   };
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<EliminateDeadFunctionsPass>(
+  SinglePassRunAndCheck<EliminateDeadFunctionsPassToken>(
       JoinAllInsts(Concat(common_code, dead_function)),
       JoinAllInsts(common_code), /* skip_nop = */ true);
 }
@@ -98,7 +98,7 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepLiveFunction) {
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   std::string assembly = JoinAllInsts(text);
-  auto result = SinglePassRunAndDisassemble<EliminateDeadFunctionsPass>(
+  auto result = SinglePassRunAndDisassemble<EliminateDeadFunctionsPassToken>(
       assembly, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
   EXPECT_EQ(assembly, std::get<0>(result));
@@ -137,7 +137,7 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepExportFunctions) {
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   std::string assembly = JoinAllInsts(text);
-  auto result = SinglePassRunAndDisassemble<EliminateDeadFunctionsPass>(
+  auto result = SinglePassRunAndDisassemble<EliminateDeadFunctionsPassToken>(
       assembly, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
   EXPECT_EQ(assembly, std::get<0>(result));
@@ -200,8 +200,8 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<EliminateDeadFunctionsPass>(text, expected_output,
-                                                    /* skip_nop = */ true);
+  SinglePassRunAndCheck<EliminateDeadFunctionsPassToken>(text, expected_output,
+                                                         /* skip_nop = */ true);
 }
 
 }  // namespace

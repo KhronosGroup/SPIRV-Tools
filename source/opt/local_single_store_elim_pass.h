@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_
-#define LIBSPIRV_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_
+#ifndef SOURCE_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_
+#define SOURCE_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_
 
 #include <algorithm>
 #include <map>
@@ -24,10 +24,11 @@
 #include <unordered_set>
 #include <utility>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -38,7 +39,7 @@ class LocalSingleStoreElimPass : public Pass {
 
  public:
   LocalSingleStoreElimPass();
-  const char* name() const override { return "eliminate-local-single-store"; }
+
   Status Process(opt::IRContext* irContext) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -95,7 +96,19 @@ class LocalSingleStoreElimPass : public Pass {
   std::unordered_set<std::string> extensions_whitelist_;
 };
 
+class LocalSingleStoreElimPassToken : public PassToken {
+ public:
+  LocalSingleStoreElimPassToken() = default;
+  ~LocalSingleStoreElimPassToken() override = default;
+
+  const char* name() const override { return "eliminate-local-single-store"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LocalSingleStoreElimPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_
+#endif  // SOURCE_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_

@@ -61,6 +61,38 @@ void main(void) {
     }
 }
 */
+
+class LoopFissionWithoutParamsPassToken : public PassToken {
+ public:
+  LoopFissionWithoutParamsPassToken() = default;
+  ~LoopFissionWithoutParamsPassToken() override = default;
+
+  const char* name() const override { return "Loop Fission"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LoopFissionPass>();
+  }
+};
+
+class LoopFissionWithFunctorPassToken : public PassToken {
+ public:
+  LoopFissionWithFunctorPassToken(
+      LoopFissionPass::FissionCriteriaFunction functor,
+      bool split_multiple_times = true)
+      : functor_(functor), split_multiple_times_(split_multiple_times) {}
+  ~LoopFissionWithFunctorPassToken() override = default;
+
+  const char* name() const override { return "Loop Fission"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LoopFissionPass>(functor_, split_multiple_times_);
+  }
+
+ private:
+  LoopFissionPass::FissionCriteriaFunction functor_;
+  bool split_multiple_times_;
+};
+
 TEST_F(FissionClassTest, SimpleFission) {
   // clang-format off
   // With LocalMultiStoreElimPass
@@ -196,11 +228,12 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 
   // Check that the loop will NOT be split when provided with a pass-through
   // register pressure functor which just returns false.
-  SinglePassRunAndCheck<LoopFissionPass>(
+  SinglePassRunAndCheck<LoopFissionWithFunctorPassToken>(
       source, source, true,
       [](const RegisterLiveness::RegionRegisterLiveness&) { return false; });
 }
@@ -290,7 +323,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -377,7 +411,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -689,14 +724,15 @@ EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                            << source << std::endl;
 
 SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                         true);
 
 // By passing 1 as argument we are using the constructor which makes the
 // critera to split the loop be if the registers in the loop exceede 1. By
 // using this constructor we are also enabling multiple passes (disabled by
 // default).
-SinglePassRunAndCheck<LoopFissionPass>(source, expected_multiple_passes, true,
-                                       1);
+SinglePassRunAndCheck<LoopFissionPassToken>(source, expected_multiple_passes,
+                                            true, 1);
 }
 
 /*
@@ -873,7 +909,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -1059,7 +1096,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -1273,7 +1311,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -1377,7 +1416,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -1599,7 +1639,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -1874,7 +1915,7 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true, 1);
+  SinglePassRunAndCheck<LoopFissionPassToken>(source, expected, true, 1);
 }
 
 /*
@@ -1968,7 +2009,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -2060,7 +2102,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -2251,7 +2294,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -2417,7 +2461,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 /*
@@ -2524,7 +2569,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -2634,7 +2680,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -2918,7 +2965,8 @@ OpFunctionEnd
 
   // Test that the pass transforms the ir into the expected output.
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 
   // Test that the loop descriptor is correctly maintained and updated by the
   // pass.
@@ -3166,7 +3214,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 
   const Function* function = spvtest::GetFunction(module, 2);
   LoopDescriptor& pre_pass_descriptor = *context->GetLoopDescriptor(function);
@@ -3175,7 +3224,8 @@ OpFunctionEnd
 
   // Test that the pass transforms the ir into the expected output.
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 
   // Test that the loop descriptor is correctly maintained and updated by the
   // pass.
@@ -3280,7 +3330,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, source, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, source,
+                                                           true);
 }
 
 /*
@@ -3481,7 +3532,8 @@ OpFunctionEnd
                              << source << std::endl;
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SinglePassRunAndCheck<LoopFissionWithoutParamsPassToken>(source, expected,
+                                                           true);
 }
 
 }  // namespace

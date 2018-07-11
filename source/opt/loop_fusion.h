@@ -19,10 +19,10 @@
 #include <set>
 #include <vector>
 
-#include "opt/ir_context.h"
-#include "opt/loop_descriptor.h"
-#include "opt/loop_utils.h"
-#include "opt/scalar_analysis.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/loop_descriptor.h"
+#include "source/opt/loop_utils.h"
+#include "source/opt/scalar_analysis.h"
 
 namespace spvtools {
 namespace opt {

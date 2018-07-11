@@ -15,21 +15,21 @@
 #ifndef SOURCE_OPT_LICM_PASS_H_
 #define SOURCE_OPT_LICM_PASS_H_
 
-#include "opt/basic_block.h"
-#include "opt/instruction.h"
-#include "opt/loop_descriptor.h"
-#include "opt/pass.h"
-
 #include <queue>
+
+#include "source/opt/basic_block.h"
+#include "source/opt/instruction.h"
+#include "source/opt/loop_descriptor.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
 
 class LICMPass : public Pass {
  public:
-  LICMPass() {}
+  LICMPass() = default;
 
-  const char* name() const override { return "loop-invariant-code-motion"; }
   Status Process(opt::IRContext*) override;
 
  private:
@@ -60,6 +60,18 @@ class LICMPass : public Pass {
   // Move the instruction to the given BasicBlock
   // This method will update the instruction to block mapping for the context
   void HoistInstruction(opt::Loop* loop, opt::Instruction* inst);
+};
+
+class LICMPassToken : public PassToken {
+ public:
+  LICMPassToken() = default;
+  ~LICMPassToken() override = default;
+
+  const char* name() const override { return "loop-invariant-code-motion"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LICMPass>();
+  }
 };
 
 }  // namespace opt

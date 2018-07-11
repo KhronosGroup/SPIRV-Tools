@@ -54,7 +54,7 @@ TEST_F(RedundancyEliminationTest, RemoveRedundantLocalAdd) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<RedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<RedundancyEliminationPassToken>(text, false);
 }
 
 // Remove a redundant add across basic blocks.
@@ -83,7 +83,7 @@ TEST_F(RedundancyEliminationTest, RemoveRedundantAdd) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<RedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<RedundancyEliminationPassToken>(text, false);
 }
 
 // Remove a redundant add going through a multiple basic blocks.
@@ -119,7 +119,7 @@ TEST_F(RedundancyEliminationTest, RemoveRedundantAddDiamond) {
                OpFunctionEnd
 
   )";
-  SinglePassRunAndMatch<RedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<RedundancyEliminationPassToken>(text, false);
 }
 
 // Remove a redundant add in a side node.
@@ -155,7 +155,7 @@ TEST_F(RedundancyEliminationTest, RemoveRedundantAddInSideNode) {
                OpFunctionEnd
 
   )";
-  SinglePassRunAndMatch<RedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<RedundancyEliminationPassToken>(text, false);
 }
 
 // Remove a redundant add whose value is in the result of a phi node.
@@ -195,7 +195,7 @@ TEST_F(RedundancyEliminationTest, RemoveRedundantAddWithPhi) {
                OpFunctionEnd
 
   )";
-  SinglePassRunAndMatch<RedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<RedundancyEliminationPassToken>(text, false);
 }
 
 // Keep the add because it is redundant on some paths, but not all paths.
@@ -229,7 +229,7 @@ TEST_F(RedundancyEliminationTest, KeepPartiallyRedundantAdd) {
                OpFunctionEnd
 
   )";
-  auto result = SinglePassRunAndDisassemble<RedundancyEliminationPass>(
+  auto result = SinglePassRunAndDisassemble<RedundancyEliminationPassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -267,7 +267,7 @@ TEST_F(RedundancyEliminationTest, KeepRedundantAddWithoutPhi) {
                OpFunctionEnd
 
   )";
-  auto result = SinglePassRunAndDisassemble<RedundancyEliminationPass>(
+  auto result = SinglePassRunAndDisassemble<RedundancyEliminationPassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }

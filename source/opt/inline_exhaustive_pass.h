@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_INLINE_EXHAUSTIVE_PASS_H_
-#define LIBSPIRV_OPT_INLINE_EXHAUSTIVE_PASS_H_
+#ifndef SOURCE_OPT_INLINE_EXHAUSTIVE_PASS_H_
+#define SOURCE_OPT_INLINE_EXHAUSTIVE_PASS_H_
 
 #include <algorithm>
 #include <list>
@@ -23,9 +23,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "def_use_manager.h"
-#include "inline_pass.h"
-#include "module.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/inline_pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -34,9 +35,8 @@ namespace opt {
 class InlineExhaustivePass : public InlinePass {
  public:
   InlineExhaustivePass();
-  Status Process(opt::IRContext* c) override;
 
-  const char* name() const override { return "inline-entry-points-exhaustive"; }
+  Status Process(opt::IRContext* c) override;
 
  private:
   // Exhaustively inline all function calls in func as well as in
@@ -47,7 +47,19 @@ class InlineExhaustivePass : public InlinePass {
   Pass::Status ProcessImpl();
 };
 
+class InlineExhaustivePassToken : public PassToken {
+ public:
+  InlineExhaustivePassToken() = default;
+  ~InlineExhaustivePassToken() override = default;
+
+  const char* name() const override { return "inline-entry-points-exhaustive"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<InlineExhaustivePass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_INLINE_EXHAUSTIVE_PASS_H_
+#endif  // SOURCE_OPT_INLINE_EXHAUSTIVE_PASS_H_

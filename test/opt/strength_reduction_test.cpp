@@ -53,7 +53,7 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPassToken>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
@@ -98,7 +98,7 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy16) {
 ; CHECK: OpFunctionEnd
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<StrengthReductionPass>(text, false);
+  SinglePassRunAndMatch<StrengthReductionPassToken>(text, false);
 }
 #endif
 
@@ -125,7 +125,7 @@ TEST_F(StrengthReductionBasicTest, BasicTwoPowersOf2) {
           OpFunctionEnd
 )";
   // clang-format on
-  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
@@ -156,7 +156,7 @@ TEST_F(StrengthReductionBasicTest, BasicDontReplace0) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPassToken>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -185,7 +185,7 @@ TEST_F(StrengthReductionBasicTest, BasicNoChange) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPassToken>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -213,7 +213,7 @@ TEST_F(StrengthReductionBasicTest, NoDuplicateConstantsAndTypes) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPassToken>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
@@ -247,7 +247,7 @@ TEST_F(StrengthReductionBasicTest, BasicCreateOneConst) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPassToken>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
@@ -338,7 +338,7 @@ TEST_F(StrengthReductionBasicTest, BasicCheckPositionAndReplacement) {
   };
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<StrengthReductionPass>(
+  SinglePassRunAndCheck<StrengthReductionPassToken>(
       JoinAllInsts(Concat(common_text, foo_before)),
       JoinAllInsts(Concat(common_text, foo_after)),
       /* skip_nop = */ true, /* do_validate = */ true);
@@ -427,7 +427,7 @@ TEST_F(StrengthReductionBasicTest, BasicTestMultipleReplacements) {
   };
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<StrengthReductionPass>(
+  SinglePassRunAndCheck<StrengthReductionPassToken>(
       JoinAllInsts(Concat(common_text, foo_before)),
       JoinAllInsts(Concat(common_text, foo_after)),
       /* skip_nop = */ true, /* do_validate = */ true);

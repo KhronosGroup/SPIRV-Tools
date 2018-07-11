@@ -68,7 +68,7 @@ TEST_F(SimplificationTest, StraightLineTest) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<SimplificationPass>(text, false);
+  SinglePassRunAndMatch<SimplificationPassToken>(text, false);
 }
 
 TEST_F(SimplificationTest, AcrossBasicBlocks) {
@@ -132,7 +132,7 @@ TEST_F(SimplificationTest, AcrossBasicBlocks) {
 
 )";
 
-  SinglePassRunAndMatch<SimplificationPass>(text, false);
+  SinglePassRunAndMatch<SimplificationPassToken>(text, false);
 }
 
 TEST_F(SimplificationTest, ThroughLoops) {
@@ -199,7 +199,7 @@ TEST_F(SimplificationTest, ThroughLoops) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<SimplificationPass>(text, false);
+  SinglePassRunAndMatch<SimplificationPassToken>(text, false);
 }
 
 #endif

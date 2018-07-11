@@ -120,8 +120,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(predefs + before,
-                                                  predefs + after, true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, ThreeStores) {
@@ -186,8 +186,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(predefs + before,
-                                                  predefs + before, true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
+      predefs + before, predefs + before, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, MultipleLoads) {
@@ -290,8 +290,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(predefs + before,
-                                                  predefs + after, true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoStoreElimWithInterveningAccessChainLoad) {
@@ -368,8 +368,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(predefs + before,
-                                                  predefs + after, true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoReplaceOfDominatingPartialStore) {
@@ -423,8 +423,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(assembly, assembly, true,
-                                                  true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(assembly, assembly, true,
+                                                       true);
 }
 
 TEST_F(LocalSingleStoreElimTest, ElimIfCopyObjectInFunction) {
@@ -526,8 +526,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(predefs + before,
-                                                  predefs + after, true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoOptIfStoreNotDominating) {
@@ -606,8 +606,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(assembly, assembly, true,
-                                                  true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(assembly, assembly, true,
+                                                       true);
 }
 
 TEST_F(LocalSingleStoreElimTest, OptInitializedVariableLikeStore) {
@@ -665,8 +665,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(predefs + before,
-                                                  predefs + after, true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, PointerVariable) {
@@ -766,7 +766,8 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<LocalSingleStoreElimPass>(before, after, true, true);
+  SinglePassRunAndCheck<LocalSingleStoreElimPassToken>(before, after, true,
+                                                       true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

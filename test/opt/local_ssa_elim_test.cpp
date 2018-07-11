@@ -135,8 +135,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, NestedForLoop) {
@@ -277,8 +277,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, ForLoopWithContinue) {
@@ -423,7 +423,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
       predefs + names + predefs2 + before, predefs + names + predefs2 + after,
       true, true);
 }
@@ -564,8 +564,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, SwapProblem) {
@@ -701,8 +701,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, LostCopyProblem) {
@@ -845,8 +845,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, IfThenElse) {
@@ -945,8 +945,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, IfThen) {
@@ -1034,8 +1034,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, Switch) {
@@ -1165,8 +1165,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, SwitchWithFallThrough) {
@@ -1297,8 +1297,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(predefs + before,
-                                                 predefs + after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, DontPatchPhiInLoopHeaderThatIsNotAVar) {
@@ -1328,7 +1328,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(before, before, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(before, before, true,
+                                                      true);
 }
 
 TEST_F(LocalSSAElimTest, OptInitializedVariableLikeStore) {
@@ -1425,7 +1426,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(
       predefs + func_before, predefs + func_after, true, true);
 }
 
@@ -1526,7 +1527,8 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<LocalMultiStoreElimPass>(before, after, true, true);
+  SinglePassRunAndCheck<LocalMultiStoreElimPassToken>(before, after, true,
+                                                      true);
 }
 
 TEST_F(LocalSSAElimTest, VerifyInstToBlockMap) {
@@ -1714,7 +1716,7 @@ TEST_F(LocalSSAElimTest, CompositeExtractProblem) {
                OpReturn
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<SSARewritePass>(spv_asm, true);
+  SinglePassRunAndMatch<SSARewritePassToken>(spv_asm, true);
 }
 #endif
 

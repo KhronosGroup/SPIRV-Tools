@@ -12,28 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_REMOVE_DUPLICATES_PASS_H_
-#define LIBSPIRV_OPT_REMOVE_DUPLICATES_PASS_H_
+#ifndef SOURCE_OPT_REMOVE_DUPLICATES_PASS_H_
+#define SOURCE_OPT_REMOVE_DUPLICATES_PASS_H_
 
 #include <unordered_map>
 
-#include "decoration_manager.h"
-#include "def_use_manager.h"
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/decoration_manager.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
 
-using IdDecorationsList =
-    std::unordered_map<uint32_t, std::vector<opt::Instruction*>>;
-
 // See optimizer.hpp for documentation.
 class RemoveDuplicatesPass : public Pass {
  public:
-  const char* name() const override { return "remove-duplicates"; }
   Status Process(opt::IRContext*) override;
+
   // TODO(pierremoreau): Move this function somewhere else (e.g. pass.h or
   // within the type manager)
   // Returns whether two types are equal, and have the same decorations.
@@ -61,7 +59,19 @@ class RemoveDuplicatesPass : public Pass {
   bool RemoveDuplicateDecorations(opt::IRContext* ir_context) const;
 };
 
+class RemoveDuplicatesPassToken : public PassToken {
+ public:
+  RemoveDuplicatesPassToken() = default;
+  ~RemoveDuplicatesPassToken() override = default;
+
+  const char* name() const override { return "remove-duplicates"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<RemoveDuplicatesPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_REMOVE_DUPLICATES_PASS_H_
+#endif  // SOURCE_OPT_REMOVE_DUPLICATES_PASS_H_

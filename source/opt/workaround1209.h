@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_WORKAROUND1209_H_
-#define LIBSPIRV_OPT_WORKAROUND1209_H_
+#ifndef SOURCE_OPT_WORKAROUND1209_H_
+#define SOURCE_OPT_WORKAROUND1209_H_
 
-#include "pass.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -23,7 +24,6 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class Workaround1209 : public Pass {
  public:
-  const char* name() const override { return "workaround-1209"; }
   Status Process(opt::IRContext*) override;
 
  private:
@@ -35,7 +35,19 @@ class Workaround1209 : public Pass {
   bool RemoveOpUnreachableInLoops();
 };
 
+class Workaround1209Token : public PassToken {
+ public:
+  Workaround1209Token() = default;
+  ~Workaround1209Token() override = default;
+
+  const char* name() const override { return "workaround-1209"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<Workaround1209>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_WORKAROUND1209_H_
+#endif  // SOURCE_OPT_WORKAROUND1209_H_

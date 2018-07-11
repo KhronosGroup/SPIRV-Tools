@@ -45,8 +45,9 @@ TEST_F(AssemblyBuilderTest, MinimalShader) {
       // clang-format on
   };
 
-  SinglePassRunAndCheck<NullPass>(builder.GetCode(), JoinAllInsts(expected),
-                                  /* skip_nop = */ false);
+  SinglePassRunAndCheck<NullPassToken>(builder.GetCode(),
+                                       JoinAllInsts(expected),
+                                       /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, ShaderWithConstants) {
@@ -158,8 +159,9 @@ TEST_F(AssemblyBuilderTest, ShaderWithConstants) {
                 "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<NullPass>(builder.GetCode(), JoinAllInsts(expected),
-                                  /* skip_nop = */ false);
+  SinglePassRunAndCheck<NullPassToken>(builder.GetCode(),
+                                       JoinAllInsts(expected),
+                                       /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, SpecConstants) {
@@ -241,8 +243,9 @@ TEST_F(AssemblyBuilderTest, SpecConstants) {
       // clang-format on
   };
 
-  SinglePassRunAndCheck<NullPass>(builder.GetCode(), JoinAllInsts(expected),
-                                  /* skip_nop = */ false);
+  SinglePassRunAndCheck<NullPassToken>(builder.GetCode(),
+                                       JoinAllInsts(expected),
+                                       /* skip_nop = */ false);
 }
 
 TEST_F(AssemblyBuilderTest, AppendNames) {
@@ -274,8 +277,9 @@ TEST_F(AssemblyBuilderTest, AppendNames) {
       // clang-format on
   };
 
-  SinglePassRunAndCheck<NullPass>(builder.GetCode(), JoinAllInsts(expected),
-                                  /* skip_nop = */ false);
+  SinglePassRunAndCheck<NullPassToken>(builder.GetCode(),
+                                       JoinAllInsts(expected),
+                                       /* skip_nop = */ false);
 }
 
 }  // namespace

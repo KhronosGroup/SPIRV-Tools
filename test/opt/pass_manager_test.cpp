@@ -27,13 +27,13 @@ namespace {
 using spvtest::GetIdBound;
 using ::testing::Eq;
 
-// A null pass whose construtors accept arguments
-class NullPassWithArgs : public NullPass {
+// A null pass whose constructors accept arguments
+class NullPassWithArgsToken : public NullPassToken {
  public:
-  NullPassWithArgs(uint32_t) {}
-  NullPassWithArgs(std::string) {}
-  NullPassWithArgs(const std::vector<int>&) {}
-  NullPassWithArgs(const std::vector<int>&, uint32_t) {}
+  NullPassWithArgsToken(uint32_t) {}
+  NullPassWithArgsToken(std::string) {}
+  NullPassWithArgsToken(const std::vector<int>&) {}
+  NullPassWithArgsToken(const std::vector<int>&, uint32_t) {}
 
   const char* name() const override { return "null-with-args"; }
 };
@@ -42,42 +42,54 @@ TEST(PassManager, Interface) {
   PassManager manager;
   EXPECT_EQ(0u, manager.NumPasses());
 
-  manager.AddPass<StripDebugInfoPass>();
+  manager.AddPassToken<StripDebugInfoPassToken>();
   EXPECT_EQ(1u, manager.NumPasses());
-  EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
+  EXPECT_STREQ("strip-debug", manager.GetPassToken(0)->name());
 
-  manager.AddPass(MakeUnique<NullPass>());
+  manager.AddPassToken(MakeUnique<NullPassToken>());
   EXPECT_EQ(2u, manager.NumPasses());
-  EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
-  EXPECT_STREQ("null", manager.GetPass(1)->name());
+  EXPECT_STREQ("strip-debug", manager.GetPassToken(0)->name());
+  EXPECT_STREQ("null", manager.GetPassToken(1)->name());
 
-  manager.AddPass<StripDebugInfoPass>();
+  manager.AddPassToken<StripDebugInfoPassToken>();
   EXPECT_EQ(3u, manager.NumPasses());
-  EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
-  EXPECT_STREQ("null", manager.GetPass(1)->name());
-  EXPECT_STREQ("strip-debug", manager.GetPass(2)->name());
+  EXPECT_STREQ("strip-debug", manager.GetPassToken(0)->name());
+  EXPECT_STREQ("null", manager.GetPassToken(1)->name());
+  EXPECT_STREQ("strip-debug", manager.GetPassToken(2)->name());
 
-  manager.AddPass<NullPassWithArgs>(1u);
-  manager.AddPass<NullPassWithArgs>("null pass args");
-  manager.AddPass<NullPassWithArgs>(std::initializer_list<int>{1, 2});
-  manager.AddPass<NullPassWithArgs>(std::initializer_list<int>{1, 2}, 3);
+  manager.AddPassToken<NullPassWithArgsToken>(1u);
+  manager.AddPassToken<NullPassWithArgsToken>("null pass args");
+  manager.AddPassToken<NullPassWithArgsToken>(std::initializer_list<int>{1, 2});
+  manager.AddPassToken<NullPassWithArgsToken>(std::initializer_list<int>{1, 2},
+                                              3);
   EXPECT_EQ(7u, manager.NumPasses());
-  EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
-  EXPECT_STREQ("null", manager.GetPass(1)->name());
-  EXPECT_STREQ("strip-debug", manager.GetPass(2)->name());
-  EXPECT_STREQ("null-with-args", manager.GetPass(3)->name());
-  EXPECT_STREQ("null-with-args", manager.GetPass(4)->name());
-  EXPECT_STREQ("null-with-args", manager.GetPass(5)->name());
-  EXPECT_STREQ("null-with-args", manager.GetPass(6)->name());
+  EXPECT_STREQ("strip-debug", manager.GetPassToken(0)->name());
+  EXPECT_STREQ("null", manager.GetPassToken(1)->name());
+  EXPECT_STREQ("strip-debug", manager.GetPassToken(2)->name());
+  EXPECT_STREQ("null-with-args", manager.GetPassToken(3)->name());
+  EXPECT_STREQ("null-with-args", manager.GetPassToken(4)->name());
+  EXPECT_STREQ("null-with-args", manager.GetPassToken(5)->name());
+  EXPECT_STREQ("null-with-args", manager.GetPassToken(6)->name());
 }
 
 // A pass that appends an OpNop instruction to the debug1 section.
 class AppendOpNopPass : public Pass {
  public:
-  const char* name() const override { return "AppendOpNop"; }
   Status Process(IRContext* irContext) override {
     irContext->AddDebug1Inst(MakeUnique<Instruction>(irContext));
     return Status::SuccessWithChange;
+  }
+};
+
+class AppendOpNopPassToken : public PassToken {
+ public:
+  AppendOpNopPassToken() = default;
+  ~AppendOpNopPassToken() = default;
+
+  const char* name() const override { return "AppendOpNop"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<AppendOpNopPass>();
   }
 };
 
@@ -87,7 +99,6 @@ class AppendMultipleOpNopPass : public Pass {
  public:
   explicit AppendMultipleOpNopPass(uint32_t num_nop) : num_nop_(num_nop) {}
 
-  const char* name() const override { return "AppendOpNop"; }
   Status Process(IRContext* irContext) override {
     for (uint32_t i = 0; i < num_nop_; i++) {
       irContext->AddDebug1Inst(MakeUnique<Instruction>(irContext));
@@ -99,10 +110,24 @@ class AppendMultipleOpNopPass : public Pass {
   uint32_t num_nop_;
 };
 
+class AppendMultipleOpNopPassToken : public PassToken {
+ public:
+  explicit AppendMultipleOpNopPassToken(uint32_t num_nop) : num_nop_(num_nop) {}
+  ~AppendMultipleOpNopPassToken() = default;
+
+  const char* name() const override { return "AppendOpNop"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<AppendMultipleOpNopPass>(num_nop_);
+  }
+
+ private:
+  uint32_t num_nop_;
+};
+
 // A pass that duplicates the last instruction in the debug1 section.
 class DuplicateInstPass : public Pass {
  public:
-  const char* name() const override { return "DuplicateInst"; }
   Status Process(IRContext* irContext) override {
     auto inst =
         MakeUnique<Instruction>(*(--irContext->debug1_end())->Clone(irContext));
@@ -111,27 +136,39 @@ class DuplicateInstPass : public Pass {
   }
 };
 
+class DuplicateInstPassToken : public PassToken {
+ public:
+  DuplicateInstPassToken() = default;
+  ~DuplicateInstPassToken() = default;
+
+  const char* name() const override { return "DuplicateInst"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<DuplicateInstPass>();
+  }
+};
+
 using PassManagerTest = PassTest<::testing::Test>;
 
 TEST_F(PassManagerTest, Run) {
   const std::string text = "OpMemoryModel Logical GLSL450\nOpSource ESSL 310\n";
 
-  AddPass<AppendOpNopPass>();
-  AddPass<AppendOpNopPass>();
+  AddPassToken<AppendOpNopPassToken>();
+  AddPassToken<AppendOpNopPassToken>();
   RunAndCheck(text.c_str(), (text + "OpNop\nOpNop\n").c_str());
 
   RenewPassManger();
-  AddPass<AppendOpNopPass>();
-  AddPass<DuplicateInstPass>();
+  AddPassToken<AppendOpNopPassToken>();
+  AddPassToken<DuplicateInstPassToken>();
   RunAndCheck(text.c_str(), (text + "OpNop\nOpNop\n").c_str());
 
   RenewPassManger();
-  AddPass<DuplicateInstPass>();
-  AddPass<AppendOpNopPass>();
+  AddPassToken<DuplicateInstPassToken>();
+  AddPassToken<AppendOpNopPassToken>();
   RunAndCheck(text.c_str(), (text + "OpSource ESSL 310\nOpNop\n").c_str());
 
   RenewPassManger();
-  AddPass<AppendMultipleOpNopPass>(3);
+  AddPassToken<AppendMultipleOpNopPassToken>(3);
   RunAndCheck(text.c_str(), (text + "OpNop\nOpNop\nOpNop\n").c_str());
 }
 
@@ -140,12 +177,26 @@ class AppendTypeVoidInstPass : public Pass {
  public:
   explicit AppendTypeVoidInstPass(uint32_t result_id) : result_id_(result_id) {}
 
-  const char* name() const override { return "AppendTypeVoidInstPass"; }
   Status Process(IRContext* irContext) override {
     auto inst = MakeUnique<Instruction>(irContext, SpvOpTypeVoid, 0, result_id_,
                                         std::vector<Operand>{});
     irContext->AddType(std::move(inst));
     return Status::SuccessWithChange;
+  }
+
+ private:
+  uint32_t result_id_;
+};
+
+class AppendTypeVoidInstPassToken : public PassToken {
+ public:
+  AppendTypeVoidInstPassToken(uint32_t result_id) : result_id_(result_id) {}
+  ~AppendTypeVoidInstPassToken() = default;
+
+  const char* name() const override { return "AppendTypeVoidInstPass"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<AppendTypeVoidInstPass>(result_id_);
   }
 
  private:
@@ -160,12 +211,12 @@ TEST(PassManager, RecomputeIdBoundAutomatically) {
   EXPECT_THAT(GetIdBound(*context.module()), Eq(0u));
 
   manager.Run(&context);
-  manager.AddPass<AppendOpNopPass>();
+  manager.AddPassToken<AppendOpNopPassToken>();
   // With no ID changes, the ID bound does not change.
   EXPECT_THAT(GetIdBound(*context.module()), Eq(0u));
 
   // Now we force an Id of 100 to be used.
-  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(100));
+  manager.AddPassToken(MakeUnique<AppendTypeVoidInstPassToken>(100));
   EXPECT_THAT(GetIdBound(*context.module()), Eq(0u));
   manager.Run(&context);
   // The Id has been updated automatically, even though the pass
@@ -173,12 +224,12 @@ TEST(PassManager, RecomputeIdBoundAutomatically) {
   EXPECT_THAT(GetIdBound(*context.module()), Eq(101u));
 
   // Try one more time!
-  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(200));
+  manager.AddPassToken(MakeUnique<AppendTypeVoidInstPassToken>(200));
   manager.Run(&context);
   EXPECT_THAT(GetIdBound(*context.module()), Eq(201u));
 
   // Add another pass, but which uses a lower Id.
-  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(10));
+  manager.AddPassToken(MakeUnique<AppendTypeVoidInstPassToken>(10));
   manager.Run(&context);
   // The Id stays high.
   EXPECT_THAT(GetIdBound(*context.module()), Eq(201u));

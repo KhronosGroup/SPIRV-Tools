@@ -24,17 +24,17 @@
 namespace spvtools {
 
 struct Optimizer::PassToken::Impl {
-  Impl(std::unique_ptr<opt::Pass> p) : pass(std::move(p)) {}
+  Impl(std::unique_ptr<opt::PassToken> p) : pass_token(std::move(p)) {}
 
-  std::unique_ptr<opt::Pass> pass;  // Internal implementation pass.
+  std::unique_ptr<opt::PassToken> pass_token;  // Internal implementation token.
 };
 
 Optimizer::PassToken::PassToken(
     std::unique_ptr<Optimizer::PassToken::Impl> impl)
     : impl_(std::move(impl)) {}
 
-Optimizer::PassToken::PassToken(std::unique_ptr<opt::Pass>&& pass)
-    : impl_(MakeUnique<Optimizer::PassToken::Impl>(std::move(pass))) {}
+Optimizer::PassToken::PassToken(std::unique_ptr<opt::PassToken>&& pass_token)
+    : impl_(MakeUnique<Optimizer::PassToken::Impl>(std::move(pass_token))) {}
 
 Optimizer::PassToken::PassToken(PassToken&& that)
     : impl_(std::move(that.impl_)) {}
@@ -44,7 +44,7 @@ Optimizer::PassToken& Optimizer::PassToken::operator=(PassToken&& that) {
   return *this;
 }
 
-Optimizer::PassToken::~PassToken() {}
+Optimizer::PassToken::~PassToken() = default;
 
 struct Optimizer::Impl {
   explicit Impl(spv_target_env env) : target_env(env), pass_manager() {}
@@ -55,20 +55,15 @@ struct Optimizer::Impl {
 
 Optimizer::Optimizer(spv_target_env env) : impl_(new Impl(env)) {}
 
-Optimizer::~Optimizer() {}
+Optimizer::~Optimizer() = default;
 
 void Optimizer::SetMessageConsumer(MessageConsumer c) {
-  // All passes' message consumer needs to be updated.
-  for (uint32_t i = 0; i < impl_->pass_manager.NumPasses(); ++i) {
-    impl_->pass_manager.GetPass(i)->SetMessageConsumer(c);
-  }
   impl_->pass_manager.SetMessageConsumer(std::move(c));
 }
 
 Optimizer& Optimizer::RegisterPass(PassToken&& p) {
   // Change to use the pass manager's consumer.
-  p.impl_->pass->SetMessageConsumer(impl_->pass_manager.consumer());
-  impl_->pass_manager.AddPass(std::move(p.impl_->pass));
+  impl_->pass_manager.AddPassToken(std::move(p.impl_->pass_token));
   return *this;
 }
 
@@ -231,249 +226,253 @@ Optimizer& Optimizer::SetTimeReport(std::ostream* out) {
   return *this;
 }
 
+std::vector<const char*> Optimizer::GetPassNames() const {
+  std::vector<const char*> v;
+  for (uint32_t i = 0; i < impl_->pass_manager.NumPasses(); i++) {
+    v.push_back(impl_->pass_manager.GetPassToken(i)->name());
+  }
+  return v;
+}
+
 Optimizer::PassToken CreateNullPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::NullPass>());
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::NullPassToken>());
 }
 
 Optimizer::PassToken CreateStripDebugInfoPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::StripDebugInfoPass>());
+      MakeUnique<opt::StripDebugInfoPassToken>());
 }
 
 Optimizer::PassToken CreateStripReflectInfoPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::StripReflectInfoPass>());
+      MakeUnique<opt::StripReflectInfoPassToken>());
 }
 
 Optimizer::PassToken CreateEliminateDeadFunctionsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::EliminateDeadFunctionsPass>());
+      MakeUnique<opt::EliminateDeadFunctionsPassToken>());
 }
 
 Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
     const std::unordered_map<uint32_t, std::string>& id_value_map) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::SetSpecConstantDefaultValuePass>(id_value_map));
+      MakeUnique<opt::SetSpecConstantDefaultValuePassToken>(id_value_map));
 }
 
 Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
     const std::unordered_map<uint32_t, std::vector<uint32_t>>& id_value_map) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::SetSpecConstantDefaultValuePass>(id_value_map));
+      MakeUnique<opt::SetSpecConstantDefaultValuePassToken>(id_value_map));
 }
 
 Optimizer::PassToken CreateFlattenDecorationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::FlattenDecorationPass>());
+      MakeUnique<opt::FlattenDecorationPassToken>());
 }
 
 Optimizer::PassToken CreateFreezeSpecConstantValuePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::FreezeSpecConstantValuePass>());
+      MakeUnique<opt::FreezeSpecConstantValuePassToken>());
 }
 
 Optimizer::PassToken CreateFoldSpecConstantOpAndCompositePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::FoldSpecConstantOpAndCompositePass>());
+      MakeUnique<opt::FoldSpecConstantOpAndCompositePassToken>());
 }
 
 Optimizer::PassToken CreateUnifyConstantPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::UnifyConstantPass>());
+      MakeUnique<opt::UnifyConstantPassToken>());
 }
 
 Optimizer::PassToken CreateEliminateDeadConstantPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::EliminateDeadConstantPass>());
+      MakeUnique<opt::EliminateDeadConstantPassToken>());
 }
 
 Optimizer::PassToken CreateDeadVariableEliminationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::DeadVariableElimination>());
+      MakeUnique<opt::DeadVariableEliminationToken>());
 }
 
 Optimizer::PassToken CreateStrengthReductionPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::StrengthReductionPass>());
+      MakeUnique<opt::StrengthReductionPassToken>());
 }
 
 Optimizer::PassToken CreateBlockMergePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::BlockMergePass>());
+      MakeUnique<opt::BlockMergePassToken>());
 }
 
 Optimizer::PassToken CreateInlineExhaustivePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::InlineExhaustivePass>());
+      MakeUnique<opt::InlineExhaustivePassToken>());
 }
 
 Optimizer::PassToken CreateInlineOpaquePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::InlineOpaquePass>());
+      MakeUnique<opt::InlineOpaquePassToken>());
 }
 
 Optimizer::PassToken CreateLocalAccessChainConvertPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LocalAccessChainConvertPass>());
+      MakeUnique<opt::LocalAccessChainConvertPassToken>());
 }
 
 Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LocalSingleBlockLoadStoreElimPass>());
+      MakeUnique<opt::LocalSingleBlockLoadStoreElimPassToken>());
 }
 
 Optimizer::PassToken CreateLocalSingleStoreElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LocalSingleStoreElimPass>());
+      MakeUnique<opt::LocalSingleStoreElimPassToken>());
 }
 
 Optimizer::PassToken CreateInsertExtractElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::SimplificationPass>());
+      MakeUnique<opt::SimplificationPassToken>());
 }
 
 Optimizer::PassToken CreateDeadInsertElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::DeadInsertElimPass>());
+      MakeUnique<opt::DeadInsertElimPassToken>());
 }
 
 Optimizer::PassToken CreateDeadBranchElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::DeadBranchElimPass>());
+      MakeUnique<opt::DeadBranchElimPassToken>());
 }
 
 Optimizer::PassToken CreateLocalMultiStoreElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LocalMultiStoreElimPass>());
+      MakeUnique<opt::LocalMultiStoreElimPassToken>());
 }
 
 Optimizer::PassToken CreateAggressiveDCEPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::AggressiveDCEPass>());
+      MakeUnique<opt::AggressiveDCEPassToken>());
 }
 
 Optimizer::PassToken CreateCommonUniformElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::CommonUniformElimPass>());
+      MakeUnique<opt::CommonUniformElimPassToken>());
 }
 
 Optimizer::PassToken CreateCompactIdsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::CompactIdsPass>());
+      MakeUnique<opt::CompactIdsPassToken>());
 }
 
 Optimizer::PassToken CreateMergeReturnPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::MergeReturnPass>());
-}
-
-std::vector<const char*> Optimizer::GetPassNames() const {
-  std::vector<const char*> v;
-  for (uint32_t i = 0; i < impl_->pass_manager.NumPasses(); i++) {
-    v.push_back(impl_->pass_manager.GetPass(i)->name());
-  }
-  return v;
+      MakeUnique<opt::MergeReturnPassToken>());
 }
 
 Optimizer::PassToken CreateCFGCleanupPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::CFGCleanupPass>());
+      MakeUnique<opt::CFGCleanupPassToken>());
 }
 
 Optimizer::PassToken CreateLocalRedundancyEliminationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LocalRedundancyEliminationPass>());
+      MakeUnique<opt::LocalRedundancyEliminationPassToken>());
 }
 
 Optimizer::PassToken CreateLoopFissionPass(size_t threshold) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LoopFissionPass>(threshold));
+      MakeUnique<opt::LoopFissionPassToken>(threshold));
 }
 
 Optimizer::PassToken CreateLoopFusionPass(size_t max_registers_per_loop) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LoopFusionPass>(max_registers_per_loop));
+      MakeUnique<opt::LoopFusionPassToken>(max_registers_per_loop));
 }
 
 Optimizer::PassToken CreateLoopInvariantCodeMotionPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::LICMPass>());
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LICMPassToken>());
 }
 
 Optimizer::PassToken CreateLoopPeelingPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LoopPeelingPass>());
+      MakeUnique<opt::LoopPeelingPassToken>());
 }
 
 Optimizer::PassToken CreateLoopUnswitchPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LoopUnswitchPass>());
+      MakeUnique<opt::LoopUnswitchPassToken>());
 }
 
 Optimizer::PassToken CreateRedundancyEliminationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::RedundancyEliminationPass>());
+      MakeUnique<opt::RedundancyEliminationPassToken>());
 }
 
 Optimizer::PassToken CreateRemoveDuplicatesPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::RemoveDuplicatesPass>());
+      MakeUnique<opt::RemoveDuplicatesPassToken>());
 }
 
 Optimizer::PassToken CreateScalarReplacementPass(uint32_t size_limit) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::ScalarReplacementPass>(size_limit));
+      MakeUnique<opt::ScalarReplacementPassToken>(size_limit));
 }
 
 Optimizer::PassToken CreatePrivateToLocalPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::PrivateToLocalPass>());
+      MakeUnique<opt::PrivateToLocalPassToken>());
 }
 
 Optimizer::PassToken CreateCCPPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::CCPPass>());
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::CCPPassToken>());
 }
 
 Optimizer::PassToken CreateWorkaround1209Pass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::Workaround1209>());
+      MakeUnique<opt::Workaround1209Token>());
 }
 
 Optimizer::PassToken CreateIfConversionPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::IfConversion>());
+      MakeUnique<opt::IfConversionToken>());
 }
 
 Optimizer::PassToken CreateReplaceInvalidOpcodePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::ReplaceInvalidOpcodePass>());
+      MakeUnique<opt::ReplaceInvalidOpcodePassToken>());
 }
 
 Optimizer::PassToken CreateSimplificationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::SimplificationPass>());
+      MakeUnique<opt::SimplificationPassToken>());
 }
 
 Optimizer::PassToken CreateLoopUnrollPass(bool fully_unroll, int factor) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LoopUnroller>(fully_unroll, factor));
+      MakeUnique<opt::LoopUnrollerToken>(fully_unroll, factor));
 }
 
 Optimizer::PassToken CreateSSARewritePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::SSARewritePass>());
+      MakeUnique<opt::SSARewritePassToken>());
 }
 
 Optimizer::PassToken CreateCopyPropagateArraysPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::CopyPropagateArrays>());
+      MakeUnique<opt::CopyPropagateArraysToken>());
 }
 
 Optimizer::PassToken CreateVectorDCEPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::VectorDCE>());
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::VectorDCEToken>());
 }
 
 Optimizer::PassToken CreateReduceLoadSizePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::ReduceLoadSize>());
+      MakeUnique<opt::ReduceLoadSizeToken>());
 }
 }  // namespace spvtools

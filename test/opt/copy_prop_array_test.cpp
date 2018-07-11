@@ -102,7 +102,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<CopyPropagateArrays>(before, false);
+  SinglePassRunAndMatch<CopyPropagateArraysToken>(before, false);
 }
 
 TEST_F(CopyPropArrayPassTest, BasicPropagateArrayWithName) {
@@ -182,7 +182,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<CopyPropagateArrays>(before, false);
+  SinglePassRunAndMatch<CopyPropagateArraysToken>(before, false);
 }
 
 // Propagate 2d array.  This test identifying a copy through multiple levels.
@@ -271,7 +271,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<CopyPropagateArrays>(text, false);
+  SinglePassRunAndMatch<CopyPropagateArraysToken>(text, false);
 }
 
 // Propagate 2d array.  This test identifying a copy through multiple levels.
@@ -358,7 +358,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<CopyPropagateArrays>(text, false);
+  SinglePassRunAndMatch<CopyPropagateArraysToken>(text, false);
 }
 
 // Test decomposing an object when we need to "rewrite" a store.
@@ -443,7 +443,7 @@ TEST_F(CopyPropArrayPassTest, DecomposeObjectForArrayStore) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<CopyPropagateArrays>(text, false);
+  SinglePassRunAndMatch<CopyPropagateArraysToken>(text, false);
 }
 
 // Test decomposing an object when we need to "rewrite" a store.
@@ -531,7 +531,7 @@ TEST_F(CopyPropArrayPassTest, DecomposeObjectForStructStore) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<CopyPropagateArrays>(text, false);
+  SinglePassRunAndMatch<CopyPropagateArraysToken>(text, false);
 }
 
 TEST_F(CopyPropArrayPassTest, CopyViaInserts) {
@@ -618,7 +618,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<CopyPropagateArrays>(before, false);
+  SinglePassRunAndMatch<CopyPropagateArraysToken>(before, false);
 }
 #endif  // SPIRV_EFFCEE
 
@@ -694,7 +694,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArraysToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -782,7 +782,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArraysToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -861,7 +861,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArraysToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -939,7 +939,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArraysToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -1021,7 +1021,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArraysToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -1103,7 +1103,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArraysToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -1183,7 +1183,7 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArraysToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
@@ -1263,7 +1263,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<CopyPropagateArrays>(before, after, true, true);
+  SinglePassRunAndCheck<CopyPropagateArraysToken>(before, after, true, true);
 }
 
 }  // namespace

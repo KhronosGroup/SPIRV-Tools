@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_CCP_PASS_H_
-#define LIBSPIRV_OPT_CCP_PASS_H_
+#ifndef SOURCE_OPT_CCP_PASS_H_
+#define SOURCE_OPT_CCP_PASS_H_
 
-#include "constants.h"
-#include "function.h"
-#include "ir_context.h"
-#include "mem_pass.h"
-#include "module.h"
-#include "propagator.h"
+#include "source/opt/constants.h"
+#include "source/opt/function.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass_token.h"
+#include "source/opt/propagator.h"
 
 namespace spvtools {
 namespace opt {
@@ -28,7 +29,7 @@ namespace opt {
 class CCPPass : public MemPass {
  public:
   CCPPass() = default;
-  const char* name() const override { return "ccp"; }
+
   Status Process(opt::IRContext* c) override;
   virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -102,7 +103,19 @@ class CCPPass : public MemPass {
   std::unique_ptr<SSAPropagator> propagator_;
 };
 
+class CCPPassToken : public PassToken {
+ public:
+  CCPPassToken() = default;
+  ~CCPPassToken() override = default;
+
+  const char* name() const override { return "ccp"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<CCPPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif
+#endif  // SOURCE_OPT_CCP_PASS_H_

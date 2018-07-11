@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_UNIFY_CONSTANT_PASS_H_
-#define LIBSPIRV_OPT_UNIFY_CONSTANT_PASS_H_
+#ifndef SOURCE_OPT_UNIFY_CONSTANT_PASS_H_
+#define SOURCE_OPT_UNIFY_CONSTANT_PASS_H_
 
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -25,11 +26,22 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class UnifyConstantPass : public Pass {
  public:
-  const char* name() const override { return "unify-const"; }
   Status Process(opt::IRContext*) override;
+};
+
+class UnifyConstantPassToken : public PassToken {
+ public:
+  UnifyConstantPassToken() = default;
+  ~UnifyConstantPassToken() override = default;
+
+  const char* name() const override { return "unify-const"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<UnifyConstantPass>();
+  }
 };
 
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_UNIFY_CONSTANT_PASS_H_
+#endif  // SOURCE_OPT_UNIFY_CONSTANT_PASS_H_

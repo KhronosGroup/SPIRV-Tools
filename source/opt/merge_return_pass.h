@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_MERGE_RETURN_PASS_H_
-#define LIBSPIRV_OPT_MERGE_RETURN_PASS_H_
-
-#include "basic_block.h"
-#include "function.h"
-#include "mem_pass.h"
+#ifndef SOURCE_OPT_MERGE_RETURN_PASS_H_
+#define SOURCE_OPT_MERGE_RETURN_PASS_H_
 
 #include <unordered_set>
 #include <vector>
+
+#include "source/opt/basic_block.h"
+#include "source/opt/function.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -102,7 +103,6 @@ class MergeReturnPass : public MemPass {
         constant_true_(nullptr),
         final_return_block_(nullptr) {}
 
-  const char* name() const override { return "merge-return"; }
   Status Process(opt::IRContext*) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -301,7 +301,19 @@ class MergeReturnPass : public MemPass {
   std::unordered_map<opt::BasicBlock*, opt::BasicBlock*> new_merge_nodes_;
 };
 
+class MergeReturnPassToken : public PassToken {
+ public:
+  MergeReturnPassToken() = default;
+  ~MergeReturnPassToken() override = default;
+
+  const char* name() const override { return "merge-return"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<MergeReturnPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_MERGE_RETURN_PASS_H_
+#endif  // SOURCE_OPT_MERGE_RETURN_PASS_H_

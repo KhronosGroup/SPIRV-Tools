@@ -32,12 +32,9 @@ namespace {
 using ::testing::UnorderedElementsAre;
 using PassClassTest = PassTest<::testing::Test>;
 
-template <int factor>
 class PartialUnrollerTestPass : public Pass {
  public:
-  PartialUnrollerTestPass() : Pass() {}
-
-  const char* name() const override { return "Loop unroller"; }
+  PartialUnrollerTestPass(int factor) : Pass(), factor_(factor) {}
 
   Status Process(IRContext* context) override {
     bool changed = false;
@@ -45,7 +42,7 @@ class PartialUnrollerTestPass : public Pass {
       LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(&f);
       for (auto& loop : loop_descriptor) {
         LoopUtils loop_utils{context, &loop};
-        if (loop_utils.PartiallyUnroll(factor)) {
+        if (loop_utils.PartiallyUnroll(factor_)) {
           changed = true;
         }
       }
@@ -53,6 +50,22 @@ class PartialUnrollerTestPass : public Pass {
 
     if (changed) return Pass::Status::SuccessWithChange;
     return Pass::Status::SuccessWithoutChange;
+  }
+
+ private:
+  int factor_;
+};
+
+template <int factor>
+class PartialUnrollerTestPassToken : public PassToken {
+ public:
+  PartialUnrollerTestPassToken() = default;
+  ~PartialUnrollerTestPassToken() = default;
+
+  const char* name() const override { return "Loop unroller"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<PartialUnrollerTestPass>(factor);
   }
 };
 
@@ -127,13 +140,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -227,9 +239,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
 }
 
 /*
@@ -308,9 +319,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
 }
 
 /*
@@ -389,9 +399,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
 }
 
 /*
@@ -464,7 +473,7 @@ OpFunctionEnd
 )";
   // clang-format on
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
 }
 
 /*
@@ -526,13 +535,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -598,13 +606,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -669,13 +676,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -746,13 +752,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -964,13 +969,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -1038,13 +1042,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -1118,13 +1121,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -1197,13 +1199,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -1276,13 +1277,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -1355,13 +1355,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 /*
@@ -1434,13 +1433,12 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
 
-  LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Make sure the pass doesn't run
-  SinglePassRunAndCheck<LoopUnroller>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<1>>(text, text, false);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, text, false);
+  SinglePassRunAndCheck<LoopUnrollerToken>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<1>>(text, text, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, text, false);
 }
 
 }  // namespace

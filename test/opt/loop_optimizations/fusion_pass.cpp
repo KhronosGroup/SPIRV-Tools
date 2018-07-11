@@ -129,7 +129,7 @@ TEST_F(FusionPassTest, SimpleFusion) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<LoopFusionPass>(text, true, 20);
+  SinglePassRunAndMatch<LoopFusionPassToken>(text, true, 20);
 }
 
 /*
@@ -266,7 +266,7 @@ TEST_F(FusionPassTest, ThreeLoopsFused) {
 
   )";
 
-  SinglePassRunAndMatch<LoopFusionPass>(text, true, 20);
+  SinglePassRunAndMatch<LoopFusionPassToken>(text, true, 20);
 }
 
 /*
@@ -416,7 +416,7 @@ TEST_F(FusionPassTest, NestedLoopsFused) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<LoopFusionPass>(text, true, 20);
+  SinglePassRunAndMatch<LoopFusionPassToken>(text, true, 20);
 }
 
 /*
@@ -495,7 +495,7 @@ TEST_F(FusionPassTest, Incompatible) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<LoopFusionPass>(text, true, 20);
+  SinglePassRunAndMatch<LoopFusionPassToken>(text, true, 20);
 }
 
 /*
@@ -607,7 +607,7 @@ TEST_F(FusionPassTest, Illegal) {
                OpFunctionEnd
     )";
 
-  SinglePassRunAndMatch<LoopFusionPass>(text, true, 20);
+  SinglePassRunAndMatch<LoopFusionPassToken>(text, true, 20);
 }
 
 /*
@@ -713,7 +713,7 @@ TEST_F(FusionPassTest, TooManyRegisters) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<LoopFusionPass>(text, true, 5);
+  SinglePassRunAndMatch<LoopFusionPassToken>(text, true, 5);
 }
 
 #endif

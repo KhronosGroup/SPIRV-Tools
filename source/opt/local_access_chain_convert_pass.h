@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_
-#define LIBSPIRV_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_
+#ifndef SOURCE_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_
+#define SOURCE_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_
 
 #include <algorithm>
 #include <map>
@@ -24,10 +24,11 @@
 #include <unordered_set>
 #include <utility>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -36,7 +37,7 @@ namespace opt {
 class LocalAccessChainConvertPass : public MemPass {
  public:
   LocalAccessChainConvertPass();
-  const char* name() const override { return "convert-local-access-chains"; }
+
   Status Process(opt::IRContext* c) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -120,7 +121,19 @@ class LocalAccessChainConvertPass : public MemPass {
   std::unordered_set<std::string> extensions_whitelist_;
 };
 
+class LocalAccessChainConvertPassToken : public PassToken {
+ public:
+  LocalAccessChainConvertPassToken() = default;
+  ~LocalAccessChainConvertPassToken() override = default;
+
+  const char* name() const override { return "convert-local-access-chains"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LocalAccessChainConvertPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_
+#endif  // SOURCE_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_

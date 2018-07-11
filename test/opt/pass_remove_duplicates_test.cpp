@@ -62,12 +62,12 @@ class RemoveDuplicatesTest : public ::testing::Test {
   virtual void TearDown() override { error_message_.clear(); }
 
   std::string RunPass(const std::string& text) {
-    context_ = spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_2, consumer_, text);
+    context_ = BuildModule(SPV_ENV_UNIVERSAL_1_2, consumer_, text);
     if (!context_.get()) return std::string();
 
     PassManager manager;
     manager.SetMessageConsumer(consumer_);
-    manager.AddPass<RemoveDuplicatesPass>();
+    manager.AddPassToken<RemoveDuplicatesPassToken>();
 
     Pass::Status pass_res = manager.Run(context_.get());
     if (pass_res == Pass::Status::Failure) return std::string();
@@ -106,10 +106,9 @@ class RemoveDuplicatesTest : public ::testing::Test {
   }
 
  private:
-  spvtools::SpirvTools
-      tools_;  // An instance for calling SPIRV-Tools functionalities.
+  SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
   std::unique_ptr<IRContext> context_;
-  spvtools::MessageConsumer consumer_;
+  MessageConsumer consumer_;
   uint32_t disassemble_options_;
   std::string error_message_;
 };

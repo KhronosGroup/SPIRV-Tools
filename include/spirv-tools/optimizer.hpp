@@ -24,10 +24,11 @@
 #include "libspirv.hpp"
 
 namespace spvtools {
-
 namespace opt {
-class Pass;
-}
+
+class PassToken;
+
+}  // namespace opt
 
 // C++ interface for SPIR-V optimization functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and
@@ -49,7 +50,7 @@ class Optimizer {
     // below; for out-of-tree passes, use this constructor instead.
     // Note that this API isn't guaranteed to be stable and may change without
     // preserving source or binary compatibility in the future.
-    PassToken(std::unique_ptr<opt::Pass>&& pass);
+    PassToken(std::unique_ptr<opt::PassToken>&& pass);
 
     // Tokens can only be moved. Copying is disabled.
     PassToken(const PassToken&) = delete;

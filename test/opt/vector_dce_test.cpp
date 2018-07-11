@@ -167,8 +167,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<VectorDCE>(before_predefs + before,
-                                   after_predefs + after, true, true);
+  SinglePassRunAndCheck<VectorDCEToken>(before_predefs + before,
+                                        after_predefs + after, true, true);
 }
 
 TEST_F(VectorDCETest, DeadInsertInChainWithPhi) {
@@ -350,8 +350,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<VectorDCE>(before_predefs + before,
-                                   after_predefs + after, true, true);
+  SinglePassRunAndCheck<VectorDCEToken>(before_predefs + before,
+                                        after_predefs + after, true, true);
 }
 
 TEST_F(VectorDCETest, DeadInsertWithScalars) {
@@ -564,8 +564,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<DeadInsertElimPass>(before_predefs + before,
-                                            after_predefs + after, true, true);
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(
+      before_predefs + before, after_predefs + after, true, true);
 }
 
 TEST_F(VectorDCETest, InsertObjectLive) {
@@ -606,7 +606,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<DeadInsertElimPass>(before, before, true, true);
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(before, before, true, true);
 }
 
 #ifdef SPIRV_EFFCEE
@@ -729,7 +729,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<VectorDCE>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 
 TEST_F(VectorDCETest, DeadLoadFeedingCompositeConstruct) {
@@ -810,7 +810,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<VectorDCE>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 
 TEST_F(VectorDCETest, DeadLoadFeedingVectorShuffle) {
@@ -894,7 +894,7 @@ TEST_F(VectorDCETest, DeadLoadFeedingVectorShuffle) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<VectorDCE>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 
 TEST_F(VectorDCETest, DeadInstThroughShuffle) {
@@ -984,7 +984,7 @@ TEST_F(VectorDCETest, DeadInstThroughShuffle) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<VectorDCE>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 
 TEST_F(VectorDCETest, DeadInsertThroughOtherInst) {
@@ -1074,7 +1074,7 @@ TEST_F(VectorDCETest, DeadInsertThroughOtherInst) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<VectorDCE>(assembly, true);
+  SinglePassRunAndMatch<VectorDCEToken>(assembly, true);
 }
 #endif
 
@@ -1148,7 +1148,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<DeadInsertElimPass>(text, text, true, true);
+  SinglePassRunAndCheck<DeadInsertElimPassToken>(text, text, true, true);
 }
 
 }  // namespace

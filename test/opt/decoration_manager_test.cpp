@@ -101,13 +101,13 @@ class DecorationManagerTest : public ::testing::Test {
     return text;
   }
 
-  spvtools::MessageConsumer GetConsumer() { return consumer_; }
+  MessageConsumer GetConsumer() { return consumer_; }
 
  private:
   // An instance for calling SPIRV-Tools functionalities.
-  spvtools::SpirvTools tools_;
+  SpirvTools tools_;
   std::unique_ptr<IRContext> context_;
-  spvtools::MessageConsumer consumer_;
+  MessageConsumer consumer_;
   uint32_t disassemble_options_;
   std::string error_message_;
 };

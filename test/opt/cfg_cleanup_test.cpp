@@ -79,8 +79,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CFGCleanupPass>(declarations + body_before,
-                                        declarations + body_after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(
+      declarations + body_before, declarations + body_after, true, true);
 }
 
 TEST_F(CFGCleanupTest, RemoveDecorations) {
@@ -142,7 +142,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CFGCleanupPass>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 TEST_F(CFGCleanupTest, UpdatePhis) {
@@ -226,7 +226,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CFGCleanupPass>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 TEST_F(CFGCleanupTest, RemoveNamedLabels) {
@@ -261,7 +261,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CFGCleanupPass>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 TEST_F(CFGCleanupTest, RemovePhiArgsFromFarBlocks) {
@@ -359,7 +359,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CFGCleanupPass>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 TEST_F(CFGCleanupTest, RemovePhiConstantArgs) {
@@ -438,7 +438,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CFGCleanupPass>(before, after, true, true);
+  SinglePassRunAndCheck<CFGCleanupPassToken>(before, after, true, true);
 }
 
 }  // namespace

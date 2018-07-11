@@ -78,7 +78,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs_before + before, predefs_before + after, true, true);
 }
 
@@ -179,7 +179,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -251,7 +251,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs_before + before, predefs_before + after, true, true);
 }
 
@@ -357,7 +357,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -415,8 +415,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(assembly, assembly,
-                                                           false, true);
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
+      assembly, assembly, false, true);
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfInterveningFunctionCall) {
@@ -471,8 +471,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(assembly, assembly,
-                                                           false, true);
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
+      assembly, assembly, false, true);
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, ElimIfCopyObjectInFunction) {
@@ -561,7 +561,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -656,7 +656,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -763,7 +763,7 @@ OpReturnValue %27
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -864,8 +864,8 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(before, after, true,
-                                                           true);
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(before, after,
+                                                                true, true);
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, RedundantStore) {
@@ -920,7 +920,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs_before + before, predefs_before + after, true, true);
 }
 
@@ -978,7 +978,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPassToken>(
       predefs_before + before, predefs_before + after, true, true);
 }
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

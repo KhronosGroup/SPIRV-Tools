@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
-#define LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
+#ifndef SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
+#define SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
 
 #include <algorithm>
 #include <map>
@@ -24,10 +24,11 @@
 #include <unordered_set>
 #include <utility>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -36,7 +37,7 @@ namespace opt {
 class LocalSingleBlockLoadStoreElimPass : public MemPass {
  public:
   LocalSingleBlockLoadStoreElimPass();
-  const char* name() const override { return "eliminate-local-single-block"; }
+
   Status Process(opt::IRContext* c) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -98,7 +99,19 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   std::unordered_set<uint32_t> supported_ref_ptrs_;
 };
 
+class LocalSingleBlockLoadStoreElimPassToken : public PassToken {
+ public:
+  LocalSingleBlockLoadStoreElimPassToken() = default;
+  ~LocalSingleBlockLoadStoreElimPassToken() override = default;
+
+  const char* name() const override { return "eliminate-local-single-block"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LocalSingleBlockLoadStoreElimPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
+#endif  // SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_

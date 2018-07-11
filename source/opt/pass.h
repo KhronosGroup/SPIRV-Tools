@@ -47,23 +47,8 @@ class Pass {
 
   using ProcessFunction = std::function<bool(opt::Function*)>;
 
-  // Constructs a new pass.
-  //
-  // The constructed instance will have an empty message consumer, which just
-  // ignores all messages from the library. Use SetMessageConsumer() to supply
-  // one if messages are of concern.
-  Pass();
-
   // Destructs the pass.
   virtual ~Pass() = default;
-
-  // Returns a descriptive name for this pass.
-  //
-  // NOTE: When deriving a new pass class, make sure you make the name
-  // compatible with the corresponding spirv-opt command-line flag. For example,
-  // if you add the flag --my-pass to spirv-opt, make this function return
-  // "my-pass" (no leading hyphens).
-  virtual const char* name() const = 0;
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
@@ -137,6 +122,13 @@ class Pass {
   uint32_t GetPointeeTypeId(const opt::Instruction* ptrInst) const;
 
  protected:
+  // Constructs a new pass.
+  //
+  // The constructed instance will have an empty message consumer, which just
+  // ignores all messages from the library. Use SetMessageConsumer() to supply
+  // one if messages are of concern.
+  Pass();
+
   // Initialize basic data structures for the pass. This sets up the def-use
   // manager, module and other attributes.
   virtual void InitializeProcessing(opt::IRContext* c) { context_ = c; }

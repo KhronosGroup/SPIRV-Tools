@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_SIMPLIFICATION_PASS_H_
-#define LIBSPIRV_OPT_SIMPLIFICATION_PASS_H_
+#ifndef SOURCE_OPT_SIMPLIFICATION_PASS_H_
+#define SOURCE_OPT_SIMPLIFICATION_PASS_H_
 
-#include "function.h"
-#include "ir_context.h"
-#include "pass.h"
+#include "source/opt/function.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -25,7 +26,6 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class SimplificationPass : public Pass {
  public:
-  const char* name() const override { return "simplify-instructions"; }
   Status Process(opt::IRContext*) override;
   virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -43,7 +43,19 @@ class SimplificationPass : public Pass {
   bool SimplifyFunction(opt::Function* function);
 };
 
+class SimplificationPassToken : public PassToken {
+ public:
+  SimplificationPassToken() = default;
+  ~SimplificationPassToken() override = default;
+
+  const char* name() const override { return "simplify-instructions"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<SimplificationPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_SIMPLIFICATION_PASS_H_
+#endif  // SOURCE_OPT_SIMPLIFICATION_PASS_H_

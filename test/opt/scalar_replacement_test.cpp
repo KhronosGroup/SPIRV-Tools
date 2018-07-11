@@ -71,7 +71,7 @@ OpReturnValue %19
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, StructInitialization) {
@@ -125,7 +125,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, SpecConstantInitialization) {
@@ -169,7 +169,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 // TODO(alanbaker): Re-enable when vector and matrix scalarization is supported.
@@ -224,7 +224,7 @@ OpFunctionEnd
 //  OpFunctionEnd
 //   )";
 //
-//   SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
+//   SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 // }
 //
 //  TEST_F(ScalarReplacementTest, MatrixInitialization) {
@@ -283,7 +283,7 @@ OpFunctionEnd
 //  OpFunctionEnd
 //   )";
 //
-//   SinglePassRunAndMatch<opt::ScalarReplacementPass>(text, true);
+//   SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 // }
 
 TEST_F(ScalarReplacementTest, ElideAccessChain) {
@@ -317,7 +317,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ElideMultipleAccessChains) {
@@ -355,7 +355,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceAccessChain) {
@@ -397,7 +397,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ArrayInitialization) {
@@ -448,7 +448,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, NonUniformCompositeInitialization) {
@@ -529,7 +529,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ElideUncombinedAccessChains) {
@@ -565,7 +565,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ElideSingleUncombinedAccessChains) {
@@ -605,7 +605,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeLoad) {
@@ -645,7 +645,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeLoadCopyMemoryAccess) {
@@ -681,7 +681,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeStore) {
@@ -718,7 +718,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeStoreCopyMemoryAccess) {
@@ -756,7 +756,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchVolatileLoad) {
@@ -788,7 +788,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchVolatileStore) {
@@ -820,7 +820,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchSpecNonFunctionVariable) {
@@ -852,7 +852,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchSpecConstantAccessChain) {
@@ -886,7 +886,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, NoPartialAccesses) {
@@ -916,7 +916,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchPtrAccessChain) {
@@ -950,7 +950,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, false);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, false);
 }
 
 TEST_F(ScalarReplacementTest, DontTouchInBoundsPtrAccessChain) {
@@ -984,7 +984,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, false);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, false);
 }
 
 TEST_F(ScalarReplacementTest, DonTouchAliasedDecoration) {
@@ -1017,7 +1017,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, CopyRestrictDecoration) {
@@ -1059,7 +1059,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontClobberDecoratesOnSubtypes) {
@@ -1097,7 +1097,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, DontCopyMemberDecorate) {
@@ -1134,7 +1134,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, NoPartialAccesses2) {
@@ -1258,7 +1258,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeLoadAndStore) {
@@ -1304,7 +1304,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, ReplaceWholeLoadAndStore2) {
@@ -1353,7 +1353,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, CreateAmbiguousNullConstant1) {
@@ -1399,7 +1399,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 
 TEST_F(ScalarReplacementTest, CreateAmbiguousNullConstant2) {
@@ -1444,7 +1444,7 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+  SinglePassRunAndMatch<ScalarReplacementPassToken>(text, true);
 }
 #endif  // SPIRV_EFFCEE
 
@@ -1478,8 +1478,8 @@ OpReturnValue %19
 OpFunctionEnd
   )";
 
-  auto result =
-      SinglePassRunAndDisassemble<ScalarReplacementPass>(text, true, false, 2);
+  auto result = SinglePassRunAndDisassemble<ScalarReplacementPassToken>(
+      text, true, false, 2);
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
@@ -1515,8 +1515,8 @@ OpReturnValue %19
 OpFunctionEnd
   )";
 
-  auto result =
-      SinglePassRunAndDisassemble<ScalarReplacementPass>(text, true, false, 0);
+  auto result = SinglePassRunAndDisassemble<ScalarReplacementPassToken>(
+      text, true, false, 0);
   EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
 }
 

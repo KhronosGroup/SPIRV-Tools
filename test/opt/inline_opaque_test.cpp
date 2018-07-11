@@ -124,7 +124,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<InlineOpaquePass>(
+  SinglePassRunAndCheck<InlineOpaquePassToken>(
       predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
@@ -214,7 +214,7 @@ OpReturnValue %33
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<InlineOpaquePass>(
+  SinglePassRunAndCheck<InlineOpaquePassToken>(
       predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
@@ -328,7 +328,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<InlineOpaquePass>(
+  SinglePassRunAndCheck<InlineOpaquePassToken>(
       predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
@@ -402,7 +402,7 @@ OpReturnValue %31
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<InlineOpaquePass>(assembly, assembly, true, true);
+  SinglePassRunAndCheck<InlineOpaquePassToken>(assembly, assembly, true, true);
 }
 
 }  // namespace

@@ -143,7 +143,7 @@ using SetSpecConstantDefaultValueInStringFormParamTest = PassTest<
 
 TEST_P(SetSpecConstantDefaultValueInStringFormParamTest, TestCase) {
   const auto& tc = GetParam();
-  SinglePassRunAndCheck<SetSpecConstantDefaultValuePass>(
+  SinglePassRunAndCheck<SetSpecConstantDefaultValuePassToken>(
       tc.code, tc.expected, /* skip_nop = */ false, tc.default_values);
 }
 
@@ -605,7 +605,7 @@ using SetSpecConstantDefaultValueInBitPatternFormParamTest =
 
 TEST_P(SetSpecConstantDefaultValueInBitPatternFormParamTest, TestCase) {
   const auto& tc = GetParam();
-  SinglePassRunAndCheck<SetSpecConstantDefaultValuePass>(
+  SinglePassRunAndCheck<SetSpecConstantDefaultValuePassToken>(
       tc.code, tc.expected, /* skip_nop = */ false, tc.default_values);
 }
 

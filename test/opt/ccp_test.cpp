@@ -82,7 +82,7 @@ TEST_F(CCPTest, PropagateThroughPhis) {
                OpFunctionEnd
                )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, SimplifyConditionals) {
@@ -139,7 +139,7 @@ TEST_F(CCPTest, SimplifyConditionals) {
                OpFunctionEnd
                )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, SimplifySwitches) {
@@ -188,7 +188,7 @@ TEST_F(CCPTest, SimplifySwitches) {
                OpFunctionEnd
                )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, SimplifySwitchesDefaultBranch) {
@@ -237,7 +237,7 @@ TEST_F(CCPTest, SimplifySwitchesDefaultBranch) {
                OpFunctionEnd
                )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, SimplifyIntVector) {
@@ -288,7 +288,7 @@ TEST_F(CCPTest, SimplifyIntVector) {
                OpFunctionEnd
                )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, BadSimplifyFloatVector) {
@@ -341,7 +341,7 @@ TEST_F(CCPTest, BadSimplifyFloatVector) {
                OpFunctionEnd
                )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, NoLoadStorePropagation) {
@@ -383,7 +383,7 @@ TEST_F(CCPTest, NoLoadStorePropagation) {
                OpFunctionEnd
                )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, HandleAbortInstructions) {
@@ -416,7 +416,7 @@ TEST_F(CCPTest, HandleAbortInstructions) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, SSAWebCycles) {
@@ -467,7 +467,7 @@ TEST_F(CCPTest, SSAWebCycles) {
   )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, LoopInductionVariables) {
@@ -521,7 +521,7 @@ TEST_F(CCPTest, LoopInductionVariables) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<CCPPass>(spv_asm, true);
+  SinglePassRunAndMatch<CCPPassToken>(spv_asm, true);
 }
 
 TEST_F(CCPTest, HandleCompositeWithUndef) {
@@ -552,7 +552,7 @@ TEST_F(CCPTest, HandleCompositeWithUndef) {
                OpFunctionEnd
   )";
 
-  auto res = SinglePassRunToBinary<CCPPass>(spv_asm, true);
+  auto res = SinglePassRunToBinary<CCPPassToken>(spv_asm, true);
   EXPECT_EQ(std::get<1>(res), Pass::Status::SuccessWithoutChange);
 }
 
@@ -579,7 +579,7 @@ TEST_F(CCPTest, SkipSpecConstantInstrucitons) {
                OpFunctionEnd
   )";
 
-  auto res = SinglePassRunToBinary<CCPPass>(spv_asm, true);
+  auto res = SinglePassRunToBinary<CCPPassToken>(spv_asm, true);
   EXPECT_EQ(std::get<1>(res), Pass::Status::SuccessWithoutChange);
 }
 
@@ -639,7 +639,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  auto res = SinglePassRunToBinary<CCPPass>(text, true);
+  auto res = SinglePassRunToBinary<CCPPassToken>(text, true);
   EXPECT_EQ(std::get<1>(res), Pass::Status::SuccessWithoutChange);
 }
 
@@ -678,7 +678,7 @@ TEST_F(CCPTest, UndefInPhi) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<CCPPass>(text, true);
+  SinglePassRunAndMatch<CCPPassToken>(text, true);
 }
 
 // Just test to make sure the constant fold rules are being used.  Will rely on
@@ -704,7 +704,7 @@ TEST_F(CCPTest, UseConstantFoldingRules) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<CCPPass>(text, true);
+  SinglePassRunAndMatch<CCPPassToken>(text, true);
 }
 
 // Test for #1300. Previously value for %5 would not settle during simulation.
@@ -731,7 +731,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunToBinary<CCPPass>(text, true);
+  SinglePassRunToBinary<CCPPassToken>(text, true);
 }
 
 TEST_F(CCPTest, NullBranchCondition) {
@@ -762,7 +762,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<CCPPass>(text, true);
+  SinglePassRunAndMatch<CCPPassToken>(text, true);
 }
 
 TEST_F(CCPTest, UndefBranchCondition) {
@@ -793,7 +793,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<CCPPass>(text, true);
+  SinglePassRunAndMatch<CCPPassToken>(text, true);
 }
 
 TEST_F(CCPTest, NullSwitchCondition) {
@@ -823,7 +823,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<CCPPass>(text, true);
+  SinglePassRunAndMatch<CCPPassToken>(text, true);
 }
 
 TEST_F(CCPTest, UndefSwitchCondition) {
@@ -853,7 +853,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<CCPPass>(text, true);
+  SinglePassRunAndMatch<CCPPassToken>(text, true);
 }
 
 // Test for #1361.
@@ -888,7 +888,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<CCPPass>(text, true);
+  SinglePassRunAndMatch<CCPPassToken>(text, true);
 }
 #endif
 

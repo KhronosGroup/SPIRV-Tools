@@ -116,7 +116,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<LICMPass>(text, false);
+  SinglePassRunAndMatch<LICMPassToken>(text, false);
 }
 #endif
 

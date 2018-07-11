@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_COMMON_UNIFORM_ELIM_PASS_H_
-#define LIBSPIRV_OPT_COMMON_UNIFORM_ELIM_PASS_H_
+#ifndef SOURCE_OPT_COMMON_UNIFORM_ELIM_PASS_H_
+#define SOURCE_OPT_COMMON_UNIFORM_ELIM_PASS_H_
 
 #include <algorithm>
 #include <map>
@@ -24,12 +24,13 @@
 #include <unordered_set>
 #include <utility>
 
-#include "basic_block.h"
-#include "decoration_manager.h"
-#include "def_use_manager.h"
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/decoration_manager.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -43,7 +44,7 @@ class CommonUniformElimPass : public Pass {
       std::function<std::vector<opt::BasicBlock*>*(const opt::BasicBlock*)>;
 
   CommonUniformElimPass();
-  const char* name() const override { return "eliminate-common-uniform"; }
+
   Status Process(opt::IRContext*) override;
 
  private:
@@ -205,7 +206,19 @@ class CommonUniformElimPass : public Pass {
       block2structured_succs_;
 };
 
+class CommonUniformElimPassToken : public PassToken {
+ public:
+  CommonUniformElimPassToken() = default;
+  ~CommonUniformElimPassToken() override = default;
+
+  const char* name() const override { return "eliminate-common-uniform"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<CommonUniformElimPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_SSAMEM_PASS_H_
+#endif  // SOURCE_OPT_COMMON_UNIFORM_ELIM_PASS_H_

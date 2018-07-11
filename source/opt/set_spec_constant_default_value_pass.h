@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_SET_SPEC_CONSTANT_DEFAULT_VALUE_PASS_H_
-#define LIBSPIRV_OPT_SET_SPEC_CONSTANT_DEFAULT_VALUE_PASS_H_
+#ifndef SOURCE_OPT_SET_SPEC_CONSTANT_DEFAULT_VALUE_PASS_H_
+#define SOURCE_OPT_SET_SPEC_CONSTANT_DEFAULT_VALUE_PASS_H_
 
 #include <memory>
 #include <string>
 #include <unordered_map>
 
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -32,16 +33,12 @@ class SetSpecConstantDefaultValuePass : public Pass {
   using SpecIdToValueStrMap = std::unordered_map<uint32_t, std::string>;
   using SpecIdToValueBitPatternMap =
       std::unordered_map<uint32_t, std::vector<uint32_t>>;
-  using SpecIdToInstMap = std::unordered_map<uint32_t, opt::Instruction*>;
 
   // Constructs a pass instance with a map from spec ids to default values
   // in the form of string.
   explicit SetSpecConstantDefaultValuePass(
       const SpecIdToValueStrMap& default_values)
       : spec_id_to_value_str_(default_values),
-        spec_id_to_value_bit_pattern_() {}
-  explicit SetSpecConstantDefaultValuePass(SpecIdToValueStrMap&& default_values)
-      : spec_id_to_value_str_(std::move(default_values)),
         spec_id_to_value_bit_pattern_() {}
 
   // Constructs a pass instance with a map from spec ids to default values in
@@ -50,12 +47,7 @@ class SetSpecConstantDefaultValuePass : public Pass {
       const SpecIdToValueBitPatternMap& default_values)
       : spec_id_to_value_str_(),
         spec_id_to_value_bit_pattern_(default_values) {}
-  explicit SetSpecConstantDefaultValuePass(
-      SpecIdToValueBitPatternMap&& default_values)
-      : spec_id_to_value_str_(),
-        spec_id_to_value_bit_pattern_(std::move(default_values)) {}
 
-  const char* name() const override { return "set-spec-const-default-value"; }
   Status Process(opt::IRContext*) override;
 
   // Parses the given null-terminated C string to get a mapping from Spec Id to
@@ -106,7 +98,42 @@ class SetSpecConstantDefaultValuePass : public Pass {
   const SpecIdToValueBitPatternMap spec_id_to_value_bit_pattern_;
 };
 
+class SetSpecConstantDefaultValuePassToken : public PassToken {
+ public:
+  explicit SetSpecConstantDefaultValuePassToken(
+      const SetSpecConstantDefaultValuePass::SpecIdToValueStrMap&
+          default_values)
+      : spec_id_to_value_str_(default_values),
+        spec_id_to_value_bit_pattern_(),
+        have_string_values_(true) {}
+
+  explicit SetSpecConstantDefaultValuePassToken(
+      const SetSpecConstantDefaultValuePass::SpecIdToValueBitPatternMap&
+          default_values)
+      : spec_id_to_value_str_(),
+        spec_id_to_value_bit_pattern_(default_values),
+        have_string_values_(false) {}
+
+  ~SetSpecConstantDefaultValuePassToken() override = default;
+
+  const char* name() const override { return "set-spec-const-default-value"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    if (have_string_values_)
+      return MakeUnique<SetSpecConstantDefaultValuePass>(spec_id_to_value_str_);
+    return MakeUnique<SetSpecConstantDefaultValuePass>(
+        spec_id_to_value_bit_pattern_);
+  }
+
+ private:
+  const SetSpecConstantDefaultValuePass::SpecIdToValueStrMap
+      spec_id_to_value_str_;
+  const SetSpecConstantDefaultValuePass::SpecIdToValueBitPatternMap
+      spec_id_to_value_bit_pattern_;
+  bool have_string_values_;
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_SET_SPEC_CONSTANT_DEFAULT_VALUE_PASS_H_
+#endif  // SOURCE_OPT_SET_SPEC_CONSTANT_DEFAULT_VALUE_PASS_H_

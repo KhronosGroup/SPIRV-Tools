@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOCAL_REDUNDANCY_ELIMINATION_H_
-#define LIBSPIRV_OPT_LOCAL_REDUNDANCY_ELIMINATION_H_
+#ifndef SOURCE_OPT_LOCAL_REDUNDANCY_ELIMINATION_H_
+#define SOURCE_OPT_LOCAL_REDUNDANCY_ELIMINATION_H_
 
-#include "ir_context.h"
-#include "pass.h"
-#include "value_number_table.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
+#include "source/opt/value_number_table.h"
 
 namespace spvtools {
 namespace opt {
@@ -31,7 +32,6 @@ namespace opt {
 // current instruction is deleted.
 class LocalRedundancyEliminationPass : public Pass {
  public:
-  const char* name() const override { return "local-redundancy-elimination"; }
   Status Process(opt::IRContext*) override;
   virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -59,7 +59,19 @@ class LocalRedundancyEliminationPass : public Pass {
                                  std::map<uint32_t, uint32_t>* value_to_ids);
 };
 
+class LocalRedundancyEliminationPassToken : public PassToken {
+ public:
+  LocalRedundancyEliminationPassToken() = default;
+  ~LocalRedundancyEliminationPassToken() override = default;
+
+  const char* name() const override { return "local-redundancy-elimination"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LocalRedundancyEliminationPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOCAL_REDUNDANCY_ELIMINATION_H_
+#endif  // SOURCE_OPT_LOCAL_REDUNDANCY_ELIMINATION_H_

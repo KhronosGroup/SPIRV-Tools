@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOOP_FISSION_H_
-#define LIBSPIRV_OPT_LOOP_FISSION_H_
+#ifndef SOURCE_OPT_LOOP_FISSION_H_
+#define SOURCE_OPT_LOOP_FISSION_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -21,12 +21,13 @@
 #include <utility>
 #include <vector>
 
-#include "cfg.h"
-#include "module.h"
-#include "opt/loop_dependence.h"
-#include "opt/loop_utils.h"
-#include "pass.h"
-#include "tree_iterator.h"
+#include "source/opt/cfg.h"
+#include "source/opt/loop_dependence.h"
+#include "source/opt/loop_utils.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
+#include "source/opt/tree_iterator.h"
 
 namespace spvtools {
 namespace opt {
@@ -55,8 +56,6 @@ class LoopFissionPass : public Pass {
                   bool split_multiple_times = true)
       : split_criteria_(functor), split_multiple_times_(split_multiple_times) {}
 
-  const char* name() const override { return "Loop Fission"; }
-
   Pass::Status Process(opt::IRContext* context) override;
 
   // Checks if |loop| meets the register pressure criteria to be split.
@@ -72,7 +71,27 @@ class LoopFissionPass : public Pass {
   bool split_multiple_times_;
 };
 
+class LoopFissionPassToken : public PassToken {
+ public:
+  LoopFissionPassToken(size_t register_threshold_to_split,
+                       bool split_multiple_times = true)
+      : register_threshold_to_split_(register_threshold_to_split),
+        split_multiple_times_(split_multiple_times) {}
+  ~LoopFissionPassToken() override = default;
+
+  const char* name() const override { return "Loop Fission"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LoopFissionPass>(register_threshold_to_split_,
+                                       split_multiple_times_);
+  }
+
+ private:
+  size_t register_threshold_to_split_;
+  bool split_multiple_times_;
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOOP_FISSION_H_
+#endif  // SOURCE_OPT_LOOP_FISSION_H_

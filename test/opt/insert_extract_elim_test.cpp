@@ -100,8 +100,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(predefs + before, predefs + after,
-                                            true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeAcrossNonConflictingInsert) {
@@ -185,8 +185,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(predefs + before, predefs + after,
-                                            true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeOpaque) {
@@ -267,8 +267,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(predefs + before, predefs + after,
-                                            true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeNestedStruct) {
@@ -396,8 +396,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(predefs + before, predefs + after,
-                                            true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization) {
@@ -464,7 +464,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(assembly, assembly, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(assembly, assembly, true,
+                                                 true);
 }
 
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization2) {
@@ -587,8 +588,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(before_predefs + before,
-                                            after_predefs + after, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(
+      before_predefs + before, after_predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, MixWithConstants) {
@@ -689,8 +690,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(predefs + before, predefs + after,
-                                            true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, VectorShuffle1) {
@@ -773,8 +774,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(predefs_before + before,
-                                            predefs_after + after, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(
+      predefs_before + before, predefs_after + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, VectorShuffle2) {
@@ -886,8 +887,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<SimplificationPass>(predefs_before + before,
-                                            predefs_after + after, true, true);
+  SinglePassRunAndCheck<SimplificationPassToken>(
+      predefs_before + before, predefs_after + after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

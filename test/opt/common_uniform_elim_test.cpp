@@ -165,8 +165,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
-                                               predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Basic2) {
@@ -329,8 +329,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
-                                               predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Basic3) {
@@ -448,8 +448,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
-                                               predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Loop) {
@@ -659,8 +659,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
-                                               predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Volatile1) {
@@ -809,8 +809,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
-                                               predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Volatile2) {
@@ -918,8 +918,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  Pass::Status res = std::get<1>(
-      SinglePassRunAndDisassemble<CommonUniformElimPass>(text, true, false));
+  Pass::Status res =
+      std::get<1>(SinglePassRunAndDisassemble<CommonUniformElimPassToken>(
+          text, true, false));
   EXPECT_EQ(res, Pass::Status::SuccessWithoutChange);
 }
 
@@ -1035,8 +1036,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  Pass::Status res = std::get<1>(
-      SinglePassRunAndDisassemble<CommonUniformElimPass>(text, true, false));
+  Pass::Status res =
+      std::get<1>(SinglePassRunAndDisassemble<CommonUniformElimPassToken>(
+          text, true, false));
   EXPECT_EQ(res, Pass::Status::SuccessWithoutChange);
 }
 
@@ -1213,8 +1215,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<CommonUniformElimPass>(predefs + before,
-                                               predefs + after, true, true);
+  SinglePassRunAndCheck<CommonUniformElimPassToken>(
+      predefs + before, predefs + after, true, true);
 }
 
 #ifdef SPIRV_EFFCEE
@@ -1325,7 +1327,7 @@ TEST_F(CommonUniformElimTest, MixedConstantAndNonConstantIndexes) {
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<CommonUniformElimPass>(text, true);
+  SinglePassRunAndMatch<CommonUniformElimPassToken>(text, true);
 }
 #endif  //  SPIRV_EFFCEE
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

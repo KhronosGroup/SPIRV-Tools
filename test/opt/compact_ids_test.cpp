@@ -43,7 +43,7 @@ OpMemoryModel Physical32 OpenCL
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<NullPass>(before, after, false, false);
+  SinglePassRunAndCheck<NullPassToken>(before, after, false, false);
 }
 
 TEST_F(CompactIdsTest, PassOn) {
@@ -87,7 +87,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<CompactIdsPass>(before, after, false, false);
+  SinglePassRunAndCheck<CompactIdsPassToken>(before, after, false, false);
 }
 
 TEST(CompactIds, InstructionResultIsUpdated) {
@@ -113,12 +113,12 @@ OpFunctionEnd
 
   std::vector<uint32_t> binary;
   const spv_target_env env = SPV_ENV_UNIVERSAL_1_0;
-  spvtools::SpirvTools tools(env);
+  SpirvTools tools(env);
   auto assembled = tools.Assemble(
       input, &binary, SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_TRUE(assembled);
 
-  spvtools::Optimizer optimizer(env);
+  Optimizer optimizer(env);
   optimizer.RegisterPass(CreateCompactIdsPass());
   // The exhaustive inliner will use the result_id
   optimizer.RegisterPass(CreateInlineExhaustivePass());
@@ -157,12 +157,12 @@ OpFunctionEnd
 
   std::vector<uint32_t> binary;
   const spv_target_env env = SPV_ENV_UNIVERSAL_1_0;
-  spvtools::SpirvTools tools(env);
+  SpirvTools tools(env);
   auto assembled = tools.Assemble(
       input, &binary, SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_TRUE(assembled);
 
-  spvtools::Optimizer optimizer(env);
+  Optimizer optimizer(env);
   optimizer.RegisterPass(CreateCompactIdsPass());
   // The exhaustive inliner will use the result_id
   optimizer.RegisterPass(CreateInlineExhaustivePass());
@@ -223,7 +223,7 @@ OpReturn
 OpFunctionEnd
 )");
 
-  spvtools::SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, input,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);

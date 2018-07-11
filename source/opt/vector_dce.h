@@ -15,8 +15,9 @@
 #ifndef LIBSPIRV_OPT_VECTOR_DCE_H_
 #define LIBSPIRV_OPT_VECTOR_DCE_H_
 
-#include <util/bit_vector.h>
-#include "mem_pass.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/pass_token.h"
+#include "source/util/bit_vector.h"
 
 namespace spvtools {
 namespace opt {
@@ -37,14 +38,13 @@ class VectorDCE : public MemPass {
   };
 
  public:
-  const char* name() const override { return "vector-dce"; }
-  Status Process(opt::IRContext*) override;
-
   VectorDCE() : all_components_live_(kMaxVectorSize) {
     for (uint32_t i = 0; i < kMaxVectorSize; i++) {
       all_components_live_.Set(i);
     }
   }
+
+  Status Process(opt::IRContext*) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse | opt::IRContext::kAnalysisCFG |
@@ -140,6 +140,18 @@ class VectorDCE : public MemPass {
   // A BitVector that can always be used to say that all components of a vector
   // are live.
   utils::BitVector all_components_live_;
+};
+
+class VectorDCEToken : public PassToken {
+ public:
+  VectorDCEToken() = default;
+  ~VectorDCEToken() override = default;
+
+  const char* name() const override { return "vector-dce"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<VectorDCE>();
+  }
 };
 
 }  // namespace opt

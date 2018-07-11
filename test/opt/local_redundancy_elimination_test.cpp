@@ -53,7 +53,7 @@ TEST_F(LocalRedundancyEliminationTest, RemoveRedundantAdd) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<LocalRedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<LocalRedundancyEliminationPassToken>(text, false);
 }
 
 // Make sure we keep instruction that are different, but look similar.
@@ -84,7 +84,7 @@ TEST_F(LocalRedundancyEliminationTest, KeepDifferentAdd) {
                OpFunctionEnd
   )";
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<LocalRedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<LocalRedundancyEliminationPassToken>(text, false);
 }
 
 // This test is check that the values are being propagated properly, and that
@@ -122,7 +122,7 @@ TEST_F(LocalRedundancyEliminationTest, RemoveMultipleInstructions) {
                OpFunctionEnd
   )";
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<LocalRedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<LocalRedundancyEliminationPassToken>(text, false);
 }
 
 // Redundant instructions in different blocks should be kept.
@@ -151,7 +151,7 @@ TEST_F(LocalRedundancyEliminationTest, KeepInstructionsInDifferentBlocks) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<LocalRedundancyEliminationPass>(text, false);
+  SinglePassRunAndMatch<LocalRedundancyEliminationPassToken>(text, false);
 }
 #endif
 

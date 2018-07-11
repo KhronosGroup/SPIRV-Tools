@@ -31,7 +31,6 @@ using ::testing::Each;
 class DummyPassPreservesNothing : public Pass {
  public:
   DummyPassPreservesNothing(Status s) : Pass(), status_to_return_(s) {}
-  const char* name() const override { return "dummy-pass"; }
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
 };
@@ -39,7 +38,6 @@ class DummyPassPreservesNothing : public Pass {
 class DummyPassPreservesAll : public Pass {
  public:
   DummyPassPreservesAll(Status s) : Pass(), status_to_return_(s) {}
-  const char* name() const override { return "dummy-pass"; }
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
   virtual Analysis GetPreservedAnalyses() override {
@@ -50,7 +48,6 @@ class DummyPassPreservesAll : public Pass {
 class DummyPassPreservesFirst : public Pass {
  public:
   DummyPassPreservesFirst(Status s) : Pass(), status_to_return_(s) {}
-  const char* name() const override { return "dummy-pass"; }
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
   virtual Analysis GetPreservedAnalyses() override {
@@ -63,7 +60,7 @@ using IRContextTest = PassTest<::testing::Test>;
 TEST_F(IRContextTest, IndividualValidAfterBuild) {
   std::unique_ptr<Module> module(new Module());
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -75,7 +72,7 @@ TEST_F(IRContextTest, IndividualValidAfterBuild) {
 TEST_F(IRContextTest, AllValidAfterBuild) {
   std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   Analysis built_analyses = IRContext::kAnalysisNone;
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
@@ -89,7 +86,7 @@ TEST_F(IRContextTest, AllValidAfterBuild) {
 TEST_F(IRContextTest, AllValidAfterPassNoChange) {
   std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   Analysis built_analyses = IRContext::kAnalysisNone;
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
@@ -107,7 +104,7 @@ TEST_F(IRContextTest, AllValidAfterPassNoChange) {
 TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
   std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -126,7 +123,7 @@ TEST_F(IRContextTest, NoneValidAfterPassWithChange) {
 TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
   std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {
@@ -145,7 +142,7 @@ TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
 TEST_F(IRContextTest, PreserveFirstOnlyAfterPassWithChange) {
   std::unique_ptr<Module> module = MakeUnique<Module>();
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, std::move(module),
-                         spvtools::MessageConsumer());
+                         MessageConsumer());
 
   for (Analysis i = IRContext::kAnalysisBegin; i < IRContext::kAnalysisEnd;
        i <<= 1) {

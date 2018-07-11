@@ -125,7 +125,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -232,7 +232,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -338,7 +338,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -451,7 +451,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs + before + remain, predefs + after + remain, true, true);
 }
 
@@ -569,7 +569,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -645,8 +645,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalAccessChainConvertPass>(assembly, assembly, false,
-                                                     true);
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(assembly, assembly,
+                                                          false, true);
 }
 
 TEST_F(LocalAccessChainConvertTest, SomeAccessChainsHaveNoUse) {
@@ -706,7 +706,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<LocalAccessChainConvertPass>(
+  SinglePassRunAndCheck<LocalAccessChainConvertPassToken>(
       predefs + before, predefs + after, true, true);
 }
 

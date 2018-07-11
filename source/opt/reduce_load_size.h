@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_REDUCE_LOAD_SIZE_H_
-#define LIBSPIRV_OPT_REDUCE_LOAD_SIZE_H_
+#ifndef SOURCE_OPT_REDUCE_LOAD_SIZE_H_
+#define SOURCE_OPT_REDUCE_LOAD_SIZE_H_
 
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -25,7 +26,6 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class ReduceLoadSize : public Pass {
  public:
-  const char* name() const override { return "reduce-load-size"; }
   Status Process(opt::IRContext* irContext) override;
 
   // Return the mask of preserved Analyses.
@@ -57,7 +57,19 @@ class ReduceLoadSize : public Pass {
   std::unordered_map<uint32_t, bool> should_replace_cache_;
 };
 
+class ReduceLoadSizeToken : public PassToken {
+ public:
+  ReduceLoadSizeToken() = default;
+  ~ReduceLoadSizeToken() override = default;
+
+  const char* name() const override { return "reduce-load-size"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<ReduceLoadSize>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_REDUCE_LOAD_SIZE_H_
+#endif  // SOURCE_OPT_REDUCE_LOAD_SIZE_H_
