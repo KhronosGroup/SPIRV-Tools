@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "validate.h"
+#include "source/val/validate.h"
 
 #include <cassert>
 
@@ -24,15 +24,15 @@
 #include <utility>
 #include <vector>
 
-#include "diagnostic.h"
-#include "instruction.h"
-#include "message.h"
-#include "opcode.h"
-#include "operand.h"
+#include "source/diagnostic.h"
+#include "source/instruction.h"
+#include "source/message.h"
+#include "source/opcode.h"
+#include "source/operand.h"
+#include "source/spirv_validator_options.h"
+#include "source/val/function.h"
+#include "source/val/validation_state.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv_validator_options.h"
-#include "val/function.h"
-#include "val/validation_state.h"
 
 using std::function;
 using std::ignore;

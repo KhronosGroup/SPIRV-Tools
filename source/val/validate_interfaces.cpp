@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "validate.h"
+#include "source/val/validate.h"
 
 #include <algorithm>
 
-#include "diagnostic.h"
-#include "val/function.h"
-#include "val/instruction.h"
-#include "val/validation_state.h"
+#include "source/diagnostic.h"
+#include "source/val/function.h"
+#include "source/val/instruction.h"
+#include "source/val/validation_state.h"
 
 namespace spvtools {
 namespace val {

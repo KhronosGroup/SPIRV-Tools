@@ -33,8 +33,8 @@
 #include "spirv_endian.h"
 #include "spirv_validator_options.h"
 #include "val/instruction.h"
+#include "val/validate.h"
 #include "val/validation_state.h"
-#include "validate.h"
 
 namespace spvtools {
 namespace {

@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_VALIDATE_H_
-#define LIBSPIRV_VALIDATE_H_
+#ifndef SOURCE_VAL_VALIDATE_H_
+#define SOURCE_VAL_VALIDATE_H_
 
 #include <functional>
 #include <utility>
 #include <vector>
 
-#include "instruction.h"
-#include "message.h"
+#include "source/instruction.h"
+#include "source/message.h"
+#include "source/table.h"
 #include "spirv-tools/libspirv.h"
-#include "table.h"
 
 namespace spvtools {
 namespace val {
@@ -221,4 +221,4 @@ spv_result_t ValidateInstructionAndUpdateValidationState(
 }  // namespace val
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_VALIDATE_H_
+#endif  // SOURCE_VAL_VALIDATE_H_

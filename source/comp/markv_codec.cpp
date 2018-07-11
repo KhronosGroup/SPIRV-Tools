@@ -57,8 +57,8 @@
 #include "util/move_to_front.h"
 #include "util/parse_number.h"
 #include "val/instruction.h"
+#include "val/validate.h"
 #include "val/validation_state.h"
-#include "validate.h"
 
 namespace spvtools {
 namespace comp {
