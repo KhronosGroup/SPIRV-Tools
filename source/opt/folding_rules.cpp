@@ -2001,12 +2001,11 @@ FoldingRule StoringUndef() {
 }
 
 FoldingRule VectorShuffleFeedingShuffle() {
-  return [](opt::Instruction* inst,
+  return [](IRContext* context, opt::Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == SpvOpVectorShuffle &&
            "Wrong opcode.  Should be OpVectorShuffle.");
 
-    IRContext* context = inst->context();
     analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
 
