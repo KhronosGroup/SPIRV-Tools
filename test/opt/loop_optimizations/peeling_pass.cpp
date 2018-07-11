@@ -23,6 +23,21 @@ namespace {
 
 using namespace spvtools;
 
+class LoopPeelingPassTokenForTest : public opt::LoopPeelingPassToken {
+ public:
+  LoopPeelingPassTokenForTest(opt::LoopPeelingPass::LoopPeelingStats* stats)
+      : stats_(stats) {}
+
+  ~LoopPeelingPassTokenForTest() override = default;
+
+  std::unique_ptr<opt::Pass> CreatePass() const override {
+    return MakeUnique<opt::LoopPeelingPass>(stats_);
+  }
+
+ private:
+  opt::LoopPeelingPass::LoopPeelingStats* stats_;
+};
+
 class PeelingPassTest : public PassTest<::testing::Test> {
  public:
   // Generic routine to run the loop peeling pass and check
@@ -58,7 +73,7 @@ class PeelingPassTest : public PassTest<::testing::Test> {
         res_id + " = " + opcode_str + "  %bool " + op1 + " " + op2 + "\n";
 
     opt::LoopPeelingPass::LoopPeelingStats stats;
-    SinglePassRunAndDisassemble<opt::LoopPeelingPass>(
+    SinglePassRunAndDisassemble<LoopPeelingPassTokenForTest>(
         text_head + test_cond + text_tail, true, true, &stats);
 
     return stats;
@@ -1086,7 +1101,7 @@ TEST_F(PeelingPassTest, PeelingNoChanges) {
 
   {
     auto result =
-        SinglePassRunAndDisassemble<opt::LoopPeelingPass>(text, true, false);
+        SinglePassRunAndDisassemble<opt::LoopPeelingPassToken>(text, true, false);
 
     EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
   }

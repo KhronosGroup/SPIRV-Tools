@@ -38,10 +38,10 @@ class InlinePass : public Pass {
   using GetBlocksFunction =
       std::function<std::vector<opt::BasicBlock*>*(const opt::BasicBlock*)>;
 
-  InlinePass();
   virtual ~InlinePass() = default;
 
  protected:
+  InlinePass();
 
   // Add pointer to type to module and return resultId.
   uint32_t AddPointerToType(uint32_t type_id, SpvStorageClass storage_class);

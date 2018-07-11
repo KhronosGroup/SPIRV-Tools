@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_NULL_PASS_H_
-#define LIBSPIRV_OPT_NULL_PASS_H_
+#ifndef SOURCE_OPT_NULL_PASS_H_
+#define SOURCE_OPT_NULL_PASS_H_
 
-#include "module.h"
-#include "pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -24,13 +25,24 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class NullPass : public Pass {
  public:
-  const char* name() const override { return "null"; }
   Status Process(opt::IRContext*) override {
     return Status::SuccessWithoutChange;
+  }
+};
+
+class NullPassToken : public PassToken {
+ public:
+  NullPassToken() = default;
+  ~NullPassToken() override = default;
+
+  const char* name() const override { return "null"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<NullPass>();
   }
 };
 
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_NULL_PASS_H_
+#endif  // SOURCE_OPT_NULL_PASS_H_

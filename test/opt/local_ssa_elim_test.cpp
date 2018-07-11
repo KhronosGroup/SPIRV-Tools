@@ -135,7 +135,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -277,7 +277,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -423,7 +423,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + names + predefs2 + before, predefs + names + predefs2 + after,
       true, true);
 }
@@ -564,7 +564,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -701,7 +701,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -845,7 +845,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -945,7 +945,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -1034,7 +1034,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -1165,7 +1165,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -1297,7 +1297,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -1328,7 +1328,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(before, before, true,
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(before, before, true,
                                                       true);
 }
 
@@ -1426,7 +1426,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(
       predefs + func_before, predefs + func_after, true, true);
 }
 
@@ -1527,7 +1527,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(before, after, true,
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPassToken>(before, after, true,
                                                       true);
 }
 
@@ -1716,7 +1716,7 @@ TEST_F(LocalSSAElimTest, CompositeExtractProblem) {
                OpReturn
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::SSARewritePass>(spv_asm, true);
+  SinglePassRunAndMatch<opt::SSARewritePassToken>(spv_asm, true);
 }
 #endif
 

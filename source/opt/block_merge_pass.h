@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_BLOCK_MERGE_PASS_H_
-#define LIBSPIRV_OPT_BLOCK_MERGE_PASS_H_
+#ifndef SOURCE_OPT_BLOCK_MERGE_PASS_H_
+#define SOURCE_OPT_BLOCK_MERGE_PASS_H_
 
 #include <algorithm>
 #include <map>
@@ -24,11 +24,12 @@
 #include <unordered_set>
 #include <utility>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -37,7 +38,7 @@ namespace opt {
 class BlockMergePass : public Pass {
  public:
   BlockMergePass();
-  const char* name() const override { return "merge-blocks"; }
+
   Status Process(opt::IRContext*) override;
   virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -68,7 +69,19 @@ class BlockMergePass : public Pass {
   Pass::Status ProcessImpl();
 };
 
+class BlockMergePassToken : public PassToken {
+ public:
+  BlockMergePassToken() = default;
+  ~BlockMergePassToken() override = default;
+
+  const char* name() const override { return "merge-blocks"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<BlockMergePass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_BLOCK_MERGE_PASS_H_
+#endif  // SOURCE_OPT_BLOCK_MERGE_PASS_H_

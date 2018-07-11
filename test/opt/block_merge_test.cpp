@@ -84,7 +84,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePass>(predefs + before, predefs + after,
+  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before, predefs + after,
                                              true, true);
 }
 
@@ -154,7 +154,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePass>(predefs + before, predefs + after,
+  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before, predefs + after,
                                              true, true);
 }
 
@@ -267,7 +267,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePass>(predefs + before, predefs + after,
+  SinglePassRunAndCheck<opt::BlockMergePassToken>(predefs + before, predefs + after,
                                              true, true);
 }
 
@@ -306,7 +306,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, UpdateMergeInstruction) {
@@ -342,7 +342,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, TwoMergeBlocksCannotBeMerged) {
@@ -383,7 +383,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, MergeContinue) {
@@ -415,7 +415,7 @@ OpUnreachable
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, TwoHeadersCannotBeMerged) {
@@ -452,7 +452,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, RemoveStructuredDeclaration) {
@@ -516,7 +516,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(assembly, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(assembly, true);
 }
 
 TEST_F(BlockMergeTest, DontMergeKill) {
@@ -548,7 +548,7 @@ OpUnreachable
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, DontMergeUnreachable) {
@@ -580,7 +580,7 @@ OpUnreachable
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, DontMergeReturn) {
@@ -612,7 +612,7 @@ OpUnreachable
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, DontMergeSwitch) {
@@ -648,7 +648,7 @@ OpUnreachable
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 
 TEST_F(BlockMergeTest, DontMergeReturnValue) {
@@ -687,7 +687,7 @@ OpUnreachable
 OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::BlockMergePass>(text, true);
+  SinglePassRunAndMatch<opt::BlockMergePassToken>(text, true);
 }
 #endif  // SPIRV_EFFCEE
 

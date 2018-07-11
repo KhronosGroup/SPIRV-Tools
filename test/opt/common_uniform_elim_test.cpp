@@ -165,7 +165,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
+  SinglePassRunAndCheck<opt::CommonUniformElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -329,7 +329,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
+  SinglePassRunAndCheck<opt::CommonUniformElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -448,7 +448,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
+  SinglePassRunAndCheck<opt::CommonUniformElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -659,7 +659,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
+  SinglePassRunAndCheck<opt::CommonUniformElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -809,7 +809,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
+  SinglePassRunAndCheck<opt::CommonUniformElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -919,7 +919,7 @@ OpFunctionEnd
 )";
 
   opt::Pass::Status res =
-      std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(
+      std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPassToken>(
           text, true, false));
   EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
 }
@@ -1037,7 +1037,7 @@ OpFunctionEnd
 )";
 
   opt::Pass::Status res =
-      std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(
+      std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPassToken>(
           text, true, false));
   EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
 }
@@ -1215,7 +1215,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::CommonUniformElimPass>(
+  SinglePassRunAndCheck<opt::CommonUniformElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -1327,7 +1327,7 @@ TEST_F(CommonUniformElimTest, MixedConstantAndNonConstantIndexes) {
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<opt::CommonUniformElimPass>(text, true);
+  SinglePassRunAndMatch<opt::CommonUniformElimPassToken>(text, true);
 }
 #endif  //  SPIRV_EFFCEE
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

@@ -26,7 +26,6 @@ namespace {
 using namespace spvtools;
 class DummyPass : public opt::Pass {
  public:
-  const char* name() const override { return "dummy-pass"; }
   Status Process(opt::IRContext* irContext) override {
     return irContext ? Status::SuccessWithoutChange : Status::Failure;
   }

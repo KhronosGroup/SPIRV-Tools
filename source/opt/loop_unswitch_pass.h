@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOOP_UNSWITCH_PASS_H_
-#define LIBSPIRV_OPT_LOOP_UNSWITCH_PASS_H_
+#ifndef SOURCE_OPT_LOOP_UNSWITCH_PASS_H_
+#define SOURCE_OPT_LOOP_UNSWITCH_PASS_H_
 
-#include "opt/loop_descriptor.h"
-#include "opt/pass.h"
+#include "source/opt/loop_descriptor.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -26,8 +27,6 @@ namespace opt {
 // constant within the loop and clones the loop for each branch.
 class LoopUnswitchPass : public Pass {
  public:
-  const char* name() const override { return "loop-unswitch"; }
-
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes have been made to the modue.
@@ -37,7 +36,19 @@ class LoopUnswitchPass : public Pass {
   bool ProcessFunction(opt::Function* f);
 };
 
+class LoopUnswitchPassToken : public PassToken {
+ public:
+  LoopUnswitchPassToken() = default;
+  ~LoopUnswitchPassToken() override = default;
+
+  const char* name() const override { return "loop-unswitch"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LoopUnswitchPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // !LIBSPIRV_OPT_LOOP_UNSWITCH_PASS_H_
+#endif  // SOURCE_OPT_LOOP_UNSWITCH_PASS_H_

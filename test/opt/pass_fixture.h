@@ -56,7 +56,7 @@ class PassTest : public TestT {
   // Returns a tuple of the optimized binary and the boolean value returned
   // from pass Process() function.
   std::tuple<std::vector<uint32_t>, opt::Pass::Status> OptimizeToBinary(
-      opt::Pass* pass, const std::string& original, bool skip_nop) {
+      opt::PassToken* pass_token, const std::string& original, bool skip_nop) {
     context_ = std::move(BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer_, original,
                                      assemble_options_));
     EXPECT_NE(nullptr, context()) << "Assembling failed for shader:\n"
@@ -66,7 +66,7 @@ class PassTest : public TestT {
                              opt::Pass::Status::Failure);
     }
 
-    const auto status = pass->Run(context());
+    const auto status = pass_token->CreatePass()->Run(context());
 
     std::vector<uint32_t> binary;
     context()->module()->ToBinary(&binary, skip_nop);
@@ -80,7 +80,6 @@ class PassTest : public TestT {
   std::tuple<std::vector<uint32_t>, opt::Pass::Status> SinglePassRunToBinary(
       const std::string& assembly, bool skip_nop, Args&&... args) {
     auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
-    pass->SetMessageConsumer(consumer_);
     return OptimizeToBinary(pass.get(), assembly, skip_nop);
   }
 
@@ -184,8 +183,8 @@ class PassTest : public TestT {
 
   // Adds a pass to be run.
   template <typename PassT, typename... Args>
-  void AddPass(Args&&... args) {
-    manager_->AddPass<PassT>(std::forward<Args>(args)...);
+  void AddPassToken(Args&&... args) {
+    manager_->AddPassToken<PassT>(std::forward<Args>(args)...);
   }
 
   // Renews the pass manager, including clearing all previously added passes.

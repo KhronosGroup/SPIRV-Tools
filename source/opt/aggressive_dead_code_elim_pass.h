@@ -14,10 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_AGGRESSIVE_DCE_PASS_H_
-#define LIBSPIRV_OPT_AGGRESSIVE_DCE_PASS_H_
+#ifndef SOURCE_OPT_AGGRESSIVE_DCE_PASS_H_
+#define SOURCE_OPT_AGGRESSIVE_DCE_PASS_H_
 
-#include <util/bit_vector.h>
 #include <algorithm>
 #include <map>
 #include <queue>
@@ -25,10 +24,12 @@
 #include <unordered_set>
 #include <utility>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass_token.h"
+#include "source/util/bit_vector.h"
 
 namespace spvtools {
 namespace opt {
@@ -42,7 +43,6 @@ class AggressiveDCEPass : public MemPass {
       std::function<std::vector<opt::BasicBlock*>*(const opt::BasicBlock*)>;
 
   AggressiveDCEPass();
-  const char* name() const override { return "eliminate-dead-code-aggressive"; }
   Status Process(opt::IRContext* c) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -186,7 +186,19 @@ class AggressiveDCEPass : public MemPass {
   std::unordered_set<std::string> extensions_whitelist_;
 };
 
+class AggressiveDCEPassToken : public PassToken {
+ public:
+  AggressiveDCEPassToken() = default;
+  ~AggressiveDCEPassToken() override = default;
+
+  const char* name() const override { return "eliminate-dead-code-aggressive"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<AggressiveDCEPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_AGGRESSIVE_DCE_PASS_H_
+#endif  // SOURCE_OPT_AGGRESSIVE_DCE_PASS_H_

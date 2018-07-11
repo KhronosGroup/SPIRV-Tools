@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_COPY_PROP_H_
-#define LIBSPIRV_OPT_COPY_PROP_H_
+#ifndef SOURCE_OPT_COPY_PROP_ARRAYS_H_
+#define SOURCE_OPT_COPY_PROP_ARRAYS_H_
 
-#include "mem_pass.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -37,7 +38,6 @@ namespace opt {
 
 class CopyPropagateArrays : public MemPass {
  public:
-  const char* name() const override { return "copy-propagate-arrays"; }
   Status Process(opt::IRContext*) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -226,7 +226,19 @@ class CopyPropagateArrays : public MemPass {
       const opt::Instruction* var_inst) const;
 };
 
+class CopyPropagateArraysToken : public PassToken {
+ public:
+  CopyPropagateArraysToken() = default;
+  ~CopyPropagateArraysToken() override = default;
+
+  const char* name() const override { return "copy-propagate-arrays"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<CopyPropagateArrays>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_COPY_PROP_H_
+#endif  // SOURCE_OPT_COPY_PROP_ARRAYS_H_

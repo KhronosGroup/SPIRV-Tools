@@ -164,7 +164,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadInsertElimPass>(
+  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 
@@ -343,7 +343,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadInsertElimPass>(
+  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 
@@ -557,7 +557,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadInsertElimPass>(
+  SinglePassRunAndCheck<opt::DeadInsertElimPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 

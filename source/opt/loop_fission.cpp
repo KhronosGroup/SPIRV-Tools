@@ -414,9 +414,7 @@ opt::Loop* LoopFissionImpl::SplitLoop() {
   return cloned_loop;
 }
 
-LoopFissionPass::LoopFissionPass(const size_t register_threshold_to_split,
-                                 bool split_multiple_times)
-    : split_multiple_times_(split_multiple_times) {
+LoopFissionPass::LoopFissionPass(const size_t register_threshold_to_split) {
   // Split if the number of registers in the loop exceeds
   // |register_threshold_to_split|.
   split_criteria_ =

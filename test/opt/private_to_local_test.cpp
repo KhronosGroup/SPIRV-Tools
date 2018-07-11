@@ -57,7 +57,7 @@ TEST_F(PrivateToLocalTest, ChangeToLocal) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<opt::PrivateToLocalPass>(text, false);
+  SinglePassRunAndMatch<opt::PrivateToLocalPassToken>(text, false);
 }
 
 TEST_F(PrivateToLocalTest, ReuseExistingType) {
@@ -89,7 +89,7 @@ TEST_F(PrivateToLocalTest, ReuseExistingType) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<opt::PrivateToLocalPass>(text, false);
+  SinglePassRunAndMatch<opt::PrivateToLocalPassToken>(text, false);
 }
 
 TEST_F(PrivateToLocalTest, UpdateAccessChain) {
@@ -127,7 +127,7 @@ TEST_F(PrivateToLocalTest, UpdateAccessChain) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<opt::PrivateToLocalPass>(text, false);
+  SinglePassRunAndMatch<opt::PrivateToLocalPassToken>(text, false);
 }
 
 TEST_F(PrivateToLocalTest, UseTexelPointer) {
@@ -172,7 +172,7 @@ OpCapability SampledBuffer
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<opt::PrivateToLocalPass>(text, false);
+  SinglePassRunAndMatch<opt::PrivateToLocalPassToken>(text, false);
 }
 
 TEST_F(PrivateToLocalTest, UsedInTwoFunctions) {
@@ -200,7 +200,7 @@ TEST_F(PrivateToLocalTest, UsedInTwoFunctions) {
                OpReturn
                OpFunctionEnd
   )";
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -234,7 +234,7 @@ TEST_F(PrivateToLocalTest, UsedInFunctionCall) {
                OpReturn
                OpFunctionEnd
   )";
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -271,7 +271,7 @@ TEST_F(PrivateToLocalTest, CreatePointerToAmbiguousStruct1) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<opt::PrivateToLocalPass>(text, false);
+  SinglePassRunAndMatch<opt::PrivateToLocalPassToken>(text, false);
 }
 
 TEST_F(PrivateToLocalTest, CreatePointerToAmbiguousStruct2) {
@@ -306,7 +306,7 @@ TEST_F(PrivateToLocalTest, CreatePointerToAmbiguousStruct2) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<opt::PrivateToLocalPass>(text, false);
+  SinglePassRunAndMatch<opt::PrivateToLocalPassToken>(text, false);
 }
 #endif
 }  // anonymous namespace

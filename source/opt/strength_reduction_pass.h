@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
-#define LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
+#ifndef SOURCE_OPT_STRENGTH_REDUCTION_PASS_H_
+#define SOURCE_OPT_STRENGTH_REDUCTION_PASS_H_
 
-#include "def_use_manager.h"
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -26,7 +27,6 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class StrengthReductionPass : public Pass {
  public:
-  const char* name() const override { return "strength-reduction"; }
   Status Process(opt::IRContext*) override;
 
  private:
@@ -59,7 +59,19 @@ class StrengthReductionPass : public Pass {
   uint32_t constant_ids_[33];
 };
 
+class StrengthReductionPassToken : public PassToken {
+ public:
+  StrengthReductionPassToken() = default;
+  ~StrengthReductionPassToken() override = default;
+
+  const char* name() const override { return "strength-reduction"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<StrengthReductionPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
+#endif  // SOURCE_OPT_STRENGTH_REDUCTION_PASS_H_

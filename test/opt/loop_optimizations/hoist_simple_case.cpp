@@ -119,7 +119,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LICMPass>(before_hoist, after_hoist, true);
+  SinglePassRunAndCheck<opt::LICMPassToken>(before_hoist, after_hoist, true);
 }
 
 }  // namespace

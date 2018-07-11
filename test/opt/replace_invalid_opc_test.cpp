@@ -77,7 +77,7 @@ TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstruction) {
                OpReturn
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::ReplaceInvalidOpcodePass>(text, false);
+  SinglePassRunAndMatch<opt::ReplaceInvalidOpcodePassToken>(text, false);
 }
 
 TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstructionInNonEntryPoint) {
@@ -137,7 +137,7 @@ TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstructionInNonEntryPoint) {
                OpReturn
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::ReplaceInvalidOpcodePass>(text, false);
+  SinglePassRunAndMatch<opt::ReplaceInvalidOpcodePassToken>(text, false);
 }
 
 TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstructionMultipleEntryPoints) {
@@ -206,7 +206,7 @@ TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstructionMultipleEntryPoints) {
                OpReturn
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::ReplaceInvalidOpcodePass>(text, false);
+  SinglePassRunAndMatch<opt::ReplaceInvalidOpcodePassToken>(text, false);
 }
 TEST_F(ReplaceInvalidOpcodeTest, DontReplaceInstruction) {
   const std::string text = R"(
@@ -256,7 +256,7 @@ TEST_F(ReplaceInvalidOpcodeTest, DontReplaceInstruction) {
                OpReturn
                OpFunctionEnd)";
 
-  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePass>(
+  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -321,7 +321,7 @@ TEST_F(ReplaceInvalidOpcodeTest, MultipleEntryPointsDifferentStage) {
                OpReturn
                OpFunctionEnd)";
 
-  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePass>(
+  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -375,7 +375,7 @@ TEST_F(ReplaceInvalidOpcodeTest, DontReplaceLinkage) {
                OpReturn
                OpFunctionEnd)";
 
-  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePass>(
+  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -402,7 +402,7 @@ TEST_F(ReplaceInvalidOpcodeTest, BarrierDontReplace) {
             OpReturn
             OpFunctionEnd)";
 
-  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePass>(
+  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
@@ -430,7 +430,7 @@ TEST_F(ReplaceInvalidOpcodeTest, BarrierReplace) {
             OpReturn
             OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::ReplaceInvalidOpcodePass>(text, false);
+  SinglePassRunAndMatch<opt::ReplaceInvalidOpcodePassToken>(text, false);
 }
 
 struct Message {
@@ -516,7 +516,7 @@ TEST_F(ReplaceInvalidOpcodeTest, MessageTest) {
        "Removing ImageSampleImplicitLod instruction because of incompatible "
        "execution model."}};
   SetMessageConsumer(GetTestMessageConsumer(messages));
-  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePass>(
+  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
 }
@@ -582,7 +582,7 @@ TEST_F(ReplaceInvalidOpcodeTest, MultipleMessageTest) {
        "incompatible "
        "execution model."}};
   SetMessageConsumer(GetTestMessageConsumer(messages));
-  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePass>(
+  auto result = SinglePassRunAndDisassemble<opt::ReplaceInvalidOpcodePassToken>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
 }

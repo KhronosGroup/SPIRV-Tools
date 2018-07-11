@@ -14,23 +14,40 @@
 
 #ifndef SOURCE_OPT_LOOP_UNROLLER_H_
 #define SOURCE_OPT_LOOP_UNROLLER_H_
-#include "opt/pass.h"
+
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
 
 class LoopUnroller : public Pass {
  public:
-  LoopUnroller() : Pass(), fully_unroll_(true), unroll_factor_(0) {}
   LoopUnroller(bool fully_unroll, int unroll_factor)
       : Pass(), fully_unroll_(fully_unroll), unroll_factor_(unroll_factor) {}
-
-  const char* name() const override { return "Loop unroller"; }
 
   Status Process(opt::IRContext* context) override;
 
  private:
   opt::IRContext* context_;
+  bool fully_unroll_;
+  int unroll_factor_;
+};
+
+class LoopUnrollerToken : public PassToken {
+ public:
+  LoopUnrollerToken(bool fully_unroll, int unroll_factor)
+    : fully_unroll_(fully_unroll), unroll_factor_(unroll_factor) {}
+
+  ~LoopUnrollerToken() override = default;
+
+  const char* name() const override { return "Loop unroller"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LoopUnroller>(fully_unroll_, unroll_factor_);
+  }
+
+ private:
   bool fully_unroll_;
   int unroll_factor_;
 };

@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_REPLACE_INVALID_OPC_H_
-#define LIBSPIRV_OPT_REPLACE_INVALID_OPC_H_
+#ifndef SOURCE_OPT_REPLACE_INVALID_OPC_H_
+#define SOURCE_OPT_REPLACE_INVALID_OPC_H_
 
-#include "pass.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -26,7 +27,6 @@ namespace opt {
 // value, the instruction will simply be deleted.
 class ReplaceInvalidOpcodePass : public Pass {
  public:
-  const char* name() const override { return "replace-invalid-opcodes"; }
   Status Process(opt::IRContext*) override;
 
  private:
@@ -59,7 +59,19 @@ class ReplaceInvalidOpcodePass : public Pass {
   std::string BuildWarningMessage(SpvOp opcode);
 };
 
+class ReplaceInvalidOpcodePassToken : public PassToken {
+ public:
+  ReplaceInvalidOpcodePassToken() = default;
+  ~ReplaceInvalidOpcodePassToken() override = default;
+
+  const char* name() const override { return "replace-invalid-opcodes"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<ReplaceInvalidOpcodePass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_REPLACE_INVALID_OPC_H_
+#endif  // SOURCE_OPT_REPLACE_INVALID_OPC_H_

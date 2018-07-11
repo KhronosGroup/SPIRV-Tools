@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_REDUNDANCY_ELIMINATION_H_
-#define LIBSPIRV_OPT_REDUNDANCY_ELIMINATION_H_
+#ifndef SOURCE_OPT_REDUNDANCY_ELIMINATION_H_
+#define SOURCE_OPT_REDUNDANCY_ELIMINATION_H_
 
-#include "ir_context.h"
-#include "local_redundancy_elimination.h"
-#include "pass.h"
-#include "value_number_table.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/local_redundancy_elimination.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
+#include "source/opt/value_number_table.h"
 
 namespace spvtools {
 namespace opt {
@@ -29,7 +30,6 @@ namespace opt {
 // that dominates inst, and also computes the same value.
 class RedundancyEliminationPass : public LocalRedundancyEliminationPass {
  public:
-  const char* name() const override { return "redundancy-elimination"; }
   Status Process(opt::IRContext*) override;
 
  protected:
@@ -48,7 +48,19 @@ class RedundancyEliminationPass : public LocalRedundancyEliminationPass {
                                  std::map<uint32_t, uint32_t> value_to_ids);
 };
 
+class RedundancyEliminationPassToken : public PassToken {
+ public:
+  RedundancyEliminationPassToken() = default;
+  ~RedundancyEliminationPassToken() override = default;
+
+  const char* name() const override { return "redundancy-elimination"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<RedundancyEliminationPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_REDUNDANCY_ELIMINATION_H_
+#endif  // SOURCE_OPT_REDUNDANCY_ELIMINATION_H_

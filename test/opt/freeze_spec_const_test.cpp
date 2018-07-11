@@ -40,7 +40,7 @@ TEST_P(FreezeSpecConstantValueTypeTest, PrimaryType) {
   std::vector<const char*> expected = {
       "OpCapability Shader", "OpMemoryModel Logical GLSL450",
       test_case.type_decl, test_case.expected_frozen_const};
-  SinglePassRunAndCheck<opt::FreezeSpecConstantValuePass>(
+  SinglePassRunAndCheck<opt::FreezeSpecConstantValuePassToken>(
       JoinAllInsts(text), JoinAllInsts(expected), /* skip_nop = */ false);
 }
 
@@ -121,7 +121,7 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
         << "replace_str:\n"
         << p.second << "\n";
   }
-  SinglePassRunAndCheck<opt::FreezeSpecConstantValuePass>(
+  SinglePassRunAndCheck<opt::FreezeSpecConstantValuePassToken>(
       JoinAllInsts(text), expected_disassembly,
       /* skip_nop = */ true);
 }

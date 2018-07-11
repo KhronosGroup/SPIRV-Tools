@@ -78,7 +78,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs_before + before, predefs_before + after, true, true);
 }
 
@@ -179,7 +179,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -251,7 +251,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs_before + before, predefs_before + after, true, true);
 }
 
@@ -357,7 +357,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -415,7 +415,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       assembly, assembly, false, true);
 }
 
@@ -471,7 +471,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       assembly, assembly, false, true);
 }
 
@@ -561,7 +561,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -613,17 +613,17 @@ OpDecorate %sampler15 DescriptorSet 0
   const std::string before =
       R"(%main = OpFunction %void None %12
 %28 = OpLabel
-%s0 = OpVariable %_ptr_Function_S_t Function 
+%s0 = OpVariable %_ptr_Function_S_t Function
 %param = OpVariable %_ptr_Function_S_t Function
 %29 = OpLoad %v2float %texCoords
-%30 = OpLoad %S_t %s0 
+%30 = OpLoad %S_t %s0
 %31 = OpCompositeInsert %S_t %29 %30 0
 OpStore %s0 %31
 %32 = OpLoad %18 %sampler15
-%33 = OpLoad %S_t %s0 
+%33 = OpLoad %S_t %s0
 %34 = OpCompositeInsert %S_t %32 %33 2
 OpStore %s0 %34
-%35 = OpLoad %S_t %s0 
+%35 = OpLoad %S_t %s0
 OpStore %param %35
 %36 = OpLoad %S_t %param
 %37 = OpCompositeExtract %18 %36 2
@@ -656,7 +656,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -763,7 +763,7 @@ OpReturnValue %27
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -864,7 +864,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(before, after,
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(before, after,
                                                                 true, true);
 }
 
@@ -920,7 +920,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs_before + before, predefs_before + after, true, true);
 }
 
@@ -978,7 +978,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPassToken>(
       predefs_before + before, predefs_before + after, true, true);
 }
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

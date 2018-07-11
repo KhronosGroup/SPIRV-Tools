@@ -19,11 +19,11 @@
 #include <ostream>
 #include <vector>
 
-#include "log.h"
-#include "module.h"
-#include "pass.h"
-
-#include "ir_context.h"
+#include "source/opt/log.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
+#include "source/opt/ir_context.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
@@ -48,17 +48,17 @@ class PassManager {
   void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
 
   // Adds an externally constructed pass.
-  void AddPass(std::unique_ptr<Pass> pass);
+  void AddPassToken(std::unique_ptr<PassToken> pass);
   // Uses the argument |args| to construct a pass instance of type |T|, and adds
   // the pass instance to this pass manger. The pass added will use this pass
   // manager's message consumer.
   template <typename T, typename... Args>
-  void AddPass(Args&&... args);
+  void AddPassToken(Args&&... args);
 
   // Returns the number of passes added.
   uint32_t NumPasses() const;
   // Returns a pointer to the |index|th pass added.
-  inline Pass* GetPass(uint32_t index) const;
+  inline PassToken* GetPassToken(uint32_t index) const;
 
   // Returns the message consumer.
   inline const MessageConsumer& consumer() const;
@@ -66,10 +66,8 @@ class PassManager {
   // Runs all passes on the given |module|. Returns Status::Failure if errors
   // occur when processing using one of the registered passes. All passes
   // registered after the error-reporting pass will be skipped. Returns the
-  // corresponding Status::Success if processing is succesful to indicate
+  // corresponding Status::Success if processing is successful to indicate
   // whether changes are made to the module.
-  //
-  // After running all the passes, they are removed from the list.
   Pass::Status Run(opt::IRContext* context);
 
   // Sets the option to print the disassembly before each pass and after the
@@ -92,7 +90,7 @@ class PassManager {
   // Consumer for messages.
   MessageConsumer consumer_;
   // A vector of passes. Order matters.
-  std::vector<std::unique_ptr<Pass>> passes_;
+  std::vector<std::unique_ptr<PassToken>> pass_tokens_;
   // The output stream to write disassembly to before each pass, and after
   // the last pass.  If this is null, no output is generated.
   std::ostream* print_all_stream_;
@@ -101,23 +99,22 @@ class PassManager {
   std::ostream* time_report_stream_;
 };
 
-inline void PassManager::AddPass(std::unique_ptr<Pass> pass) {
-  passes_.push_back(std::move(pass));
+inline void PassManager::AddPassToken(std::unique_ptr<PassToken> pass_token) {
+  pass_tokens_.push_back(std::move(pass_token));
 }
 
 template <typename T, typename... Args>
-inline void PassManager::AddPass(Args&&... args) {
-  passes_.emplace_back(new T(std::forward<Args>(args)...));
-  passes_.back()->SetMessageConsumer(consumer_);
+inline void PassManager::AddPassToken(Args&&... args) {
+  pass_tokens_.emplace_back(new T(std::forward<Args>(args)...));
 }
 
 inline uint32_t PassManager::NumPasses() const {
-  return static_cast<uint32_t>(passes_.size());
+  return static_cast<uint32_t>(pass_tokens_.size());
 }
 
-inline Pass* PassManager::GetPass(uint32_t index) const {
-  SPIRV_ASSERT(consumer_, index < passes_.size(), "index out of bound");
-  return passes_[index].get();
+inline PassToken* PassManager::GetPassToken(uint32_t index) const {
+  SPIRV_ASSERT(consumer_, index < pass_tokens_.size(), "index out of bound");
+  return pass_tokens_[index].get();
 }
 
 inline const MessageConsumer& PassManager::consumer() const {

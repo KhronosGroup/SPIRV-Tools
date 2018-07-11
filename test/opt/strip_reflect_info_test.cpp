@@ -40,7 +40,7 @@ OpMemoryModel Logical Simple
 %float = OpTypeFloat 32
 )";
 
-  SinglePassRunAndCheck<opt::StripReflectInfoPass>(before, after, false);
+  SinglePassRunAndCheck<opt::StripReflectInfoPassToken>(before, after, false);
 }
 
 TEST_F(StripLineReflectInfoTest, StripHlslCounterBuffer) {
@@ -59,7 +59,7 @@ OpMemoryModel Logical Simple
 %float = OpTypeFloat 32
 )";
 
-  SinglePassRunAndCheck<opt::StripReflectInfoPass>(before, after, false);
+  SinglePassRunAndCheck<opt::StripReflectInfoPassToken>(before, after, false);
 }
 
 }  // anonymous namespace

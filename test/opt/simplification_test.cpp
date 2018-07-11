@@ -68,7 +68,7 @@ TEST_F(SimplificationTest, StraightLineTest) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::SimplificationPass>(text, false);
+  SinglePassRunAndMatch<opt::SimplificationPassToken>(text, false);
 }
 
 TEST_F(SimplificationTest, AcrossBasicBlocks) {
@@ -132,7 +132,7 @@ TEST_F(SimplificationTest, AcrossBasicBlocks) {
 
 )";
 
-  SinglePassRunAndMatch<opt::SimplificationPass>(text, false);
+  SinglePassRunAndMatch<opt::SimplificationPassToken>(text, false);
 }
 
 TEST_F(SimplificationTest, ThroughLoops) {
@@ -199,7 +199,7 @@ TEST_F(SimplificationTest, ThroughLoops) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::SimplificationPass>(text, false);
+  SinglePassRunAndMatch<opt::SimplificationPassToken>(text, false);
 }
 #endif
 }  // anonymous namespace

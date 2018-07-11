@@ -31,7 +31,6 @@ using ::testing::Each;
 class DummyPassPreservesNothing : public opt::Pass {
  public:
   DummyPassPreservesNothing(Status s) : opt::Pass(), status_to_return_(s) {}
-  const char* name() const override { return "dummy-pass"; }
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
 };
@@ -39,7 +38,6 @@ class DummyPassPreservesNothing : public opt::Pass {
 class DummyPassPreservesAll : public opt::Pass {
  public:
   DummyPassPreservesAll(Status s) : opt::Pass(), status_to_return_(s) {}
-  const char* name() const override { return "dummy-pass"; }
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
   virtual Analysis GetPreservedAnalyses() override {
@@ -50,7 +48,6 @@ class DummyPassPreservesAll : public opt::Pass {
 class DummyPassPreservesFirst : public opt::Pass {
  public:
   DummyPassPreservesFirst(Status s) : opt::Pass(), status_to_return_(s) {}
-  const char* name() const override { return "dummy-pass"; }
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
   virtual Analysis GetPreservedAnalyses() override {

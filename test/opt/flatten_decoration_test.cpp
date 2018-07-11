@@ -75,7 +75,7 @@ TEST_P(FlattenDecorationTest, TransformsDecorations) {
   const auto after =
       PreambleAssembly() + GetParam().expected + TypesAndFunctionsAssembly();
 
-  SinglePassRunAndCheck<opt::FlattenDecorationPass>(before, after, false, true);
+  SinglePassRunAndCheck<opt::FlattenDecorationPassToken>(before, after, false, true);
 }
 
 INSTANTIATE_TEST_CASE_P(NoUses, FlattenDecorationTest,

@@ -29,6 +29,7 @@ using spvtools::opt::IRContext;
 using spvtools::opt::Instruction;
 using spvtools::opt::PassManager;
 using spvtools::opt::RemoveDuplicatesPass;
+using spvtools::opt::RemoveDuplicatesPassToken;
 
 class RemoveDuplicatesTest : public ::testing::Test {
  public:
@@ -70,7 +71,7 @@ class RemoveDuplicatesTest : public ::testing::Test {
 
     PassManager manager;
     manager.SetMessageConsumer(consumer_);
-    manager.AddPass<RemoveDuplicatesPass>();
+    manager.AddPassToken<RemoveDuplicatesPassToken>();
 
     spvtools::opt::Pass::Status pass_res = manager.Run(context_.get());
     if (pass_res == spvtools::opt::Pass::Status::Failure) return std::string();

@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_DEAD_VARIABLE_ELIMINATION_H
-#define SPIRV_TOOLS_DEAD_VARIABLE_ELIMINATION_H
+#ifndef SOURCE_OPT_DEAD_VARIABLE_ELIMINATION_H
+#define SOURCE_OPT_DEAD_VARIABLE_ELIMINATION_H
 
 #include <climits>
 #include <unordered_map>
 
-#include "decoration_manager.h"
-#include "mem_pass.h"
+#include "source/opt/decoration_manager.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
 
 class DeadVariableElimination : public MemPass {
  public:
-  const char* name() const override { return "dead-variable-elimination"; }
   Status Process(opt::IRContext* c) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -49,7 +49,19 @@ class DeadVariableElimination : public MemPass {
   enum { kMustKeep = INT_MAX };
 };
 
+class DeadVariableEliminationToken : public PassToken {
+ public:
+  DeadVariableEliminationToken() = default;
+  ~DeadVariableEliminationToken() override = default;
+
+  const char* name() const override { return "dead-variable-elimination"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<DeadVariableElimination>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_DEAD_VARIABLE_ELIMINATION_H
+#endif  // SOURCE_OPT_DEAD_VARIABLE_ELIMINATION_H

@@ -22,7 +22,6 @@ using namespace spvtools;
 // A pass turning all none debug line instructions into Nop.
 class NopifyPass : public opt::Pass {
  public:
-  const char* name() const override { return "NopifyPass"; }
   Status Process(opt::IRContext* irContext) override {
     bool modified = false;
     irContext->module()->ForEachInst(
@@ -32,6 +31,18 @@ class NopifyPass : public opt::Pass {
         },
         /* run_on_debug_line_insts = */ false);
     return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+  }
+};
+
+class NopifyPassToken : public opt::PassToken {
+ public:
+  NopifyPassToken() = default;
+  ~NopifyPassToken() = default;
+
+  const char* name() const override { return "NopifyPass"; }
+
+  std::unique_ptr<opt::Pass> CreatePass() const override {
+    return MakeUnique<NopifyPass>();
   }
 };
 
@@ -90,7 +101,7 @@ TEST_F(PassTestForLineDebugInfo, KeepLineDebugInfo) {
       "OpLine %3 4 4\n"
       "OpNoLine\n"
       "OpNop\n";
-  SinglePassRunAndCheck<NopifyPass>(text, result_keep_nop,
+  SinglePassRunAndCheck<NopifyPassToken>(text, result_keep_nop,
                                     /* skip_nop = */ false);
   const char* result_skip_nop =
       "OpNoLine\n"
@@ -104,7 +115,7 @@ TEST_F(PassTestForLineDebugInfo, KeepLineDebugInfo) {
       "OpNoLine\n"
       "OpLine %3 4 4\n"
       "OpNoLine\n";
-  SinglePassRunAndCheck<NopifyPass>(text, result_skip_nop,
+  SinglePassRunAndCheck<NopifyPassToken>(text, result_skip_nop,
                                     /* skip_nop = */ true);
 }
 

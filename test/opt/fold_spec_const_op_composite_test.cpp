@@ -25,7 +25,7 @@ using namespace spvtools;
 using FoldSpecConstantOpAndCompositePassBasicTest = PassTest<::testing::Test>;
 
 TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, Empty) {
-  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePass>(
+  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePassToken>(
       "", "", /* skip_nop = */ true);
 }
 
@@ -73,7 +73,7 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, Basic) {
                     "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePass>(
+  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePassToken>(
       builder.GetCode(), JoinAllInsts(expected), /* skip_nop = */ true);
 }
 
@@ -99,7 +99,7 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
           // clang-format on
       });
 
-  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePass>(
+  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePassToken>(
       builder.GetCode(), builder.GetCode(), /* skip_nop = */ true);
 }
 
@@ -208,7 +208,7 @@ TEST_P(FoldSpecConstantOpAndCompositePassTest, ParamTestCase) {
   std::string optimized;
   auto status = opt::Pass::Status::SuccessWithoutChange;
   std::tie(optimized, status) =
-      SinglePassRunAndDisassemble<opt::FoldSpecConstantOpAndCompositePass>(
+      SinglePassRunAndDisassemble<opt::FoldSpecConstantOpAndCompositePassToken>(
           original, /* skip_nop = */ true, /* do_validation = */ false);
 
   // Check the optimized code, but ignore the OpName instructions.

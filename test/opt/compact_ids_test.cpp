@@ -43,7 +43,7 @@ OpMemoryModel Physical32 OpenCL
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::NullPass>(before, after, false, false);
+  SinglePassRunAndCheck<opt::NullPassToken>(before, after, false, false);
 }
 
 TEST_F(CompactIdsTest, PassOn) {
@@ -87,7 +87,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::CompactIdsPass>(before, after, false, false);
+  SinglePassRunAndCheck<opt::CompactIdsPassToken>(before, after, false, false);
 }
 
 TEST(CompactIds, InstructionResultIsUpdated) {

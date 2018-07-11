@@ -51,7 +51,7 @@ TEST_F(StripLineDebugInfoTest, LineNoLine) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::StripDebugInfoPass>(JoinAllInsts(text),
+  SinglePassRunAndCheck<opt::StripDebugInfoPassToken>(JoinAllInsts(text),
                                                  JoinNonDebugInsts(text),
                                                  /* skip_nop = */ false);
 
@@ -67,7 +67,7 @@ TEST_F(StripLineDebugInfoTest, LineNoLine) {
       "OpName %2 \"main\"",
   };
   text.insert(text.begin() + 4, more_text.cbegin(), more_text.cend());
-  SinglePassRunAndCheck<opt::StripDebugInfoPass>(JoinAllInsts(text),
+  SinglePassRunAndCheck<opt::StripDebugInfoPassToken>(JoinAllInsts(text),
                                                  JoinNonDebugInsts(text),
                                                  /* skip_nop = */ false);
 }
@@ -80,7 +80,7 @@ TEST_P(StripDebugInfoTest, Kind) {
       "OpMemoryModel Logical GLSL450",
       GetParam(),
   };
-  SinglePassRunAndCheck<opt::StripDebugInfoPass>(JoinAllInsts(text),
+  SinglePassRunAndCheck<opt::StripDebugInfoPassToken>(JoinAllInsts(text),
                                                  JoinNonDebugInsts(text),
                                                  /* skip_nop = */ false);
 }

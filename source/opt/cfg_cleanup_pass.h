@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_CFG_CLEANUP_PASS_H_
-#define LIBSPIRV_OPT_CFG_CLEANUP_PASS_H_
+#ifndef SOURCE_OPT_CFG_CLEANUP_PASS_H_
+#define SOURCE_OPT_CFG_CLEANUP_PASS_H_
 
-#include "function.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/function.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -25,7 +26,7 @@ namespace opt {
 class CFGCleanupPass : public MemPass {
  public:
   CFGCleanupPass() = default;
-  const char* name() const override { return "cfg-cleanup"; }
+
   Status Process(opt::IRContext* c) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -37,7 +38,19 @@ class CFGCleanupPass : public MemPass {
   void Initialize(opt::IRContext* c);
 };
 
+class CFGCleanupPassToken : public PassToken {
+ public:
+  CFGCleanupPassToken() = default;
+  ~CFGCleanupPassToken() override = default;
+
+  const char* name() const override { return "cfg-cleanup"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<CFGCleanupPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif
+#endif  // SOURCE_OPT_CFG_CLEANUP_PASS_H_

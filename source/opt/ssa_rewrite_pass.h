@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_SSA_REWRITE_PASS_H_
-#define LIBSPIRV_OPT_SSA_REWRITE_PASS_H_
-
-#include "basic_block.h"
-#include "ir_context.h"
-#include "mem_pass.h"
+#ifndef SOURCE_OPT_SSA_REWRITE_PASS_H_
+#define SOURCE_OPT_SSA_REWRITE_PASS_H_
 
 #include <unordered_map>
+
+#include "source/opt/basic_block.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -290,7 +291,7 @@ class SSARewriter {
 class SSARewritePass : public MemPass {
  public:
   SSARewritePass() = default;
-  const char* name() const override { return "ssa-rewrite"; }
+
   Status Process(opt::IRContext* c) override;
 
  private:
@@ -298,7 +299,19 @@ class SSARewritePass : public MemPass {
   void Initialize(opt::IRContext* c);
 };
 
+class SSARewritePassToken : public PassToken {
+ public:
+  SSARewritePassToken() = default;
+  ~SSARewritePassToken() override = default;
+
+  const char* name() const override { return "ssa-rewrite"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<SSARewritePass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_SSA_REWRITE_PASS_H_
+#endif  // SOURCE_OPT_SSA_REWRITE_PASS_H_

@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_ELIMINATE_DEAD_FUNCTIONS_PASS_H_
-#define LIBSPIRV_OPT_ELIMINATE_DEAD_FUNCTIONS_PASS_H_
+#ifndef SOURCE_OPT_ELIMINATE_DEAD_FUNCTIONS_PASS_H_
+#define SOURCE_OPT_ELIMINATE_DEAD_FUNCTIONS_PASS_H_
 
-#include "def_use_manager.h"
-#include "function.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/function.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -26,7 +27,6 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class EliminateDeadFunctionsPass : public MemPass {
  public:
-  const char* name() const override { return "eliminate-dead-functions"; }
   Status Process(opt::IRContext* c) override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
@@ -37,7 +37,19 @@ class EliminateDeadFunctionsPass : public MemPass {
   void EliminateFunction(opt::Function* func);
 };
 
+class EliminateDeadFunctionsPassToken : public PassToken {
+ public:
+  EliminateDeadFunctionsPassToken() = default;
+  ~EliminateDeadFunctionsPassToken() override = default;
+
+  const char* name() const override { return "eliminate-dead-functions"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<EliminateDeadFunctionsPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_ELIMINATE_DEAD_FUNCTIONS_PASS_H_
+#endif  // SOURCE_OPT_ELIMINATE_DEAD_FUNCTIONS_PASS_H_

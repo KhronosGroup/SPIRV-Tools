@@ -23,11 +23,12 @@
 #include <utility>
 #include <vector>
 
-#include "opt/ir_context.h"
-#include "opt/loop_descriptor.h"
-#include "opt/loop_utils.h"
-#include "opt/pass.h"
-#include "opt/scalar_analysis.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/loop_descriptor.h"
+#include "source/opt/loop_utils.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
+#include "source/opt/scalar_analysis.h"
 
 namespace spvtools {
 namespace opt {
@@ -245,7 +246,9 @@ class LoopPeelingPass : public Pass {
         peeled_loops_;
   };
 
-  LoopPeelingPass(LoopPeelingStats* stats = nullptr) : stats_(stats) {}
+  LoopPeelingPass(LoopPeelingStats* stats) : stats_(stats) {}
+
+  LoopPeelingPass() = default;
 
   // Sets the loop peeling growth threshold. If the code size increase is above
   // |code_grow_threshold|, the loop will not be peeled. The code size is
@@ -256,8 +259,6 @@ class LoopPeelingPass : public Pass {
 
   // Returns the loop peeling code growth threshold.
   static size_t GetLoopPeelingThreshold() { return code_grow_threshold_; }
-
-  const char* name() const override { return "loop-peeling"; }
 
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
@@ -329,6 +330,18 @@ class LoopPeelingPass : public Pass {
 
   static size_t code_grow_threshold_;
   LoopPeelingStats* stats_;
+};
+
+class LoopPeelingPassToken : public PassToken {
+ public:
+  LoopPeelingPassToken() = default;
+  ~LoopPeelingPassToken() override = default;
+
+  const char* name() const override { return "loop-peeling"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<LoopPeelingPass>();
+  }
 };
 
 }  // namespace opt

@@ -151,7 +151,7 @@ TEST_F(UnswitchTest, SimpleUnswitch) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPass>(text, true);
+  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -257,7 +257,7 @@ TEST_F(UnswitchTest, UnswitchExit) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPass>(text, true);
+  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -373,7 +373,7 @@ TEST_F(UnswitchTest, UnswitchContinue) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPass>(text, true);
+  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -479,7 +479,7 @@ TEST_F(UnswitchTest, UnswitchKillLoop) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPass>(text, true);
+  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -605,7 +605,7 @@ TEST_F(UnswitchTest, UnswitchSwitch) {
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPass>(text, true);
+  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
 }
 
 /*
@@ -806,7 +806,7 @@ TEST_F(UnswitchTest, UnSwitchNested) {
                OpFunctionEnd
 )";
 
-  SinglePassRunAndMatch<opt::LoopUnswitchPass>(text, true);
+  SinglePassRunAndMatch<opt::LoopUnswitchPassToken>(text, true);
 }
 #endif  // SPIRV_EFFCEE
 
@@ -906,7 +906,7 @@ TEST_F(UnswitchTest, UnswitchNotUniform) {
   )";
 
   auto result =
-      SinglePassRunAndDisassemble<opt::LoopUnswitchPass>(text, true, false);
+      SinglePassRunAndDisassemble<opt::LoopUnswitchPassToken>(text, true, false);
 
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }

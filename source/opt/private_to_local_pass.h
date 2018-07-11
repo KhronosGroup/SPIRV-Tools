@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_PRIVATE_TO_LOCAL_PASS_H_
-#define LIBSPIRV_OPT_PRIVATE_TO_LOCAL_PASS_H_
+#ifndef SOURCE_OPT_PRIVATE_TO_LOCAL_PASS_H_
+#define SOURCE_OPT_PRIVATE_TO_LOCAL_PASS_H_
 
-#include "ir_context.h"
-#include "pass.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
 
 namespace spvtools {
 namespace opt {
@@ -27,7 +28,6 @@ namespace opt {
 // that dominates inst, and also computes the same value.
 class PrivateToLocalPass : public Pass {
  public:
-  const char* name() const override { return "private-to-local"; }
   Status Process(opt::IRContext*) override;
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -66,7 +66,19 @@ class PrivateToLocalPass : public Pass {
   void UpdateUses(uint32_t id);
 };
 
+class PrivateToLocalPassToken : public PassToken {
+ public:
+  PrivateToLocalPassToken() = default;
+  ~PrivateToLocalPassToken() override = default;
+
+  const char* name() const override { return "private-to-local"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<PrivateToLocalPass>();
+  }
+};
+
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_PRIVATE_TO_LOCAL_PASS_H_
+#endif  // SOURCE_OPT_PRIVATE_TO_LOCAL_PASS_H_

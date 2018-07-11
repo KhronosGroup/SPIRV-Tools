@@ -19,12 +19,13 @@
 #include <unordered_map>
 #include <vector>
 
-#include "constants.h"
-#include "def_use_manager.h"
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
-#include "type_manager.h"
+#include "source/opt/constants.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/pass_token.h"
+#include "source/opt/type_manager.h"
 
 namespace spvtools {
 namespace opt {
@@ -33,8 +34,6 @@ namespace opt {
 class FoldSpecConstantOpAndCompositePass : public Pass {
  public:
   FoldSpecConstantOpAndCompositePass() = default;
-
-  const char* name() const override { return "fold-spec-const-op-composite"; }
 
   Status Process(opt::IRContext* irContext) override;
 
@@ -85,6 +84,18 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
   //
   // |type| must be a composite type.
   uint32_t GetTypeComponent(uint32_t type, uint32_t element) const;
+};
+
+class FoldSpecConstantOpAndCompositePassToken : public PassToken {
+ public:
+  FoldSpecConstantOpAndCompositePassToken() = default;
+  ~FoldSpecConstantOpAndCompositePassToken() override = default;
+
+  const char* name() const override { return "fold-spec-const-op-composite"; }
+
+  std::unique_ptr<Pass> CreatePass() const override {
+    return MakeUnique<FoldSpecConstantOpAndCompositePass>();
+  }
 };
 
 }  // namespace opt

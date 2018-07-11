@@ -100,7 +100,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(predefs + before,
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
                                                  predefs + after, true, true);
 }
 
@@ -185,7 +185,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(predefs + before,
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
                                                  predefs + after, true, true);
 }
 
@@ -236,9 +236,9 @@ OpDecorate %sampler15 DescriptorSet 0
   const std::string before =
       R"(%main = OpFunction %void None %9
 %25 = OpLabel
-%s0 = OpVariable %_ptr_Function_S_t Function 
+%s0 = OpVariable %_ptr_Function_S_t Function
 %26 = OpLoad %v2float %texCoords
-%27 = OpLoad %S_t %s0 
+%27 = OpLoad %S_t %s0
 %28 = OpCompositeInsert %S_t %26 %27 0
 %29 = OpLoad %15 %sampler15
 %30 = OpCompositeInsert %S_t %29 %28 2
@@ -267,7 +267,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(predefs + before,
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
                                                  predefs + after, true, true);
 }
 
@@ -396,7 +396,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(predefs + before,
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
                                                  predefs + after, true, true);
 }
 
@@ -464,7 +464,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(assembly, assembly, true,
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(assembly, assembly, true,
                                                  true);
 }
 
@@ -588,7 +588,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(
       before_predefs + before, after_predefs + after, true, true);
 }
 
@@ -690,7 +690,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(predefs + before,
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(predefs + before,
                                                  predefs + after, true, true);
 }
 
@@ -774,7 +774,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 
@@ -887,7 +887,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::SimplificationPass>(
+  SinglePassRunAndCheck<opt::SimplificationPassToken>(
       predefs_before + before, predefs_after + after, true, true);
 }
 

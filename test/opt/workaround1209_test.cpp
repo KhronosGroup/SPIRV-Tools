@@ -119,7 +119,7 @@ TEST_F(Workaround1209Test, RemoveOpUnreachableInLoop) {
                OpReturn
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::Workaround1209>(text, false);
+  SinglePassRunAndMatch<opt::Workaround1209Token>(text, false);
 }
 
 TEST_F(Workaround1209Test, RemoveOpUnreachableInNestedLoop) {
@@ -219,7 +219,7 @@ TEST_F(Workaround1209Test, RemoveOpUnreachableInNestedLoop) {
                OpReturn
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::Workaround1209>(text, false);
+  SinglePassRunAndMatch<opt::Workaround1209Token>(text, false);
 }
 
 TEST_F(Workaround1209Test, RemoveOpUnreachableInAdjacentLoops) {
@@ -333,7 +333,7 @@ TEST_F(Workaround1209Test, RemoveOpUnreachableInAdjacentLoops) {
                OpReturn
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::Workaround1209>(text, false);
+  SinglePassRunAndMatch<opt::Workaround1209Token>(text, false);
 }
 
 TEST_F(Workaround1209Test, LeaveUnreachableNotInLoop) {
@@ -415,7 +415,7 @@ TEST_F(Workaround1209Test, LeaveUnreachableNotInLoop) {
                OpUnreachable
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::Workaround1209>(text, false);
+  SinglePassRunAndMatch<opt::Workaround1209Token>(text, false);
 }
 #endif
 }  // anonymous namespace

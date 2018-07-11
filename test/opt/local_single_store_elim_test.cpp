@@ -120,7 +120,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -186,7 +186,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
       predefs + before, predefs + before, true, true);
 }
 
@@ -290,7 +290,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -368,7 +368,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -423,7 +423,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(assembly, assembly, true,
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(assembly, assembly, true,
                                                        true);
 }
 
@@ -526,7 +526,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -606,7 +606,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(assembly, assembly, true,
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(assembly, assembly, true,
                                                        true);
 }
 
@@ -665,7 +665,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(
       predefs + before, predefs + after, true, true);
 }
 
@@ -766,7 +766,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(before, after, true,
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPassToken>(before, after, true,
                                                        true);
 }
 

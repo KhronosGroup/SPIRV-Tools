@@ -64,7 +64,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, after, true,
+  SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, after, true,
                                                       true);
 }
 
@@ -94,7 +94,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, before, true,
+  SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, before, true,
                                                       true);
 }
 
@@ -144,7 +144,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, after, true,
+  SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, after, true,
                                                       true);
 }
 
@@ -198,7 +198,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, after, true,
+  SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, after, true,
                                                       true);
 }
 
@@ -229,7 +229,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, before, true,
+  SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, before, true,
                                                       true);
 }
 
@@ -293,7 +293,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, after, true,
+  SinglePassRunAndCheck<opt::DeadVariableEliminationToken>(before, after, true,
                                                       true);
 }
 }  // namespace

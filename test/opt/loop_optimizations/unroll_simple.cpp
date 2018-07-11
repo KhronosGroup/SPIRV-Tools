@@ -189,28 +189,40 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
 }
 
-template <int factor>
 class PartialUnrollerTestPass : public opt::Pass {
  public:
-  PartialUnrollerTestPass() : Pass() {}
-
-  const char* name() const override { return "Loop unroller"; }
+  PartialUnrollerTestPass(int factor) : Pass(), factor_(factor) {}
 
   Status Process(opt::IRContext* context) override {
     for (opt::Function& f : *context->module()) {
       opt::LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(&f);
       for (auto& loop : loop_descriptor) {
         opt::LoopUtils loop_utils{context, &loop};
-        loop_utils.PartiallyUnroll(factor);
+        loop_utils.PartiallyUnroll(factor_);
       }
     }
 
     return Pass::Status::SuccessWithChange;
+  }
+
+ private:
+  int factor_;
+};
+
+template <int factor>
+class PartialUnrollerTestPassToken : public opt::PassToken {
+ public:
+  PartialUnrollerTestPassToken() = default;
+  ~PartialUnrollerTestPassToken() = default;
+
+  const char* name() const override { return "Loop unroller"; }
+
+  std::unique_ptr<opt::Pass> CreatePass() const override {
+    return MakeUnique<PartialUnrollerTestPass>(factor);
   }
 };
 
@@ -349,9 +361,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, output, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, output, false);
 }
 
 /*
@@ -520,12 +531,11 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
   // By unrolling by a factor that doesn't divide evenly into the number of loop
   // iterations we perfom an additional transform when partially unrolling to
   // account for the remainder.
-  SinglePassRunAndCheck<PartialUnrollerTestPass<3>>(text, output, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<3>>(text, output, false);
 }
 
 /* Generated from
@@ -960,9 +970,9 @@ OpFunctionEnd
   opt::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
-  opt::LoopUnroller loop_unroller;
+
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
 }
 
 /*
@@ -1086,9 +1096,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  // SinglePassRunAndCheck<opt::LoopUnroller>(text, expected, false);
+  // SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, expected, false, false, true, 0);
 
   opt::Function* f = spvtest::GetFunction(module, 4);
 
@@ -1112,7 +1121,7 @@ OpFunctionEnd
   EXPECT_TRUE(loop.FindNumberOfIterations(induction, &*condition->ctail(),
                                           &iterations));
   EXPECT_EQ(iterations, 2u);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, expected, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, expected, false, false, true, 0);
 }
 
 /*
@@ -1258,7 +1267,6 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   opt::Function* f = spvtest::GetFunction(module, 4);
@@ -1283,7 +1291,7 @@ OpFunctionEnd
   EXPECT_TRUE(loop.FindNumberOfIterations(induction, &*condition->ctail(),
                                           &iterations));
   EXPECT_EQ(iterations, 9u);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(text, expected, false);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(text, expected, false);
 }
 
 /*
@@ -1587,9 +1595,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
 }
 
 /*
@@ -1728,9 +1735,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
 }
 
 /*
@@ -1868,9 +1874,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
 }
 
 /*
@@ -2021,9 +2026,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
 }
 
 // With opt::LocalMultiStoreElimPass
@@ -2197,9 +2201,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << multiple_phi_shader << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<4>>(multiple_phi_shader, output,
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<4>>(multiple_phi_shader, output,
                                                     false);
 }
 
@@ -2273,9 +2276,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << multiple_phi_shader << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(multiple_phi_shader, output,
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(multiple_phi_shader, output,
                                                     false);
 }
 
@@ -2397,9 +2399,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << multiple_phi_shader << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(multiple_phi_shader, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(multiple_phi_shader, output, false, false, true, 0);
 }
 
 /*
@@ -2558,9 +2559,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << text << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(text, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(text, output, false, false, true, 0);
 }
 
 // With opt::LocalMultiStoreElimPass
@@ -2667,9 +2667,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << condition_in_header << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::LoopUnroller>(condition_in_header, output, false);
+  SinglePassRunAndCheck<opt::LoopUnrollerToken>(condition_in_header, output, false, false, true, 0);
 }
 
 TEST_F(PassClassTest, PartiallyUnrollResidualConditionIsInHeaderBlock) {
@@ -2747,9 +2746,8 @@ OpFunctionEnd
   EXPECT_NE(nullptr, module) << "Assembling failed for ushader:\n"
                              << condition_in_header << std::endl;
 
-  opt::LoopUnroller loop_unroller;
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<2>>(condition_in_header, output,
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<2>>(condition_in_header, output,
                                                     false);
 }
 
@@ -2925,7 +2923,7 @@ OpFunctionEnd
 )";
 
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<PartialUnrollerTestPass<3>>(text, expected, true);
+  SinglePassRunAndCheck<PartialUnrollerTestPassToken<3>>(text, expected, true);
 
   // Make sure the latch block information is preserved and propagated correctly
   // by the pass.
@@ -2933,7 +2931,7 @@ OpFunctionEnd
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
 
-  PartialUnrollerTestPass<3> unroller;
+  PartialUnrollerTestPass unroller(3);
   unroller.Process(context.get());
 
   opt::Module* module = context->module();

@@ -116,7 +116,7 @@ class UnifyConstantTest : public PassTest<T> {
     std::string optimized_before_strip;
     auto status = opt::Pass::Status::SuccessWithoutChange;
     std::tie(optimized_before_strip, status) =
-        this->template SinglePassRunAndDisassemble<opt::UnifyConstantPass>(
+        this->template SinglePassRunAndDisassemble<opt::UnifyConstantPassToken>(
             test_builder.GetCode(),
             /* skip_nop = */ true, /* do_validation = */ false);
     std::string optimized_without_opnames;
