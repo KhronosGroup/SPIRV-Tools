@@ -19,13 +19,14 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-using namespace spvtools;
 
 using FoldSpecConstantOpAndCompositePassBasicTest = PassTest<::testing::Test>;
 
 TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, Empty) {
-  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePass>(
+  SinglePassRunAndCheck<FoldSpecConstantOpAndCompositePass>(
       "", "", /* skip_nop = */ true);
 }
 
@@ -73,7 +74,7 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, Basic) {
                     "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePass>(
+  SinglePassRunAndCheck<FoldSpecConstantOpAndCompositePass>(
       builder.GetCode(), JoinAllInsts(expected), /* skip_nop = */ true);
 }
 
@@ -99,7 +100,7 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
           // clang-format on
       });
 
-  SinglePassRunAndCheck<opt::FoldSpecConstantOpAndCompositePass>(
+  SinglePassRunAndCheck<FoldSpecConstantOpAndCompositePass>(
       builder.GetCode(), builder.GetCode(), /* skip_nop = */ true);
 }
 
@@ -206,16 +207,16 @@ TEST_P(FoldSpecConstantOpAndCompositePassTest, ParamTestCase) {
 
   // Run the optimization and get the result code in disassembly.
   std::string optimized;
-  auto status = opt::Pass::Status::SuccessWithoutChange;
+  auto status = Pass::Status::SuccessWithoutChange;
   std::tie(optimized, status) =
-      SinglePassRunAndDisassemble<opt::FoldSpecConstantOpAndCompositePass>(
+      SinglePassRunAndDisassemble<FoldSpecConstantOpAndCompositePass>(
           original, /* skip_nop = */ true, /* do_validation = */ false);
 
   // Check the optimized code, but ignore the OpName instructions.
-  EXPECT_NE(opt::Pass::Status::Failure, status);
+  EXPECT_NE(Pass::Status::Failure, status);
   EXPECT_EQ(
       StripOpNameInstructions(expected) == StripOpNameInstructions(original),
-      status == opt::Pass::Status::SuccessWithoutChange);
+      status == Pass::Status::SuccessWithoutChange);
   EXPECT_EQ(StripOpNameInstructions(expected),
             StripOpNameInstructions(optimized));
 }
@@ -1386,4 +1387,7 @@ INSTANTIATE_TEST_CASE_P(
         },
         // Long Def-Use chain with swizzle
         })));
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

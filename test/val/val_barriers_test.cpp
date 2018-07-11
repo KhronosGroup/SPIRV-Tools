@@ -19,6 +19,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::HasSubstr;
@@ -802,4 +804,6 @@ OpMemoryNamedBarrier %barrier %workgroup %acquire_and_release_uniform
                         "AcquireRelease or SequentiallyConsistent"));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

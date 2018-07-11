@@ -18,9 +18,10 @@
 
 #include "util/bit_vector.h"
 
+namespace spvtools {
+namespace utils {
 namespace {
 
-using spvtools::utils::BitVector;
 using BitVectorTest = ::testing::Test;
 
 TEST(BitVectorTest, Initialize) {
@@ -159,3 +160,5 @@ TEST(BitVectorTest, SubsetOrTest) {
 }
 
 }  // namespace
+}  // namespace utils
+}  // namespace spvtools

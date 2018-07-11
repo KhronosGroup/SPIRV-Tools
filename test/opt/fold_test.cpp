@@ -29,15 +29,14 @@
 #include "pass_utils.h"
 #include "spirv-tools/libspirv.hpp"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
 using ::testing::Contains;
 
-using namespace spvtools;
-using spvtools::opt::analysis::DefUseManager;
-
 #ifdef SPIRV_EFFCEE
-std::string Disassemble(const std::string& original, opt::IRContext* context,
+std::string Disassemble(const std::string& original, IRContext* context,
                         uint32_t disassemble_options = 0) {
   std::vector<uint32_t> optimized_bin;
   context->module()->ToBinary(&optimized_bin, true);
@@ -51,7 +50,7 @@ std::string Disassemble(const std::string& original, opt::IRContext* context,
   return optimized_asm;
 }
 
-void Match(const std::string& original, opt::IRContext* context,
+void Match(const std::string& original, IRContext* context,
            uint32_t disassemble_options = 0) {
   std::string disassembly = Disassemble(original, context, disassemble_options);
   auto match_result = effcee::Match(disassembly, original);
@@ -78,14 +77,14 @@ TEST_P(IntegerInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
@@ -94,8 +93,8 @@ TEST_P(IntegerInstructionFoldingTest, Case) {
     EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     EXPECT_EQ(inst->opcode(), SpvOpConstant);
-    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const opt::analysis::IntConstant* result =
+    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const analysis::IntConstant* result =
         const_mrg->GetConstantFromInst(inst)->AsIntConstant();
     EXPECT_NE(result, nullptr);
     if (result != nullptr) {
@@ -446,14 +445,14 @@ TEST_P(IntVectorInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
@@ -463,12 +462,11 @@ TEST_P(IntVectorInstructionFoldingTest, Case) {
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     std::vector<SpvOp> opcodes = {SpvOpConstantComposite};
     EXPECT_THAT(opcodes, Contains(inst->opcode()));
-    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const opt::analysis::Constant* result =
-        const_mrg->GetConstantFromInst(inst);
+    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const analysis::Constant* result = const_mrg->GetConstantFromInst(inst);
     EXPECT_NE(result, nullptr);
     if (result != nullptr) {
-      const std::vector<const opt::analysis::Constant*>& componenets =
+      const std::vector<const analysis::Constant*>& componenets =
           result->AsVectorConstant()->GetComponents();
       EXPECT_EQ(componenets.size(), tc.expected_result.size());
       for (size_t i = 0; i < componenets.size(); i++) {
@@ -510,14 +508,14 @@ TEST_P(BooleanInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
@@ -527,8 +525,8 @@ TEST_P(BooleanInstructionFoldingTest, Case) {
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     std::vector<SpvOp> bool_opcodes = {SpvOpConstantTrue, SpvOpConstantFalse};
     EXPECT_THAT(bool_opcodes, Contains(inst->opcode()));
-    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const opt::analysis::BoolConstant* result =
+    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const analysis::BoolConstant* result =
         const_mrg->GetConstantFromInst(inst)->AsBoolConstant();
     EXPECT_NE(result, nullptr);
     if (result != nullptr) {
@@ -1121,14 +1119,14 @@ TEST_P(FloatInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
@@ -1137,8 +1135,8 @@ TEST_P(FloatInstructionFoldingTest, Case) {
     EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     EXPECT_EQ(inst->opcode(), SpvOpConstant);
-    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const opt::analysis::FloatConstant* result =
+    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const analysis::FloatConstant* result =
         const_mrg->GetConstantFromInst(inst)->AsFloatConstant();
     EXPECT_NE(result, nullptr);
     if (result != nullptr) {
@@ -1268,14 +1266,14 @@ TEST_P(DoubleInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
@@ -1284,8 +1282,8 @@ TEST_P(DoubleInstructionFoldingTest, Case) {
     EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     EXPECT_EQ(inst->opcode(), SpvOpConstant);
-    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const opt::analysis::FloatConstant* result =
+    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const analysis::FloatConstant* result =
         const_mrg->GetConstantFromInst(inst)->AsFloatConstant();
     EXPECT_NE(result, nullptr);
     if (result != nullptr) {
@@ -2026,14 +2024,14 @@ TEST_P(IntegerInstructionFoldingTestWithMap, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   inst = context->get_instruction_folder().FoldInstructionToConstant(inst,
                                                                      tc.id_map);
 
@@ -2041,8 +2039,8 @@ TEST_P(IntegerInstructionFoldingTestWithMap, Case) {
   EXPECT_NE(inst, nullptr);
   if (inst != nullptr) {
     EXPECT_EQ(inst->opcode(), SpvOpConstant);
-    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const opt::analysis::IntConstant* result =
+    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const analysis::IntConstant* result =
         const_mrg->GetConstantFromInst(inst)->AsIntConstant();
     EXPECT_NE(result, nullptr);
     if (result != nullptr) {
@@ -2074,14 +2072,14 @@ TEST_P(BooleanInstructionFoldingTestWithMap, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   inst = context->get_instruction_folder().FoldInstructionToConstant(inst,
                                                                      tc.id_map);
 
@@ -2090,8 +2088,8 @@ TEST_P(BooleanInstructionFoldingTestWithMap, Case) {
   if (inst != nullptr) {
     std::vector<SpvOp> bool_opcodes = {SpvOpConstantTrue, SpvOpConstantFalse};
     EXPECT_THAT(bool_opcodes, Contains(inst->opcode()));
-    opt::analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const opt::analysis::BoolConstant* result =
+    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+    const analysis::BoolConstant* result =
         const_mrg->GetConstantFromInst(inst)->AsBoolConstant();
     EXPECT_NE(result, nullptr);
     if (result != nullptr) {
@@ -2124,15 +2122,15 @@ TEST_P(GeneralInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  std::unique_ptr<opt::Instruction> original_inst(inst->Clone(context.get()));
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
@@ -3630,15 +3628,15 @@ TEST_P(ToNegateFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  std::unique_ptr<opt::Instruction> original_inst(inst->Clone(context.get()));
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
@@ -3753,15 +3751,15 @@ TEST_P(MatchingInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  opt::Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  std::unique_ptr<opt::Instruction> original_inst(inst->Clone(context.get()));
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
   EXPECT_EQ(succeeded, tc.expected_result);
   if (succeeded) {
@@ -5610,23 +5608,23 @@ TEST_P(MatchingInstructionWithNoResultFoldingTest, Case) {
   const auto& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Fold the instruction to test.
-  opt::Instruction* inst = nullptr;
-  opt::Function* func = &*context->module()->begin();
-  for (auto& bb : *func) {
-    opt::Instruction* terminator = bb.terminator();
+  Instruction* inst = nullptr;
+  Function* func = &*context->module()->begin();
+  for(auto& bb : *func) {
+    Instruction* terminator = bb.terminator();
     if (terminator->IsReturnOrAbort()) {
       inst = terminator->PreviousNode();
       break;
     }
   }
   assert(inst && "Invalid test.  Could not find instruction to fold.");
-  std::unique_ptr<opt::Instruction> original_inst(inst->Clone(context.get()));
+  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
   EXPECT_EQ(succeeded, tc.expected_result);
   if (succeeded) {
@@ -5653,4 +5651,7 @@ INSTANTIATE_TEST_CASE_P(StoreMatchingTest, MatchingInstructionWithNoResultFoldin
 ));
 
 #endif
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

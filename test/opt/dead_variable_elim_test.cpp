@@ -15,9 +15,9 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using DeadVariableElimTest = PassTest<::testing::Test>;
 
@@ -64,8 +64,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, after, true,
-                                                      true);
+  SinglePassRunAndCheck<DeadVariableElimination>(before, after, true, true);
 }
 
 // Since %dead is exported, make sure we keep it.  It could be referenced
@@ -94,8 +93,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, before, true,
-                                                      true);
+  SinglePassRunAndCheck<DeadVariableElimination>(before, before, true, true);
 }
 
 // Delete %dead because it is unreferenced.  Then %initializer becomes
@@ -144,8 +142,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, after, true,
-                                                      true);
+  SinglePassRunAndCheck<DeadVariableElimination>(before, after, true, true);
 }
 
 // Delete %dead because it is unreferenced.  In this case, the initialized has
@@ -198,8 +195,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, after, true,
-                                                      true);
+  SinglePassRunAndCheck<DeadVariableElimination>(before, after, true, true);
 }
 
 // Keep %live because it is used, and its initializer.
@@ -229,8 +225,7 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, before, true,
-                                                      true);
+  SinglePassRunAndCheck<DeadVariableElimination>(before, before, true, true);
 }
 
 // This test that the decoration associated with a variable are removed when the
@@ -293,7 +288,9 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::DeadVariableElimination>(before, after, true,
-                                                      true);
+  SinglePassRunAndCheck<DeadVariableElimination>(before, after, true, true);
 }
+
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

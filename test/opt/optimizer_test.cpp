@@ -19,12 +19,10 @@
 
 #include "pass_fixture.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using spvtools::CreateNullPass;
-using spvtools::CreateStripDebugInfoPass;
-using spvtools::Optimizer;
-using spvtools::SpirvTools;
 using ::testing::Eq;
 
 TEST(Optimizer, CanRunNullPassWithDistinctInputOutputVectors) {
@@ -107,3 +105,5 @@ TEST(Optimizer, CanRunTransformingPassWithAliasedVectors) {
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

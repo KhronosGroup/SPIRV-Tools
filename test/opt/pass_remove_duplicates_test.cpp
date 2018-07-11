@@ -23,12 +23,9 @@
 #include "source/spirv_constant.h"
 #include "unit_spirv.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using spvtools::opt::IRContext;
-using spvtools::opt::Instruction;
-using spvtools::opt::PassManager;
-using spvtools::opt::RemoveDuplicatesPass;
 
 class RemoveDuplicatesTest : public ::testing::Test {
  public:
@@ -72,8 +69,8 @@ class RemoveDuplicatesTest : public ::testing::Test {
     manager.SetMessageConsumer(consumer_);
     manager.AddPass<RemoveDuplicatesPass>();
 
-    spvtools::opt::Pass::Status pass_res = manager.Run(context_.get());
-    if (pass_res == spvtools::opt::Pass::Status::Failure) return std::string();
+    Pass::Status pass_res = manager.Run(context_.get());
+    if (pass_res == Pass::Status::Failure) return std::string();
 
     return ModuleToText();
   }
@@ -641,4 +638,7 @@ OpFunctionEnd
   EXPECT_EQ(RunPass(spirv), result);
   EXPECT_EQ(GetErrorMessage(), "");
 }
+
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

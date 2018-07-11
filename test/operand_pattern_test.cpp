@@ -17,9 +17,10 @@
 #include "gmock/gmock.h"
 #include "source/operand.h"
 
-using ::testing::Eq;
-
+namespace spvtools {
 namespace {
+
+using ::testing::Eq;
 
 TEST(OperandPattern, InitiallyEmpty) {
   spv_operand_pattern_t empty;
@@ -262,4 +263,5 @@ TEST(AlternatePatternFollowingImmediate, ResultIdBack) {
                                SPV_OPERAND_TYPE_RESULT_ID}));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

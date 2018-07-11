@@ -21,6 +21,7 @@
 #include <vector>
 
 namespace spvtools {
+namespace opt {
 
 // In-place substring replacement. Finds the |find_str| in the |process_str|
 // and replaces the found substring with |replace_str|. Returns true if at
@@ -60,6 +61,7 @@ std::vector<T> Concat(const std::vector<T>& a, const std::vector<T>& b) {
   return ret;
 }
 
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_TEST_OPT_PASS_UTILS_H_

@@ -19,12 +19,12 @@
 
 #include "source/instruction.h"
 
-using spvtools::AssemblyContext;
+namespace spvtools {
+namespace {
+
 using spvtest::AutoText;
 using spvtest::Concatenate;
 using ::testing::Eq;
-
-namespace {
 
 struct EncodeStringCase {
   std::string str;
@@ -73,4 +73,5 @@ INSTANTIATE_TEST_CASE_P(
     }),);
 // clang-format on
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

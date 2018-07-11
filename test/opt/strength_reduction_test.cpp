@@ -23,13 +23,12 @@
 #include <sstream>
 #include <unordered_set>
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-using namespace spvtools;
 
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
-
 using StrengthReductionBasicTest = PassTest<::testing::Test>;
 
 // Test to make sure we replace 5*8.
@@ -54,10 +53,10 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
-  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+  EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);
   EXPECT_THAT(output, Not(HasSubstr("OpIMul")));
   EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %uint %uint_5 %uint_3"));
@@ -99,7 +98,7 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy16) {
 ; CHECK: OpFunctionEnd
                OpFunctionEnd)";
 
-  SinglePassRunAndMatch<opt::StrengthReductionPass>(text, false);
+  SinglePassRunAndMatch<StrengthReductionPass>(text, false);
 }
 #endif
 
@@ -126,10 +125,10 @@ TEST_F(StrengthReductionBasicTest, BasicTwoPowersOf2) {
           OpFunctionEnd
 )";
   // clang-format on
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
       text, /* skip_nop = */ true, /* do_validation = */ false);
 
-  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+  EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);
   EXPECT_THAT(output, Not(HasSubstr("OpIMul")));
   EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %int %int_4 %uint_5"));
@@ -157,10 +156,10 @@ TEST_F(StrengthReductionBasicTest, BasicDontReplace0) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
-  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
 // Test to make sure we do not replace a multiple of 5 and 7.
@@ -186,10 +185,10 @@ TEST_F(StrengthReductionBasicTest, BasicNoChange) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
-  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
 // Test to make sure constants and types are reused and not duplicated.
@@ -214,10 +213,10 @@ TEST_F(StrengthReductionBasicTest, NoDuplicateConstantsAndTypes) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
-  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+  EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);
   EXPECT_THAT(output,
               Not(MatchesRegex(".*OpConstant %uint 3.*OpConstant %uint 3.*")));
@@ -248,10 +247,10 @@ TEST_F(StrengthReductionBasicTest, BasicCreateOneConst) {
       // clang-format on
   };
 
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+  auto result = SinglePassRunAndDisassemble<StrengthReductionPass>(
       JoinAllInsts(text), /* skip_nop = */ true, /* do_validation = */ false);
 
-  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+  EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);
   EXPECT_THAT(output, Not(HasSubstr("OpIMul")));
   EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %uint %uint_5 %uint_7"));
@@ -339,7 +338,7 @@ TEST_F(StrengthReductionBasicTest, BasicCheckPositionAndReplacement) {
   };
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::StrengthReductionPass>(
+  SinglePassRunAndCheck<StrengthReductionPass>(
       JoinAllInsts(Concat(common_text, foo_before)),
       JoinAllInsts(Concat(common_text, foo_after)),
       /* skip_nop = */ true, /* do_validate = */ true);
@@ -428,9 +427,12 @@ TEST_F(StrengthReductionBasicTest, BasicTestMultipleReplacements) {
   };
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<opt::StrengthReductionPass>(
+  SinglePassRunAndCheck<StrengthReductionPass>(
       JoinAllInsts(Concat(common_text, foo_before)),
       JoinAllInsts(Concat(common_text, foo_after)),
       /* skip_nop = */ true, /* do_validate = */ true);
 }
-}  // anonymous namespace
+
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

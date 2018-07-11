@@ -18,9 +18,9 @@
 #include "spirv-tools/optimizer.hpp"
 #include "spirv/1.1/spirv.h"
 
+namespace spvtools {
 namespace {
 
-using namespace spvtools;
 using ::testing::ContainerEq;
 using ::testing::HasSubstr;
 
@@ -192,7 +192,7 @@ TEST(CppInterface, ValidateWithOptionsPass) {
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::vector<uint32_t> binary;
   EXPECT_TRUE(t.Assemble(MakeModuleHavingStruct(10), &binary));
-  const spvtools::ValidatorOptions opts;
+  const ValidatorOptions opts;
 
   EXPECT_TRUE(t.Validate(binary.data(), binary.size(), opts));
 }
@@ -201,7 +201,7 @@ TEST(CppInterface, ValidateWithOptionsFail) {
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::vector<uint32_t> binary;
   EXPECT_TRUE(t.Assemble(MakeModuleHavingStruct(10), &binary));
-  spvtools::ValidatorOptions opts;
+  ValidatorOptions opts;
   opts.SetUniversalLimit(spv_validator_limit_max_struct_members, 9);
   std::stringstream os;
   t.SetMessageConsumer([&os](spv_message_level_t, const char*,
@@ -315,4 +315,5 @@ TEST(CppInterface, OptimizeSameAddressForOriginalOptimizedBinary) {
 
 // TODO(antiagainst): tests for SetMessageConsumer().
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

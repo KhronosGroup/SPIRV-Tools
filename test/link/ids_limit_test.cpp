@@ -15,10 +15,10 @@
 #include "gmock/gmock.h"
 #include "linker_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using ::testing::HasSubstr;
-
 using IdsLimit = spvtest::LinkerTest;
 
 TEST_F(IdsLimit, UnderLimit) {
@@ -66,4 +66,5 @@ TEST_F(IdsLimit, OverLimit) {
                         "the current ID bound."));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

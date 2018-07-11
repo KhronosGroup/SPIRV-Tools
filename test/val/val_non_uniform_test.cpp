@@ -19,6 +19,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::Combine;
@@ -244,4 +246,6 @@ INSTANTIATE_TEST_CASE_P(GroupNonUniformQuad, GroupNonUniformScope,
                                 Values("%u32"), ValuesIn(scopes),
                                 Values("%u32_0 %u32_0")));
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

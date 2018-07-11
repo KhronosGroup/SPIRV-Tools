@@ -33,6 +33,7 @@
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
+namespace opt {
 
 // Template class for testing passes. It contains some handy utility methods for
 // running passes and checking results.
@@ -48,22 +49,21 @@ class PassTest : public TestT {
       : consumer_(nullptr),
         context_(nullptr),
         tools_(SPV_ENV_UNIVERSAL_1_1),
-        manager_(new opt::PassManager()),
+        manager_(new PassManager()),
         assemble_options_(SpirvTools::kDefaultAssembleOption),
         disassemble_options_(SpirvTools::kDefaultDisassembleOption) {}
 
   // Runs the given |pass| on the binary assembled from the |original|.
   // Returns a tuple of the optimized binary and the boolean value returned
   // from pass Process() function.
-  std::tuple<std::vector<uint32_t>, opt::Pass::Status> OptimizeToBinary(
-      opt::Pass* pass, const std::string& original, bool skip_nop) {
+  std::tuple<std::vector<uint32_t>, Pass::Status> OptimizeToBinary(
+      Pass* pass, const std::string& original, bool skip_nop) {
     context_ = std::move(BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer_, original,
                                      assemble_options_));
     EXPECT_NE(nullptr, context()) << "Assembling failed for shader:\n"
                                   << original << std::endl;
     if (!context()) {
-      return std::make_tuple(std::vector<uint32_t>(),
-                             opt::Pass::Status::Failure);
+      return std::make_tuple(std::vector<uint32_t>(), Pass::Status::Failure);
     }
 
     const auto status = pass->Run(context());
@@ -77,7 +77,7 @@ class PassTest : public TestT {
   // |assembly|. Returns a tuple of the optimized binary and the boolean value
   // from the pass Process() function.
   template <typename PassT, typename... Args>
-  std::tuple<std::vector<uint32_t>, opt::Pass::Status> SinglePassRunToBinary(
+  std::tuple<std::vector<uint32_t>, Pass::Status> SinglePassRunToBinary(
       const std::string& assembly, bool skip_nop, Args&&... args) {
     auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
     pass->SetMessageConsumer(consumer_);
@@ -88,11 +88,11 @@ class PassTest : public TestT {
   // |assembly|, disassembles the optimized binary. Returns a tuple of
   // disassembly string and the boolean value from the pass Process() function.
   template <typename PassT, typename... Args>
-  std::tuple<std::string, opt::Pass::Status> SinglePassRunAndDisassemble(
+  std::tuple<std::string, Pass::Status> SinglePassRunAndDisassemble(
       const std::string& assembly, bool skip_nop, bool do_validation,
       Args&&... args) {
     std::vector<uint32_t> optimized_bin;
-    auto status = opt::Pass::Status::SuccessWithoutChange;
+    auto status = Pass::Status::SuccessWithoutChange;
     std::tie(optimized_bin, status) = SinglePassRunToBinary<PassT>(
         assembly, skip_nop, std::forward<Args>(args)...);
     if (do_validation) {
@@ -124,13 +124,13 @@ class PassTest : public TestT {
                              const std::string& expected, bool skip_nop,
                              bool do_validation, Args&&... args) {
     std::vector<uint32_t> optimized_bin;
-    auto status = opt::Pass::Status::SuccessWithoutChange;
+    auto status = Pass::Status::SuccessWithoutChange;
     std::tie(optimized_bin, status) = SinglePassRunToBinary<PassT>(
         original, skip_nop, std::forward<Args>(args)...);
     // Check whether the pass returns the correct modification indication.
-    EXPECT_NE(opt::Pass::Status::Failure, status);
+    EXPECT_NE(Pass::Status::Failure, status);
     EXPECT_EQ(original == expected,
-              status == opt::Pass::Status::SuccessWithoutChange);
+              status == Pass::Status::SuccessWithoutChange);
     if (do_validation) {
       spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
       spv_context spvContext = spvContextCreate(target_env);
@@ -190,7 +190,7 @@ class PassTest : public TestT {
 
   // Renews the pass manager, including clearing all previously added passes.
   void RenewPassManger() {
-    manager_.reset(new opt::PassManager());
+    manager_.reset(new PassManager());
     manager_->SetMessageConsumer(consumer_);
   }
 
@@ -224,7 +224,7 @@ class PassTest : public TestT {
   }
 
   MessageConsumer consumer() { return consumer_; }
-  opt::IRContext* context() { return context_.get(); }
+  IRContext* context() { return context_.get(); }
 
   void SetMessageConsumer(MessageConsumer msg_consumer) {
     consumer_ = msg_consumer;
@@ -232,13 +232,14 @@ class PassTest : public TestT {
 
  private:
   MessageConsumer consumer_;                // Message consumer.
-  std::unique_ptr<opt::IRContext> context_;  // IR context
+  std::unique_ptr<IRContext> context_;      // IR context
   SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
-  std::unique_ptr<opt::PassManager> manager_;  // The pass manager.
+  std::unique_ptr<PassManager> manager_;  // The pass manager.
   uint32_t assemble_options_;
   uint32_t disassemble_options_;
 };
 
+}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_TEST_OPT_PASS_FIXTURE_H_

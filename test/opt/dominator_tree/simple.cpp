@@ -24,11 +24,11 @@
 #include "opt/dominator_analysis.h"
 #include "opt/pass.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
-using namespace spvtools;
 using ::testing::UnorderedElementsAre;
-
 using PassClassTest = PassTest<::testing::Test>;
 
 /*
@@ -139,18 +139,18 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
                OpFunctionEnd
 )";
   // clang-format on
-  std::unique_ptr<opt::IRContext> context =
+  std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  opt::Module* module = context->module();
+  Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  const opt::Function* f = spvtest::GetFunction(module, 4);
+  const Function* f = spvtest::GetFunction(module, 4);
 
-  opt::DominatorAnalysis* analysis = context->GetDominatorAnalysis(f);
-  const opt::CFG& cfg = *context->cfg();
+  DominatorAnalysis* analysis = context->GetDominatorAnalysis(f);
+  const CFG& cfg = *context->cfg();
 
-  opt::DominatorTree& tree = analysis->GetDomTree();
+  DominatorTree& tree = analysis->GetDomTree();
 
   EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
   EXPECT_TRUE(analysis->Dominates(5, 18));
@@ -173,3 +173,5 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
 }
 
 }  // namespace
+}  // namespace opt
+}  // namespace spvtools

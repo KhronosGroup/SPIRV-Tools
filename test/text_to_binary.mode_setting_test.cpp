@@ -20,6 +20,7 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::EnumCase;
@@ -295,4 +296,5 @@ TEST_F(TextToBinaryCapability, BadInvalidCapability) {
 
 // TODO(dneto): OpExecutionMode
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

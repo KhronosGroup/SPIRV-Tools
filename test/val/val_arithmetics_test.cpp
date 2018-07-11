@@ -20,6 +20,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace spvtools {
+namespace val {
 namespace {
 
 using ::testing::HasSubstr;
@@ -1273,4 +1275,6 @@ TEST_F(ValidateArithmetics, SMulExtendedResultTypeMembersNotIdentical) {
                 "SMulExtended"));
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace val
+}  // namespace spvtools

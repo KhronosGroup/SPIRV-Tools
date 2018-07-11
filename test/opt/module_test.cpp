@@ -25,12 +25,12 @@
 
 #include "module_utils.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 
 using ::testing::Eq;
 using spvtest::GetIdBound;
-using spvtools::opt::IRContext;
-using spvtools::opt::Module;
 
 TEST(ModuleTest, SetIdBound) {
   Module m;
@@ -140,4 +140,6 @@ OpFunctionEnd)";
   EXPECT_EQ(text, str.str());
 }
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace opt
+}  // namespace spvtools

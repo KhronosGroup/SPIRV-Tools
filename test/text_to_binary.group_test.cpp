@@ -20,6 +20,7 @@
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 
+namespace spvtools {
 namespace {
 
 using spvtest::EnumCase;
@@ -69,4 +70,5 @@ TEST_F(GroupOperationTest, WrongGroupOperation) {
 // TODO(dneto): OpGroupUMax
 // TODO(dneto): OpGroupSMax
 
-}  // anonymous namespace
+}  // namespace
+}  // namespace spvtools

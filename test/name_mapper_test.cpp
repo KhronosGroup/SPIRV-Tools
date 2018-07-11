@@ -19,11 +19,11 @@
 
 #include "source/name_mapper.h"
 
-using spvtest::ScopedContext;
-using ::testing::Eq;
-
 namespace spvtools {
 namespace {
+
+using spvtest::ScopedContext;
+using ::testing::Eq;
 
 TEST(TrivialNameTest, Samples) {
   auto mapper = GetTrivialNameMapper();

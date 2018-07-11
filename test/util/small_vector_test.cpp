@@ -18,9 +18,10 @@
 
 #include "util/small_vector.h"
 
+namespace spvtools {
+namespace utils {
 namespace {
 
-using spvtools::utils::SmallVector;
 using SmallVectorTest = ::testing::Test;
 
 TEST(SmallVectorTest, Initialize_default) {
@@ -591,4 +592,7 @@ TEST(SmallVectorTest, Resize6) {
   EXPECT_EQ(vec.size(), 3);
   EXPECT_EQ(vec, result);
 }
+
 }  // namespace
+}  // namespace utils
+}  // namespace spvtools
