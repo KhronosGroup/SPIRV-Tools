@@ -1540,74 +1540,73 @@ FoldingRule VectorShuffleFeedingExtract() {
 // corresponding |a| in the FMix is 0 or 1, we can extract from one of the
 // operands of the FMix.
 FoldingRule FMixFeedingExtract() {
-  return
-      [](opt::Instruction* inst,
-         const std::vector<const analysis::Constant*>&) {
-        assert(inst->opcode() == SpvOpCompositeExtract &&
-               "Wrong opcode.  Should be OpCompositeExtract.");
-        opt::IRContext* context = inst->context();
-        analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-        analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+  return [](opt::Instruction* inst,
+            const std::vector<const analysis::Constant*>&) {
+    assert(inst->opcode() == SpvOpCompositeExtract &&
+           "Wrong opcode.  Should be OpCompositeExtract.");
+    opt::IRContext* context = inst->context();
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
 
-        uint32_t composite_id =
-            inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-        opt::Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
+    uint32_t composite_id =
+        inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
+    opt::Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
 
-        if (composite_inst->opcode() != SpvOpExtInst) {
-          return false;
-        }
+    if (composite_inst->opcode() != SpvOpExtInst) {
+      return false;
+    }
 
-        uint32_t inst_set_id =
-            inst->context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
+    uint32_t inst_set_id =
+        inst->context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450();
 
-        if (composite_inst->GetSingleWordInOperand(kExtInstSetIdInIdx) !=
-                inst_set_id ||
-            composite_inst->GetSingleWordInOperand(kExtInstInstructionInIdx) !=
-                GLSLstd450FMix) {
-          return false;
-        }
+    if (composite_inst->GetSingleWordInOperand(kExtInstSetIdInIdx) !=
+            inst_set_id ||
+        composite_inst->GetSingleWordInOperand(kExtInstInstructionInIdx) !=
+            GLSLstd450FMix) {
+      return false;
+    }
 
-        // Get the |a| for the FMix instruction.
-        uint32_t a_id = composite_inst->GetSingleWordInOperand(kFMixAIdInIdx);
-        std::unique_ptr<opt::Instruction> a(inst->Clone(inst->context()));
-        a->SetInOperand(kExtractCompositeIdInIdx, {a_id});
-        context->get_instruction_folder().FoldInstruction(a.get());
+    // Get the |a| for the FMix instruction.
+    uint32_t a_id = composite_inst->GetSingleWordInOperand(kFMixAIdInIdx);
+    std::unique_ptr<opt::Instruction> a(inst->Clone(inst->context()));
+    a->SetInOperand(kExtractCompositeIdInIdx, {a_id});
+    context->get_instruction_folder().FoldInstruction(a.get());
 
-        if (a->opcode() != SpvOpCopyObject) {
-          return false;
-        }
+    if (a->opcode() != SpvOpCopyObject) {
+      return false;
+    }
 
-        const analysis::Constant* a_const =
-            const_mgr->FindDeclaredConstant(a->GetSingleWordInOperand(0));
+    const analysis::Constant* a_const =
+        const_mgr->FindDeclaredConstant(a->GetSingleWordInOperand(0));
 
-        if (!a_const) {
-          return false;
-        }
+    if (!a_const) {
+      return false;
+    }
 
-        bool use_x = false;
+    bool use_x = false;
 
-        assert(a_const->type()->AsFloat());
-        double element_value = a_const->GetValueAsDouble();
-        if (element_value == 0.0) {
-          use_x = true;
-        } else if (element_value == 1.0) {
-          use_x = false;
-        } else {
-          return false;
-        }
+    assert(a_const->type()->AsFloat());
+    double element_value = a_const->GetValueAsDouble();
+    if (element_value == 0.0) {
+      use_x = true;
+    } else if (element_value == 1.0) {
+      use_x = false;
+    } else {
+      return false;
+    }
 
-        // Get the id of the of the vector the element comes from.
-        uint32_t new_vector = 0;
-        if (use_x) {
-          new_vector = composite_inst->GetSingleWordInOperand(kFMixXIdInIdx);
-        } else {
-          new_vector = composite_inst->GetSingleWordInOperand(kFMixYIdInIdx);
-        }
+    // Get the id of the of the vector the element comes from.
+    uint32_t new_vector = 0;
+    if (use_x) {
+      new_vector = composite_inst->GetSingleWordInOperand(kFMixXIdInIdx);
+    } else {
+      new_vector = composite_inst->GetSingleWordInOperand(kFMixYIdInIdx);
+    }
 
-        // Update the extract instruction.
-        inst->SetInOperand(kExtractCompositeIdInIdx, {new_vector});
-        return true;
-      };
+    // Update the extract instruction.
+    inst->SetInOperand(kExtractCompositeIdInIdx, {new_vector});
+    return true;
+  };
 }
 
 FoldingRule RedundantPhi() {
