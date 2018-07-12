@@ -178,7 +178,6 @@ uint32_t InstructionFolder::OperateWords(
 }
 
 bool InstructionFolder::FoldInstructionInternal(opt::Instruction* inst) const {
-  opt::IRContext* context = inst->context();
   auto identity_map = [](uint32_t id) { return id; };
   opt::Instruction* folded_inst = FoldInstructionToConstant(inst, identity_map);
   if (folded_inst != nullptr) {
@@ -188,13 +187,13 @@ bool InstructionFolder::FoldInstructionInternal(opt::Instruction* inst) const {
   }
 
   SpvOp opcode = inst->opcode();
-  analysis::ConstantManager* const_manager = context->get_constant_mgr();
+  analysis::ConstantManager* const_manager = context_->get_constant_mgr();
 
   std::vector<const analysis::Constant*> constants =
       const_manager->GetOperandConstants(inst);
 
   for (const FoldingRule& rule : GetFoldingRules().GetRulesForOpcode(opcode)) {
-    if (rule(inst, constants)) {
+    if (rule(context_, inst, constants)) {
       return true;
     }
   }
@@ -233,8 +232,7 @@ bool InstructionFolder::FoldBinaryIntegerOpToConstant(
     opt::Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
     uint32_t* result) const {
   SpvOp opcode = inst->opcode();
-  opt::IRContext* context = inst->context();
-  analysis::ConstantManager* const_manger = context->get_constant_mgr();
+  analysis::ConstantManager* const_manger = context_->get_constant_mgr();
 
   uint32_t ids[2];
   const analysis::IntConstant* constants[2];
@@ -417,8 +415,7 @@ bool InstructionFolder::FoldBinaryBooleanOpToConstant(
     opt::Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
     uint32_t* result) const {
   SpvOp opcode = inst->opcode();
-  opt::IRContext* context = inst->context();
-  analysis::ConstantManager* const_manger = context->get_constant_mgr();
+  analysis::ConstantManager* const_manger = context_->get_constant_mgr();
 
   uint32_t ids[2];
   const analysis::BoolConstant* constants[2];
@@ -574,8 +571,7 @@ bool InstructionFolder::IsFoldableConstant(
 
 opt::Instruction* InstructionFolder::FoldInstructionToConstant(
     opt::Instruction* inst, std::function<uint32_t(uint32_t)> id_map) const {
-  opt::IRContext* context = inst->context();
-  analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+  analysis::ConstantManager* const_mgr = context_->get_constant_mgr();
 
   if (!inst->IsFoldableByFoldScalar() &&
       !GetConstantFoldingRules().HasFoldingRule(inst->opcode())) {
@@ -600,13 +596,13 @@ opt::Instruction* InstructionFolder::FoldInstructionToConstant(
     const analysis::Constant* folded_const = nullptr;
     for (auto rule :
          GetConstantFoldingRules().GetRulesForOpcode(inst->opcode())) {
-      folded_const = rule(inst, constants);
+      folded_const = rule(context_, inst, constants);
       if (folded_const != nullptr) {
         opt::Instruction* const_inst =
             const_mgr->GetDefiningInstruction(folded_const, inst->type_id());
         assert(const_inst->type_id() == inst->type_id());
         // May be a new instruction that needs to be analysed.
-        context->UpdateDefUse(const_inst);
+        context_->UpdateDefUse(const_inst);
         return const_inst;
       }
     }

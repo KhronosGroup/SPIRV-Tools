@@ -28,6 +28,8 @@ namespace opt {
 
 class InstructionFolder {
  public:
+  explicit InstructionFolder(IRContext* context) : context_(context) {}
+
   // Returns the result of folding a scalar instruction with the given |opcode|
   // and |operands|. Each entry in |operands| is a pointer to an
   // analysis::Constant instance, which should've been created with the constant
@@ -153,6 +155,8 @@ class InstructionFolder {
   bool FoldIntegerOpToConstant(Instruction* inst,
                                const std::function<uint32_t(uint32_t)>& id_map,
                                uint32_t* result) const;
+
+  IRContext* context_;
 
   // Folding rules used by |FoldInstructionToConstant| and |FoldInstruction|.
   ConstantFoldingRules const_folding_rules;
