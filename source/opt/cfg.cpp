@@ -158,7 +158,7 @@ BasicBlock* CFG::SplitLoopHeader(opt::BasicBlock* bb) {
   assert(bb->GetLoopMergeInst() && "Expecting bb to be the header of a loop.");
 
   Function* fn = bb->GetParent();
-  IRContext* context = fn->context();
+  IRContext* context = module_->context();
 
   // Find the insertion point for the new bb.
   Function::iterator header_it = std::find_if(
