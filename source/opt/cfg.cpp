@@ -22,6 +22,8 @@ namespace spvtools {
 namespace opt {
 namespace {
 
+using cbb_ptr = const opt::BasicBlock*;
+
 // Universal Limit of ResultID + 1
 const int kMaxResultId = 0x400000;
 
@@ -308,14 +310,6 @@ BasicBlock* CFG::SplitLoopHeader(opt::BasicBlock* bb) {
     }
   }
   return new_header;
-}
-
-unordered_set<BasicBlock*> CFG::FindReachableBlocks(BasicBlock* start) {
-  std::unordered_set<BasicBlock*> reachable_blocks;
-  ForEachBlockInReversePostOrder(start, [&reachable_blocks](BasicBlock* bb) {
-    reachable_blocks.insert(bb);
-  });
-  return reachable_blocks;
 }
 
 }  // namespace opt
