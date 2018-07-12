@@ -37,12 +37,11 @@ Pass::Status LocalRedundancyEliminationPass::Process() {
 }
 
 bool LocalRedundancyEliminationPass::EliminateRedundanciesInBB(
-    opt::BasicBlock* block, const ValueNumberTable& vnTable,
+    BasicBlock* block, const ValueNumberTable& vnTable,
     std::map<uint32_t, uint32_t>* value_to_ids) {
   bool modified = false;
 
-  auto func = [this, &vnTable, &modified,
-               value_to_ids](opt::Instruction* inst) {
+  auto func = [this, &vnTable, &modified, value_to_ids](Instruction* inst) {
     if (inst->result_id() == 0) {
       return;
     }

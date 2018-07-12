@@ -40,26 +40,24 @@ class LICMPass : public Pass {
 
   // Checks the function for loops, calling ProcessLoop on each one found.
   // Returns true if a change was made to the function, false otherwise.
-  bool ProcessFunction(opt::Function* f);
+  bool ProcessFunction(Function* f);
 
   // Checks for invariants in the loop and attempts to move them to the loops
   // preheader. Works from inner loop to outer when nested loops are found.
   // Returns true if a change was made to the loop, false otherwise.
-  bool ProcessLoop(opt::Loop* loop, opt::Function* f);
+  bool ProcessLoop(Loop* loop, Function* f);
 
   // Analyses each instruction in |bb|, hoisting invariants to |pre_header_bb|.
   // Each child of |bb| wrt to |dom_tree| is pushed to |loop_bbs|
-  bool AnalyseAndHoistFromBB(opt::Loop* loop, opt::Function* f,
-                             opt::BasicBlock* bb,
-                             std::vector<opt::BasicBlock*>* loop_bbs);
+  bool AnalyseAndHoistFromBB(Loop* loop, Function* f, BasicBlock* bb,
+                             std::vector<BasicBlock*>* loop_bbs);
 
   // Returns true if |bb| is immediately contained in |loop|
-  bool IsImmediatelyContainedInLoop(opt::Loop* loop, opt::Function* f,
-                                    opt::BasicBlock* bb);
+  bool IsImmediatelyContainedInLoop(Loop* loop, Function* f, BasicBlock* bb);
 
   // Move the instruction to the given BasicBlock
   // This method will update the instruction to block mapping for the context
-  void HoistInstruction(opt::Loop* loop, opt::Instruction* inst);
+  void HoistInstruction(Loop* loop, Instruction* inst);
 };
 
 }  // namespace opt

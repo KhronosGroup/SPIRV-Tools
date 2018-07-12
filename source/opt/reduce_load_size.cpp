@@ -33,7 +33,7 @@ Pass::Status ReduceLoadSize::Process() {
   bool modified = false;
 
   for (auto& func : *get_module()) {
-    func.ForEachInst([&modified, this](opt::Instruction* inst) {
+    func.ForEachInst([&modified, this](Instruction* inst) {
       if (inst->opcode() == SpvOpCompositeExtract) {
         if (ShouldReplaceExtract(inst)) {
           modified |= ReplaceExtract(inst);
@@ -45,7 +45,7 @@ Pass::Status ReduceLoadSize::Process() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool ReduceLoadSize::ReplaceExtract(opt::Instruction* inst) {
+bool ReduceLoadSize::ReplaceExtract(Instruction* inst) {
   assert(inst->opcode() == SpvOpCompositeExtract &&
          "Wrong opcode.  Should be OpCompositeExtract.");
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
@@ -54,7 +54,7 @@ bool ReduceLoadSize::ReplaceExtract(opt::Instruction* inst) {
 
   uint32_t composite_id =
       inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-  opt::Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
+  Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
 
   if (composite_inst->opcode() != SpvOpLoad) {
     return false;
@@ -66,7 +66,7 @@ bool ReduceLoadSize::ReplaceExtract(opt::Instruction* inst) {
     return false;
   }
 
-  opt::Instruction* var = composite_inst->GetBaseAddress();
+  Instruction* var = composite_inst->GetBaseAddress();
   if (var == nullptr || var->opcode() != SpvOpVariable) {
     return false;
   }
@@ -85,9 +85,9 @@ bool ReduceLoadSize::ReplaceExtract(opt::Instruction* inst) {
   // Create a new access chain and load just after the old load.
   // We cannot create the new access chain load in the position of the extract
   // because the storage may have been written to in between.
-  InstructionBuilder ir_builder(inst->context(), composite_inst,
-                                opt::IRContext::kAnalysisInstrToBlockMapping |
-                                    opt::IRContext::kAnalysisDefUse);
+  InstructionBuilder ir_builder(
+      inst->context(), composite_inst,
+      IRContext::kAnalysisInstrToBlockMapping | IRContext::kAnalysisDefUse);
 
   uint32_t pointer_to_result_type_id =
       type_mgr->FindPointerToType(inst->type_id(), storage_class);
@@ -104,10 +104,10 @@ bool ReduceLoadSize::ReplaceExtract(opt::Instruction* inst) {
     ids.push_back(const_mgr->GetDefiningInstruction(index_const)->result_id());
   }
 
-  opt::Instruction* new_access_chain = ir_builder.AddAccessChain(
+  Instruction* new_access_chain = ir_builder.AddAccessChain(
       pointer_to_result_type_id,
       composite_inst->GetSingleWordInOperand(kLoadPointerInIdx), ids);
-  opt::Instruction* new_laod =
+  Instruction* new_laod =
       ir_builder.AddLoad(inst->type_id(), new_access_chain->result_id());
 
   context()->ReplaceAllUsesWith(inst->result_id(), new_laod->result_id());
@@ -115,9 +115,9 @@ bool ReduceLoadSize::ReplaceExtract(opt::Instruction* inst) {
   return true;
 }
 
-bool ReduceLoadSize::ShouldReplaceExtract(opt::Instruction* inst) {
+bool ReduceLoadSize::ShouldReplaceExtract(Instruction* inst) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-  opt::Instruction* op_inst = def_use_mgr->GetDef(
+  Instruction* op_inst = def_use_mgr->GetDef(
       inst->GetSingleWordInOperand(kExtractCompositeIdInIdx));
 
   if (op_inst->opcode() != SpvOpLoad) {
@@ -132,8 +132,8 @@ bool ReduceLoadSize::ShouldReplaceExtract(opt::Instruction* inst) {
   bool all_elements_used = false;
   std::set<uint32_t> elements_used;
 
-  all_elements_used = !def_use_mgr->WhileEachUser(
-      op_inst, [&elements_used](opt::Instruction* use) {
+  all_elements_used =
+      !def_use_mgr->WhileEachUser(op_inst, [&elements_used](Instruction* use) {
         if (use->opcode() != SpvOpCompositeExtract) {
           return false;
         }

@@ -42,7 +42,7 @@ Pass::Status DeadVariableElimination::Process() {
     // else, so we must keep the variable around.
     get_decoration_mgr()->ForEachDecoration(
         result_id, SpvDecorationLinkageAttributes,
-        [&count](const opt::Instruction& linkage_instruction) {
+        [&count](const Instruction& linkage_instruction) {
           uint32_t last_operand = linkage_instruction.NumOperands() - 1;
           if (linkage_instruction.GetSingleWordOperand(last_operand) ==
               SpvLinkageTypeExport) {
@@ -54,13 +54,11 @@ Pass::Status DeadVariableElimination::Process() {
       // If we don't have to keep the instruction for other reasons, then look
       // at the uses and count the number of real references.
       count = 0;
-      get_def_use_mgr()->ForEachUser(
-          result_id, [&count](opt::Instruction* user) {
-            if (!opt::IsAnnotationInst(user->opcode()) &&
-                user->opcode() != SpvOpName) {
-              ++count;
-            }
-          });
+      get_def_use_mgr()->ForEachUser(result_id, [&count](Instruction* user) {
+        if (!IsAnnotationInst(user->opcode()) && user->opcode() != SpvOpName) {
+          ++count;
+        }
+      });
     }
     reference_count_[result_id] = count;
     if (count == 0) {
@@ -80,14 +78,14 @@ Pass::Status DeadVariableElimination::Process() {
 }
 
 void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
-  opt::Instruction* inst = get_def_use_mgr()->GetDef(result_id);
+  Instruction* inst = get_def_use_mgr()->GetDef(result_id);
   assert(inst->opcode() == SpvOpVariable &&
          "Should not be trying to delete anything other than an OpVariable.");
 
   // Look for an initializer that references another variable.  We need to know
   // if that variable can be deleted after the reference is removed.
   if (inst->NumOperands() == 4) {
-    opt::Instruction* initializer =
+    Instruction* initializer =
         get_def_use_mgr()->GetDef(inst->GetSingleWordOperand(3));
 
     // TODO: Handle OpSpecConstantOP which might be defined in terms of other

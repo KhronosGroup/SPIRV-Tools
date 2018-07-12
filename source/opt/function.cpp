@@ -96,7 +96,7 @@ std::ostream& operator<<(std::ostream& str, const Function& func) {
 
 std::string Function::PrettyPrint(uint32_t options) const {
   std::ostringstream str;
-  ForEachInst([&str, options](const opt::Instruction* inst) {
+  ForEachInst([&str, options](const Instruction* inst) {
     str << inst->PrettyPrint(options);
     if (inst->opcode() != SpvOpFunctionEnd) {
       str << std::endl;

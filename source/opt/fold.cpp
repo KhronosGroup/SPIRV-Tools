@@ -26,7 +26,6 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 
 #ifndef INT32_MIN
@@ -177,9 +176,9 @@ uint32_t InstructionFolder::OperateWords(
   }
 }
 
-bool InstructionFolder::FoldInstructionInternal(opt::Instruction* inst) const {
+bool InstructionFolder::FoldInstructionInternal(Instruction* inst) const {
   auto identity_map = [](uint32_t id) { return id; };
-  opt::Instruction* folded_inst = FoldInstructionToConstant(inst, identity_map);
+  Instruction* folded_inst = FoldInstructionToConstant(inst, identity_map);
   if (folded_inst != nullptr) {
     inst->SetOpcode(SpvOpCopyObject);
     inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {folded_inst->result_id()}}});
@@ -229,7 +228,7 @@ uint32_t InstructionFolder::FoldScalars(
 }
 
 bool InstructionFolder::FoldBinaryIntegerOpToConstant(
-    opt::Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
+    Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
     uint32_t* result) const {
   SpvOp opcode = inst->opcode();
   analysis::ConstantManager* const_manger = context_->get_constant_mgr();
@@ -237,7 +236,7 @@ bool InstructionFolder::FoldBinaryIntegerOpToConstant(
   uint32_t ids[2];
   const analysis::IntConstant* constants[2];
   for (uint32_t i = 0; i < 2; i++) {
-    const opt::Operand* operand = &inst->GetInOperand(i);
+    const Operand* operand = &inst->GetInOperand(i);
     if (operand->type != SPV_OPERAND_TYPE_ID) {
       return false;
     }
@@ -412,7 +411,7 @@ bool InstructionFolder::FoldBinaryIntegerOpToConstant(
 }
 
 bool InstructionFolder::FoldBinaryBooleanOpToConstant(
-    opt::Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
+    Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
     uint32_t* result) const {
   SpvOp opcode = inst->opcode();
   analysis::ConstantManager* const_manger = context_->get_constant_mgr();
@@ -420,7 +419,7 @@ bool InstructionFolder::FoldBinaryBooleanOpToConstant(
   uint32_t ids[2];
   const analysis::BoolConstant* constants[2];
   for (uint32_t i = 0; i < 2; i++) {
-    const opt::Operand* operand = &inst->GetInOperand(i);
+    const Operand* operand = &inst->GetInOperand(i);
     if (operand->type != SPV_OPERAND_TYPE_ID) {
       return false;
     }
@@ -460,7 +459,7 @@ bool InstructionFolder::FoldBinaryBooleanOpToConstant(
 }
 
 bool InstructionFolder::FoldIntegerOpToConstant(
-    opt::Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
+    Instruction* inst, const std::function<uint32_t(uint32_t)>& id_map,
     uint32_t* result) const {
   assert(IsFoldableOpcode(inst->opcode()) &&
          "Unhandled instruction opcode in FoldScalars");
@@ -569,8 +568,8 @@ bool InstructionFolder::IsFoldableConstant(
     return cst->AsNullConstant() != nullptr;
 }
 
-opt::Instruction* InstructionFolder::FoldInstructionToConstant(
-    opt::Instruction* inst, std::function<uint32_t(uint32_t)> id_map) const {
+Instruction* InstructionFolder::FoldInstructionToConstant(
+    Instruction* inst, std::function<uint32_t(uint32_t)> id_map) const {
   analysis::ConstantManager* const_mgr = context_->get_constant_mgr();
 
   if (!inst->IsFoldableByFoldScalar() &&
@@ -598,7 +597,7 @@ opt::Instruction* InstructionFolder::FoldInstructionToConstant(
          GetConstantFoldingRules().GetRulesForOpcode(inst->opcode())) {
       folded_const = rule(context_, inst, constants);
       if (folded_const != nullptr) {
-        opt::Instruction* const_inst =
+        Instruction* const_inst =
             const_mgr->GetDefiningInstruction(folded_const, inst->type_id());
         assert(const_inst->type_id() == inst->type_id());
         // May be a new instruction that needs to be analysed.
@@ -623,14 +622,14 @@ opt::Instruction* InstructionFolder::FoldInstructionToConstant(
   if (successful) {
     const analysis::Constant* result_const =
         const_mgr->GetConstant(const_mgr->GetType(inst), {result_val});
-    opt::Instruction* folded_inst =
+    Instruction* folded_inst =
         const_mgr->GetDefiningInstruction(result_const, inst->type_id());
     return folded_inst;
   }
   return nullptr;
 }
 
-bool InstructionFolder::IsFoldableType(opt::Instruction* type_inst) const {
+bool InstructionFolder::IsFoldableType(Instruction* type_inst) const {
   // Support 32-bit integers.
   if (type_inst->opcode() == SpvOpTypeInt) {
     return type_inst->GetSingleWordInOperand(0) == 32;
@@ -643,9 +642,9 @@ bool InstructionFolder::IsFoldableType(opt::Instruction* type_inst) const {
   return false;
 }
 
-bool InstructionFolder::FoldInstruction(opt::Instruction* inst) const {
+bool InstructionFolder::FoldInstruction(Instruction* inst) const {
   bool modified = false;
-  opt::Instruction* folded_inst(inst);
+  Instruction* folded_inst(inst);
   while (folded_inst->opcode() != SpvOpCopyObject &&
          FoldInstructionInternal(&*folded_inst)) {
     modified = true;

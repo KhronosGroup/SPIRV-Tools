@@ -23,8 +23,8 @@ namespace opt {
 Pass::Status EliminateDeadFunctionsPass::Process() {
   // Identify live functions first.  Those that are not live
   // are dead.
-  std::unordered_set<const opt::Function*> live_function_set;
-  ProcessFunction mark_live = [&live_function_set](opt::Function* fp) {
+  std::unordered_set<const Function*> live_function_set;
+  ProcessFunction mark_live = [&live_function_set](Function* fp) {
     live_function_set.insert(fp);
     return false;
   };
@@ -46,10 +46,10 @@ Pass::Status EliminateDeadFunctionsPass::Process() {
                   : Pass::Status::SuccessWithoutChange;
 }
 
-void EliminateDeadFunctionsPass::EliminateFunction(opt::Function* func) {
+void EliminateDeadFunctionsPass::EliminateFunction(Function* func) {
   // Remove all of the instruction in the function body
-  func->ForEachInst(
-      [this](opt::Instruction* inst) { context()->KillInst(inst); }, true);
+  func->ForEachInst([this](Instruction* inst) { context()->KillInst(inst); },
+                    true);
 }
 }  // namespace opt
 }  // namespace spvtools

@@ -27,21 +27,21 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status EliminateDeadConstantPass::Process() {
-  std::unordered_set<opt::Instruction*> working_list;
+  std::unordered_set<Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
   // working list and count number of real uses for constants. Uses in
   // annotation instructions do not count.
-  std::unordered_map<opt::Instruction*, size_t> use_counts;
-  std::vector<opt::Instruction*> constants = context()->GetConstants();
+  std::unordered_map<Instruction*, size_t> use_counts;
+  std::vector<Instruction*> constants = context()->GetConstants();
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
     size_t count = 0;
     context()->get_def_use_mgr()->ForEachUse(
-        const_id, [&count](opt::Instruction* user, uint32_t index) {
+        const_id, [&count](Instruction* user, uint32_t index) {
           (void)index;
           SpvOp op = user->opcode();
-          if (!(opt::IsAnnotationInst(op) || opt::IsDebug1Inst(op) ||
-                opt::IsDebug2Inst(op) || opt::IsDebug3Inst(op))) {
+          if (!(IsAnnotationInst(op) || IsDebug1Inst(op) || IsDebug2Inst(op) ||
+                IsDebug3Inst(op))) {
             ++count;
           }
         });
@@ -53,9 +53,9 @@ Pass::Status EliminateDeadConstantPass::Process() {
 
   // Start from the constants with 0 uses, back trace through the def-use chain
   // to find all dead constants.
-  std::unordered_set<opt::Instruction*> dead_consts;
+  std::unordered_set<Instruction*> dead_consts;
   while (!working_list.empty()) {
-    opt::Instruction* inst = *working_list.begin();
+    Instruction* inst = *working_list.begin();
     // Back propagate if the instruction contains IDs in its operands.
     switch (inst->opcode()) {
       case SpvOp::SpvOpConstantComposite:
@@ -68,7 +68,7 @@ Pass::Status EliminateDeadConstantPass::Process() {
             continue;
           }
           uint32_t operand_id = inst->GetSingleWordInOperand(i);
-          opt::Instruction* def_inst =
+          Instruction* def_inst =
               context()->get_def_use_mgr()->GetDef(operand_id);
           // If the use_count does not have any count for the def_inst,
           // def_inst must not be a constant, and should be ignored here.

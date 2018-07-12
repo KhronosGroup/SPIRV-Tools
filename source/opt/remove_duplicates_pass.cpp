@@ -30,12 +30,6 @@
 namespace spvtools {
 namespace opt {
 
-using opt::Instruction;
-using opt::Module;
-using opt::Operand;
-using opt::analysis::DecorationManager;
-using opt::analysis::DefUseManager;
-
 Pass::Status RemoveDuplicatesPass::Process() {
   bool modified = RemoveDuplicateCapabilities();
   modified |= RemoveDuplicatesExtInstImports();
@@ -155,7 +149,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations() const {
 
   std::vector<const Instruction*> visited_decorations;
 
-  opt::analysis::DecorationManager decoration_manager(context()->module());
+  analysis::DecorationManager decoration_manager(context()->module());
   for (auto* i = &*context()->annotation_begin(); i;) {
     // Is the current decoration equal to one of the decorations we have aready
     // visited?
@@ -185,9 +179,9 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations() const {
 
 bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
                                          const Instruction& inst2,
-                                         opt::IRContext* context) {
+                                         IRContext* context) {
   if (inst1.opcode() != inst2.opcode()) return false;
-  if (!opt::IsTypeInst(inst1.opcode())) return false;
+  if (!IsTypeInst(inst1.opcode())) return false;
 
   const analysis::Type* type1 =
       context->get_type_mgr()->GetType(inst1.result_id());

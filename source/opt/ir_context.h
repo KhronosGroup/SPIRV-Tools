@@ -126,8 +126,8 @@ class IRContext {
   inline IteratorRange<Module::const_inst_iterator> capabilities() const;
 
   // Iterators for types, constants and global variables instructions.
-  inline opt::Module::inst_iterator types_values_begin();
-  inline opt::Module::inst_iterator types_values_end();
+  inline Module::inst_iterator types_values_begin();
+  inline Module::inst_iterator types_values_end();
   inline IteratorRange<Module::inst_iterator> types_values();
   inline IteratorRange<Module::const_inst_iterator> types_values() const;
 
@@ -203,7 +203,7 @@ class IRContext {
 
   // Returns a pointer to a def-use manager.  If the def-use manager is
   // invalid, it is rebuilt first.
-  opt::analysis::DefUseManager* get_def_use_mgr() {
+  analysis::DefUseManager* get_def_use_mgr() {
     if (!AreAnalysesValid(kAnalysisDefUse)) {
       BuildDefUseManager();
     }
@@ -212,7 +212,7 @@ class IRContext {
 
   // Returns a pointer to a value number table.  If the liveness analysis is
   // invalid, it is rebuilt first.
-  opt::ValueNumberTable* GetValueNumberTable() {
+  ValueNumberTable* GetValueNumberTable() {
     if (!AreAnalysesValid(kAnalysisValueNumberTable)) {
       BuildValueNumberTable();
     }
@@ -221,7 +221,7 @@ class IRContext {
 
   // Returns a pointer to a liveness analysis.  If the liveness analysis is
   // invalid, it is rebuilt first.
-  opt::LivenessAnalysis* GetLivenessAnalysis() {
+  LivenessAnalysis* GetLivenessAnalysis() {
     if (!AreAnalysesValid(kAnalysisRegisterPressure)) {
       BuildRegPressureAnalysis();
     }
@@ -230,7 +230,7 @@ class IRContext {
 
   // Returns the basic block for instruction |instr|. Re-builds the instruction
   // block map, if needed.
-  opt::BasicBlock* get_instr_block(opt::Instruction* instr) {
+  BasicBlock* get_instr_block(Instruction* instr) {
     if (!AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
       BuildInstrToBlockMapping();
     }
@@ -242,14 +242,14 @@ class IRContext {
   // needed.
   //
   // |id| must be a registered definition.
-  opt::BasicBlock* get_instr_block(uint32_t id) {
-    opt::Instruction* def = get_def_use_mgr()->GetDef(id);
+  BasicBlock* get_instr_block(uint32_t id) {
+    Instruction* def = get_def_use_mgr()->GetDef(id);
     return get_instr_block(def);
   }
 
   // Sets the basic block for |inst|. Re-builds the mapping if it has become
   // invalid.
-  void set_instr_block(opt::Instruction* inst, opt::BasicBlock* block) {
+  void set_instr_block(Instruction* inst, BasicBlock* block) {
     if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
       instr_to_block_[inst] = block;
     }
@@ -257,7 +257,7 @@ class IRContext {
 
   // Returns a pointer the decoration manager.  If the decoration manger is
   // invalid, it is rebuilt first.
-  opt::analysis::DecorationManager* get_decoration_mgr() {
+  analysis::DecorationManager* get_decoration_mgr() {
     if (!AreAnalysesValid(kAnalysisDecorations)) {
       BuildDecorationManager();
     }
@@ -267,24 +267,24 @@ class IRContext {
   // Returns a pointer to the constant manager.  If no constant manager has been
   // created yet, it creates one.  NOTE: Once created, the constant manager
   // remains active and it is never re-built.
-  opt::analysis::ConstantManager* get_constant_mgr() {
+  analysis::ConstantManager* get_constant_mgr() {
     if (!constant_mgr_)
-      constant_mgr_.reset(new opt::analysis::ConstantManager(this));
+      constant_mgr_.reset(new analysis::ConstantManager(this));
     return constant_mgr_.get();
   }
 
   // Returns a pointer to the type manager.  If no type manager has been created
   // yet, it creates one. NOTE: Once created, the type manager remains active it
   // is never re-built.
-  opt::analysis::TypeManager* get_type_mgr() {
+  analysis::TypeManager* get_type_mgr() {
     if (!type_mgr_)
-      type_mgr_.reset(new opt::analysis::TypeManager(consumer(), this));
+      type_mgr_.reset(new analysis::TypeManager(consumer(), this));
     return type_mgr_.get();
   }
 
   // Returns a pointer to the scalar evolution analysis. If it is invalid it
   // will be rebuilt first.
-  opt::ScalarEvolutionAnalysis* GetScalarEvolutionAnalysis() {
+  ScalarEvolutionAnalysis* GetScalarEvolutionAnalysis() {
     if (!AreAnalysesValid(kAnalysisScalarEvolution)) {
       BuildScalarEvolutionAnalysis();
     }
@@ -337,7 +337,7 @@ class IRContext {
   //
   // Returns a pointer to the instruction after |inst| or |nullptr| if no such
   // instruction exists.
-  Instruction* KillInst(opt::Instruction* inst);
+  Instruction* KillInst(Instruction* inst);
 
   // Returns true if all of the given analyses are valid.
   bool AreAnalysesValid(Analysis set) { return (set & valid_analyses_) == set; }
@@ -371,7 +371,7 @@ class IRContext {
   void KillNamesAndDecorates(uint32_t id);
 
   // Kill all name and decorate ops targeting the result id of |inst|.
-  void KillNamesAndDecorates(opt::Instruction* inst);
+  void KillNamesAndDecorates(Instruction* inst);
 
   // Returns the next unique id for use by an instruction.
   inline uint32_t TakeNextUniqueId() {
@@ -400,7 +400,7 @@ class IRContext {
   }
 
   // Returns a pointer to the CFG for all the functions in |module_|.
-  opt::CFG* cfg() {
+  CFG* cfg() {
     if (!AreAnalysesValid(kAnalysisCFG)) {
       BuildCFG();
     }
@@ -408,28 +408,28 @@ class IRContext {
   }
 
   // Gets the loop descriptor for function |f|.
-  opt::LoopDescriptor* GetLoopDescriptor(const opt::Function* f);
+  LoopDescriptor* GetLoopDescriptor(const Function* f);
 
   // Gets the dominator analysis for function |f|.
-  opt::DominatorAnalysis* GetDominatorAnalysis(const opt::Function* f);
+  DominatorAnalysis* GetDominatorAnalysis(const Function* f);
 
   // Gets the postdominator analysis for function |f|.
-  opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const opt::Function* f);
+  PostDominatorAnalysis* GetPostDominatorAnalysis(const Function* f);
 
   // Remove the dominator tree of |f| from the cache.
-  inline void RemoveDominatorAnalysis(const opt::Function* f) {
+  inline void RemoveDominatorAnalysis(const Function* f) {
     dominator_trees_.erase(f);
   }
 
   // Remove the postdominator tree of |f| from the cache.
-  inline void RemovePostDominatorAnalysis(const opt::Function* f) {
+  inline void RemovePostDominatorAnalysis(const Function* f) {
     post_dominator_trees_.erase(f);
   }
 
   // Return the next available SSA id and increment it.
   inline uint32_t TakeNextId() { return module()->TakeNextIdBound(); }
 
-  opt::FeatureManager* get_feature_mgr() {
+  FeatureManager* get_feature_mgr() {
     if (!feature_mgr_.get()) {
       AnalyzeFeatures();
     }
@@ -443,9 +443,9 @@ class IRContext {
   // its definitions and uses.
   inline void UpdateDefUse(Instruction* inst);
 
-  const opt::InstructionFolder& get_instruction_folder() {
+  const InstructionFolder& get_instruction_folder() {
     if (!inst_folder_) {
-      inst_folder_.reset(new opt::InstructionFolder(this));
+      inst_folder_.reset(new InstructionFolder(this));
     }
     return *inst_folder_;
   }
@@ -453,7 +453,7 @@ class IRContext {
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
-    def_use_mgr_.reset(new opt::analysis::DefUseManager(module()));
+    def_use_mgr_.reset(new analysis::DefUseManager(module()));
     valid_analyses_ = valid_analyses_ | kAnalysisDefUse;
   }
 
@@ -462,7 +462,7 @@ class IRContext {
     instr_to_block_.clear();
     for (auto& fn : *module_) {
       for (auto& block : fn) {
-        block.ForEachInst([this, &block](opt::Instruction* inst) {
+        block.ForEachInst([this, &block](Instruction* inst) {
           instr_to_block_[inst] = &block;
         });
       }
@@ -471,30 +471,30 @@ class IRContext {
   }
 
   void BuildDecorationManager() {
-    decoration_mgr_.reset(new opt::analysis::DecorationManager(module()));
+    decoration_mgr_.reset(new analysis::DecorationManager(module()));
     valid_analyses_ = valid_analyses_ | kAnalysisDecorations;
   }
 
   void BuildCFG() {
-    cfg_.reset(new opt::CFG(module()));
+    cfg_.reset(new CFG(module()));
     valid_analyses_ = valid_analyses_ | kAnalysisCFG;
   }
 
   void BuildScalarEvolutionAnalysis() {
-    scalar_evolution_analysis_.reset(new opt::ScalarEvolutionAnalysis(this));
+    scalar_evolution_analysis_.reset(new ScalarEvolutionAnalysis(this));
     valid_analyses_ = valid_analyses_ | kAnalysisScalarEvolution;
   }
 
   // Builds the liveness analysis from scratch, even if it was already valid.
   void BuildRegPressureAnalysis() {
-    reg_pressure_.reset(new opt::LivenessAnalysis(this));
+    reg_pressure_.reset(new LivenessAnalysis(this));
     valid_analyses_ = valid_analyses_ | kAnalysisRegisterPressure;
   }
 
   // Builds the value number table analysis from scratch, even if it was already
   // valid.
   void BuildValueNumberTable() {
-    vn_table_.reset(new opt::ValueNumberTable(this));
+    vn_table_.reset(new ValueNumberTable(this));
     valid_analyses_ = valid_analyses_ | kAnalysisValueNumberTable;
   }
 
@@ -516,7 +516,7 @@ class IRContext {
 
   // Analyzes the features in the owned module. Builds the manager if required.
   void AnalyzeFeatures() {
-    feature_mgr_.reset(new opt::FeatureManager(grammar_));
+    feature_mgr_.reset(new FeatureManager(grammar_));
     feature_mgr_->Analyze(module());
   }
 
@@ -528,7 +528,7 @@ class IRContext {
   void AddCombinatorsForCapability(uint32_t capability);
 
   // Add the combinator opcode for the given extension to combinator_ops_.
-  void AddCombinatorsForExtension(opt::Instruction* extension);
+  void AddCombinatorsForExtension(Instruction* extension);
 
   // Remove |inst| from |id_to_name_| if it is in map.
   void RemoveFromIdToName(const Instruction* inst);
@@ -558,18 +558,18 @@ class IRContext {
   MessageConsumer consumer_;
 
   // The def-use manager for |module_|.
-  std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;
+  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
   // The instruction decoration manager for |module_|.
-  std::unique_ptr<opt::analysis::DecorationManager> decoration_mgr_;
-  std::unique_ptr<opt::FeatureManager> feature_mgr_;
+  std::unique_ptr<analysis::DecorationManager> decoration_mgr_;
+  std::unique_ptr<FeatureManager> feature_mgr_;
 
   // A map from instructions the the basic block they belong to. This mapping is
   // built on-demand when get_instr_block() is called.
   //
   // NOTE: Do not traverse this map. Ever. Use the function and basic block
   // iterators to traverse instructions.
-  std::unordered_map<opt::Instruction*, opt::BasicBlock*> instr_to_block_;
+  std::unordered_map<Instruction*, BasicBlock*> instr_to_block_;
 
   // A bitset indicating which analyes are currently valid.
   Analysis valid_analyses_;
@@ -579,59 +579,55 @@ class IRContext {
   std::unordered_map<uint32_t, std::unordered_set<uint32_t>> combinator_ops_;
 
   // The CFG for all the functions in |module_|.
-  std::unique_ptr<opt::CFG> cfg_;
+  std::unique_ptr<CFG> cfg_;
 
   // Each function in the module will create its own dominator tree. We cache
   // the result so it doesn't need to be rebuilt each time.
-  std::map<const opt::Function*, opt::DominatorAnalysis> dominator_trees_;
-  std::map<const opt::Function*, opt::PostDominatorAnalysis>
-      post_dominator_trees_;
+  std::map<const Function*, DominatorAnalysis> dominator_trees_;
+  std::map<const Function*, PostDominatorAnalysis> post_dominator_trees_;
 
   // Cache of loop descriptors for each function.
-  std::unordered_map<const opt::Function*, opt::LoopDescriptor>
-      loop_descriptors_;
+  std::unordered_map<const Function*, LoopDescriptor> loop_descriptors_;
 
   // Constant manager for |module_|.
-  std::unique_ptr<opt::analysis::ConstantManager> constant_mgr_;
+  std::unique_ptr<analysis::ConstantManager> constant_mgr_;
 
   // Type manager for |module_|.
-  std::unique_ptr<opt::analysis::TypeManager> type_mgr_;
+  std::unique_ptr<analysis::TypeManager> type_mgr_;
 
   // A map from an id to its corresponding OpName and OpMemberName instructions.
   std::unique_ptr<std::multimap<uint32_t, Instruction*>> id_to_name_;
 
   // The cache scalar evolution analysis node.
-  std::unique_ptr<opt::ScalarEvolutionAnalysis> scalar_evolution_analysis_;
+  std::unique_ptr<ScalarEvolutionAnalysis> scalar_evolution_analysis_;
 
   // The liveness analysis |module_|.
-  std::unique_ptr<opt::LivenessAnalysis> reg_pressure_;
+  std::unique_ptr<LivenessAnalysis> reg_pressure_;
 
-  std::unique_ptr<opt::ValueNumberTable> vn_table_;
+  std::unique_ptr<ValueNumberTable> vn_table_;
 
-  std::unique_ptr<opt::InstructionFolder> inst_folder_;
+  std::unique_ptr<InstructionFolder> inst_folder_;
 };
 
-inline opt::IRContext::Analysis operator|(opt::IRContext::Analysis lhs,
-                                          opt::IRContext::Analysis rhs) {
-  return static_cast<opt::IRContext::Analysis>(static_cast<int>(lhs) |
-                                               static_cast<int>(rhs));
+inline IRContext::Analysis operator|(IRContext::Analysis lhs,
+                                     IRContext::Analysis rhs) {
+  return static_cast<IRContext::Analysis>(static_cast<int>(lhs) |
+                                          static_cast<int>(rhs));
 }
 
-inline opt::IRContext::Analysis& operator|=(opt::IRContext::Analysis& lhs,
-                                            opt::IRContext::Analysis rhs) {
-  lhs = static_cast<opt::IRContext::Analysis>(static_cast<int>(lhs) |
-                                              static_cast<int>(rhs));
+inline IRContext::Analysis& operator|=(IRContext::Analysis& lhs,
+                                       IRContext::Analysis rhs) {
+  lhs = static_cast<IRContext::Analysis>(static_cast<int>(lhs) |
+                                         static_cast<int>(rhs));
   return lhs;
 }
 
-inline opt::IRContext::Analysis operator<<(opt::IRContext::Analysis a,
-                                           int shift) {
-  return static_cast<opt::IRContext::Analysis>(static_cast<int>(a) << shift);
+inline IRContext::Analysis operator<<(IRContext::Analysis a, int shift) {
+  return static_cast<IRContext::Analysis>(static_cast<int>(a) << shift);
 }
 
-inline opt::IRContext::Analysis& operator<<=(opt::IRContext::Analysis& a,
-                                             int shift) {
-  a = static_cast<opt::IRContext::Analysis>(static_cast<int>(a) << shift);
+inline IRContext::Analysis& operator<<=(IRContext::Analysis& a, int shift) {
+  a = static_cast<IRContext::Analysis>(static_cast<int>(a) << shift);
   return a;
 }
 
@@ -675,11 +671,11 @@ IteratorRange<Module::const_inst_iterator> IRContext::capabilities() const {
   return ((const Module*)module())->capabilities();
 }
 
-opt::Module::inst_iterator IRContext::types_values_begin() {
+Module::inst_iterator IRContext::types_values_begin() {
   return module()->types_values_begin();
 }
 
-opt::Module::inst_iterator IRContext::types_values_end() {
+Module::inst_iterator IRContext::types_values_end() {
   return module()->types_values_end();
 }
 

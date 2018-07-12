@@ -48,13 +48,13 @@ Pass::Status FoldSpecConstantOpAndCompositePass::Process() {
   // the dependee Spec Constants, all its dependent constants must have been
   // processed and all its dependent Spec Constants should have been folded if
   // possible.
-  opt::Module::inst_iterator next_inst = context()->types_values_begin();
-  for (opt::Module::inst_iterator inst_iter = next_inst;
+  Module::inst_iterator next_inst = context()->types_values_begin();
+  for (Module::inst_iterator inst_iter = next_inst;
        // Need to re-evaluate the end iterator since we may modify the list of
        // instructions in this section of the module as the process goes.
        inst_iter != context()->types_values_end(); inst_iter = next_inst) {
     ++next_inst;
-    opt::Instruction* inst = &*inst_iter;
+    Instruction* inst = &*inst_iter;
     // Collect constant values of normal constants and process the
     // OpSpecConstantOp and OpSpecConstantComposite instructions if possible.
     // The constant values will be stored in analysis::Constant instances.
@@ -110,9 +110,9 @@ Pass::Status FoldSpecConstantOpAndCompositePass::Process() {
 }
 
 bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
-    opt::Module::inst_iterator* pos) {
-  opt::Instruction* inst = &**pos;
-  opt::Instruction* folded_inst = nullptr;
+    Module::inst_iterator* pos) {
+  Instruction* inst = &**pos;
+  Instruction* folded_inst = nullptr;
   assert(inst->GetInOperand(0).type ==
              SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER &&
          "The first in-operand of OpSpecContantOp instruction must be of "
@@ -150,16 +150,16 @@ bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
 
 uint32_t FoldSpecConstantOpAndCompositePass::GetTypeComponent(
     uint32_t typeId, uint32_t element) const {
-  opt::Instruction* type = context()->get_def_use_mgr()->GetDef(typeId);
+  Instruction* type = context()->get_def_use_mgr()->GetDef(typeId);
   uint32_t subtype = type->GetTypeComponent(element);
   assert(subtype != 0);
 
   return subtype;
 }
 
-opt::Instruction* FoldSpecConstantOpAndCompositePass::DoCompositeExtract(
-    opt::Module::inst_iterator* pos) {
-  opt::Instruction* inst = &**pos;
+Instruction* FoldSpecConstantOpAndCompositePass::DoCompositeExtract(
+    Module::inst_iterator* pos) {
+  Instruction* inst = &**pos;
   assert(inst->NumInOperands() - 1 >= 2 &&
          "OpSpecConstantOp CompositeExtract requires at least two non-type "
          "non-opcode operands.");
@@ -207,9 +207,9 @@ opt::Instruction* FoldSpecConstantOpAndCompositePass::DoCompositeExtract(
       current_const, pos);
 }
 
-opt::Instruction* FoldSpecConstantOpAndCompositePass::DoVectorShuffle(
-    opt::Module::inst_iterator* pos) {
-  opt::Instruction* inst = &**pos;
+Instruction* FoldSpecConstantOpAndCompositePass::DoVectorShuffle(
+    Module::inst_iterator* pos) {
+  Instruction* inst = &**pos;
   analysis::Vector* result_vec_type =
       context()->get_constant_mgr()->GetType(inst)->AsVector();
   assert(inst->NumInOperands() - 1 > 2 &&
@@ -312,9 +312,9 @@ bool IsValidTypeForComponentWiseOperation(const analysis::Type* type) {
 }
 }  // namespace
 
-opt::Instruction* FoldSpecConstantOpAndCompositePass::DoComponentWiseOperation(
-    opt::Module::inst_iterator* pos) {
-  const opt::Instruction* inst = &**pos;
+Instruction* FoldSpecConstantOpAndCompositePass::DoComponentWiseOperation(
+    Module::inst_iterator* pos) {
+  const Instruction* inst = &**pos;
   const analysis::Type* result_type =
       context()->get_constant_mgr()->GetType(inst);
   SpvOp spec_opcode = static_cast<SpvOp>(inst->GetSingleWordInOperand(0));
@@ -322,8 +322,7 @@ opt::Instruction* FoldSpecConstantOpAndCompositePass::DoComponentWiseOperation(
   std::vector<const analysis::Constant*> operands;
 
   if (!std::all_of(
-          inst->cbegin(), inst->cend(),
-          [&operands, this](const opt::Operand& o) {
+          inst->cbegin(), inst->cend(), [&operands, this](const Operand& o) {
             // skip the operands that is not an id.
             if (o.type != spv_operand_type_t::SPV_OPERAND_TYPE_ID) return true;
             uint32_t id = o.words.front();

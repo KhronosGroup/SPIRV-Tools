@@ -29,8 +29,8 @@ class DeadVariableElimination : public MemPass {
   const char* name() const override { return "dead-variable-elimination"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse;
   }
 
  private:

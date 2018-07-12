@@ -48,7 +48,7 @@ namespace opt {
 // fold an instruction, the later rules will not be attempted.
 
 using ConstantFoldingRule = std::function<const analysis::Constant*(
-    IRContext* ctx, opt::Instruction* inst,
+    IRContext* ctx, Instruction* inst,
     const std::vector<const analysis::Constant*>& constants)>;
 
 class ConstantFoldingRules {

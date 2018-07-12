@@ -25,19 +25,19 @@ namespace opt {
 
 Pass::Status VectorDCE::Process() {
   bool modified = false;
-  for (opt::Function& function : *get_module()) {
+  for (Function& function : *get_module()) {
     modified |= VectorDCEFunction(&function);
   }
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
 
-bool VectorDCE::VectorDCEFunction(opt::Function* function) {
+bool VectorDCE::VectorDCEFunction(Function* function) {
   LiveComponentMap live_components;
   FindLiveComponents(function, &live_components);
   return RewriteInstructions(function, live_components);
 }
 
-void VectorDCE::FindLiveComponents(opt::Function* function,
+void VectorDCE::FindLiveComponents(Function* function,
                                    LiveComponentMap* live_components) {
   std::vector<WorkListItem> work_list;
 
@@ -48,7 +48,7 @@ void VectorDCE::FindLiveComponents(opt::Function* function,
   // the nesting.  We cannot simply us a bit vector to keep track of which
   // components are live because of arbitrary nesting of structs.
   function->ForEachInst(
-      [&work_list, this, live_components](opt::Instruction* current_inst) {
+      [&work_list, this, live_components](Instruction* current_inst) {
         if (!HasVectorOrScalarResult(current_inst) ||
             !context()->IsCombinatorInstruction(current_inst)) {
           MarkUsesAsLive(current_inst, all_components_live_, live_components,
@@ -59,7 +59,7 @@ void VectorDCE::FindLiveComponents(opt::Function* function,
   // Process the work list propagating liveness.
   for (uint32_t i = 0; i < work_list.size(); i++) {
     WorkListItem current_item = work_list[i];
-    opt::Instruction* current_inst = current_item.instruction;
+    Instruction* current_inst = current_item.instruction;
 
     switch (current_inst->opcode()) {
       case SpvOpCompositeExtract:
@@ -88,13 +88,13 @@ void VectorDCE::FindLiveComponents(opt::Function* function,
   }
 }
 
-void VectorDCE::MarkExtractUseAsLive(const opt::Instruction* current_inst,
+void VectorDCE::MarkExtractUseAsLive(const Instruction* current_inst,
                                      LiveComponentMap* live_components,
                                      std::vector<WorkListItem>* work_list) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   uint32_t operand_id =
       current_inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-  opt::Instruction* operand_inst = def_use_mgr->GetDef(operand_id);
+  Instruction* operand_inst = def_use_mgr->GetDef(operand_id);
 
   if (HasVectorOrScalarResult(operand_inst)) {
     WorkListItem new_item;
@@ -116,7 +116,7 @@ void VectorDCE::MarkInsertUsesAsLive(
   // Add the elements of the composite object that are used.
   uint32_t operand_id =
       current_item.instruction->GetSingleWordInOperand(kInsertCompositeIdInIdx);
-  opt::Instruction* operand_inst = def_use_mgr->GetDef(operand_id);
+  Instruction* operand_inst = def_use_mgr->GetDef(operand_id);
 
   WorkListItem new_item;
   new_item.instruction = operand_inst;
@@ -129,7 +129,7 @@ void VectorDCE::MarkInsertUsesAsLive(
   if (current_item.components.Get(insert_position)) {
     uint32_t obj_operand_id =
         current_item.instruction->GetSingleWordInOperand(kInsertObjectIdInIdx);
-    opt::Instruction* obj_operand_inst = def_use_mgr->GetDef(obj_operand_id);
+    Instruction* obj_operand_inst = def_use_mgr->GetDef(obj_operand_id);
     WorkListItem new_item_for_obj;
     new_item_for_obj.instruction = obj_operand_inst;
     new_item_for_obj.components.Set(0);
@@ -179,11 +179,11 @@ void VectorDCE::MarkCompositeContructUsesAsLive(
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
 
   uint32_t current_component = 0;
-  opt::Instruction* current_inst = work_item.instruction;
+  Instruction* current_inst = work_item.instruction;
   uint32_t num_in_operands = current_inst->NumInOperands();
   for (uint32_t i = 0; i < num_in_operands; ++i) {
     uint32_t id = current_inst->GetSingleWordInOperand(i);
-    opt::Instruction* op_inst = def_use_mgr->GetDef(id);
+    Instruction* op_inst = def_use_mgr->GetDef(id);
 
     if (HasScalarResult(op_inst)) {
       WorkListItem new_work_item;
@@ -212,14 +212,14 @@ void VectorDCE::MarkCompositeContructUsesAsLive(
 }
 
 void VectorDCE::MarkUsesAsLive(
-    opt::Instruction* current_inst, const utils::BitVector& live_elements,
+    Instruction* current_inst, const utils::BitVector& live_elements,
     LiveComponentMap* live_components,
     std::vector<VectorDCE::WorkListItem>* work_list) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 
   current_inst->ForEachInId([&work_list, &live_elements, this, live_components,
                              def_use_mgr](uint32_t* operand_id) {
-    opt::Instruction* operand_inst = def_use_mgr->GetDef(*operand_id);
+    Instruction* operand_inst = def_use_mgr->GetDef(*operand_id);
 
     if (HasVectorResult(operand_inst)) {
       WorkListItem new_item;
@@ -235,11 +235,11 @@ void VectorDCE::MarkUsesAsLive(
   });
 }
 
-bool VectorDCE::HasVectorOrScalarResult(const opt::Instruction* inst) const {
+bool VectorDCE::HasVectorOrScalarResult(const Instruction* inst) const {
   return HasScalarResult(inst) || HasVectorResult(inst);
 }
 
-bool VectorDCE::HasVectorResult(const opt::Instruction* inst) const {
+bool VectorDCE::HasVectorResult(const Instruction* inst) const {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   if (inst->type_id() == 0) {
     return false;
@@ -254,7 +254,7 @@ bool VectorDCE::HasVectorResult(const opt::Instruction* inst) const {
   }
 }
 
-bool VectorDCE::HasScalarResult(const opt::Instruction* inst) const {
+bool VectorDCE::HasScalarResult(const Instruction* inst) const {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   if (inst->type_id() == 0) {
     return false;
@@ -272,11 +272,10 @@ bool VectorDCE::HasScalarResult(const opt::Instruction* inst) const {
 }
 
 bool VectorDCE::RewriteInstructions(
-    opt::Function* function,
-    const VectorDCE::LiveComponentMap& live_components) {
+    Function* function, const VectorDCE::LiveComponentMap& live_components) {
   bool modified = false;
   function->ForEachInst(
-      [&modified, this, live_components](opt::Instruction* current_inst) {
+      [&modified, this, live_components](Instruction* current_inst) {
         if (!context()->IsCombinatorInstruction(current_inst)) {
           return;
         }
@@ -319,7 +318,7 @@ bool VectorDCE::RewriteInstructions(
 }
 
 bool VectorDCE::RewriteInsertInstruction(
-    opt::Instruction* current_inst, const utils::BitVector& live_components) {
+    Instruction* current_inst, const utils::BitVector& live_components) {
   // If the value being inserted is not live, then we can skip the insert.
   bool modified = false;
   uint32_t insert_index = current_inst->GetSingleWordInOperand(2);
@@ -348,7 +347,7 @@ bool VectorDCE::RewriteInsertInstruction(
 void VectorDCE::AddItemToWorkListIfNeeded(
     WorkListItem work_item, VectorDCE::LiveComponentMap* live_components,
     std::vector<WorkListItem>* work_list) {
-  opt::Instruction* current_inst = work_item.instruction;
+  Instruction* current_inst = work_item.instruction;
   auto it = live_components->find(current_inst->result_id());
   if (it == live_components->end()) {
     live_components->emplace(

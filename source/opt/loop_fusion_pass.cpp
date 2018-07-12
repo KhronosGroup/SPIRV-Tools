@@ -24,18 +24,18 @@ namespace opt {
 
 Pass::Status LoopFusionPass::Process() {
   bool modified = false;
-  opt::Module* module = context()->module();
+  Module* module = context()->module();
 
   // Process each function in the module
-  for (opt::Function& f : *module) {
+  for (Function& f : *module) {
     modified |= ProcessFunction(&f);
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool LoopFusionPass::ProcessFunction(opt::Function* function) {
-  opt::LoopDescriptor& ld = *context()->GetLoopDescriptor(function);
+bool LoopFusionPass::ProcessFunction(Function* function) {
+  LoopDescriptor& ld = *context()->GetLoopDescriptor(function);
 
   // If a loop doesn't have a preheader needs then it needs to be created. Make
   // sure to return Status::SuccessWithChange in that case.

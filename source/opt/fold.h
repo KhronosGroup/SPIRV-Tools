@@ -68,7 +68,7 @@ class InstructionFolder {
 
   // Returns true if |FoldInstructionToConstant| could fold an instruction whose
   // result type is |type_inst|.
-  bool IsFoldableType(opt::Instruction* type_inst) const;
+  bool IsFoldableType(Instruction* type_inst) const;
 
   // Tries to fold |inst| to a single constant, when the input ids to |inst|
   // have been substituted using |id_map|.  Returns a pointer to the OpConstant*
@@ -79,8 +79,8 @@ class InstructionFolder {
   // can be used for things like CCP where it is known that some ids contain a
   // constant, but the instruction itself has not been updated yet.  This can
   // map those ids to the appropriate constants.
-  opt::Instruction* FoldInstructionToConstant(
-      opt::Instruction* inst, std::function<uint32_t(uint32_t)> id_map) const;
+  Instruction* FoldInstructionToConstant(
+      Instruction* inst, std::function<uint32_t(uint32_t)> id_map) const;
   // Returns true if |inst| can be folded into a simpler instruction.
   // If |inst| can be simplified, |inst| is overwritten with the simplified
   // instruction reusing the same result id.
@@ -92,7 +92,7 @@ class InstructionFolder {
   // 1) An OpPhi becomes and OpCopyObject - If there are OpPhi instruction after
   //    |inst| in a basic block then this is invalid.  The caller must fix this
   //    up.
-  bool FoldInstruction(opt::Instruction* inst) const;
+  bool FoldInstruction(Instruction* inst) const;
 
   // Return true if this opcode has a const folding rule associtated with it.
   bool HasConstFoldingRule(SpvOp opcode) const {
@@ -128,7 +128,7 @@ class InstructionFolder {
   uint32_t OperateWords(SpvOp opcode,
                         const std::vector<uint32_t>& operand_words) const;
 
-  bool FoldInstructionInternal(opt::Instruction* inst) const;
+  bool FoldInstructionInternal(Instruction* inst) const;
 
   // Returns true if |inst| is a binary operation that takes two integers as
   // parameters and folds to a constant that can be represented as an unsigned

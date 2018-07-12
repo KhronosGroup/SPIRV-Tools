@@ -43,12 +43,12 @@ class InlineOpaquePass : public InlinePass {
   bool IsOpaqueType(uint32_t typeId);
 
   // Return true if function call |callInst| has opaque argument or return type
-  bool HasOpaqueArgsOrReturn(const opt::Instruction* callInst);
+  bool HasOpaqueArgsOrReturn(const Instruction* callInst);
 
   // Inline all function calls in |func| that have opaque params or return
   // type. Inline similarly all code that is inlined into func. Return true
   // if func is modified.
-  bool InlineOpaque(opt::Function* func);
+  bool InlineOpaque(Function* func);
 
   void Initialize();
   Pass::Status ProcessImpl();

@@ -66,7 +66,7 @@ Pass::Status StrengthReductionPass::Process() {
 }
 
 bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
-    opt::BasicBlock::iterator* inst) {
+    BasicBlock::iterator* inst) {
   assert((*inst)->opcode() == SpvOp::SpvOpIMul &&
          "Only works for multiplication of integers.");
   bool modified = false;
@@ -80,7 +80,7 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
   // Check the operands for a constant that is a power of 2.
   for (int i = 0; i < 2; i++) {
     uint32_t opId = (*inst)->GetSingleWordInOperand(i);
-    opt::Instruction* opInst = get_def_use_mgr()->GetDef(opId);
+    Instruction* opInst = get_def_use_mgr()->GetDef(opId);
     if (opInst->opcode() == SpvOp::SpvOpConstant) {
       // We found a constant operand.
       uint32_t constVal = opInst->GetSingleWordOperand(2);
@@ -92,14 +92,14 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
 
         // Create the new instruction.
         uint32_t newResultId = TakeNextId();
-        std::vector<opt::Operand> newOperands;
+        std::vector<Operand> newOperands;
         newOperands.push_back((*inst)->GetInOperand(1 - i));
-        opt::Operand shiftOperand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                                  {shiftConstResultId});
+        Operand shiftOperand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+                             {shiftConstResultId});
         newOperands.push_back(shiftOperand);
-        std::unique_ptr<opt::Instruction> newInstruction(
-            new opt::Instruction(context(), SpvOp::SpvOpShiftLeftLogical,
-                                 (*inst)->type_id(), newResultId, newOperands));
+        std::unique_ptr<Instruction> newInstruction(
+            new Instruction(context(), SpvOp::SpvOpShiftLeftLogical,
+                            (*inst)->type_id(), newResultId, newOperands));
 
         // Insert the new instruction and update the data structures.
         (*inst) = (*inst).InsertBefore(std::move(newInstruction));
@@ -108,7 +108,7 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
         context()->ReplaceAllUsesWith((*inst)->result_id(), newResultId);
 
         // Remove the old instruction.
-        opt::Instruction* inst_to_delete = &*(*inst);
+        Instruction* inst_to_delete = &*(*inst);
         --(*inst);
         context()->KillInst(inst_to_delete);
 
@@ -154,11 +154,11 @@ uint32_t StrengthReductionPass::GetConstantId(uint32_t val) {
 
     // Construct the constant.
     uint32_t resultId = TakeNextId();
-    opt::Operand constant(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                          {val});
-    std::unique_ptr<opt::Instruction> newConstant(
-        new opt::Instruction(context(), SpvOp::SpvOpConstant, uint32_type_id_,
-                             resultId, {constant}));
+    Operand constant(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                     {val});
+    std::unique_ptr<Instruction> newConstant(
+        new Instruction(context(), SpvOp::SpvOpConstant, uint32_type_id_,
+                        resultId, {constant}));
     get_module()->AddGlobalValue(std::move(newConstant));
 
     // Notify the DefUseManager about this constant.

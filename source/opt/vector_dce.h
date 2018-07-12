@@ -32,7 +32,7 @@ class VectorDCE : public MemPass {
   struct WorkListItem {
     WorkListItem() : instruction(nullptr), components(kMaxVectorSize) {}
 
-    opt::Instruction* instruction;
+    Instruction* instruction;
     utils::BitVector components;
   };
 
@@ -46,29 +46,27 @@ class VectorDCE : public MemPass {
   const char* name() const override { return "vector-dce"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse | opt::IRContext::kAnalysisCFG |
-           opt::IRContext::kAnalysisInstrToBlockMapping |
-           opt::IRContext::kAnalysisLoopAnalysis |
-           opt::IRContext::kAnalysisDecorations |
-           opt::IRContext::kAnalysisDominatorAnalysis |
-           opt::IRContext::kAnalysisNameMap;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse | IRContext::kAnalysisCFG |
+           IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisLoopAnalysis | IRContext::kAnalysisDecorations |
+           IRContext::kAnalysisDominatorAnalysis | IRContext::kAnalysisNameMap;
   }
 
  private:
   // Runs the vector dce pass on |function|.  Returns true if |function| was
   // modified.
-  bool VectorDCEFunction(opt::Function* function);
+  bool VectorDCEFunction(Function* function);
 
   // Identifies the live components of the vectors that are results of
   // instructions in |function|.  The results are stored in |live_components|.
-  void FindLiveComponents(opt::Function* function,
+  void FindLiveComponents(Function* function,
                           LiveComponentMap* live_components);
 
   // Rewrites instructions in |function| that are dead or partially dead.  If an
   // instruction does not have an entry in |live_components|, then it is not
   // changed.  Returns true if |function| was modified.
-  bool RewriteInstructions(opt::Function* function,
+  bool RewriteInstructions(Function* function,
                            const LiveComponentMap& live_components);
 
   // Rewrites the OpCompositeInsert instruction |current_inst| to avoid
@@ -80,17 +78,17 @@ class VectorDCE : public MemPass {
   //
   // If the composite input to |current_inst| is not live, then it is replaced
   // by and OpUndef in |current_inst|.
-  bool RewriteInsertInstruction(opt::Instruction* current_inst,
+  bool RewriteInsertInstruction(Instruction* current_inst,
                                 const utils::BitVector& live_components);
 
   // Returns true if the result of |inst| is a vector or a scalar.
-  bool HasVectorOrScalarResult(const opt::Instruction* inst) const;
+  bool HasVectorOrScalarResult(const Instruction* inst) const;
 
   // Returns true if the result of |inst| is a scalar.
-  bool HasVectorResult(const opt::Instruction* inst) const;
+  bool HasVectorResult(const Instruction* inst) const;
 
   // Returns true if the result of |inst| is a vector.
-  bool HasScalarResult(const opt::Instruction* inst) const;
+  bool HasScalarResult(const Instruction* inst) const;
 
   // Adds |work_item| to |work_list| if it is not already live according to
   // |live_components|.  |live_components| is updated to indicate that
@@ -102,7 +100,7 @@ class VectorDCE : public MemPass {
   // Marks the components |live_elements| of the uses in |current_inst| as live
   // according to |live_components|. If they were not live before, then they are
   // added to |work_list|.
-  void MarkUsesAsLive(opt::Instruction* current_inst,
+  void MarkUsesAsLive(Instruction* current_inst,
                       const utils::BitVector& live_elements,
                       LiveComponentMap* live_components,
                       std::vector<WorkListItem>* work_list);
@@ -126,7 +124,7 @@ class VectorDCE : public MemPass {
   // Marks the uses in the OpCompositeExtract instruction |current_inst| as
   // live. If anything becomes live they are added to |work_list| and
   // |live_components| is updated accordingly.
-  void MarkExtractUseAsLive(const opt::Instruction* current_inst,
+  void MarkExtractUseAsLive(const Instruction* current_inst,
                             LiveComponentMap* live_components,
                             std::vector<WorkListItem>* work_list);
 

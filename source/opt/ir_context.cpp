@@ -92,7 +92,7 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
 }
 
-Instruction* IRContext::KillInst(opt::Instruction* inst) {
+Instruction* IRContext::KillInst(Instruction* inst) {
   if (!inst) {
     return nullptr;
   }
@@ -114,11 +114,11 @@ Instruction* IRContext::KillInst(opt::Instruction* inst) {
     }
   }
 
-  if (type_mgr_ && opt::IsTypeInst(inst->opcode())) {
+  if (type_mgr_ && IsTypeInst(inst->opcode())) {
     type_mgr_->RemoveId(inst->result_id());
   }
 
-  if (constant_mgr_ && opt::IsConstantInst(inst->opcode())) {
+  if (constant_mgr_ && IsConstantInst(inst->opcode())) {
     constant_mgr_->RemoveId(inst->result_id());
   }
 
@@ -138,7 +138,7 @@ Instruction* IRContext::KillInst(opt::Instruction* inst) {
 }
 
 bool IRContext::KillDef(uint32_t id) {
-  opt::Instruction* def = get_def_use_mgr()->GetDef(id);
+  Instruction* def = get_def_use_mgr()->GetDef(id);
   if (def != nullptr) {
     KillInst(def);
     return true;
@@ -153,15 +153,15 @@ bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   assert(get_def_use_mgr()->GetDef(after) &&
          "'after' is not a registered def.");
 
-  std::vector<std::pair<opt::Instruction*, uint32_t>> uses_to_update;
+  std::vector<std::pair<Instruction*, uint32_t>> uses_to_update;
   get_def_use_mgr()->ForEachUse(
-      before, [&uses_to_update](opt::Instruction* user, uint32_t index) {
+      before, [&uses_to_update](Instruction* user, uint32_t index) {
         uses_to_update.emplace_back(user, index);
       });
 
-  opt::Instruction* prev = nullptr;
+  Instruction* prev = nullptr;
   for (auto p : uses_to_update) {
-    opt::Instruction* user = p.first;
+    Instruction* user = p.first;
     uint32_t index = p.second;
     if (prev == nullptr || prev != user) {
       ForgetUses(user);
@@ -202,7 +202,7 @@ bool IRContext::IsConsistent() {
 #endif
 
   if (AreAnalysesValid(kAnalysisDefUse)) {
-    opt::analysis::DefUseManager new_def_use(module());
+    analysis::DefUseManager new_def_use(module());
     if (*get_def_use_mgr() != new_def_use) {
       return false;
     }
@@ -211,7 +211,7 @@ bool IRContext::IsConsistent() {
   if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
     for (auto& func : *module()) {
       for (auto& block : func) {
-        if (!block.WhileEachInst([this, &block](opt::Instruction* inst) {
+        if (!block.WhileEachInst([this, &block](Instruction* inst) {
               if (get_instr_block(inst) != &block) {
                 return false;
               }
@@ -257,18 +257,18 @@ void IRContext::AnalyzeUses(Instruction* inst) {
 }
 
 void IRContext::KillNamesAndDecorates(uint32_t id) {
-  std::vector<opt::Instruction*> decorations =
+  std::vector<Instruction*> decorations =
       get_decoration_mgr()->GetDecorationsFor(id, true);
 
   for (Instruction* inst : decorations) {
     KillInst(inst);
   }
 
-  std::vector<opt::Instruction*> name_to_kill;
+  std::vector<Instruction*> name_to_kill;
   for (auto name : GetNames(id)) {
     name_to_kill.push_back(name.second);
   }
-  for (opt::Instruction* name_inst : name_to_kill) {
+  for (Instruction* name_inst : name_to_kill) {
     KillInst(name_inst);
   }
 }
@@ -442,7 +442,7 @@ void IRContext::AddCombinatorsForCapability(uint32_t capability) {
   }
 }
 
-void IRContext::AddCombinatorsForExtension(opt::Instruction* extension) {
+void IRContext::AddCombinatorsForExtension(Instruction* extension) {
   assert(extension->opcode() == SpvOpExtInstImport &&
          "Expecting an import of an extension's instruction set.");
   const char* extension_name =
@@ -557,16 +557,16 @@ void IRContext::RemoveFromIdToName(const Instruction* inst) {
   }
 }
 
-opt::LoopDescriptor* IRContext::GetLoopDescriptor(const opt::Function* f) {
+LoopDescriptor* IRContext::GetLoopDescriptor(const Function* f) {
   if (!AreAnalysesValid(kAnalysisLoopAnalysis)) {
     ResetLoopAnalysis();
   }
 
-  std::unordered_map<const opt::Function*, opt::LoopDescriptor>::iterator it =
+  std::unordered_map<const Function*, LoopDescriptor>::iterator it =
       loop_descriptors_.find(f);
   if (it == loop_descriptors_.end()) {
     return &loop_descriptors_
-                .emplace(std::make_pair(f, opt::LoopDescriptor(this, f)))
+                .emplace(std::make_pair(f, LoopDescriptor(this, f)))
                 .first->second;
   }
 
@@ -574,8 +574,7 @@ opt::LoopDescriptor* IRContext::GetLoopDescriptor(const opt::Function* f) {
 }
 
 // Gets the dominator analysis for function |f|.
-opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(
-    const opt::Function* f) {
+DominatorAnalysis* IRContext::GetDominatorAnalysis(const Function* f) {
   if (!AreAnalysesValid(kAnalysisDominatorAnalysis)) {
     ResetDominatorAnalysis();
   }
@@ -588,8 +587,7 @@ opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(
 }
 
 // Gets the postdominator analysis for function |f|.
-opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
-    const opt::Function* f) {
+PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(const Function* f) {
   if (!AreAnalysesValid(kAnalysisDominatorAnalysis)) {
     ResetDominatorAnalysis();
   }
@@ -601,13 +599,13 @@ opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
   return &post_dominator_trees_[f];
 }
 
-bool opt::IRContext::CheckCFG() {
+bool IRContext::CheckCFG() {
   std::unordered_map<uint32_t, std::vector<uint32_t>> real_preds;
   if (!AreAnalysesValid(kAnalysisCFG)) {
     return true;
   }
 
-  for (opt::Function& function : *module()) {
+  for (Function& function : *module()) {
     for (const auto& bb : function) {
       bb.ForEachSuccessorLabel([&bb, &real_preds](const uint32_t lab_id) {
         real_preds[lab_id].push_back(bb.id());
