@@ -361,7 +361,6 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
   for (const auto& module : input_modules) {
     for (const auto& func : *module) {
       std::unique_ptr<opt::Function> cloned_func(func.Clone(linked_context));
-      cloned_func->SetParent(linked_module);
       linked_module->AddFunction(std::move(cloned_func));
     }
   }
