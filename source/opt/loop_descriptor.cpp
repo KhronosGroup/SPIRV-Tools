@@ -490,16 +490,14 @@ void Loop::ComputeLoopStructuredOrder(
     ordered_loop_blocks->push_back(loop_merge_);
 }
 
-LoopDescriptor::LoopDescriptor(const Function* f)
+LoopDescriptor::LoopDescriptor(IRContext* context, const Function* f)
     : loops_(), dummy_top_loop_(nullptr) {
-  PopulateList(f);
+  PopulateList(context, f);
 }
 
 LoopDescriptor::~LoopDescriptor() { ClearLoops(); }
 
-void LoopDescriptor::PopulateList(const Function* f) {
-  IRContext* context = f->GetParent()->context();
-
+void LoopDescriptor::PopulateList(IRContext* context, const Function* f) {
   DominatorAnalysis* dom_analysis = context->GetDominatorAnalysis(f);
 
   ClearLoops();

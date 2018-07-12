@@ -19,7 +19,6 @@
 #include <map>
 
 #include "dominator_tree.h"
-#include "module.h"
 
 namespace spvtools {
 namespace opt {

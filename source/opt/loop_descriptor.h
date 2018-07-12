@@ -424,7 +424,7 @@ class LoopDescriptor {
   using const_pre_iterator = TreeDFIterator<const Loop>;
 
   // Creates a loop object for all loops found in |f|.
-  explicit LoopDescriptor(const Function* f);
+  LoopDescriptor(IRContext* context, const Function* f);
 
   // Disable copy constructor, to avoid double-free on destruction.
   LoopDescriptor(const LoopDescriptor&) = delete;
@@ -539,7 +539,7 @@ class LoopDescriptor {
   using LoopsToAddContainerType = std::vector<std::pair<Loop*, Loop*>>;
 
   // Creates loop descriptors for the function |f|.
-  void PopulateList(const Function* f);
+  void PopulateList(IRContext* context, const Function* f);
 
   // Returns the inner most loop that contains the basic block id |block_id|.
   inline Loop* FindLoopForBasicBlock(uint32_t block_id) const {

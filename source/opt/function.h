@@ -53,10 +53,6 @@ class Function {
   Instruction& DefInst() { return *def_inst_; }
   const Instruction& DefInst() const { return *def_inst_; }
 
-  // Sets the enclosing module for this function.
-  void SetParent(Module* module) { module_ = module; }
-  // Gets the enclosing module for this function
-  Module* GetParent() const { return module_; }
   // Appends a parameter to this function.
   inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a basic block to this function.
@@ -129,8 +125,6 @@ class Function {
   std::string PrettyPrint(uint32_t options = 0u) const;
 
  private:
-  // The enclosing module.
-  Module* module_;
   // The OpFunction instruction that begins the definition of this function.
   std::unique_ptr<Instruction> def_inst_;
   // All parameters to this function.
@@ -145,7 +139,7 @@ class Function {
 std::ostream& operator<<(std::ostream& str, const Function& func);
 
 inline Function::Function(std::unique_ptr<Instruction> def_inst)
-    : module_(nullptr), def_inst_(std::move(def_inst)), end_inst_() {}
+    : def_inst_(std::move(def_inst)), end_inst_() {}
 
 inline void Function::AddParameter(std::unique_ptr<Instruction> p) {
   params_.emplace_back(std::move(p));

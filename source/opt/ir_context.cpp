@@ -565,7 +565,8 @@ LoopDescriptor* IRContext::GetLoopDescriptor(const Function* f) {
   std::unordered_map<const Function*, LoopDescriptor>::iterator it =
       loop_descriptors_.find(f);
   if (it == loop_descriptors_.end()) {
-    return &loop_descriptors_.emplace(std::make_pair(f, LoopDescriptor(f)))
+    return &loop_descriptors_
+                .emplace(std::make_pair(f, LoopDescriptor(this, f)))
                 .first->second;
   }
 
