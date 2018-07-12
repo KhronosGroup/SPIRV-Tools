@@ -35,7 +35,7 @@ bool HasFloatingPoint(const analysis::Type* type) {
 
 // Folds an OpcompositeExtract where input is a composite constant.
 ConstantFoldingRule FoldExtractWithConstants() {
-  return [](opt::Instruction* inst,
+  return [](IRContext* context, opt::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     const analysis::Constant* c = constants[kExtractCompositeIdInIdx];
@@ -47,7 +47,6 @@ ConstantFoldingRule FoldExtractWithConstants() {
       uint32_t element_index = inst->GetSingleWordInOperand(i);
       if (c->AsNullConstant()) {
         // Return Null for the return type.
-        opt::IRContext* context = inst->context();
         analysis::ConstantManager* const_mgr = context->get_constant_mgr();
         analysis::TypeManager* type_mgr = context->get_type_mgr();
         return const_mgr->GetConstant(type_mgr->GetType(inst->type_id()), {});
@@ -63,7 +62,7 @@ ConstantFoldingRule FoldExtractWithConstants() {
 }
 
 ConstantFoldingRule FoldVectorShuffleWithConstants() {
-  return [](opt::Instruction* inst,
+  return [](IRContext* context, opt::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     assert(inst->opcode() == SpvOpVectorShuffle);
@@ -73,7 +72,6 @@ ConstantFoldingRule FoldVectorShuffleWithConstants() {
       return nullptr;
     }
 
-    opt::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* element_type = c1->type()->AsVector()->element_type();
 
@@ -116,11 +114,10 @@ ConstantFoldingRule FoldVectorShuffleWithConstants() {
 }
 
 ConstantFoldingRule FoldVectorTimesScalar() {
-  return [](opt::Instruction* inst,
+  return [](IRContext* context, opt::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     assert(inst->opcode() == SpvOpVectorTimesScalar);
-    opt::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
 
@@ -194,10 +191,9 @@ ConstantFoldingRule FoldVectorTimesScalar() {
 ConstantFoldingRule FoldCompositeWithConstants() {
   // Folds an OpCompositeConstruct where all of the inputs are constants to a
   // constant.  A new constant is created if necessary.
-  return [](opt::Instruction* inst,
+  return [](IRContext* context, opt::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    opt::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* new_type = type_mgr->GetType(inst->type_id());
@@ -238,10 +234,9 @@ using BinaryScalarFoldingRule = std::function<const analysis::Constant*(
 // not |nullptr|, then their type is either |Float| or |Integer| or a |Vector|
 // whose element type is |Float| or |Integer|.
 ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
-  return [scalar_rule](opt::Instruction* inst,
+  return [scalar_rule](IRContext* context, opt::Instruction* inst,
                        const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    opt::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
@@ -288,10 +283,9 @@ ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
 // that |constants| contains 2 entries.  If they are not |nullptr|, then their
 // type is either |Float| or a |Vector| whose element type is |Float|.
 ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
-  return [scalar_rule](opt::Instruction* inst,
+  return [scalar_rule](IRContext* context, opt::Instruction* inst,
                        const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    opt::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
@@ -518,10 +512,9 @@ ConstantFoldingRule FoldFUnordGreaterThanEqual() {
 // Folds an OpDot where all of the inputs are constants to a
 // constant.  A new constant is created if necessary.
 ConstantFoldingRule FoldOpDotWithConstants() {
-  return [](opt::Instruction* inst,
+  return [](IRContext* context, opt::Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    opt::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* new_type = type_mgr->GetType(inst->type_id());
@@ -614,10 +607,9 @@ UnaryScalarFoldingRule FoldFNegateOp() {
 ConstantFoldingRule FoldFNegate() { return FoldFPUnaryOp(FoldFNegateOp()); }
 
 ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
-  return [cmp_opcode](opt::Instruction* inst,
+  return [cmp_opcode](IRContext* context, opt::Instruction* inst,
                       const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    opt::IRContext* context = inst->context();
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
 

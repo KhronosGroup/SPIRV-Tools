@@ -445,7 +445,7 @@ class IRContext {
 
   const opt::InstructionFolder& get_instruction_folder() {
     if (!inst_folder_) {
-      inst_folder_.reset(new opt::InstructionFolder());
+      inst_folder_.reset(new opt::InstructionFolder(this));
     }
     return *inst_folder_;
   }
