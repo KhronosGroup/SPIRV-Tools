@@ -122,8 +122,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
   // Test normal dominator tree
   {
     DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -187,8 +187,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
   // Test post dominator tree
   {
     PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -289,8 +289,8 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
   // Check normal dominator tree
   {
     DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -331,8 +331,8 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
   // Check post dominator tree
   {
     PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -410,8 +410,8 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
   // Check normal dominator tree
   {
     DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -486,8 +486,8 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
   // Check post dominator tree
   {
     PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -607,8 +607,8 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
   // Check normal dominator tree
   {
     DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -658,8 +658,8 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
   // Check post dominator tree.
   {
     PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // (strict) dominance checks.
     for (uint32_t id : {10, 11, 12, 13, 14, 15})
@@ -737,8 +737,8 @@ TEST_F(PassClassTest, DominatorInfinitLoop) {
   // Check normal dominator tree
   {
     DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -772,8 +772,8 @@ TEST_F(PassClassTest, DominatorInfinitLoop) {
   // Check post dominator tree
   {
     PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
@@ -842,8 +842,9 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
   // Check dominator tree
   {
     DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
+
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, cfg.pseudo_entry_block());
@@ -870,8 +871,8 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
   // Check post dominator tree
   {
     PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
     const CFG& cfg = *context->cfg();
+    dom_tree.InitializeTree(cfg, fn);
 
     // Inspect the actual tree
     DominatorTree& tree = dom_tree.GetDomTree();

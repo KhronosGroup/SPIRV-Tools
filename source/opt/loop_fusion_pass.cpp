@@ -35,8 +35,7 @@ Pass::Status LoopFusionPass::Process() {
 }
 
 bool LoopFusionPass::ProcessFunction(opt::Function* function) {
-  auto c = function->context();
-  opt::LoopDescriptor& ld = *c->GetLoopDescriptor(function);
+  opt::LoopDescriptor& ld = *context()->GetLoopDescriptor(function);
 
   // If a loop doesn't have a preheader needs then it needs to be created. Make
   // sure to return Status::SuccessWithChange in that case.
@@ -46,10 +45,10 @@ bool LoopFusionPass::ProcessFunction(opt::Function* function) {
   // picked out so don't have to check every loop
   for (auto& loop_0 : ld) {
     for (auto& loop_1 : ld) {
-      LoopFusion fusion(c, &loop_0, &loop_1);
+      LoopFusion fusion(context(), &loop_0, &loop_1);
 
       if (fusion.AreCompatible() && fusion.IsLegal()) {
-        RegisterLiveness liveness(c, function);
+        RegisterLiveness liveness(context(), function);
         RegisterLiveness::RegionRegisterLiveness reg_pressure{};
         liveness.SimulateFusion(loop_0, loop_1, &reg_pressure);
 

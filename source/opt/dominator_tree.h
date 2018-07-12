@@ -156,9 +156,10 @@ class DominatorTree {
   // Dumps the tree in the graphvis dot format into the |out_stream|.
   void DumpTreeAsDot(std::ostream& out_stream) const;
 
-  // Build the (post-)dominator tree for the function |f|
-  // Any existing data will be overwritten
-  void InitializeTree(const opt::Function* f);
+  // Build the (post-)dominator tree for the given control flow graph
+  // |cfg| and the function |f|. |f| must exist in the |cfg|. Any
+  // existing data in the dominator tree will be overwritten
+  void InitializeTree(const CFG& cfg, const opt::Function* f);
 
   // Check if the basic block |a| dominates the basic block |b|.
   bool Dominates(const opt::BasicBlock* a, const opt::BasicBlock* b) const;
