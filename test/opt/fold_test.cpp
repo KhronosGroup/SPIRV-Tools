@@ -5816,6 +5816,44 @@ INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResu
             "%9 = OpVectorShuffle %v4double %7 %8 2 0 7 5\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
+        9, true),
+    // Test case 9: Replace first operand with a smaller vector.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} %5 %7 0 0 5 3\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v2double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%4 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v2double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%7 = OpLoad %v4double %4\n" +
+            "%8 = OpVectorShuffle %v4double %5 %5 0 1 2 3\n" +
+            "%9 = OpVectorShuffle %v4double %8 %7 2 0 7 5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        9, true),
+    // Test case 10: Replace first operand with a larger vector.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} %5 %7 3 0 7 5\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v4double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%4 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v4double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%7 = OpLoad %v4double %4\n" +
+            "%8 = OpVectorShuffle %v2double %5 %5 0 3\n" +
+            "%9 = OpVectorShuffle %v4double %8 %7 1 0 5 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
         9, true)
 ));
 #endif

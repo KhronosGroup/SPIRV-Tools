@@ -1819,7 +1819,7 @@ bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
   for (size_t i = firstLiteralIndex; i < inst->words.size(); ++i) {
     auto literal = inst->words[i];
     if (literal != 0xFFFFFFFF && literal >= N) {
-      DIAG(module_.FindDef(inst->words[i]))
+      DIAG(module_.FindDef(inst->words[0]))
           << "Component literal value " << literal << " is greater than "
           << N - 1 << ".";
       return false;
