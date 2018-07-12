@@ -34,13 +34,12 @@ class LocalRedundancyEliminationPass : public Pass {
   const char* name() const override { return "local-redundancy-elimination"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse |
-           opt::IRContext::kAnalysisInstrToBlockMapping |
-           opt::IRContext::kAnalysisDecorations |
-           opt::IRContext::kAnalysisCombinators | opt::IRContext::kAnalysisCFG |
-           opt::IRContext::kAnalysisDominatorAnalysis |
-           opt::IRContext::kAnalysisNameMap;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse |
+           IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
+           IRContext::kAnalysisCFG | IRContext::kAnalysisDominatorAnalysis |
+           IRContext::kAnalysisNameMap;
   }
 
  protected:
@@ -55,7 +54,7 @@ class LocalRedundancyEliminationPass : public Pass {
   // dominates |bb|.
   //
   // Returns true if the module is changed.
-  bool EliminateRedundanciesInBB(opt::BasicBlock* block,
+  bool EliminateRedundanciesInBB(BasicBlock* block,
                                  const ValueNumberTable& vnTable,
                                  std::map<uint32_t, uint32_t>* value_to_ids);
 };

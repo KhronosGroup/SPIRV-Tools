@@ -33,20 +33,20 @@ namespace opt {
 
 // Takes in a phi instruction |induction| and the loop |header| and returns the
 // step operation of the loop.
-opt::Instruction* Loop::GetInductionStepOperation(
-    const opt::Instruction* induction) const {
+Instruction* Loop::GetInductionStepOperation(
+    const Instruction* induction) const {
   // Induction must be a phi instruction.
   assert(induction->opcode() == SpvOpPhi);
 
-  opt::Instruction* step = nullptr;
+  Instruction* step = nullptr;
 
-  opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
+  analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
 
   // Traverse the incoming operands of the phi instruction.
   for (uint32_t operand_id = 1; operand_id < induction->NumInOperands();
        operand_id += 2) {
     // Incoming edge.
-    opt::BasicBlock* incoming_block =
+    BasicBlock* incoming_block =
         context_->cfg()->block(induction->GetSingleWordInOperand(operand_id));
 
     // Check if the block is dominated by header, and thus coming from within
@@ -142,17 +142,17 @@ int64_t Loop::GetResidualConditionValue(SpvOp condition, int64_t initial_value,
   return remainder;
 }
 
-opt::Instruction* Loop::GetConditionInst() const {
-  opt::BasicBlock* condition_block = FindConditionBlock();
+Instruction* Loop::GetConditionInst() const {
+  BasicBlock* condition_block = FindConditionBlock();
   if (!condition_block) {
     return nullptr;
   }
-  opt::Instruction* branch_conditional = &*condition_block->tail();
+  Instruction* branch_conditional = &*condition_block->tail();
   if (!branch_conditional ||
       branch_conditional->opcode() != SpvOpBranchConditional) {
     return nullptr;
   }
-  opt::Instruction* condition_inst = context_->get_def_use_mgr()->GetDef(
+  Instruction* condition_inst = context_->get_def_use_mgr()->GetDef(
       branch_conditional->GetSingleWordInOperand(0));
   if (IsSupportedCondition(condition_inst->opcode())) {
     return condition_inst;
@@ -164,14 +164,14 @@ opt::Instruction* Loop::GetConditionInst() const {
 // Extract the initial value from the |induction| OpPhi instruction and store it
 // in |value|. If the function couldn't find the initial value of |induction|
 // return false.
-bool Loop::GetInductionInitValue(const opt::Instruction* induction,
+bool Loop::GetInductionInitValue(const Instruction* induction,
                                  int64_t* value) const {
-  opt::Instruction* constant_instruction = nullptr;
-  opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
+  Instruction* constant_instruction = nullptr;
+  analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
 
   for (uint32_t operand_id = 0; operand_id < induction->NumInOperands();
        operand_id += 2) {
-    opt::BasicBlock* bb = context_->cfg()->block(
+    BasicBlock* bb = context_->cfg()->block(
         induction->GetSingleWordInOperand(operand_id + 1));
 
     if (!IsInsideLoop(bb)) {
@@ -182,13 +182,13 @@ bool Loop::GetInductionInitValue(const opt::Instruction* induction,
 
   if (!constant_instruction) return false;
 
-  const opt::analysis::Constant* constant =
+  const analysis::Constant* constant =
       context_->get_constant_mgr()->FindDeclaredConstant(
           constant_instruction->result_id());
   if (!constant) return false;
 
   if (value) {
-    const opt::analysis::Integer* type =
+    const analysis::Integer* type =
         constant->AsIntConstant()->type()->AsInteger();
 
     if (type->IsSigned()) {
@@ -201,7 +201,7 @@ bool Loop::GetInductionInitValue(const opt::Instruction* induction,
   return true;
 }
 
-Loop::Loop(IRContext* context, opt::DominatorAnalysis* dom_analysis,
+Loop::Loop(IRContext* context, DominatorAnalysis* dom_analysis,
            BasicBlock* header, BasicBlock* continue_target,
            BasicBlock* merge_target)
     : context_(context),
@@ -217,17 +217,17 @@ Loop::Loop(IRContext* context, opt::DominatorAnalysis* dom_analysis,
   loop_latch_ = FindLatchBlock();
 }
 
-BasicBlock* Loop::FindLoopPreheader(opt::DominatorAnalysis* dom_analysis) {
+BasicBlock* Loop::FindLoopPreheader(DominatorAnalysis* dom_analysis) {
   CFG* cfg = context_->cfg();
-  opt::DominatorTree& dom_tree = dom_analysis->GetDomTree();
-  opt::DominatorTreeNode* header_node = dom_tree.GetTreeNode(loop_header_);
+  DominatorTree& dom_tree = dom_analysis->GetDomTree();
+  DominatorTreeNode* header_node = dom_tree.GetTreeNode(loop_header_);
 
   // The loop predecessor.
   BasicBlock* loop_pred = nullptr;
 
   auto header_pred = cfg->preds(loop_header_->id());
   for (uint32_t p_id : header_pred) {
-    opt::DominatorTreeNode* node = dom_tree.GetTreeNode(p_id);
+    DominatorTreeNode* node = dom_tree.GetTreeNode(p_id);
     if (node && !dom_tree.Dominates(header_node, node)) {
       // The predecessor is not part of the loop, so potential loop preheader.
       if (loop_pred && node->bb_ != loop_pred) {
@@ -264,7 +264,7 @@ bool Loop::IsInsideLoop(Instruction* inst) const {
 
 bool Loop::IsBasicBlockInLoopSlow(const BasicBlock* bb) {
   assert(bb->GetParent() && "The basic block does not belong to a function");
-  opt::DominatorAnalysis* dom_analysis =
+  DominatorAnalysis* dom_analysis =
       context_->GetDominatorAnalysis(bb->GetParent());
   if (dom_analysis->IsReachable(bb) &&
       !dom_analysis->Dominates(GetHeaderBlock(), bb))
@@ -327,10 +327,10 @@ void Loop::SetPreHeaderBlock(BasicBlock* preheader) {
   loop_preheader_ = preheader;
 }
 
-opt::BasicBlock* Loop::FindLatchBlock() {
-  opt::CFG* cfg = context_->cfg();
+BasicBlock* Loop::FindLatchBlock() {
+  CFG* cfg = context_->cfg();
 
-  opt::DominatorAnalysis* dominator_analysis =
+  DominatorAnalysis* dominator_analysis =
       context_->GetDominatorAnalysis(loop_header_->GetParent());
 
   // Look at the predecessors of the loop header to find a predecessor block
@@ -350,7 +350,7 @@ opt::BasicBlock* Loop::FindLatchBlock() {
 }
 
 void Loop::GetExitBlocks(std::unordered_set<uint32_t>* exit_blocks) const {
-  opt::CFG* cfg = context_->cfg();
+  CFG* cfg = context_->cfg();
   exit_blocks->clear();
 
   for (uint32_t bb_id : GetBlocks()) {
@@ -366,13 +366,13 @@ void Loop::GetExitBlocks(std::unordered_set<uint32_t>* exit_blocks) const {
 void Loop::GetMergingBlocks(
     std::unordered_set<uint32_t>* merging_blocks) const {
   assert(GetMergeBlock() && "This loop is not structured");
-  opt::CFG* cfg = context_->cfg();
+  CFG* cfg = context_->cfg();
   merging_blocks->clear();
 
-  std::stack<const opt::BasicBlock*> to_visit;
+  std::stack<const BasicBlock*> to_visit;
   to_visit.push(GetMergeBlock());
   while (!to_visit.empty()) {
-    const opt::BasicBlock* bb = to_visit.top();
+    const BasicBlock* bb = to_visit.top();
     to_visit.pop();
     merging_blocks->insert(bb->id());
     for (uint32_t pred_id : cfg->preds(bb->id())) {
@@ -386,7 +386,7 @@ void Loop::GetMergingBlocks(
 namespace {
 
 static inline bool IsBasicBlockSafeToClone(IRContext* context, BasicBlock* bb) {
-  for (opt::Instruction& inst : *bb) {
+  for (Instruction& inst : *bb) {
     if (!inst.IsBranch() && !context->IsCombinatorInstruction(&inst))
       return false;
   }
@@ -397,7 +397,7 @@ static inline bool IsBasicBlockSafeToClone(IRContext* context, BasicBlock* bb) {
 }  // namespace
 
 bool Loop::IsSafeToClone() const {
-  opt::CFG& cfg = *context_->cfg();
+  CFG& cfg = *context_->cfg();
 
   for (uint32_t bb_id : GetBlocks()) {
     BasicBlock* bb = cfg.block(bb_id);
@@ -421,14 +421,14 @@ bool Loop::IsSafeToClone() const {
 }
 
 bool Loop::IsLCSSA() const {
-  opt::CFG* cfg = context_->cfg();
-  opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+  CFG* cfg = context_->cfg();
+  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
   std::unordered_set<uint32_t> exit_blocks;
   GetExitBlocks(&exit_blocks);
 
   // Declare ir_context so we can capture context_ in the below lambda
-  opt::IRContext* ir_context = context_;
+  IRContext* ir_context = context_;
 
   for (uint32_t bb_id : GetBlocks()) {
     for (Instruction& insn : *cfg->block(bb_id)) {
@@ -437,7 +437,7 @@ bool Loop::IsLCSSA() const {
       //  - In an exit block and in a phi instruction.
       if (!def_use_mgr->WhileEachUser(
               &insn,
-              [&exit_blocks, ir_context, this](opt::Instruction* use) -> bool {
+              [&exit_blocks, ir_context, this](Instruction* use) -> bool {
                 BasicBlock* parent = ir_context->get_instr_block(use);
                 assert(parent && "Invalid analysis");
                 if (IsInsideLoop(parent)) return true;
@@ -456,7 +456,7 @@ bool Loop::ShouldHoistInstruction(IRContext* context, Instruction* inst) {
 }
 
 bool Loop::AreAllOperandsOutsideLoop(IRContext* context, Instruction* inst) {
-  opt::analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   bool all_outside_loop = true;
 
   const std::function<void(uint32_t*)> operand_outside_loop =
@@ -472,9 +472,9 @@ bool Loop::AreAllOperandsOutsideLoop(IRContext* context, Instruction* inst) {
 }
 
 void Loop::ComputeLoopStructuredOrder(
-    std::vector<opt::BasicBlock*>* ordered_loop_blocks, bool include_pre_header,
+    std::vector<BasicBlock*>* ordered_loop_blocks, bool include_pre_header,
     bool include_merge) const {
-  opt::CFG& cfg = *context_->cfg();
+  CFG& cfg = *context_->cfg();
 
   // Reserve the memory: all blocks in the loop + extra if needed.
   ordered_loop_blocks->reserve(GetBlocks().size() + include_pre_header +
@@ -498,15 +498,15 @@ LoopDescriptor::LoopDescriptor(IRContext* context, const Function* f)
 LoopDescriptor::~LoopDescriptor() { ClearLoops(); }
 
 void LoopDescriptor::PopulateList(IRContext* context, const Function* f) {
-  opt::DominatorAnalysis* dom_analysis = context->GetDominatorAnalysis(f);
+  DominatorAnalysis* dom_analysis = context->GetDominatorAnalysis(f);
 
   ClearLoops();
 
   // Post-order traversal of the dominator tree to find all the OpLoopMerge
   // instructions.
-  opt::DominatorTree& dom_tree = dom_analysis->GetDomTree();
-  for (opt::DominatorTreeNode& node :
-       opt::make_range(dom_tree.post_begin(), dom_tree.post_end())) {
+  DominatorTree& dom_tree = dom_analysis->GetDomTree();
+  for (DominatorTreeNode& node :
+       make_range(dom_tree.post_begin(), dom_tree.post_end())) {
     Instruction* merge_inst = node.bb_->GetLoopMergeInst();
     if (merge_inst) {
       bool all_backedge_unreachable = true;
@@ -560,8 +560,8 @@ void LoopDescriptor::PopulateList(IRContext* context, const Function* f) {
 
         current_loop->AddNestedLoop(previous_loop);
       }
-      opt::DominatorTreeNode* dom_merge_node = dom_tree.GetTreeNode(merge_bb);
-      for (opt::DominatorTreeNode& loop_node :
+      DominatorTreeNode* dom_merge_node = dom_tree.GetTreeNode(merge_bb);
+      for (DominatorTreeNode& loop_node :
            make_range(node.df_begin(), node.df_end())) {
         // Check if we are in the loop.
         if (dom_tree.Dominates(dom_merge_node, &loop_node)) continue;
@@ -576,14 +576,14 @@ void LoopDescriptor::PopulateList(IRContext* context, const Function* f) {
   }
 }
 
-std::vector<opt::Loop*> LoopDescriptor::GetLoopsInBinaryLayoutOrder() {
+std::vector<Loop*> LoopDescriptor::GetLoopsInBinaryLayoutOrder() {
   std::vector<uint32_t> ids{};
 
   for (size_t i = 0; i < NumLoops(); ++i) {
     ids.push_back(GetLoopByIndex(i).GetHeaderBlock()->id());
   }
 
-  std::vector<opt::Loop*> loops{};
+  std::vector<Loop*> loops{};
   if (!ids.empty()) {
     auto function = GetLoopByIndex(0).GetHeaderBlock()->GetParent();
     for (const auto& block : *function) {
@@ -599,11 +599,11 @@ std::vector<opt::Loop*> LoopDescriptor::GetLoopsInBinaryLayoutOrder() {
   return loops;
 }
 
-opt::BasicBlock* Loop::FindConditionBlock() const {
+BasicBlock* Loop::FindConditionBlock() const {
   if (!loop_merge_) {
     return nullptr;
   }
-  opt::BasicBlock* condition_block = nullptr;
+  BasicBlock* condition_block = nullptr;
 
   uint32_t in_loop_pred = 0;
   for (uint32_t p : context_->cfg()->preds(loop_merge_->id())) {
@@ -620,11 +620,11 @@ opt::BasicBlock* Loop::FindConditionBlock() const {
     return nullptr;
   }
 
-  opt::BasicBlock* bb = context_->cfg()->block(in_loop_pred);
+  BasicBlock* bb = context_->cfg()->block(in_loop_pred);
 
   if (!bb) return nullptr;
 
-  const opt::Instruction& branch = *bb->ctail();
+  const Instruction& branch = *bb->ctail();
 
   // Make sure the branch is a conditional branch.
   if (branch.opcode() != SpvOpBranchConditional) return nullptr;
@@ -638,33 +638,33 @@ opt::BasicBlock* Loop::FindConditionBlock() const {
   return condition_block;
 }
 
-bool Loop::FindNumberOfIterations(const opt::Instruction* induction,
-                                  const opt::Instruction* branch_inst,
+bool Loop::FindNumberOfIterations(const Instruction* induction,
+                                  const Instruction* branch_inst,
                                   size_t* iterations_out,
                                   int64_t* step_value_out,
                                   int64_t* init_value_out) const {
   // From the branch instruction find the branch condition.
-  opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
+  analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
 
   // Condition instruction from the OpConditionalBranch.
-  opt::Instruction* condition =
+  Instruction* condition =
       def_use_manager->GetDef(branch_inst->GetSingleWordOperand(0));
 
   assert(IsSupportedCondition(condition->opcode()));
 
   // Get the constant manager from the ir context.
-  opt::analysis::ConstantManager* const_manager = context_->get_constant_mgr();
+  analysis::ConstantManager* const_manager = context_->get_constant_mgr();
 
   // Find the constant value used by the condition variable. Exit out if it
   // isn't a constant int.
-  const opt::analysis::Constant* upper_bound =
+  const analysis::Constant* upper_bound =
       const_manager->FindDeclaredConstant(condition->GetSingleWordOperand(3));
   if (!upper_bound) return false;
 
   // Must be integer because of the opcode on the condition.
   int64_t condition_value = 0;
 
-  const opt::analysis::Integer* type =
+  const analysis::Integer* type =
       upper_bound->AsIntConstant()->type()->AsInteger();
 
   if (type->width() > 32) {
@@ -678,18 +678,18 @@ bool Loop::FindNumberOfIterations(const opt::Instruction* induction,
   }
 
   // Find the instruction which is stepping through the loop.
-  opt::Instruction* step_inst = GetInductionStepOperation(induction);
+  Instruction* step_inst = GetInductionStepOperation(induction);
   if (!step_inst) return false;
 
   // Find the constant value used by the condition variable.
-  const opt::analysis::Constant* step_constant =
+  const analysis::Constant* step_constant =
       const_manager->FindDeclaredConstant(step_inst->GetSingleWordOperand(3));
   if (!step_constant) return false;
 
   // Must be integer because of the opcode on the condition.
   int64_t step_value = 0;
 
-  const opt::analysis::Integer* step_type =
+  const analysis::Integer* step_type =
       step_constant->AsIntConstant()->type()->AsInteger();
 
   if (step_type->IsSigned()) {
@@ -831,34 +831,34 @@ int64_t Loop::GetIterations(SpvOp condition, int64_t condition_value,
 
 // Returns the list of induction variables within the loop.
 void Loop::GetInductionVariables(
-    std::vector<opt::Instruction*>& induction_variables) const {
-  for (opt::Instruction& inst : *loop_header_) {
+    std::vector<Instruction*>& induction_variables) const {
+  for (Instruction& inst : *loop_header_) {
     if (inst.opcode() == SpvOp::SpvOpPhi) {
       induction_variables.push_back(&inst);
     }
   }
 }
 
-opt::Instruction* Loop::FindConditionVariable(
-    const opt::BasicBlock* condition_block) const {
+Instruction* Loop::FindConditionVariable(
+    const BasicBlock* condition_block) const {
   // Find the branch instruction.
-  const opt::Instruction& branch_inst = *condition_block->ctail();
+  const Instruction& branch_inst = *condition_block->ctail();
 
-  opt::Instruction* induction = nullptr;
+  Instruction* induction = nullptr;
   // Verify that the branch instruction is a conditional branch.
   if (branch_inst.opcode() == SpvOp::SpvOpBranchConditional) {
     // From the branch instruction find the branch condition.
-    opt::analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
+    analysis::DefUseManager* def_use_manager = context_->get_def_use_mgr();
 
     // Find the instruction representing the condition used in the conditional
     // branch.
-    opt::Instruction* condition =
+    Instruction* condition =
         def_use_manager->GetDef(branch_inst.GetSingleWordOperand(0));
 
     // Ensure that the condition is a less than operation.
     if (condition && IsSupportedCondition(condition->opcode())) {
       // The left hand side operand of the operation.
-      opt::Instruction* variable_inst =
+      Instruction* variable_inst =
           def_use_manager->GetDef(condition->GetSingleWordOperand(2));
 
       // Make sure the variable instruction used is a phi.
@@ -922,7 +922,7 @@ bool LoopDescriptor::CreatePreHeaderBlocksIfMissing() {
 // maintain the state of the loop descriptor class.
 void LoopDescriptor::PostModificationCleanup() {
   LoopContainerType loops_to_remove_;
-  for (opt::Loop* loop : loops_) {
+  for (Loop* loop : loops_) {
     if (loop->IsMarkedForRemoval()) {
       loops_to_remove_.push_back(loop);
       if (loop->HasParent()) {
@@ -931,13 +931,13 @@ void LoopDescriptor::PostModificationCleanup() {
     }
   }
 
-  for (opt::Loop* loop : loops_to_remove_) {
+  for (Loop* loop : loops_to_remove_) {
     loops_.erase(std::find(loops_.begin(), loops_.end(), loop));
   }
 
   for (auto& pair : loops_to_add_) {
-    opt::Loop* parent = pair.first;
-    opt::Loop* loop = pair.second;
+    Loop* parent = pair.first;
+    Loop* loop = pair.second;
 
     if (parent) {
       loop->SetParent(nullptr);
@@ -962,12 +962,12 @@ void LoopDescriptor::ClearLoops() {
 }
 
 // Adds a new loop nest to the descriptor set.
-opt::Loop* LoopDescriptor::AddLoopNest(std::unique_ptr<opt::Loop> new_loop) {
-  opt::Loop* loop = new_loop.release();
+Loop* LoopDescriptor::AddLoopNest(std::unique_ptr<Loop> new_loop) {
+  Loop* loop = new_loop.release();
   if (!loop->HasParent()) dummy_top_loop_.nested_loops_.push_back(loop);
   // Iterate from inner to outer most loop, adding basic block to loop mapping
   // as we go.
-  for (opt::Loop& current_loop :
+  for (Loop& current_loop :
        make_range(iterator::begin(loop), iterator::end(nullptr))) {
     loops_.push_back(&current_loop);
     for (uint32_t bb_id : current_loop.GetBlocks())
@@ -977,18 +977,18 @@ opt::Loop* LoopDescriptor::AddLoopNest(std::unique_ptr<opt::Loop> new_loop) {
   return loop;
 }
 
-void LoopDescriptor::RemoveLoop(opt::Loop* loop) {
-  opt::Loop* parent = loop->GetParent() ? loop->GetParent() : &dummy_top_loop_;
+void LoopDescriptor::RemoveLoop(Loop* loop) {
+  Loop* parent = loop->GetParent() ? loop->GetParent() : &dummy_top_loop_;
   parent->nested_loops_.erase(std::find(parent->nested_loops_.begin(),
                                         parent->nested_loops_.end(), loop));
   std::for_each(
       loop->nested_loops_.begin(), loop->nested_loops_.end(),
-      [loop](opt::Loop* sub_loop) { sub_loop->SetParent(loop->GetParent()); });
+      [loop](Loop* sub_loop) { sub_loop->SetParent(loop->GetParent()); });
   parent->nested_loops_.insert(parent->nested_loops_.end(),
                                loop->nested_loops_.begin(),
                                loop->nested_loops_.end());
   for (uint32_t bb_id : loop->GetBlocks()) {
-    opt::Loop* l = FindLoopForBasicBlock(bb_id);
+    Loop* l = FindLoopForBasicBlock(bb_id);
     if (l == loop) {
       SetBasicBlockToLoop(bb_id, l->GetParent());
     } else {

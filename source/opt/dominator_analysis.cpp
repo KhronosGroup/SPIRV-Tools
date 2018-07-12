@@ -21,12 +21,12 @@
 namespace spvtools {
 namespace opt {
 
-opt::BasicBlock* DominatorAnalysisBase::CommonDominator(
-    opt::BasicBlock* b1, opt::BasicBlock* b2) const {
+BasicBlock* DominatorAnalysisBase::CommonDominator(BasicBlock* b1,
+                                                   BasicBlock* b2) const {
   if (!b1 || !b2) return nullptr;
 
-  std::unordered_set<opt::BasicBlock*> seen;
-  opt::BasicBlock* block = b1;
+  std::unordered_set<BasicBlock*> seen;
+  BasicBlock* block = b1;
   while (block && seen.insert(block).second) {
     block = ImmediateDominator(block);
   }
@@ -39,8 +39,7 @@ opt::BasicBlock* DominatorAnalysisBase::CommonDominator(
   return block;
 }
 
-bool DominatorAnalysisBase::Dominates(opt::Instruction* a,
-                                      opt::Instruction* b) const {
+bool DominatorAnalysisBase::Dominates(Instruction* a, Instruction* b) const {
   if (!a || !b) {
     return false;
   }
@@ -49,14 +48,14 @@ bool DominatorAnalysisBase::Dominates(opt::Instruction* a,
     return true;
   }
 
-  opt::BasicBlock* bb_a = a->context()->get_instr_block(a);
-  opt::BasicBlock* bb_b = b->context()->get_instr_block(b);
+  BasicBlock* bb_a = a->context()->get_instr_block(a);
+  BasicBlock* bb_b = b->context()->get_instr_block(b);
 
   if (bb_a != bb_b) {
     return tree_.Dominates(bb_a, bb_b);
   }
 
-  opt::Instruction* current_inst = a;
+  Instruction* current_inst = a;
   while ((current_inst = current_inst->NextNode())) {
     if (current_inst == b) {
       return true;

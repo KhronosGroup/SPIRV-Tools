@@ -27,7 +27,7 @@ namespace opt {
 namespace {
 
 // Append all the loops nested in |loop| to |loops|.
-void CollectChildren(opt::Loop* loop, std::vector<const opt::Loop*>* loops) {
+void CollectChildren(Loop* loop, std::vector<const Loop*>* loops) {
   for (auto child : *loop) {
     loops->push_back(child);
     if (child->NumImmediateChildren() != 0) {
@@ -37,10 +37,10 @@ void CollectChildren(opt::Loop* loop, std::vector<const opt::Loop*>* loops) {
 }
 
 // Return the set of locations accessed by |stores| and |loads|.
-std::set<opt::Instruction*> GetLocationsAccessed(
-    const std::map<opt::Instruction*, std::vector<opt::Instruction*>>& stores,
-    const std::map<opt::Instruction*, std::vector<opt::Instruction*>>& loads) {
-  std::set<opt::Instruction*> locations{};
+std::set<Instruction*> GetLocationsAccessed(
+    const std::map<Instruction*, std::vector<Instruction*>>& stores,
+    const std::map<Instruction*, std::vector<Instruction*>>& loads) {
+  std::set<Instruction*> locations{};
 
   for (const auto& kv : stores) {
     locations.insert(std::get<0>(kv));
@@ -56,8 +56,8 @@ std::set<opt::Instruction*> GetLocationsAccessed(
 // Append all dependences from |sources| to |destinations| to |dependences|.
 void GetDependences(std::vector<DistanceVector>* dependences,
                     LoopDependenceAnalysis* analysis,
-                    const std::vector<opt::Instruction*>& sources,
-                    const std::vector<opt::Instruction*>& destinations,
+                    const std::vector<Instruction*>& sources,
+                    const std::vector<Instruction*>& destinations,
                     size_t num_entries) {
   for (auto source : sources) {
     for (auto destination : destinations) {
@@ -70,8 +70,8 @@ void GetDependences(std::vector<DistanceVector>* dependences,
 }
 
 // Apped all instructions in |block| to |instructions|.
-void AddInstructionsInBlock(std::vector<opt::Instruction*>* instructions,
-                            opt::BasicBlock* block) {
+void AddInstructionsInBlock(std::vector<Instruction*>* instructions,
+                            BasicBlock* block) {
   for (auto& inst : *block) {
     instructions->push_back(&inst);
   }
@@ -81,13 +81,13 @@ void AddInstructionsInBlock(std::vector<opt::Instruction*>* instructions,
 
 }  // namespace
 
-bool LoopFusion::UsedInContinueOrConditionBlock(
-    opt::Instruction* phi_instruction, opt::Loop* loop) {
+bool LoopFusion::UsedInContinueOrConditionBlock(Instruction* phi_instruction,
+                                                Loop* loop) {
   auto condition_block = loop->FindConditionBlock()->id();
   auto continue_block = loop->GetContinueBlock()->id();
   auto not_used = context_->get_def_use_mgr()->WhileEachUser(
       phi_instruction,
-      [this, condition_block, continue_block](opt::Instruction* instruction) {
+      [this, condition_block, continue_block](Instruction* instruction) {
         auto block_id = context_->get_instr_block(instruction)->id();
         return block_id != condition_block && block_id != continue_block;
       });
@@ -96,10 +96,10 @@ bool LoopFusion::UsedInContinueOrConditionBlock(
 }
 
 void LoopFusion::RemoveIfNotUsedContinueOrConditionBlock(
-    std::vector<opt::Instruction*>* instructions, opt::Loop* loop) {
+    std::vector<Instruction*>* instructions, Loop* loop) {
   instructions->erase(
       std::remove_if(std::begin(*instructions), std::end(*instructions),
-                     [this, loop](opt::Instruction* instruction) {
+                     [this, loop](Instruction* instruction) {
                        return !UsedInContinueOrConditionBlock(instruction,
                                                               loop);
                      }),
@@ -132,7 +132,7 @@ bool LoopFusion::AreCompatible() {
 
   // |GetInductionVariables| returns all OpPhi in the header. Check that both
   // loops have exactly one that is used in the continue and condition blocks.
-  std::vector<opt::Instruction*> inductions_0{}, inductions_1{};
+  std::vector<Instruction*> inductions_0{}, inductions_1{};
   loop_0_->GetInductionVariables(inductions_0);
   RemoveIfNotUsedContinueOrConditionBlock(&inductions_0, loop_0_);
 
@@ -169,7 +169,7 @@ bool LoopFusion::AreCompatible() {
 
   auto pre_header_1 = loop_1_->GetPreHeaderBlock();
 
-  std::vector<opt::BasicBlock*> block_to_check{};
+  std::vector<BasicBlock*> block_to_check{};
   block_to_check.push_back(pre_header_1);
 
   if (loop_0_->GetMergeBlock() != loop_1_->GetPreHeaderBlock()) {
@@ -208,7 +208,7 @@ bool LoopFusion::AreCompatible() {
         auto is_used = false;
         context_->get_def_use_mgr()->ForEachUse(
             inst.GetSingleWordInOperand(0),
-            [&is_used](opt::Instruction* use_inst, uint32_t) {
+            [&is_used](Instruction* use_inst, uint32_t) {
               if (use_inst->opcode() == SpvOpLoad) {
                 is_used = true;
               }
@@ -230,7 +230,7 @@ bool LoopFusion::AreCompatible() {
   return true;
 }  // namespace opt
 
-bool LoopFusion::ContainsBarriersOrFunctionCalls(opt::Loop* loop) {
+bool LoopFusion::ContainsBarriersOrFunctionCalls(Loop* loop) {
   for (const auto& block : loop->GetBlocks()) {
     for (const auto& inst : *containing_function_->FindBlock(block)) {
       auto opcode = inst.opcode();
@@ -336,9 +336,9 @@ bool LoopFusion::CheckStep() {
   return true;
 }
 
-std::map<opt::Instruction*, std::vector<opt::Instruction*>>
-LoopFusion::LocationToMemOps(const std::vector<opt::Instruction*>& mem_ops) {
-  std::map<opt::Instruction*, std::vector<opt::Instruction*>> location_map{};
+std::map<Instruction*, std::vector<Instruction*>> LoopFusion::LocationToMemOps(
+    const std::vector<Instruction*>& mem_ops) {
+  std::map<Instruction*, std::vector<Instruction*>> location_map{};
 
   for (auto instruction : mem_ops) {
     auto access_location = context_->get_def_use_mgr()->GetDef(
@@ -355,10 +355,10 @@ LoopFusion::LocationToMemOps(const std::vector<opt::Instruction*>& mem_ops) {
   return location_map;
 }
 
-std::pair<std::vector<opt::Instruction*>, std::vector<opt::Instruction*>>
-LoopFusion::GetLoadsAndStoresInLoop(opt::Loop* loop) {
-  std::vector<opt::Instruction*> loads{};
-  std::vector<opt::Instruction*> stores{};
+std::pair<std::vector<Instruction*>, std::vector<Instruction*>>
+LoopFusion::GetLoadsAndStoresInLoop(Loop* loop) {
+  std::vector<Instruction*> loads{};
+  std::vector<Instruction*> stores{};
 
   for (auto block_id : loop->GetBlocks()) {
     if (block_id == loop->GetContinueBlock()->id()) {
@@ -377,9 +377,9 @@ LoopFusion::GetLoadsAndStoresInLoop(opt::Loop* loop) {
   return std::make_pair(loads, stores);
 }
 
-bool LoopFusion::IsUsedInLoop(opt::Instruction* instruction, opt::Loop* loop) {
+bool LoopFusion::IsUsedInLoop(Instruction* instruction, Loop* loop) {
   auto not_used = context_->get_def_use_mgr()->WhileEachUser(
-      instruction, [this, loop](opt::Instruction* user) {
+      instruction, [this, loop](Instruction* user) {
         auto block_id = context_->get_instr_block(user)->id();
         return !loop->IsInsideLoop(block_id);
       });
@@ -397,7 +397,7 @@ bool LoopFusion::IsLegal() {
     return false;
   }
 
-  std::vector<opt::Instruction*> phi_instructions{};
+  std::vector<Instruction*> phi_instructions{};
   loop_0_->GetInductionVariables(phi_instructions);
 
   // Check no OpPhi in |loop_0_| is used in |loop_1_|.
@@ -410,7 +410,7 @@ bool LoopFusion::IsLegal() {
   // Check no LCSSA OpPhi in merge block of |loop_0_| is used in |loop_1_|.
   auto phi_used = false;
   loop_0_->GetMergeBlock()->ForEachPhiInst(
-      [this, &phi_used](opt::Instruction* phi_instruction) {
+      [this, &phi_used](Instruction* phi_instruction) {
         phi_used |= IsUsedInLoop(phi_instruction, loop_1_);
       });
 
@@ -433,7 +433,7 @@ bool LoopFusion::IsLegal() {
   auto locations_0 = GetLocationsAccessed(store_locs_0, load_locs_0);
   auto locations_1 = GetLocationsAccessed(store_locs_1, load_locs_1);
 
-  std::vector<opt::Instruction*> potential_clashes{};
+  std::vector<Instruction*> potential_clashes{};
 
   std::set_intersection(std::begin(locations_0), std::end(locations_0),
                         std::begin(locations_1), std::end(locations_1),
@@ -445,7 +445,7 @@ bool LoopFusion::IsLegal() {
   }
 
   // Find variables that have at least one store.
-  std::vector<opt::Instruction*> potential_clashes_with_stores{};
+  std::vector<Instruction*> potential_clashes_with_stores{};
   for (auto location : potential_clashes) {
     if (store_locs_0.find(location) != std::end(store_locs_0) ||
         store_locs_1.find(location) != std::end(store_locs_1)) {
@@ -463,7 +463,7 @@ bool LoopFusion::IsLegal() {
   // distance.
 
   // Find all the loops in this loop nest for the dependency analysis.
-  std::vector<const opt::Loop*> loops{};
+  std::vector<const Loop*> loops{};
 
   // Find the parents.
   for (auto current_loop = loop_0_; current_loop != nullptr;
@@ -519,7 +519,7 @@ bool LoopFusion::IsLegal() {
   return true;
 }
 
-void ReplacePhiParentWith(opt::Instruction* inst, uint32_t orig_block,
+void ReplacePhiParentWith(Instruction* inst, uint32_t orig_block,
                           uint32_t new_block) {
   if (inst->GetSingleWordInOperand(1) == orig_block) {
     inst->SetInOperand(1, {new_block});
@@ -555,7 +555,7 @@ void LoopFusion::Fuse() {
 
   // Update merge block id in the header of |loop_0_| to the merge block of
   // |loop_1_|.
-  loop_0_->GetHeaderBlock()->ForEachInst([this](opt::Instruction* inst) {
+  loop_0_->GetHeaderBlock()->ForEachInst([this](Instruction* inst) {
     if (inst->opcode() == SpvOpLoopMerge) {
       inst->SetInOperand(0, {loop_1_->GetMergeBlock()->id()});
     }
@@ -563,7 +563,7 @@ void LoopFusion::Fuse() {
 
   // Update condition branch target in |loop_0_| to the merge block of
   // |loop_1_|.
-  condition_block_of_0->ForEachInst([this](opt::Instruction* inst) {
+  condition_block_of_0->ForEachInst([this](Instruction* inst) {
     if (inst->opcode() == SpvOpBranchConditional) {
       auto loop_0_merge_block_id = loop_0_->GetMergeBlock()->id();
 
@@ -577,7 +577,7 @@ void LoopFusion::Fuse() {
 
   // Move OpPhi instructions not corresponding to the induction variable from
   // the header of |loop_1_| to the header of |loop_0_|.
-  std::vector<opt::Instruction*> instructions_to_move{};
+  std::vector<Instruction*> instructions_to_move{};
   for (auto& instruction : *loop_1_->GetHeaderBlock()) {
     if (instruction.opcode() == SpvOpPhi && &instruction != induction_1_) {
       instructions_to_move.push_back(&instruction);
@@ -590,7 +590,7 @@ void LoopFusion::Fuse() {
   }
 
   // Update the OpPhi parents to the correct blocks in |loop_0_|.
-  loop_0_->GetHeaderBlock()->ForEachPhiInst([this](opt::Instruction* i) {
+  loop_0_->GetHeaderBlock()->ForEachPhiInst([this](Instruction* i) {
     ReplacePhiParentWith(i, loop_1_->GetPreHeaderBlock()->id(),
                          loop_0_->GetPreHeaderBlock()->id());
 
@@ -610,15 +610,14 @@ void LoopFusion::Fuse() {
                                induction_0_->result_id());
 
   // Replace LCSSA OpPhi in merge block of |loop_0_|.
-  loop_0_->GetMergeBlock()->ForEachPhiInst(
-      [this](opt::Instruction* instruction) {
-        context_->ReplaceAllUsesWith(instruction->result_id(),
-                                     instruction->GetSingleWordInOperand(0));
-      });
+  loop_0_->GetMergeBlock()->ForEachPhiInst([this](Instruction* instruction) {
+    context_->ReplaceAllUsesWith(instruction->result_id(),
+                                 instruction->GetSingleWordInOperand(0));
+  });
 
   // Update LCSSA OpPhi in merge block of |loop_1_|.
   loop_1_->GetMergeBlock()->ForEachPhiInst(
-      [condition_block_of_0](opt::Instruction* instruction) {
+      [condition_block_of_0](Instruction* instruction) {
         instruction->SetInOperand(1, {condition_block_of_0->id()});
       });
 
@@ -627,7 +626,7 @@ void LoopFusion::Fuse() {
 
   // Gather all instructions to be killed from |loop_1_| (induction variable
   // initialisation, header, condition and continue blocks).
-  std::vector<opt::Instruction*> instr_to_delete{};
+  std::vector<Instruction*> instr_to_delete{};
   AddInstructionsInBlock(&instr_to_delete, loop_1_->GetPreHeaderBlock());
   AddInstructionsInBlock(&instr_to_delete, loop_1_->GetHeaderBlock());
   AddInstructionsInBlock(&instr_to_delete, loop_1_->FindConditionBlock());
@@ -673,7 +672,7 @@ void LoopFusion::Fuse() {
   auto ld = context_->GetLoopDescriptor(containing_function_);
 
   // Create a copy, so the iterator wouldn't be invalidated.
-  std::vector<opt::Loop*> loops_to_add_remove{};
+  std::vector<Loop*> loops_to_add_remove{};
   for (auto child_loop : *loop_1_) {
     loops_to_add_remove.push_back(child_loop);
   }
@@ -722,10 +721,9 @@ void LoopFusion::Fuse() {
 
   // Invalidate analyses.
   context_->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisInstrToBlockMapping |
-      opt::IRContext::Analysis::kAnalysisLoopAnalysis |
-      opt::IRContext::Analysis::kAnalysisDefUse |
-      opt::IRContext::Analysis::kAnalysisCFG);
+      IRContext::Analysis::kAnalysisInstrToBlockMapping |
+      IRContext::Analysis::kAnalysisLoopAnalysis |
+      IRContext::Analysis::kAnalysisDefUse | IRContext::Analysis::kAnalysisCFG);
 }
 
 }  // namespace opt

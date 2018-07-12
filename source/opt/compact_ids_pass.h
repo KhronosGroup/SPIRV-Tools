@@ -29,10 +29,10 @@ class CompactIdsPass : public Pass {
   Status Process() override;
 
   // Return the mask of preserved Analyses.
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisInstrToBlockMapping |
-           opt::IRContext::kAnalysisDominatorAnalysis |
-           opt::IRContext::kAnalysisLoopAnalysis;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisDominatorAnalysis |
+           IRContext::kAnalysisLoopAnalysis;
   }
 };
 

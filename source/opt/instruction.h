@@ -458,7 +458,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 // to provide the correct interpretation of types, constants, etc.
 //
 // Disassembly uses raw ids (not pretty printed names).
-std::ostream& operator<<(std::ostream& str, const opt::Instruction& inst);
+std::ostream& operator<<(std::ostream& str, const Instruction& inst);
 
 inline bool Instruction::operator==(const Instruction& other) const {
   return unique_id() == other.unique_id();

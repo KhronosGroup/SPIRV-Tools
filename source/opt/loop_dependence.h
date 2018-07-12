@@ -167,7 +167,7 @@ class DependenceEmpty;
 
 class Constraint {
  public:
-  explicit Constraint(const opt::Loop* loop) : loop_(loop) {}
+  explicit Constraint(const Loop* loop) : loop_(loop) {}
   enum ConstraintType { Line, Distance, Point, None, Empty };
 
   virtual ConstraintType GetType() const = 0;
@@ -175,7 +175,7 @@ class Constraint {
   virtual ~Constraint() {}
 
   // Get the loop this constraint belongs to.
-  const opt::Loop* GetLoop() const { return loop_; }
+  const Loop* GetLoop() const { return loop_; }
 
   bool operator==(const Constraint& other) const;
 
@@ -192,12 +192,12 @@ class Constraint {
 #undef DeclareCastMethod
 
  protected:
-  const opt::Loop* loop_;
+  const Loop* loop_;
 };
 
 class DependenceLine : public Constraint {
  public:
-  DependenceLine(SENode* a, SENode* b, SENode* c, const opt::Loop* loop)
+  DependenceLine(SENode* a, SENode* b, SENode* c, const Loop* loop)
       : Constraint(loop), a_(a), b_(b), c_(c) {}
 
   ConstraintType GetType() const final { return Line; }
@@ -217,7 +217,7 @@ class DependenceLine : public Constraint {
 
 class DependenceDistance : public Constraint {
  public:
-  DependenceDistance(SENode* distance, const opt::Loop* loop)
+  DependenceDistance(SENode* distance, const Loop* loop)
       : Constraint(loop), distance_(distance) {}
 
   ConstraintType GetType() const final { return Distance; }
@@ -233,7 +233,7 @@ class DependenceDistance : public Constraint {
 
 class DependencePoint : public Constraint {
  public:
-  DependencePoint(SENode* source, SENode* destination, const opt::Loop* loop)
+  DependencePoint(SENode* source, SENode* destination, const Loop* loop)
       : Constraint(loop), source_(source), destination_(destination) {}
 
   ConstraintType GetType() const final { return Point; }
@@ -294,8 +294,7 @@ class DependenceEmpty : public Constraint {
 // is present in the pair.
 class LoopDependenceAnalysis {
  public:
-  LoopDependenceAnalysis(opt::IRContext* context,
-                         std::vector<const opt::Loop*> loops)
+  LoopDependenceAnalysis(IRContext* context, std::vector<const Loop*> loops)
       : context_(context),
         loops_(loops),
         scalar_evolution_(context),
@@ -308,8 +307,7 @@ class LoopDependenceAnalysis {
   // Any direction and distance information found will be stored in
   // |distance_vector|.
   // Returns true if independence is found, false otherwise.
-  bool GetDependence(const opt::Instruction* source,
-                     const opt::Instruction* destination,
+  bool GetDependence(const Instruction* source, const Instruction* destination,
                      DistanceVector* distance_vector);
 
   // Returns true if |subscript_pair| represents a Zero Index Variable pair
@@ -326,11 +324,11 @@ class LoopDependenceAnalysis {
 
   // Finds the lower bound of |loop| as an SENode* and returns the result.
   // The lower bound is the starting value of the loops induction variable
-  SENode* GetLowerBound(const opt::Loop* loop);
+  SENode* GetLowerBound(const Loop* loop);
 
   // Finds the upper bound of |loop| as an SENode* and returns the result.
   // The upper bound is the last value before the loop exit condition is met.
-  SENode* GetUpperBound(const opt::Loop* loop);
+  SENode* GetUpperBound(const Loop* loop);
 
   // Returns true if |value| is between |bound_one| and |bound_two| (inclusive).
   bool IsWithinBounds(int64_t value, int64_t bound_one, int64_t bound_two);
@@ -338,32 +336,32 @@ class LoopDependenceAnalysis {
   // Finds the bounds of |loop| as upper_bound - lower_bound and returns the
   // resulting SENode.
   // If the operations can not be completed a nullptr is returned.
-  SENode* GetTripCount(const opt::Loop* loop);
+  SENode* GetTripCount(const Loop* loop);
 
   // Returns the SENode* produced by building an SENode from the result of
   // calling GetInductionInitValue on |loop|.
   // If the operation can not be completed a nullptr is returned.
-  SENode* GetFirstTripInductionNode(const opt::Loop* loop);
+  SENode* GetFirstTripInductionNode(const Loop* loop);
 
   // Returns the SENode* produced by building an SENode from the result of
   // GetFirstTripInductionNode + (GetTripCount - 1) * induction_coefficient.
   // If the operation can not be completed a nullptr is returned.
-  SENode* GetFinalTripInductionNode(const opt::Loop* loop,
+  SENode* GetFinalTripInductionNode(const Loop* loop,
                                     SENode* induction_coefficient);
 
   // Returns all the distinct loops that appear in |nodes|.
-  std::set<const opt::Loop*> CollectLoops(
+  std::set<const Loop*> CollectLoops(
       const std::vector<SERecurrentNode*>& nodes);
 
   // Returns all the distinct loops that appear in |source| and |destination|.
-  std::set<const opt::Loop*> CollectLoops(SENode* source, SENode* destination);
+  std::set<const Loop*> CollectLoops(SENode* source, SENode* destination);
 
   // Returns true if |distance| is provably outside the loop bounds.
   // |coefficient| must be an SENode representing the coefficient of the
   // induction variable of |loop|.
   // This method is able to handle some symbolic cases which IsWithinBounds
   // can't handle.
-  bool IsProvablyOutsideOfLoopBounds(const opt::Loop* loop, SENode* distance,
+  bool IsProvablyOutsideOfLoopBounds(const Loop* loop, SENode* distance,
                                      SENode* coefficient);
 
   // Sets the ostream for debug information for the analysis.
@@ -393,14 +391,14 @@ class LoopDependenceAnalysis {
   // Returns the partitioning of subscript pairs. Sets of size 1 indicates an
   // independent subscript-pair and others indicate coupled sets.
   using PartitionedSubscripts =
-      std::vector<std::set<std::pair<opt::Instruction*, opt::Instruction*>>>;
+      std::vector<std::set<std::pair<Instruction*, Instruction*>>>;
   PartitionedSubscripts PartitionSubscripts(
-      const std::vector<opt::Instruction*>& source_subscripts,
-      const std::vector<opt::Instruction*>& destination_subscripts);
+      const std::vector<Instruction*>& source_subscripts,
+      const std::vector<Instruction*>& destination_subscripts);
 
-  // Returns the opt::Loop* matching the loop for |subscript_pair|.
+  // Returns the Loop* matching the loop for |subscript_pair|.
   // |subscript_pair| must be an SIV pair.
-  const opt::Loop* GetLoopForSubscriptPair(
+  const Loop* GetLoopForSubscriptPair(
       const std::pair<SENode*, SENode*>& subscript_pair);
 
   // Returns the DistanceEntry matching the loop for |subscript_pair|.
@@ -410,13 +408,12 @@ class LoopDependenceAnalysis {
       DistanceVector* distance_vector);
 
   // Returns the DistanceEntry matching |loop|.
-  DistanceEntry* GetDistanceEntryForLoop(const opt::Loop* loop,
+  DistanceEntry* GetDistanceEntryForLoop(const Loop* loop,
                                          DistanceVector* distance_vector);
 
   // Returns a vector of Instruction* which form the subscripts of the array
   // access defined by the access chain |instruction|.
-  std::vector<opt::Instruction*> GetSubscripts(
-      const opt::Instruction* instruction);
+  std::vector<Instruction*> GetSubscripts(const Instruction* instruction);
 
   // Delta test as described in Figure 3 of 'Practical Dependence
   // Testing' by Gina Goff, Ken Kennedy, and Chau-Wen Tseng from PLDI '91.
@@ -441,18 +438,18 @@ class LoopDependenceAnalysis {
   // analysis.
   // A loop is supported if it has a single induction variable and that
   // induction variable has a step of +1 or -1 per loop iteration.
-  bool CheckSupportedLoops(std::vector<const opt::Loop*> loops);
+  bool CheckSupportedLoops(std::vector<const Loop*> loops);
 
   // Returns true if |loop| is in a form supported by this analysis.
   // A loop is supported if it has a single induction variable and that
   // induction variable has a step of +1 or -1 per loop iteration.
-  bool IsSupportedLoop(const opt::Loop* loop);
+  bool IsSupportedLoop(const Loop* loop);
 
  private:
-  opt::IRContext* context_;
+  IRContext* context_;
 
   // The loop nest we are analysing the dependence of.
-  std::vector<const opt::Loop*> loops_;
+  std::vector<const Loop*> loops_;
 
   // The ScalarEvolutionAnalysis used by this analysis to store and perform much
   // of its logic.
@@ -514,8 +511,7 @@ class LoopDependenceAnalysis {
 
   // Uses the def_use_mgr to get the instruction referenced by
   // SingleWordInOperand(|id|) when called on |instruction|.
-  opt::Instruction* GetOperandDefinition(const opt::Instruction* instruction,
-                                         int id);
+  Instruction* GetOperandDefinition(const Instruction* instruction, int id);
 
   // Perform the GCD test if both, the source and the destination nodes, are in
   // the form a0*i0 + a1*i1 + ... an*in + c.
@@ -533,14 +529,14 @@ class LoopDependenceAnalysis {
   // Takes the offset from the induction variable and subtracts the lower bound
   // from it to get the constant term added to the induction.
   // Returns the resuting constant term, or nullptr if it could not be produced.
-  SENode* GetConstantTerm(const opt::Loop* loop, SERecurrentNode* induction);
+  SENode* GetConstantTerm(const Loop* loop, SERecurrentNode* induction);
 
   // Marks all the distance entries in |distance_vector| that were relate to
   // loops in |loops_| but were not used in any subscripts as irrelevant to the
   // to the dependence test.
-  void MarkUnsusedDistanceEntriesAsIrrelevant(
-      const opt::Instruction* source, const opt::Instruction* destination,
-      DistanceVector* distance_vector);
+  void MarkUnsusedDistanceEntriesAsIrrelevant(const Instruction* source,
+                                              const Instruction* destination,
+                                              DistanceVector* distance_vector);
 
   // Converts |value| to a std::string and returns the result.
   // This is required because Android does not compile std::to_string.

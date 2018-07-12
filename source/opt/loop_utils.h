@@ -28,7 +28,7 @@ namespace opt {
 // So far it counts the number of instructions in a ROI (excluding debug
 // and label instructions) per basic block and in total.
 struct CodeMetrics {
-  void Analyze(const opt::Loop& loop);
+  void Analyze(const Loop& loop);
 
   // The number of instructions per basic block in the ROI.
   std::unordered_map<uint32_t, size_t> block_sizes_;
@@ -45,8 +45,8 @@ class LoopUtils {
   // Holds a auxiliary results of the loop cloning procedure.
   struct LoopCloningResult {
     using ValueMapTy = std::unordered_map<uint32_t, uint32_t>;
-    using BlockMapTy = std::unordered_map<uint32_t, opt::BasicBlock*>;
-    using PtrMap = std::unordered_map<opt::Instruction*, opt::Instruction*>;
+    using BlockMapTy = std::unordered_map<uint32_t, BasicBlock*>;
+    using PtrMap = std::unordered_map<Instruction*, Instruction*>;
 
     PtrMap ptr_map_;
 
@@ -57,10 +57,10 @@ class LoopUtils {
     // Mapping between the cloned loop blocks to original one.
     BlockMapTy new_to_old_bb_;
     // List of cloned basic block.
-    std::vector<std::unique_ptr<opt::BasicBlock>> cloned_bb_;
+    std::vector<std::unique_ptr<BasicBlock>> cloned_bb_;
   };
 
-  LoopUtils(opt::IRContext* context, opt::Loop* loop)
+  LoopUtils(IRContext* context, Loop* loop)
       : context_(context),
         loop_desc_(
             context->GetLoopDescriptor(loop->GetHeaderBlock()->GetParent())),
@@ -111,15 +111,14 @@ class LoopUtils {
   // The function preserves the def/use, cfg and instr to block analyses.
   // The cloned loop nest will be added to the loop descriptor and will have
   // ownership.
-  opt::Loop* CloneLoop(
-      LoopCloningResult* cloning_result,
-      const std::vector<opt::BasicBlock*>& ordered_loop_blocks) const;
+  Loop* CloneLoop(LoopCloningResult* cloning_result,
+                  const std::vector<BasicBlock*>& ordered_loop_blocks) const;
   // Clone |loop_| and remap its instructions, as above. Overload to compute
   // loop block ordering within method rather than taking in as parameter.
-  opt::Loop* CloneLoop(LoopCloningResult* cloning_result) const;
+  Loop* CloneLoop(LoopCloningResult* cloning_result) const;
 
   // Clone the |loop_| and make the new loop branch to the second loop on exit.
-  opt::Loop* CloneAndAttachLoopToHeader(LoopCloningResult* cloning_result);
+  Loop* CloneAndAttachLoopToHeader(LoopCloningResult* cloning_result);
 
   // Perfom a partial unroll of |loop| by given |factor|. This will copy the
   // body of the loop |factor| times. So a |factor| of one would give a new loop
@@ -151,26 +150,26 @@ class LoopUtils {
   void Finalize();
 
   // Returns the context associate to |loop_|.
-  opt::IRContext* GetContext() { return context_; }
+  IRContext* GetContext() { return context_; }
   // Returns the loop descriptor owning |loop_|.
-  opt::LoopDescriptor* GetLoopDescriptor() { return loop_desc_; }
+  LoopDescriptor* GetLoopDescriptor() { return loop_desc_; }
   // Returns the loop on which the object operates on.
-  opt::Loop* GetLoop() const { return loop_; }
+  Loop* GetLoop() const { return loop_; }
   // Returns the function that |loop_| belong to.
-  opt::Function* GetFunction() const { return &function_; }
+  Function* GetFunction() const { return &function_; }
 
  private:
-  opt::IRContext* context_;
-  opt::LoopDescriptor* loop_desc_;
-  opt::Loop* loop_;
-  opt::Function& function_;
+  IRContext* context_;
+  LoopDescriptor* loop_desc_;
+  Loop* loop_;
+  Function& function_;
 
   // Populates the loop nest of |new_loop| according to |loop_| nest.
-  void PopulateLoopNest(opt::Loop* new_loop,
+  void PopulateLoopNest(Loop* new_loop,
                         const LoopCloningResult& cloning_result) const;
 
   // Populates |new_loop| descriptor according to |old_loop|'s one.
-  void PopulateLoopDesc(opt::Loop* new_loop, opt::Loop* old_loop,
+  void PopulateLoopDesc(Loop* new_loop, Loop* old_loop,
                         const LoopCloningResult& cloning_result) const;
 };
 

@@ -34,20 +34,19 @@ namespace opt {
 
 // See optimizer.hpp for documentation.
 class LocalMultiStoreElimPass : public MemPass {
-  using cbb_ptr = const opt::BasicBlock*;
+  using cbb_ptr = const BasicBlock*;
 
  public:
   using GetBlocksFunction =
-      std::function<std::vector<opt::BasicBlock*>*(const opt::BasicBlock*)>;
+      std::function<std::vector<BasicBlock*>*(const BasicBlock*)>;
 
   LocalMultiStoreElimPass();
 
   const char* name() const override { return "eliminate-local-multi-store"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse |
-           opt::IRContext::kAnalysisInstrToBlockMapping;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping;
   }
 
  private:

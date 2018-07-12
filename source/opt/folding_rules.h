@@ -52,7 +52,7 @@ namespace opt {
 // the later rules will not be attempted.
 
 using FoldingRule = std::function<bool(
-    IRContext* context, opt::Instruction* inst,
+    IRContext* context, Instruction* inst,
     const std::vector<const analysis::Constant*>& constants)>;
 
 class FoldingRules {

@@ -29,7 +29,7 @@ namespace opt {
 
 class LoopFusion {
  public:
-  LoopFusion(opt::IRContext* context, opt::Loop* loop_0, opt::Loop* loop_1)
+  LoopFusion(IRContext* context, Loop* loop_0, Loop* loop_1)
       : context_(context),
         loop_0_(loop_0),
         loop_1_(loop_1),
@@ -70,42 +70,41 @@ class LoopFusion {
 
   // Returns |true| if |instruction| is used in the continue or condition block
   // of |loop|.
-  bool UsedInContinueOrConditionBlock(opt::Instruction* instruction,
-                                      opt::Loop* loop);
+  bool UsedInContinueOrConditionBlock(Instruction* instruction, Loop* loop);
 
   // Remove entries in |instructions| that are not used in the continue or
   // condition block of |loop|.
   void RemoveIfNotUsedContinueOrConditionBlock(
-      std::vector<opt::Instruction*>* instructions, opt::Loop* loop);
+      std::vector<Instruction*>* instructions, Loop* loop);
 
   // Returns |true| if |instruction| is used in |loop|.
-  bool IsUsedInLoop(opt::Instruction* instruction, opt::Loop* loop);
+  bool IsUsedInLoop(Instruction* instruction, Loop* loop);
 
   // Returns |true| if |loop| has at least one barrier or function call.
-  bool ContainsBarriersOrFunctionCalls(opt::Loop* loop);
+  bool ContainsBarriersOrFunctionCalls(Loop* loop);
 
   // Get all instructions in the |loop| (except in the latch block) that have
   // the opcode |opcode|.
-  std::pair<std::vector<opt::Instruction*>, std::vector<opt::Instruction*>>
-  GetLoadsAndStoresInLoop(opt::Loop* loop);
+  std::pair<std::vector<Instruction*>, std::vector<Instruction*>>
+  GetLoadsAndStoresInLoop(Loop* loop);
 
   // Given a vector of memory operations (OpLoad/OpStore), constructs a map from
   // variables to the loads/stores that those variables.
-  std::map<opt::Instruction*, std::vector<opt::Instruction*>> LocationToMemOps(
-      const std::vector<opt::Instruction*>& mem_ops);
+  std::map<Instruction*, std::vector<Instruction*>> LocationToMemOps(
+      const std::vector<Instruction*>& mem_ops);
 
-  opt::IRContext* context_;
+  IRContext* context_;
 
   // The original loops to be fused.
-  opt::Loop* loop_0_;
-  opt::Loop* loop_1_;
+  Loop* loop_0_;
+  Loop* loop_1_;
 
   // The function that contains |loop_0_| and |loop_1_|.
-  opt::Function* containing_function_ = nullptr;
+  Function* containing_function_ = nullptr;
 
   // The induction variables for |loop_0_| and |loop_1_|.
-  opt::Instruction* induction_0_ = nullptr;
-  opt::Instruction* induction_1_ = nullptr;
+  Instruction* induction_0_ = nullptr;
+  Instruction* induction_1_ = nullptr;
 };
 
 }  // namespace opt

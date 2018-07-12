@@ -23,9 +23,6 @@
 namespace spvtools {
 namespace opt {
 
-using opt::Instruction;
-using opt::Operand;
-
 using Words = std::vector<uint32_t>;
 using OrderedUsesMap = std::unordered_map<uint32_t, Words>;
 

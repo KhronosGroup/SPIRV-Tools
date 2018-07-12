@@ -45,7 +45,7 @@ namespace {
 // depth first search on generic BasicBlock types. Will call post and pre order
 // user defined functions during traversal
 //
-// BBType - BasicBlock type. Will either be opt::BasicBlock or DominatorTreeNode
+// BBType - BasicBlock type. Will either be BasicBlock or DominatorTreeNode
 // SuccessorLambda - Lamdba matching the signature of 'const
 // std::vector<BBType>*(const BBType *A)'. Will return a vector of the nodes
 // succeding BasicBlock A.
@@ -66,7 +66,7 @@ static void DepthFirstSearch(const BBType* bb, SuccessorLambda successors,
 // depth first search on generic BasicBlock types. This overload is for only
 // performing user defined post order.
 //
-// BBType - BasicBlock type. Will either be opt::BasicBlock or DominatorTreeNode
+// BBType - BasicBlock type. Will either be BasicBlock or DominatorTreeNode
 // SuccessorLambda - Lamdba matching the signature of 'const
 // std::vector<BBType>*(const BBType *A)'. Will return a vector of the nodes
 // succeding BasicBlock A.
@@ -84,7 +84,7 @@ static void DepthFirstSearchPostOrder(const BBType* bb,
 // Small type trait to get the function class type.
 template <typename BBType>
 struct GetFunctionClass {
-  using FunctionType = opt::Function;
+  using FunctionType = Function;
 };
 
 // Helper class to compute predecessors and successors for each Basic Block in a
@@ -98,7 +98,7 @@ struct GetFunctionClass {
 // returned by this class will be predecessors in the original CFG.
 template <typename BBType>
 class BasicBlockSuccessorHelper {
-  // This should eventually become const opt::BasicBlock.
+  // This should eventually become const BasicBlock.
   using BasicBlock = BBType;
   using Function = typename GetFunctionClass<BBType>::FunctionType;
 
@@ -219,8 +219,8 @@ bool DominatorTree::StrictlyDominates(uint32_t a, uint32_t b) const {
   return Dominates(a, b);
 }
 
-bool DominatorTree::StrictlyDominates(const opt::BasicBlock* a,
-                                      const opt::BasicBlock* b) const {
+bool DominatorTree::StrictlyDominates(const BasicBlock* a,
+                                      const BasicBlock* b) const {
   return DominatorTree::StrictlyDominates(a->id(), b->id());
 }
 
@@ -248,17 +248,15 @@ bool DominatorTree::Dominates(const DominatorTreeNode* a,
          a->dfs_num_post_ > b->dfs_num_post_;
 }
 
-bool DominatorTree::Dominates(const opt::BasicBlock* A,
-                              const opt::BasicBlock* B) const {
+bool DominatorTree::Dominates(const BasicBlock* A, const BasicBlock* B) const {
   return Dominates(A->id(), B->id());
 }
 
-opt::BasicBlock* DominatorTree::ImmediateDominator(
-    const opt::BasicBlock* A) const {
+BasicBlock* DominatorTree::ImmediateDominator(const BasicBlock* A) const {
   return ImmediateDominator(A->id());
 }
 
-opt::BasicBlock* DominatorTree::ImmediateDominator(uint32_t a) const {
+BasicBlock* DominatorTree::ImmediateDominator(uint32_t a) const {
   // Check that A is a valid node in the tree.
   auto a_itr = nodes_.find(a);
   if (a_itr == nodes_.end()) return nullptr;
@@ -272,7 +270,7 @@ opt::BasicBlock* DominatorTree::ImmediateDominator(uint32_t a) const {
   return node->parent_->bb_;
 }
 
-DominatorTreeNode* DominatorTree::GetOrInsertNode(opt::BasicBlock* bb) {
+DominatorTreeNode* DominatorTree::GetOrInsertNode(BasicBlock* bb) {
   DominatorTreeNode* dtn = nullptr;
 
   std::map<uint32_t, DominatorTreeNode>::iterator node_iter =
@@ -287,21 +285,21 @@ DominatorTreeNode* DominatorTree::GetOrInsertNode(opt::BasicBlock* bb) {
 }
 
 void DominatorTree::GetDominatorEdges(
-    const opt::Function* f, const opt::BasicBlock* dummy_start_node,
-    std::vector<std::pair<opt::BasicBlock*, opt::BasicBlock*>>* edges) {
+    const Function* f, const BasicBlock* dummy_start_node,
+    std::vector<std::pair<BasicBlock*, BasicBlock*>>* edges) {
   // Each time the depth first traversal calls the postorder callback
   // std::function we push that node into the postorder vector to create our
   // postorder list.
-  std::vector<const opt::BasicBlock*> postorder;
-  auto postorder_function = [&](const opt::BasicBlock* b) {
+  std::vector<const BasicBlock*> postorder;
+  auto postorder_function = [&](const BasicBlock* b) {
     postorder.push_back(b);
   };
 
-  // CFA::CalculateDominators requires std::vector<opt::BasicBlock*>
+  // CFA::CalculateDominators requires std::vector<BasicBlock*>
   // BB are derived from F, so we need to const cast it at some point
   // no modification is made on F.
-  BasicBlockSuccessorHelper<opt::BasicBlock> helper{
-      *const_cast<opt::Function*>(f), dummy_start_node, postdominator_};
+  BasicBlockSuccessorHelper<BasicBlock> helper{
+      *const_cast<Function*>(f), dummy_start_node, postdominator_};
 
   // The successor function tells DepthFirstTraversal how to move to successive
   // nodes by providing an interface to get a list of successor nodes from any
@@ -317,11 +315,10 @@ void DominatorTree::GetDominatorEdges(
   // versa.
   DepthFirstSearchPostOrder(dummy_start_node, successor_functor,
                             postorder_function);
-  *edges =
-      CFA<opt::BasicBlock>::CalculateDominators(postorder, predecessor_functor);
+  *edges = CFA<BasicBlock>::CalculateDominators(postorder, predecessor_functor);
 }
 
-void DominatorTree::InitializeTree(const CFG& cfg, const opt::Function* f) {
+void DominatorTree::InitializeTree(const CFG& cfg, const Function* f) {
   ClearTree();
 
   // Skip over empty functions.
@@ -329,11 +326,11 @@ void DominatorTree::InitializeTree(const CFG& cfg, const opt::Function* f) {
     return;
   }
 
-  const opt::BasicBlock* dummy_start_node =
+  const BasicBlock* dummy_start_node =
       postdominator_ ? cfg.pseudo_exit_block() : cfg.pseudo_entry_block();
 
   // Get the immediate dominator for each node.
-  std::vector<std::pair<opt::BasicBlock*, opt::BasicBlock*>> edges;
+  std::vector<std::pair<BasicBlock*, BasicBlock*>> edges;
   GetDominatorEdges(f, dummy_start_node, &edges);
 
   // Transform the vector<pair> into the tree structure which we can use to

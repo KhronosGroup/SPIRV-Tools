@@ -24,7 +24,7 @@ Pass::Status StripDebugInfoPass::Process() {
                   !context()->debugs3().empty();
   context()->debug_clear();
 
-  context()->module()->ForEachInst([&modified](opt::Instruction* inst) {
+  context()->module()->ForEachInst([&modified](Instruction* inst) {
     modified |= !inst->dbg_line_insts().empty();
     inst->dbg_line_insts().clear();
   });

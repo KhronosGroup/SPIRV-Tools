@@ -34,7 +34,7 @@ namespace opt {
 // Return true if the extract indices in |extIndices| starting at |extOffset|
 // match indices of insert |insInst|.
 bool ExtInsMatch(const std::vector<uint32_t>& extIndices,
-                 const opt::Instruction* insInst, const uint32_t extOffset);
+                 const Instruction* insInst, const uint32_t extOffset);
 
 // Return true if indices in |extIndices| starting at |extOffset| and
 // indices of insert |insInst| conflict, specifically, if the insert
@@ -42,7 +42,7 @@ bool ExtInsMatch(const std::vector<uint32_t>& extIndices,
 // or less bits than the extract specifies, meaning the exact value being
 // inserted cannot be used to replace the extract.
 bool ExtInsConflict(const std::vector<uint32_t>& extIndices,
-                    const opt::Instruction* insInst, const uint32_t extOffset);
+                    const Instruction* insInst, const uint32_t extOffset);
 
 }  // namespace opt
 }  // namespace spvtools

@@ -27,7 +27,7 @@ namespace spvtools {
 namespace opt {
 
 using IdDecorationsList =
-    std::unordered_map<uint32_t, std::vector<opt::Instruction*>>;
+    std::unordered_map<uint32_t, std::vector<Instruction*>>;
 
 // See optimizer.hpp for documentation.
 class RemoveDuplicatesPass : public Pass {
@@ -38,9 +38,8 @@ class RemoveDuplicatesPass : public Pass {
   // TODO(pierremoreau): Move this function somewhere else (e.g. pass.h or
   // within the type manager)
   // Returns whether two types are equal, and have the same decorations.
-  static bool AreTypesEqual(const opt::Instruction& inst1,
-                            const opt::Instruction& inst2,
-                            opt::IRContext* context);
+  static bool AreTypesEqual(const Instruction& inst1, const Instruction& inst2,
+                            IRContext* context);
 
  private:
   // Remove duplicate capabilities from the module

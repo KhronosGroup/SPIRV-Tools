@@ -38,15 +38,14 @@ const uint32_t kVaryingSSAId = std::numeric_limits<uint32_t>::max();
 
 bool CCPPass::IsVaryingValue(uint32_t id) const { return id == kVaryingSSAId; }
 
-SSAPropagator::PropStatus CCPPass::MarkInstructionVarying(
-    opt::Instruction* instr) {
+SSAPropagator::PropStatus CCPPass::MarkInstructionVarying(Instruction* instr) {
   assert(instr->result_id() != 0 &&
          "Instructions with no result cannot be marked varying.");
   values_[instr->result_id()] = kVaryingSSAId;
   return SSAPropagator::kVarying;
 }
 
-SSAPropagator::PropStatus CCPPass::VisitPhi(opt::Instruction* phi) {
+SSAPropagator::PropStatus CCPPass::VisitPhi(Instruction* phi) {
   uint32_t meet_val_id = 0;
 
   // Implement the lattice meet operation. The result of this Phi instruction is
@@ -100,7 +99,7 @@ SSAPropagator::PropStatus CCPPass::VisitPhi(opt::Instruction* phi) {
   return SSAPropagator::kInteresting;
 }
 
-SSAPropagator::PropStatus CCPPass::VisitAssignment(opt::Instruction* instr) {
+SSAPropagator::PropStatus CCPPass::VisitAssignment(Instruction* instr) {
   assert(instr->result_id() != 0 &&
          "Expecting an instruction that produces a result");
 
@@ -133,7 +132,7 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(opt::Instruction* instr) {
     }
     return it->second;
   };
-  opt::Instruction* folded_inst =
+  Instruction* folded_inst =
       context()->get_instruction_folder().FoldInstructionToConstant(instr,
                                                                     map_func);
   if (folded_inst != nullptr) {
@@ -168,8 +167,8 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(opt::Instruction* instr) {
   return MarkInstructionVarying(instr);
 }
 
-SSAPropagator::PropStatus CCPPass::VisitBranch(
-    opt::Instruction* instr, opt::BasicBlock** dest_bb) const {
+SSAPropagator::PropStatus CCPPass::VisitBranch(Instruction* instr,
+                                               BasicBlock** dest_bb) const {
   assert(instr->IsBranch() && "Expected a branch instruction.");
 
   *dest_bb = nullptr;
@@ -250,8 +249,8 @@ SSAPropagator::PropStatus CCPPass::VisitBranch(
   return SSAPropagator::kInteresting;
 }
 
-SSAPropagator::PropStatus CCPPass::VisitInstruction(opt::Instruction* instr,
-                                                    opt::BasicBlock** dest_bb) {
+SSAPropagator::PropStatus CCPPass::VisitInstruction(Instruction* instr,
+                                                    BasicBlock** dest_bb) {
   *dest_bb = nullptr;
   if (instr->opcode() == SpvOpPhi) {
     return VisitPhi(instr);
@@ -275,14 +274,13 @@ bool CCPPass::ReplaceValues() {
   return retval;
 }
 
-bool CCPPass::PropagateConstants(opt::Function* fp) {
+bool CCPPass::PropagateConstants(Function* fp) {
   // Mark function parameters as varying.
-  fp->ForEachParam([this](const opt::Instruction* inst) {
+  fp->ForEachParam([this](const Instruction* inst) {
     values_[inst->result_id()] = kVaryingSSAId;
   });
 
-  const auto visit_fn = [this](opt::Instruction* instr,
-                               opt::BasicBlock** dest_bb) {
+  const auto visit_fn = [this](Instruction* instr, BasicBlock** dest_bb) {
     return VisitInstruction(instr, dest_bb);
   };
 
@@ -317,9 +315,7 @@ Pass::Status CCPPass::Process() {
   Initialize();
 
   // Process all entry point functions.
-  ProcessFunction pfn = [this](opt::Function* fp) {
-    return PropagateConstants(fp);
-  };
+  ProcessFunction pfn = [this](Function* fp) { return PropagateConstants(fp); };
   bool modified = ProcessReachableCallTree(pfn, context());
   return modified ? Pass::Status::SuccessWithChange
                   : Pass::Status::SuccessWithoutChange;

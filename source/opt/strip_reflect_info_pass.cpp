@@ -22,8 +22,6 @@
 namespace spvtools {
 namespace opt {
 
-using opt::Instruction;
-
 Pass::Status StripReflectInfoPass::Process() {
   bool modified = false;
 

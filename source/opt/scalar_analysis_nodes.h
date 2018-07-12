@@ -53,7 +53,7 @@ class SENode {
 
   using ChildContainerType = std::vector<SENode*>;
 
-  explicit SENode(opt::ScalarEvolutionAnalysis* parent_analysis)
+  explicit SENode(ScalarEvolutionAnalysis* parent_analysis)
       : parent_analysis_(parent_analysis), unique_id_(++NumberOfNodes) {}
 
   virtual SENodeType GetType() const = 0;
@@ -183,14 +183,14 @@ class SENode {
 #undef DeclareCastMethod
 
   // Get the analysis which has this node in its cache.
-  inline opt::ScalarEvolutionAnalysis* GetParentAnalysis() const {
+  inline ScalarEvolutionAnalysis* GetParentAnalysis() const {
     return parent_analysis_;
   }
 
  protected:
   ChildContainerType children_;
 
-  opt::ScalarEvolutionAnalysis* parent_analysis_;
+  ScalarEvolutionAnalysis* parent_analysis_;
 
   // The unique id of this node, assigned on creation by incrementing the static
   // node count.
@@ -211,7 +211,7 @@ struct SENodeHash {
 // A node representing a constant integer.
 class SEConstantNode : public SENode {
  public:
-  SEConstantNode(opt::ScalarEvolutionAnalysis* parent_analysis, int64_t value)
+  SEConstantNode(ScalarEvolutionAnalysis* parent_analysis, int64_t value)
       : SENode(parent_analysis), literal_value_(value) {}
 
   SENodeType GetType() const final { return Constant; }
@@ -237,8 +237,7 @@ class SEConstantNode : public SENode {
 // of zero and a coefficient of one.
 class SERecurrentNode : public SENode {
  public:
-  SERecurrentNode(opt::ScalarEvolutionAnalysis* parent_analysis,
-                  const opt::Loop* loop)
+  SERecurrentNode(ScalarEvolutionAnalysis* parent_analysis, const Loop* loop)
       : SENode(parent_analysis), loop_(loop) {}
 
   SENodeType GetType() const final { return RecurrentAddExpr; }
@@ -260,7 +259,7 @@ class SERecurrentNode : public SENode {
   inline SENode* GetOffset() { return offset_; }
 
   // Return the loop which this recurrent expression is recurring within.
-  const opt::Loop* GetLoop() const { return loop_; }
+  const Loop* GetLoop() const { return loop_; }
 
   SERecurrentNode* AsSERecurrentNode() override { return this; }
   const SERecurrentNode* AsSERecurrentNode() const override { return this; }
@@ -268,13 +267,13 @@ class SERecurrentNode : public SENode {
  private:
   SENode* coefficient_;
   SENode* offset_;
-  const opt::Loop* loop_;
+  const Loop* loop_;
 };
 
 // A node representing an addition operation between child nodes.
 class SEAddNode : public SENode {
  public:
-  explicit SEAddNode(opt::ScalarEvolutionAnalysis* parent_analysis)
+  explicit SEAddNode(ScalarEvolutionAnalysis* parent_analysis)
       : SENode(parent_analysis) {}
 
   SENodeType GetType() const final { return Add; }
@@ -286,7 +285,7 @@ class SEAddNode : public SENode {
 // A node representing a multiply operation between child nodes.
 class SEMultiplyNode : public SENode {
  public:
-  explicit SEMultiplyNode(opt::ScalarEvolutionAnalysis* parent_analysis)
+  explicit SEMultiplyNode(ScalarEvolutionAnalysis* parent_analysis)
       : SENode(parent_analysis) {}
 
   SENodeType GetType() const final { return Multiply; }
@@ -298,7 +297,7 @@ class SEMultiplyNode : public SENode {
 // A node representing a unary negative operation.
 class SENegative : public SENode {
  public:
-  explicit SENegative(opt::ScalarEvolutionAnalysis* parent_analysis)
+  explicit SENegative(ScalarEvolutionAnalysis* parent_analysis)
       : SENode(parent_analysis) {}
 
   SENodeType GetType() const final { return Negative; }
@@ -314,8 +313,7 @@ class SEValueUnknown : public SENode {
   // SEValueUnknowns must come from an instruction |unique_id| is the unique id
   // of that instruction. This is so we cancompare value unknowns and have a
   // unique value unknown for each instruction.
-  SEValueUnknown(opt::ScalarEvolutionAnalysis* parent_analysis,
-                 uint32_t result_id)
+  SEValueUnknown(ScalarEvolutionAnalysis* parent_analysis, uint32_t result_id)
       : SENode(parent_analysis), result_id_(result_id) {}
 
   SENodeType GetType() const final { return ValueUnknown; }
@@ -332,7 +330,7 @@ class SEValueUnknown : public SENode {
 // A node which we cannot reason about at all.
 class SECantCompute : public SENode {
  public:
-  explicit SECantCompute(opt::ScalarEvolutionAnalysis* parent_analysis)
+  explicit SECantCompute(ScalarEvolutionAnalysis* parent_analysis)
       : SENode(parent_analysis) {}
 
   SENodeType GetType() const final { return CanNotCompute; }

@@ -29,7 +29,7 @@ namespace opt {
 
 Pass::Status CFGCleanupPass::Process() {
   // Process all entry point functions.
-  ProcessFunction pfn = [this](opt::Function* fp) { return CFGCleanup(fp); };
+  ProcessFunction pfn = [this](Function* fp) { return CFGCleanup(fp); };
   bool modified = ProcessReachableCallTree(pfn, context());
   return modified ? Pass::Status::SuccessWithChange
                   : Pass::Status::SuccessWithoutChange;
