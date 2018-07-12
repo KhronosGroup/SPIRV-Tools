@@ -157,7 +157,7 @@ class DominatorTree {
   void DumpTreeAsDot(std::ostream& out_stream) const;
 
   // Build the (post-)dominator tree for the given control flow graph
-  // |cfg| and the function |f|. |f| must exist in the |cfg|. Any 
+  // |cfg| and the function |f|. |f| must exist in the |cfg|. Any
   // existing data in the dominator tree will be overwritten
   void InitializeTree(const CFG& cfg, const opt::Function* f);
 
