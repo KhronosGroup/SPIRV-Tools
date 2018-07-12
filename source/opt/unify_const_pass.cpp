@@ -39,7 +39,7 @@ class ResultIdTrie {
   // is found, creates a trie node with those keys, stores the instruction's
   // result id and returns that result id. If an existing result id is found,
   // returns the existing result id.
-  uint32_t LookupEquivalentResultFor(const opt::Instruction& inst) {
+  uint32_t LookupEquivalentResultFor(const Instruction& inst) {
     auto keys = GetLookUpKeys(inst);
     auto* node = root_.get();
     for (uint32_t key : keys) {
@@ -85,7 +85,7 @@ class ResultIdTrie {
 
   // Returns a vector of the opcode followed by the words in the raw SPIR-V
   // instruction encoding but without the result id.
-  std::vector<uint32_t> GetLookUpKeys(const opt::Instruction& inst) {
+  std::vector<uint32_t> GetLookUpKeys(const Instruction& inst) {
     std::vector<uint32_t> keys;
     // Need to use the opcode, otherwise there might be a conflict with the
     // following case when <op>'s binary value equals xx's id:
@@ -107,7 +107,7 @@ Pass::Status UnifyConstantPass::Process() {
   bool modified = false;
   ResultIdTrie defined_constants;
 
-  for (opt::Instruction *next_instruction,
+  for (Instruction *next_instruction,
        *inst = &*(context()->types_values_begin());
        inst; inst = next_instruction) {
     next_instruction = inst->NextNode();

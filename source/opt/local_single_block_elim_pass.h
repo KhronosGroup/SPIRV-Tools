@@ -40,9 +40,8 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   const char* name() const override { return "eliminate-local-single-block"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse |
-           opt::IRContext::kAnalysisInstrToBlockMapping;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping;
   }
 
  private:
@@ -59,7 +58,7 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // load id with previous id and delete load. Finally, check if
   // remaining stores are useless, and delete store and variable
   // where possible. Assumes logical addressing.
-  bool LocalSingleBlockLoadStoreElim(opt::Function* func);
+  bool LocalSingleBlockLoadStoreElim(Function* func);
 
   // Initialize extensions whitelist
   void InitExtensions();
@@ -75,14 +74,14 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // at the start of each block and incrementally updated as the block
   // is scanned. The stores are candidates for elimination. The map is
   // conservatively cleared when a function call is encountered.
-  std::unordered_map<uint32_t, opt::Instruction*> var2store_;
+  std::unordered_map<uint32_t, Instruction*> var2store_;
 
   // Map from function scope variable to a load of that variable in the
   // current block whose value is currently valid. This map is cleared
   // at the start of each block and incrementally updated as the block
   // is scanned. The stores are candidates for elimination. The map is
   // conservatively cleared when a function call is encountered.
-  std::unordered_map<uint32_t, opt::Instruction*> var2load_;
+  std::unordered_map<uint32_t, Instruction*> var2load_;
 
   // Set of variables whose most recent store in the current block cannot be
   // deleted, for example, if there is a load of the variable which is

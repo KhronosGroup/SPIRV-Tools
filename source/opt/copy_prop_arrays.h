@@ -40,13 +40,11 @@ class CopyPropagateArrays : public MemPass {
   const char* name() const override { return "copy-propagate-arrays"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse | opt::IRContext::kAnalysisCFG |
-           opt::IRContext::kAnalysisInstrToBlockMapping |
-           opt::IRContext::kAnalysisLoopAnalysis |
-           opt::IRContext::kAnalysisDecorations |
-           opt::IRContext::kAnalysisDominatorAnalysis |
-           opt::IRContext::kAnalysisNameMap;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse | IRContext::kAnalysisCFG |
+           IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisLoopAnalysis | IRContext::kAnalysisDecorations |
+           IRContext::kAnalysisDominatorAnalysis | IRContext::kAnalysisNameMap;
   }
 
  private:
@@ -62,7 +60,7 @@ class CopyPropagateArrays : public MemPass {
     // are interpreted the same way they would be in an |OpAccessChain|
     // instruction.
     template <class iterator>
-    MemoryObject(opt::Instruction* var_inst, iterator begin, iterator end);
+    MemoryObject(Instruction* var_inst, iterator begin, iterator end);
 
     // Change |this| to now point to the member identified by |access_chain|
     // (starting from the current member).  The elements in |access_chain| are
@@ -87,7 +85,7 @@ class CopyPropagateArrays : public MemPass {
     uint32_t GetNumberOfMembers();
 
     // Returns the owning variable that the memory object is contained in.
-    opt::Instruction* GetVariable() const { return variable_inst_; }
+    Instruction* GetVariable() const { return variable_inst_; }
 
     // Returns a vector of integers that can be used to access the specific
     // member that |this| represents starting from the owning variable.  These
@@ -127,7 +125,7 @@ class CopyPropagateArrays : public MemPass {
 
    private:
     // The variable that owns this memory object.
-    opt::Instruction* variable_inst_;
+    Instruction* variable_inst_;
 
     // The access chain to reach the particular member the memory object
     // represents.  It should be interpreted the same way the indices in an
@@ -142,18 +140,17 @@ class CopyPropagateArrays : public MemPass {
   // and only identifies very simple cases.  If no such memory object can be
   // found, the return value is |nullptr|.
   std::unique_ptr<CopyPropagateArrays::MemoryObject> FindSourceObjectIfPossible(
-      opt::Instruction* var_inst, opt::Instruction* store_inst);
+      Instruction* var_inst, Instruction* store_inst);
 
   // Replaces all loads of |var_inst| with a load from |source| instead.
   // |insertion_pos| is a position where it is possible to construct the
   // address of |source| and also dominates all of the loads of |var_inst|.
-  void PropagateObject(opt::Instruction* var_inst, MemoryObject* source,
-                       opt::Instruction* insertion_pos);
+  void PropagateObject(Instruction* var_inst, MemoryObject* source,
+                       Instruction* insertion_pos);
 
   // Returns true if all of the references to |ptr_inst| can be rewritten and
   // are dominated by |store_inst|.
-  bool HasValidReferencesOnly(opt::Instruction* ptr_inst,
-                              opt::Instruction* store_inst);
+  bool HasValidReferencesOnly(Instruction* ptr_inst, Instruction* store_inst);
 
   // Returns a memory object that at one time was equivalent to the value in
   // |result|.  If no such memory object exists, the return value is |nullptr|.
@@ -163,21 +160,21 @@ class CopyPropagateArrays : public MemPass {
   // object cannot be identified, the return value is |nullptr|.  The opcode of
   // |load_inst| must be |OpLoad|.
   std::unique_ptr<MemoryObject> BuildMemoryObjectFromLoad(
-      opt::Instruction* load_inst);
+      Instruction* load_inst);
 
   // Returns the memory object that at some point was equivalent to the result
   // of |extract_inst|.  If a memory object cannot be identified, the return
   // value is |nullptr|.  The opcode of |extract_inst| must be
   // |OpCompositeExtract|.
   std::unique_ptr<MemoryObject> BuildMemoryObjectFromExtract(
-      opt::Instruction* extract_inst);
+      Instruction* extract_inst);
 
   // Returns the memory object that at some point was equivalent to the result
   // of |construct_inst|.  If a memory object cannot be identified, the return
   // value is |nullptr|.  The opcode of |constuct_inst| must be
   // |OpCompositeConstruct|.
   std::unique_ptr<MemoryObject> BuildMemoryObjectFromCompositeConstruct(
-      opt::Instruction* conststruct_inst);
+      Instruction* conststruct_inst);
 
   // Returns the memory object that at some point was equivalent to the result
   // of |insert_inst|.  If a memory object cannot be identified, the return
@@ -186,44 +183,43 @@ class CopyPropagateArrays : public MemPass {
   // |OpCompositeInsert| instructions that insert the elements one at a time in
   // order from beginning to end.
   std::unique_ptr<MemoryObject> BuildMemoryObjectFromInsert(
-      opt::Instruction* insert_inst);
+      Instruction* insert_inst);
 
   // Return true if |type_id| is a pointer type whose pointee type is an array.
   bool IsPointerToArrayType(uint32_t type_id);
 
   // Returns true of there are not stores using |ptr_inst| or something derived
   // from it.
-  bool HasNoStores(opt::Instruction* ptr_inst);
+  bool HasNoStores(Instruction* ptr_inst);
 
   // Creates an |OpAccessChain| instruction whose result is a pointer the memory
   // represented by |source|.  The new instruction will be placed before
   // |insertion_point|.  |insertion_point| must be part of a function.  Returns
   // the new instruction.
-  opt::Instruction* BuildNewAccessChain(opt::Instruction* insertion_point,
-                                        MemoryObject* source) const;
+  Instruction* BuildNewAccessChain(Instruction* insertion_point,
+                                   MemoryObject* source) const;
 
   // Rewrites all uses of |original_ptr| to use |new_pointer_inst| updating
   // types of other instructions as needed.  This function should not be called
   // if |CanUpdateUses(original_ptr_inst, new_pointer_inst->type_id())| returns
   // false.
-  void UpdateUses(opt::Instruction* original_ptr_inst,
-                  opt::Instruction* new_pointer_inst);
+  void UpdateUses(Instruction* original_ptr_inst,
+                  Instruction* new_pointer_inst);
 
   // Return true if |UpdateUses| is able to change all of the uses of
   // |original_ptr_inst| to |type_id| and still have valid code.
-  bool CanUpdateUses(opt::Instruction* original_ptr_inst, uint32_t type_id);
+  bool CanUpdateUses(Instruction* original_ptr_inst, uint32_t type_id);
 
   // Returns the id whose value is the same as |object_to_copy| except its type
   // is |new_type_id|.  Any instructions need to generate this value will be
   // inserted before |insertion_position|.
-  uint32_t GenerateCopy(opt::Instruction* object_to_copy, uint32_t new_type_id,
-                        opt::Instruction* insertion_position);
+  uint32_t GenerateCopy(Instruction* object_to_copy, uint32_t new_type_id,
+                        Instruction* insertion_position);
 
   // Returns a store to |var_inst| that writes to the entire variable, and is
   // the only store that does so.  Note it does not look through OpAccessChain
   // instruction, so partial stores are not considered.
-  opt::Instruction* FindStoreInstruction(
-      const opt::Instruction* var_inst) const;
+  Instruction* FindStoreInstruction(const Instruction* var_inst) const;
 };
 
 }  // namespace opt

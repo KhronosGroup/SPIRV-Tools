@@ -52,27 +52,25 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
   // folding is done successfully, the original OpSpecConstantOp instruction
   // will be changed to Nop and new folded instruction will be inserted before
   // it.
-  bool ProcessOpSpecConstantOp(opt::Module::inst_iterator* pos);
+  bool ProcessOpSpecConstantOp(Module::inst_iterator* pos);
 
   // Try to fold the OpSpecConstantOp CompositeExtract instruction pointed by
   // the given instruction iterator to a normal constant defining instruction.
   // Returns the pointer to the new constant defining instruction if succeeded.
   // Otherwise returns nullptr.
-  opt::Instruction* DoCompositeExtract(
-      opt::Module::inst_iterator* inst_iter_ptr);
+  Instruction* DoCompositeExtract(Module::inst_iterator* inst_iter_ptr);
 
   // Try to fold the OpSpecConstantOp VectorShuffle instruction pointed by the
   // given instruction iterator to a normal constant defining instruction.
   // Returns the pointer to the new constant defining instruction if succeeded.
   // Otherwise return nullptr.
-  opt::Instruction* DoVectorShuffle(opt::Module::inst_iterator* inst_iter_ptr);
+  Instruction* DoVectorShuffle(Module::inst_iterator* inst_iter_ptr);
 
   // Try to fold the OpSpecConstantOp <component wise operations> instruction
   // pointed by the given instruction iterator to a normal constant defining
   // instruction. Returns the pointer to the new constant defining instruction
   // if succeeded, otherwise return nullptr.
-  opt::Instruction* DoComponentWiseOperation(
-      opt::Module::inst_iterator* inst_iter_ptr);
+  Instruction* DoComponentWiseOperation(Module::inst_iterator* inst_iter_ptr);
 
   // Returns the |element|'th subtype of |type|.
   //

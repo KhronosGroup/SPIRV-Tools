@@ -45,7 +45,7 @@ class Pass {
     SuccessWithoutChange = 0x11,
   };
 
-  using ProcessFunction = std::function<bool(opt::Function*)>;
+  using ProcessFunction = std::function<bool(Function*)>;
 
   // Destructs the pass.
   virtual ~Pass() = default;
@@ -80,30 +80,29 @@ class Pass {
   }
 
   // Returns a pointer to the current module for this pass.
-  opt::Module* get_module() const { return context_->module(); }
+  Module* get_module() const { return context_->module(); }
 
   // Sets the pointer to the current context for this pass.
   void SetContextForTesting(IRContext* ctx) { context_ = ctx; }
 
   // Returns a pointer to the current context for this pass.
-  opt::IRContext* context() const { return context_; }
+  IRContext* context() const { return context_; }
 
   // Returns a pointer to the CFG for current module.
-  opt::CFG* cfg() const { return context()->cfg(); }
+  CFG* cfg() const { return context()->cfg(); }
 
   // Add to |todo| all ids of functions called in |func|.
-  void AddCalls(opt::Function* func, std::queue<uint32_t>* todo);
+  void AddCalls(Function* func, std::queue<uint32_t>* todo);
 
   // Applies |pfn| to every function in the call trees that are rooted at the
   // entry points.  Returns true if any call |pfn| returns true.  By convention
   // |pfn| should return true if it modified the module.
-  bool ProcessEntryPointCallTree(ProcessFunction& pfn, opt::Module* module);
+  bool ProcessEntryPointCallTree(ProcessFunction& pfn, Module* module);
 
   // Applies |pfn| to every function in the call trees rooted at the entry
   // points and exported functions.  Returns true if any call |pfn| returns
   // true.  By convention |pfn| should return true if it modified the module.
-  bool ProcessReachableCallTree(ProcessFunction& pfn,
-                                opt::IRContext* irContext);
+  bool ProcessReachableCallTree(ProcessFunction& pfn, IRContext* irContext);
 
   // Applies |pfn| to every function in the call trees rooted at the elements of
   // |roots|.  Returns true if any call to |pfn| returns true.  By convention
@@ -111,7 +110,7 @@ class Pass {
   // |roots| will be empty.
   bool ProcessCallTreeFromRoots(
       ProcessFunction& pfn,
-      const std::unordered_map<uint32_t, opt::Function*>& id2function,
+      const std::unordered_map<uint32_t, Function*>& id2function,
       std::queue<uint32_t>* roots);
 
   // Run the pass on the given |module|. Returns Status::Failure if errors occur
@@ -122,15 +121,15 @@ class Pass {
   //
   // It is an error if |Run| is called twice with the same instance of the pass.
   // If this happens the return value will be |Failure|.
-  Status Run(opt::IRContext* ctx);
+  Status Run(IRContext* ctx);
 
   // Returns the set of analyses that the pass is guaranteed to preserve.
-  virtual opt::IRContext::Analysis GetPreservedAnalyses() {
-    return opt::IRContext::kAnalysisNone;
+  virtual IRContext::Analysis GetPreservedAnalyses() {
+    return IRContext::kAnalysisNone;
   }
 
   // Return type id for |ptrInst|'s pointee
-  uint32_t GetPointeeTypeId(const opt::Instruction* ptrInst) const;
+  uint32_t GetPointeeTypeId(const Instruction* ptrInst) const;
 
  protected:
   // Constructs a new pass.
@@ -152,7 +151,7 @@ class Pass {
   MessageConsumer consumer_;  // Message consumer.
 
   // The context that this pass belongs to.
-  opt::IRContext* context_;
+  IRContext* context_;
 
   // An instance of a pass can only be run once because it is too hard to
   // enforce proper resetting of internal state for each instance.  This member

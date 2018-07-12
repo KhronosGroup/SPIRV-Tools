@@ -102,7 +102,7 @@ class Function {
 
   // Returns an iterator to the basic block |id|.
   iterator FindBlock(uint32_t bb_id) {
-    return std::find_if(begin(), end(), [bb_id](const opt::BasicBlock& it_bb) {
+    return std::find_if(begin(), end(), [bb_id](const BasicBlock& it_bb) {
       return bb_id == it_bb.id();
     });
   }
@@ -119,8 +119,8 @@ class Function {
   void ForEachParam(const std::function<void(const Instruction*)>& f,
                     bool run_on_debug_line_insts = false) const;
 
-  BasicBlock* InsertBasicBlockAfter(
-      std::unique_ptr<opt::BasicBlock>&& new_block, BasicBlock* position);
+  BasicBlock* InsertBasicBlockAfter(std::unique_ptr<BasicBlock>&& new_block,
+                                    BasicBlock* position);
 
   // Pretty-prints all the basic blocks in this function into a std::string.
   //

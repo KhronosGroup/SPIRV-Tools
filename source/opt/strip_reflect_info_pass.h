@@ -29,12 +29,11 @@ class StripReflectInfoPass : public Pass {
   Status Process() override;
 
   // Return the mask of preserved Analyses.
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisInstrToBlockMapping |
-           opt::IRContext::kAnalysisCombinators | opt::IRContext::kAnalysisCFG |
-           opt::IRContext::kAnalysisDominatorAnalysis |
-           opt::IRContext::kAnalysisLoopAnalysis |
-           opt::IRContext::kAnalysisNameMap;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisCombinators | IRContext::kAnalysisCFG |
+           IRContext::kAnalysisDominatorAnalysis |
+           IRContext::kAnalysisLoopAnalysis | IRContext::kAnalysisNameMap;
   }
 };
 

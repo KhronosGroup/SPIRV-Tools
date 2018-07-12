@@ -21,7 +21,7 @@ namespace opt {
 Pass::Status FreezeSpecConstantValuePass::Process() {
   bool modified = false;
   auto ctx = context();
-  ctx->module()->ForEachInst([&modified, ctx](opt::Instruction* inst) {
+  ctx->module()->ForEachInst([&modified, ctx](Instruction* inst) {
     switch (inst->opcode()) {
       case SpvOp::SpvOpSpecConstant:
         inst->SetOpcode(SpvOp::SpvOpConstant);

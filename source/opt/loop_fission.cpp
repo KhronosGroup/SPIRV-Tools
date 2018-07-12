@@ -55,7 +55,7 @@ namespace opt {
 
 class LoopFissionImpl {
  public:
-  LoopFissionImpl(opt::IRContext* context, opt::Loop* loop)
+  LoopFissionImpl(IRContext* context, Loop* loop)
       : context_(context), loop_(loop), load_used_in_condition_(false) {}
 
   // Group each instruction in the loop into sets of instructions related by
@@ -69,37 +69,36 @@ class LoopFissionImpl {
   bool CanPerformSplit();
 
   // Split the loop and return a pointer to the new loop.
-  opt::Loop* SplitLoop();
+  Loop* SplitLoop();
 
   // Checks if |inst| is safe to move. We can only move instructions which don't
   // have any side effects and OpLoads and OpStores.
-  bool MovableInstruction(const opt::Instruction& inst) const;
+  bool MovableInstruction(const Instruction& inst) const;
 
  private:
   // Traverse the def use chain of |inst| and add the users and uses of |inst|
   // which are in the same loop to the |returned_set|.
-  void TraverseUseDef(opt::Instruction* inst,
-                      std::set<opt::Instruction*>* returned_set,
+  void TraverseUseDef(Instruction* inst, std::set<Instruction*>* returned_set,
                       bool ignore_phi_users = false, bool report_loads = false);
 
   // We group the instructions in the block into two different groups, the
   // instructions to be kept in the original loop and the ones to be cloned into
   // the new loop. As the cloned loop is attached to the preheader it will be
   // the first loop and the second loop will be the original.
-  std::set<opt::Instruction*> cloned_loop_instructions_;
-  std::set<opt::Instruction*> original_loop_instructions_;
+  std::set<Instruction*> cloned_loop_instructions_;
+  std::set<Instruction*> original_loop_instructions_;
 
   // We need a set of all the instructions to be seen so we can break any
   // recursion and also so we can ignore certain instructions by preemptively
   // adding them to this set.
-  std::set<opt::Instruction*> seen_instructions_;
+  std::set<Instruction*> seen_instructions_;
 
   // A map of instructions to their relative position in the function.
-  std::map<opt::Instruction*, size_t> instruction_order_;
+  std::map<Instruction*, size_t> instruction_order_;
 
-  opt::IRContext* context_;
+  IRContext* context_;
 
-  opt::Loop* loop_;
+  Loop* loop_;
 
   // This is set to true by TraverseUseDef when traversing the instructions
   // related to the loop condition and any if conditions should any of those
@@ -107,27 +106,27 @@ class LoopFissionImpl {
   bool load_used_in_condition_;
 };
 
-bool LoopFissionImpl::MovableInstruction(const opt::Instruction& inst) const {
+bool LoopFissionImpl::MovableInstruction(const Instruction& inst) const {
   return inst.opcode() == SpvOp::SpvOpLoad ||
          inst.opcode() == SpvOp::SpvOpStore ||
          inst.opcode() == SpvOp::SpvOpSelectionMerge ||
          inst.opcode() == SpvOp::SpvOpPhi || inst.IsOpcodeCodeMotionSafe();
 }
 
-void LoopFissionImpl::TraverseUseDef(opt::Instruction* inst,
-                                     std::set<opt::Instruction*>* returned_set,
+void LoopFissionImpl::TraverseUseDef(Instruction* inst,
+                                     std::set<Instruction*>* returned_set,
                                      bool ignore_phi_users, bool report_loads) {
   assert(returned_set && "Set to be returned cannot be null.");
 
-  opt::analysis::DefUseManager* def_use = context_->get_def_use_mgr();
-  std::set<opt::Instruction*>& inst_set = *returned_set;
+  analysis::DefUseManager* def_use = context_->get_def_use_mgr();
+  std::set<Instruction*>& inst_set = *returned_set;
 
   // We create this functor to traverse the use def chain to build the
   // grouping of related instructions. The lambda captures the std::function
   // to allow it to recurse.
-  std::function<void(opt::Instruction*)> traverser_functor;
+  std::function<void(Instruction*)> traverser_functor;
   traverser_functor = [this, def_use, &inst_set, &traverser_functor,
-                       ignore_phi_users, report_loads](opt::Instruction* user) {
+                       ignore_phi_users, report_loads](Instruction* user) {
     // If we've seen the instruction before or it is not inside the loop end the
     // traversal.
     if (!user || seen_instructions_.count(user) != 0 ||
@@ -171,7 +170,7 @@ void LoopFissionImpl::TraverseUseDef(opt::Instruction* inst,
     def_use->ForEachUser(user, traverser_functor);
 
     // Wrapper functor for the use traversal.
-    auto traverse_use = [&traverser_functor](opt::Instruction* use, uint32_t) {
+    auto traverse_use = [&traverser_functor](Instruction* use, uint32_t) {
       traverser_functor(use);
     };
     def_use->ForEachUse(user, traverse_use);
@@ -184,33 +183,33 @@ void LoopFissionImpl::TraverseUseDef(opt::Instruction* inst,
 }
 
 bool LoopFissionImpl::GroupInstructionsByUseDef() {
-  std::vector<std::set<opt::Instruction*>> sets{};
+  std::vector<std::set<Instruction*>> sets{};
 
   // We want to ignore all the instructions stemming from the loop condition
   // instruction.
-  opt::BasicBlock* condition_block = loop_->FindConditionBlock();
+  BasicBlock* condition_block = loop_->FindConditionBlock();
 
   if (!condition_block) return false;
-  opt::Instruction* condition = &*condition_block->tail();
+  Instruction* condition = &*condition_block->tail();
 
   // We iterate over the blocks via iterating over all the blocks in the
   // function, we do this so we are iterating in the same order which the blocks
   // appear in the binary.
-  opt::Function& function = *loop_->GetHeaderBlock()->GetParent();
+  Function& function = *loop_->GetHeaderBlock()->GetParent();
 
   // Create a temporary set to ignore certain groups of instructions within the
   // loop. We don't want any instructions related to control flow to be removed
   // from either loop only instructions within the control flow bodies.
-  std::set<opt::Instruction*> instructions_to_ignore{};
+  std::set<Instruction*> instructions_to_ignore{};
   TraverseUseDef(condition, &instructions_to_ignore, true, true);
 
   // Traverse control flow instructions to ensure they are added to the
   // seen_instructions_ set and will be ignored when it it called with actual
   // sets.
-  for (opt::BasicBlock& block : function) {
+  for (BasicBlock& block : function) {
     if (!loop_->IsInsideLoop(block.id())) continue;
 
-    for (opt::Instruction& inst : block) {
+    for (Instruction& inst : block) {
       // Ignore all instructions related to control flow.
       if (inst.opcode() == SpvOp::SpvOpSelectionMerge || inst.IsBranch()) {
         TraverseUseDef(&inst, &instructions_to_ignore, true, true);
@@ -220,12 +219,12 @@ bool LoopFissionImpl::GroupInstructionsByUseDef() {
 
   // Traverse the instructions and generate the sets, automatically ignoring any
   // instructions in instructions_to_ignore.
-  for (opt::BasicBlock& block : function) {
+  for (BasicBlock& block : function) {
     if (!loop_->IsInsideLoop(block.id()) ||
         loop_->GetHeaderBlock()->id() == block.id())
       continue;
 
-    for (opt::Instruction& inst : block) {
+    for (Instruction& inst : block) {
       // Record the order that each load/store is seen.
       if (inst.opcode() == SpvOp::SpvOpLoad ||
           inst.opcode() == SpvOp::SpvOpStore) {
@@ -238,7 +237,7 @@ bool LoopFissionImpl::GroupInstructionsByUseDef() {
       }
 
       // Build the set.
-      std::set<opt::Instruction*> inst_set{};
+      std::set<Instruction*> inst_set{};
       TraverseUseDef(&inst, &inst_set);
       if (!inst_set.empty()) sets.push_back(std::move(inst_set));
     }
@@ -273,8 +272,8 @@ bool LoopFissionImpl::CanPerformSplit() {
 
   // Build a list of all parent loops of this loop. Loop dependence analysis
   // needs this structure.
-  std::vector<const opt::Loop*> loops;
-  opt::Loop* parent_loop = loop_;
+  std::vector<const Loop*> loops;
+  Loop* parent_loop = loop_;
   while (parent_loop) {
     loops.push_back(parent_loop);
     parent_loop = parent_loop->GetParent();
@@ -283,13 +282,13 @@ bool LoopFissionImpl::CanPerformSplit() {
   LoopDependenceAnalysis analysis{context_, loops};
 
   // A list of all the stores in the cloned loop.
-  std::vector<opt::Instruction*> set_one_stores{};
+  std::vector<Instruction*> set_one_stores{};
 
   // A list of all the loads in the cloned loop.
-  std::vector<opt::Instruction*> set_one_loads{};
+  std::vector<Instruction*> set_one_loads{};
 
   // Populate the above lists.
-  for (opt::Instruction* inst : cloned_loop_instructions_) {
+  for (Instruction* inst : cloned_loop_instructions_) {
     if (inst->opcode() == SpvOp::SpvOpStore) {
       set_one_stores.push_back(inst);
     } else if (inst->opcode() == SpvOp::SpvOpLoad) {
@@ -307,7 +306,7 @@ bool LoopFissionImpl::CanPerformSplit() {
 
   // Check the dependencies between loads in the cloned loop and stores in the
   // original and vice versa.
-  for (opt::Instruction* inst : original_loop_instructions_) {
+  for (Instruction* inst : original_loop_instructions_) {
     // If we find any instruction which we can't move (such as a barrier),
     // return false.
     if (!MovableInstruction(*inst)) return false;
@@ -315,7 +314,7 @@ bool LoopFissionImpl::CanPerformSplit() {
     // Look at the dependency between the loads in the original and stores in
     // the cloned loops.
     if (inst->opcode() == SpvOp::SpvOpLoad) {
-      for (opt::Instruction* store : set_one_stores) {
+      for (Instruction* store : set_one_stores) {
         DistanceVector vec{loop_depth};
 
         // If the store actually should appear after the load, return false.
@@ -333,7 +332,7 @@ bool LoopFissionImpl::CanPerformSplit() {
         }
       }
     } else if (inst->opcode() == SpvOp::SpvOpStore) {
-      for (opt::Instruction* load : set_one_loads) {
+      for (Instruction* load : set_one_loads) {
         DistanceVector vec{loop_depth};
 
         // If the load actually should appear after the store, return false.
@@ -355,30 +354,30 @@ bool LoopFissionImpl::CanPerformSplit() {
   return true;
 }
 
-opt::Loop* LoopFissionImpl::SplitLoop() {
+Loop* LoopFissionImpl::SplitLoop() {
   // Clone the loop.
   LoopUtils util{context_, loop_};
   LoopUtils::LoopCloningResult clone_results;
-  opt::Loop* cloned_loop = util.CloneAndAttachLoopToHeader(&clone_results);
+  Loop* cloned_loop = util.CloneAndAttachLoopToHeader(&clone_results);
 
   // Update the OpLoopMerge in the cloned loop.
   cloned_loop->UpdateLoopMergeInst();
 
   // Add the loop_ to the module.
-  opt::Function::iterator it =
+  Function::iterator it =
       util.GetFunction()->FindBlock(loop_->GetOrCreatePreHeaderBlock()->id());
   util.GetFunction()->AddBasicBlocks(clone_results.cloned_bb_.begin(),
                                      clone_results.cloned_bb_.end(), ++it);
   loop_->SetPreHeaderBlock(cloned_loop->GetMergeBlock());
 
-  std::vector<opt::Instruction*> instructions_to_kill{};
+  std::vector<Instruction*> instructions_to_kill{};
 
   // Kill all the instructions which should appear in the cloned loop but not in
   // the original loop.
   for (uint32_t id : loop_->GetBlocks()) {
-    opt::BasicBlock* block = context_->cfg()->block(id);
+    BasicBlock* block = context_->cfg()->block(id);
 
-    for (opt::Instruction& inst : *block) {
+    for (Instruction& inst : *block) {
       // If the instruction appears in the cloned loop instruction group, kill
       // it.
       if (cloned_loop_instructions_.count(&inst) == 1 &&
@@ -395,9 +394,9 @@ opt::Loop* LoopFissionImpl::SplitLoop() {
   // Kill all instructions which should appear in the original loop and not in
   // the cloned loop.
   for (uint32_t id : cloned_loop->GetBlocks()) {
-    opt::BasicBlock* block = context_->cfg()->block(id);
-    for (opt::Instruction& inst : *block) {
-      opt::Instruction* old_inst = clone_results.ptr_map_[&inst];
+    BasicBlock* block = context_->cfg()->block(id);
+    for (Instruction& inst : *block) {
+      Instruction* old_inst = clone_results.ptr_map_[&inst];
       // If the instruction belongs to the original loop instruction group, kill
       // it.
       if (cloned_loop_instructions_.count(old_inst) == 0 &&
@@ -407,7 +406,7 @@ opt::Loop* LoopFissionImpl::SplitLoop() {
     }
   }
 
-  for (opt::Instruction* i : instructions_to_kill) {
+  for (Instruction* i : instructions_to_kill) {
     context_->KillInst(i);
   }
 
@@ -433,13 +432,12 @@ LoopFissionPass::LoopFissionPass() : split_multiple_times_(false) {
   };
 }
 
-bool LoopFissionPass::ShouldSplitLoop(const opt::Loop& loop,
-                                      opt::IRContext* c) {
+bool LoopFissionPass::ShouldSplitLoop(const Loop& loop, IRContext* c) {
   LivenessAnalysis* analysis = c->GetLivenessAnalysis();
 
   RegisterLiveness::RegionRegisterLiveness liveness{};
 
-  opt::Function* function = loop.GetHeaderBlock()->GetParent();
+  Function* function = loop.GetHeaderBlock()->GetParent();
   analysis->Get(function)->ComputeLoopRegisterPressure(loop, &liveness);
 
   return split_criteria_(liveness);
@@ -448,23 +446,23 @@ bool LoopFissionPass::ShouldSplitLoop(const opt::Loop& loop,
 Pass::Status LoopFissionPass::Process() {
   bool changed = false;
 
-  for (opt::Function& f : *context()->module()) {
+  for (Function& f : *context()->module()) {
     // We collect all the inner most loops in the function and run the loop
     // splitting util on each. The reason we do this is to allow us to iterate
     // over each, as creating new loops will invalidate the the loop iterator.
-    std::vector<opt::Loop*> inner_most_loops{};
-    opt::LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(&f);
-    for (opt::Loop& loop : loop_descriptor) {
+    std::vector<Loop*> inner_most_loops{};
+    LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(&f);
+    for (Loop& loop : loop_descriptor) {
       if (!loop.HasChildren() && ShouldSplitLoop(loop, context())) {
         inner_most_loops.push_back(&loop);
       }
     }
 
     // List of new loops which meet the criteria to be split again.
-    std::vector<opt::Loop*> new_loops_to_split{};
+    std::vector<Loop*> new_loops_to_split{};
 
     while (!inner_most_loops.empty()) {
-      for (opt::Loop* loop : inner_most_loops) {
+      for (Loop* loop : inner_most_loops) {
         LoopFissionImpl impl{context(), loop};
 
         // Group the instructions in the loop into two different sets of related
@@ -475,10 +473,10 @@ Pass::Status LoopFissionPass::Process() {
         }
 
         if (impl.CanPerformSplit()) {
-          opt::Loop* second_loop = impl.SplitLoop();
+          Loop* second_loop = impl.SplitLoop();
           changed = true;
           context()->InvalidateAnalysesExceptFor(
-              opt::IRContext::kAnalysisLoopAnalysis);
+              IRContext::kAnalysisLoopAnalysis);
 
           // If the newly created loop meets the criteria to be split, split it
           // again.

@@ -30,30 +30,29 @@ class PrivateToLocalPass : public Pass {
   const char* name() const override { return "private-to-local"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse |
-           opt::IRContext::kAnalysisInstrToBlockMapping |
-           opt::IRContext::kAnalysisDecorations |
-           opt::IRContext::kAnalysisCombinators | opt::IRContext::kAnalysisCFG |
-           opt::IRContext::kAnalysisDominatorAnalysis |
-           opt::IRContext::kAnalysisNameMap;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse |
+           IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
+           IRContext::kAnalysisCFG | IRContext::kAnalysisDominatorAnalysis |
+           IRContext::kAnalysisNameMap;
   }
 
  private:
   // Moves |variable| from the private storage class to the function storage
   // class of |function|.
-  void MoveVariable(opt::Instruction* variable, opt::Function* function);
+  void MoveVariable(Instruction* variable, Function* function);
 
   // |inst| is an instruction declaring a varible.  If that variable is
   // referenced in a single function and all of uses are valid as defined by
   // |IsValidUse|, then that function is returned.  Otherwise, the return
   // value is |nullptr|.
-  opt::Function* FindLocalFunction(const opt::Instruction& inst) const;
+  Function* FindLocalFunction(const Instruction& inst) const;
 
   // Returns true is |inst| is a valid use of a pointer.  In this case, a
   // valid use is one where the transformation is able to rewrite the type to
   // match a change in storage class of the original variable.
-  bool IsValidUse(const opt::Instruction* inst) const;
+  bool IsValidUse(const Instruction* inst) const;
 
   // Given the result id of a pointer type, |old_type_id|, this function
   // returns the id of a the same pointer type except the storage class has
@@ -63,7 +62,7 @@ class PrivateToLocalPass : public Pass {
 
   // Updates |inst|, and any instruction dependent on |inst|, to reflect the
   // change of the base pointer now pointing to the function storage class.
-  void UpdateUse(opt::Instruction* inst);
+  void UpdateUse(Instruction* inst);
   void UpdateUses(uint32_t id);
 };
 

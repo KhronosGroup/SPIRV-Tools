@@ -26,7 +26,7 @@ Pass::Status RedundancyEliminationPass::Process() {
   for (auto& func : *get_module()) {
     // Build the dominator tree for this function. It is how the code is
     // traversed.
-    opt::DominatorTree& dom_tree =
+    DominatorTree& dom_tree =
         context()->GetDominatorAnalysis(&func)->GetDomTree();
 
     // Keeps track of all ids that contain a given value number. We keep

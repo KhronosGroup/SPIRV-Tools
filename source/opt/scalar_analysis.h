@@ -40,7 +40,7 @@ class Loop;
 // usable form with SimplifyExpression.
 class ScalarEvolutionAnalysis {
  public:
-  explicit ScalarEvolutionAnalysis(opt::IRContext* context);
+  explicit ScalarEvolutionAnalysis(IRContext* context);
 
   // Create a unary negative node on |operand|.
   SENode* CreateNegation(SENode* operand);
@@ -61,18 +61,18 @@ class ScalarEvolutionAnalysis {
   SENode* CreateConstant(int64_t integer);
 
   // Create a value unknown node, such as a load.
-  SENode* CreateValueUnknownNode(const opt::Instruction* inst);
+  SENode* CreateValueUnknownNode(const Instruction* inst);
 
   // Create a CantComputeNode. Used to exit out of analysis.
   SENode* CreateCantComputeNode();
 
   // Create a new recurrent node with |offset| and |coefficient|, with respect
   // to |loop|.
-  SENode* CreateRecurrentExpression(const opt::Loop* loop, SENode* offset,
+  SENode* CreateRecurrentExpression(const Loop* loop, SENode* offset,
                                     SENode* coefficient);
 
   // Construct the DAG by traversing use def chain of |inst|.
-  SENode* AnalyzeInstruction(const opt::Instruction* inst);
+  SENode* AnalyzeInstruction(const Instruction* inst);
 
   // Simplify the |node| by grouping like terms or if contains a recurrent
   // expression, rewrite the graph so the whole DAG (from |node| down) is in
@@ -91,7 +91,7 @@ class ScalarEvolutionAnalysis {
   SENode* GetCachedOrAdd(std::unique_ptr<SENode> prospective_node);
 
   // Checks that the graph starting from |node| is invariant to the |loop|.
-  bool IsLoopInvariant(const opt::Loop* loop, const SENode* node) const;
+  bool IsLoopInvariant(const Loop* loop, const SENode* node) const;
 
   // Sets |is_gt_zero| to true if |node| represent a value always strictly
   // greater than 0. The result of |is_gt_zero| is valid only if the function
@@ -106,15 +106,15 @@ class ScalarEvolutionAnalysis {
   // |node| and return the coefficient of that recurrent term. Constant zero
   // will be returned if no recurrent could be found. |node| should be in
   // simplest form.
-  SENode* GetCoefficientFromRecurrentTerm(SENode* node, const opt::Loop* loop);
+  SENode* GetCoefficientFromRecurrentTerm(SENode* node, const Loop* loop);
 
   // Return a rebuilt graph starting from |node| with the recurrent expression
   // belonging to |loop| being zeroed out. Returned node will be simplified.
-  SENode* BuildGraphWithoutRecurrentTerm(SENode* node, const opt::Loop* loop);
+  SENode* BuildGraphWithoutRecurrentTerm(SENode* node, const Loop* loop);
 
   // Return the recurrent term belonging to |loop| if it appears in the graph
   // starting at |node| or null if it doesn't.
-  SERecurrentNode* GetRecurrentTerm(SENode* node, const opt::Loop* loop);
+  SERecurrentNode* GetRecurrentTerm(SENode* node, const Loop* loop);
 
   SENode* UpdateChildNode(SENode* parent, SENode* child, SENode* new_child);
 
@@ -122,29 +122,29 @@ class ScalarEvolutionAnalysis {
   // SERecurrentNode objects. This enables analysing dependencies that will be
   // created during loop fusion.
   void AddLoopsToPretendAreTheSame(
-      const std::pair<const opt::Loop*, const opt::Loop*>& loop_pair) {
+      const std::pair<const Loop*, const Loop*>& loop_pair) {
     pretend_equal_[std::get<1>(loop_pair)] = std::get<0>(loop_pair);
   }
 
  private:
-  SENode* AnalyzeConstant(const opt::Instruction* inst);
+  SENode* AnalyzeConstant(const Instruction* inst);
 
   // Handles both addition and subtraction. If the |instruction| is OpISub
   // then the resulting node will be op1+(-op2) otherwise if it is OpIAdd then
   // the result will be op1+op2. |instruction| must be OpIAdd or OpISub.
-  SENode* AnalyzeAddOp(const opt::Instruction* instruction);
+  SENode* AnalyzeAddOp(const Instruction* instruction);
 
-  SENode* AnalyzeMultiplyOp(const opt::Instruction* multiply);
+  SENode* AnalyzeMultiplyOp(const Instruction* multiply);
 
-  SENode* AnalyzePhiInstruction(const opt::Instruction* phi);
+  SENode* AnalyzePhiInstruction(const Instruction* phi);
 
-  opt::IRContext* context_;
+  IRContext* context_;
 
   // A map of instructions to SENodes. This is used to track recurrent
   // expressions as they are added when analyzing instructions. Recurrent
   // expressions come from phi nodes which by nature can include recursion so we
   // check if nodes have already been built when analyzing instructions.
-  std::map<const opt::Instruction*, SENode*> recurrent_node_map_;
+  std::map<const Instruction*, SENode*> recurrent_node_map_;
 
   // On creation we create and cache the CantCompute node so we not need to
   // perform a needless create step.
@@ -167,7 +167,7 @@ class ScalarEvolutionAnalysis {
 
   // Loops that should be considered the same for performing analysis for loop
   // fusion.
-  std::map<const opt::Loop*, const opt::Loop*> pretend_equal_;
+  std::map<const Loop*, const Loop*> pretend_equal_;
 };
 
 // Wrapping class to manipulate SENode pointer using + - * / operators.

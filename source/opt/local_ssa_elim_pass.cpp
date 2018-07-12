@@ -47,7 +47,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
   // Process functions
-  ProcessFunction pfn = [this](opt::Function* fp) {
+  ProcessFunction pfn = [this](Function* fp) {
     return SSARewriter(this).RewriteFunctionIntoSSA(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());

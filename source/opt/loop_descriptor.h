@@ -55,7 +55,7 @@ class Loop {
         parent_(nullptr),
         loop_is_marked_for_removal_(false) {}
 
-  Loop(IRContext* context, opt::DominatorAnalysis* analysis, BasicBlock* header,
+  Loop(IRContext* context, DominatorAnalysis* analysis, BasicBlock* header,
        BasicBlock* continue_target, BasicBlock* merge_target);
 
   // Iterators over the immediate sub-loops.
@@ -77,7 +77,7 @@ class Loop {
   inline void UpdateLoopMergeInst() {
     assert(GetHeaderBlock()->GetLoopMergeInst() &&
            "The loop is not structured");
-    opt::Instruction* merge_inst = GetHeaderBlock()->GetLoopMergeInst();
+    Instruction* merge_inst = GetHeaderBlock()->GetLoopMergeInst();
     merge_inst->SetInOperand(0, {GetMergeBlock()->id()});
   }
 
@@ -232,22 +232,20 @@ class Loop {
   }
 
   // Returns the list of induction variables within the loop.
-  void GetInductionVariables(std::vector<opt::Instruction*>& inductions) const;
+  void GetInductionVariables(std::vector<Instruction*>& inductions) const;
 
   // This function uses the |condition| to find the induction variable which is
   // used by the loop condition within the loop. This only works if the loop is
   // bound by a single condition and single induction variable.
-  opt::Instruction* FindConditionVariable(
-      const opt::BasicBlock* condition) const;
+  Instruction* FindConditionVariable(const BasicBlock* condition) const;
 
   // Returns the number of iterations within a loop when given the |induction|
   // variable and the loop |condition| check. It stores the found number of
   // iterations in the output parameter |iterations| and optionally, the step
   // value in |step_value| and the initial value of the induction variable in
   // |init_value|.
-  bool FindNumberOfIterations(const opt::Instruction* induction,
-                              const opt::Instruction* condition,
-                              size_t* iterations,
+  bool FindNumberOfIterations(const Instruction* induction,
+                              const Instruction* condition, size_t* iterations,
                               int64_t* step_amount = nullptr,
                               int64_t* init_value = nullptr) const;
 
@@ -263,7 +261,7 @@ class Loop {
 
   // Finds the conditional block with a branch to the merge and continue blocks
   // within the loop body.
-  opt::BasicBlock* FindConditionBlock() const;
+  BasicBlock* FindConditionBlock() const;
 
   // Remove the child loop form this loop.
   inline void RemoveChildLoop(Loop* loop) {
@@ -307,13 +305,12 @@ class Loop {
   // Extract the initial value from the |induction| variable and store it in
   // |value|. If the function couldn't find the initial value of |induction|
   // return false.
-  bool GetInductionInitValue(const opt::Instruction* induction,
+  bool GetInductionInitValue(const Instruction* induction,
                              int64_t* value) const;
 
   // Takes in a phi instruction |induction| and the loop |header| and returns
   // the step operation of the loop.
-  opt::Instruction* GetInductionStepOperation(
-      const opt::Instruction* induction) const;
+  Instruction* GetInductionStepOperation(const Instruction* induction) const;
 
   // Returns true if we can deduce the number of loop iterations in the step
   // operation |step|. IsSupportedCondition must also be true for the condition
@@ -330,9 +327,9 @@ class Loop {
   // pre-header block will also be included at the beginning of the list if it
   // exist. If |include_merge| is true, the merge block will also be included at
   // the end of the list if it exist.
-  void ComputeLoopStructuredOrder(
-      std::vector<opt::BasicBlock*>* ordered_loop_blocks,
-      bool include_pre_header = false, bool include_merge = false) const;
+  void ComputeLoopStructuredOrder(std::vector<BasicBlock*>* ordered_loop_blocks,
+                                  bool include_pre_header = false,
+                                  bool include_merge = false) const;
 
   // Given the loop |condition|, |initial_value|, |step_value|, the trip count
   // |number_of_iterations|, and the |unroll_factor| requested, get the new
@@ -345,7 +342,7 @@ class Loop {
 
   // Returns the condition instruction for entry into the loop
   // Returns nullptr if it can't be found.
-  opt::Instruction* GetConditionInst() const;
+  Instruction* GetConditionInst() const;
 
   // Returns the context associated this loop.
   IRContext* GetContext() const { return context_; }
@@ -354,7 +351,7 @@ class Loop {
   // which is also dominated by the loop continue block. This block is the latch
   // block. The specification mandates that this block should exist, therefore
   // this function will assert if it is not found.
-  opt::BasicBlock* FindLatchBlock();
+  BasicBlock* FindLatchBlock();
 
  private:
   IRContext* context_;
@@ -389,7 +386,7 @@ class Loop {
   bool IsBasicBlockInLoopSlow(const BasicBlock* bb);
 
   // Returns the loop preheader if it exists, returns nullptr otherwise.
-  BasicBlock* FindLoopPreheader(opt::DominatorAnalysis* dom_analysis);
+  BasicBlock* FindLoopPreheader(DominatorAnalysis* dom_analysis);
 
   // Sets |latch| as the loop unique latch block. No checks are performed
   // here.
@@ -420,11 +417,11 @@ class Loop {
 class LoopDescriptor {
  public:
   // Iterator interface (depth first postorder traversal).
-  using iterator = opt::PostOrderTreeDFIterator<Loop>;
-  using const_iterator = opt::PostOrderTreeDFIterator<const Loop>;
+  using iterator = PostOrderTreeDFIterator<Loop>;
+  using const_iterator = PostOrderTreeDFIterator<const Loop>;
 
-  using pre_iterator = opt::TreeDFIterator<Loop>;
-  using const_pre_iterator = opt::TreeDFIterator<const Loop>;
+  using pre_iterator = TreeDFIterator<Loop>;
+  using const_pre_iterator = TreeDFIterator<const Loop>;
 
   // Creates a loop object for all loops found in |f|.
   explicit LoopDescriptor(const Function* f);
@@ -458,7 +455,7 @@ class LoopDescriptor {
 
   // Returns the loops in |this| in the order their headers appear in the
   // binary.
-  std::vector<opt::Loop*> GetLoopsInBinaryLayoutOrder();
+  std::vector<Loop*> GetLoopsInBinaryLayoutOrder();
 
   // Returns the inner most loop that contains the basic block id |block_id|.
   inline Loop* operator[](uint32_t block_id) const {
@@ -501,7 +498,7 @@ class LoopDescriptor {
 
   // Mark the loop |loop_to_add| as needing to be added when the user calls
   // PostModificationCleanup. |parent| may be null.
-  inline void AddLoop(opt::Loop* loop_to_add, opt::Loop* parent) {
+  inline void AddLoop(Loop* loop_to_add, Loop* parent) {
     loops_to_add_.emplace_back(std::make_pair(parent, loop_to_add));
   }
 
@@ -520,12 +517,12 @@ class LoopDescriptor {
 
   // Adds the loop |new_loop| and all its nested loops to the descriptor set.
   // The object takes ownership of all the loops.
-  opt::Loop* AddLoopNest(std::unique_ptr<opt::Loop> new_loop);
+  Loop* AddLoopNest(std::unique_ptr<Loop> new_loop);
 
   // Remove the loop |loop|.
-  void RemoveLoop(opt::Loop* loop);
+  void RemoveLoop(Loop* loop);
 
-  void SetAsTopLoop(opt::Loop* loop) {
+  void SetAsTopLoop(Loop* loop) {
     assert(std::find(dummy_top_loop_.begin(), dummy_top_loop_.end(), loop) ==
                dummy_top_loop_.end() &&
            "already registered");

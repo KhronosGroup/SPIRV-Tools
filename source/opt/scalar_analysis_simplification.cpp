@@ -375,7 +375,7 @@ SENode* SENodeSimplifyImpl::FoldRecurrentAddExpressions(SENode* root) {
 
   // A mapping of loops to the list of recurrent expressions which are with
   // respect to those loops.
-  std::map<const opt::Loop*, std::vector<std::pair<SERecurrentNode*, bool>>>
+  std::map<const Loop*, std::vector<std::pair<SERecurrentNode*, bool>>>
       loops_to_recurrent{};
 
   bool has_multiple_same_loop_recurrent_terms = false;
@@ -389,7 +389,7 @@ SENode* SENodeSimplifyImpl::FoldRecurrentAddExpressions(SENode* root) {
     }
 
     if (child->GetType() == SENode::RecurrentAddExpr) {
-      const opt::Loop* loop = child->AsSERecurrentNode()->GetLoop();
+      const Loop* loop = child->AsSERecurrentNode()->GetLoop();
 
       SERecurrentNode* rec = child->AsSERecurrentNode();
       if (loops_to_recurrent.find(loop) == loops_to_recurrent.end()) {
@@ -408,7 +408,7 @@ SENode* SENodeSimplifyImpl::FoldRecurrentAddExpressions(SENode* root) {
   for (auto pair : loops_to_recurrent) {
     std::vector<std::pair<SERecurrentNode*, bool>>& recurrent_expressions =
         pair.second;
-    const opt::Loop* loop = pair.first;
+    const Loop* loop = pair.first;
 
     std::unique_ptr<SENode> new_coefficient{new SEAddNode(&analysis_)};
     std::unique_ptr<SENode> new_offset{new SEAddNode(&analysis_)};

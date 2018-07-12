@@ -29,12 +29,12 @@ class EliminateDeadFunctionsPass : public MemPass {
   const char* name() const override { return "eliminate-dead-functions"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse;
   }
 
  private:
-  void EliminateFunction(opt::Function* func);
+  void EliminateFunction(Function* func);
 };
 
 }  // namespace opt

@@ -47,12 +47,12 @@ bool LoopDependenceAnalysis::IsMIV(
          1;
 }
 
-SENode* LoopDependenceAnalysis::GetLowerBound(const opt::Loop* loop) {
-  opt::Instruction* cond_inst = loop->GetConditionInst();
+SENode* LoopDependenceAnalysis::GetLowerBound(const Loop* loop) {
+  Instruction* cond_inst = loop->GetConditionInst();
   if (!cond_inst) {
     return nullptr;
   }
-  opt::Instruction* lower_inst = GetOperandDefinition(cond_inst, 0);
+  Instruction* lower_inst = GetOperandDefinition(cond_inst, 0);
   switch (cond_inst->opcode()) {
     case SpvOpULessThan:
     case SpvOpSLessThan:
@@ -79,12 +79,12 @@ SENode* LoopDependenceAnalysis::GetLowerBound(const opt::Loop* loop) {
   }
 }
 
-SENode* LoopDependenceAnalysis::GetUpperBound(const opt::Loop* loop) {
-  opt::Instruction* cond_inst = loop->GetConditionInst();
+SENode* LoopDependenceAnalysis::GetUpperBound(const Loop* loop) {
+  Instruction* cond_inst = loop->GetConditionInst();
   if (!cond_inst) {
     return nullptr;
   }
-  opt::Instruction* upper_inst = GetOperandDefinition(cond_inst, 1);
+  Instruction* upper_inst = GetOperandDefinition(cond_inst, 1);
   switch (cond_inst->opcode()) {
     case SpvOpULessThan:
     case SpvOpSLessThan: {
@@ -135,7 +135,7 @@ bool LoopDependenceAnalysis::IsWithinBounds(int64_t value, int64_t bound_one,
 }
 
 bool LoopDependenceAnalysis::IsProvablyOutsideOfLoopBounds(
-    const opt::Loop* loop, SENode* distance, SENode* coefficient) {
+    const Loop* loop, SENode* distance, SENode* coefficient) {
   // We test to see if we can reduce the coefficient to an integral constant.
   SEConstantNode* coefficient_constant = coefficient->AsSEConstantNode();
   if (!coefficient_constant) {
@@ -196,7 +196,7 @@ bool LoopDependenceAnalysis::IsProvablyOutsideOfLoopBounds(
   return false;
 }
 
-const opt::Loop* LoopDependenceAnalysis::GetLoopForSubscriptPair(
+const Loop* LoopDependenceAnalysis::GetLoopForSubscriptPair(
     const std::pair<SENode*, SENode*>& subscript_pair) {
   // Collect all the SERecurrentNodes.
   std::vector<SERecurrentNode*> source_nodes =
@@ -205,7 +205,7 @@ const opt::Loop* LoopDependenceAnalysis::GetLoopForSubscriptPair(
       std::get<1>(subscript_pair)->CollectRecurrentNodes();
 
   // Collect all the loops stored by the SERecurrentNodes.
-  std::unordered_set<const opt::Loop*> loops{};
+  std::unordered_set<const Loop*> loops{};
   for (auto source_nodes_it = source_nodes.begin();
        source_nodes_it != source_nodes.end(); ++source_nodes_it) {
     loops.insert((*source_nodes_it)->GetLoop());
@@ -226,7 +226,7 @@ const opt::Loop* LoopDependenceAnalysis::GetLoopForSubscriptPair(
 }
 
 DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForLoop(
-    const opt::Loop* loop, DistanceVector* distance_vector) {
+    const Loop* loop, DistanceVector* distance_vector) {
   if (!loop) {
     return nullptr;
   }
@@ -245,22 +245,21 @@ DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForLoop(
 DistanceEntry* LoopDependenceAnalysis::GetDistanceEntryForSubscriptPair(
     const std::pair<SENode*, SENode*>& subscript_pair,
     DistanceVector* distance_vector) {
-  const opt::Loop* loop = GetLoopForSubscriptPair(subscript_pair);
+  const Loop* loop = GetLoopForSubscriptPair(subscript_pair);
 
   return GetDistanceEntryForLoop(loop, distance_vector);
 }
 
-SENode* LoopDependenceAnalysis::GetTripCount(const opt::Loop* loop) {
-  opt::BasicBlock* condition_block = loop->FindConditionBlock();
+SENode* LoopDependenceAnalysis::GetTripCount(const Loop* loop) {
+  BasicBlock* condition_block = loop->FindConditionBlock();
   if (!condition_block) {
     return nullptr;
   }
-  opt::Instruction* induction_instr =
-      loop->FindConditionVariable(condition_block);
+  Instruction* induction_instr = loop->FindConditionVariable(condition_block);
   if (!induction_instr) {
     return nullptr;
   }
-  opt::Instruction* cond_instr = loop->GetConditionInst();
+  Instruction* cond_instr = loop->GetConditionInst();
   if (!cond_instr) {
     return nullptr;
   }
@@ -280,14 +279,12 @@ SENode* LoopDependenceAnalysis::GetTripCount(const opt::Loop* loop) {
   return nullptr;
 }
 
-SENode* LoopDependenceAnalysis::GetFirstTripInductionNode(
-    const opt::Loop* loop) {
-  opt::BasicBlock* condition_block = loop->FindConditionBlock();
+SENode* LoopDependenceAnalysis::GetFirstTripInductionNode(const Loop* loop) {
+  BasicBlock* condition_block = loop->FindConditionBlock();
   if (!condition_block) {
     return nullptr;
   }
-  opt::Instruction* induction_instr =
-      loop->FindConditionVariable(condition_block);
+  Instruction* induction_instr = loop->FindConditionVariable(condition_block);
   if (!induction_instr) {
     return nullptr;
   }
@@ -302,7 +299,7 @@ SENode* LoopDependenceAnalysis::GetFirstTripInductionNode(
 }
 
 SENode* LoopDependenceAnalysis::GetFinalTripInductionNode(
-    const opt::Loop* loop, SENode* induction_coefficient) {
+    const Loop* loop, SENode* induction_coefficient) {
   SENode* first_trip_induction_node = GetFirstTripInductionNode(loop);
   if (!first_trip_induction_node) {
     return nullptr;
@@ -319,12 +316,12 @@ SENode* LoopDependenceAnalysis::GetFinalTripInductionNode(
       scalar_evolution_.CreateMultiplyNode(trip_count, induction_coefficient)));
 }
 
-std::set<const opt::Loop*> LoopDependenceAnalysis::CollectLoops(
+std::set<const Loop*> LoopDependenceAnalysis::CollectLoops(
     const std::vector<SERecurrentNode*>& recurrent_nodes) {
   // We don't handle loops with more than one induction variable. Therefore we
   // can identify the number of induction variables by collecting all of the
   // loops the collected recurrent nodes belong to.
-  std::set<const opt::Loop*> loops{};
+  std::set<const Loop*> loops{};
   for (auto recurrent_nodes_it = recurrent_nodes.begin();
        recurrent_nodes_it != recurrent_nodes.end(); ++recurrent_nodes_it) {
     loops.insert((*recurrent_nodes_it)->GetLoop());
@@ -343,24 +340,23 @@ int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* node) {
   // We don't handle loops with more than one induction variable. Therefore we
   // can identify the number of induction variables by collecting all of the
   // loops the collected recurrent nodes belong to.
-  std::set<const opt::Loop*> loops = CollectLoops(recurrent_nodes);
+  std::set<const Loop*> loops = CollectLoops(recurrent_nodes);
 
   return static_cast<int64_t>(loops.size());
 }
 
-std::set<const opt::Loop*> LoopDependenceAnalysis::CollectLoops(
+std::set<const Loop*> LoopDependenceAnalysis::CollectLoops(
     SENode* source, SENode* destination) {
   if (!source || !destination) {
-    return std::set<const opt::Loop*>{};
+    return std::set<const Loop*>{};
   }
 
   std::vector<SERecurrentNode*> source_nodes = source->CollectRecurrentNodes();
   std::vector<SERecurrentNode*> destination_nodes =
       destination->CollectRecurrentNodes();
 
-  std::set<const opt::Loop*> loops = CollectLoops(source_nodes);
-  std::set<const opt::Loop*> destination_loops =
-      CollectLoops(destination_nodes);
+  std::set<const Loop*> loops = CollectLoops(source_nodes);
+  std::set<const Loop*> destination_loops = CollectLoops(destination_nodes);
 
   loops.insert(std::begin(destination_loops), std::end(destination_loops));
 
@@ -373,22 +369,22 @@ int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* source,
     return -1;
   }
 
-  std::set<const opt::Loop*> loops = CollectLoops(source, destination);
+  std::set<const Loop*> loops = CollectLoops(source, destination);
 
   return static_cast<int64_t>(loops.size());
 }
 
-opt::Instruction* LoopDependenceAnalysis::GetOperandDefinition(
-    const opt::Instruction* instruction, int id) {
+Instruction* LoopDependenceAnalysis::GetOperandDefinition(
+    const Instruction* instruction, int id) {
   return context_->get_def_use_mgr()->GetDef(
       instruction->GetSingleWordInOperand(id));
 }
 
-std::vector<opt::Instruction*> LoopDependenceAnalysis::GetSubscripts(
-    const opt::Instruction* instruction) {
-  opt::Instruction* access_chain = GetOperandDefinition(instruction, 0);
+std::vector<Instruction*> LoopDependenceAnalysis::GetSubscripts(
+    const Instruction* instruction) {
+  Instruction* access_chain = GetOperandDefinition(instruction, 0);
 
-  std::vector<opt::Instruction*> subscripts;
+  std::vector<Instruction*> subscripts;
 
   for (auto i = 1u; i < access_chain->NumInOperandWords(); ++i) {
     subscripts.push_back(GetOperandDefinition(access_chain, i));
@@ -397,7 +393,7 @@ std::vector<opt::Instruction*> LoopDependenceAnalysis::GetSubscripts(
   return subscripts;
 }
 
-SENode* LoopDependenceAnalysis::GetConstantTerm(const opt::Loop* loop,
+SENode* LoopDependenceAnalysis::GetConstantTerm(const Loop* loop,
                                                 SERecurrentNode* induction) {
   SENode* offset = induction->GetOffset();
   SENode* lower_bound = GetLowerBound(loop);
@@ -410,7 +406,7 @@ SENode* LoopDependenceAnalysis::GetConstantTerm(const opt::Loop* loop,
 }
 
 bool LoopDependenceAnalysis::CheckSupportedLoops(
-    std::vector<const opt::Loop*> loops) {
+    std::vector<const Loop*> loops) {
   for (auto loop : loops) {
     if (!IsSupportedLoop(loop)) {
       return false;
@@ -420,15 +416,14 @@ bool LoopDependenceAnalysis::CheckSupportedLoops(
 }
 
 void LoopDependenceAnalysis::MarkUnsusedDistanceEntriesAsIrrelevant(
-    const opt::Instruction* source, const opt::Instruction* destination,
+    const Instruction* source, const Instruction* destination,
     DistanceVector* distance_vector) {
-  std::vector<opt::Instruction*> source_subscripts = GetSubscripts(source);
-  std::vector<opt::Instruction*> destination_subscripts =
-      GetSubscripts(destination);
+  std::vector<Instruction*> source_subscripts = GetSubscripts(source);
+  std::vector<Instruction*> destination_subscripts = GetSubscripts(destination);
 
-  std::set<const opt::Loop*> used_loops{};
+  std::set<const Loop*> used_loops{};
 
-  for (opt::Instruction* source_inst : source_subscripts) {
+  for (Instruction* source_inst : source_subscripts) {
     SENode* source_node = scalar_evolution_.SimplifyExpression(
         scalar_evolution_.AnalyzeInstruction(source_inst));
     std::vector<SERecurrentNode*> recurrent_nodes =
@@ -438,7 +433,7 @@ void LoopDependenceAnalysis::MarkUnsusedDistanceEntriesAsIrrelevant(
     }
   }
 
-  for (opt::Instruction* destination_inst : destination_subscripts) {
+  for (Instruction* destination_inst : destination_subscripts) {
     SENode* destination_node = scalar_evolution_.SimplifyExpression(
         scalar_evolution_.AnalyzeInstruction(destination_inst));
     std::vector<SERecurrentNode*> recurrent_nodes =
@@ -456,13 +451,13 @@ void LoopDependenceAnalysis::MarkUnsusedDistanceEntriesAsIrrelevant(
   }
 }
 
-bool LoopDependenceAnalysis::IsSupportedLoop(const opt::Loop* loop) {
-  std::vector<opt::Instruction*> inductions{};
+bool LoopDependenceAnalysis::IsSupportedLoop(const Loop* loop) {
+  std::vector<Instruction*> inductions{};
   loop->GetInductionVariables(inductions);
   if (inductions.size() != 1) {
     return false;
   }
-  opt::Instruction* induction = inductions[0];
+  Instruction* induction = inductions[0];
   SENode* induction_node = scalar_evolution_.SimplifyExpression(
       scalar_evolution_.AnalyzeInstruction(induction));
   if (!induction_node->AsSERecurrentNode()) {
