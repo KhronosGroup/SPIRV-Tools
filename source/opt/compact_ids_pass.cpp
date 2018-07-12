@@ -21,9 +21,6 @@
 namespace spvtools {
 namespace opt {
 
-using opt::Instruction;
-using opt::Operand;
-
 Pass::Status CompactIdsPass::Process() {
   bool modified = false;
   std::unordered_map<uint32_t, uint32_t> result_id_mapping;

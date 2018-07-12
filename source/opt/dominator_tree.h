@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "cfg.h"
-#include "module.h"
 #include "tree_iterator.h"
 
 namespace spvtools {
@@ -31,7 +30,7 @@ namespace opt {
 // children. It also contains two values, for the pre and post indexes in the
 // tree which are used to compare two nodes.
 struct DominatorTreeNode {
-  explicit DominatorTreeNode(opt::BasicBlock* bb)
+  explicit DominatorTreeNode(BasicBlock* bb)
       : bb_(bb),
         parent_(nullptr),
         children_({}),
@@ -77,7 +76,7 @@ struct DominatorTreeNode {
 
   inline uint32_t id() const { return bb_->id(); }
 
-  opt::BasicBlock* bb_;
+  BasicBlock* bb_;
   DominatorTreeNode* parent_;
   std::vector<DominatorTreeNode*> children_;
 
@@ -159,10 +158,10 @@ class DominatorTree {
   // Build the (post-)dominator tree for the given control flow graph
   // |cfg| and the function |f|. |f| must exist in the |cfg|. Any
   // existing data in the dominator tree will be overwritten
-  void InitializeTree(const CFG& cfg, const opt::Function* f);
+  void InitializeTree(const CFG& cfg, const Function* f);
 
   // Check if the basic block |a| dominates the basic block |b|.
-  bool Dominates(const opt::BasicBlock* a, const opt::BasicBlock* b) const;
+  bool Dominates(const BasicBlock* a, const BasicBlock* b) const;
 
   // Check if the basic block id |a| dominates the basic block id |b|.
   bool Dominates(uint32_t a, uint32_t b) const;
@@ -171,8 +170,7 @@ class DominatorTree {
   bool Dominates(const DominatorTreeNode* a, const DominatorTreeNode* b) const;
 
   // Check if the basic block |a| strictly dominates the basic block |b|.
-  bool StrictlyDominates(const opt::BasicBlock* a,
-                         const opt::BasicBlock* b) const;
+  bool StrictlyDominates(const BasicBlock* a, const BasicBlock* b) const;
 
   // Check if the basic block id |a| strictly dominates the basic block id |b|.
   bool StrictlyDominates(uint32_t a, uint32_t b) const;
@@ -183,15 +181,15 @@ class DominatorTree {
                          const DominatorTreeNode* b) const;
 
   // Returns the immediate dominator of basic block |a|.
-  opt::BasicBlock* ImmediateDominator(const opt::BasicBlock* A) const;
+  BasicBlock* ImmediateDominator(const BasicBlock* A) const;
 
   // Returns the immediate dominator of basic block id |a|.
-  opt::BasicBlock* ImmediateDominator(uint32_t a) const;
+  BasicBlock* ImmediateDominator(uint32_t a) const;
 
   // Returns true if the basic block |a| is reachable by this tree. A node would
   // be unreachable if it cannot be reached by traversal from the start node or
   // for a postdominator tree, cannot be reached from the exit nodes.
-  inline bool ReachableFromRoots(const opt::BasicBlock* a) const {
+  inline bool ReachableFromRoots(const BasicBlock* a) const {
     if (!a) return false;
     return ReachableFromRoots(a->id());
   }
@@ -243,12 +241,12 @@ class DominatorTree {
 
   // Returns the DominatorTreeNode associated with the basic block |bb|.
   // If the |bb| is unknown to the dominator tree, it returns null.
-  inline DominatorTreeNode* GetTreeNode(opt::BasicBlock* bb) {
+  inline DominatorTreeNode* GetTreeNode(BasicBlock* bb) {
     return GetTreeNode(bb->id());
   }
   // Returns the DominatorTreeNode associated with the basic block |bb|.
   // If the |bb| is unknown to the dominator tree, it returns null.
-  inline const DominatorTreeNode* GetTreeNode(opt::BasicBlock* bb) const {
+  inline const DominatorTreeNode* GetTreeNode(BasicBlock* bb) const {
     return GetTreeNode(bb->id());
   }
 
@@ -273,7 +271,7 @@ class DominatorTree {
 
   // Adds the basic block |bb| to the tree structure if it doesn't already
   // exist.
-  DominatorTreeNode* GetOrInsertNode(opt::BasicBlock* bb);
+  DominatorTreeNode* GetOrInsertNode(BasicBlock* bb);
 
   // Recomputes the DF numbering of the tree.
   void ResetDFNumbering();
@@ -288,8 +286,8 @@ class DominatorTree {
   // pair is its immediate dominator.
   // The root of the tree has themself as immediate dominator.
   void GetDominatorEdges(
-      const opt::Function* f, const opt::BasicBlock* dummy_start_node,
-      std::vector<std::pair<opt::BasicBlock*, opt::BasicBlock*>>* edges);
+      const Function* f, const BasicBlock* dummy_start_node,
+      std::vector<std::pair<BasicBlock*, BasicBlock*>>* edges);
 
   // The roots of the tree.
   std::vector<DominatorTreeNode*> roots_;

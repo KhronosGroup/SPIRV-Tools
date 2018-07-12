@@ -33,20 +33,20 @@ size_t LoopPeelingPass::code_grow_threshold_ = 1000;
 
 void LoopPeeling::DuplicateAndConnectLoop(
     LoopUtils::LoopCloningResult* clone_results) {
-  opt::CFG& cfg = *context_->cfg();
+  CFG& cfg = *context_->cfg();
   analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
   assert(CanPeelLoop() && "Cannot peel loop!");
 
-  std::vector<opt::BasicBlock*> ordered_loop_blocks;
-  opt::BasicBlock* pre_header = loop_->GetOrCreatePreHeaderBlock();
+  std::vector<BasicBlock*> ordered_loop_blocks;
+  BasicBlock* pre_header = loop_->GetOrCreatePreHeaderBlock();
 
   loop_->ComputeLoopStructuredOrder(&ordered_loop_blocks);
 
   cloned_loop_ = loop_utils_.CloneLoop(clone_results, ordered_loop_blocks);
 
   // Add the basic block to the function.
-  opt::Function::iterator it =
+  Function::iterator it =
       loop_utils_.GetFunction()->FindBlock(pre_header->id());
   assert(it != loop_utils_.GetFunction()->end() &&
          "Pre-header not found in the function.");
@@ -54,7 +54,7 @@ void LoopPeeling::DuplicateAndConnectLoop(
       clone_results->cloned_bb_.begin(), clone_results->cloned_bb_.end(), ++it);
 
   // Make the |loop_|'s preheader the |cloned_loop_| one.
-  opt::BasicBlock* cloned_header = cloned_loop_->GetHeaderBlock();
+  BasicBlock* cloned_header = cloned_loop_->GetHeaderBlock();
   pre_header->ForEachSuccessorLabel(
       [cloned_header](uint32_t* succ) { *succ = cloned_header->id(); });
 
@@ -71,7 +71,7 @@ void LoopPeeling::DuplicateAndConnectLoop(
   uint32_t cloned_loop_exit = 0;
   for (uint32_t pred_id : cfg.preds(loop_->GetMergeBlock()->id())) {
     if (loop_->IsInsideLoop(pred_id)) continue;
-    opt::BasicBlock* bb = cfg.block(pred_id);
+    BasicBlock* bb = cfg.block(pred_id);
     assert(cloned_loop_exit == 0 && "The loop has multiple exits.");
     cloned_loop_exit = bb->id();
     bb->ForEachSuccessorLabel([this](uint32_t* succ) {
@@ -116,7 +116,7 @@ void LoopPeeling::DuplicateAndConnectLoop(
   // }
   loop_->GetHeaderBlock()->ForEachPhiInst([cloned_loop_exit, def_use_mgr,
                                            clone_results,
-                                           this](opt::Instruction* phi) {
+                                           this](Instruction* phi) {
     for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
       if (!loop_->IsInsideLoop(phi->GetSingleWordInOperand(i + 1))) {
         phi->SetInOperand(i,
@@ -143,20 +143,19 @@ void LoopPeeling::InsertCanonicalInductionVariable(
     return;
   }
 
-  opt::BasicBlock::iterator insert_point =
-      GetClonedLoop()->GetLatchBlock()->tail();
+  BasicBlock::iterator insert_point = GetClonedLoop()->GetLatchBlock()->tail();
   if (GetClonedLoop()->GetLatchBlock()->GetMergeInst()) {
     --insert_point;
   }
-  InstructionBuilder builder(context_, &*insert_point,
-                             opt::IRContext::kAnalysisDefUse |
-                                 opt::IRContext::kAnalysisInstrToBlockMapping);
-  opt::Instruction* uint_1_cst =
+  InstructionBuilder builder(
+      context_, &*insert_point,
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+  Instruction* uint_1_cst =
       builder.Add32BitConstantInteger<uint32_t>(1, int_type_->IsSigned());
   // Create the increment.
   // Note that we do "1 + 1" here, one of the operand should the phi
   // value but we don't have it yet. The operand will be set latter.
-  opt::Instruction* iv_inc = builder.AddIAdd(
+  Instruction* iv_inc = builder.AddIAdd(
       uint_1_cst->type_id(), uint_1_cst->result_id(), uint_1_cst->result_id());
 
   builder.SetInsertPoint(&*GetClonedLoop()->GetHeaderBlock()->begin());
@@ -180,12 +179,12 @@ void LoopPeeling::InsertCanonicalInductionVariable(
 }
 
 void LoopPeeling::GetIteratorUpdateOperations(
-    const opt::Loop* loop, opt::Instruction* iterator,
-    std::unordered_set<opt::Instruction*>* operations) {
-  opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+    const Loop* loop, Instruction* iterator,
+    std::unordered_set<Instruction*>* operations) {
+  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
   operations->insert(iterator);
   iterator->ForEachInId([def_use_mgr, loop, operations, this](uint32_t* id) {
-    opt::Instruction* insn = def_use_mgr->GetDef(*id);
+    Instruction* insn = def_use_mgr->GetDef(*id);
     if (insn->opcode() == SpvOpLabel) {
       return;
     }
@@ -202,7 +201,7 @@ void LoopPeeling::GetIteratorUpdateOperations(
 // Gather the set of blocks for all the path from |entry| to |root|.
 static void GetBlocksInPath(uint32_t block, uint32_t entry,
                             std::unordered_set<uint32_t>* blocks_in_path,
-                            const opt::CFG& cfg) {
+                            const CFG& cfg) {
   for (uint32_t pid : cfg.preds(block)) {
     if (blocks_in_path->insert(pid).second) {
       if (pid != entry) {
@@ -213,7 +212,7 @@ static void GetBlocksInPath(uint32_t block, uint32_t entry,
 }
 
 bool LoopPeeling::IsConditionCheckSideEffectFree() const {
-  opt::CFG& cfg = *context_->cfg();
+  CFG& cfg = *context_->cfg();
 
   // The "do-while" form does not cause issues, the algorithm takes into account
   // the first iteration.
@@ -227,8 +226,8 @@ bool LoopPeeling::IsConditionCheckSideEffectFree() const {
                     &blocks_in_path, cfg);
 
     for (uint32_t bb_id : blocks_in_path) {
-      opt::BasicBlock* bb = cfg.block(bb_id);
-      if (!bb->WhileEachInst([this](opt::Instruction* insn) {
+      BasicBlock* bb = cfg.block(bb_id);
+      if (!bb->WhileEachInst([this](Instruction* insn) {
             if (insn->IsBranch()) return true;
             switch (insn->opcode()) {
               case SpvOpLabel:
@@ -249,11 +248,10 @@ bool LoopPeeling::IsConditionCheckSideEffectFree() const {
 }
 
 void LoopPeeling::GetIteratingExitValues() {
-  opt::CFG& cfg = *context_->cfg();
+  CFG& cfg = *context_->cfg();
 
-  loop_->GetHeaderBlock()->ForEachPhiInst([this](opt::Instruction* phi) {
-    exit_value_[phi->result_id()] = nullptr;
-  });
+  loop_->GetHeaderBlock()->ForEachPhiInst(
+      [this](Instruction* phi) { exit_value_[phi->result_id()] = nullptr; });
 
   if (!loop_->GetMergeBlock()) {
     return;
@@ -261,7 +259,7 @@ void LoopPeeling::GetIteratingExitValues() {
   if (cfg.preds(loop_->GetMergeBlock()->id()).size() != 1) {
     return;
   }
-  opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
   uint32_t condition_block_id = cfg.preds(loop_->GetMergeBlock()->id())[0];
 
@@ -270,8 +268,8 @@ void LoopPeeling::GetIteratingExitValues() {
                              condition_block_id) != header_pred.end();
   if (do_while_form_) {
     loop_->GetHeaderBlock()->ForEachPhiInst(
-        [condition_block_id, def_use_mgr, this](opt::Instruction* phi) {
-          std::unordered_set<opt::Instruction*> operations;
+        [condition_block_id, def_use_mgr, this](Instruction* phi) {
+          std::unordered_set<Instruction*> operations;
 
           for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
             if (condition_block_id == phi->GetSingleWordInOperand(i + 1)) {
@@ -284,17 +282,17 @@ void LoopPeeling::GetIteratingExitValues() {
     DominatorTree* dom_tree =
         &context_->GetDominatorAnalysis(loop_utils_.GetFunction())
              ->GetDomTree();
-    opt::BasicBlock* condition_block = cfg.block(condition_block_id);
+    BasicBlock* condition_block = cfg.block(condition_block_id);
 
     loop_->GetHeaderBlock()->ForEachPhiInst(
-        [dom_tree, condition_block, this](opt::Instruction* phi) {
-          std::unordered_set<opt::Instruction*> operations;
+        [dom_tree, condition_block, this](Instruction* phi) {
+          std::unordered_set<Instruction*> operations;
 
           // Not the back-edge value, check if the phi instruction is the only
           // possible candidate.
           GetIteratorUpdateOperations(loop_, phi, &operations);
 
-          for (opt::Instruction* insn : operations) {
+          for (Instruction* insn : operations) {
             if (insn == phi) {
               continue;
             }
@@ -309,8 +307,8 @@ void LoopPeeling::GetIteratingExitValues() {
 }
 
 void LoopPeeling::FixExitCondition(
-    const std::function<uint32_t(opt::Instruction*)>& condition_builder) {
-  opt::CFG& cfg = *context_->cfg();
+    const std::function<uint32_t(Instruction*)>& condition_builder) {
+  CFG& cfg = *context_->cfg();
 
   uint32_t condition_block_id = 0;
   for (uint32_t id : cfg.preds(GetClonedLoop()->GetMergeBlock()->id())) {
@@ -321,10 +319,10 @@ void LoopPeeling::FixExitCondition(
   }
   assert(condition_block_id != 0 && "2nd loop in improperly connected");
 
-  opt::BasicBlock* condition_block = cfg.block(condition_block_id);
-  opt::Instruction* exit_condition = condition_block->terminator();
+  BasicBlock* condition_block = cfg.block(condition_block_id);
+  Instruction* exit_condition = condition_block->terminator();
   assert(exit_condition->opcode() == SpvOpBranchConditional);
-  opt::BasicBlock::iterator insert_point = condition_block->tail();
+  BasicBlock::iterator insert_point = condition_block->tail();
   if (condition_block->GetMergeInst()) {
     --insert_point;
   }
@@ -343,17 +341,17 @@ void LoopPeeling::FixExitCondition(
   context_->get_def_use_mgr()->AnalyzeInstUse(exit_condition);
 }
 
-opt::BasicBlock* LoopPeeling::CreateBlockBefore(opt::BasicBlock* bb) {
+BasicBlock* LoopPeeling::CreateBlockBefore(BasicBlock* bb) {
   analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
-  opt::CFG& cfg = *context_->cfg();
+  CFG& cfg = *context_->cfg();
   assert(cfg.preds(bb->id()).size() == 1 && "More than one predecessor");
 
-  std::unique_ptr<opt::BasicBlock> new_bb = MakeUnique<opt::BasicBlock>(
-      std::unique_ptr<opt::Instruction>(new opt::Instruction(
+  std::unique_ptr<BasicBlock> new_bb =
+      MakeUnique<BasicBlock>(std::unique_ptr<Instruction>(new Instruction(
           context_, SpvOpLabel, 0, context_->TakeNextId(), {})));
   new_bb->SetParent(loop_utils_.GetFunction());
   // Update the loop descriptor.
-  opt::Loop* in_loop = (*loop_utils_.GetLoopDescriptor())[bb];
+  Loop* in_loop = (*loop_utils_.GetLoopDescriptor())[bb];
   if (in_loop) {
     in_loop->AddBasicBlock(new_bb.get());
     loop_utils_.GetLoopDescriptor()->SetBasicBlockToLoop(new_bb->id(), in_loop);
@@ -362,7 +360,7 @@ opt::BasicBlock* LoopPeeling::CreateBlockBefore(opt::BasicBlock* bb) {
   context_->set_instr_block(new_bb->GetLabelInst(), new_bb.get());
   def_use_mgr->AnalyzeInstDefUse(new_bb->GetLabelInst());
 
-  opt::BasicBlock* bb_pred = cfg.block(cfg.preds(bb->id())[0]);
+  BasicBlock* bb_pred = cfg.block(cfg.preds(bb->id())[0]);
   bb_pred->tail()->ForEachInId([bb, &new_bb](uint32_t* id) {
     if (*id == bb->id()) {
       *id = new_bb->id();
@@ -373,37 +371,36 @@ opt::BasicBlock* LoopPeeling::CreateBlockBefore(opt::BasicBlock* bb) {
   def_use_mgr->AnalyzeInstUse(&*bb_pred->tail());
 
   // Update the incoming branch.
-  bb->ForEachPhiInst([&new_bb, def_use_mgr](opt::Instruction* phi) {
+  bb->ForEachPhiInst([&new_bb, def_use_mgr](Instruction* phi) {
     phi->SetInOperand(1, {new_bb->id()});
     def_use_mgr->AnalyzeInstUse(phi);
   });
-  InstructionBuilder(context_, new_bb.get(),
-                     opt::IRContext::kAnalysisDefUse |
-                         opt::IRContext::kAnalysisInstrToBlockMapping)
+  InstructionBuilder(
+      context_, new_bb.get(),
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping)
       .AddBranch(bb->id());
   cfg.RegisterBlock(new_bb.get());
 
   // Add the basic block to the function.
-  opt::Function::iterator it = loop_utils_.GetFunction()->FindBlock(bb->id());
+  Function::iterator it = loop_utils_.GetFunction()->FindBlock(bb->id());
   assert(it != loop_utils_.GetFunction()->end() &&
          "Basic block not found in the function.");
-  opt::BasicBlock* ret = new_bb.get();
+  BasicBlock* ret = new_bb.get();
   loop_utils_.GetFunction()->AddBasicBlock(std::move(new_bb), it);
   return ret;
 }
 
-opt::BasicBlock* LoopPeeling::ProtectLoop(opt::Loop* loop,
-                                          opt::Instruction* condition,
-                                          opt::BasicBlock* if_merge) {
-  opt::BasicBlock* if_block = loop->GetOrCreatePreHeaderBlock();
+BasicBlock* LoopPeeling::ProtectLoop(Loop* loop, Instruction* condition,
+                                     BasicBlock* if_merge) {
+  BasicBlock* if_block = loop->GetOrCreatePreHeaderBlock();
   // Will no longer be a pre-header because of the if.
   loop->SetPreHeaderBlock(nullptr);
   // Kill the branch to the header.
   context_->KillInst(&*if_block->tail());
 
-  InstructionBuilder builder(context_, if_block,
-                             opt::IRContext::kAnalysisDefUse |
-                                 opt::IRContext::kAnalysisInstrToBlockMapping);
+  InstructionBuilder builder(
+      context_, if_block,
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
   builder.AddConditionalBranch(condition->result_id(),
                                loop->GetHeaderBlock()->id(), if_merge->id(),
                                if_merge->id());
@@ -421,27 +418,25 @@ void LoopPeeling::PeelBefore(uint32_t peel_factor) {
   // Add a canonical induction variable "canonical_induction_variable_".
   InsertCanonicalInductionVariable(&clone_results);
 
-  InstructionBuilder builder(context_,
-                             &*cloned_loop_->GetPreHeaderBlock()->tail(),
-                             opt::IRContext::kAnalysisDefUse |
-                                 opt::IRContext::kAnalysisInstrToBlockMapping);
-  opt::Instruction* factor =
+  InstructionBuilder builder(
+      context_, &*cloned_loop_->GetPreHeaderBlock()->tail(),
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+  Instruction* factor =
       builder.Add32BitConstantInteger(peel_factor, int_type_->IsSigned());
 
-  opt::Instruction* has_remaining_iteration = builder.AddLessThan(
+  Instruction* has_remaining_iteration = builder.AddLessThan(
       factor->result_id(), loop_iteration_count_->result_id());
-  opt::Instruction* max_iteration = builder.AddSelect(
+  Instruction* max_iteration = builder.AddSelect(
       factor->type_id(), has_remaining_iteration->result_id(),
       factor->result_id(), loop_iteration_count_->result_id());
 
   // Change the exit condition of the cloned loop to be (exit when become
   // false):
   //  "canonical_induction_variable_" < min("factor", "loop_iteration_count_")
-  FixExitCondition([max_iteration,
-                    this](opt::Instruction* insert_before_point) {
+  FixExitCondition([max_iteration, this](Instruction* insert_before_point) {
     return InstructionBuilder(context_, insert_before_point,
-                              opt::IRContext::kAnalysisDefUse |
-                                  opt::IRContext::kAnalysisInstrToBlockMapping)
+                              IRContext::kAnalysisDefUse |
+                                  IRContext::kAnalysisInstrToBlockMapping)
         .AddLessThan(canonical_induction_variable_->result_id(),
                      max_iteration->result_id())
         ->result_id();
@@ -449,15 +444,15 @@ void LoopPeeling::PeelBefore(uint32_t peel_factor) {
 
   // "Protect" the second loop: the second loop can only be executed if
   // |has_remaining_iteration| is true (i.e. factor < loop_iteration_count_).
-  opt::BasicBlock* if_merge_block = loop_->GetMergeBlock();
+  BasicBlock* if_merge_block = loop_->GetMergeBlock();
   loop_->SetMergeBlock(CreateBlockBefore(loop_->GetMergeBlock()));
   // Prevent the second loop from being executed if we already executed all the
   // required iterations.
-  opt::BasicBlock* if_block =
+  BasicBlock* if_block =
       ProtectLoop(loop_, has_remaining_iteration, if_merge_block);
   // Patch the phi of the merge block.
   if_merge_block->ForEachPhiInst(
-      [&clone_results, if_block, this](opt::Instruction* phi) {
+      [&clone_results, if_block, this](Instruction* phi) {
         // if_merge_block had previously only 1 predecessor.
         uint32_t incoming_value = phi->GetSingleWordInOperand(0);
         auto def_in_loop = clone_results.value_map_.find(incoming_value);
@@ -471,9 +466,8 @@ void LoopPeeling::PeelBefore(uint32_t peel_factor) {
       });
 
   context_->InvalidateAnalysesExceptFor(
-      opt::IRContext::kAnalysisDefUse |
-      opt::IRContext::kAnalysisInstrToBlockMapping |
-      opt::IRContext::kAnalysisLoopAnalysis | opt::IRContext::kAnalysisCFG);
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping |
+      IRContext::kAnalysisLoopAnalysis | IRContext::kAnalysisCFG);
 }
 
 void LoopPeeling::PeelAfter(uint32_t peel_factor) {
@@ -486,24 +480,22 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
   // Add a canonical induction variable "canonical_induction_variable_".
   InsertCanonicalInductionVariable(&clone_results);
 
-  InstructionBuilder builder(context_,
-                             &*cloned_loop_->GetPreHeaderBlock()->tail(),
-                             opt::IRContext::kAnalysisDefUse |
-                                 opt::IRContext::kAnalysisInstrToBlockMapping);
-  opt::Instruction* factor =
+  InstructionBuilder builder(
+      context_, &*cloned_loop_->GetPreHeaderBlock()->tail(),
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+  Instruction* factor =
       builder.Add32BitConstantInteger(peel_factor, int_type_->IsSigned());
 
-  opt::Instruction* has_remaining_iteration = builder.AddLessThan(
+  Instruction* has_remaining_iteration = builder.AddLessThan(
       factor->result_id(), loop_iteration_count_->result_id());
 
   // Change the exit condition of the cloned loop to be (exit when become
   // false):
   //  "canonical_induction_variable_" + "factor" < "loop_iteration_count_"
-  FixExitCondition([factor, this](opt::Instruction* insert_before_point) {
+  FixExitCondition([factor, this](Instruction* insert_before_point) {
     InstructionBuilder cond_builder(
         context_, insert_before_point,
-        opt::IRContext::kAnalysisDefUse |
-            opt::IRContext::kAnalysisInstrToBlockMapping);
+        IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
     // Build the following check: canonical_induction_variable_ + factor <
     // iteration_count
     return cond_builder
@@ -525,9 +517,8 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
   // Use the second loop preheader as if merge block.
 
   // Prevent the first loop if only the peeled loop needs it.
-  opt::BasicBlock* if_block =
-      ProtectLoop(cloned_loop_, has_remaining_iteration,
-                  GetOriginalLoop()->GetPreHeaderBlock());
+  BasicBlock* if_block = ProtectLoop(cloned_loop_, has_remaining_iteration,
+                                     GetOriginalLoop()->GetPreHeaderBlock());
 
   // Patch the phi of the header block.
   // We added an if to enclose the first loop and because the phi node are
@@ -536,25 +527,25 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
   // We had to the preheader (our if merge block) the required phi instruction
   // and patch the header phi.
   GetOriginalLoop()->GetHeaderBlock()->ForEachPhiInst(
-      [&clone_results, if_block, this](opt::Instruction* phi) {
-        opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+      [&clone_results, if_block, this](Instruction* phi) {
+        analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
-        auto find_value_idx = [](opt::Instruction* phi_inst, opt::Loop* loop) {
+        auto find_value_idx = [](Instruction* phi_inst, Loop* loop) {
           uint32_t preheader_value_idx =
               !loop->IsInsideLoop(phi_inst->GetSingleWordInOperand(1)) ? 0 : 2;
           return preheader_value_idx;
         };
 
-        opt::Instruction* cloned_phi =
+        Instruction* cloned_phi =
             def_use_mgr->GetDef(clone_results.value_map_.at(phi->result_id()));
         uint32_t cloned_preheader_value = cloned_phi->GetSingleWordInOperand(
             find_value_idx(cloned_phi, GetClonedLoop()));
 
-        opt::Instruction* new_phi =
+        Instruction* new_phi =
             InstructionBuilder(context_,
                                &*GetOriginalLoop()->GetPreHeaderBlock()->tail(),
-                               opt::IRContext::kAnalysisDefUse |
-                                   opt::IRContext::kAnalysisInstrToBlockMapping)
+                               IRContext::kAnalysisDefUse |
+                                   IRContext::kAnalysisInstrToBlockMapping)
                 .AddPhi(phi->type_id(),
                         {phi->GetSingleWordInOperand(
                              find_value_idx(phi, GetOriginalLoop())),
@@ -567,47 +558,45 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
       });
 
   context_->InvalidateAnalysesExceptFor(
-      opt::IRContext::kAnalysisDefUse |
-      opt::IRContext::kAnalysisInstrToBlockMapping |
-      opt::IRContext::kAnalysisLoopAnalysis | opt::IRContext::kAnalysisCFG);
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping |
+      IRContext::kAnalysisLoopAnalysis | IRContext::kAnalysisCFG);
 }
 
 Pass::Status LoopPeelingPass::Process() {
   bool modified = false;
-  opt::Module* module = context()->module();
+  Module* module = context()->module();
 
   // Process each function in the module
-  for (opt::Function& f : *module) {
+  for (Function& f : *module) {
     modified |= ProcessFunction(&f);
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool LoopPeelingPass::ProcessFunction(opt::Function* f) {
+bool LoopPeelingPass::ProcessFunction(Function* f) {
   bool modified = false;
-  opt::LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(f);
+  LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(f);
 
-  std::vector<opt::Loop*> to_process_loop;
+  std::vector<Loop*> to_process_loop;
   to_process_loop.reserve(loop_descriptor.NumLoops());
-  for (opt::Loop& l : loop_descriptor) {
+  for (Loop& l : loop_descriptor) {
     to_process_loop.push_back(&l);
   }
 
-  opt::ScalarEvolutionAnalysis scev_analysis(context());
+  ScalarEvolutionAnalysis scev_analysis(context());
 
-  for (opt::Loop* loop : to_process_loop) {
+  for (Loop* loop : to_process_loop) {
     CodeMetrics loop_size;
     loop_size.Analyze(*loop);
 
-    auto try_peel = [&loop_size, &modified,
-                     this](opt::Loop* loop_to_peel) -> opt::Loop* {
+    auto try_peel = [&loop_size, &modified, this](Loop* loop_to_peel) -> Loop* {
       if (!loop_to_peel->IsLCSSA()) {
         LoopUtils(context(), loop_to_peel).MakeLoopClosedSSA();
       }
 
       bool peeled_loop;
-      opt::Loop* still_peelable_loop;
+      Loop* still_peelable_loop;
       std::tie(peeled_loop, still_peelable_loop) =
           ProcessLoop(loop_to_peel, &loop_size);
 
@@ -618,7 +607,7 @@ bool LoopPeelingPass::ProcessFunction(opt::Function* f) {
       return still_peelable_loop;
     };
 
-    opt::Loop* still_peelable_loop = try_peel(loop);
+    Loop* still_peelable_loop = try_peel(loop);
     // The pass is working out the maximum factor by which a loop can be peeled.
     // If the loop can potentially be peeled again, then there is only one
     // possible direction, so only one call is still needed.
@@ -630,19 +619,19 @@ bool LoopPeelingPass::ProcessFunction(opt::Function* f) {
   return modified;
 }
 
-std::pair<bool, opt::Loop*> LoopPeelingPass::ProcessLoop(
-    opt::Loop* loop, CodeMetrics* loop_size) {
-  opt::ScalarEvolutionAnalysis* scev_analysis =
+std::pair<bool, Loop*> LoopPeelingPass::ProcessLoop(Loop* loop,
+                                                    CodeMetrics* loop_size) {
+  ScalarEvolutionAnalysis* scev_analysis =
       context()->GetScalarEvolutionAnalysis();
   // Default values for bailing out.
-  std::pair<bool, opt::Loop*> bail_out{false, nullptr};
+  std::pair<bool, Loop*> bail_out{false, nullptr};
 
-  opt::BasicBlock* exit_block = loop->FindConditionBlock();
+  BasicBlock* exit_block = loop->FindConditionBlock();
   if (!exit_block) {
     return bail_out;
   }
 
-  opt::Instruction* exiting_iv = loop->FindConditionVariable(exit_block);
+  Instruction* exiting_iv = loop->FindConditionVariable(exit_block);
   if (!exiting_iv) {
     return bail_out;
   }
@@ -655,11 +644,11 @@ std::pair<bool, opt::Loop*> LoopPeelingPass::ProcessLoop(
     return bail_out;
   }
 
-  opt::Instruction* canonical_induction_variable = nullptr;
+  Instruction* canonical_induction_variable = nullptr;
 
   loop->GetHeaderBlock()->WhileEachPhiInst([&canonical_induction_variable,
                                             scev_analysis,
-                                            this](opt::Instruction* insn) {
+                                            this](Instruction* insn) {
     if (const SERecurrentNode* iv =
             scev_analysis->AnalyzeInstruction(insn)->AsSERecurrentNode()) {
       const SEConstantNode* offset = iv->GetOffset()->AsSEConstantNode();
@@ -685,9 +674,9 @@ std::pair<bool, opt::Loop*> LoopPeelingPass::ProcessLoop(
 
   LoopPeeling peeler(
       loop,
-      InstructionBuilder(context(), loop->GetHeaderBlock(),
-                         opt::IRContext::kAnalysisDefUse |
-                             opt::IRContext::kAnalysisInstrToBlockMapping)
+      InstructionBuilder(
+          context(), loop->GetHeaderBlock(),
+          IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping)
           .Add32BitConstantInteger<uint32_t>(static_cast<uint32_t>(iterations),
                                              is_signed),
       canonical_induction_variable);
@@ -707,7 +696,7 @@ std::pair<bool, opt::Loop*> LoopPeelingPass::ProcessLoop(
     if (block == exit_block->id()) {
       continue;
     }
-    opt::BasicBlock* bb = cfg()->block(block);
+    BasicBlock* bb = cfg()->block(block);
     PeelDirection direction;
     uint32_t factor;
     std::tie(direction, factor) = peel_info.GetPeelingInfo(bb);
@@ -749,7 +738,7 @@ std::pair<bool, opt::Loop*> LoopPeelingPass::ProcessLoop(
   loop_size->roi_size_ *= factor;
 
   // Find if a loop should be peeled again.
-  opt::Loop* extra_opportunity = nullptr;
+  Loop* extra_opportunity = nullptr;
 
   if (direction == PeelDirection::kBefore) {
     peeler.PeelBefore(factor);
@@ -775,9 +764,9 @@ std::pair<bool, opt::Loop*> LoopPeelingPass::ProcessLoop(
 }
 
 uint32_t LoopPeelingPass::LoopPeelingInfo::GetFirstLoopInvariantOperand(
-    opt::Instruction* condition) const {
+    Instruction* condition) const {
   for (uint32_t i = 0; i < condition->NumInOperands(); i++) {
-    opt::BasicBlock* bb =
+    BasicBlock* bb =
         context_->get_instr_block(condition->GetSingleWordInOperand(i));
     if (bb && loop_->IsInsideLoop(bb)) {
       return condition->GetSingleWordInOperand(i);
@@ -788,9 +777,9 @@ uint32_t LoopPeelingPass::LoopPeelingInfo::GetFirstLoopInvariantOperand(
 }
 
 uint32_t LoopPeelingPass::LoopPeelingInfo::GetFirstNonLoopInvariantOperand(
-    opt::Instruction* condition) const {
+    Instruction* condition) const {
   for (uint32_t i = 0; i < condition->NumInOperands(); i++) {
-    opt::BasicBlock* bb =
+    BasicBlock* bb =
         context_->get_instr_block(condition->GetSingleWordInOperand(i));
     if (!bb || !loop_->IsInsideLoop(bb)) {
       return condition->GetSingleWordInOperand(i);
@@ -819,14 +808,14 @@ static bool IsHandledCondition(SpvOp opcode) {
 }
 
 LoopPeelingPass::LoopPeelingInfo::Direction
-LoopPeelingPass::LoopPeelingInfo::GetPeelingInfo(opt::BasicBlock* bb) const {
+LoopPeelingPass::LoopPeelingInfo::GetPeelingInfo(BasicBlock* bb) const {
   if (bb->terminator()->opcode() != SpvOpBranchConditional) {
     return GetNoneDirection();
   }
 
-  opt::analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
-  opt::Instruction* condition =
+  Instruction* condition =
       def_use_mgr->GetDef(bb->terminator()->GetSingleWordInOperand(0));
 
   if (!IsHandledCondition(condition->opcode())) {

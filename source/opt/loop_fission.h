@@ -60,7 +60,7 @@ class LoopFissionPass : public Pass {
   Pass::Status Process() override;
 
   // Checks if |loop| meets the register pressure criteria to be split.
-  bool ShouldSplitLoop(const opt::Loop& loop, opt::IRContext* context);
+  bool ShouldSplitLoop(const Loop& loop, IRContext* context);
 
  private:
   // Functor to run in ShouldSplitLoop to determine if the register pressure

@@ -159,14 +159,14 @@ class BasicBlock {
   void ForEachSuccessorLabel(const std::function<void(uint32_t*)>& f);
 
   // Returns true if |block| is a direct successor of |this|.
-  bool IsSuccessor(const opt::BasicBlock* block) const;
+  bool IsSuccessor(const BasicBlock* block) const;
 
   // Runs the given function |f| on the merge and continue label, if any
   void ForMergeAndContinueLabel(const std::function<void(const uint32_t)>& f);
 
   // Returns true if this basic block has any Phi instructions.
   bool HasPhiInstructions() {
-    return !WhileEachPhiInst([](opt::Instruction*) { return false; });
+    return !WhileEachPhiInst([](Instruction*) { return false; });
   }
 
   // Return true if this block is a loop header block.

@@ -32,7 +32,7 @@ class SetSpecConstantDefaultValuePass : public Pass {
   using SpecIdToValueStrMap = std::unordered_map<uint32_t, std::string>;
   using SpecIdToValueBitPatternMap =
       std::unordered_map<uint32_t, std::vector<uint32_t>>;
-  using SpecIdToInstMap = std::unordered_map<uint32_t, opt::Instruction*>;
+  using SpecIdToInstMap = std::unordered_map<uint32_t, Instruction*>;
 
   // Constructs a pass instance with a map from spec ids to default values
   // in the form of string.

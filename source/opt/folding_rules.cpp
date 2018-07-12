@@ -75,9 +75,8 @@ const analysis::Constant* ConstInput(
   return constants[0] ? constants[0] : constants[1];
 }
 
-opt::Instruction* NonConstInput(opt::IRContext* context,
-                                const analysis::Constant* c,
-                                opt::Instruction* inst) {
+Instruction* NonConstInput(IRContext* context, const analysis::Constant* c,
+                           Instruction* inst) {
   uint32_t in_op = c ? 1u : 0u;
   return context->get_def_use_mgr()->GetDef(
       inst->GetSingleWordInOperand(in_op));
@@ -199,7 +198,7 @@ uint32_t Reciprocal(analysis::ConstantManager* const_mgr,
 
 // Replaces fdiv where second operand is constant with fmul.
 FoldingRule ReciprocalFDiv() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFDiv);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
@@ -243,7 +242,7 @@ FoldingRule ReciprocalFDiv() {
 
 // Elides consecutive negate instructions.
 FoldingRule MergeNegateArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFNegate || inst->opcode() == SpvOpSNegate);
     (void)constants;
@@ -252,7 +251,7 @@ FoldingRule MergeNegateArithmetic() {
     if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
       return false;
 
-    opt::Instruction* op_inst =
+    Instruction* op_inst =
         context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
     if (HasFloatingPoint(type) && !op_inst->IsFloatingPointFoldingAllowed())
       return false;
@@ -277,7 +276,7 @@ FoldingRule MergeNegateArithmetic() {
 // -(x / 2) = x / -2
 // -(2 / x) = -2 / x
 FoldingRule MergeNegateMulDivArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFNegate || inst->opcode() == SpvOpSNegate);
     (void)constants;
@@ -287,7 +286,7 @@ FoldingRule MergeNegateMulDivArithmetic() {
     if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
       return false;
 
-    opt::Instruction* op_inst =
+    Instruction* op_inst =
         context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
     if (HasFloatingPoint(type) && !op_inst->IsFloatingPointFoldingAllowed())
       return false;
@@ -335,7 +334,7 @@ FoldingRule MergeNegateMulDivArithmetic() {
 // -(x - 2) = 2 - x
 // -(2 - x) = x - 2
 FoldingRule MergeNegateAddSubArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFNegate || inst->opcode() == SpvOpSNegate);
     (void)constants;
@@ -345,7 +344,7 @@ FoldingRule MergeNegateAddSubArithmetic() {
     if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
       return false;
 
-    opt::Instruction* op_inst =
+    Instruction* op_inst =
         context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
     if (HasFloatingPoint(type) && !op_inst->IsFloatingPointFoldingAllowed())
       return false;
@@ -567,7 +566,7 @@ uint32_t PerformOperation(analysis::ConstantManager* const_mgr, SpvOp opcode,
 // (x * 2) * 2 = x * 4
 // (2 * x) * 2 = x * 4
 FoldingRule MergeMulMulArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFMul || inst->opcode() == SpvOpIMul);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
@@ -582,7 +581,7 @@ FoldingRule MergeMulMulArithmetic() {
     // Determine the constant input and the variable input in |inst|.
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (HasFloatingPoint(type) && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -619,7 +618,7 @@ FoldingRule MergeMulMulArithmetic() {
 // (y / x) * x = y
 // x * (y / x) = y
 FoldingRule MergeMulDivArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFMul);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
@@ -634,7 +633,7 @@ FoldingRule MergeMulDivArithmetic() {
 
     for (uint32_t i = 0; i < 2; i++) {
       uint32_t op_id = inst->GetSingleWordInOperand(i);
-      opt::Instruction* op_inst = def_use_mgr->GetDef(op_id);
+      Instruction* op_inst = def_use_mgr->GetDef(op_id);
       if (op_inst->opcode() == SpvOpFDiv) {
         if (op_inst->GetSingleWordInOperand(1) ==
             inst->GetSingleWordInOperand(1 - i)) {
@@ -648,7 +647,7 @@ FoldingRule MergeMulDivArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!other_inst->IsFloatingPointFoldingAllowed()) return false;
 
     if (other_inst->opcode() == SpvOpFDiv) {
@@ -693,7 +692,7 @@ FoldingRule MergeMulDivArithmetic() {
 // (-x) * 2 = x * -2
 // 2 * (-x) = x * -2
 FoldingRule MergeMulNegateArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFMul || inst->opcode() == SpvOpIMul);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
@@ -707,7 +706,7 @@ FoldingRule MergeMulNegateArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -733,7 +732,7 @@ FoldingRule MergeMulNegateArithmetic() {
 // (4 / x) / 2 = 2 / x
 // (x / 2) / 2 = x / 4
 FoldingRule MergeDivDivArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFDiv);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
@@ -746,7 +745,7 @@ FoldingRule MergeDivDivArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1 || HasZero(const_input1)) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!other_inst->IsFloatingPointFoldingAllowed()) return false;
 
     bool first_is_variable = constants[0] == nullptr;
@@ -804,7 +803,7 @@ FoldingRule MergeDivDivArithmetic() {
 // (x * y) / x = y
 // (y * x) / x = y
 FoldingRule MergeDivMulArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFDiv);
     analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
@@ -818,7 +817,7 @@ FoldingRule MergeDivMulArithmetic() {
     if (width != 32 && width != 64) return false;
 
     uint32_t op_id = inst->GetSingleWordInOperand(0);
-    opt::Instruction* op_inst = def_use_mgr->GetDef(op_id);
+    Instruction* op_inst = def_use_mgr->GetDef(op_id);
 
     if (op_inst->opcode() == SpvOpFMul) {
       for (uint32_t i = 0; i < 2; i++) {
@@ -834,7 +833,7 @@ FoldingRule MergeDivMulArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1 || HasZero(const_input1)) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (!other_inst->IsFloatingPointFoldingAllowed()) return false;
 
     bool first_is_variable = constants[0] == nullptr;
@@ -876,7 +875,7 @@ FoldingRule MergeDivMulArithmetic() {
 // (-x) / 2 = x / -2
 // 2 / (-x) = 2 / -x
 FoldingRule MergeDivNegateArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFDiv || inst->opcode() == SpvOpSDiv ||
            inst->opcode() == SpvOpUDiv);
@@ -891,7 +890,7 @@ FoldingRule MergeDivNegateArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -921,7 +920,7 @@ FoldingRule MergeDivNegateArithmetic() {
 // (-x) + 2 = 2 - x
 // 2 + (-x) = 2 - x
 FoldingRule MergeAddNegateArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFAdd || inst->opcode() == SpvOpIAdd);
     const analysis::Type* type =
@@ -931,7 +930,7 @@ FoldingRule MergeAddNegateArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -954,7 +953,7 @@ FoldingRule MergeAddNegateArithmetic() {
 // (-x) - 2 = -2 - x
 // 2 - (-x) = x + 2
 FoldingRule MergeSubNegateArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFSub || inst->opcode() == SpvOpISub);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
@@ -968,7 +967,7 @@ FoldingRule MergeSubNegateArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -1002,7 +1001,7 @@ FoldingRule MergeSubNegateArithmetic() {
 // 2 + (x + 2) = x + 4
 // 2 + (2 + x) = x + 4
 FoldingRule MergeAddAddArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFAdd || inst->opcode() == SpvOpIAdd);
     const analysis::Type* type =
@@ -1016,7 +1015,7 @@ FoldingRule MergeAddAddArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -1027,7 +1026,7 @@ FoldingRule MergeAddAddArithmetic() {
       const analysis::Constant* const_input2 = ConstInput(other_constants);
       if (!const_input2) return false;
 
-      opt::Instruction* non_const_input =
+      Instruction* non_const_input =
           NonConstInput(context, other_constants[0], other_inst);
       uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
                                             const_input1, const_input2);
@@ -1049,7 +1048,7 @@ FoldingRule MergeAddAddArithmetic() {
 // 2 + (x - 2) = x + 0
 // 2 + (2 - x) = 4 - x
 FoldingRule MergeAddSubArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFAdd || inst->opcode() == SpvOpIAdd);
     const analysis::Type* type =
@@ -1063,7 +1062,7 @@ FoldingRule MergeAddSubArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -1108,7 +1107,7 @@ FoldingRule MergeAddSubArithmetic() {
 // 2 - (x + 2) = 0 - x
 // 2 - (2 + x) = 0 - x
 FoldingRule MergeSubAddArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFSub || inst->opcode() == SpvOpISub);
     const analysis::Type* type =
@@ -1122,7 +1121,7 @@ FoldingRule MergeSubAddArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -1133,7 +1132,7 @@ FoldingRule MergeSubAddArithmetic() {
       const analysis::Constant* const_input2 = ConstInput(other_constants);
       if (!const_input2) return false;
 
-      opt::Instruction* non_const_input =
+      Instruction* non_const_input =
           NonConstInput(context, other_constants[0], other_inst);
 
       // If the first operand of the sub is not a constant, swap the constants
@@ -1173,7 +1172,7 @@ FoldingRule MergeSubAddArithmetic() {
 // 2 - (x - 2) = 4 - x
 // 2 - (2 - x) = x + 0
 FoldingRule MergeSubSubArithmetic() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFSub || inst->opcode() == SpvOpISub);
     const analysis::Type* type =
@@ -1187,7 +1186,7 @@ FoldingRule MergeSubSubArithmetic() {
 
     const analysis::Constant* const_input1 = ConstInput(constants);
     if (!const_input1) return false;
-    opt::Instruction* other_inst = NonConstInput(context, constants[0], inst);
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
     if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -1198,7 +1197,7 @@ FoldingRule MergeSubSubArithmetic() {
       const analysis::Constant* const_input2 = ConstInput(other_constants);
       if (!const_input2) return false;
 
-      opt::Instruction* non_const_input =
+      Instruction* non_const_input =
           NonConstInput(context, other_constants[0], other_inst);
 
       // Merge the constants.
@@ -1239,7 +1238,7 @@ FoldingRule MergeSubSubArithmetic() {
 }
 
 FoldingRule IntMultipleBy1() {
-  return [](IRContext*, opt::Instruction* inst,
+  return [](IRContext*, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpIMul && "Wrong opcode.  Should be OpIMul.");
     for (uint32_t i = 0; i < 2; i++) {
@@ -1265,7 +1264,7 @@ FoldingRule IntMultipleBy1() {
 }
 
 FoldingRule CompositeConstructFeedingExtract() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     // If the input to an OpCompositeExtract is an OpCompositeConstruct,
     // then we can simply use the appropriate element in the construction.
@@ -1274,13 +1273,13 @@ FoldingRule CompositeConstructFeedingExtract() {
     analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     uint32_t cid = inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-    opt::Instruction* cinst = def_use_mgr->GetDef(cid);
+    Instruction* cinst = def_use_mgr->GetDef(cid);
 
     if (cinst->opcode() != SpvOpCompositeConstruct) {
       return false;
     }
 
-    std::vector<opt::Operand> operands;
+    std::vector<Operand> operands;
     analysis::Type* composite_type = type_mgr->GetType(cinst->type_id());
     if (composite_type->AsVector() == nullptr) {
       // Get the element being extracted from the OpCompositeConstruct
@@ -1305,7 +1304,7 @@ FoldingRule CompositeConstructFeedingExtract() {
       for (uint32_t construct_index = 0;
            construct_index < cinst->NumInOperands(); ++construct_index) {
         uint32_t element_id = cinst->GetSingleWordInOperand(construct_index);
-        opt::Instruction* element_def = def_use_mgr->GetDef(element_id);
+        Instruction* element_def = def_use_mgr->GetDef(element_id);
         analysis::Vector* element_type =
             type_mgr->GetType(element_def->type_id())->AsVector();
         if (element_type) {
@@ -1350,7 +1349,7 @@ FoldingRule CompositeExtractFeedingConstruct() {
   //
   // This is a common code pattern because of the way that scalar replacement
   // works.
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == SpvOpCompositeConstruct &&
            "Wrong opcode.  Should be OpCompositeConstruct.");
@@ -1363,7 +1362,7 @@ FoldingRule CompositeExtractFeedingConstruct() {
     // - all extract from the same id.
     for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
       uint32_t element_id = inst->GetSingleWordInOperand(i);
-      opt::Instruction* element_inst = def_use_mgr->GetDef(element_id);
+      Instruction* element_inst = def_use_mgr->GetDef(element_id);
 
       if (element_inst->opcode() != SpvOpCompositeExtract) {
         return false;
@@ -1388,7 +1387,7 @@ FoldingRule CompositeExtractFeedingConstruct() {
 
     // The last check it to see that the object being extracted from is the
     // correct type.
-    opt::Instruction* original_inst = def_use_mgr->GetDef(original_id);
+    Instruction* original_inst = def_use_mgr->GetDef(original_id);
     if (original_inst->type_id() != inst->type_id()) {
       return false;
     }
@@ -1401,13 +1400,13 @@ FoldingRule CompositeExtractFeedingConstruct() {
 }
 
 FoldingRule InsertFeedingExtract() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == SpvOpCompositeExtract &&
            "Wrong opcode.  Should be OpCompositeExtract.");
     analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
     uint32_t cid = inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-    opt::Instruction* cinst = def_use_mgr->GetDef(cid);
+    Instruction* cinst = def_use_mgr->GetDef(cid);
 
     if (cinst->opcode() != SpvOpCompositeInsert) {
       return false;
@@ -1445,7 +1444,7 @@ FoldingRule InsertFeedingExtract() {
     // Extracting an element of the value that was inserted.  Extract from
     // that value directly.
     if (i + 1 == cinst->NumInOperands()) {
-      std::vector<opt::Operand> operands;
+      std::vector<Operand> operands;
       operands.push_back(
           {SPV_OPERAND_TYPE_ID,
            {cinst->GetSingleWordInOperand(kInsertObjectIdInIdx)}});
@@ -1459,7 +1458,7 @@ FoldingRule InsertFeedingExtract() {
 
     // Extracting a value that is disjoint from the element being inserted.
     // Rewrite the extract to use the composite input to the insert.
-    std::vector<opt::Operand> operands;
+    std::vector<Operand> operands;
     operands.push_back(
         {SPV_OPERAND_TYPE_ID,
          {cinst->GetSingleWordInOperand(kInsertCompositeIdInIdx)}});
@@ -1476,21 +1475,21 @@ FoldingRule InsertFeedingExtract() {
 // operands of the VectorShuffle.  We just need to adjust the index in the
 // extract instruction.
 FoldingRule VectorShuffleFeedingExtract() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == SpvOpCompositeExtract &&
            "Wrong opcode.  Should be OpCompositeExtract.");
     analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     uint32_t cid = inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-    opt::Instruction* cinst = def_use_mgr->GetDef(cid);
+    Instruction* cinst = def_use_mgr->GetDef(cid);
 
     if (cinst->opcode() != SpvOpVectorShuffle) {
       return false;
     }
 
     // Find the size of the first vector operand of the VectorShuffle
-    opt::Instruction* first_input =
+    Instruction* first_input =
         def_use_mgr->GetDef(cinst->GetSingleWordInOperand(0));
     analysis::Type* first_input_type =
         type_mgr->GetType(first_input->type_id());
@@ -1524,7 +1523,7 @@ FoldingRule VectorShuffleFeedingExtract() {
 // corresponding |a| in the FMix is 0 or 1, we can extract from one of the
 // operands of the FMix.
 FoldingRule FMixFeedingExtract() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == SpvOpCompositeExtract &&
            "Wrong opcode.  Should be OpCompositeExtract.");
@@ -1533,7 +1532,7 @@ FoldingRule FMixFeedingExtract() {
 
     uint32_t composite_id =
         inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-    opt::Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
+    Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
 
     if (composite_inst->opcode() != SpvOpExtInst) {
       return false;
@@ -1551,7 +1550,7 @@ FoldingRule FMixFeedingExtract() {
 
     // Get the |a| for the FMix instruction.
     uint32_t a_id = composite_inst->GetSingleWordInOperand(kFMixAIdInIdx);
-    std::unique_ptr<opt::Instruction> a(inst->Clone(context));
+    std::unique_ptr<Instruction> a(inst->Clone(context));
     a->SetInOperand(kExtractCompositeIdInIdx, {a_id});
     context->get_instruction_folder().FoldInstruction(a.get());
 
@@ -1595,7 +1594,7 @@ FoldingRule FMixFeedingExtract() {
 FoldingRule RedundantPhi() {
   // An OpPhi instruction where all values are the same or the result of the phi
   // itself, can be replaced by the value itself.
-  return [](IRContext*, opt::Instruction* inst,
+  return [](IRContext*, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == SpvOpPhi && "Wrong opcode.  Should be OpPhi.");
 
@@ -1630,7 +1629,7 @@ FoldingRule RedundantPhi() {
 FoldingRule RedundantSelect() {
   // An OpSelect instruction where both values are the same or the condition is
   // constant can be replaced by one of the values
-  return [](IRContext*, opt::Instruction* inst,
+  return [](IRContext*, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpSelect &&
            "Wrong opcode.  Should be OpSelect.");
@@ -1666,7 +1665,7 @@ FoldingRule RedundantSelect() {
           return true;
         } else {
           // Convert to a vector shuffle.
-          std::vector<opt::Operand> ops;
+          std::vector<Operand> ops;
           ops.push_back({SPV_OPERAND_TYPE_ID, {true_id}});
           ops.push_back({SPV_OPERAND_TYPE_ID, {false_id}});
           const analysis::VectorConstant* vector_const =
@@ -1746,7 +1745,7 @@ FloatConstantKind getFloatConstantKind(const analysis::Constant* constant) {
 }
 
 FoldingRule RedundantFAdd() {
-  return [](IRContext*, opt::Instruction* inst,
+  return [](IRContext*, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFAdd && "Wrong opcode.  Should be OpFAdd.");
     assert(constants.size() == 2);
@@ -1771,7 +1770,7 @@ FoldingRule RedundantFAdd() {
 }
 
 FoldingRule RedundantFSub() {
-  return [](IRContext*, opt::Instruction* inst,
+  return [](IRContext*, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFSub && "Wrong opcode.  Should be OpFSub.");
     assert(constants.size() == 2);
@@ -1802,7 +1801,7 @@ FoldingRule RedundantFSub() {
 }
 
 FoldingRule RedundantFMul() {
-  return [](IRContext*, opt::Instruction* inst,
+  return [](IRContext*, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFMul && "Wrong opcode.  Should be OpFMul.");
     assert(constants.size() == 2);
@@ -1835,7 +1834,7 @@ FoldingRule RedundantFMul() {
 }
 
 FoldingRule RedundantFDiv() {
-  return [](IRContext*, opt::Instruction* inst,
+  return [](IRContext*, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpFDiv && "Wrong opcode.  Should be OpFDiv.");
     assert(constants.size() == 2);
@@ -1866,7 +1865,7 @@ FoldingRule RedundantFDiv() {
 }
 
 FoldingRule RedundantFMix() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpExtInst &&
            "Wrong opcode.  Should be OpExtInst.");
@@ -1903,7 +1902,7 @@ FoldingRule RedundantFMix() {
 // This rule look for a dot with a constant vector containing a single 1 and
 // the rest 0s.  This is the same as doing an extract.
 FoldingRule DotProductDoingExtract() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpDot && "Wrong opcode.  Should be OpDot.");
 
@@ -1958,7 +1957,7 @@ FoldingRule DotProductDoingExtract() {
         continue;
       }
 
-      std::vector<opt::Operand> operands;
+      std::vector<Operand> operands;
       operands.push_back(
           {SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(1u - i)}});
       operands.push_back(
@@ -1977,7 +1976,7 @@ FoldingRule DotProductDoingExtract() {
 // TODO: We can do something similar for OpImageWrite, but checking for volatile
 // is complicated.  Waiting to see if it is needed.
 FoldingRule StoringUndef() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == SpvOpStore && "Wrong opcode.  Should be OpStore.");
 
@@ -1991,7 +1990,7 @@ FoldingRule StoringUndef() {
     }
 
     uint32_t object_id = inst->GetSingleWordInOperand(kStoreObjectInIdx);
-    opt::Instruction* object_inst = def_use_mgr->GetDef(object_id);
+    Instruction* object_inst = def_use_mgr->GetDef(object_id);
     if (object_inst->opcode() == SpvOpUndef) {
       inst->ToNop();
       return true;
@@ -2001,7 +2000,7 @@ FoldingRule StoringUndef() {
 }
 
 FoldingRule VectorShuffleFeedingShuffle() {
-  return [](IRContext* context, opt::Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == SpvOpVectorShuffle &&
            "Wrong opcode.  Should be OpVectorShuffle.");

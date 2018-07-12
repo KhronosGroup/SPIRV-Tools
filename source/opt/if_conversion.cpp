@@ -22,13 +22,13 @@ namespace opt {
 Pass::Status IfConversion::Process() {
   const ValueNumberTable& vn_table = *context()->GetValueNumberTable();
   bool modified = false;
-  std::vector<opt::Instruction*> to_kill;
+  std::vector<Instruction*> to_kill;
   for (auto& func : *get_module()) {
     DominatorAnalysis* dominators = context()->GetDominatorAnalysis(&func);
     for (auto& block : func) {
       // Check if it is possible for |block| to have phis that can be
       // transformed.
-      opt::BasicBlock* common = nullptr;
+      BasicBlock* common = nullptr;
       if (!CheckBlock(&block, dominators, &common)) continue;
 
       // Get an insertion point.
@@ -39,11 +39,9 @@ Pass::Status IfConversion::Process() {
 
       InstructionBuilder builder(
           context(), &*iter,
-          opt::IRContext::kAnalysisDefUse |
-              opt::IRContext::kAnalysisInstrToBlockMapping);
+          IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
       block.ForEachPhiInst([this, &builder, &modified, &common, &to_kill,
-                            dominators, &block,
-                            &vn_table](opt::Instruction* phi) {
+                            dominators, &block, &vn_table](Instruction* phi) {
         // This phi is not compatible, but subsequent phis might be.
         if (!CheckType(phi->type_id())) return;
 
@@ -57,13 +55,12 @@ Pass::Status IfConversion::Process() {
         // branches. If |then_block| dominates |inc0| or if the true edge
         // branches straight to this block and |common| is |inc0|, then |inc0|
         // is on the true branch. Otherwise the |inc1| is on the true branch.
-        opt::BasicBlock* inc0 = GetIncomingBlock(phi, 0u);
-        opt::Instruction* branch = common->terminator();
+        BasicBlock* inc0 = GetIncomingBlock(phi, 0u);
+        Instruction* branch = common->terminator();
         uint32_t condition = branch->GetSingleWordInOperand(0u);
-        opt::BasicBlock* then_block =
-            GetBlock(branch->GetSingleWordInOperand(1u));
-        opt::Instruction* true_value = nullptr;
-        opt::Instruction* false_value = nullptr;
+        BasicBlock* then_block = GetBlock(branch->GetSingleWordInOperand(1u));
+        Instruction* true_value = nullptr;
+        Instruction* false_value = nullptr;
         if ((then_block == &block && inc0 == common) ||
             dominators->Dominates(then_block, inc0)) {
           true_value = GetIncomingValue(phi, 0u);
@@ -73,15 +70,13 @@ Pass::Status IfConversion::Process() {
           false_value = GetIncomingValue(phi, 0u);
         }
 
-        opt::BasicBlock* true_def_block =
-            context()->get_instr_block(true_value);
-        opt::BasicBlock* false_def_block =
-            context()->get_instr_block(false_value);
+        BasicBlock* true_def_block = context()->get_instr_block(true_value);
+        BasicBlock* false_def_block = context()->get_instr_block(false_value);
 
         uint32_t true_vn = vn_table.GetValueNumber(true_value);
         uint32_t false_vn = vn_table.GetValueNumber(false_value);
         if (true_vn != 0 && true_vn == false_vn) {
-          opt::Instruction* inst_to_use = nullptr;
+          Instruction* inst_to_use = nullptr;
 
           // Try to pick an instruction that is not in a side node.  If we can't
           // pick either the true for false branch as long as they can be
@@ -124,9 +119,9 @@ Pass::Status IfConversion::Process() {
           condition = SplatCondition(vec_data_ty, condition, &builder);
         }
 
-        opt::Instruction* select = builder.AddSelect(phi->type_id(), condition,
-                                                     true_value->result_id(),
-                                                     false_value->result_id());
+        Instruction* select = builder.AddSelect(phi->type_id(), condition,
+                                                true_value->result_id(),
+                                                false_value->result_id());
         context()->ReplaceAllUsesWith(phi->result_id(), select->result_id());
         to_kill.push_back(phi);
         modified = true;
@@ -143,18 +138,17 @@ Pass::Status IfConversion::Process() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool IfConversion::CheckBlock(opt::BasicBlock* block,
-                              DominatorAnalysis* dominators,
-                              opt::BasicBlock** common) {
+bool IfConversion::CheckBlock(BasicBlock* block, DominatorAnalysis* dominators,
+                              BasicBlock** common) {
   const std::vector<uint32_t>& preds = cfg()->preds(block->id());
 
   // TODO(alan-baker): Extend to more than two predecessors
   if (preds.size() != 2) return false;
 
-  opt::BasicBlock* inc0 = context()->get_instr_block(preds[0]);
+  BasicBlock* inc0 = context()->get_instr_block(preds[0]);
   if (dominators->Dominates(block, inc0)) return false;
 
-  opt::BasicBlock* inc1 = context()->get_instr_block(preds[1]);
+  BasicBlock* inc1 = context()->get_instr_block(preds[1]);
   if (dominators->Dominates(block, inc1)) return false;
 
   // All phis will have the same common dominator, so cache the result
@@ -162,16 +156,15 @@ bool IfConversion::CheckBlock(opt::BasicBlock* block,
   // any phi in this basic block.
   *common = dominators->CommonDominator(inc0, inc1);
   if (!*common || cfg()->IsPseudoEntryBlock(*common)) return false;
-  opt::Instruction* branch = (*common)->terminator();
+  Instruction* branch = (*common)->terminator();
   if (branch->opcode() != SpvOpBranchConditional) return false;
 
   return true;
 }
 
-bool IfConversion::CheckPhiUsers(opt::Instruction* phi,
-                                 opt::BasicBlock* block) {
+bool IfConversion::CheckPhiUsers(Instruction* phi, BasicBlock* block) {
   return get_def_use_mgr()->WhileEachUser(phi, [block,
-                                                this](opt::Instruction* user) {
+                                                this](Instruction* user) {
     if (user->opcode() == SpvOpPhi && context()->get_instr_block(user) == block)
       return false;
     return true;
@@ -194,7 +187,7 @@ uint32_t IfConversion::SplatCondition(analysis::Vector* vec_data_ty,
 }
 
 bool IfConversion::CheckType(uint32_t id) {
-  opt::Instruction* type = get_def_use_mgr()->GetDef(id);
+  Instruction* type = get_def_use_mgr()->GetDef(id);
   SpvOp op = type->opcode();
   if (spvOpcodeIsScalarType(op) || op == SpvOpTypePointer ||
       op == SpvOpTypeVector)
@@ -202,26 +195,25 @@ bool IfConversion::CheckType(uint32_t id) {
   return false;
 }
 
-opt::BasicBlock* IfConversion::GetBlock(uint32_t id) {
+BasicBlock* IfConversion::GetBlock(uint32_t id) {
   return context()->get_instr_block(get_def_use_mgr()->GetDef(id));
 }
 
-opt::BasicBlock* IfConversion::GetIncomingBlock(opt::Instruction* phi,
-                                                uint32_t predecessor) {
+BasicBlock* IfConversion::GetIncomingBlock(Instruction* phi,
+                                           uint32_t predecessor) {
   uint32_t in_index = 2 * predecessor + 1;
   return GetBlock(phi->GetSingleWordInOperand(in_index));
 }
 
-opt::Instruction* IfConversion::GetIncomingValue(opt::Instruction* phi,
-                                                 uint32_t predecessor) {
+Instruction* IfConversion::GetIncomingValue(Instruction* phi,
+                                            uint32_t predecessor) {
   uint32_t in_index = 2 * predecessor;
   return get_def_use_mgr()->GetDef(phi->GetSingleWordInOperand(in_index));
 }
 
-void IfConversion::HoistInstruction(opt::Instruction* inst,
-                                    opt::BasicBlock* target_block,
+void IfConversion::HoistInstruction(Instruction* inst, BasicBlock* target_block,
                                     DominatorAnalysis* dominators) {
-  opt::BasicBlock* inst_block = context()->get_instr_block(inst);
+  BasicBlock* inst_block = context()->get_instr_block(inst);
   if (!inst_block) {
     // This is in the header, and dominates everything.
     return;
@@ -239,23 +231,23 @@ void IfConversion::HoistInstruction(opt::Instruction* inst,
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   inst->ForEachInId(
       [this, target_block, def_use_mgr, dominators](uint32_t* id) {
-        opt::Instruction* operand_inst = def_use_mgr->GetDef(*id);
+        Instruction* operand_inst = def_use_mgr->GetDef(*id);
         HoistInstruction(operand_inst, target_block, dominators);
       });
 
-  opt::Instruction* insertion_pos = target_block->terminator();
+  Instruction* insertion_pos = target_block->terminator();
   if ((insertion_pos)->PreviousNode()->opcode() == SpvOpSelectionMerge) {
     insertion_pos = insertion_pos->PreviousNode();
   }
   inst->RemoveFromList();
-  insertion_pos->InsertBefore(std::unique_ptr<opt::Instruction>(inst));
+  insertion_pos->InsertBefore(std::unique_ptr<Instruction>(inst));
   context()->set_instr_block(inst, target_block);
 }
 
-bool IfConversion::CanHoistInstruction(opt::Instruction* inst,
-                                       opt::BasicBlock* target_block,
+bool IfConversion::CanHoistInstruction(Instruction* inst,
+                                       BasicBlock* target_block,
                                        DominatorAnalysis* dominators) {
-  opt::BasicBlock* inst_block = context()->get_instr_block(inst);
+  BasicBlock* inst_block = context()->get_instr_block(inst);
   if (!inst_block) {
     // This is in the header, and dominates everything.
     return true;
@@ -274,7 +266,7 @@ bool IfConversion::CanHoistInstruction(opt::Instruction* inst,
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   return inst->WhileEachInId(
       [this, target_block, def_use_mgr, dominators](uint32_t* id) {
-        opt::Instruction* operand_inst = def_use_mgr->GetDef(*id);
+        Instruction* operand_inst = def_use_mgr->GetDef(*id);
         return CanHoistInstruction(operand_inst, target_block, dominators);
       });
 }

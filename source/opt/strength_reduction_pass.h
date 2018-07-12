@@ -32,7 +32,7 @@ class StrengthReductionPass : public Pass {
  private:
   // Replaces multiple by power of 2 with an equivalent bit shift.
   // Returns true if something changed.
-  bool ReplaceMultiplyByPowerOf2(opt::BasicBlock::iterator*);
+  bool ReplaceMultiplyByPowerOf2(BasicBlock::iterator*);
 
   // Scan the types and constants in the module looking for the the integer
   // types that we are

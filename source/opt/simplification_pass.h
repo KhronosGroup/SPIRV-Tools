@@ -28,20 +28,19 @@ class SimplificationPass : public Pass {
   const char* name() const override { return "simplify-instructions"; }
   Status Process() override;
 
-  opt::IRContext::Analysis GetPreservedAnalyses() override {
-    return opt::IRContext::kAnalysisDefUse |
-           opt::IRContext::kAnalysisInstrToBlockMapping |
-           opt::IRContext::kAnalysisDecorations |
-           opt::IRContext::kAnalysisCombinators | opt::IRContext::kAnalysisCFG |
-           opt::IRContext::kAnalysisDominatorAnalysis |
-           opt::IRContext::kAnalysisNameMap;
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse |
+           IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
+           IRContext::kAnalysisCFG | IRContext::kAnalysisDominatorAnalysis |
+           IRContext::kAnalysisNameMap;
   }
 
  private:
   // Returns true if the module was changed.  The simplifier is called on every
   // instruction in |function| until nothing else in the function can be
   // simplified.
-  bool SimplifyFunction(opt::Function* function);
+  bool SimplifyFunction(Function* function);
 };
 
 }  // namespace opt

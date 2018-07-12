@@ -41,7 +41,7 @@ class InlineExhaustivePass : public InlinePass {
  private:
   // Exhaustively inline all function calls in func as well as in
   // all code that is inlined into func. Return true if func is modified.
-  bool InlineExhaustive(opt::Function* func);
+  bool InlineExhaustive(Function* func);
 
   void Initialize();
   Pass::Status ProcessImpl();

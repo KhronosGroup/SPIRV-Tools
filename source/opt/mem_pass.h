@@ -48,7 +48,7 @@ class MemPass : public Pass {
   // Given a load or store |ip|, return the pointer instruction.
   // Also return the base variable's id in |varId|.  If no base variable is
   // found, |varId| will be 0.
-  opt::Instruction* GetPtr(opt::Instruction* ip, uint32_t* varId);
+  Instruction* GetPtr(Instruction* ip, uint32_t* varId);
 
   // Return true if |varId| is a previously identified target variable.
   // Return false if |varId| is a previously identified non-target variable.
@@ -65,19 +65,19 @@ class MemPass : public Pass {
   // Collect target SSA variables.  This traverses all the loads and stores in
   // function |func| looking for variables that can be replaced with SSA IDs. It
   // populates the sets |seen_target_vars_| and |seen_non_target_vars_|.
-  void CollectTargetVars(opt::Function* func);
+  void CollectTargetVars(Function* func);
 
  protected:
   MemPass();
 
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
-  bool IsBaseTargetType(const opt::Instruction* typeInst) const;
+  bool IsBaseTargetType(const Instruction* typeInst) const;
 
   // Returns true if |typeInst| is a math type or a struct or array
   // of a math type.
   // TODO(): Add more complex types to convert
-  bool IsTargetType(const opt::Instruction* typeInst) const;
+  bool IsTargetType(const Instruction* typeInst) const;
 
   // Returns true if |opcode| is a non-ptr access chain op
   bool IsNonPtrAccessChain(const SpvOp opcode) const;
@@ -89,14 +89,14 @@ class MemPass : public Pass {
   // Given the id of a pointer |ptrId|, return the top-most non-CopyObj.
   // Also return the base variable's id in |varId|.  If no base variable is
   // found, |varId| will be 0.
-  opt::Instruction* GetPtr(uint32_t ptrId, uint32_t* varId);
+  Instruction* GetPtr(uint32_t ptrId, uint32_t* varId);
 
   // Return true if all uses of |id| are only name or decorate ops.
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
 
   // Kill all instructions in block |bp|. Whether or not to kill the label is
   // indicated by |killLabel|.
-  void KillAllInsts(opt::BasicBlock* bp, bool killLabel = true);
+  void KillAllInsts(BasicBlock* bp, bool killLabel = true);
 
   // Return true if any instruction loads from |varId|
   bool HasLoads(uint32_t varId) const;
@@ -106,16 +106,15 @@ class MemPass : public Pass {
   bool IsLiveVar(uint32_t varId) const;
 
   // Add stores using |ptr_id| to |insts|
-  void AddStores(uint32_t ptr_id, std::queue<opt::Instruction*>* insts);
+  void AddStores(uint32_t ptr_id, std::queue<Instruction*>* insts);
 
   // Delete |inst| and iterate DCE on all its operands if they are now
   // useless. If a load is deleted and its variable has no other loads,
   // delete all its variable's stores.
-  void DCEInst(opt::Instruction* inst,
-               const std::function<void(opt::Instruction*)>&);
+  void DCEInst(Instruction* inst, const std::function<void(Instruction*)>&);
 
   // Call all the cleanup helper functions on |func|.
-  bool CFGCleanup(opt::Function* func);
+  bool CFGCleanup(Function* func);
 
   // Return true if |op| is supported decorate.
   inline bool IsNonTypeDecorate(uint32_t op) const {
@@ -142,17 +141,17 @@ class MemPass : public Pass {
   bool HasOnlySupportedRefs(uint32_t varId);
 
   // Remove all the unreachable basic blocks in |func|.
-  bool RemoveUnreachableBlocks(opt::Function* func);
+  bool RemoveUnreachableBlocks(Function* func);
 
   // Remove the block pointed by the iterator |*bi|. This also removes
   // all the instructions in the pointed-to block.
-  void RemoveBlock(opt::Function::iterator* bi);
+  void RemoveBlock(Function::iterator* bi);
 
   // Remove Phi operands in |phi| that are coming from blocks not in
   // |reachable_blocks|.
   void RemovePhiOperands(
-      opt::Instruction* phi,
-      const std::unordered_set<opt::BasicBlock*>& reachable_blocks);
+      Instruction* phi,
+      const std::unordered_set<BasicBlock*>& reachable_blocks);
 
   // Map from type to undef
   std::unordered_map<uint32_t, uint32_t> type2undefs_;

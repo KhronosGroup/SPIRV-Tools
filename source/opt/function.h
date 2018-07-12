@@ -53,10 +53,6 @@ class Function {
   Instruction& DefInst() { return *def_inst_; }
   const Instruction& DefInst() const { return *def_inst_; }
 
-  // Sets the enclosing module for this function.
-  void SetParent(Module* module) { module_ = module; }
-  // Gets the enclosing module for this function
-  Module* GetParent() const { return module_; }
   // Appends a parameter to this function.
   inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a basic block to this function.
@@ -102,7 +98,7 @@ class Function {
 
   // Returns an iterator to the basic block |id|.
   iterator FindBlock(uint32_t bb_id) {
-    return std::find_if(begin(), end(), [bb_id](const opt::BasicBlock& it_bb) {
+    return std::find_if(begin(), end(), [bb_id](const BasicBlock& it_bb) {
       return bb_id == it_bb.id();
     });
   }
@@ -119,8 +115,8 @@ class Function {
   void ForEachParam(const std::function<void(const Instruction*)>& f,
                     bool run_on_debug_line_insts = false) const;
 
-  BasicBlock* InsertBasicBlockAfter(
-      std::unique_ptr<opt::BasicBlock>&& new_block, BasicBlock* position);
+  BasicBlock* InsertBasicBlockAfter(std::unique_ptr<BasicBlock>&& new_block,
+                                    BasicBlock* position);
 
   // Pretty-prints all the basic blocks in this function into a std::string.
   //
@@ -129,8 +125,6 @@ class Function {
   std::string PrettyPrint(uint32_t options = 0u) const;
 
  private:
-  // The enclosing module.
-  Module* module_;
   // The OpFunction instruction that begins the definition of this function.
   std::unique_ptr<Instruction> def_inst_;
   // All parameters to this function.
@@ -145,7 +139,7 @@ class Function {
 std::ostream& operator<<(std::ostream& str, const Function& func);
 
 inline Function::Function(std::unique_ptr<Instruction> def_inst)
-    : module_(nullptr), def_inst_(std::move(def_inst)), end_inst_() {}
+    : def_inst_(std::move(def_inst)), end_inst_() {}
 
 inline void Function::AddParameter(std::unique_ptr<Instruction> p) {
   params_.emplace_back(std::move(p));
