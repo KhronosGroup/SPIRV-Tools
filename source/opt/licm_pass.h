@@ -30,7 +30,7 @@ class LICMPass : public Pass {
   LICMPass() {}
 
   const char* name() const override { return "loop-invariant-code-motion"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
  private:
   // Searches the IRContext for functions and processes each, moving invariants

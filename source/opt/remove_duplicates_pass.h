@@ -33,7 +33,8 @@ using IdDecorationsList =
 class RemoveDuplicatesPass : public Pass {
  public:
   const char* name() const override { return "remove-duplicates"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
+
   // TODO(pierremoreau): Move this function somewhere else (e.g. pass.h or
   // within the type manager)
   // Returns whether two types are equal, and have the same decorations.
@@ -42,23 +43,22 @@ class RemoveDuplicatesPass : public Pass {
                             opt::IRContext* context);
 
  private:
-  // Remove duplicate capabilities from the module attached to |ir_context|.
+  // Remove duplicate capabilities from the module
   //
   // Returns true if the module was modified, false otherwise.
-  bool RemoveDuplicateCapabilities(opt::IRContext* ir_context) const;
-  // Remove duplicate extended instruction imports from the module attached to
-  // |ir_context|.
+  bool RemoveDuplicateCapabilities() const;
+  // Remove duplicate extended instruction imports from the module
   //
   // Returns true if the module was modified, false otherwise.
-  bool RemoveDuplicatesExtInstImports(opt::IRContext* ir_context) const;
-  // Remove duplicate types from the module attached to |ir_context|.
+  bool RemoveDuplicatesExtInstImports() const;
+  // Remove duplicate types from the module
   //
   // Returns true if the module was modified, false otherwise.
-  bool RemoveDuplicateTypes(opt::IRContext* ir_context) const;
-  // Remove duplicate decorations from the module attached to |ir_context|.
+  bool RemoveDuplicateTypes() const;
+  // Remove duplicate decorations from the module
   //
   // Returns true if the module was modified, false otherwise.
-  bool RemoveDuplicateDecorations(opt::IRContext* ir_context) const;
+  bool RemoveDuplicateDecorations() const;
 };
 
 }  // namespace opt

@@ -296,9 +296,7 @@ bool CCPPass::PropagateConstants(opt::Function* fp) {
   return false;
 }
 
-void CCPPass::Initialize(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+void CCPPass::Initialize() {
   const_mgr_ = context()->get_constant_mgr();
 
   // Populate the constant table with values from constant declarations in the
@@ -315,8 +313,8 @@ void CCPPass::Initialize(opt::IRContext* c) {
   }
 }
 
-Pass::Status CCPPass::Process(opt::IRContext* c) {
-  Initialize(c);
+Pass::Status CCPPass::Process() {
+  Initialize();
 
   // Process all entry point functions.
   ProcessFunction pfn = [this](opt::Function* fp) {

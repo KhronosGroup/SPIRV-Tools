@@ -290,12 +290,9 @@ class SSARewriter {
 class SSARewritePass : public MemPass {
  public:
   SSARewritePass() = default;
-  const char* name() const override { return "ssa-rewrite"; }
-  Status Process(opt::IRContext* c) override;
 
- private:
-  // Initializes the pass.
-  void Initialize(opt::IRContext* c);
+  const char* name() const override { return "ssa-rewrite"; }
+  Status Process() override;
 };
 
 }  // namespace opt

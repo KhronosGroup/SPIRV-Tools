@@ -2922,8 +2922,9 @@ OpFunctionEnd
 
   // Test that the loop descriptor is correctly maintained and updated by the
   // pass.
-  LoopFissionPass loop_fission{};
-  loop_fission.Process(context.get());
+  LoopFissionPass loop_fission;
+  loop_fission.SetContextForTesting(context.get());
+  loop_fission.Process();
 
   function = spvtest::GetFunction(module, 2);
   LoopDescriptor& post_pass_descriptor = *context->GetLoopDescriptor(function);
@@ -3179,8 +3180,9 @@ OpFunctionEnd
 
   // Test that the loop descriptor is correctly maintained and updated by the
   // pass.
-  LoopFissionPass loop_fission{};
-  loop_fission.Process(context.get());
+  LoopFissionPass loop_fission;
+  loop_fission.SetContextForTesting(context.get());
+  loop_fission.Process();
 
   function = spvtest::GetFunction(module, 2);
   LoopDescriptor& post_pass_descriptor = *context->GetLoopDescriptor(function);

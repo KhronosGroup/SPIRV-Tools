@@ -36,8 +36,9 @@ namespace opt {
 class LocalSingleBlockLoadStoreElimPass : public MemPass {
  public:
   LocalSingleBlockLoadStoreElimPass();
+
   const char* name() const override { return "eliminate-local-single-block"; }
-  Status Process(opt::IRContext* c) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -66,7 +67,7 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // Return true if all extensions in this module are supported by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(opt::IRContext* c);
+  void Initialize();
   Pass::Status ProcessImpl();
 
   // Map from function scope variable to a store of that variable in the

@@ -92,7 +92,7 @@ bool InlineOpaquePass::InlineOpaque(opt::Function* func) {
   return modified;
 }
 
-void InlineOpaquePass::Initialize(opt::IRContext* c) { InitializeInline(c); }
+void InlineOpaquePass::Initialize() { InitializeInline(); }
 
 Pass::Status InlineOpaquePass::ProcessImpl() {
   // Do opaque inlining on each function in entry point call tree
@@ -101,10 +101,10 @@ Pass::Status InlineOpaquePass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-InlineOpaquePass::InlineOpaquePass() {}
+InlineOpaquePass::InlineOpaquePass() = default;
 
-Pass::Status InlineOpaquePass::Process(opt::IRContext* c) {
-  Initialize(c);
+Pass::Status InlineOpaquePass::Process() {
+  Initialize();
   return ProcessImpl();
 }
 

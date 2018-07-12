@@ -253,24 +253,13 @@ bool DeadInsertElimPass::EliminateDeadInsertsOnePass(opt::Function* func) {
   return modified;
 }
 
-void DeadInsertElimPass::Initialize(opt::IRContext* c) {
-  InitializeProcessing(c);
-}
-
-Pass::Status DeadInsertElimPass::ProcessImpl() {
+Pass::Status DeadInsertElimPass::Process() {
   // Process all entry point functions.
   ProcessFunction pfn = [this](opt::Function* fp) {
     return EliminateDeadInserts(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
-}
-
-DeadInsertElimPass::DeadInsertElimPass() {}
-
-Pass::Status DeadInsertElimPass::Process(opt::IRContext* c) {
-  Initialize(c);
-  return ProcessImpl();
 }
 
 }  // namespace opt

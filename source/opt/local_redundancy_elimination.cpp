@@ -19,9 +19,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status LocalRedundancyEliminationPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+Pass::Status LocalRedundancyEliminationPass::Process() {
   bool modified = false;
   ValueNumberTable vnTable(context());
 

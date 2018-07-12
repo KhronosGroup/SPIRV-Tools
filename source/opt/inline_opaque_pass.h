@@ -34,7 +34,7 @@ namespace opt {
 class InlineOpaquePass : public InlinePass {
  public:
   InlineOpaquePass();
-  Status Process(opt::IRContext* c) override;
+  Status Process() override;
 
   const char* name() const override { return "inline-entry-points-opaque"; }
 
@@ -50,7 +50,7 @@ class InlineOpaquePass : public InlinePass {
   // if func is modified.
   bool InlineOpaque(opt::Function* func);
 
-  void Initialize(opt::IRContext* c);
+  void Initialize();
   Pass::Status ProcessImpl();
 };
 

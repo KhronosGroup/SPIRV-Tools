@@ -53,9 +53,7 @@ bool IsPowerOf2(uint32_t val) {
 namespace spvtools {
 namespace opt {
 
-Pass::Status StrengthReductionPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+Pass::Status StrengthReductionPass::Process() {
   // Initialize the member variables on a per module basis.
   bool modified = false;
   int32_type_id_ = 0;

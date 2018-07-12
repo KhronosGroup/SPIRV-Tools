@@ -25,9 +25,7 @@ const uint32_t kCompositeExtractObjectInOperand = 0;
 namespace spvtools {
 namespace opt {
 
-Pass::Status CopyPropagateArrays::Process(opt::IRContext* ctx) {
-  InitializeProcessing(ctx);
-
+Pass::Status CopyPropagateArrays::Process() {
   bool modified = false;
   for (opt::Function& function : *get_module()) {
     opt::BasicBlock* entry_bb = &*function.begin();

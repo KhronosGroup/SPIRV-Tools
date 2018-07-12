@@ -22,15 +22,9 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status LICMPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-  bool modified = false;
-
-  if (c != nullptr) {
-    modified = ProcessIRContext();
-  }
-
-  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+Pass::Status LICMPass::Process() {
+  return ProcessIRContext() ? Status::SuccessWithChange
+                            : Status::SuccessWithoutChange;
 }
 
 bool LICMPass::ProcessIRContext() {

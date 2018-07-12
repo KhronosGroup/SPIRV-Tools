@@ -20,8 +20,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status Workaround1209::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
+Pass::Status Workaround1209::Process() {
   bool modified = false;
   modified = RemoveOpUnreachableInLoops();
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);

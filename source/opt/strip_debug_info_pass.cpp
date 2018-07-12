@@ -18,13 +18,13 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status StripDebugInfoPass::Process(opt::IRContext* irContext) {
-  bool modified = !irContext->debugs1().empty() ||
-                  !irContext->debugs2().empty() ||
-                  !irContext->debugs3().empty();
-  irContext->debug_clear();
+Pass::Status StripDebugInfoPass::Process() {
+  bool modified = !context()->debugs1().empty() ||
+                  !context()->debugs2().empty() ||
+                  !context()->debugs3().empty();
+  context()->debug_clear();
 
-  irContext->module()->ForEachInst([&modified](opt::Instruction* inst) {
+  context()->module()->ForEachInst([&modified](opt::Instruction* inst) {
     modified |= !inst->dbg_line_insts().empty();
     inst->dbg_line_insts().clear();
   });

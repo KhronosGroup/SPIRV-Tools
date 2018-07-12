@@ -35,10 +35,11 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class DeadInsertElimPass : public MemPass {
  public:
-  DeadInsertElimPass();
+  DeadInsertElimPass() = default;
+
   const char* name() const override { return "eliminate-dead-inserts"; }
-  Status Process(opt::IRContext*) override;
-  virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
+  Status Process() override;
+  opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
            opt::IRContext::kAnalysisInstrToBlockMapping |
            opt::IRContext::kAnalysisDecorations |
@@ -74,9 +75,6 @@ class DeadInsertElimPass : public MemPass {
 
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
-
-  void Initialize(opt::IRContext* c);
-  Pass::Status ProcessImpl();
 
   // Live inserts
   std::unordered_set<uint32_t> liveInserts_;

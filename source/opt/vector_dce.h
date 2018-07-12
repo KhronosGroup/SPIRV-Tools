@@ -37,14 +37,14 @@ class VectorDCE : public MemPass {
   };
 
  public:
-  const char* name() const override { return "vector-dce"; }
-  Status Process(opt::IRContext*) override;
-
   VectorDCE() : all_components_live_(kMaxVectorSize) {
     for (uint32_t i = 0; i < kMaxVectorSize; i++) {
       all_components_live_.Set(i);
     }
   }
+
+  const char* name() const override { return "vector-dce"; }
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse | opt::IRContext::kAnalysisCFG |

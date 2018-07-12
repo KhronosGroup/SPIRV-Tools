@@ -37,9 +37,10 @@ class DeadBranchElimPass : public MemPass {
   using cbb_ptr = const opt::BasicBlock*;
 
  public:
-  DeadBranchElimPass();
+  DeadBranchElimPass() = default;
+
   const char* name() const override { return "eliminate-dead-branches"; }
-  Status Process(opt::IRContext* context) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -128,9 +129,6 @@ class DeadBranchElimPass : public MemPass {
       const std::unordered_set<opt::BasicBlock*>& unreachable_merges,
       const std::unordered_map<opt::BasicBlock*, opt::BasicBlock*>&
           unreachable_continues);
-
-  void Initialize(opt::IRContext* c);
-  Pass::Status ProcessImpl();
 };
 
 }  // namespace opt

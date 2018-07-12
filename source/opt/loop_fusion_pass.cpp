@@ -22,9 +22,9 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status LoopFusionPass::Process(opt::IRContext* c) {
+Pass::Status LoopFusionPass::Process() {
   bool modified = false;
-  opt::Module* module = c->module();
+  opt::Module* module = context()->module();
 
   // Process each function in the module
   for (opt::Function& f : *module) {

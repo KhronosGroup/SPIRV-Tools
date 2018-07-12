@@ -38,8 +38,9 @@ class BlockMergePass : public Pass {
  public:
   BlockMergePass();
   const char* name() const override { return "merge-blocks"; }
-  Status Process(opt::IRContext*) override;
-  virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
+  Status Process() override;
+
+  opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
            opt::IRContext::kAnalysisInstrToBlockMapping |
            opt::IRContext::kAnalysisDecorations |
@@ -63,9 +64,6 @@ class BlockMergePass : public Pass {
   // instruction.
   bool IsMerge(opt::BasicBlock* block);
   bool IsMerge(uint32_t id);
-
-  void Initialize(opt::IRContext* c);
-  Pass::Status ProcessImpl();
 };
 
 }  // namespace opt

@@ -26,8 +26,9 @@ namespace opt {
 class SimplificationPass : public Pass {
  public:
   const char* name() const override { return "simplify-instructions"; }
-  Status Process(opt::IRContext*) override;
-  virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
+  Status Process() override;
+
+  opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
            opt::IRContext::kAnalysisInstrToBlockMapping |
            opt::IRContext::kAnalysisDecorations |

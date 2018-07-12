@@ -30,7 +30,7 @@ namespace opt {
 class RedundancyEliminationPass : public LocalRedundancyEliminationPass {
  public:
   const char* name() const override { return "redundancy-elimination"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
  protected:
   // Removes for all total redundancies in the function starting at |bb|.

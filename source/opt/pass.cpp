@@ -109,7 +109,10 @@ Pass::Status Pass::Run(opt::IRContext* ctx) {
   }
   already_run_ = true;
 
-  Pass::Status status = Process(ctx);
+  context_ = ctx;
+  Pass::Status status = Process();
+  context_ = nullptr;
+
   if (status == Status::SuccessWithChange) {
     ctx->InvalidateAnalysesExceptFor(GetPreservedAnalyses());
   }

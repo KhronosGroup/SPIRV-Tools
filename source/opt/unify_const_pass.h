@@ -26,7 +26,7 @@ namespace opt {
 class UnifyConstantPass : public Pass {
  public:
   const char* name() const override { return "unify-const"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 };
 
 }  // namespace opt

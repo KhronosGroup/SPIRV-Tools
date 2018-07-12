@@ -158,9 +158,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
   return modified;
 }
 
-void LocalSingleBlockLoadStoreElimPass::Initialize(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+void LocalSingleBlockLoadStoreElimPass::Initialize() {
   // Initialize Target Type Caches
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
@@ -204,10 +202,11 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElimPass() {}
+LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElimPass() =
+    default;
 
-Pass::Status LocalSingleBlockLoadStoreElimPass::Process(opt::IRContext* c) {
-  Initialize(c);
+Pass::Status LocalSingleBlockLoadStoreElimPass::Process() {
+  Initialize();
   return ProcessImpl();
 }
 

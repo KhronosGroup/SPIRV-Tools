@@ -23,9 +23,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status MergeReturnPass::Process(opt::IRContext* irContext) {
-  InitializeProcessing(irContext);
-
+Pass::Status MergeReturnPass::Process() {
   bool modified = false;
   bool is_shader =
       context()->get_feature_mgr()->HasCapability(SpvCapabilityShader);

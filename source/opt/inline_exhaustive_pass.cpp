@@ -59,10 +59,6 @@ bool InlineExhaustivePass::InlineExhaustive(opt::Function* func) {
   return modified;
 }
 
-void InlineExhaustivePass::Initialize(opt::IRContext* c) {
-  InitializeInline(c);
-}
-
 Pass::Status InlineExhaustivePass::ProcessImpl() {
   // Attempt exhaustive inlining on each entry point function in module
   ProcessFunction pfn = [this](opt::Function* fp) {
@@ -72,10 +68,10 @@ Pass::Status InlineExhaustivePass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-InlineExhaustivePass::InlineExhaustivePass() {}
+InlineExhaustivePass::InlineExhaustivePass() = default;
 
-Pass::Status InlineExhaustivePass::Process(opt::IRContext* c) {
-  Initialize(c);
+Pass::Status InlineExhaustivePass::Process() {
+  InitializeInline();
   return ProcessImpl();
 }
 

@@ -43,8 +43,9 @@ class CommonUniformElimPass : public Pass {
       std::function<std::vector<opt::BasicBlock*>*(const opt::BasicBlock*)>;
 
   CommonUniformElimPass();
+
   const char* name() const override { return "eliminate-common-uniform"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
  private:
   // Returns true if |opcode| is a non-ptr access chain op
@@ -184,7 +185,7 @@ class CommonUniformElimPass : public Pass {
     return false;
   }
 
-  void Initialize(opt::IRContext* c);
+  void Initialize();
   Pass::Status ProcessImpl();
 
   // Map from uniform variable id to its common load id

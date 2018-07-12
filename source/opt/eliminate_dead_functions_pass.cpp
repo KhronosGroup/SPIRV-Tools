@@ -20,9 +20,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status EliminateDeadFunctionsPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+Pass::Status EliminateDeadFunctionsPass::Process() {
   // Identify live functions first.  Those that are not live
   // are dead.
   std::unordered_set<const opt::Function*> live_function_set;

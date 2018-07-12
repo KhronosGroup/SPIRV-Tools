@@ -201,11 +201,11 @@ class PartialUnrollerTestPass : public Pass {
 
   const char* name() const override { return "Loop unroller"; }
 
-  Status Process(IRContext* context) override {
-    for (Function& f : *context->module()) {
-      LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(&f);
+  Status Process() override {
+    for (Function& f : *context()->module()) {
+      LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(&f);
       for (auto& loop : loop_descriptor) {
-        LoopUtils loop_utils{context, &loop};
+        LoopUtils loop_utils{context(), &loop};
         loop_utils.PartiallyUnroll(factor);
       }
     }
@@ -2934,7 +2934,8 @@ OpFunctionEnd
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
 
   PartialUnrollerTestPass<3> unroller;
-  unroller.Process(context.get());
+  unroller.SetContextForTesting(context.get());
+  unroller.Process();
 
   Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
