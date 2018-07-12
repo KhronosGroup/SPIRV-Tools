@@ -38,10 +38,10 @@ class InlinePass : public Pass {
   using GetBlocksFunction =
       std::function<std::vector<opt::BasicBlock*>*(const opt::BasicBlock*)>;
 
-  InlinePass();
   virtual ~InlinePass() = default;
 
  protected:
+  InlinePass();
 
   // Add pointer to type to module and return resultId.
   uint32_t AddPointerToType(uint32_t type_id, SpvStorageClass storage_class);
@@ -157,7 +157,7 @@ class InlinePass : public Pass {
       std::vector<std::unique_ptr<opt::BasicBlock>>& new_blocks);
 
   // Initialize state for optimization of |module|
-  void InitializeInline(opt::IRContext* c);
+  void InitializeInline();
 
   // Map from function's result id to function.
   std::unordered_map<uint32_t, opt::Function*> id2function_;

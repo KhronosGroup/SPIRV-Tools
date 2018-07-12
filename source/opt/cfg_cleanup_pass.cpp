@@ -27,11 +27,7 @@
 namespace spvtools {
 namespace opt {
 
-void CFGCleanupPass::Initialize(opt::IRContext* c) { InitializeProcessing(c); }
-
-Pass::Status CFGCleanupPass::Process(opt::IRContext* c) {
-  Initialize(c);
-
+Pass::Status CFGCleanupPass::Process() {
   // Process all entry point functions.
   ProcessFunction pfn = [this](opt::Function* fp) { return CFGCleanup(fp); };
   bool modified = ProcessReachableCallTree(pfn, context());

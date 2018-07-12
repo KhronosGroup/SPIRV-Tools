@@ -27,7 +27,7 @@ namespace opt {
 class StrengthReductionPass : public Pass {
  public:
   const char* name() const override { return "strength-reduction"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
  private:
   // Replaces multiple by power of 2 with an equivalent bit shift.

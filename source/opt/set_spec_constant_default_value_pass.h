@@ -56,7 +56,7 @@ class SetSpecConstantDefaultValuePass : public Pass {
         spec_id_to_value_bit_pattern_(std::move(default_values)) {}
 
   const char* name() const override { return "set-spec-const-default-value"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
   // Parses the given null-terminated C string to get a mapping from Spec Id to
   // default value strings. Returns a unique pointer of the mapping from spec

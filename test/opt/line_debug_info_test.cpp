@@ -23,9 +23,9 @@ namespace {
 class NopifyPass : public Pass {
  public:
   const char* name() const override { return "NopifyPass"; }
-  Status Process(IRContext* irContext) override {
+  Status Process() override {
     bool modified = false;
-    irContext->module()->ForEachInst(
+    context()->module()->ForEachInst(
         [&modified](Instruction* inst) {
           inst->ToNop();
           modified = true;

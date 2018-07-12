@@ -856,11 +856,9 @@ class LoopUnswitch {
 
 }  // namespace
 
-Pass::Status LoopUnswitchPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+Pass::Status LoopUnswitchPass::Process() {
   bool modified = false;
-  opt::Module* module = c->module();
+  opt::Module* module = context()->module();
 
   // Process each function in the module
   for (opt::Function& f : *module) {

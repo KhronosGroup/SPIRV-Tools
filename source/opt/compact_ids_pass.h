@@ -26,7 +26,7 @@ namespace opt {
 class CompactIdsPass : public Pass {
  public:
   const char* name() const override { return "compact-ids"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
   // Return the mask of preserved Analyses.
   opt::IRContext::Analysis GetPreservedAnalyses() override {

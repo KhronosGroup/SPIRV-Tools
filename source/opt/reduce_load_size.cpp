@@ -29,8 +29,7 @@ const double kThreshold = 0.9;
 namespace spvtools {
 namespace opt {
 
-Pass::Status ReduceLoadSize::Process(opt::IRContext* ctx) {
-  InitializeProcessing(ctx);
+Pass::Status ReduceLoadSize::Process() {
   bool modified = false;
 
   for (auto& func : *get_module()) {

@@ -43,7 +43,7 @@ class AggressiveDCEPass : public MemPass {
 
   AggressiveDCEPass();
   const char* name() const override { return "eliminate-dead-code-aggressive"; }
-  Status Process(opt::IRContext* c) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
@@ -138,7 +138,6 @@ class AggressiveDCEPass : public MemPass {
   // TODO(): Remove useless control constructs.
   bool AggressiveDCE(opt::Function* func);
 
-  void Initialize(opt::IRContext* c);
   Pass::Status ProcessImpl();
 
   // True if current function has a call instruction contained in it

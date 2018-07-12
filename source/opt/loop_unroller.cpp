@@ -1040,13 +1040,12 @@ void LoopUtils::Finalize() {
  *
  */
 
-Pass::Status LoopUnroller::Process(opt::IRContext* c) {
-  context_ = c;
+Pass::Status LoopUnroller::Process() {
   bool changed = false;
-  for (opt::Function& f : *c->module()) {
-    opt::LoopDescriptor* LD = context_->GetLoopDescriptor(&f);
+  for (opt::Function& f : *context()->module()) {
+    opt::LoopDescriptor* LD = context()->GetLoopDescriptor(&f);
     for (opt::Loop& loop : *LD) {
-      LoopUtils loop_utils{c, &loop};
+      LoopUtils loop_utils{context(), &loop};
       if (!loop.HasUnrollLoopControl() || !loop_utils.CanPerformUnroll()) {
         continue;
       }

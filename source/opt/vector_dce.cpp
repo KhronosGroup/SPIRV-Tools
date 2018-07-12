@@ -23,9 +23,7 @@ const uint32_t kInsertCompositeIdInIdx = 1;
 namespace spvtools {
 namespace opt {
 
-Pass::Status VectorDCE::Process(opt::IRContext* ctx) {
-  InitializeProcessing(ctx);
-
+Pass::Status VectorDCE::Process() {
   bool modified = false;
   for (opt::Function& function : *get_module()) {
     modified |= VectorDCEFunction(&function);

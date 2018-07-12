@@ -31,31 +31,40 @@ using ::testing::Each;
 class DummyPassPreservesNothing : public Pass {
  public:
   DummyPassPreservesNothing(Status s) : Pass(), status_to_return_(s) {}
+
   const char* name() const override { return "dummy-pass"; }
-  Status Process(IRContext*) override { return status_to_return_; }
+  Status Process() override { return status_to_return_; }
+
+ private:
   Status status_to_return_;
 };
 
 class DummyPassPreservesAll : public Pass {
  public:
   DummyPassPreservesAll(Status s) : Pass(), status_to_return_(s) {}
+
   const char* name() const override { return "dummy-pass"; }
-  Status Process(IRContext*) override { return status_to_return_; }
-  Status status_to_return_;
-  virtual Analysis GetPreservedAnalyses() override {
+  Status Process() override { return status_to_return_; }
+
+  Analysis GetPreservedAnalyses() override {
     return Analysis(IRContext::kAnalysisEnd - 1);
   }
+
+ private:
+  Status status_to_return_;
 };
 
 class DummyPassPreservesFirst : public Pass {
  public:
   DummyPassPreservesFirst(Status s) : Pass(), status_to_return_(s) {}
+
   const char* name() const override { return "dummy-pass"; }
-  Status Process(IRContext*) override { return status_to_return_; }
+  Status Process() override { return status_to_return_; }
+
+  Analysis GetPreservedAnalyses() override { return IRContext::kAnalysisBegin; }
+
+ private:
   Status status_to_return_;
-  virtual Analysis GetPreservedAnalyses() override {
-    return IRContext::kAnalysisBegin;
-  }
 };
 
 using IRContextTest = PassTest<::testing::Test>;

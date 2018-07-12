@@ -27,7 +27,7 @@ namespace opt {
 class IfConversion : public Pass {
  public:
   const char* name() const override { return "if-conversion"; }
-  Status Process(opt::IRContext* context) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |

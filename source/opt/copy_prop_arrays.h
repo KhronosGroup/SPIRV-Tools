@@ -38,7 +38,7 @@ namespace opt {
 class CopyPropagateArrays : public MemPass {
  public:
   const char* name() const override { return "copy-propagate-arrays"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse | opt::IRContext::kAnalysisCFG |

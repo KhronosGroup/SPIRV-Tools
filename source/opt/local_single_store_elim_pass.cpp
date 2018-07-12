@@ -45,11 +45,6 @@ bool LocalSingleStoreElimPass::LocalSingleStoreElim(opt::Function* func) {
   return modified;
 }
 
-void LocalSingleStoreElimPass::Initialize(opt::IRContext* irContext) {
-  InitializeProcessing(irContext);
-  InitExtensionWhiteList();
-}
-
 bool LocalSingleStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : get_module()->extensions()) {
@@ -76,10 +71,10 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalSingleStoreElimPass::LocalSingleStoreElimPass() {}
+LocalSingleStoreElimPass::LocalSingleStoreElimPass() = default;
 
-Pass::Status LocalSingleStoreElimPass::Process(opt::IRContext* irContext) {
-  Initialize(irContext);
+Pass::Status LocalSingleStoreElimPass::Process() {
+  InitExtensionWhiteList();
   return ProcessImpl();
 }
 

@@ -26,18 +26,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status FoldSpecConstantOpAndCompositePass::Process(
-    opt::IRContext* irContext) {
-  Initialize(irContext);
-  return ProcessImpl(irContext);
-}
-
-void FoldSpecConstantOpAndCompositePass::Initialize(opt::IRContext* irContext) {
-  InitializeProcessing(irContext);
-}
-
-Pass::Status FoldSpecConstantOpAndCompositePass::ProcessImpl(
-    opt::IRContext* irContext) {
+Pass::Status FoldSpecConstantOpAndCompositePass::Process() {
   bool modified = false;
   // Traverse through all the constant defining instructions. For Normal
   // Constants whose values are determined and do not depend on OpUndef
@@ -59,11 +48,11 @@ Pass::Status FoldSpecConstantOpAndCompositePass::ProcessImpl(
   // the dependee Spec Constants, all its dependent constants must have been
   // processed and all its dependent Spec Constants should have been folded if
   // possible.
-  opt::Module::inst_iterator next_inst = irContext->types_values_begin();
+  opt::Module::inst_iterator next_inst = context()->types_values_begin();
   for (opt::Module::inst_iterator inst_iter = next_inst;
        // Need to re-evaluate the end iterator since we may modify the list of
        // instructions in this section of the module as the process goes.
-       inst_iter != irContext->types_values_end(); inst_iter = next_inst) {
+       inst_iter != context()->types_values_end(); inst_iter = next_inst) {
     ++next_inst;
     opt::Instruction* inst = &*inst_iter;
     // Collect constant values of normal constants and process the

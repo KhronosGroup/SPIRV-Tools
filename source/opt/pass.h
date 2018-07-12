@@ -47,13 +47,6 @@ class Pass {
 
   using ProcessFunction = std::function<bool(opt::Function*)>;
 
-  // Constructs a new pass.
-  //
-  // The constructed instance will have an empty message consumer, which just
-  // ignores all messages from the library. Use SetMessageConsumer() to supply
-  // one if messages are of concern.
-  Pass();
-
   // Destructs the pass.
   virtual ~Pass() = default;
 
@@ -88,6 +81,9 @@ class Pass {
 
   // Returns a pointer to the current module for this pass.
   opt::Module* get_module() const { return context_->module(); }
+
+  // Sets the pointer to the current context for this pass.
+  void SetContextForTesting(IRContext* ctx) { context_ = ctx; }
 
   // Returns a pointer to the current context for this pass.
   opt::IRContext* context() const { return context_; }
@@ -126,7 +122,7 @@ class Pass {
   //
   // It is an error if |Run| is called twice with the same instance of the pass.
   // If this happens the return value will be |Failure|.
-  virtual Status Run(opt::IRContext* ctx) final;
+  Status Run(opt::IRContext* ctx);
 
   // Returns the set of analyses that the pass is guaranteed to preserve.
   virtual opt::IRContext::Analysis GetPreservedAnalyses() {
@@ -137,14 +133,17 @@ class Pass {
   uint32_t GetPointeeTypeId(const opt::Instruction* ptrInst) const;
 
  protected:
-  // Initialize basic data structures for the pass. This sets up the def-use
-  // manager, module and other attributes.
-  virtual void InitializeProcessing(opt::IRContext* c) { context_ = c; }
+  // Constructs a new pass.
+  //
+  // The constructed instance will have an empty message consumer, which just
+  // ignores all messages from the library. Use SetMessageConsumer() to supply
+  // one if messages are of concern.
+  Pass();
 
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes are made to the module.
-  virtual Status Process(opt::IRContext* context) = 0;
+  virtual Status Process() = 0;
 
   // Return the next available SSA id and increment it.
   uint32_t TakeNextId() { return context_->TakeNextId(); }

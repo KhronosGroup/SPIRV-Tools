@@ -19,8 +19,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status ReplaceInvalidOpcodePass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
+Pass::Status ReplaceInvalidOpcodePass::Process() {
   bool modified = false;
 
   if (context()->get_feature_mgr()->HasCapability(SpvCapabilityLinkage)) {

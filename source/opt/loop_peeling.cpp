@@ -572,11 +572,9 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
       opt::IRContext::kAnalysisLoopAnalysis | opt::IRContext::kAnalysisCFG);
 }
 
-Pass::Status LoopPeelingPass::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+Pass::Status LoopPeelingPass::Process() {
   bool modified = false;
-  opt::Module* module = c->module();
+  opt::Module* module = context()->module();
 
   // Process each function in the module
   for (opt::Function& f : *module) {

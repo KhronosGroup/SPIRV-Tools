@@ -668,9 +668,7 @@ bool InlinePass::IsInlinableFunction(opt::Function* func) {
          no_return_in_loop_.cend();
 }
 
-void InlinePass::InitializeInline(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+void InlinePass::InitializeInline() {
   false_id_ = 0;
 
   // clear collections

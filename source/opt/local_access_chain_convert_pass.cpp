@@ -245,9 +245,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(
   return modified;
 }
 
-void LocalAccessChainConvertPass::Initialize(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+void LocalAccessChainConvertPass::Initialize() {
   // Initialize Target Variable Caches
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
@@ -294,8 +292,8 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
 
 LocalAccessChainConvertPass::LocalAccessChainConvertPass() {}
 
-Pass::Status LocalAccessChainConvertPass::Process(opt::IRContext* c) {
-  Initialize(c);
+Pass::Status LocalAccessChainConvertPass::Process() {
+  Initialize();
   return ProcessImpl();
 }
 

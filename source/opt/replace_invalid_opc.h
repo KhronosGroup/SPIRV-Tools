@@ -27,7 +27,7 @@ namespace opt {
 class ReplaceInvalidOpcodePass : public Pass {
  public:
   const char* name() const override { return "replace-invalid-opcodes"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
  private:
   // Returns the execution model that is used by every entry point in the

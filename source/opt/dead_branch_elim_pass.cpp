@@ -371,11 +371,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(opt::Function* func) {
   return modified;
 }
 
-void DeadBranchElimPass::Initialize(opt::IRContext* c) {
-  InitializeProcessing(c);
-}
-
-Pass::Status DeadBranchElimPass::ProcessImpl() {
+Pass::Status DeadBranchElimPass::Process() {
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
@@ -387,13 +383,6 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
   };
   bool modified = ProcessReachableCallTree(pfn, context());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
-}
-
-DeadBranchElimPass::DeadBranchElimPass() {}
-
-Pass::Status DeadBranchElimPass::Process(opt::IRContext* module) {
-  Initialize(module);
-  return ProcessImpl();
 }
 
 }  // namespace opt

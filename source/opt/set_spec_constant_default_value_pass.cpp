@@ -190,10 +190,7 @@ opt::Instruction* GetSpecIdTargetFromDecorationGroup(
 }
 }  // namespace
 
-Pass::Status SetSpecConstantDefaultValuePass::Process(
-    opt::IRContext* irContext) {
-  InitializeProcessing(irContext);
-
+Pass::Status SetSpecConstantDefaultValuePass::Process() {
   // The operand index of decoration target in an OpDecorate instruction.
   const uint32_t kTargetIdOperandIndex = 0;
   // The operand index of the decoration literal in an OpDecorate instruction.
@@ -216,7 +213,7 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(
   // is found for a spec id, the string will be parsed according to the target
   // spec constant type. The parsed value will be used to replace the original
   // default value of the target spec constant.
-  for (opt::Instruction& inst : irContext->annotations()) {
+  for (opt::Instruction& inst : context()->annotations()) {
     // Only process 'OpDecorate SpecId' instructions
     if (inst.opcode() != SpvOp::SpvOpDecorate) continue;
     if (inst.NumOperands() != kOpDecorateSpecIdNumOperands) continue;

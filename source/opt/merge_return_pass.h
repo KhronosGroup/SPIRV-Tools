@@ -103,7 +103,7 @@ class MergeReturnPass : public MemPass {
         final_return_block_(nullptr) {}
 
   const char* name() const override { return "merge-return"; }
-  Status Process(opt::IRContext*) override;
+  Status Process() override;
 
   opt::IRContext::Analysis GetPreservedAnalyses() override {
     // return opt::IRContext::kAnalysisDefUse;

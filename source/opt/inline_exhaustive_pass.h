@@ -34,7 +34,7 @@ namespace opt {
 class InlineExhaustivePass : public InlinePass {
  public:
   InlineExhaustivePass();
-  Status Process(opt::IRContext* c) override;
+  Status Process() override;
 
   const char* name() const override { return "inline-entry-points-exhaustive"; }
 
@@ -43,7 +43,7 @@ class InlineExhaustivePass : public InlinePass {
   // all code that is inlined into func. Return true if func is modified.
   bool InlineExhaustive(opt::Function* func);
 
-  void Initialize(opt::IRContext* c);
+  void Initialize();
   Pass::Status ProcessImpl();
 };
 

@@ -19,9 +19,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status IfConversion::Process(opt::IRContext* c) {
-  InitializeProcessing(c);
-
+Pass::Status IfConversion::Process() {
   const ValueNumberTable& vn_table = *context()->GetValueNumberTable();
   bool modified = false;
   std::vector<opt::Instruction*> to_kill;

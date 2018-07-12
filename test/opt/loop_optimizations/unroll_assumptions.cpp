@@ -39,12 +39,12 @@ class PartialUnrollerTestPass : public Pass {
 
   const char* name() const override { return "Loop unroller"; }
 
-  Status Process(IRContext* context) override {
+  Status Process() override {
     bool changed = false;
-    for (Function& f : *context->module()) {
-      LoopDescriptor& loop_descriptor = *context->GetLoopDescriptor(&f);
+    for (Function& f : *context()->module()) {
+      LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(&f);
       for (auto& loop : loop_descriptor) {
-        LoopUtils loop_utils{context, &loop};
+        LoopUtils loop_utils{context(), &loop};
         if (loop_utils.PartiallyUnroll(factor)) {
           changed = true;
         }

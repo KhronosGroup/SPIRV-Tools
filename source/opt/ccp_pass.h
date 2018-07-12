@@ -28,9 +28,11 @@ namespace opt {
 class CCPPass : public MemPass {
  public:
   CCPPass() = default;
+
   const char* name() const override { return "ccp"; }
-  Status Process(opt::IRContext* c) override;
-  virtual opt::IRContext::Analysis GetPreservedAnalyses() override {
+  Status Process() override;
+
+  opt::IRContext::Analysis GetPreservedAnalyses() override {
     return opt::IRContext::kAnalysisDefUse |
            opt::IRContext::kAnalysisInstrToBlockMapping |
            opt::IRContext::kAnalysisDecorations |
@@ -41,7 +43,7 @@ class CCPPass : public MemPass {
 
  private:
   // Initializes the pass.
-  void Initialize(opt::IRContext* c);
+  void Initialize();
 
   // Runs constant propagation on the given function |fp|. Returns true if any
   // constants were propagated and the IR modified.
