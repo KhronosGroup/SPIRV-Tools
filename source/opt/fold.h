@@ -28,7 +28,7 @@ namespace opt {
 
 class InstructionFolder {
  public:
-  InstructionFolder(IRContext* context) : context_(context) {}
+  explicit InstructionFolder(IRContext* context) : context_(context) {}
 
   // Returns the result of folding a scalar instruction with the given |opcode|
   // and |operands|. Each entry in |operands| is a pointer to an
