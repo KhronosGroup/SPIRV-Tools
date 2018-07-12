@@ -107,8 +107,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
       : utils::IntrusiveNodeBase<Instruction>(),
         context_(nullptr),
         opcode_(SpvOpNop),
-        type_id_(0),
-        result_id_(0),
+        has_type_id_(false),
+        has_result_id_(false),
         unique_id_(0) {}
 
   // Creates a default OpNop instruction.
@@ -153,8 +153,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // TODO(qining): Remove this function when instruction building and insertion
   // is well implemented.
   void SetOpcode(SpvOp op) { opcode_ = op; }
-  uint32_t type_id() const { return type_id_; }
-  uint32_t result_id() const { return result_id_; }
+  uint32_t type_id() const {
+    return has_type_id_ ? GetSingleWordOperand(0) : 0;
+  }
+  uint32_t result_id() const {
+    return has_result_id_ ? GetSingleWordOperand(has_type_id_ ? 1 : 0) : 0;
+  }
   uint32_t unique_id() const {
     assert(unique_id_ != 0);
     return unique_id_;
@@ -211,7 +215,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline void SetResultType(uint32_t ty_id);
   // Sets the result id
   inline void SetResultId(uint32_t res_id);
-  inline bool HasResultId() const { return result_id_ != 0; }
+  inline bool HasResultId() const { return has_result_id_; }
   // Remove the |index|-th operand
   void RemoveOperand(uint32_t index) {
     operands_.erase(operands_.begin() + index);
@@ -418,7 +422,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
-    return (type_id_ != 0) + (result_id_ != 0);
+    if (has_type_id_ && has_result_id_) return 2;
+    if (has_type_id_ || has_result_id_) return 1;
+    return 0;
   }
 
   // Returns true if the instruction declares a variable that is read-only.  The
@@ -439,8 +445,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 
   IRContext* context_;  // IR Context
   SpvOp opcode_;        // Opcode
-  uint32_t type_id_;    // Result type id. A value of 0 means no result type id.
-  uint32_t result_id_;  // Result id. A value of 0 means no result id.
+  bool has_type_id_;    // True if the instruction has a type id
+  bool has_result_id_;  // True if the instruction has a result id
   uint32_t unique_id_;  // Unique instruction id
   // All logical operands, including result type id and result id.
   OperandList operands_;
@@ -506,28 +512,27 @@ inline void Instruction::SetInOperands(OperandList&& new_operands) {
 }
 
 inline void Instruction::SetResultId(uint32_t res_id) {
-  result_id_ = res_id;
-  auto ridx = (type_id_ != 0) ? 1 : 0;
+  auto ridx = has_type_id_ ? 1 : 0;
   assert(operands_[ridx].type == SPV_OPERAND_TYPE_RESULT_ID);
   operands_[ridx].words = {res_id};
 }
 
 inline void Instruction::SetResultType(uint32_t ty_id) {
-  if (type_id_ != 0) {
-    type_id_ = ty_id;
-    assert(operands_.front().type == SPV_OPERAND_TYPE_TYPE_ID);
-    operands_.front().words = {ty_id};
-  }
+  if (!has_type_id_) return;
+
+  assert(operands_.front().type == SPV_OPERAND_TYPE_TYPE_ID);
+  operands_.front().words = {ty_id};
 }
 
 inline bool Instruction::IsNop() const {
-  return opcode_ == SpvOpNop && type_id_ == 0 && result_id_ == 0 &&
+  return opcode_ == SpvOpNop && !has_type_id_ && !has_result_id_ &&
          operands_.empty();
 }
 
 inline void Instruction::ToNop() {
   opcode_ = SpvOpNop;
-  type_id_ = result_id_ = 0;
+  has_type_id_ = false;
+  has_result_id_ = false;
   operands_.clear();
 }
 
@@ -576,9 +581,6 @@ inline void Instruction::ForEachInst(
 inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
   for (auto& opnd : operands_)
     if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
-  if (type_id_ != 0u) type_id_ = GetSingleWordOperand(0u);
-  if (result_id_ != 0u)
-    result_id_ = GetSingleWordOperand(type_id_ == 0u ? 0u : 1u);
 }
 
 inline void Instruction::ForEachId(

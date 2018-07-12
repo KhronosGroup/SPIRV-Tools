@@ -36,24 +36,24 @@ Instruction::Instruction(IRContext* c)
     : utils::IntrusiveNodeBase<Instruction>(),
       context_(c),
       opcode_(SpvOpNop),
-      type_id_(0),
-      result_id_(0),
+      has_type_id_(false),
+      has_result_id_(false),
       unique_id_(c->TakeNextUniqueId()) {}
 
 Instruction::Instruction(IRContext* c, SpvOp op)
     : utils::IntrusiveNodeBase<Instruction>(),
       context_(c),
       opcode_(op),
-      type_id_(0),
-      result_id_(0),
+      has_type_id_(false),
+      has_result_id_(false),
       unique_id_(c->TakeNextUniqueId()) {}
 
 Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
                          std::vector<Instruction>&& dbg_line)
     : context_(c),
       opcode_(static_cast<SpvOp>(inst.opcode)),
-      type_id_(inst.type_id),
-      result_id_(inst.result_id),
+      has_type_id_(inst.type_id != 0),
+      has_result_id_(inst.result_id != 0),
       unique_id_(c->TakeNextUniqueId()),
       dbg_line_insts_(std::move(dbg_line)) {
   assert((!IsDebugLineInst(opcode_) || dbg_line.empty()) &&
@@ -72,17 +72,17 @@ Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id,
     : utils::IntrusiveNodeBase<Instruction>(),
       context_(c),
       opcode_(op),
-      type_id_(ty_id),
-      result_id_(res_id),
+      has_type_id_(ty_id != 0),
+      has_result_id_(res_id != 0),
       unique_id_(c->TakeNextUniqueId()),
       operands_() {
-  if (type_id_ != 0) {
+  if (has_type_id_) {
     operands_.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_TYPE_ID,
-                           std::initializer_list<uint32_t>{type_id_});
+                           std::initializer_list<uint32_t>{ty_id});
   }
-  if (result_id_ != 0) {
+  if (has_result_id_) {
     operands_.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_RESULT_ID,
-                           std::initializer_list<uint32_t>{result_id_});
+                           std::initializer_list<uint32_t>{res_id});
   }
   operands_.insert(operands_.end(), in_operands.begin(), in_operands.end());
 }
@@ -90,16 +90,16 @@ Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id,
 Instruction::Instruction(Instruction&& that)
     : utils::IntrusiveNodeBase<Instruction>(),
       opcode_(that.opcode_),
-      type_id_(that.type_id_),
-      result_id_(that.result_id_),
+      has_type_id_(that.has_type_id_),
+      has_result_id_(that.has_result_id_),
       unique_id_(that.unique_id_),
       operands_(std::move(that.operands_)),
       dbg_line_insts_(std::move(that.dbg_line_insts_)) {}
 
 Instruction& Instruction::operator=(Instruction&& that) {
   opcode_ = that.opcode_;
-  type_id_ = that.type_id_;
-  result_id_ = that.result_id_;
+  has_type_id_ = that.has_type_id_;
+  has_result_id_ = that.has_result_id_;
   unique_id_ = that.unique_id_;
   operands_ = std::move(that.operands_);
   dbg_line_insts_ = std::move(that.dbg_line_insts_);
@@ -109,8 +109,8 @@ Instruction& Instruction::operator=(Instruction&& that) {
 Instruction* Instruction::Clone(IRContext* c) const {
   Instruction* clone = new Instruction(c);
   clone->opcode_ = opcode_;
-  clone->type_id_ = type_id_;
-  clone->result_id_ = result_id_;
+  clone->has_type_id_ = has_type_id_;
+  clone->has_result_id_ = has_result_id_;
   clone->unique_id_ = c->TakeNextUniqueId();
   clone->operands_ = operands_;
   clone->dbg_line_insts_ = dbg_line_insts_;
