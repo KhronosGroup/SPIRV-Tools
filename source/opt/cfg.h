@@ -27,10 +27,7 @@ namespace opt {
 
 class CFG {
  public:
-  CFG(Module* module);
-
-  // Return the module described by this CFG.
-  Module* get_module() const { return module_; }
+  explicit CFG(Module* module);
 
   // Return the list of predecesors for basic block with label |blkid|.
   // TODO(dnovillo): Move this to BasicBlock.
@@ -128,11 +125,7 @@ class CFG {
   // Returns a pointer to the new loop header.
   BasicBlock* SplitLoopHeader(BasicBlock* bb);
 
-  std::unordered_set<BasicBlock*> FindReachableBlocks(BasicBlock* start);
-
  private:
-  using cbb_ptr = const BasicBlock*;
-
   // Compute structured successors for function |func|. A block's structured
   // successors are the blocks it branches to together with its declared merge
   // block and continue block if it has them. When order matters, the merge
