@@ -169,7 +169,7 @@ void PrivateToLocalPass::UpdateUse(Instruction* inst) {
 }
 void PrivateToLocalPass::UpdateUses(uint32_t id) {
   std::vector<Instruction*> uses;
-  this->context()->get_def_use_mgr()->ForEachUser(
+  context()->get_def_use_mgr()->ForEachUser(
       id, [&uses](Instruction* use) { uses.push_back(use); });
 
   for (Instruction* use : uses) {

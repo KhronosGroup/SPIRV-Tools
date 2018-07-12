@@ -48,9 +48,9 @@ Pass::Status ReduceLoadSize::Process() {
 bool ReduceLoadSize::ReplaceExtract(Instruction* inst) {
   assert(inst->opcode() == SpvOpCompositeExtract &&
          "Wrong opcode.  Should be OpCompositeExtract.");
-  analysis::DefUseManager* def_use_mgr = inst->context()->get_def_use_mgr();
-  analysis::TypeManager* type_mgr = inst->context()->get_type_mgr();
-  analysis::ConstantManager* const_mgr = inst->context()->get_constant_mgr();
+  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+  analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
 
   uint32_t composite_id =
       inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);

@@ -132,8 +132,7 @@ void InlinePass::CloneAndMapLocals(
   auto callee_block_itr = calleeFn->begin();
   auto callee_var_itr = callee_block_itr->begin();
   while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
-    std::unique_ptr<Instruction> var_inst(
-        callee_var_itr->Clone(callee_var_itr->context()));
+    std::unique_ptr<Instruction> var_inst(callee_var_itr->Clone(context()));
     uint32_t newId = TakeNextId();
     get_decoration_mgr()->CloneDecorations(callee_var_itr->result_id(), newId);
     var_inst->SetResultId(newId);
@@ -183,8 +182,7 @@ void InlinePass::CloneSameBlockOps(
           if (mapItr2 != (*preCallSB).end()) {
             // Clone pre-call same-block ops, map result id.
             const Instruction* inInst = mapItr2->second;
-            std::unique_ptr<Instruction> sb_inst(
-                inInst->Clone(inInst->context()));
+            std::unique_ptr<Instruction> sb_inst(inInst->Clone(context()));
             CloneSameBlockOps(&sb_inst, postCallSB, preCallSB, block_ptr);
             const uint32_t rid = sb_inst->result_id();
             const uint32_t nid = this->TakeNextId();
