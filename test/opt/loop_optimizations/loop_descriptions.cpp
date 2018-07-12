@@ -292,7 +292,7 @@ TEST_F(PassClassTest, NoLoop) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const Function* f = spvtest::GetFunction(module, 4);
-  LoopDescriptor ld{f};
+  LoopDescriptor ld{context.get(), f};
 
   EXPECT_EQ(ld.NumLoops(), 0u);
 }
@@ -368,7 +368,7 @@ TEST_F(PassClassTest, LoopLatchNotContinue) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const Function* f = spvtest::GetFunction(module, 2);
-  LoopDescriptor ld{f};
+  LoopDescriptor ld{context.get(), f};
 
   EXPECT_EQ(ld.NumLoops(), 1u);
 
