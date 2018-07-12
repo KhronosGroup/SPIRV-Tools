@@ -153,7 +153,6 @@ void IrLoader::EndModule() {
   }
   for (auto& function : *module_) {
     for (auto& bb : function) bb.SetParent(&function);
-    function.SetParent(module_);
   }
 }
 

@@ -143,7 +143,7 @@ TEST_F(LCSSATest, SimpleLCSSA) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const Function* f = spvtest::GetFunction(module, 2);
-  LoopDescriptor ld{f};
+  LoopDescriptor ld{context.get(), f};
 
   Loop* loop = ld[17];
   EXPECT_FALSE(loop->IsLCSSA());
@@ -229,7 +229,7 @@ TEST_F(LCSSATest, PhiReuseLCSSA) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const Function* f = spvtest::GetFunction(module, 2);
-  LoopDescriptor ld{f};
+  LoopDescriptor ld{context.get(), f};
 
   Loop* loop = ld[17];
   EXPECT_FALSE(loop->IsLCSSA());
@@ -328,7 +328,7 @@ TEST_F(LCSSATest, DualLoopLCSSA) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const Function* f = spvtest::GetFunction(module, 2);
-  LoopDescriptor ld{f};
+  LoopDescriptor ld{context.get(), f};
 
   Loop* loop = ld[16];
   EXPECT_FALSE(loop->IsLCSSA());
@@ -421,7 +421,7 @@ TEST_F(LCSSATest, PhiUserLCSSA) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const Function* f = spvtest::GetFunction(module, 2);
-  LoopDescriptor ld{f};
+  LoopDescriptor ld{context.get(), f};
 
   Loop* loop = ld[19];
   EXPECT_FALSE(loop->IsLCSSA());
@@ -516,7 +516,7 @@ TEST_F(LCSSATest, LCSSAWithBreak) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const Function* f = spvtest::GetFunction(module, 2);
-  LoopDescriptor ld{f};
+  LoopDescriptor ld{context.get(), f};
 
   Loop* loop = ld[19];
   EXPECT_FALSE(loop->IsLCSSA());
@@ -599,7 +599,7 @@ TEST_F(LCSSATest, LCSSAUseInNonEligiblePhi) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const Function* f = spvtest::GetFunction(module, 2);
-  LoopDescriptor ld{f};
+  LoopDescriptor ld{context.get(), f};
 
   Loop* loop = ld[12];
   EXPECT_FALSE(loop->IsLCSSA());

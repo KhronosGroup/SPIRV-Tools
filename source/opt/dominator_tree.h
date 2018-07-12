@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "cfg.h"
-#include "module.h"
 #include "tree_iterator.h"
 
 namespace spvtools {
