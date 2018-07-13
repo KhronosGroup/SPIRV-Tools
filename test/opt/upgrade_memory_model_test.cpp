@@ -1173,6 +1173,162 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
 }
+
+TEST_F(UpgradeMemoryModelTest, TessellationControlBarrierNoChange) {
+  const std::string text = R"(
+; CHECK: [[none:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: OpControlBarrier [[workgroup]] [[workgroup]] [[none]]
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpEntryPoint TessellationControl %func "func"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%none = OpConstant %int 0
+%workgroup = OpConstant %int 2
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+OpControlBarrier %workgroup %workgroup %none
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, TessellationControlBarrierAddOutput) {
+  const std::string text = R"(
+; CHECK: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: [[output:%\w+]] = OpConstant {{%\w+}} 4096
+; CHECK: OpControlBarrier [[workgroup]] [[workgroup]] [[output]]
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpEntryPoint TessellationControl %func "func" %var
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%none = OpConstant %int 0
+%workgroup = OpConstant %int 2
+%ptr_int_Output = OpTypePointer Output %int
+%var = OpVariable %ptr_int_Output Output
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %int %var
+OpControlBarrier %workgroup %workgroup %none
+OpStore %var %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, TessellationMemoryBarrierNoChange) {
+  const std::string text = R"(
+; CHECK: [[none:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: OpMemoryBarrier [[workgroup]] [[none]]
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpEntryPoint TessellationControl %func "func" %var
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%none = OpConstant %int 0
+%workgroup = OpConstant %int 2
+%ptr_int_Output = OpTypePointer Output %int
+%var = OpVariable %ptr_int_Output Output
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%ld = OpLoad %int %var
+OpMemoryBarrier %workgroup %none
+OpStore %var %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest, TessellationControlBarrierAddOutputSubFunction) {
+  const std::string text = R"(
+; CHECK: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: [[output:%\w+]] = OpConstant {{%\w+}} 4096
+; CHECK: OpControlBarrier [[workgroup]] [[workgroup]] [[output]]
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpEntryPoint TessellationControl %func "func" %var
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%none = OpConstant %int 0
+%workgroup = OpConstant %int 2
+%ptr_int_Output = OpTypePointer Output %int
+%var = OpVariable %ptr_int_Output Output
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%call = OpFunctionCall %void %sub_func
+OpReturn
+OpFunctionEnd
+%sub_func = OpFunction %void None %func_ty
+%2 = OpLabel
+%ld = OpLoad %int %var
+OpControlBarrier %workgroup %workgroup %none
+OpStore %var %ld
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
+TEST_F(UpgradeMemoryModelTest,
+       TessellationControlBarrierAddOutputDifferentFunctions) {
+  const std::string text = R"(
+; CHECK: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: [[output:%\w+]] = OpConstant {{%\w+}} 4096
+; CHECK: OpControlBarrier [[workgroup]] [[workgroup]] [[output]]
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpEntryPoint TessellationControl %func "func" %var
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%none = OpConstant %int 0
+%workgroup = OpConstant %int 2
+%ptr_int_Output = OpTypePointer Output %int
+%var = OpVariable %ptr_int_Output Output
+%func_ty = OpTypeFunction %void
+%ld_func_ty = OpTypeFunction %int
+%st_func_ty = OpTypeFunction %void %int
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%call_ld = OpFunctionCall %int %ld_func
+%call_barrier = OpFunctionCall %void %barrier_func
+%call_st = OpFunctionCall %void %st_func %call_ld
+OpReturn
+OpFunctionEnd
+%ld_func = OpFunction %int None %ld_func_ty
+%2 = OpLabel
+%ld = OpLoad %int %var
+OpReturnValue %ld
+OpFunctionEnd
+%barrier_func = OpFunction %void None %func_ty
+%3 = OpLabel
+OpControlBarrier %workgroup %workgroup %none
+OpReturn
+OpFunctionEnd
+%st_func = OpFunction %void None %st_func_ty
+%param = OpFunctionParameter %int
+%4 = OpLabel
+OpStore %var %param
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
 #endif
 
 }  // namespace

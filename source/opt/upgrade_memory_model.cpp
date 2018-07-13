@@ -34,6 +34,7 @@ Pass::Status UpgradeMemoryModel::Process(ir::IRContext* context) {
   UpgradeMemoryModelInstruction();
   UpgradeInstructions();
   CleanupDecorations();
+  UpgradeBarriers();
 
   return Pass::Status::SuccessWithChange;
 }
@@ -468,6 +469,74 @@ void UpgradeMemoryModel::CleanupDecorations() {
           });
     }
   });
+}
+
+void UpgradeMemoryModel::UpgradeBarriers() {
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, ir::Function*> id2function;
+  for (auto& fn : *get_module()) id2function[fn.result_id()] = &fn;
+
+  std::vector<ir::Instruction*> barriers;
+  // Collects all the control barriers in |function|. Returns true if the
+  // function operates on the Output storage class.
+  ProcessFunction CollectBarriers = [this, &barriers](ir::Function* function) {
+    bool operates_on_output = false;
+    for (auto& block : *function) {
+      block.ForEachInst([this, &barriers,
+                         &operates_on_output](ir::Instruction* inst) {
+        if (inst->opcode() == SpvOpControlBarrier) {
+          barriers.push_back(inst);
+        } else if (!operates_on_output) {
+          // This instruction operates on output storage class if it is a
+          // pointer to output type or any input operand is a pointer to output
+          // type.
+          analysis::Type* type =
+              context()->get_type_mgr()->GetType(inst->type_id());
+          if (type && type->AsPointer() &&
+              type->AsPointer()->storage_class() == SpvStorageClassOutput) {
+            operates_on_output = true;
+            return;
+          }
+          inst->ForEachInId([this, &operates_on_output](uint32_t* id_ptr) {
+            ir::Instruction* op_inst =
+                context()->get_def_use_mgr()->GetDef(*id_ptr);
+            analysis::Type* op_type =
+                context()->get_type_mgr()->GetType(op_inst->type_id());
+            if (op_type && op_type->AsPointer() &&
+                op_type->AsPointer()->storage_class() == SpvStorageClassOutput)
+              operates_on_output = true;
+          });
+        }
+      });
+    }
+    return operates_on_output;
+  };
+
+  std::queue<uint32_t> roots;
+  for (auto& e : get_module()->entry_points())
+    if (e.GetSingleWordInOperand(0u) == SpvExecutionModelTessellationControl) {
+      roots.push(e.GetSingleWordInOperand(1u));
+      if (ProcessCallTreeFromRoots(CollectBarriers, id2function, &roots)) {
+        for (auto barrier : barriers) {
+          // Add OutputMemoryKHR to the semantics of the barriers.
+          uint32_t semantics_id = barrier->GetSingleWordInOperand(2u);
+          ir::Instruction* semantics_inst =
+              context()->get_def_use_mgr()->GetDef(semantics_id);
+          analysis::Type* semantics_type =
+              context()->get_type_mgr()->GetType(semantics_inst->type_id());
+          uint64_t semantics_value = GetIndexValue(semantics_inst);
+          const analysis::Constant* constant =
+              context()->get_constant_mgr()->GetConstant(
+                  semantics_type, {static_cast<uint32_t>(semantics_value) |
+                                   SpvMemorySemanticsOutputMemoryKHRMask});
+          barrier->SetInOperand(2u, {context()
+                                         ->get_constant_mgr()
+                                         ->GetDefiningInstruction(constant)
+                                         ->result_id()});
+        }
+      }
+      barriers.clear();
+    }
 }
 
 }  // namespace opt

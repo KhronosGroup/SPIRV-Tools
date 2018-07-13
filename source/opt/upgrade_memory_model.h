@@ -34,6 +34,12 @@ struct CacheHash {
   }
 };
 
+// Upgrades the memory model from Logical GLSL450 to Logical VulkanKHR.
+//
+// This pass remove deprecated decorations (Volatile and Coherent) and replaces
+// them with new flags on individual instructions. It adds the Output storage
+// class semantic to control barriers in tessellation control shaders that have
+// an access to Output memory.
 class UpgradeMemoryModel : public Pass {
  public:
   const char* name() const override { return "upgrade-memory-model"; }
@@ -98,6 +104,11 @@ class UpgradeMemoryModel : public Pass {
 
   // Removes coherent and volatile decorations.
   void CleanupDecorations();
+
+  // For all tessellation control entry points, if there is an operation on
+  // Output storage class, then all barriers are modified to include the
+  // OutputMemoryKHR semantic.
+  void UpgradeBarriers();
 
   // Caches the result of TraceInstruction. For a given result id and set of
   // indices, stores whether that combination is coherent and/or volatile.
