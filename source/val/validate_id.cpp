@@ -116,15 +116,6 @@ class idUsage {
                           SPV_ERROR_INVALID_DIAGNOSTIC);                    \
   helper
 
-#if 0
-template <>
-bool idUsage::isValid<SpvOpUndef>(const spv_instruction_t *inst,
-                                  const spv_opcode_desc) {
-  assert(0 && "Unimplemented!");
-  return false;
-}
-#endif  // 0
-
 template <>
 bool idUsage::isValid<SpvOpMemberName>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
@@ -283,12 +274,6 @@ bool idUsage::isValid<SpvOpGroupMemberDecorate>(const spv_instruction_t* inst,
   }
   return true;
 }
-
-#if 0
-template <>
-bool idUsage::isValid<SpvOpExtInst>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif  // 0
 
 template <>
 bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
@@ -1143,11 +1128,6 @@ bool idUsage::isValid<SpvOpSpecConstantComposite>(const spv_instruction_t* inst,
   return true;
 }
 
-#if 0
-template <>
-bool idUsage::isValid<SpvOpSpecConstantOp>(const spv_instruction_t *inst) {}
-#endif
-
 template <>
 bool idUsage::isValid<SpvOpVariable>(const spv_instruction_t* inst,
                                      const spv_opcode_desc) {
@@ -1585,24 +1565,6 @@ bool idUsage::isValid<SpvOpInBoundsPtrAccessChain>(
   return isValid<SpvOpPtrAccessChain>(inst, opcodeEntry);
 }
 
-#if 0
-template <>
-bool idUsage::isValid<SpvOpArrayLength>(const spv_instruction_t *inst,
-                                        const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<SpvOpImagePointer>(const spv_instruction_t *inst,
-                                         const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<SpvOpGenericPtrMemSemantics>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
 template <>
 bool idUsage::isValid<SpvOpFunction>(const spv_instruction_t* inst,
                                      const spv_opcode_desc) {
@@ -1903,18 +1865,6 @@ bool idUsage::isValid<SpvOpPhi>(const spv_instruction_t* inst,
   return true;
 }
 
-#if 0
-template <>
-bool idUsage::isValid<OpLoopMerge>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpSelectionMerge>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
 template <>
 bool idUsage::isValid<SpvOpBranchConditional>(const spv_instruction_t* inst,
                                               const spv_opcode_desc) {
@@ -1963,12 +1913,6 @@ bool idUsage::isValid<SpvOpBranchConditional>(const spv_instruction_t* inst,
 
   return ret;
 }
-
-#if 0
-template <>
-bool idUsage::isValid<OpSwitch>(const spv_instruction_t *inst,
-                                const spv_opcode_desc opcodeEntry) {}
-#endif
 
 template <>
 bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
@@ -2022,387 +1966,6 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
   }
   return true;
 }
-
-#if 0
-template <>
-bool idUsage::isValid<OpLifetimeStart>(const spv_instruction_t *inst,
-                                       const spv_opcode_desc opcodeEntry) {
-}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpLifetimeStop>(const spv_instruction_t *inst,
-                                      const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicInit>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicLoad>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicStore>(const spv_instruction_t *inst,
-                                     const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicExchange>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicCompareExchange>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicCompareExchangeWeak>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicIIncrement>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicIDecrement>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicIAdd>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicISub>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicUMin>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicUMax>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicAnd>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicOr>(const spv_instruction_t *inst,
-                                  const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicXor>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicIMin>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpAtomicIMax>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpEmitStreamVertex>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpEndStreamPrimitive>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupAsyncCopy>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupWaitEvents>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupAll>(const spv_instruction_t *inst,
-                                  const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupAny>(const spv_instruction_t *inst,
-                                  const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupBroadcast>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupIAdd>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupFAdd>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupFMin>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupUMin>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupSMin>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupFMax>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupUMax>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupSMax>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpEnqueueMarker>(const spv_instruction_t *inst,
-                                       const spv_opcode_desc opcodeEntry) {
-}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpEnqueueKernel>(const spv_instruction_t *inst,
-                                       const spv_opcode_desc opcodeEntry) {
-}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGetKernelNDrangeSubGroupCount>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGetKernelNDrangeMaxSubGroupSize>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGetKernelWorkGroupSize>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGetKernelPreferredWorkGroupSizeMultiple>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpRetainEvent>(const spv_instruction_t *inst,
-                                     const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpReleaseEvent>(const spv_instruction_t *inst,
-                                      const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpCreateUserEvent>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpIsValidEvent>(const spv_instruction_t *inst,
-                                      const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpSetUserEventStatus>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpCaptureEventProfilingInfo>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGetDefaultQueue>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpBuildNDRange>(const spv_instruction_t *inst,
-                                      const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpReadPipe>(const spv_instruction_t *inst,
-                                  const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpWritePipe>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpReservedReadPipe>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpReservedWritePipe>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpReserveReadPipePackets>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpReserveWritePipePackets>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpCommitReadPipe>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpCommitWritePipe>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpIsValidReserveId>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGetNumPipePackets>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGetMaxPipePackets>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupReserveReadPipePackets>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupReserveWritePipePackets>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupCommitReadPipe>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpGroupCommitWritePipe>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
 
 #undef DIAG
 
