@@ -2086,7 +2086,12 @@ FoldingRule VectorShuffleFeedingShuffle() {
     }
 
     if (new_feeder_id == 0) {
-      new_feeder_id = inst->GetSingleWordInOperand(feeder_is_op0 ? 1 : 0);
+      analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+      const analysis::Type* type =
+          type_mgr->GetType(feeding_shuffle_inst->type_id());
+      const analysis::Constant* null_const = const_mgr->GetConstant(type, {});
+      new_feeder_id =
+          const_mgr->GetDefiningInstruction(null_const, 0)->result_id();
     }
 
     if (feeder_is_op0) {
