@@ -197,13 +197,25 @@ ConstantFoldingRule FoldCompositeWithConstants() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* new_type = type_mgr->GetType(inst->type_id());
+    Instruction* type_inst =
+        context->get_def_use_mgr()->GetDef(inst->type_id());
 
     std::vector<uint32_t> ids;
-    for (const analysis::Constant* element_const : constants) {
+    for (uint32_t i = 0; i < constants.size(); ++i) {
+      const analysis::Constant* element_const = constants[i];
       if (element_const == nullptr) {
         return nullptr;
       }
-      uint32_t element_id = const_mgr->FindDeclaredConstant(element_const);
+
+      uint32_t component_type_id = 0;
+      if (type_inst->opcode() == SpvOpTypeStruct) {
+        component_type_id = type_inst->GetSingleWordInOperand(i);
+      } else if (type_inst->opcode() == SpvOpTypeArray) {
+        component_type_id = type_inst->GetSingleWordInOperand(0);
+      }
+
+      uint32_t element_id =
+          const_mgr->FindDeclaredConstant(element_const, component_type_id);
       if (element_id == 0) {
         return nullptr;
       }
