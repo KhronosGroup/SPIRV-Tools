@@ -138,26 +138,13 @@ uint32_t ConstantManager::FindDeclaredConstant(const Constant* c,
     return 0;
   }
 
-  auto iter = const_val_to_id_.lower_bound(c);
-  if (iter == const_val_to_id_.end()) {
-    return 0;
-  }
-
-  if (iter->first != c) {
-    return 0;
-  }
-
-  if (type_id == 0) {
-    return iter->second;
-  }
-
-  auto ub = const_val_to_id_.upper_bound(c);
-  while (iter != ub) {
-    Instruction* const_def = context()->get_def_use_mgr()->GetDef(iter->second);
+  for (auto range = const_val_to_id_.equal_range(c);
+       range.first != range.second; ++range.first) {
+    Instruction* const_def =
+        context()->get_def_use_mgr()->GetDef(range.first->second);
     if (const_def->type_id() == type_id) {
-      return iter->second;
+      return range.first->second;
     }
-    ++iter;
   }
   return 0;
 }
