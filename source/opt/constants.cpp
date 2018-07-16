@@ -142,7 +142,7 @@ uint32_t ConstantManager::FindDeclaredConstant(const Constant* c,
        range.first != range.second; ++range.first) {
     Instruction* const_def =
         context()->get_def_use_mgr()->GetDef(range.first->second);
-    if (const_def->type_id() == type_id) {
+    if (type_id == 0 || const_def->type_id() == type_id) {
       return range.first->second;
     }
   }
