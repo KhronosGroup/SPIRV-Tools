@@ -3849,7 +3849,7 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component literal value 5 is greater than 4."));
+              HasSubstr("Component index 5 is out of range for a result vector of size 5."));
 }
 
 // TODO: OpCompositeConstruct
@@ -4704,6 +4704,33 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateIdWithMessage, CorrectErrorForShuffle) {
+  string spirv = kGLSL450MemoryModel + R"(
+   %uint = OpTypeInt 32 0
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%v2float = OpTypeVector %float 2
+   %void = OpTypeVoid
+    %548 = OpTypeFunction %void
+     %CS = OpFunction %void None %548
+    %550 = OpLabel
+   %6275 = OpUndef %v2float
+   %6280 = OpUndef %v2float
+   %6282 = OpVectorShuffle %v4float %6275 %6280 0 1 4 5
+           OpReturn
+           OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Component index 4 is out of range for a result vector of size 4."));
+
+  // TODO(dsinclair): This should be index 23 ...
+  EXPECT_EQ(15, getErrorPosition().index);
 }
 
 // TODO: OpLifetimeStart

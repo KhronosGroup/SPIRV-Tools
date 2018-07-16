@@ -1781,9 +1781,12 @@ bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
   for (size_t i = firstLiteralIndex; i < inst->words.size(); ++i) {
     auto literal = inst->words[i];
     if (literal != 0xFFFFFFFF && literal >= N) {
-      DIAG(module_.FindDef(inst->words[0]))
-          << "Component literal value " << literal << " is greater than "
-          << N - 1 << ".";
+      // TODO(dsinclair): This should provide the line number of the
+      // OpVectorShuffle but need the spv_instruction_t to be an Instruction
+      // in order to provide that value.
+      DIAG(module_.FindDef(inst->words[1]))
+          << "Component index " << literal << " is out of range for a result "
+          << "vector of size " << N << ".";
       return false;
     }
   }
