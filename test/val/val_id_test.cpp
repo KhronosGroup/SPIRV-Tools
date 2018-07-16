@@ -3848,8 +3848,10 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component index 5 is out of range for a result vector of size 5."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Component index 5 is out of range for a result vector of size 5."));
 }
 
 // TODO: OpCompositeConstruct
@@ -4727,7 +4729,8 @@ TEST_F(ValidateIdWithMessage, CorrectErrorForShuffle) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Component index 4 is out of range for a result vector of size 4."));
+      HasSubstr(
+          "Component index 4 is out of range for a result vector of size 4."));
 
   // TODO(dsinclair): This should be index 23 ...
   EXPECT_EQ(15, getErrorPosition().index);
