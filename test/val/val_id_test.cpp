@@ -4731,9 +4731,7 @@ TEST_F(ValidateIdWithMessage, CorrectErrorForShuffle) {
       getDiagnosticString(),
       HasSubstr(
           "Component index 4 is out of range for a result vector of size 4."));
-
-  // TODO(dsinclair): This should be index 23 ...
-  EXPECT_EQ(15, getErrorPosition().index);
+  EXPECT_EQ(23, getErrorPosition().index);
 }
 
 // TODO: OpLifetimeStart
