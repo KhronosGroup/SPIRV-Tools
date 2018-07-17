@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//testing/test.gni")
 import("//build_overrides/build.gni")
 
 if (build_with_chromium) {
@@ -560,5 +561,188 @@ static_library("SPIRV-Tools") {
     ":spvtools",
     ":spvtools_val",
     ":spvtools_opt"
+  ]
+}
+
+if (!build_with_chromium) {
+  static_library("gtest") {
+    testonly = true
+
+    defines = [
+      # In order to allow regex matches in gtest to be shared between Windows
+      # and other systems, we tell gtest to always use its internal engine.
+      "GTEST_HAS_POSIX_RE=0",
+
+      # Enables C++11 features.
+      "GTEST_LANG_CXX11=1",
+
+      # Prevents gtest from including both <tr1/tuple> and <tuple>.
+      "GTEST_HAS_TR1_TUPLE=0",
+    ]
+
+    sources = [
+      "external/googletest/googletest/include/gtest/gtest-death-test.h",
+      "external/googletest/googletest/include/gtest/gtest-message.h",
+      "external/googletest/googletest/include/gtest/gtest-param-test.h",
+      "external/googletest/googletest/include/gtest/gtest-printers.h",
+      "external/googletest/googletest/include/gtest/gtest-spi.h",
+      "external/googletest/googletest/include/gtest/gtest-test-part.h",
+      "external/googletest/googletest/include/gtest/gtest-typed-test.h",
+      "external/googletest/googletest/include/gtest/gtest.h",
+      "external/googletest/googletest/include/gtest/gtest_pred_impl.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-death-test-internal.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-filepath.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-internal.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-linked_ptr.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-param-util-generated.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-param-util.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-port.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-string.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-tuple.h",
+      "external/googletest/googletest/include/gtest/internal/gtest-type-util.h",
+      "external/googletest/googletest/src/gtest-death-test.cc",
+      "external/googletest/googletest/src/gtest-filepath.cc",
+      "external/googletest/googletest/src/gtest-internal-inl.h",
+      "external/googletest/googletest/src/gtest-port.cc",
+      "external/googletest/googletest/src/gtest-printers.cc",
+      "external/googletest/googletest/src/gtest-test-part.cc",
+      "external/googletest/googletest/src/gtest-typed-test.cc",
+      "external/googletest/googletest/src/gtest.cc",
+    ]
+
+    include_dirs = [
+      "external/googletest/googletest/include",
+      "external/googletest/googletest/",
+    ]
+
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+  }
+
+  static_library("gmock") {
+    testonly = true
+    sources = [
+      "external/googletest/googlemock/include/gmock/gmock-actions.h",
+      "external/googletest/googlemock/include/gmock/gmock-cardinalities.h",
+      "external/googletest/googlemock/include/gmock/gmock-generated-actions.h",
+      "external/googletest/googlemock/include/gmock/gmock-generated-function-mockers.h",
+      "external/googletest/googlemock/include/gmock/gmock-generated-matchers.h",
+      "external/googletest/googlemock/include/gmock/gmock-generated-nice-strict.h",
+      "external/googletest/googlemock/include/gmock/gmock-matchers.h",
+      "external/googletest/googlemock/include/gmock/gmock-spec-builders.h",
+      "external/googletest/googlemock/include/gmock/gmock.h",
+      "external/googletest/googlemock/include/gmock/internal/gmock-generated-internal-utils.h",
+      "external/googletest/googlemock/include/gmock/internal/gmock-internal-utils.h",
+      "external/googletest/googlemock/include/gmock/internal/gmock-port.h",
+      "external/googletest/googlemock/src/gmock-cardinalities.cc",
+      "external/googletest/googlemock/src/gmock-internal-utils.cc",
+      "external/googletest/googlemock/src/gmock-matchers.cc",
+      "external/googletest/googlemock/src/gmock-spec-builders.cc",
+      "external/googletest/googlemock/src/gmock.cc",
+    ]
+
+    include_dirs = [
+      "external/googletest/googletest/include",
+      "external/googletest/googlemock/include",
+    ]
+  }
+}
+
+config("spvtools_test_config") {
+  if (is_clang) {
+    cflags = [
+      "-Wno-self-assign"
+    ]
+  }
+}
+
+test("spvtools_test") {
+  sources = [
+    "test/test_fixture.h",
+    "test/unit_spirv.h",
+    "test/assembly_context_test.cpp",
+    "test/assembly_format_test.cpp",
+    "test/binary_destroy_test.cpp",
+    "test/binary_endianness_test.cpp",
+    "test/binary_header_get_test.cpp",
+    "test/binary_parse_test.cpp",
+    "test/binary_strnlen_s_test.cpp",
+    "test/binary_to_text_test.cpp",
+    "test/binary_to_text.literal_test.cpp",
+    "test/comment_test.cpp",
+    "test/enum_string_mapping_test.cpp",
+    "test/enum_set_test.cpp",
+    "test/ext_inst.debuginfo_test.cpp",
+    "test/ext_inst.glsl_test.cpp",
+    "test/ext_inst.opencl_test.cpp",
+    "test/fix_word_test.cpp",
+    "test/generator_magic_number_test.cpp",
+    "test/hex_float_test.cpp",
+    "test/immediate_int_test.cpp",
+    "test/libspirv_macros_test.cpp",
+    "test/named_id_test.cpp",
+    "test/name_mapper_test.cpp",
+    "test/opcode_make_test.cpp",
+    "test/opcode_require_capabilities_test.cpp",
+    "test/opcode_split_test.cpp",
+    "test/opcode_table_get_test.cpp",
+    "test/operand_capabilities_test.cpp",
+    "test/operand_test.cpp",
+    "test/operand_pattern_test.cpp",
+    "test/target_env_test.cpp",
+    "test/text_advance_test.cpp",
+    "test/text_destroy_test.cpp",
+    "test/text_literal_test.cpp",
+    "test/text_start_new_inst_test.cpp",
+    "test/text_to_binary.annotation_test.cpp",
+    "test/text_to_binary.barrier_test.cpp",
+    "test/text_to_binary.constant_test.cpp",
+    "test/text_to_binary.control_flow_test.cpp",
+    "test/text_to_binary_test.cpp",
+    "test/text_to_binary.debug_test.cpp",
+    "test/text_to_binary.device_side_enqueue_test.cpp",
+    "test/text_to_binary.extension_test.cpp",
+    "test/text_to_binary.function_test.cpp",
+    "test/text_to_binary.group_test.cpp",
+    "test/text_to_binary.image_test.cpp",
+    "test/text_to_binary.literal_test.cpp",
+    "test/text_to_binary.memory_test.cpp",
+    "test/text_to_binary.misc_test.cpp",
+    "test/text_to_binary.mode_setting_test.cpp",
+    "test/text_to_binary.pipe_storage_test.cpp",
+    "test/text_to_binary.type_declaration_test.cpp",
+    "test/text_to_binary.subgroup_dispatch_test.cpp",
+    "test/text_to_binary.reserved_sampling_test.cpp",
+    "test/text_word_get_test.cpp",
+    "test/unit_spirv.cpp",
+  ]
+
+  deps = [ ":spvtools" ]
+
+  if (build_with_chromium) {
+    deps += [
+      "//testing/gtest",
+      "//testing/gtest:gtest_main",
+      "//testing/gmock",
+     ]
+  } else {
+    deps += [
+      ":gtest",
+      ":gmock",
+    ]
+
+    sources += [
+      "external/googletest/googletest/src/gtest_main.cc"
+    ]
+
+    include_dirs = [
+      "external/googletest/googletest/include",
+      "external/googletest/googlemock/include"
+    ]
+  }
+
+  configs += [
+    ":spvtools_config",
+    ":spvtools_test_config",
   ]
 }
