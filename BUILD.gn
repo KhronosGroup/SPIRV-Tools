@@ -746,3 +746,12 @@ test("spvtools_test") {
     ":spvtools_test_config",
   ]
 }
+
+if (!build_with_chromium) {
+  group("fuzzers") {
+    testonly = true
+    deps = [
+      "//testing/fuzzers",
+    ]
+  }
+}
