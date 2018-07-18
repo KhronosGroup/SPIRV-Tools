@@ -512,15 +512,31 @@ inline void Instruction::SetInOperands(OperandList&& new_operands) {
 }
 
 inline void Instruction::SetResultId(uint32_t res_id) {
+  // TODO(dsinclair): Allow setting a result id if there wasn't one
+  // previously. Need to make room in the operands_ array to place the result,
+  // and update the has_result_id_ flag.
+  assert(has_result_id_);
+
+  // TODO(dsinclair): Allow removing the result id. This needs to make sure,
+  // if there was a result id previously to remove it from the operands_ array
+  // and reset the has_result_id_ flag.
+  assert(res_id != 0);
+
   auto ridx = has_type_id_ ? 1 : 0;
-  assert(operands_[ridx].type == SPV_OPERAND_TYPE_RESULT_ID);
   operands_[ridx].words = {res_id};
 }
 
 inline void Instruction::SetResultType(uint32_t ty_id) {
-  if (!has_type_id_) return;
+  // TODO(dsinclair): Allow setting a type id if there wasn't one
+  // previously. Need to make room in the operands_ array to place the result,
+  // and update the has_type_id_ flag.
+  assert(has_type_id_);
 
-  assert(operands_.front().type == SPV_OPERAND_TYPE_TYPE_ID);
+  // TODO(dsinclair): Allow removing the type id. This needs to make sure,
+  // if there was a type id previously to remove it from the operands_ array
+  // and reset the has_type_id_ flag.
+  assert(ty_id != 0);
+
   operands_.front().words = {ty_id};
 }
 
