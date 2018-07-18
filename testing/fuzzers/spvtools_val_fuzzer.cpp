@@ -19,11 +19,7 @@
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   spvtools::SpirvTools tools(SPV_ENV_UNIVERSAL_1_3);
   tools.SetMessageConsumer([](spv_message_level_t, const char*,
-                              const spv_position_t&, const char* message) {
-
-printf("%s\n", message);
-
-  });
+                              const spv_position_t&, const char*) {});
 
 
   std::vector<uint32_t> input;
