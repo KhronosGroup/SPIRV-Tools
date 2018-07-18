@@ -29,7 +29,8 @@ template("spvtools_core_tables") {
 
     version = invoker.version
 
-    core_json_file = "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
+    core_json_file =
+        "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
     core_insts_file = "${target_gen_dir}/core.insts-$version.inc"
     operand_kinds_file = "${target_gen_dir}/operand.kinds-$version.inc"
     extinst_file = "source/extinst.debuginfo.grammar.json"
@@ -62,7 +63,8 @@ template("spvtools_core_enums") {
 
     version = invoker.version
 
-    core_json_file = "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
+    core_json_file =
+        "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
     debug_insts_file = "source/extinst.debuginfo.grammar.json"
     extension_enum_file = "${target_gen_dir}/extension_enum.inc"
     extension_map_file = "${target_gen_dir}/enum_string_mapping.inc"
@@ -95,7 +97,8 @@ template("spvtools_glsl_tables") {
 
     version = invoker.version
 
-    core_json_file = "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
+    core_json_file =
+        "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
     glsl_json_file = "${spirv_headers}/include/spirv/${version}/extinst.glsl.std.450.grammar.json"
     glsl_insts_file = "${target_gen_dir}/glsl.std.450.insts.inc"
     debug_insts_file = "source/extinst.debuginfo.grammar.json"
@@ -128,7 +131,8 @@ template("spvtools_opencl_tables") {
 
     version = invoker.version
 
-    core_json_file = "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
+    core_json_file =
+        "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
     opengl_json_file = "${spirv_headers}/include/spirv/${version}/extinst.opencl.std.100.grammar.json"
     opencl_insts_file = "${target_gen_dir}/opencl.std.insts.inc"
     debug_insts_file = "source/extinst.debuginfo.grammar.json"
@@ -212,8 +216,12 @@ action("spvtools_generators_inc") {
   xml_file = "${spirv_headers}/include/spirv/spir-v.xml"
   inc_file = "${target_gen_dir}/generators.inc"
 
-  sources = [ xml_file ]
-  outputs = [ inc_file ]
+  sources = [
+    xml_file,
+  ]
+  outputs = [
+    inc_file,
+  ]
   args = [
     "--xml",
     rebase_path(xml_file, root_build_dir),
@@ -262,20 +270,18 @@ config("spvtools_config") {
   ]
 
   if (is_clang) {
-    cflags = [
-      "-Wno-implicit-fallthrough"
-    ]
+    cflags = [ "-Wno-implicit-fallthrough" ]
   }
 }
 
 static_library("spvtools") {
   deps = [
-    ":spvtools_core_tables_unified1",
     ":spvtools_core_enums_unified1",
-    ":spvtools_language_header_unified1",
-    ":spvtools_glsl_tables_glsl1-0",
-    ":spvtools_opencl_tables_opencl1-0",
+    ":spvtools_core_tables_unified1",
     ":spvtools_generators_inc",
+    ":spvtools_glsl_tables_glsl1-0",
+    ":spvtools_language_header_unified1",
+    ":spvtools_opencl_tables_opencl1-0",
   ]
   foreach(target_name, spvtools_vendor_tables) {
     deps += [ ":spvtools_vendor_tables_$target_name" ]
@@ -290,8 +296,11 @@ static_library("spvtools") {
     "source/diagnostic.h",
     "source/disassemble.cpp",
     "source/enum_set.h",
+    "source/enum_string_mapping.cpp",
     "source/ext_inst.cpp",
     "source/ext_inst.h",
+    "source/extensions.cpp",
+    "source/extensions.h",
     "source/instruction.h",
     "source/libspirv.cpp",
     "source/macro.h",
@@ -306,9 +315,6 @@ static_library("spvtools") {
     "source/parsed_operand.h",
     "source/print.cpp",
     "source/print.h",
-    "source/enum_string_mapping.cpp",
-    "source/extensions.cpp",
-    "source/extensions.h",
     "source/spirv_constant.h",
     "source/spirv_definition.h",
     "source/spirv_endian.cpp",
@@ -353,7 +359,6 @@ static_library("spvtools_val") {
     "source/val/construct.cpp",
     "source/val/function.cpp",
     "source/val/instruction.cpp",
-    "source/val/validation_state.cpp",
     "source/val/validate.cpp",
     "source/val/validate.h",
     "source/val/validate_adjacency.cpp",
@@ -380,9 +385,12 @@ static_library("spvtools_val") {
     "source/val/validate_non_uniform.cpp",
     "source/val/validate_primitives.cpp",
     "source/val/validate_type_unique.cpp",
+    "source/val/validation_state.cpp",
   ]
 
-  deps = [ ":spvtools" ]
+  deps = [
+    ":spvtools",
+  ]
 
   public_configs = [ ":spvtools_config" ]
   configs -= [ "//build/config/compiler:chromium_code" ]
@@ -401,20 +409,20 @@ static_library("spvtools_opt") {
     "source/opt/build_module.h",
     "source/opt/ccp_pass.cpp",
     "source/opt/ccp_pass.h",
-    "source/opt/cfg_cleanup_pass.cpp",
-    "source/opt/cfg_cleanup_pass.h",
     "source/opt/cfg.cpp",
     "source/opt/cfg.h",
+    "source/opt/cfg_cleanup_pass.cpp",
+    "source/opt/cfg_cleanup_pass.h",
     "source/opt/common_uniform_elim_pass.cpp",
     "source/opt/common_uniform_elim_pass.h",
     "source/opt/compact_ids_pass.cpp",
     "source/opt/compact_ids_pass.h",
     "source/opt/composite.cpp",
     "source/opt/composite.h",
-    "source/opt/constants.cpp",
-    "source/opt/constants.h",
     "source/opt/const_folding_rules.cpp",
     "source/opt/const_folding_rules.h",
+    "source/opt/constants.cpp",
+    "source/opt/constants.h",
     "source/opt/copy_prop_arrays.cpp",
     "source/opt/copy_prop_arrays.h",
     "source/opt/dead_branch_elim_pass.cpp",
@@ -441,10 +449,10 @@ static_library("spvtools_opt") {
     "source/opt/flatten_decoration_pass.h",
     "source/opt/fold.cpp",
     "source/opt/fold.h",
-    "source/opt/folding_rules.cpp",
-    "source/opt/folding_rules.h",
     "source/opt/fold_spec_constant_op_and_composite_pass.cpp",
     "source/opt/fold_spec_constant_op_and_composite_pass.h",
+    "source/opt/folding_rules.cpp",
+    "source/opt/folding_rules.h",
     "source/opt/freeze_spec_constant_value_pass.cpp",
     "source/opt/freeze_spec_constant_value_pass.h",
     "source/opt/function.cpp",
@@ -509,10 +517,10 @@ static_library("spvtools_opt") {
     "source/opt/null_pass.h",
     "source/opt/optimizer.cpp",
     "source/opt/pass.cpp",
-    "source/opt/passes.h",
     "source/opt/pass.h",
     "source/opt/pass_manager.cpp",
     "source/opt/pass_manager.h",
+    "source/opt/passes.h",
     "source/opt/private_to_local_pass.cpp",
     "source/opt/private_to_local_pass.h",
     "source/opt/propagator.cpp",
@@ -560,7 +568,9 @@ static_library("spvtools_opt") {
     "source/opt/workaround1209.cpp",
     "source/opt/workaround1209.h",
   ]
-  deps = [ ":spvtools" ]
+  deps = [
+    ":spvtools",
+  ]
 
   public_configs = [ ":spvtools_config" ]
   configs -= [ "//build/config/compiler:chromium_code" ]
@@ -570,8 +580,8 @@ static_library("spvtools_opt") {
 static_library("SPIRV-Tools") {
   deps = [
     ":spvtools",
+    ":spvtools_opt",
     ":spvtools_val",
-    ":spvtools_opt"
   ]
 }
 
@@ -661,16 +671,12 @@ if (!build_with_chromium) {
 
 config("spvtools_test_config") {
   if (is_clang) {
-    cflags = [
-      "-Wno-self-assign"
-    ]
+    cflags = [ "-Wno-self-assign" ]
   }
 }
 
 test("spvtools_test") {
   sources = [
-    "test/test_fixture.h",
-    "test/unit_spirv.h",
     "test/assembly_context_test.cpp",
     "test/assembly_format_test.cpp",
     "test/binary_destroy_test.cpp",
@@ -678,11 +684,11 @@ test("spvtools_test") {
     "test/binary_header_get_test.cpp",
     "test/binary_parse_test.cpp",
     "test/binary_strnlen_s_test.cpp",
-    "test/binary_to_text_test.cpp",
     "test/binary_to_text.literal_test.cpp",
+    "test/binary_to_text_test.cpp",
     "test/comment_test.cpp",
-    "test/enum_string_mapping_test.cpp",
     "test/enum_set_test.cpp",
+    "test/enum_string_mapping_test.cpp",
     "test/ext_inst.debuginfo_test.cpp",
     "test/ext_inst.glsl_test.cpp",
     "test/ext_inst.opencl_test.cpp",
@@ -691,16 +697,17 @@ test("spvtools_test") {
     "test/hex_float_test.cpp",
     "test/immediate_int_test.cpp",
     "test/libspirv_macros_test.cpp",
-    "test/named_id_test.cpp",
     "test/name_mapper_test.cpp",
+    "test/named_id_test.cpp",
     "test/opcode_make_test.cpp",
     "test/opcode_require_capabilities_test.cpp",
     "test/opcode_split_test.cpp",
     "test/opcode_table_get_test.cpp",
     "test/operand_capabilities_test.cpp",
-    "test/operand_test.cpp",
     "test/operand_pattern_test.cpp",
+    "test/operand_test.cpp",
     "test/target_env_test.cpp",
+    "test/test_fixture.h",
     "test/text_advance_test.cpp",
     "test/text_destroy_test.cpp",
     "test/text_literal_test.cpp",
@@ -709,7 +716,6 @@ test("spvtools_test") {
     "test/text_to_binary.barrier_test.cpp",
     "test/text_to_binary.constant_test.cpp",
     "test/text_to_binary.control_flow_test.cpp",
-    "test/text_to_binary_test.cpp",
     "test/text_to_binary.debug_test.cpp",
     "test/text_to_binary.device_side_enqueue_test.cpp",
     "test/text_to_binary.extension_test.cpp",
@@ -721,34 +727,36 @@ test("spvtools_test") {
     "test/text_to_binary.misc_test.cpp",
     "test/text_to_binary.mode_setting_test.cpp",
     "test/text_to_binary.pipe_storage_test.cpp",
-    "test/text_to_binary.type_declaration_test.cpp",
-    "test/text_to_binary.subgroup_dispatch_test.cpp",
     "test/text_to_binary.reserved_sampling_test.cpp",
+    "test/text_to_binary.subgroup_dispatch_test.cpp",
+    "test/text_to_binary.type_declaration_test.cpp",
+    "test/text_to_binary_test.cpp",
     "test/text_word_get_test.cpp",
     "test/unit_spirv.cpp",
+    "test/unit_spirv.h",
   ]
 
-  deps = [ ":spvtools" ]
+  deps = [
+    ":spvtools",
+  ]
 
   if (build_with_chromium) {
     deps += [
+      "//testing/gmock",
       "//testing/gtest",
       "//testing/gtest:gtest_main",
-      "//testing/gmock",
-     ]
+    ]
   } else {
     deps += [
-      ":gtest",
       ":gmock",
+      ":gtest",
     ]
 
-    sources += [
-      "external/googletest/googletest/src/gtest_main.cc"
-    ]
+    sources += [ "external/googletest/googletest/src/gtest_main.cc" ]
 
     include_dirs = [
       "external/googletest/googletest/include",
-      "external/googletest/googlemock/include"
+      "external/googletest/googlemock/include",
     ]
   }
 

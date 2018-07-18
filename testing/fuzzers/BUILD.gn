@@ -43,8 +43,8 @@ template("spvtools_fuzzer") {
     sources = invoker.sources
     deps = [
       "../..:spvtools",
-      "../..:spvtools_val",
       "../..:spvtools_opt",
+      "../..:spvtools_val",
     ]
     if (defined(invoker.deps)) {
       deps += invoker.deps
@@ -53,7 +53,7 @@ template("spvtools_fuzzer") {
     configs -= [ "//build/config/compiler:chromium_code" ]
     configs += [
       "//build/config/compiler:no_chromium_code",
-      ":fuzzer_config"
+      ":fuzzer_config",
     ]
   }
 }
@@ -73,13 +73,17 @@ spvtools_fuzzer("spvtools_val_fuzzer_src") {
 if (!build_with_chromium || use_fuzzing_engine) {
   fuzzer_test("spvtools_opt_fuzzer") {
     sources = []
-    deps = [ ":spvtools_opt_fuzzer_src" ]
+    deps = [
+      ":spvtools_opt_fuzzer_src",
+    ]
     seed_corpus = "corpora/spv"
   }
 
   fuzzer_test("spvtools_val_fuzzer") {
     sources = []
-    deps = [ ":spvtools_val_fuzzer_src" ]
+    deps = [
+      ":spvtools_val_fuzzer_src",
+    ]
     seed_corpus = "corpora/spv"
   }
 }

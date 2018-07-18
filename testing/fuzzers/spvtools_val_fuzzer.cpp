@@ -21,7 +21,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   tools.SetMessageConsumer([](spv_message_level_t, const char*,
                               const spv_position_t&, const char*) {});
 
-
   std::vector<uint32_t> input;
   input.resize(size >> 2);
 
