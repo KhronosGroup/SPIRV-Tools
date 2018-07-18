@@ -14,15 +14,23 @@
 
 #include <cstdint>
 
-#include "spirv-tools/libspirv.hpp"
+#include "spirv-tools/optimizer.hpp"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  spvtools::SpirvTools tools(SPV_ENV_UNIVERSAL_1_3);
-  tools.SetMessageConsumer([](spv_message_level_t, const char*,
-                              const spv_position_t&, const char*) {});
+  spvtools::Optimizer optimizer(SPV_ENV_UNIVERSAL_1_3);
+  optimizer.SetMessageConsumer([](spv_message_level_t, const char*,
+                                  const spv_position_t&, const char*) {});
 
+  std::vector<uint32_t> input;
+  input.resize(size >> 2);
 
-  std::vector<uint32_t> input(data, data + size);
-  tools.Validate(input);
+  size_t count = 0;
+  for (size_t i = 0; (i + 3) < size; i += 4) {
+    input[count++] = data[i] | (data[i + 1] << 8) | (data[i + 2] << 16) |
+                     (data[i + 3]) << 24;
+  }
+
+  optimizer.Run(input.data(), input.size(), &input);
+
   return 0;
 }
