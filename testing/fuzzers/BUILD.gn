@@ -12,25 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//testing/libfuzzer/fuzzer_test.gni")
+import("//testing/test.gni")
+
+config("fuzzer_config") {
+  configs = [ "../..:spvtools_config" ]
+}
+
 group("fuzzers") {
   testonly = true
+  deps = []
+
+  if (!build_with_chromium || use_fuzzing_engine) {
+    deps += [ ":fuzzers_bin" ]
+  }
+}
+
+group("fuzzers_bin") {
+  testonly = true
+
   deps = [
-    ":spvtools_validate_fuzzer_src",
+    ":spvtools_validate_fuzzer",
   ]
 }
 
 template("spvtools_fuzzer") {
   source_set(target_name) {
+    testonly = true
     sources = invoker.sources
     deps = [
       "../..:spvtools",
+      "../..:spvtools_val",
+      "../..:spvtools_opt",
     ]
     if (defined(invoker.deps)) {
       deps += invoker.deps
     }
-    testonly = true
+
     configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
+    configs += [
+      "//build/config/compiler:no_chromium_code",
+      ":fuzzer_config"
+    ]
   }
 }
 
@@ -38,4 +61,12 @@ spvtools_fuzzer("spvtools_validate_fuzzer_src") {
   sources = [
     "spvtools_validate_fuzzer.cpp",
   ]
+}
+
+if (!build_with_chromium || use_fuzzing_engine) {
+  fuzzer_test("spvtools_validate_fuzzer") {
+    sources = []
+    deps = [ ":spvtools_validate_fuzzer_src" ]
+    seed_corpus = "corpora/spv"
+  }
 }
