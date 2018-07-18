@@ -51,6 +51,35 @@ TEST_F(ConstantManagerTest, GetDefiningInstruction) {
   EXPECT_EQ(const_inst_2->type_id(), 2);
 }
 
+TEST_F(ConstantManagerTest, GetDefiningInstruction2) {
+  const std::string text = R"(
+%int = OpTypeInt 32 0
+%1 = OpTypeStruct %int
+%2 = OpTypeStruct %int
+%3 = OpConstantNull %1
+%4 = OpConstantNull %2
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(context, nullptr);
+
+  Type* struct_type_1 = context->get_type_mgr()->GetType(1);
+  NullConstant struct_const_1(struct_type_1->AsStruct());
+  Instruction* const_inst_1 =
+      context->get_constant_mgr()->GetDefiningInstruction(&struct_const_1, 1);
+  EXPECT_EQ(const_inst_1->type_id(), 1);
+  EXPECT_EQ(const_inst_1->result_id(), 3);
+
+  Type* struct_type_2 = context->get_type_mgr()->GetType(2);
+  NullConstant struct_const_2(struct_type_2->AsStruct());
+  Instruction* const_inst_2 =
+      context->get_constant_mgr()->GetDefiningInstruction(&struct_const_2, 2);
+  EXPECT_EQ(const_inst_2->type_id(), 2);
+  EXPECT_EQ(const_inst_2->result_id(), 4);
+}
+
 }  // namespace
 }  // namespace analysis
 }  // namespace opt

@@ -2086,10 +2086,31 @@ FoldingRule VectorShuffleFeedingShuffle() {
     }
 
     if (new_feeder_id == 0) {
-      new_feeder_id = inst->GetSingleWordInOperand(feeder_is_op0 ? 1 : 0);
+      analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+      const analysis::Type* type =
+          type_mgr->GetType(feeding_shuffle_inst->type_id());
+      const analysis::Constant* null_const = const_mgr->GetConstant(type, {});
+      new_feeder_id =
+          const_mgr->GetDefiningInstruction(null_const, 0)->result_id();
     }
 
     if (feeder_is_op0) {
+      // If the size of the first vector operand changed then the indices
+      // referring to the second operand need to be adjusted.
+      Instruction* new_feeder_inst = def_use_mgr->GetDef(new_feeder_id);
+      analysis::Type* new_feeder_type =
+          type_mgr->GetType(new_feeder_inst->type_id());
+      uint32_t new_op0_size = new_feeder_type->AsVector()->element_count();
+      int32_t adjustment = op0_length - new_op0_size;
+
+      if (adjustment != 0) {
+        for (uint32_t i = 2; i < new_operands.size(); i++) {
+          if (inst->GetSingleWordInOperand(i) >= op0_length) {
+            new_operands[i].words[0] -= adjustment;
+          }
+        }
+      }
+
       new_operands[0].words[0] = new_feeder_id;
       new_operands[1] = inst->GetInOperand(1);
     } else {

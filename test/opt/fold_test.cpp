@@ -198,7 +198,6 @@ OpName %main "main"
 %104 = OpConstant %float 0 ; Need a def with an numerical id to define id maps.
 %float_null = OpConstantNull %float
 %float_0 = OpConstant %float 0
-%float_half = OpConstant %float 0.5
 %float_1 = OpConstant %float 1
 %float_2 = OpConstant %float 2
 %float_3 = OpConstant %float 3
@@ -5728,26 +5727,7 @@ INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResu
             "OpReturn\n" +
             "OpFunctionEnd",
         9, true),
-    // Test case 4: Don't use feeder.
-    InstructionFoldingCase<bool>(
-        Header() +
-            "; CHECK: OpVectorShuffle\n" +
-            "; CHECK: OpVectorShuffle {{%\\w+}} %7 %7 2 3 0 1\n" +
-            "; CHECK: OpReturn\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%2 = OpVariable %_ptr_v4double Function\n" +
-            "%3 = OpVariable %_ptr_v4double Function\n" +
-            "%4 = OpVariable %_ptr_v4double Function\n" +
-            "%5 = OpLoad %v4double %2\n" +
-            "%6 = OpLoad %v4double %3\n" +
-            "%7 = OpLoad %v4double %4\n" +
-            "%8 = OpVectorShuffle %v4double %5 %6 2 3 4 5\n" +
-            "%9 = OpVectorShuffle %v4double %7 %8 2 3 0 1\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        9, true),
-    // Test case 5: Don't fold, need both operands of the feeder.
+    // Test case 4: Don't fold, need both operands of the feeder.
     InstructionFoldingCase<bool>(
         Header() +
             "%main = OpFunction %void None %void_func\n" +
@@ -5763,7 +5743,7 @@ INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResu
             "OpReturn\n" +
             "OpFunctionEnd",
         9, false),
-    // Test case 6: Don't fold, need both operands of the feeder.
+    // Test case 5: Don't fold, need both operands of the feeder.
     InstructionFoldingCase<bool>(
         Header() +
             "%main = OpFunction %void None %void_func\n" +
@@ -5779,7 +5759,7 @@ INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResu
             "OpReturn\n" +
             "OpFunctionEnd",
         9, false),
-    // Test case 7: Fold, need both operands of the feeder, but they are the same.
+    // Test case 6: Fold, need both operands of the feeder, but they are the same.
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: OpVectorShuffle\n" +
@@ -5798,7 +5778,7 @@ INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResu
             "OpReturn\n" +
             "OpFunctionEnd",
         9, true),
-    // Test case 8: Fold, need both operands of the feeder, but they are the same.
+    // Test case 7: Fold, need both operands of the feeder, but they are the same.
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: OpVectorShuffle\n" +
@@ -5814,6 +5794,108 @@ INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResu
             "%7 = OpLoad %v4double %4\n" +
             "%8 = OpVectorShuffle %v4double %5 %5 2 3 4 5\n" +
             "%9 = OpVectorShuffle %v4double %7 %8 2 0 7 5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        9, true),
+    // Test case 8: Replace first operand with a smaller vector.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} %5 %7 0 0 5 3\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v2double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%4 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v2double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%7 = OpLoad %v4double %4\n" +
+            "%8 = OpVectorShuffle %v4double %5 %5 0 1 2 3\n" +
+            "%9 = OpVectorShuffle %v4double %8 %7 2 0 7 5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        9, true),
+    // Test case 9: Replace first operand with a larger vector.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} %5 %7 3 0 7 5\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v4double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%4 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v4double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%7 = OpLoad %v4double %4\n" +
+            "%8 = OpVectorShuffle %v2double %5 %5 0 3\n" +
+            "%9 = OpVectorShuffle %v4double %8 %7 1 0 5 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        9, true),
+    // Test case 10: Replace unused operand with null.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: [[v4double:%\\w+]] = OpTypeVector [[double]] 2\n" +
+            "; CHECK: [[null:%\\w+]] = OpConstantNull [[v4double]]\n" +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} [[null]] %7 4 2 5 3\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v4double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%4 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v4double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%7 = OpLoad %v4double %4\n" +
+            "%8 = OpVectorShuffle %v2double %5 %5 0 3\n" +
+            "%9 = OpVectorShuffle %v4double %8 %7 4 2 5 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        9, true),
+    // Test case 11: Replace unused operand with null.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: [[v4double:%\\w+]] = OpTypeVector [[double]] 2\n" +
+            "; CHECK: [[null:%\\w+]] = OpConstantNull [[v4double]]\n" +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} [[null]] %5 2 2 5 5\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v4double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v4double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%8 = OpVectorShuffle %v2double %5 %5 0 3\n" +
+            "%9 = OpVectorShuffle %v4double %8 %8 2 2 3 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        9, true),
+    // Test case 12: Replace unused operand with null.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: [[v4double:%\\w+]] = OpTypeVector [[double]] 2\n" +
+            "; CHECK: [[null:%\\w+]] = OpConstantNull [[v4double]]\n" +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} %7 [[null]] 2 0 1 3\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v4double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%4 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v4double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%7 = OpLoad %v4double %4\n" +
+            "%8 = OpVectorShuffle %v2double %5 %5 0 3\n" +
+            "%9 = OpVectorShuffle %v4double %7 %8 2 0 1 3\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
         9, true)

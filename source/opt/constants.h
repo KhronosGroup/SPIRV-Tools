@@ -561,10 +561,7 @@ class ConstantManager {
 
   // A helper function to get the id of a collected constant with the pointer
   // to the Constant instance. Returns 0 in case the constant is not found.
-  uint32_t FindDeclaredConstant(const Constant* c) const {
-    auto iter = const_val_to_id_.find(c);
-    return (iter != const_val_to_id_.end()) ? iter->second : 0;
-  }
+  uint32_t FindDeclaredConstant(const Constant* c, uint32_t type_id) const;
 
   // Returns the canonical constant that has the same structure and value as the
   // given Constant |cst|. If none is found, it returns nullptr.
@@ -616,8 +613,9 @@ class ConstantManager {
   // Records a new mapping between |inst| and |const_value|. This updates the
   // two mappings |id_to_const_val_| and |const_val_to_id_|.
   void MapConstantToInst(const Constant* const_value, Instruction* inst) {
-    const_val_to_id_[const_value] = inst->result_id();
-    id_to_const_val_[inst->result_id()] = const_value;
+    if (id_to_const_val_.insert({inst->result_id(), const_value}).second) {
+      const_val_to_id_.insert({const_value, inst->result_id()});
+    }
   }
 
  private:
@@ -676,7 +674,7 @@ class ConstantManager {
   // result id in the module. This is a mirror map of |id_to_const_val_|. All
   // Normal Constants that defining instructions in the module should have
   // their Constant and their result id registered here.
-  std::unordered_map<const Constant*, uint32_t> const_val_to_id_;
+  std::multimap<const Constant*, uint32_t> const_val_to_id_;
 
   // The constant pool.  All created constants are registered here.
   std::unordered_set<const Constant*, ConstantHash, ConstantEqual> const_pool_;
