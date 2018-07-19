@@ -169,7 +169,10 @@ endif()
 
 find_host_package(PythonInterp)
 
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+# Check for symbol exports on Linux.
+# At the moment, this check will fail on the OSX build machines for the Android NDK.
+# It appears they don't have objdump.
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   macro(spvtools_check_symbol_exports TARGET)
     if (NOT "${SPIRV_SKIP_TESTS}")
       add_test(NAME spirv-tools-symbol-exports-${TARGET}
