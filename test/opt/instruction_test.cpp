@@ -31,6 +31,7 @@ using ::testing::Eq;
 using DescriptorTypeTest = PassTest<::testing::Test>;
 using OpaqueTypeTest = PassTest<::testing::Test>;
 using GetBaseTest = PassTest<::testing::Test>;
+using ValidBasePointerTest = PassTest<::testing::Test>;
 
 TEST(InstructionTest, CreateTrivial) {
   Instruction empty;
@@ -652,6 +653,450 @@ TEST_F(GetBaseTest, ImageRead) {
   Instruction* load = context->get_def_use_mgr()->GetDef(14);
   Instruction* base = context->get_def_use_mgr()->GetDef(13);
   EXPECT_TRUE(load->GetBaseAddress() == base);
+}
+
+TEST_F(ValidBasePointerTest, OpSelectBadNoVariablePointersStorageBuffer) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer StorageBuffer %3
+%5 = OpVariable %4 StorageBuffer
+%6 = OpTypeFunction %2
+%7 = OpTypeBool
+%8 = OpConstantTrue %7
+%1 = OpFunction %2 None %6
+%9 = OpLabel
+%10 = OpSelect %4 %8 %5 %5
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* select = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_NE(select, nullptr);
+  EXPECT_FALSE(select->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpSelectBadNoVariablePointers) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Workgroup %3
+%5 = OpVariable %4 Workgroup
+%6 = OpTypeFunction %2
+%7 = OpTypeBool
+%8 = OpConstantTrue %7
+%1 = OpFunction %2 None %6
+%9 = OpLabel
+%10 = OpSelect %4 %8 %5 %5
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* select = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_NE(select, nullptr);
+  EXPECT_FALSE(select->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpSelectGoodVariablePointersStorageBuffer) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer StorageBuffer %3
+%5 = OpVariable %4 StorageBuffer
+%6 = OpTypeFunction %2
+%7 = OpTypeBool
+%8 = OpConstantTrue %7
+%1 = OpFunction %2 None %6
+%9 = OpLabel
+%10 = OpSelect %4 %8 %5 %5
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* select = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_NE(select, nullptr);
+  EXPECT_TRUE(select->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpSelectGoodVariablePointers) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Workgroup %3
+%5 = OpVariable %4 Workgroup
+%6 = OpTypeFunction %2
+%7 = OpTypeBool
+%8 = OpConstantTrue %7
+%1 = OpFunction %2 None %6
+%9 = OpLabel
+%10 = OpSelect %4 %8 %5 %5
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_TRUE(null_inst->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpConstantNullBadNoVariablePointersStorageBuffer) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer StorageBuffer %3
+%5 = OpConstantNull %4
+%6 = OpTypeFunction %2
+%1 = OpFunction %2 None %6
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(5);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_FALSE(null_inst->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpConstantNullBadNoVariablePointers) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Workgroup %3
+%5 = OpConstantNull %4
+%6 = OpTypeFunction %2
+%1 = OpFunction %2 None %6
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(5);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_FALSE(null_inst->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpConstantNullGoodVariablePointersStorageBuffer) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer StorageBuffer %3
+%5 = OpConstantNull %4
+%6 = OpTypeFunction %2
+%1 = OpFunction %2 None %6
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(5);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_TRUE(null_inst->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpConstantNullGoodVariablePointers) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Workgroup %3
+%5 = OpConstantNull %4
+%6 = OpTypeFunction %2
+%1 = OpFunction %2 None %6
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(5);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_TRUE(null_inst->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpPhiBadNoVariablePointersStorageBuffer) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer StorageBuffer %3
+%5 = OpVariable %4 StorageBuffer
+%6 = OpTypeFunction %2
+%1 = OpFunction %2 None %6
+%7 = OpLabel
+OpBranch %8
+%8 = OpLabel
+%9 = OpPhi %4 %5 %7
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* phi = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_NE(phi, nullptr);
+  EXPECT_FALSE(phi->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpPhiBadNoVariablePointers) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Workgroup %3
+%5 = OpVariable %4 Workgroup
+%6 = OpTypeFunction %2
+%1 = OpFunction %2 None %6
+%7 = OpLabel
+OpBranch %8
+%8 = OpLabel
+%9 = OpPhi %4 %5 %7
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* phi = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_NE(phi, nullptr);
+  EXPECT_FALSE(phi->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpPhiGoodVariablePointersStorageBuffer) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer StorageBuffer %3
+%5 = OpVariable %4 StorageBuffer
+%6 = OpTypeFunction %2
+%1 = OpFunction %2 None %6
+%7 = OpLabel
+OpBranch %8
+%8 = OpLabel
+%9 = OpPhi %4 %5 %7
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* phi = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_NE(phi, nullptr);
+  EXPECT_TRUE(phi->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpPhiGoodVariablePointers) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Workgroup %3
+%5 = OpVariable %4 Workgroup
+%6 = OpTypeFunction %2
+%1 = OpFunction %2 None %6
+%7 = OpLabel
+OpBranch %8
+%8 = OpLabel
+%9 = OpPhi %4 %5 %7
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* phi = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_NE(phi, nullptr);
+  EXPECT_TRUE(phi->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpFunctionCallBadNoVariablePointersStorageBuffer) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer StorageBuffer %3
+%5 = OpConstantNull %4
+%6 = OpTypeFunction %2
+%7 = OpTypeFunction %4
+%1 = OpFunction %2 None %6
+%8 = OpLabel
+%9 = OpFunctionCall %4 %10
+OpReturn
+OpFunctionEnd
+%10 = OpFunction %4 None %7
+%11 = OpLabel
+OpReturnValue %5
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_FALSE(null_inst->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpFunctionCallBadNoVariablePointers) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Workgroup %3
+%5 = OpConstantNull %4
+%6 = OpTypeFunction %2
+%7 = OpTypeFunction %4
+%1 = OpFunction %2 None %6
+%8 = OpLabel
+%9 = OpFunctionCall %4 %10
+OpReturn
+OpFunctionEnd
+%10 = OpFunction %4 None %7
+%11 = OpLabel
+OpReturnValue %5
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_FALSE(null_inst->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpFunctionCallGoodVariablePointersStorageBuffer) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer StorageBuffer %3
+%5 = OpConstantNull %4
+%6 = OpTypeFunction %2
+%7 = OpTypeFunction %4
+%1 = OpFunction %2 None %6
+%8 = OpLabel
+%9 = OpFunctionCall %4 %10
+OpReturn
+OpFunctionEnd
+%10 = OpFunction %4 None %7
+%11 = OpLabel
+OpReturnValue %5
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_TRUE(null_inst->IsValidBasePointer());
+}
+
+TEST_F(ValidBasePointerTest, OpFunctionCallGoodVariablePointers) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Workgroup %3
+%5 = OpConstantNull %4
+%6 = OpTypeFunction %2
+%7 = OpTypeFunction %4
+%1 = OpFunction %2 None %6
+%8 = OpLabel
+%9 = OpFunctionCall %4 %10
+OpReturn
+OpFunctionEnd
+%10 = OpFunction %4 None %7
+%11 = OpLabel
+OpReturnValue %5
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text);
+  EXPECT_NE(context, nullptr);
+  Instruction* null_inst = context->get_def_use_mgr()->GetDef(9);
+  EXPECT_NE(null_inst, nullptr);
+  EXPECT_TRUE(null_inst->IsValidBasePointer());
 }
 
 }  // namespace
