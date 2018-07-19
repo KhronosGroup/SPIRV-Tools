@@ -244,6 +244,23 @@ vector<pair<BB*, BB*>> CFA<BB>::CalculateDominators(
     out.push_back({const_cast<BB*>(get<0>(idom)),
                    const_cast<BB*>(postorder[get<1>(idom).dominator])});
   }
+
+  // Sort by postorder index to generate a deterministic ordering of edges.
+  std::sort(out.begin(), out.end(),
+            [&idoms](const pair<bb_ptr, bb_ptr>& lhs,
+                     const pair<bb_ptr, bb_ptr>& rhs) {
+              assert(lhs.first);
+              assert(lhs.second);
+              assert(rhs.first);
+              assert(rhs.second);
+              auto lhs_first_index = idoms[lhs.first].postorder_index;
+              auto lhs_second_index = idoms[lhs.second].postorder_index;
+              auto rhs_first_index = idoms[rhs.first].postorder_index;
+              auto rhs_second_index = idoms[rhs.second].postorder_index;
+              if (lhs_first_index < rhs_first_index) return true;
+              if (rhs_first_index < lhs_first_index) return false;
+              return lhs_second_index < rhs_second_index;
+            });
   return out;
 }
 
