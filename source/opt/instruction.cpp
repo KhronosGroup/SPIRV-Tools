@@ -419,13 +419,33 @@ bool Instruction::IsValidBasePointer() const {
     return false;
   }
 
-  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses)) {
+  auto feature_mgr = context()->get_feature_mgr();
+  if (feature_mgr->HasCapability(SpvCapabilityAddresses)) {
     // TODO: The rules here could be more restrictive.
     return true;
   }
 
   if (opcode() == SpvOpVariable || opcode() == SpvOpFunctionParameter) {
     return true;
+  }
+
+  // With variable pointers, there are more valid base pointer objects.
+  // Variable pointers implicitly declares Variable pointers storage buffer.
+  SpvStorageClass storage_class =
+      static_cast<SpvStorageClass>(type->GetSingleWordInOperand(0));
+  if ((feature_mgr->HasCapability(SpvCapabilityVariablePointersStorageBuffer) &&
+       storage_class == SpvStorageClassStorageBuffer) ||
+      (feature_mgr->HasCapability(SpvCapabilityVariablePointers) &&
+       storage_class == SpvStorageClassWorkgroup)) {
+    switch (opcode()) {
+      case SpvOpPhi:
+      case SpvOpSelect:
+      case SpvOpFunctionCall:
+      case SpvOpConstantNull:
+        return true;
+      default:
+        break;
+    }
   }
 
   uint32_t pointee_type_id = type->GetSingleWordInOperand(1);
