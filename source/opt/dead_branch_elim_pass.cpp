@@ -364,6 +364,48 @@ bool DeadBranchElimPass::EliminateDeadBranches(Function* func) {
   return modified;
 }
 
+void DeadBranchElimPass::FixBlockOrder() {
+  context()->BuildInvalidAnalyses(IRContext::kAnalysisCFG |
+                                  IRContext::kAnalysisDominatorAnalysis);
+  // Reorders blocks according to DFS of dominator tree.
+  ProcessFunction reorder_dominators = [this](Function* function) {
+    DominatorAnalysis* dominators = context()->GetDominatorAnalysis(function);
+    std::vector<BasicBlock*> blocks;
+    for (auto iter = dominators->GetDomTree().begin();
+         iter != dominators->GetDomTree().end(); ++iter) {
+      if (iter->id() != 0) {
+        blocks.push_back(iter->bb_);
+      }
+    }
+    for (uint32_t i = 1; i < blocks.size(); ++i) {
+      function->MoveBasicBlockToAfter(blocks[i]->id(), blocks[i - 1]);
+    }
+    return true;
+  };
+
+  // Reorders blocks according to structured order.
+  ProcessFunction reorder_structured = [this](Function* function) {
+    std::list<BasicBlock*> order;
+    context()->cfg()->ComputeStructuredOrder(function, &*function->begin(),
+                                             &order);
+    std::vector<BasicBlock*> blocks;
+    for (auto block : order) {
+      blocks.push_back(block);
+    }
+    for (uint32_t i = 1; i < blocks.size(); ++i) {
+      function->MoveBasicBlockToAfter(blocks[i]->id(), blocks[i - 1]);
+    }
+    return true;
+  };
+
+  // Structured order is more intuitive so use it where possible.
+  if (context()->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
+    ProcessReachableCallTree(reorder_structured, context());
+  } else {
+    ProcessReachableCallTree(reorder_dominators, context());
+  }
+}
+
 Pass::Status DeadBranchElimPass::Process() {
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().
@@ -375,6 +417,7 @@ Pass::Status DeadBranchElimPass::Process() {
     return EliminateDeadBranches(fp);
   };
   bool modified = ProcessReachableCallTree(pfn, context());
+  if (modified) FixBlockOrder();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

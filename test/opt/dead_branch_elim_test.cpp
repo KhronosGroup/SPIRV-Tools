@@ -605,11 +605,11 @@ OpBranch %28
 %37 = OpINotEqual %bool %36 %uint_0
 OpSelectionMerge %38 None
 OpBranchConditional %37 %39 %40
-%39 = OpLabel
-OpStore %v %23
-OpBranch %38
 %40 = OpLabel
 OpStore %v %21
+OpBranch %38
+%39 = OpLabel
+OpStore %v %23
 OpBranch %38
 %38 = OpLabel
 OpBranch %26
@@ -1654,12 +1654,12 @@ TEST_F(DeadBranchElimTest, RemoveUnreachableBlocksPartiallyDeadPhi) {
 ; CHECK-NEXT: [[param:%\w+]] = OpFunctionParameter
 ; CHECK-NEXT: OpLabel
 ; CHECK-NEXT: OpBranchConditional [[param]] [[merge:%\w+]] [[br:%\w+]]
-; CHECK-NEXT: [[br]] = OpLabel
-; CHECK-NEXT: OpBranch [[merge]]
 ; CHECK-NEXT: [[merge]] = OpLabel
 ; CHECK-NEXT: [[phi:%\w+]] = OpPhi %bool %true %2 %false [[br]]
 ; CHECK-NEXT: OpLogicalNot %bool [[phi]]
 ; CHECK-NEXT: OpReturn
+; CHECK-NEXT: [[br]] = OpLabel
+; CHECK-NEXT: OpBranch [[merge]]
 ; CHECK-NEXT: OpFunctionEnd
 OpCapability Kernel
 OpCapability Linkage
@@ -1772,9 +1772,10 @@ TEST_F(DeadBranchElimTest, ExtraBackedgeBlocksUnreachable) {
 ; CHECK-NEXT: [[header]] = OpLabel
 ; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
 ; CHECK-NEXT: OpBranch [[merge]]
+; CHECK-NEXT: [[merge]] = OpLabel
+; CHECK-NEXT: OpReturn
 ; CHECK-NEXT: [[continue]] = OpLabel
 ; CHECK-NEXT: OpBranch [[header]]
-; CHECK-NEXT: [[merge]] = OpLabel
 OpCapability Kernel
 OpCapability Linkage
 OpMemoryModel Logical OpenCL
@@ -1841,6 +1842,7 @@ TEST_F(DeadBranchElimTest, ExtraBackedgePartiallyDead) {
 ; CHECK: OpLabel
 ; CHECK: [[header:%\w+]] = OpLabel
 ; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
+; CHECK: [[merge]] = OpLabel
 ; CHECK: [[continue]] = OpLabel
 ; CHECK: OpBranch [[extra:%\w+]]
 ; CHECK: [[extra]] = OpLabel
@@ -1851,7 +1853,6 @@ TEST_F(DeadBranchElimTest, ExtraBackedgePartiallyDead) {
 ; CHECK-NEXT: OpBranch [[backedge:%\w+]]
 ; CHECK-NEXT: [[backedge:%\w+]] = OpLabel
 ; CHECK-NEXT: OpBranch [[header]]
-; CHECK-NEXT: [[merge]] = OpLabel
 OpCapability Kernel
 OpCapability Linkage
 OpMemoryModel Logical OpenCL
@@ -1997,6 +1998,95 @@ OpBranch %final
 OpBranch %final
 %final = OpLabel
 OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, ReorderBlocks) {
+  const std::string text = R"(
+; CHECK: OpLabel
+; CHECK: OpBranch [[label:%\w+]]
+; CHECK: [[label:%\w+]] = OpLabel
+; CHECK-NEXT: OpLogicalNot
+; CHECK-NEXT: OpBranch [[label:%\w+]]
+; CHECK: [[label]] = OpLabel
+; CHECK-NEXT: OpReturn
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+OpSelectionMerge %3 None
+OpBranchConditional %true %2 %3
+%3 = OpLabel
+OpReturn
+%2 = OpLabel
+%not = OpLogicalNot %bool %true
+OpBranch %3
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, ReorderBlocksMultiple) {
+  // Checks are not important. The validation post optimization is the
+  // important part.
+  const std::string text = R"(
+; CHECK: OpLabel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+OpSelectionMerge %3 None
+OpBranchConditional %true %2 %3
+%3 = OpLabel
+OpReturn
+%2 = OpLabel
+OpBranch %4
+%4 = OpLabel
+OpBranch %3
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<DeadBranchElimPass>(text, true);
+}
+
+TEST_F(DeadBranchElimTest, ReorderBlocksMultiple2) {
+  // Checks are not important. The validation post optimization is the
+  // important part.
+  const std::string text = R"(
+; CHECK: OpLabel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+OpSelectionMerge %3 None
+OpBranchConditional %true %2 %3
+%3 = OpLabel
+OpBranch %5
+%5 = OpLabel
+OpReturn
+%2 = OpLabel
+OpBranch %4
+%4 = OpLabel
+OpBranch %3
 OpFunctionEnd
 )";
 

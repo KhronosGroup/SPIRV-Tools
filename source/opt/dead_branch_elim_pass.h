@@ -125,6 +125,10 @@ class DeadBranchElimPass : public MemPass {
       const std::unordered_set<BasicBlock*>& unreachable_merges,
       const std::unordered_map<BasicBlock*, BasicBlock*>&
           unreachable_continues);
+
+  // Reorders blocks in reachable functions so that they satisfy dominator
+  // block ordering rules.
+  void FixBlockOrder();
 };
 
 }  // namespace opt
