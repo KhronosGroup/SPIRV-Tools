@@ -415,6 +415,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Return true if the only effect of this instructions is the result.
   bool IsOpcodeSafeToDelete() const;
 
+  // Returns true if it is valid to use the result of |inst| as the base
+  // pointer for a load or store.  In this case, valid is defined by the relaxed
+  // logical addressing rules when using logical addressing.  Normal validation
+  // rules for physical addressing.
+  bool IsValidBasePointer() const;
+
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
@@ -426,12 +432,6 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // kernel.
   bool IsReadOnlyVariableShaders() const;
   bool IsReadOnlyVariableKernel() const;
-
-  // Returns true if it is valid to use the result of |inst| as the base
-  // pointer for a load or store.  In this case, valid is defined by the relaxed
-  // logical addressing rules when using logical addressing.  Normal validation
-  // rules for physical addressing.
-  bool IsValidBasePointer() const;
 
   // Returns true if the result of |inst| can be used as the base image for an
   // instruction that samples a image, reads an image, or writes to an image.
