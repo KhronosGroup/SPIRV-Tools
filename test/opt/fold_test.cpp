@@ -452,11 +452,12 @@ TEST_P(IntVectorInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  SpvOp original_opcode = inst->opcode();
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
-  EXPECT_TRUE(succeeded);
-  if (inst != nullptr) {
+  EXPECT_EQ(succeeded, inst == nullptr || inst->opcode() != original_opcode);
+  if (succeeded && inst != nullptr) {
     EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     std::vector<SpvOp> opcodes = {SpvOpConstantComposite};
@@ -496,7 +497,25 @@ INSTANTIATE_TEST_CASE_P(TestCase, IntVectorInstructionFoldingTest,
           "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 0 3\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, {0,3})
+      2, {0,3}),
+    InstructionFoldingCase<std::vector<uint32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_int Function\n" +
+          "%load = OpLoad %int %n\n" +
+          "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 4294967295 3\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, {0,0}),
+    InstructionFoldingCase<std::vector<uint32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_int Function\n" +
+          "%load = OpLoad %int %n\n" +
+          "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 0 4294967295 \n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, {0,0})
 ));
 // clang-format on
 
@@ -5512,7 +5531,22 @@ INSTANTIATE_TEST_CASE_P(CompositeExtractMatchingTest, MatchingInstructionFolding
             "%5 = OpCompositeExtract %double %4 3\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        5, false)
+        5, false),
+    // Test case 7: Extracting the undefined literal value from a vector
+    // shuffle.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+            "; CHECK: %4 = OpUndef [[int]]\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4int Function\n" +
+            "%2 = OpLoad %v4int %n\n" +
+            "%3 = OpVectorShuffle %v2int %2 %2 2 4294967295\n" +
+            "%4 = OpCompositeExtract %int %3 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, true)
 ));
 
 INSTANTIATE_TEST_CASE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
@@ -5896,6 +5930,27 @@ INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResu
             "%7 = OpLoad %v4double %4\n" +
             "%8 = OpVectorShuffle %v2double %5 %5 0 3\n" +
             "%9 = OpVectorShuffle %v4double %7 %8 2 0 1 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        9, true),
+    // Test case 13: Shuffle with undef literal.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: [[v4double:%\\w+]] = OpTypeVector [[double]] 2\n" +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} %7 {{%\\w+}} 2 0 1 4294967295\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v4double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%4 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v4double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%7 = OpLoad %v4double %4\n" +
+            "%8 = OpVectorShuffle %v2double %5 %5 0 1\n" +
+            "%9 = OpVectorShuffle %v4double %7 %8 2 0 1 4294967295\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
         9, true)

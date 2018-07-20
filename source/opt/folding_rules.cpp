@@ -1502,6 +1502,14 @@ FoldingRule VectorShuffleFeedingExtract() {
     uint32_t new_index =
         cinst->GetSingleWordInOperand(2 + inst->GetSingleWordInOperand(1));
 
+    // Extracting an undefined value so fold this extract into an undef.
+    const uint32_t undef_literal_value = 0xffffffff;
+    if (new_index == undef_literal_value) {
+      inst->SetOpcode(SpvOpUndef);
+      inst->SetInOperands({});
+      return true;
+    }
+
     // Get the id of the of the vector the elemtent comes from, and update the
     // index if needed.
     uint32_t new_vector = 0;
@@ -2035,10 +2043,13 @@ FoldingRule VectorShuffleFeedingShuffle() {
     std::vector<Operand> new_operands;
     new_operands.resize(
         2, {SPV_OPERAND_TYPE_ID, {0}});  // Place holders for vector operands.
+    const uint32_t undef_literal = 0xffffffff;
     for (uint32_t op = 2; op < inst->NumInOperands(); ++op) {
       uint32_t component_index = inst->GetSingleWordInOperand(op);
 
-      if (feeder_is_op0 == (component_index < op0_length)) {
+      // Do not interpret the undefined value literal as coming from operand 1.
+      if (component_index != undef_literal &&
+          feeder_is_op0 == (component_index < op0_length)) {
         // This component comes from the feeding_shuffle_inst.  Update
         // |component_index| to be the index into the operand of the feeder.
 
