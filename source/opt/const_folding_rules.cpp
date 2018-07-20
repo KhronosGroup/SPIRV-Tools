@@ -95,9 +95,13 @@ ConstantFoldingRule FoldVectorShuffleWithConstants() {
     }
 
     std::vector<uint32_t> ids;
+    const uint32_t undef_literal_value = 0xffffffff;
     for (uint32_t i = 2; i < inst->NumInOperands(); ++i) {
       uint32_t index = inst->GetSingleWordInOperand(i);
-      if (index < c1_components.size()) {
+      if (index == undef_literal_value) {
+        // Don't fold shuffle with undef literal value.
+        return nullptr;
+      } else if (index < c1_components.size()) {
         Instruction* member_inst =
             const_mgr->GetDefiningInstruction(c1_components[index]);
         ids.push_back(member_inst->result_id());
