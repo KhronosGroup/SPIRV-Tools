@@ -332,3 +332,8 @@ add_spvtools_unittest(TARGET constant_manager
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET combine_access_chains
+  SRCS combine_access_chains_test.cpp
+  LIBS SPIRV-Tools-opt
+)
+

@@ -636,6 +636,11 @@ Optimizer::PassToken CreateVectorDCEPass();
 // a load of the specific elements.
 Optimizer::PassToken CreateReduceLoadSizePass();
 
+// Create a pass to combine chained access chains.
+// This pass looks for access chains fed by other access chains and combines
+// them into a single instruction where possible.
+Optimizer::PassToken CreateCombineAccessChainsPass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_
