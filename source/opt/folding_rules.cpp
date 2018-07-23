@@ -1913,16 +1913,15 @@ FoldingRule RedundantIAdd() {
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpIAdd && "Wrong opcode. Should be OpIAdd.");
 
-    uint32_t operand = 0;
+    uint32_t operand = std::numeric_limits<uint32_t>::max();
     if (constants[0] && constants[0]->IsZero())
       operand = inst->GetSingleWordInOperand(1);
     else if (constants[1] && constants[1]->IsZero())
       operand = inst->GetSingleWordInOperand(0);
 
-    if (operand != 0) {
+    if (operand != std::numeric_limits<uint32_t>::max()) {
       inst->SetOpcode(SpvOpCopyObject);
-      inst->SetInOperands(
-          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(operand)}}});
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {operand}}});
       return true;
     }
     return false;

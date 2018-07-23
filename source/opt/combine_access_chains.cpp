@@ -176,6 +176,7 @@ bool CombineAccessChainsPass::CombinePtrAccessChain(Instruction* inst) {
   // above.
   inst->SetOpcode(ptr_input->opcode());
   inst->SetInOperands(std::move(new_operands));
+  context()->AnalyzeUses(inst);
   return true;
 }
 
