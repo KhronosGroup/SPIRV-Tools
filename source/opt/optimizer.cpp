@@ -159,6 +159,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateRedundancyEliminationPass())
+      .RegisterPass(CreateCombineAccessChainsPass())
       .RegisterPass(CreateSimplificationPass())
       .RegisterPass(CreateVectorDCEPass())
       .RegisterPass(CreateDeadInsertElimPass())
@@ -303,6 +304,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateInlineExhaustivePass());
   } else if (pass_name == "inline-entry-points-opaque") {
     RegisterPass(CreateInlineOpaquePass());
+  } else if (pass_name == "combine-access-chains") {
+    RegisterPass(CreateCombineAccessChainsPass());
   } else if (pass_name == "convert-local-access-chains") {
     RegisterPass(CreateLocalAccessChainConvertPass());
   } else if (pass_name == "eliminate-dead-code-aggressive") {
@@ -709,5 +712,10 @@ Optimizer::PassToken CreateVectorDCEPass() {
 Optimizer::PassToken CreateReduceLoadSizePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::ReduceLoadSize>());
+}
+
+Optimizer::PassToken CreateCombineAccessChainsPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::CombineAccessChains>());
 }
 }  // namespace spvtools
