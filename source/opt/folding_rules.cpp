@@ -1907,6 +1907,28 @@ FoldingRule RedundantFMix() {
   };
 }
 
+// This rule handles addition of zero for integers.
+FoldingRule RedundantIAdd() {
+  return [](IRContext*, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpIAdd && "Wrong opcode. Should be OpIAdd.");
+
+    uint32_t operand = 0;
+    if (constants[0] && constants[0]->IsZero())
+      operand = inst->GetSingleWordInOperand(1);
+    else if (constants[1] && constants[1]->IsZero())
+      operand = inst->GetSingleWordInOperand(0);
+
+    if (operand != 0) {
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(operand)}}});
+      return true;
+    }
+    return false;
+  };
+}
+
 // This rule look for a dot with a constant vector containing a single 1 and
 // the rest 0s.  This is the same as doing an extract.
 FoldingRule DotProductDoingExtract() {
@@ -2177,6 +2199,7 @@ FoldingRules::FoldingRules() {
   rules_[SpvOpFSub].push_back(MergeSubAddArithmetic());
   rules_[SpvOpFSub].push_back(MergeSubSubArithmetic());
 
+  rules_[SpvOpIAdd].push_back(RedundantIAdd());
   rules_[SpvOpIAdd].push_back(MergeAddNegateArithmetic());
   rules_[SpvOpIAdd].push_back(MergeAddAddArithmetic());
   rules_[SpvOpIAdd].push_back(MergeAddSubArithmetic());

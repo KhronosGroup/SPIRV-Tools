@@ -106,6 +106,9 @@ Options (in lexicographical order):
                Cleanup the control flow graph. This will remove any unnecessary
                code from the CFG like unreachable code. Performed on entry
                point call tree functions and exported functions.
+  --combine-access-chains
+               Combines chained access chains to produce a single instruction
+               where possible.
   --compact-ids
                Remap result ids to a compact range starting from %%1 and without
                any gaps.

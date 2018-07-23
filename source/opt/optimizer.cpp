@@ -159,6 +159,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateCCPPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateRedundancyEliminationPass())
+      .RegisterPass(CreateCombineAccessChainsPass())
       .RegisterPass(CreateSimplificationPass())
       .RegisterPass(CreateVectorDCEPass())
       .RegisterPass(CreateDeadInsertElimPass())
@@ -709,5 +710,10 @@ Optimizer::PassToken CreateVectorDCEPass() {
 Optimizer::PassToken CreateReduceLoadSizePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::ReduceLoadSize>());
+}
+
+Optimizer::PassToken CreateCombineAccessChainsPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::CombineAccessChainsPass>());
 }
 }  // namespace spvtools
