@@ -63,7 +63,7 @@ TEST_F(CombineAccessChainsTest, PtrAccessChainFromInBoundsAccessChainConstant) {
 ; CHECK: [[int3:%\w+]] = OpConstant [[int]] 3
 ; CHECK: [[ptr_int:%\w+]] = OpTypePointer Workgroup [[int]]
 ; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Workgroup
-; CHECK: OpInBoundsAccessChain [[ptr_int]] [[var]] [[int3]]
+; CHECK: OpAccessChain [[ptr_int]] [[var]] [[int3]]
 OpCapability Shader
 OpCapability VariablePointers
 OpExtension "SPV_KHR_variable_pointers"

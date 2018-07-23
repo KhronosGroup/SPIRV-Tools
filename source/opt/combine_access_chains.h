@@ -35,12 +35,29 @@ class CombineAccessChains : public Pass {
   }
 
  private:
+  // Combine access chains in |function|. Blocks are processed in reverse
+  // post-order.
   bool ProcessFunction(Function& function);
-  bool CombinePtrAccessChain(Instruction* inst);
+
+  // Combines an access chain (normal, in bounds or pointer) |inst| if its base
+  // pointer is another access chain. Returns true if the access chain was
+  // modified.
+  bool CombineAccessChain(Instruction* inst);
+
+  // Returns the value of |constant_inst| as a uint32_t.
   uint32_t GetConstantValue(const analysis::Constant* constant_inst);
+
+  // Returns the array stride of |inst|'s type.
   uint32_t GetArrayStride(const Instruction* inst);
+
+  // Returns the type by resolving the index operands |inst| (except for the
+  // last). Populates |new_operands| with a copy of operands for use in
+  // building the modified access chain.
   const analysis::Type* GetIndexedType(Instruction* inst,
                                        std::vector<Operand>* new_operands);
+
+  // Combines the last index of |ptr_input| with the element operand of |inst|.
+  // Adds the combined operand to |new_operands|.
   bool CombineIndices(const analysis::Type* type, Instruction* ptr_input,
                       Instruction* inst, std::vector<Operand>* new_operands);
 };

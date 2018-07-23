@@ -41,7 +41,7 @@ bool CombineAccessChains::ProcessFunction(Function& function) {
             case SpvOpAccessChain:
             case SpvOpInBoundsAccessChain:
             case SpvOpPtrAccessChain:
-              modified |= CombinePtrAccessChain(inst);
+              modified |= CombineAccessChain(inst);
               break;
             default:
               break;
@@ -183,7 +183,7 @@ bool CombineAccessChains::CombineIndices(const analysis::Type* type,
   return true;
 }
 
-bool CombineAccessChains::CombinePtrAccessChain(Instruction* inst) {
+bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
   assert((inst->opcode() == SpvOpPtrAccessChain ||
           inst->opcode() == SpvOpAccessChain ||
           inst->opcode() == SpvOpInBoundsAccessChain) &&
@@ -197,11 +197,16 @@ bool CombineAccessChains::CombinePtrAccessChain(Instruction* inst) {
     return false;
   }
 
-  // %gep1 = OpAccessChain %ptr_type1 %base <indices1>
-  // %gep2 = OpPtrAccessChain %ptr_type2 %gep1 %element <indices2>
-  // We know %element is a constant. We want to combine to combine it with
-  // the last index in %gep1 (if its in bounds) and then tack on the rest
-  // of indices.
+  // Handles the following cases:
+  // 1. |inst| is not a pointer access chain.
+  //    |inst|'s indices are appended to |ptr_input|'s indices.
+  // 2. |ptr_input| is not pointer access chain.
+  //    |inst|'s element operand is combined with the last index in
+  //    |ptr_input| to form a new operand.
+  // 3. |ptr_input| is a pointer access chain.
+  //    Like the above scenario, |inst|'s element operand is combined
+  //    with |ptr_input|'s last index. This results is either a
+  //    combined element operand or regular index.
 
   // TODO(alan-baker): support this properly.
   uint32_t array_stride = GetArrayStride(ptr_input);
@@ -228,7 +233,13 @@ bool CombineAccessChains::CombinePtrAccessChain(Instruction* inst) {
   // Update the instruction. The opcode changes to be the same as
   // |ptr_input|'s opcode. The operands are the combined operands constructed
   // above.
-  inst->SetOpcode(ptr_input->opcode());
+  if (ptr_input->opcode() == SpvOpInBoundsAccessChain &&
+      inst->opcode() != SpvOpInBoundsAccessChain) {
+    // Cannot guarantee the pointer is in bounds anymore.
+    inst->SetOpcode(SpvOpAccessChain);
+  } else {
+    inst->SetOpcode(ptr_input->opcode());
+  }
   inst->SetInOperands(std::move(new_operands));
   context()->AnalyzeUses(inst);
   return true;
