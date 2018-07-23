@@ -183,6 +183,8 @@ OpName %main "main"
 %uint_32 = OpConstant %uint 32
 %uint_max = OpConstant %uint 4294967295
 %v2int_undef = OpUndef %v2int
+%v2int_0_0 = OpConstantComposite %v2int %int_0 %int_0
+%v2int_1_0 = OpConstantComposite %v2int %int_1 %int_0
 %v2int_2_2 = OpConstantComposite %v2int %int_2 %int_2
 %v2int_2_3 = OpConstantComposite %v2int %int_2 %int_3
 %v2int_3_2 = OpConstantComposite %v2int %int_3 %int_2
@@ -3366,6 +3368,46 @@ INSTANTIATE_TEST_CASE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingTe
             "%n = OpVariable %_ptr_uint Function\n" +
             "%3 = OpLoad %uint %n\n" +
             "%2 = OpIAdd %uint %uint_0 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 4: Don't fold n + (1,0)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v2int Function\n" +
+            "%3 = OpLoad %v2int %n\n" +
+            "%2 = OpIAdd %v2int %3 %v2int_1_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 5: Don't fold (1,0) + n
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v2int Function\n" +
+            "%3 = OpLoad %v2int %n\n" +
+            "%2 = OpIAdd %v2int %v2int_1_0 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 6: Fold n + (0,0)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v2int Function\n" +
+            "%3 = OpLoad %v2int %n\n" +
+            "%2 = OpIAdd %v2int %3 %v2int_0_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 7: Fold (0,0) + n
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v2int Function\n" +
+            "%3 = OpLoad %v2int %n\n" +
+            "%2 = OpIAdd %v2int %v2int_0_0 %3\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 3)

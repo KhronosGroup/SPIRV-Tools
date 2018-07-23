@@ -21,7 +21,7 @@ namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class CombineAccessChainsPass : public Pass {
+class CombineAccessChains : public Pass {
  public:
   const char* name() const override { return "combine-access-chains"; }
   Status Process() override;
@@ -37,8 +37,12 @@ class CombineAccessChainsPass : public Pass {
  private:
   bool ProcessFunction(Function& function);
   bool CombinePtrAccessChain(Instruction* inst);
-
   uint32_t GetConstantValue(const analysis::Constant* constant_inst);
+  uint32_t GetArrayStride(const Instruction* inst);
+  const analysis::Type* GetIndexedType(Instruction* inst,
+                                       std::vector<Operand>* new_operands);
+  bool CombineIndices(const analysis::Type* type, Instruction* ptr_input,
+                      Instruction* inst, std::vector<Operand>* new_operands);
 };
 
 }  // namespace opt

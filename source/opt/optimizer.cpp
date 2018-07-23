@@ -714,6 +714,6 @@ Optimizer::PassToken CreateReduceLoadSizePass() {
 
 Optimizer::PassToken CreateCombineAccessChainsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::CombineAccessChainsPass>());
+      MakeUnique<opt::CombineAccessChains>());
 }
 }  // namespace spvtools
