@@ -53,6 +53,11 @@ class CombineAccessChains : public Pass {
   // Returns the type by resolving the index operands |inst|.
   const analysis::Type* GetIndexedType(Instruction* inst);
 
+  // Populates |new_operands| with the operands for the combined access chain.
+  // Returns false if the access chains cannot be combined.
+  bool CreateNewOperands(Instruction* ptr_input, Instruction* inst,
+                         std::vector<Operand>* new_operands);
+
   // Combines the last index of |ptr_input| with the element operand of |inst|.
   // Adds the combined operand to |new_operands|.
   bool CombineIndices(const analysis::Type* type, Instruction* ptr_input,

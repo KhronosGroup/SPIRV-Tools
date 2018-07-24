@@ -169,6 +169,37 @@ bool CombineAccessChains::CombineIndices(const analysis::Type* type,
   return true;
 }
 
+bool CombineAccessChains::CreateNewOperands(
+    Instruction* ptr_input, Instruction* inst,
+    std::vector<Operand>* new_operands) {
+  const analysis::Type* type = GetIndexedType(ptr_input);
+
+  // Start by copying all the input operands of the feeder access chain.
+  for (uint32_t i = 0; i != ptr_input->NumInOperands() - 1; ++i) {
+    new_operands->push_back(ptr_input->GetInOperand(i));
+  }
+
+  // Deal with the last index of the feeder access chain.
+  if (inst->opcode() == SpvOpPtrAccessChain) {
+    // The last index of the feeder should be combined with the element operand
+    // of |inst|.
+    if (!CombineIndices(type, ptr_input, inst, new_operands)) return false;
+  } else {
+    // The indices aren't being combined so now add the last index operand of
+    // |ptr_input|.
+    new_operands->push_back(
+        ptr_input->GetInOperand(ptr_input->NumInOperands() - 1));
+  }
+
+  // Copy the remaining index operands.
+  uint32_t starting_index = (inst->opcode() == SpvOpPtrAccessChain) ? 2 : 1;
+  for (uint32_t i = starting_index; i < inst->NumInOperands(); ++i) {
+    new_operands->push_back(inst->GetInOperand(i));
+  }
+
+  return true;
+}
+
 bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
   assert((inst->opcode() == SpvOpPtrAccessChain ||
           inst->opcode() == SpvOpAccessChain ||
@@ -192,37 +223,14 @@ bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
   // 3. |ptr_input| is a pointer access chain.
   //    Like the above scenario, |inst|'s element operand is combined
   //    with |ptr_input|'s last index. This results is either a
-  //    combined element operand or regular index.
+  //    combined element operand or combined regular index.
 
   // TODO(alan-baker): support this properly.
   uint32_t array_stride = GetArrayStride(ptr_input);
   if (array_stride != 0) return false;
 
-  const analysis::Type* type = GetIndexedType(ptr_input);
-
-  // Start by copying all the input operands of the feeder access chain.
   std::vector<Operand> new_operands;
-  for (uint32_t i = 0; i != ptr_input->NumInOperands() - 1; ++i) {
-    new_operands.push_back(ptr_input->GetInOperand(i));
-  }
-
-  // Deal with the last index of the feeder access chain.
-  if (inst->opcode() == SpvOpPtrAccessChain) {
-    // The last index of the feeder should be combined with the element operand
-    // of |inst|.
-    if (!CombineIndices(type, ptr_input, inst, &new_operands)) return false;
-  } else {
-    // The indices aren't being combined so now add the last index operand of
-    // |ptr_input|.
-    new_operands.push_back(
-        ptr_input->GetInOperand(ptr_input->NumInOperands() - 1));
-  }
-
-  // Copy the remaining index operands.
-  uint32_t starting_index = (inst->opcode() == SpvOpPtrAccessChain) ? 2 : 1;
-  for (uint32_t i = starting_index; i < inst->NumInOperands(); ++i) {
-    new_operands.push_back(inst->GetInOperand(i));
-  }
+  if (!CreateNewOperands(ptr_input, inst, &new_operands)) return false;
 
   // Update the instruction. The opcode changes to be the same as
   // |ptr_input|'s opcode. The operands are the combined operands constructed
