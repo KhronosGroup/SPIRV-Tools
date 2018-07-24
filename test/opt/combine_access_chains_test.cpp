@@ -421,6 +421,75 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<CombineAccessChains>(text, true);
 }
+
+TEST_F(CombineAccessChainsTest, NonConstantStructSlide) {
+  const std::string text = R"(
+; CHECK: [[int0:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Workgroup
+; CHECK: [[ld:%\w+]] = OpLoad
+; CHECK: OpPtrAccessChain {{%\w+}} [[var]] [[ld]] [[int0]]
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%struct = OpTypeStruct %uint %uint
+%ptr_Workgroup_struct = OpTypePointer Workgroup %struct
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%ptr_Function_uint = OpTypePointer Function %uint
+%wg_var = OpVariable %ptr_Workgroup_struct Workgroup
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%1 = OpLabel
+%func_var = OpVariable %ptr_Function_uint Function
+%ld = OpLoad %uint %func_var
+%ptr_gep = OpPtrAccessChain %ptr_Workgroup_struct %wg_var %ld
+%gep = OpAccessChain %ptr_Workgroup_uint %ptr_gep %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
+
+TEST_F(CombineAccessChainsTest, DontCombineNonConstantStructSlide) {
+  const std::string text = R"(
+; CHECK: [[int0:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK: [[ld:%\w+]] = OpLoad
+; CHECK: [[gep:%\w+]] = OpAccessChain
+; CHECK: OpPtrAccessChain {{%\w+}} [[gep]] [[ld]] [[int0]]
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_4 = OpConstant %uint 4
+%struct = OpTypeStruct %uint %uint
+%struct_array_4 = OpTypeArray %struct %uint_4
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%ptr_Function_uint = OpTypePointer Function %uint
+%ptr_Workgroup_struct = OpTypePointer Workgroup %struct
+%ptr_Workgroup_struct_array_4 = OpTypePointer Workgroup %struct_array_4
+%wg_var = OpVariable %ptr_Workgroup_struct_array_4 Workgroup
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%1 = OpLabel
+%func_var = OpVariable %ptr_Function_uint Function
+%ld = OpLoad %uint %func_var
+%gep = OpAccessChain %ptr_Workgroup_struct %wg_var %uint_0
+%ptr_gep = OpPtrAccessChain %ptr_Workgroup_uint %gep %ld %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 }  // namespace

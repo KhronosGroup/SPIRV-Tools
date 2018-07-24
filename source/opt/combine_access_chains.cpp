@@ -88,10 +88,7 @@ uint32_t CombineAccessChains::GetArrayStride(const Instruction* inst) {
   return array_stride;
 }
 
-const analysis::Type* CombineAccessChains::GetIndexedType(
-    Instruction* inst, std::vector<Operand>* new_operands) {
-  // Walk the types till we find the second to last type in the chain.
-  // Also copy the operands to construct the new operands.
+const analysis::Type* CombineAccessChains::GetIndexedType(Instruction* inst) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
 
@@ -100,18 +97,15 @@ const analysis::Type* CombineAccessChains::GetIndexedType(
   assert(type->AsPointer());
   type = type->AsPointer()->pointee_type();
   std::vector<uint32_t> element_indices;
-  new_operands->push_back({SPV_OPERAND_TYPE_ID, {base_ptr->result_id()}});
   uint32_t starting_index = 1;
   if (inst->opcode() == SpvOpPtrAccessChain) {
     // Skip the first index of OpPtrAccessChain as it does not affect type
     // resolution.
     starting_index = 2;
-    new_operands->push_back(inst->GetInOperand(1));
   }
-  for (uint32_t i = starting_index; i < inst->NumInOperands() - 1; ++i) {
+  for (uint32_t i = starting_index; i < inst->NumInOperands(); ++i) {
     Instruction* index_inst =
         def_use_mgr->GetDef(inst->GetSingleWordInOperand(i));
-    new_operands->push_back(inst->GetInOperand(i));
     const analysis::Constant* index_constant =
         context()->get_constant_mgr()->GetConstantFromInst(index_inst);
     if (index_constant) {
@@ -143,17 +137,9 @@ bool CombineAccessChains::CombineIndices(const analysis::Type* type,
   const analysis::Constant* element_constant =
       constant_mgr->GetConstantFromInst(element_inst);
 
-  uint32_t new_value_id = 0;
-  if (ptr_input->opcode() == SpvOpPtrAccessChain &&
-      ptr_input->NumInOperands() == 2) {
-    // This a PtrAccessChain feeding a PtrAccessChain where the first
-    // PtrAccessChain only does the element resolution. Previously, we appended
-    // the element operand into |new_operands|, so pop it now.
-    new_operands->pop_back();
-  }
-
   // Combine the last index of the AccessChain (|ptr_inst|) with the element
   // operand of the PtrAccessChain (|inst|).
+  uint32_t new_value_id = 0;
   if (last_index_constant && element_constant) {
     // Combine the constants.
     uint32_t new_value = GetConstantValue(last_index_constant) +
@@ -212,14 +198,22 @@ bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
   uint32_t array_stride = GetArrayStride(ptr_input);
   if (array_stride != 0) return false;
 
-  std::vector<Operand> new_operands;
-  const analysis::Type* type = GetIndexedType(ptr_input, &new_operands);
+  const analysis::Type* type = GetIndexedType(ptr_input);
 
+  // Start by copying all the input operands of the feeder access chain.
+  std::vector<Operand> new_operands;
+  for (uint32_t i = 0; i != ptr_input->NumInOperands() - 1; ++i) {
+    new_operands.push_back(ptr_input->GetInOperand(i));
+  }
+
+  // Deal with the last index of the feeder access chain.
   if (inst->opcode() == SpvOpPtrAccessChain) {
+    // The last index of the feeder should be combined with the element operand
+    // of |inst|.
     if (!CombineIndices(type, ptr_input, inst, &new_operands)) return false;
-  } else if (ptr_input->opcode() != SpvOpPtrAccessChain ||
-             ptr_input->NumInOperands() > 2) {
-    // OpAccessChain and OpInBoundsAccessChain both just append the indices.
+  } else {
+    // The indices aren't being combined so now add the last index operand of
+    // |ptr_input|.
     new_operands.push_back(
         ptr_input->GetInOperand(ptr_input->NumInOperands() - 1));
   }
