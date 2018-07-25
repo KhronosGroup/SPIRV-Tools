@@ -177,6 +177,7 @@ OpName %main "main"
 %long_2 = OpConstant %long 2
 %long_3 = OpConstant %long 3
 %uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
 %uint_2 = OpConstant %uint 2
 %uint_3 = OpConstant %uint 3
 %uint_4 = OpConstant %uint 4
