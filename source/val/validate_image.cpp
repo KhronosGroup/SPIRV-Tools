@@ -498,6 +498,41 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     }
   }
 
+  if (mask & SpvImageOperandsMakeTexelAvailableKHRMask) {
+    // Checked elsewhere: capability and memory model are correct.
+    if (opcode != SpvOpImageWrite) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Image Operand MakeTexelAvailableKHR can only be used with Op"
+             << spvOpcodeString(SpvOpImageWrite) << ": Op"
+             << spvOpcodeString(opcode);
+    }
+
+    if (!(mask & SpvImageOperandsNonPrivateTexelKHRMask)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Image Operand MakeTexelAvailableKHR requires "
+                "NonPrivateTexelKHR is also specified: Op"
+             << spvOpcodeString(opcode);
+    }
+  }
+
+  if (mask & SpvImageOperandsMakeTexelVisibleKHRMask) {
+    // Checked elsewhere: capability and memory model are correct.
+    if (opcode != SpvOpImageRead && opcode != SpvOpImageSparseRead) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Image Operand MakeTexelVisibleKHR can only be used with Op"
+             << spvOpcodeString(SpvOpImageRead) << " or Op"
+             << spvOpcodeString(SpvOpImageSparseRead) << ": Op"
+             << spvOpcodeString(opcode);
+    }
+
+    if (!(mask & SpvImageOperandsNonPrivateTexelKHRMask)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Image Operand MakeTexelVisibleKHR requires NonPrivateTexelKHR "
+                "is also specified: Op"
+             << spvOpcodeString(opcode);
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
