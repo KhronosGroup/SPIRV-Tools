@@ -22,6 +22,7 @@
 #include <sstream>
 #include <vector>
 
+#include "opt/log.h"
 #include "opt/loop_peeling.h"
 #include "opt/set_spec_constant_default_value_pass.h"
 #include "spirv-tools/optimizer.hpp"
@@ -40,6 +41,17 @@ struct OptStatus {
   OptActions action;
   int code;
 };
+
+// Message consumer for this tool.  Used to emit diagnostics during
+// initialization and setup. Note that |source| and |position| are irrelevant
+// here because we are still not processing a SPIR-V input file.
+void opt_diagnostic(spv_message_level_t level, const char* /*source*/,
+                    const spv_position_t& /*positon*/, const char* message) {
+  if (level == SPV_MSG_ERROR) {
+    fprintf(stderr, "error: ");
+  }
+  fprintf(stderr, "%s\n", message);
+}
 
 std::string GetListOfPassesAsString(const spvtools::Optimizer& optimizer) {
   std::stringstream ss;
@@ -356,7 +368,8 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
                        std::vector<std::string>* file_flags) {
   const char* fname = strchr(oconfig_flag, '=');
   if (fname == nullptr || fname[0] != '=') {
-    fprintf(stderr, "error: Invalid -Oconfig flag %s\n", oconfig_flag);
+    Errorf(opt_diagnostic, nullptr, {}, "Invalid -Oconfig flag %s",
+           oconfig_flag);
     return false;
   }
   fname++;
@@ -364,7 +377,7 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
   std::ifstream input_file;
   input_file.open(fname);
   if (input_file.fail()) {
-    fprintf(stderr, "error: Could not open file '%s'\n", fname);
+    Errorf(opt_diagnostic, nullptr, {}, "Could not open file '%s'", fname);
     return false;
   }
 
@@ -397,8 +410,8 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
 
   std::vector<std::string> file_flags;
   if (!ReadFlagsFromFile(opt_flag, &file_flags)) {
-    fprintf(stderr,
-            "error: Could not read optimizer flags from configuration file\n");
+    Error(opt_diagnostic, nullptr, {},
+          "Could not read optimizer flags from configuration file");
     return {OPT_STOP, 1};
   }
   flags.insert(flags.end(), file_flags.begin(), file_flags.end());
@@ -406,9 +419,8 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
   const char** new_argv = new const char*[flags.size()];
   for (size_t i = 0; i < flags.size(); i++) {
     if (flags[i].find("-Oconfig=") != std::string::npos) {
-      fprintf(stderr,
-              "error: Flag -Oconfig= may not be used inside the configuration "
-              "file\n");
+      Error(opt_diagnostic, nullptr, {},
+            "Flag -Oconfig= may not be used inside the configuration file");
       return {OPT_STOP, 1};
     }
     new_argv[i] = flags[i].c_str();
@@ -419,68 +431,49 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
                     in_file, out_file, nullptr, &skip_validator);
 }
 
-OptStatus ParseLoopFissionArg(int argc, const char** argv, int argi,
-                              Optimizer* optimizer) {
-  if (argi < argc) {
-    int register_threshold_to_split = atoi(argv[argi]);
-    optimizer->RegisterPass(CreateLoopFissionPass(
-        static_cast<size_t>(register_threshold_to_split)));
-    return {OPT_CONTINUE, 0};
-  }
-  fprintf(
-      stderr,
-      "error: --loop-fission must be followed by a positive integer value\n");
-  return {OPT_STOP, 1};
-}
+// Canonicalize the flag in |argv[argi]| of the form '--pass arg' into
+// '--pass=arg'. The optimizer only accepts arguments to pass names that use the
+// form '--pass_name=arg'.  Since spirv-opt also accepts the other form, this
+// function makes the necessary conversion.
+//
+// Pass flags that require additional arguments should be handled here.  Note
+// that additional arguments should be given as a single string.  If the flag
+// requires more than one argument, the pass creator in
+// Optimizer::GetPassFromFlag() should parse it accordingly (e.g., see the
+// handler for --set-spec-const-default-value).
+//
+// If the argument requests one of the passes that need an additional argument,
+// |argi| is modified to point past the current argument, and the string
+// "argv[argi]=argv[argi + 1]" is returned. Otherwise, |argi| is unmodified and
+// the string "|argv[argi]|" is returned.
+std::string CanonicalizeFlag(const char** argv, int argc, int* argi) {
+  const char* cur_arg = argv[*argi];
+  const char* next_arg = (*(argi + 1) < argc) ? argv[*argi + 1] : nullptr;
+  std::ostringstream canonical_arg;
+  canonical_arg << cur_arg;
 
-OptStatus ParseLoopFusionArg(int argc, const char** argv, int argi,
-                             Optimizer* optimizer) {
-  if (argi < argc) {
-    int max_registers_per_loop = atoi(argv[argi]);
-    if (max_registers_per_loop > 0) {
-      optimizer->RegisterPass(
-          CreateLoopFusionPass(static_cast<size_t>(max_registers_per_loop)));
-      return {OPT_CONTINUE, 0};
+  // NOTE: DO NOT ADD NEW FLAGS HERE.
+  //
+  // These flags are supported for backwards compatibility.  When adding new
+  // passes that need extra arguments in its command-line flag, please make them
+  // use the syntax "--pass_name[=pass_arg].
+  if (0 == strcmp(cur_arg, "--set-spec-const-default-value") ||
+      0 == strcmp(cur_arg, "--loop-fission") ||
+      0 == strcmp(cur_arg, "--loop-fusion") ||
+      0 == strcmp(cur_arg, "--loop-unroll-partial") ||
+      0 == strcmp(cur_arg, "--loop-peeling-threshold")) {
+    if (next_arg) {
+      canonical_arg << "=" << next_arg;
+      ++(*argi);
     }
   }
-  fprintf(stderr,
-          "error: --loop-loop-fusion must be followed by a positive "
-          "integer\n");
-  return {OPT_STOP, 1};
+
+  return canonical_arg.str();
 }
 
-OptStatus ParseLoopUnrollPartialArg(int argc, const char** argv, int argi,
-                                    Optimizer* optimizer) {
-  if (argi < argc) {
-    int factor = atoi(argv[argi]);
-    if (factor != 0) {
-      optimizer->RegisterPass(CreateLoopUnrollPass(false, factor));
-      return {OPT_CONTINUE, 0};
-    }
-  }
-  fprintf(stderr,
-          "error: --loop-unroll-partial must be followed by a non-0 "
-          "integer\n");
-  return {OPT_STOP, 1};
-}
-
-OptStatus ParseLoopPeelingThresholdArg(int argc, const char** argv, int argi) {
-  if (argi < argc) {
-    int factor = atoi(argv[argi]);
-    if (factor > 0) {
-      opt::LoopPeelingPass::SetLoopPeelingThreshold(factor);
-      return {OPT_CONTINUE, 0};
-    }
-  }
-  fprintf(
-      stderr,
-      "error: --loop-peeling-threshold must be followed by a non-0 integer\n");
-  return {OPT_STOP, 1};
-}
-
-// Parses command-line flags. |argc| contains the number of command-line flags.
-// |argv| points to an array of strings holding the flags. |optimizer| is the
-// Optimizer instance used to optimize the program.
+// the number of command-line flags. |argv| points to an array of strings
+// holding the flags. |optimizer| is the Optimizer instance used to optimize the
+// program.
 //
 // On return, this function stores the name of the input program in |in_file|.
 // The name of the output file in |out_file|. The return value indicates whether
@@ -489,11 +482,13 @@ OptStatus ParseLoopPeelingThresholdArg(int argc, const char** argv, int argi) {
 OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
                      const char** in_file, const char** out_file,
                      spv_validator_options options, bool* skip_validator) {
+  std::vector<std::string> pass_flags;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
       if (0 == strcmp(cur_arg, "--version")) {
-        printf("%s\n", spvSoftwareVersionDetailsString());
+        Logf(opt_diagnostic, SPV_MSG_INFO, nullptr, {}, "%s\n",
+             spvSoftwareVersionDetailsString());
         return {OPT_STOP, 0};
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         PrintUsage(argv[0]);
@@ -505,180 +500,51 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
           PrintUsage(argv[0]);
           return {OPT_STOP, 1};
         }
-      } else if (0 == strcmp(cur_arg, "--strip-debug")) {
-        optimizer->RegisterPass(CreateStripDebugInfoPass());
-      } else if (0 == strcmp(cur_arg, "--strip-reflect")) {
-        optimizer->RegisterPass(CreateStripReflectInfoPass());
-      } else if (0 == strcmp(cur_arg, "--set-spec-const-default-value")) {
-        if (++argi < argc) {
-          auto spec_ids_vals =
-              opt::SetSpecConstantDefaultValuePass::ParseDefaultValuesString(
-                  argv[argi]);
-          if (!spec_ids_vals) {
-            fprintf(stderr,
-                    "error: Invalid argument for "
-                    "--set-spec-const-default-value: %s\n",
-                    argv[argi]);
-            return {OPT_STOP, 1};
-          }
-          optimizer->RegisterPass(
-              CreateSetSpecConstantDefaultValuePass(std::move(*spec_ids_vals)));
+      } else if ('\0' == cur_arg[1]) {
+        // Setting a filename of "-" to indicate stdin.
+        if (!*in_file) {
+          *in_file = cur_arg;
         } else {
-          fprintf(
-              stderr,
-              "error: Expected a string of <spec id>:<default value> pairs.");
+          Error(opt_diagnostic, nullptr, {},
+                "More than one input file specified");
           return {OPT_STOP, 1};
         }
-      } else if (0 == strcmp(cur_arg, "--if-conversion")) {
-        optimizer->RegisterPass(CreateIfConversionPass());
-      } else if (0 == strcmp(cur_arg, "--freeze-spec-const")) {
-        optimizer->RegisterPass(CreateFreezeSpecConstantValuePass());
-      } else if (0 == strcmp(cur_arg, "--inline-entry-points-exhaustive")) {
-        optimizer->RegisterPass(CreateInlineExhaustivePass());
-      } else if (0 == strcmp(cur_arg, "--inline-entry-points-opaque")) {
-        optimizer->RegisterPass(CreateInlineOpaquePass());
-      } else if (0 == strcmp(cur_arg, "--convert-local-access-chains")) {
-        optimizer->RegisterPass(CreateLocalAccessChainConvertPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-dead-code-aggressive")) {
-        optimizer->RegisterPass(CreateAggressiveDCEPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-insert-extract")) {
-        optimizer->RegisterPass(CreateInsertExtractElimPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-local-single-block")) {
-        optimizer->RegisterPass(CreateLocalSingleBlockLoadStoreElimPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-local-single-store")) {
-        optimizer->RegisterPass(CreateLocalSingleStoreElimPass());
-      } else if (0 == strcmp(cur_arg, "--merge-blocks")) {
-        optimizer->RegisterPass(CreateBlockMergePass());
-      } else if (0 == strcmp(cur_arg, "--merge-return")) {
-        optimizer->RegisterPass(CreateMergeReturnPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-dead-branches")) {
-        optimizer->RegisterPass(CreateDeadBranchElimPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-dead-functions")) {
-        optimizer->RegisterPass(CreateEliminateDeadFunctionsPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-local-multi-store")) {
-        optimizer->RegisterPass(CreateLocalMultiStoreElimPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-common-uniform")) {
-        optimizer->RegisterPass(CreateCommonUniformElimPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
-        optimizer->RegisterPass(CreateEliminateDeadConstantPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-dead-inserts")) {
-        optimizer->RegisterPass(CreateDeadInsertElimPass());
-      } else if (0 == strcmp(cur_arg, "--eliminate-dead-variables")) {
-        optimizer->RegisterPass(CreateDeadVariableEliminationPass());
-      } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {
-        optimizer->RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
-      } else if (0 == strcmp(cur_arg, "--loop-unswitch")) {
-        optimizer->RegisterPass(CreateLoopUnswitchPass());
-      } else if (0 == strcmp(cur_arg, "--scalar-replacement")) {
-        optimizer->RegisterPass(CreateScalarReplacementPass());
-      } else if (0 == strncmp(cur_arg, "--scalar-replacement=", 21)) {
-        uint32_t limit = atoi(cur_arg + 21);
-        optimizer->RegisterPass(CreateScalarReplacementPass(limit));
-      } else if (0 == strcmp(cur_arg, "--strength-reduction")) {
-        optimizer->RegisterPass(CreateStrengthReductionPass());
-      } else if (0 == strcmp(cur_arg, "--unify-const")) {
-        optimizer->RegisterPass(CreateUnifyConstantPass());
-      } else if (0 == strcmp(cur_arg, "--flatten-decorations")) {
-        optimizer->RegisterPass(CreateFlattenDecorationPass());
-      } else if (0 == strcmp(cur_arg, "--compact-ids")) {
-        optimizer->RegisterPass(CreateCompactIdsPass());
-      } else if (0 == strcmp(cur_arg, "--cfg-cleanup")) {
-        optimizer->RegisterPass(CreateCFGCleanupPass());
-      } else if (0 == strcmp(cur_arg, "--local-redundancy-elimination")) {
-        optimizer->RegisterPass(CreateLocalRedundancyEliminationPass());
-      } else if (0 == strcmp(cur_arg, "--loop-invariant-code-motion")) {
-        optimizer->RegisterPass(CreateLoopInvariantCodeMotionPass());
-      } else if (0 == strcmp(cur_arg, "--reduce-load-size")) {
-        optimizer->RegisterPass(CreateReduceLoadSizePass());
-      } else if (0 == strcmp(cur_arg, "--redundancy-elimination")) {
-        optimizer->RegisterPass(CreateRedundancyEliminationPass());
-      } else if (0 == strcmp(cur_arg, "--private-to-local")) {
-        optimizer->RegisterPass(CreatePrivateToLocalPass());
-      } else if (0 == strcmp(cur_arg, "--remove-duplicates")) {
-        optimizer->RegisterPass(CreateRemoveDuplicatesPass());
-      } else if (0 == strcmp(cur_arg, "--workaround-1209")) {
-        optimizer->RegisterPass(CreateWorkaround1209Pass());
-      } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
-        options->relax_struct_store = true;
-      } else if (0 == strcmp(cur_arg, "--replace-invalid-opcode")) {
-        optimizer->RegisterPass(CreateReplaceInvalidOpcodePass());
-      } else if (0 == strcmp(cur_arg, "--simplify-instructions")) {
-        optimizer->RegisterPass(CreateSimplificationPass());
-      } else if (0 == strcmp(cur_arg, "--ssa-rewrite")) {
-        optimizer->RegisterPass(CreateSSARewritePass());
-      } else if (0 == strcmp(cur_arg, "--copy-propagate-arrays")) {
-        optimizer->RegisterPass(CreateCopyPropagateArraysPass());
-      } else if (0 == strcmp(cur_arg, "--loop-fission")) {
-        OptStatus status = ParseLoopFissionArg(argc, argv, ++argi, optimizer);
-        if (status.action != OPT_CONTINUE) {
-          return status;
-        }
-      } else if (0 == strcmp(cur_arg, "--loop-fusion")) {
-        OptStatus status = ParseLoopFusionArg(argc, argv, ++argi, optimizer);
-        if (status.action != OPT_CONTINUE) {
-          return status;
-        }
-      } else if (0 == strcmp(cur_arg, "--loop-unroll")) {
-        optimizer->RegisterPass(CreateLoopUnrollPass(true));
-      } else if (0 == strcmp(cur_arg, "--vector-dce")) {
-        optimizer->RegisterPass(CreateVectorDCEPass());
-      } else if (0 == strcmp(cur_arg, "--loop-unroll-partial")) {
-        OptStatus status =
-            ParseLoopUnrollPartialArg(argc, argv, ++argi, optimizer);
-        if (status.action != OPT_CONTINUE) {
-          return status;
-        }
-      } else if (0 == strcmp(cur_arg, "--loop-peeling")) {
-        optimizer->RegisterPass(CreateLoopPeelingPass());
-      } else if (0 == strcmp(cur_arg, "--loop-peeling-threshold")) {
-        OptStatus status = ParseLoopPeelingThresholdArg(argc, argv, ++argi);
-        if (status.action != OPT_CONTINUE) {
-          return status;
-        }
-      } else if (0 == strcmp(cur_arg, "--skip-validation")) {
-        *skip_validator = true;
-      } else if (0 == strcmp(cur_arg, "-O")) {
-        optimizer->RegisterPerformancePasses();
-      } else if (0 == strcmp(cur_arg, "-Os")) {
-        optimizer->RegisterSizePasses();
-      } else if (0 == strcmp(cur_arg, "--legalize-hlsl")) {
-        *skip_validator = true;
-        optimizer->RegisterLegalizationPasses();
       } else if (0 == strncmp(cur_arg, "-Oconfig=", sizeof("-Oconfig=") - 1)) {
         OptStatus status =
             ParseOconfigFlag(argv[0], cur_arg, optimizer, in_file, out_file);
         if (status.action != OPT_CONTINUE) {
           return status;
         }
-      } else if (0 == strcmp(cur_arg, "--ccp")) {
-        optimizer->RegisterPass(CreateCCPPass());
+      } else if (0 == strcmp(cur_arg, "--skip-validation")) {
+        *skip_validator = true;
       } else if (0 == strcmp(cur_arg, "--print-all")) {
         optimizer->SetPrintAll(&std::cerr);
       } else if (0 == strcmp(cur_arg, "--time-report")) {
         optimizer->SetTimeReport(&std::cerr);
-      } else if ('\0' == cur_arg[1]) {
-        // Setting a filename of "-" to indicate stdin.
-        if (!*in_file) {
-          *in_file = cur_arg;
-        } else {
-          fprintf(stderr, "error: More than one input file specified\n");
-          return {OPT_STOP, 1};
-        }
+      } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
+        options->relax_struct_store = true;
       } else {
-        fprintf(
-            stderr,
-            "error: Unknown flag '%s'. Use --help for a list of valid flags\n",
-            cur_arg);
-        return {OPT_STOP, 1};
+        // Some passes used to accept the form '--pass arg', canonicalize them
+        // to '--pass=arg'.
+        pass_flags.push_back(CanonicalizeFlag(argv, argc, &argi));
+
+        // If we were requested to legalize SPIR-V generated from the HLSL
+        // front-end, skip validation.
+        if (0 == strcmp(cur_arg, "--legalize-hlsl")) *skip_validator = true;
       }
     } else {
       if (!*in_file) {
         *in_file = cur_arg;
       } else {
-        fprintf(stderr, "error: More than one input file specified\n");
+        Error(opt_diagnostic, nullptr, {},
+              "More than one input file specified");
         return {OPT_STOP, 1};
       }
     }
+  }
+
+  if (!optimizer->RegisterPassesFromFlags(pass_flags)) {
+    return {OPT_STOP, 1};
   }
 
   return {OPT_CONTINUE, 0};
@@ -710,7 +576,7 @@ int main(int argc, const char** argv) {
   }
 
   if (out_file == nullptr) {
-    fprintf(stderr, "error: -o required\n");
+    Error(opt_diagnostic, nullptr, {}, "-o required");
     return 1;
   }
 

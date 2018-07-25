@@ -15,6 +15,7 @@
 #include "spirv-tools/optimizer.hpp"
 
 #include "build_module.h"
+#include "log.h"
 #include "make_unique.h"
 #include "pass_manager.h"
 #include "passes.h"
@@ -65,9 +66,13 @@ void Optimizer::SetMessageConsumer(MessageConsumer c) {
   impl_->pass_manager.SetMessageConsumer(std::move(c));
 }
 
+const MessageConsumer& Optimizer::consumer() const {
+  return impl_->pass_manager.consumer();
+}
+
 Optimizer& Optimizer::RegisterPass(PassToken&& p) {
   // Change to use the pass manager's consumer.
-  p.impl_->pass->SetMessageConsumer(impl_->pass_manager.consumer());
+  p.impl_->pass->SetMessageConsumer(consumer());
   impl_->pass_manager.AddPass(std::move(p.impl_->pass));
   return *this;
 }
@@ -201,12 +206,241 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateAggressiveDCEPass());
 }
 
+bool Optimizer::RegisterPassesFromFlags(const std::vector<std::string>& flags) {
+  for (const auto& flag : flags) {
+    if (!RegisterPassFromFlag(flag)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+namespace {
+
+// Splits the string |flag|, of the form '--pass_name[=pass_args]' into two
+// strings "pass_name" and "pass_args".  If |flag| has no arguments, the second
+// string will be empty.
+std::pair<std::string, std::string> SplitFlagArgs(const std::string& flag) {
+  if (flag.size() < 2) return make_pair(flag, std::string());
+
+  // Detect the last dash before the pass name. Since we have to
+  // handle single dash options (-O and -Os), count up to two dashes.
+  size_t dash_ix = 0;
+  if (flag[0] == '-' && flag[1] == '-')
+    dash_ix = 2;
+  else if (flag[0] == '-')
+    dash_ix = 1;
+
+  size_t ix = flag.find('=');
+  return (ix != std::string::npos)
+             ? make_pair(flag.substr(dash_ix, ix - 2), flag.substr(ix + 1))
+             : make_pair(flag.substr(dash_ix), std::string());
+}
+}  // namespace
+
+bool Optimizer::FlagHasValidForm(const std::string& flag) const {
+  if (flag == "-O" || flag == "-Os") {
+    return true;
+  } else if (flag.size() > 2 && flag.substr(0, 2) == "--") {
+    return true;
+  }
+
+  Errorf(consumer(), nullptr, {},
+         "%s is not a valid flag.  Flag passes should have the form "
+         "'--pass_name[=pass_args]'. Special flag names also accepted: -O "
+         "and -Os.",
+         flag.c_str());
+  return false;
+}
+
+bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
+  if (!FlagHasValidForm(flag)) {
+    return false;
+  }
+
+  // Split flags of the form --pass_name=pass_args.
+  auto p = SplitFlagArgs(flag);
+  std::string pass_name = p.first;
+  std::string pass_args = p.second;
+
+  // FIXME(dnovillo): This should be re-factored so that pass names can be
+  // automatically checked against Pass::name() and PassToken instances created
+  // via a template function.  Additionally, class Pass should have a desc()
+  // method that describes the pass (so it can be used in --help).
+  //
+  // Both Pass::name() and Pass::desc() should be static class members so they
+  // can be invoked without creating a pass instance.
+  if (pass_name == "strip-debug") {
+    RegisterPass(CreateStripDebugInfoPass());
+  } else if (pass_name == "strip-reflect") {
+    RegisterPass(CreateStripReflectInfoPass());
+  } else if (pass_name == "set-spec-const-default-value") {
+    if (pass_args.size() > 0) {
+      auto spec_ids_vals =
+          opt::SetSpecConstantDefaultValuePass::ParseDefaultValuesString(
+              pass_args.c_str());
+      if (!spec_ids_vals) {
+        Errorf(consumer(), nullptr, {},
+               "Invalid argument for --set-spec-const-default-value: %s",
+               pass_args.c_str());
+        return false;
+      }
+      RegisterPass(
+          CreateSetSpecConstantDefaultValuePass(std::move(*spec_ids_vals)));
+    } else {
+      Errorf(consumer(), nullptr, {},
+             "Invalid spec constant value string '%s'. Expected a string of "
+             "<spec id>:<default value> pairs.",
+             pass_args.c_str());
+      return false;
+    }
+  } else if (pass_name == "if-conversion") {
+    RegisterPass(CreateIfConversionPass());
+  } else if (pass_name == "freeze-spec-const") {
+    RegisterPass(CreateFreezeSpecConstantValuePass());
+  } else if (pass_name == "inline-entry-points-exhaustive") {
+    RegisterPass(CreateInlineExhaustivePass());
+  } else if (pass_name == "inline-entry-points-opaque") {
+    RegisterPass(CreateInlineOpaquePass());
+  } else if (pass_name == "convert-local-access-chains") {
+    RegisterPass(CreateLocalAccessChainConvertPass());
+  } else if (pass_name == "eliminate-dead-code-aggressive") {
+    RegisterPass(CreateAggressiveDCEPass());
+  } else if (pass_name == "eliminate-insert-extract") {
+    RegisterPass(CreateInsertExtractElimPass());
+  } else if (pass_name == "eliminate-local-single-block") {
+    RegisterPass(CreateLocalSingleBlockLoadStoreElimPass());
+  } else if (pass_name == "eliminate-local-single-store") {
+    RegisterPass(CreateLocalSingleStoreElimPass());
+  } else if (pass_name == "merge-blocks") {
+    RegisterPass(CreateBlockMergePass());
+  } else if (pass_name == "merge-return") {
+    RegisterPass(CreateMergeReturnPass());
+  } else if (pass_name == "eliminate-dead-branches") {
+    RegisterPass(CreateDeadBranchElimPass());
+  } else if (pass_name == "eliminate-dead-functions") {
+    RegisterPass(CreateEliminateDeadFunctionsPass());
+  } else if (pass_name == "eliminate-local-multi-store") {
+    RegisterPass(CreateLocalMultiStoreElimPass());
+  } else if (pass_name == "eliminate-common-uniform") {
+    RegisterPass(CreateCommonUniformElimPass());
+  } else if (pass_name == "eliminate-dead-const") {
+    RegisterPass(CreateEliminateDeadConstantPass());
+  } else if (pass_name == "eliminate-dead-inserts") {
+    RegisterPass(CreateDeadInsertElimPass());
+  } else if (pass_name == "eliminate-dead-variables") {
+    RegisterPass(CreateDeadVariableEliminationPass());
+  } else if (pass_name == "fold-spec-const-op-composite") {
+    RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
+  } else if (pass_name == "loop-unswitch") {
+    RegisterPass(CreateLoopUnswitchPass());
+  } else if (pass_name == "scalar-replacement") {
+    if (pass_args.size() == 0) {
+      RegisterPass(CreateScalarReplacementPass());
+    } else {
+      uint32_t limit = atoi(pass_args.c_str());
+      if (limit > 0) {
+        RegisterPass(CreateScalarReplacementPass(limit));
+      } else {
+        Error(consumer(), nullptr, {},
+              "--scalar-replacement must have no arguments or a positive "
+              "integer argument");
+        return false;
+      }
+    }
+  } else if (pass_name == "strength-reduction") {
+    RegisterPass(CreateStrengthReductionPass());
+  } else if (pass_name == "unify-const") {
+    RegisterPass(CreateUnifyConstantPass());
+  } else if (pass_name == "flatten-decorations") {
+    RegisterPass(CreateFlattenDecorationPass());
+  } else if (pass_name == "compact-ids") {
+    RegisterPass(CreateCompactIdsPass());
+  } else if (pass_name == "cfg-cleanup") {
+    RegisterPass(CreateCFGCleanupPass());
+  } else if (pass_name == "local-redundancy-elimination") {
+    RegisterPass(CreateLocalRedundancyEliminationPass());
+  } else if (pass_name == "loop-invariant-code-motion") {
+    RegisterPass(CreateLoopInvariantCodeMotionPass());
+  } else if (pass_name == "reduce-load-size") {
+    RegisterPass(CreateReduceLoadSizePass());
+  } else if (pass_name == "redundancy-elimination") {
+    RegisterPass(CreateRedundancyEliminationPass());
+  } else if (pass_name == "private-to-local") {
+    RegisterPass(CreatePrivateToLocalPass());
+  } else if (pass_name == "remove-duplicates") {
+    RegisterPass(CreateRemoveDuplicatesPass());
+  } else if (pass_name == "workaround-1209") {
+    RegisterPass(CreateWorkaround1209Pass());
+  } else if (pass_name == "replace-invalid-opcode") {
+    RegisterPass(CreateReplaceInvalidOpcodePass());
+  } else if (pass_name == "simplify-instructions") {
+    RegisterPass(CreateSimplificationPass());
+  } else if (pass_name == "ssa-rewrite") {
+    RegisterPass(CreateSSARewritePass());
+  } else if (pass_name == "copy-propagate-arrays") {
+    RegisterPass(CreateCopyPropagateArraysPass());
+  } else if (pass_name == "loop-fission") {
+    int register_threshold_to_split =
+        (pass_args.size() > 0) ? atoi(pass_args.c_str()) : -1;
+    if (register_threshold_to_split > 0) {
+      RegisterPass(CreateLoopFissionPass(
+          static_cast<size_t>(register_threshold_to_split)));
+    } else {
+      Error(consumer(), nullptr, {},
+            "--loop-fission must have a positive integer argument");
+      return false;
+    }
+  } else if (pass_name == "loop-fusion") {
+    int max_registers_per_loop =
+        (pass_args.size() > 0) ? atoi(pass_args.c_str()) : -1;
+    if (max_registers_per_loop > 0) {
+      RegisterPass(
+          CreateLoopFusionPass(static_cast<size_t>(max_registers_per_loop)));
+    } else {
+      Error(consumer(), nullptr, {},
+            "--loop-fusion must be have a positive integer argument");
+      return false;
+    }
+  } else if (pass_name == "loop-unroll") {
+    RegisterPass(CreateLoopUnrollPass(true));
+  } else if (pass_name == "vector-dce") {
+    RegisterPass(CreateVectorDCEPass());
+  } else if (pass_name == "loop-unroll-partial") {
+    int factor = (pass_args.size() > 0) ? atoi(pass_args.c_str()) : 0;
+    if (factor != 0) {
+      RegisterPass(CreateLoopUnrollPass(false, factor));
+    } else {
+      Error(consumer(), nullptr, {},
+            "--loop-unroll-partial must have a non-0 integer argument");
+      return false;
+    }
+  } else if (pass_name == "loop-peeling") {
+    RegisterPass(CreateLoopPeelingPass());
+  } else if (pass_name == "ccp") {
+    RegisterPass(CreateCCPPass());
+  } else if (pass_name == "O") {
+    RegisterPerformancePasses();
+  } else if (pass_name == "Os") {
+    RegisterSizePasses();
+  } else if (pass_name == "legalize-hlsl") {
+    RegisterLegalizationPasses();
+  } else {
+    Errorf(consumer(), nullptr, {},
+           "Unknown flag '--%s'. Use --help for a list of valid flags",
+           pass_name.c_str());
+    return false;
+  }
+
+  return true;
+}
+
 bool Optimizer::Run(const uint32_t* original_binary,
                     const size_t original_binary_size,
                     std::vector<uint32_t>* optimized_binary) const {
-  std::unique_ptr<opt::IRContext> context =
-      BuildModule(impl_->target_env, impl_->pass_manager.consumer(),
-                  original_binary, original_binary_size);
+  std::unique_ptr<opt::IRContext> context = BuildModule(
+      impl_->target_env, consumer(), original_binary, original_binary_size);
   if (context == nullptr) return false;
 
   auto status = impl_->pass_manager.Run(context.get());
