@@ -3032,6 +3032,89 @@ OpFunctionEnd
                         "Storage Class of Input(1) or Output(3). Found Storage "
                         "Class 4 for Entry Point id 1."));
 }
+
+TEST_F(ValidateDecorations, VulkanMemoryModelNonCoherent) {
+  const string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical VulkanKHR
+OpDecorate %1 Coherent
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer StorageBuffer %2
+%1 = OpVariable %3 StorageBuffer
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Coherent decoration targeting 1 is banned when using "
+                        "the Vulkan memory model."));
+}
+
+TEST_F(ValidateDecorations, VulkanMemoryModelNoCoherentMember) {
+  const string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpMemberDecorate %1 0 Coherent
+%2 = OpTypeInt 32 0
+%1 = OpTypeStruct %2 %2
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Coherent decoration targeting 1 (member index 0) is "
+                        "banned when using "
+                        "the Vulkan memory model."));
+}
+
+TEST_F(ValidateDecorations, VulkanMemoryModelNoVolatile) {
+  const string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical VulkanKHR
+OpDecorate %1 Volatile
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer StorageBuffer %2
+%1 = OpVariable %3 StorageBuffer
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Volatile decoration targeting 1 is banned when using "
+                        "the Vulkan memory model."));
+}
+
+TEST_F(ValidateDecorations, VulkanMemoryModelNoVolatileMember) {
+  const string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpMemberDecorate %1 1 Volatile
+%2 = OpTypeInt 32 0
+%1 = OpTypeStruct %2 %2
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Volatile decoration targeting 1 (member index 1) is "
+                        "banned when using "
+                        "the Vulkan memory model."));
+>>>>>>> Decoration validation for Vulkan memory model
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
