@@ -490,6 +490,41 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<CombineAccessChains>(text, true);
 }
+
+TEST_F(CombineAccessChainsTest, CombineNonConstantStructSlideElement) {
+  const std::string text = R"(
+; CHECK: [[int0:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Workgroup
+; CHECK: [[ld:%\w+]] = OpLoad
+; CHECK: [[add:%\w+]] = OpIAdd {{%\w+}} [[ld]] [[ld]]
+; CHECK: OpPtrAccessChain {{%\w+}} [[var]] [[add]] [[int0]]
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_4 = OpConstant %uint 4
+%struct = OpTypeStruct %uint %uint
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%ptr_Function_uint = OpTypePointer Function %uint
+%ptr_Workgroup_struct = OpTypePointer Workgroup %struct
+%wg_var = OpVariable %ptr_Workgroup_struct Workgroup
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%1 = OpLabel
+%func_var = OpVariable %ptr_Function_uint Function
+%ld = OpLoad %uint %func_var
+%gep = OpPtrAccessChain %ptr_Workgroup_struct %wg_var %ld
+%ptr_gep = OpPtrAccessChain %ptr_Workgroup_uint %gep %ld %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 }  // namespace

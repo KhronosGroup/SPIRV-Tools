@@ -60,8 +60,8 @@ class CombineAccessChains : public Pass {
 
   // Combines the last index of |ptr_input| with the element operand of |inst|.
   // Adds the combined operand to |new_operands|.
-  bool CombineIndices(const analysis::Type* type, Instruction* ptr_input,
-                      Instruction* inst, std::vector<Operand>* new_operands);
+  bool CombineIndices(Instruction* ptr_input, Instruction* inst,
+                      std::vector<Operand>* new_operands);
 };
 
 }  // namespace opt

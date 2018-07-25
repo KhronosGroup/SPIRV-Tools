@@ -77,8 +77,8 @@ uint32_t CombineAccessChains::GetArrayStride(const Instruction* inst) {
   context()->get_decoration_mgr()->WhileEachDecoration(
       inst->type_id(), SpvDecorationArrayStride,
       [&array_stride](const Instruction& decoration) {
-        if (decoration.opcode() == SpvOpDecorate ||
-            decoration.opcode() == SpvOpDecorateId) {
+        assert(decoration.opcode() != SpvOpDecorateId);
+        if (decoration.opcode() == SpvOpDecorate) {
           array_stride = decoration.GetSingleWordInOperand(1);
         } else {
           array_stride = decoration.GetSingleWordInOperand(2);
@@ -120,8 +120,7 @@ const analysis::Type* CombineAccessChains::GetIndexedType(Instruction* inst) {
   return type;
 }
 
-bool CombineAccessChains::CombineIndices(const analysis::Type* type,
-                                         Instruction* ptr_input,
+bool CombineAccessChains::CombineIndices(Instruction* ptr_input,
                                          Instruction* inst,
                                          std::vector<Operand>* new_operands) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
@@ -139,7 +138,12 @@ bool CombineAccessChains::CombineIndices(const analysis::Type* type,
 
   // Combine the last index of the AccessChain (|ptr_inst|) with the element
   // operand of the PtrAccessChain (|inst|).
+  const bool combining_element_operands =
+      inst->opcode() == SpvOpPtrAccessChain &&
+      ptr_input->opcode() == SpvOpPtrAccessChain &&
+      ptr_input->NumInOperands() == 2;
   uint32_t new_value_id = 0;
+  const analysis::Type* type = GetIndexedType(ptr_input);
   if (last_index_constant && element_constant) {
     // Combine the constants.
     uint32_t new_value = GetConstantValue(last_index_constant) +
@@ -149,7 +153,7 @@ bool CombineAccessChains::CombineIndices(const analysis::Type* type,
     Instruction* new_value_inst =
         constant_mgr->GetDefiningInstruction(new_value_constant);
     new_value_id = new_value_inst->result_id();
-  } else if (!type->AsStruct()) {
+  } else if (!type->AsStruct() || combining_element_operands) {
     // TODO(alan-baker): handle this unlikely case.
     if (last_index_inst->type_id() != element_inst->type_id()) return false;
 
@@ -172,8 +176,6 @@ bool CombineAccessChains::CombineIndices(const analysis::Type* type,
 bool CombineAccessChains::CreateNewOperands(
     Instruction* ptr_input, Instruction* inst,
     std::vector<Operand>* new_operands) {
-  const analysis::Type* type = GetIndexedType(ptr_input);
-
   // Start by copying all the input operands of the feeder access chain.
   for (uint32_t i = 0; i != ptr_input->NumInOperands() - 1; ++i) {
     new_operands->push_back(ptr_input->GetInOperand(i));
@@ -183,7 +185,7 @@ bool CombineAccessChains::CreateNewOperands(
   if (inst->opcode() == SpvOpPtrAccessChain) {
     // The last index of the feeder should be combined with the element operand
     // of |inst|.
-    if (!CombineIndices(type, ptr_input, inst, new_operands)) return false;
+    if (!CombineIndices(ptr_input, inst, new_operands)) return false;
   } else {
     // The indices aren't being combined so now add the last index operand of
     // |ptr_input|.
@@ -225,16 +227,16 @@ bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
   //    with |ptr_input|'s last index. This results is either a
   //    combined element operand or combined regular index.
 
-  // TODO(alan-baker): support this properly.
+  // TODO(alan-baker): Support this properly. Requires analyzing the
+  // size/alignment of the type and converting the stride into an element
+  // index.
   uint32_t array_stride = GetArrayStride(ptr_input);
   if (array_stride != 0) return false;
 
   std::vector<Operand> new_operands;
   if (!CreateNewOperands(ptr_input, inst, &new_operands)) return false;
 
-  // Update the instruction. The opcode changes to be the same as
-  // |ptr_input|'s opcode. The operands are the combined operands constructed
-  // above.
+  // Update the instruction.
   if (ptr_input->opcode() == SpvOpInBoundsAccessChain &&
       inst->opcode() != SpvOpInBoundsAccessChain) {
     // Cannot guarantee the pointer is in bounds anymore.
