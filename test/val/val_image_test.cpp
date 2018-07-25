@@ -34,7 +34,8 @@ std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
     const std::string& execution_model = "Fragment",
-    const spv_target_env env = SPV_ENV_UNIVERSAL_1_0) {
+    const spv_target_env env = SPV_ENV_UNIVERSAL_1_0,
+    const std::string& memory_model = "GLSL450") {
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
@@ -53,7 +54,7 @@ OpCapability SparseResidency
   }
 
   ss << capabilities_and_extensions;
-  ss << "OpMemoryModel Logical GLSL450\n";
+  ss << "OpMemoryModel Logical " << memory_model << "\n";
   ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
 
   ss << R"(
@@ -604,9 +605,16 @@ TEST_F(ValidateImage, SampleImplicitLodSuccess) {
 %res5 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_hh Offset %s32vec2_01
 %res6 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_hh MinLod %f32_0_5
 %res7 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_hh Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+%res8 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_hh NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -717,9 +725,16 @@ TEST_F(ValidateImage, SampleExplicitLodSuccessShader) {
 %res3 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec2_hh ConstOffset %s32vec2_01
 %res4 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec3_hhh Offset %s32vec2_01
 %res5 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec2_hh Grad|Offset|MinLod %f32vec2_10 %f32vec2_01 %s32vec2_01 %f32_0_5
+%res6 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec4_0000 Lod|NonPrivateTexelKHR %f32_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1295,9 +1310,16 @@ TEST_F(ValidateImage, SampleProjExplicitLodSuccess2D) {
 %res4 = OpImageSampleProjExplicitLod %f32vec4 %simg %f32vec3_hhh ConstOffset %s32vec2_01
 %res5 = OpImageSampleProjExplicitLod %f32vec4 %simg %f32vec3_hhh Offset %s32vec2_01
 %res7 = OpImageSampleProjExplicitLod %f32vec4 %simg %f32vec3_hhh Grad|Offset %f32vec2_10 %f32vec2_01 %s32vec2_01
+%res8 = OpImageSampleProjExplicitLod %f32vec4 %simg %f32vec3_hhh Lod|NonPrivateTexelKHR %f32_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1422,9 +1444,16 @@ TEST_F(ValidateImage, SampleProjImplicitLodSuccess) {
 %res5 = OpImageSampleProjImplicitLod %f32vec4 %simg %f32vec3_hhh Offset %s32vec2_01
 %res6 = OpImageSampleProjImplicitLod %f32vec4 %simg %f32vec3_hhh MinLod %f32_0_5
 %res7 = OpImageSampleProjImplicitLod %f32vec4 %simg %f32vec3_hhh Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+%res8 = OpImageSampleProjImplicitLod %f32vec4 %simg %f32vec3_hhh NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1536,9 +1565,16 @@ TEST_F(ValidateImage, SampleDrefImplicitLodSuccess) {
 %res5 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 Offset %s32vec2_01
 %res6 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 MinLod %f32_0_5
 %res7 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+%res8 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1652,9 +1688,16 @@ TEST_F(ValidateImage, SampleDrefExplicitLodSuccess) {
 %res4 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %f32_1 ConstOffset %s32vec3_012
 %res5 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec4_0000 %f32_1 Offset %s32vec3_012
 %res7 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %f32_1 Grad|Offset %f32vec3_hhh %f32vec3_hhh %s32vec3_012
+%res8 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec4_0000 %f32_1 Lod|NonPrivateTexelKHR %f32_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1769,9 +1812,16 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodSuccess) {
 %res5 = OpImageSampleProjDrefImplicitLod %f32 %simg %f32vec3_hhh %f32_0_5 Offset %s32vec2_01
 %res6 = OpImageSampleProjDrefImplicitLod %f32 %simg %f32vec3_hhh %f32_0_5 MinLod %f32_0_5
 %res7 = OpImageSampleProjDrefImplicitLod %f32 %simg %f32vec3_hhh %f32_0_5 Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+%res8 = OpImageSampleProjDrefImplicitLod %f32 %simg %f32vec3_hhh %f32_0_5 NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1885,9 +1935,16 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodSuccess) {
 %res3 = OpImageSampleProjDrefExplicitLod %f32 %simg %f32vec2_hh %f32_0_5 ConstOffset %s32_1
 %res4 = OpImageSampleProjDrefExplicitLod %f32 %simg %f32vec2_hh %f32_0_5 Offset %s32_1
 %res5 = OpImageSampleProjDrefExplicitLod %f32 %simg %f32vec2_hh %f32_0_5 Grad|Offset %f32_0_5 %f32_0_5 %s32_1
+%res6 = OpImageSampleProjDrefExplicitLod %f32 %simg %f32vec2_hh %f32_0_5 Lod|NonPrivateTexelKHR %f32_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1981,9 +2038,16 @@ TEST_F(ValidateImage, FetchSuccess) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
 %res1 = OpImageFetch %f32vec4 %img %u32vec2_01
+%res2 = OpImageFetch %f32vec4 %img %u32vec2_01 NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2118,9 +2182,16 @@ TEST_F(ValidateImage, GatherSuccess) {
 %simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1
 %res2 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %const_offsets
+%res3 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2367,9 +2438,16 @@ TEST_F(ValidateImage, DrefGatherSuccess) {
 %simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageDrefGather %f32vec4 %simg %f32vec4_0000 %f32_0_5
 %res2 = OpImageDrefGather %f32vec4 %simg %f32vec4_0000 %f32_0_5 ConstOffsets %const_offsets
+%res3 = OpImageDrefGather %f32vec4 %simg %f32vec4_0000 %f32_0_5 NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3339,9 +3417,16 @@ TEST_F(ValidateImage, SparseSampleImplicitLodSuccess) {
 %res5 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4 %simg %f32vec2_hh Offset %s32vec2_01
 %res6 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4 %simg %f32vec2_hh MinLod %f32_0_5
 %res7 = OpImageSparseSampleImplicitLod %struct_u64_f32vec4 %simg %f32vec2_hh Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+%res8 = OpImageSparseSampleImplicitLod %struct_u32_f32vec4 %simg %f32vec2_hh NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3460,9 +3545,16 @@ TEST_F(ValidateImage, SparseSampleDrefImplicitLodSuccess) {
 %res5 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 Offset %s32vec2_01
 %res6 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 MinLod %f32_0_5
 %res7 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+%res8 = OpImageSparseSampleDrefImplicitLod %struct_u32_u32 %simg %f32vec2_hh %f32_1 NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3547,9 +3639,16 @@ TEST_F(ValidateImage, SparseFetchSuccess) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
 %res1 = OpImageSparseFetch %struct_u32_f32vec4 %img %u32vec2_01
+%res2 = OpImageSparseFetch %struct_u32_f32vec4 %img %u32vec2_01 NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3757,9 +3856,16 @@ TEST_F(ValidateImage, SparseGatherSuccess) {
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageSparseGather %struct_u32_f32vec4 %simg %f32vec4_0000 %u32_1
+%res2 = OpImageSparseGather %struct_u32_f32vec4 %simg %f32vec4_0000 %u32_1 NonPrivateTexelKHR
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3885,6 +3991,142 @@ TEST_F(ValidateImage, SparseTexelsResidentResultTypeNotBool) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to be bool scalar type"));
+}
+
+TEST_F(ValidateImage, MakeTexelVisibleKHRSuccessImageRead) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0000 %uniform_image_u32_2d_0000
+%res1 = OpImageRead %u32vec4 %img %u32vec2_01 MakeTexelVisibleKHR|NonPrivateTexelKHR %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, MakeTexelVisibleKHRSuccessImageSparseRead) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
+%res1 = OpImageSparseRead %struct_u32_f32vec4 %img %u32vec2_01 MakeTexelVisibleKHR|NonPrivateTexelKHR %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, MakeTexelVisibleKHRFailureOpcode) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_hh MakeTexelVisibleKHR|NonPrivateTexelKHR %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Image Operand MakeTexelVisibleKHR can only be used with "
+                "OpImageRead or OpImageSparseRead: OpImageSampleImplicitLod"));
+}
+
+TEST_F(ValidateImage, MakeTexelVisibleKHRFailureMissingNonPrivate) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0000 %uniform_image_u32_2d_0000
+%res1 = OpImageRead %u32vec4 %img %u32vec2_01 MakeTexelVisibleKHR %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand MakeTexelVisibleKHR requires "
+                        "NonPrivateTexelKHR is also specified: OpImageRead"));
+}
+
+TEST_F(ValidateImage, MakeTexelAvailableKHRSuccessImageWrite) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0000 %uniform_image_u32_2d_0000
+%res1 = OpImageWrite %img %u32vec2_01 %u32vec4_0123 MakeTexelAvailableKHR|NonPrivateTexelKHR %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageWriteWithoutFormat
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, MakeTexelAvailableKHRFailureOpcode) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_hh MakeTexelAvailableKHR|NonPrivateTexelKHR %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand MakeTexelAvailableKHR can only be used "
+                        "with OpImageWrite: OpImageSampleImplicitLod"));
+}
+
+TEST_F(ValidateImage, MakeTexelAvailableKHRFailureMissingNonPrivate) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0000 %uniform_image_u32_2d_0000
+%res1 = OpImageWrite %img %u32vec2_01 %u32vec4_0123 MakeTexelAvailableKHR %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageWriteWithoutFormat
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
+                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand MakeTexelAvailableKHR requires "
+                        "NonPrivateTexelKHR is also specified: OpImageWrite"));
 }
 
 }  // namespace
