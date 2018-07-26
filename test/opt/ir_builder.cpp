@@ -317,20 +317,20 @@ OpFunctionEnd
 
   InstructionBuilder builder(context.get(),
                              &*context->module()->begin()->begin()->begin());
-  EXPECT_NE(nullptr, builder.Add32BitUnsignedIntegerConstant(13));
-  EXPECT_NE(nullptr, builder.Add32BitSignedIntegerConstant(-1));
+  EXPECT_NE(nullptr, builder.GetUintConstant(13));
+  EXPECT_NE(nullptr, builder.GetSintConstant(-1));
 
   // Try adding the same constants again to make sure they aren't added.
-  EXPECT_NE(nullptr, builder.Add32BitUnsignedIntegerConstant(13));
-  EXPECT_NE(nullptr, builder.Add32BitSignedIntegerConstant(-1));
+  EXPECT_NE(nullptr, builder.GetUintConstant(13));
+  EXPECT_NE(nullptr, builder.GetSintConstant(-1));
 
   // Try adding different constants to make sure the type is reused.
-  EXPECT_NE(nullptr, builder.Add32BitUnsignedIntegerConstant(1));
-  EXPECT_NE(nullptr, builder.Add32BitSignedIntegerConstant(34));
+  EXPECT_NE(nullptr, builder.GetUintConstant(1));
+  EXPECT_NE(nullptr, builder.GetSintConstant(34));
 
   // Try adding 0 as both signed and unsigned.
-  EXPECT_NE(nullptr, builder.Add32BitUnsignedIntegerConstant(0));
-  EXPECT_NE(nullptr, builder.Add32BitSignedIntegerConstant(0));
+  EXPECT_NE(nullptr, builder.GetUintConstant(0));
+  EXPECT_NE(nullptr, builder.GetSintConstant(0));
 
   Match(text, context.get());
 }
@@ -362,25 +362,25 @@ OpFunctionEnd
 
   InstructionBuilder builder(context.get(),
                              &*context->module()->begin()->begin()->begin());
-  Instruction* const_1 = builder.Add32BitUnsignedIntegerConstant(13);
-  Instruction* const_2 = builder.Add32BitSignedIntegerConstant(-1);
+  Instruction* const_1 = builder.GetUintConstant(13);
+  Instruction* const_2 = builder.GetSintConstant(-1);
 
   EXPECT_NE(nullptr, const_1);
   EXPECT_NE(nullptr, const_2);
 
   // Try adding the same constants again to make sure they aren't added.
-  EXPECT_EQ(const_1, builder.Add32BitUnsignedIntegerConstant(13));
-  EXPECT_EQ(const_2, builder.Add32BitSignedIntegerConstant(-1));
+  EXPECT_EQ(const_1, builder.GetUintConstant(13));
+  EXPECT_EQ(const_2, builder.GetSintConstant(-1));
 
-  Instruction* const_3 = builder.Add32BitUnsignedIntegerConstant(1);
-  Instruction* const_4 = builder.Add32BitSignedIntegerConstant(34);
+  Instruction* const_3 = builder.GetUintConstant(1);
+  Instruction* const_4 = builder.GetSintConstant(34);
 
   // Try adding different constants to make sure the type is reused.
   EXPECT_NE(nullptr, const_3);
   EXPECT_NE(nullptr, const_4);
 
-  Instruction* const_5 = builder.Add32BitUnsignedIntegerConstant(0);
-  Instruction* const_6 = builder.Add32BitSignedIntegerConstant(0);
+  Instruction* const_5 = builder.GetUintConstant(0);
+  Instruction* const_6 = builder.GetSintConstant(0);
 
   // Try adding 0 as both signed and unsigned.
   EXPECT_NE(nullptr, const_5);

@@ -342,3 +342,8 @@ add_spvtools_unittest(TARGET struct_cfg_analysis
         LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_inst_bindless
+  SRCS inst_bindless_check_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
