@@ -824,6 +824,253 @@ OpMemoryBarrier %u32 %u32_0
       HasSubstr("MemoryBarrier: expected Memory Scope to be a 32-bit int"));
 }
 
+TEST_F(ValidateBarriers,
+       OpControlBarrierVulkanMemoryModelBanSequentiallyConsistent) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %1 "func"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 16
+%5 = OpTypeFunction %2
+%6 = OpConstant %3 1
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpControlBarrier %6 %6 %4
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SequentiallyConsistent memory semantics cannot be "
+                        "used with the VulkanKHR memory model."));
+}
+
+TEST_F(ValidateBarriers,
+       OpMemoryBarrierVulkanMemoryModelBanSequentiallyConsistent) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %1 "func"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 16
+%5 = OpTypeFunction %2
+%6 = OpConstant %3 1
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpMemoryBarrier %6 %4
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SequentiallyConsistent memory semantics cannot be "
+                        "used with the VulkanKHR memory model."));
+}
+
+TEST_F(ValidateBarriers, OutputMemoryKHRRequireVulkanMemoryModelKHR) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 4104
+%5 = OpTypeFunction %2
+%device = OpConstant %3 1
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpControlBarrier %device %device %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ControlBarrier: Memory Semantics OutputMemoryKHR "
+                        "requires capability VulkanMemoryModelKHR"));
+}
+
+TEST_F(ValidateBarriers, MakeAvailableKHRRequireVulkanMemoryModelKHR) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 8264
+%5 = OpTypeFunction %2
+%device = OpConstant %3 1
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpControlBarrier %device %device %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ControlBarrier: Memory Semantics MakeAvailableKHR "
+                        "requires capability VulkanMemoryModelKHR"));
+}
+
+TEST_F(ValidateBarriers, MakeVisibleKHRRequireVulkanMemoryModelKHR) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 16456
+%5 = OpTypeFunction %2
+%device = OpConstant %3 1
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpControlBarrier %device %device %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ControlBarrier: Memory Semantics MakeVisibleKHR "
+                        "requires capability VulkanMemoryModelKHR"));
+}
+
+TEST_F(ValidateBarriers, MakeAvailableKHRRequiresReleaseSemantics) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%workgroup = OpConstant %int 2
+%semantics = OpConstant %int 8448
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpControlBarrier %workgroup %workgroup %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ControlBarrier: MakeAvailableKHR Memory Semantics also "
+                "requires either Release or AcquireRelease Memory Semantics"));
+}
+
+TEST_F(ValidateBarriers, MakeVisibleKHRRequiresAcquireSemantics) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%workgroup = OpConstant %int 2
+%semantics = OpConstant %int 16640
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpControlBarrier %workgroup %workgroup %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ControlBarrier: MakeVisibleKHR Memory Semantics also requires "
+                "either Acquire or AcquireRelease Memory Semantics"));
+}
+
+TEST_F(ValidateBarriers, MakeAvailableKHRRequiresStorageSemantics) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%workgroup = OpConstant %int 2
+%semantics = OpConstant %int 8196
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpMemoryBarrier %workgroup %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("MemoryBarrier: expected Memory Semantics to include a "
+                        "storage class"));
+}
+
+TEST_F(ValidateBarriers, MakeVisibleKHRRequiresStorageSemantics) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%workgroup = OpConstant %int 2
+%semantics = OpConstant %int 16386
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpMemoryBarrier %workgroup %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("MemoryBarrier: expected Memory Semantics to include a "
+                        "storage class"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
