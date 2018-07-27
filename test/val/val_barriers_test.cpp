@@ -816,6 +816,60 @@ OpMemoryBarrier %u32 %u32_0
       HasSubstr("MemoryBarrier: expected Memory Scope to be a 32-bit int"));
 }
 
+TEST_F(ValidateBarriers,
+       OpControlBarrierVulkanMemoryModelBanSequentiallyConsistent) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 16
+%5 = OpTypeFunction %2
+%6 = OpConstant %3 1
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpControlBarrier %6 %6 %4
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SequentiallyConsistent memory semantics cannot be "
+                        "used with the VulkanKHR memory model."));
+}
+
+TEST_F(ValidateBarriers,
+       OpMemoryBarrierVulkanMemoryModelBanSequentiallyConsistent) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 16
+%5 = OpTypeFunction %2
+%6 = OpConstant %3 1
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpMemoryBarrier %6 %4
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SequentiallyConsistent memory semantics cannot be "
+                        "used with the VulkanKHR memory model."));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

@@ -82,6 +82,18 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
+  if (spvOpcodeIsSpecConstant(_.FindDef(memory_semantics_id)->opcode())) {
+    // We cannot assume the value of the spec constant.
+    return SPV_SUCCESS;
+  }
+
+  if (_.memory_model() == SpvMemoryModelVulkanKHR &&
+      flags & SpvMemorySemanticsSequentiallyConsistentMask) {
+    return _.diag(SPV_ERROR_INVALID_DATA) << "SequentiallyConsistent memory "
+                                             "semantics cannot be used with "
+                                             "the VulkanKHR memory model.";
+  }
+
   if (spvtools::utils::CountSetBits(
           flags &
           (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
