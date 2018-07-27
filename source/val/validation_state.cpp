@@ -882,8 +882,12 @@ std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
     return std::make_tuple(false, false, 0);
   }
 
-  if (inst->opcode() != SpvOpConstant && inst->opcode() != SpvOpSpecConstant) {
+  if (!spvOpcodeIsConstant(inst->opcode())) {
     return std::make_tuple(true, false, 0);
+  }
+
+  if (inst->opcode() == SpvOpConstantNull) {
+    return std::make_tuple(true, true, 0);
   }
 
   assert(inst->words().size() == 4);
