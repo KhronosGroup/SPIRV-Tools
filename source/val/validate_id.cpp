@@ -48,17 +48,12 @@ namespace {
 class idUsage {
  public:
   idUsage(spv_const_context context, const spv_instruction_t* pInsts,
-          const uint64_t instCountArg, const SpvMemoryModel memoryModelArg,
           const SpvAddressingModel addressingModelArg,
           const ValidationState_t& module, const vector<uint32_t>& entry_points,
           spv_position positionArg, const MessageConsumer& consumer)
       : targetEnv(context->target_env),
         opcodeTable(context->opcode_table),
-        operandTable(context->operand_table),
-        extInstTable(context->ext_inst_table),
         firstInst(pInsts),
-        instCount(instCountArg),
-        memoryModel(memoryModelArg),
         addressingModel(addressingModelArg),
         position(positionArg),
         consumer_(consumer),
@@ -73,11 +68,7 @@ class idUsage {
  private:
   const spv_target_env targetEnv;
   const spv_opcode_table opcodeTable;
-  const spv_operand_table operandTable;
-  const spv_ext_inst_table extInstTable;
   const spv_instruction_t* const firstInst;
-  const uint64_t instCount;
-  const SpvMemoryModel memoryModel;
   const SpvAddressingModel addressingModel;
   spv_position position;
   const MessageConsumer& consumer_;
@@ -2364,9 +2355,8 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const uint64_t instCount,
                                        const ValidationState_t& state,
                                        spv_position position) {
-  idUsage idUsage(state.context(), pInsts, instCount, state.memory_model(),
-                  state.addressing_model(), state, state.entry_points(),
-                  position, state.context()->consumer);
+  idUsage idUsage(state.context(), pInsts, state.addressing_model(), state,
+                  state.entry_points(), position, state.context()->consumer);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
     if (!idUsage.isValid(&pInsts[instIndex])) return SPV_ERROR_INVALID_ID;
   }
