@@ -1708,90 +1708,6 @@ bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
-                                          const spv_opcode_desc) {
-  auto instr_name = [&inst]() {
-    std::string name =
-        "Op" + std::string(spvOpcodeString(static_cast<SpvOp>(inst->opcode)));
-    return name;
-  };
-
-  // Result Type must be an OpTypeVector.
-  auto resultTypeIndex = 1;
-  auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
-  if (!resultType || resultType->opcode() != SpvOpTypeVector) {
-    DIAG(resultType) << "The Result Type of " << instr_name()
-                     << " must be OpTypeVector. Found Op"
-                     << spvOpcodeString(
-                            static_cast<SpvOp>(resultType->opcode()))
-                     << ".";
-    return false;
-  }
-
-  // The number of components in Result Type must be the same as the number of
-  // Component operands.
-  auto componentCount = inst->words.size() - 5;
-  auto vectorComponentCountIndex = 3;
-  auto resultVectorDimension = resultType->words()[vectorComponentCountIndex];
-  if (componentCount != resultVectorDimension) {
-    DIAG(module_.FindDef(inst->words.back()))
-        << instr_name()
-        << " component literals count does not match "
-           "Result Type <id> '"
-        << module_.getIdName(resultType->id()) << "'s vector component count.";
-    return false;
-  }
-
-  // Vector 1 and Vector 2 must both have vector types, with the same Component
-  // Type as Result Type.
-  auto vector1Index = 3;
-  auto vector1Object = module_.FindDef(inst->words[vector1Index]);
-  auto vector1Type = module_.FindDef(vector1Object->type_id());
-  auto vector2Index = 4;
-  auto vector2Object = module_.FindDef(inst->words[vector2Index]);
-  auto vector2Type = module_.FindDef(vector2Object->type_id());
-  if (!vector1Type || vector1Type->opcode() != SpvOpTypeVector) {
-    DIAG(vector1Object) << "The type of Vector 1 must be OpTypeVector.";
-    return false;
-  }
-  if (!vector2Type || vector2Type->opcode() != SpvOpTypeVector) {
-    DIAG(vector2Object) << "The type of Vector 2 must be OpTypeVector.";
-    return false;
-  }
-  auto vectorComponentTypeIndex = 2;
-  auto resultComponentType = resultType->words()[vectorComponentTypeIndex];
-  auto vector1ComponentType = vector1Type->words()[vectorComponentTypeIndex];
-  if (vector1ComponentType != resultComponentType) {
-    DIAG(vector1Object) << "The Component Type of Vector 1 must be the same "
-                           "as ResultType.";
-    return false;
-  }
-  auto vector2ComponentType = vector2Type->words()[vectorComponentTypeIndex];
-  if (vector2ComponentType != resultComponentType) {
-    DIAG(vector2Object) << "The Component Type of Vector 2 must be the same "
-                           "as ResultType.";
-    return false;
-  }
-
-  // All Component literals must either be FFFFFFFF or in [0, N - 1].
-  auto vector1ComponentCount = vector1Type->words()[vectorComponentCountIndex];
-  auto vector2ComponentCount = vector2Type->words()[vectorComponentCountIndex];
-  auto N = vector1ComponentCount + vector2ComponentCount;
-  auto firstLiteralIndex = 5;
-  for (size_t i = firstLiteralIndex; i < inst->words.size(); ++i) {
-    auto literal = inst->words[i];
-    if (literal != 0xFFFFFFFF && literal >= N) {
-      DIAG(module_.FindDef(inst->words[2]))
-          << "Component index " << literal << " is out of range for a result "
-          << "vector of size " << N << ".";
-      return false;
-    }
-  }
-
-  return true;
-}
-
-template <>
 bool idUsage::isValid<SpvOpPhi>(const spv_instruction_t* inst,
                                 const spv_opcode_desc /*opcodeEntry*/) {
   auto thisInst = module_.FindDef(inst->words[2]);
@@ -1977,11 +1893,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
 #define CASE(OpCode) \
   case Spv##OpCode:  \
     return isValid<Spv##OpCode>(inst, opcodeEntry);
-#define TODO(OpCode) \
-  case Spv##OpCode:  \
-    return true;
   switch (inst->opcode) {
-    TODO(OpUndef)
     CASE(OpMemberName)
     CASE(OpLine)
     CASE(OpDecorate)
@@ -1989,7 +1901,6 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpDecorationGroup)
     CASE(OpGroupDecorate)
     CASE(OpGroupMemberDecorate)
-    TODO(OpExtInst)
     CASE(OpEntryPoint)
     CASE(OpExecutionMode)
     CASE(OpTypeVector)
@@ -2010,7 +1921,6 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpSpecConstantFalse)
     CASE(OpSpecConstantComposite)
     CASE(OpSampledImage)
-    TODO(OpSpecConstantOp)
     CASE(OpVariable)
     CASE(OpLoad)
     CASE(OpStore)
@@ -2020,87 +1930,19 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpInBoundsAccessChain)
     CASE(OpPtrAccessChain)
     CASE(OpInBoundsPtrAccessChain)
-    TODO(OpArrayLength)
-    TODO(OpGenericPtrMemSemantics)
     CASE(OpFunction)
     CASE(OpFunctionParameter)
     CASE(OpFunctionCall)
-    // Conversion opcodes are validated in validate_conversion.cpp.
-    CASE(OpVectorShuffle)
     // Other composite opcodes are validated in validate_composites.cpp.
     // Arithmetic opcodes are validated in validate_arithmetics.cpp.
     // Bitwise opcodes are validated in validate_bitwise.cpp.
     // Logical opcodes are validated in validate_logicals.cpp.
     // Derivative opcodes are validated in validate_derivatives.cpp.
     CASE(OpPhi)
-    TODO(OpLoopMerge)
-    TODO(OpSelectionMerge)
     // OpBranch is validated in validate_cfg.cpp.
     // See tests in test/val/val_cfg_test.cpp.
     CASE(OpBranchConditional)
-    TODO(OpSwitch)
     CASE(OpReturnValue)
-    TODO(OpLifetimeStart)
-    TODO(OpLifetimeStop)
-    TODO(OpAtomicLoad)
-    TODO(OpAtomicStore)
-    TODO(OpAtomicExchange)
-    TODO(OpAtomicCompareExchange)
-    TODO(OpAtomicCompareExchangeWeak)
-    TODO(OpAtomicIIncrement)
-    TODO(OpAtomicIDecrement)
-    TODO(OpAtomicIAdd)
-    TODO(OpAtomicISub)
-    TODO(OpAtomicUMin)
-    TODO(OpAtomicUMax)
-    TODO(OpAtomicAnd)
-    TODO(OpAtomicOr)
-    TODO(OpAtomicSMin)
-    TODO(OpAtomicSMax)
-    TODO(OpEmitStreamVertex)
-    TODO(OpEndStreamPrimitive)
-    TODO(OpGroupAsyncCopy)
-    TODO(OpGroupWaitEvents)
-    TODO(OpGroupAll)
-    TODO(OpGroupAny)
-    TODO(OpGroupBroadcast)
-    TODO(OpGroupIAdd)
-    TODO(OpGroupFAdd)
-    TODO(OpGroupFMin)
-    TODO(OpGroupUMin)
-    TODO(OpGroupSMin)
-    TODO(OpGroupFMax)
-    TODO(OpGroupUMax)
-    TODO(OpGroupSMax)
-    TODO(OpEnqueueMarker)
-    TODO(OpEnqueueKernel)
-    TODO(OpGetKernelNDrangeSubGroupCount)
-    TODO(OpGetKernelNDrangeMaxSubGroupSize)
-    TODO(OpGetKernelWorkGroupSize)
-    TODO(OpGetKernelPreferredWorkGroupSizeMultiple)
-    TODO(OpRetainEvent)
-    TODO(OpReleaseEvent)
-    TODO(OpCreateUserEvent)
-    TODO(OpIsValidEvent)
-    TODO(OpSetUserEventStatus)
-    TODO(OpCaptureEventProfilingInfo)
-    TODO(OpGetDefaultQueue)
-    TODO(OpBuildNDRange)
-    TODO(OpReadPipe)
-    TODO(OpWritePipe)
-    TODO(OpReservedReadPipe)
-    TODO(OpReservedWritePipe)
-    TODO(OpReserveReadPipePackets)
-    TODO(OpReserveWritePipePackets)
-    TODO(OpCommitReadPipe)
-    TODO(OpCommitWritePipe)
-    TODO(OpIsValidReserveId)
-    TODO(OpGetNumPipePackets)
-    TODO(OpGetMaxPipePackets)
-    TODO(OpGroupReserveReadPipePackets)
-    TODO(OpGroupReserveWritePipePackets)
-    TODO(OpGroupCommitReadPipe)
-    TODO(OpGroupCommitWritePipe)
     default:
       return true;
   }
