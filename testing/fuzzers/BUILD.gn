@@ -28,13 +28,15 @@ group("fuzzers") {
   }
 }
 
-group("fuzzers_bin") {
-  testonly = true
+if (!build_with_chromium || use_fuzzing_engine) {
+  group("fuzzers_bin") {
+    testonly = true
 
-  deps = [
-    ":spvtools_opt_fuzzer",
-    ":spvtools_val_fuzzer",
-  ]
+    deps = [
+      ":spvtools_opt_fuzzer",
+      ":spvtools_val_fuzzer",
+    ]
+  }
 }
 
 template("spvtools_fuzzer") {
