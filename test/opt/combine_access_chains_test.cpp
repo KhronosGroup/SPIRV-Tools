@@ -525,6 +525,115 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<CombineAccessChains>(text, true);
 }
+
+TEST_F(CombineAccessChainsTest, PtrAccessChainFromInBoundsPtrAccessChain) {
+  const std::string text = R"(
+; CHECK: [[int:%\w+]] = OpTypeInt 32 0
+; CHECK: [[int4:%\w+]] = OpConstant [[int]] 4
+; CHECK: [[array:%\w+]] = OpTypeArray [[int]] [[int4]]
+; CHECK: [[ptr_array:%\w+]] = OpTypePointer Workgroup [[array]]
+; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Workgroup
+; CHECK: [[int6:%\w+]] = OpConstant [[int]] 6
+; CHECK: OpPtrAccessChain [[ptr_array]] [[var]] [[int6]]
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability Addresses
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_3 = OpConstant %uint 3
+%uint_4 = OpConstant %uint 4
+%uint_array_4 = OpTypeArray %uint %uint_4
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%ptr_Workgroup_uint_array_4 = OpTypePointer Workgroup %uint_array_4
+%var = OpVariable %ptr_Workgroup_uint_array_4 Workgroup
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%main_lab = OpLabel
+%gep = OpInBoundsPtrAccessChain %ptr_Workgroup_uint_array_4 %var %uint_3
+%ptr_gep = OpPtrAccessChain %ptr_Workgroup_uint_array_4 %gep %uint_3
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
+
+TEST_F(CombineAccessChainsTest, InBoundsPtrAccessChainFromPtrAccessChain) {
+  const std::string text = R"(
+; CHECK: [[int:%\w+]] = OpTypeInt 32 0
+; CHECK: [[int4:%\w+]] = OpConstant [[int]] 4
+; CHECK: [[array:%\w+]] = OpTypeArray [[int]] [[int4]]
+; CHECK: [[ptr_array:%\w+]] = OpTypePointer Workgroup [[array]]
+; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Workgroup
+; CHECK: [[int6:%\w+]] = OpConstant [[int]] 6
+; CHECK: OpPtrAccessChain [[ptr_array]] [[var]] [[int6]]
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability Addresses
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_3 = OpConstant %uint 3
+%uint_4 = OpConstant %uint 4
+%uint_array_4 = OpTypeArray %uint %uint_4
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%ptr_Workgroup_uint_array_4 = OpTypePointer Workgroup %uint_array_4
+%var = OpVariable %ptr_Workgroup_uint_array_4 Workgroup
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%main_lab = OpLabel
+%gep = OpPtrAccessChain %ptr_Workgroup_uint_array_4 %var %uint_3
+%ptr_gep = OpInBoundsPtrAccessChain %ptr_Workgroup_uint_array_4 %gep %uint_3
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
+
+TEST_F(CombineAccessChainsTest,
+       InBoundsPtrAccessChainFromInBoundsPtrAccessChain) {
+  const std::string text = R"(
+; CHECK: [[int:%\w+]] = OpTypeInt 32 0
+; CHECK: [[int4:%\w+]] = OpConstant [[int]] 4
+; CHECK: [[array:%\w+]] = OpTypeArray [[int]] [[int4]]
+; CHECK: [[ptr_array:%\w+]] = OpTypePointer Workgroup [[array]]
+; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Workgroup
+; CHECK: [[int6:%\w+]] = OpConstant [[int]] 6
+; CHECK: OpInBoundsPtrAccessChain [[ptr_array]] [[var]] [[int6]]
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability Addresses
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_3 = OpConstant %uint 3
+%uint_4 = OpConstant %uint 4
+%uint_array_4 = OpTypeArray %uint %uint_4
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%ptr_Workgroup_uint_array_4 = OpTypePointer Workgroup %uint_array_4
+%var = OpVariable %ptr_Workgroup_uint_array_4 Workgroup
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%main_lab = OpLabel
+%gep = OpInBoundsPtrAccessChain %ptr_Workgroup_uint_array_4 %var %uint_3
+%ptr_gep = OpInBoundsPtrAccessChain %ptr_Workgroup_uint_array_4 %gep %uint_3
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 }  // namespace

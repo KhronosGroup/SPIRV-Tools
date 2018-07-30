@@ -62,6 +62,12 @@ class CombineAccessChains : public Pass {
   // Adds the combined operand to |new_operands|.
   bool CombineIndices(Instruction* ptr_input, Instruction* inst,
                       std::vector<Operand>* new_operands);
+
+  // Returns the opcode to use for the combined access chain.
+  SpvOp UpdateOpcode(SpvOp base_opcode, SpvOp input_opcode);
+
+  // Returns true if |opcode| is a pointer access chain.
+  bool IsPtrAccessChain(SpvOp opcode);
 };
 
 }  // namespace opt

@@ -41,6 +41,7 @@ bool CombineAccessChains::ProcessFunction(Function& function) {
             case SpvOpAccessChain:
             case SpvOpInBoundsAccessChain:
             case SpvOpPtrAccessChain:
+            case SpvOpInBoundsPtrAccessChain:
               modified |= CombineAccessChain(inst);
               break;
             default:
@@ -98,7 +99,7 @@ const analysis::Type* CombineAccessChains::GetIndexedType(Instruction* inst) {
   type = type->AsPointer()->pointee_type();
   std::vector<uint32_t> element_indices;
   uint32_t starting_index = 1;
-  if (inst->opcode() == SpvOpPtrAccessChain) {
+  if (IsPtrAccessChain(inst->opcode())) {
     // Skip the first index of OpPtrAccessChain as it does not affect type
     // resolution.
     starting_index = 2;
@@ -139,9 +140,8 @@ bool CombineAccessChains::CombineIndices(Instruction* ptr_input,
   // Combine the last index of the AccessChain (|ptr_inst|) with the element
   // operand of the PtrAccessChain (|inst|).
   const bool combining_element_operands =
-      inst->opcode() == SpvOpPtrAccessChain &&
-      ptr_input->opcode() == SpvOpPtrAccessChain &&
-      ptr_input->NumInOperands() == 2;
+      IsPtrAccessChain(inst->opcode()) &&
+      IsPtrAccessChain(ptr_input->opcode()) && ptr_input->NumInOperands() == 2;
   uint32_t new_value_id = 0;
   const analysis::Type* type = GetIndexedType(ptr_input);
   if (last_index_constant && element_constant) {
@@ -182,7 +182,7 @@ bool CombineAccessChains::CreateNewOperands(
   }
 
   // Deal with the last index of the feeder access chain.
-  if (inst->opcode() == SpvOpPtrAccessChain) {
+  if (IsPtrAccessChain(inst->opcode())) {
     // The last index of the feeder should be combined with the element operand
     // of |inst|.
     if (!CombineIndices(ptr_input, inst, new_operands)) return false;
@@ -194,7 +194,7 @@ bool CombineAccessChains::CreateNewOperands(
   }
 
   // Copy the remaining index operands.
-  uint32_t starting_index = (inst->opcode() == SpvOpPtrAccessChain) ? 2 : 1;
+  uint32_t starting_index = IsPtrAccessChain(inst->opcode()) ? 2 : 1;
   for (uint32_t i = starting_index; i < inst->NumInOperands(); ++i) {
     new_operands->push_back(inst->GetInOperand(i));
   }
@@ -202,17 +202,38 @@ bool CombineAccessChains::CreateNewOperands(
   return true;
 }
 
+bool CombineAccessChains::IsPtrAccessChain(SpvOp opcode) {
+  return opcode == SpvOpPtrAccessChain || opcode == SpvOpInBoundsPtrAccessChain;
+}
+
+SpvOp CombineAccessChains::UpdateOpcode(SpvOp base_opcode, SpvOp input_opcode) {
+  auto IsInBounds = [](SpvOp opcode) {
+    return opcode == SpvOpInBoundsPtrAccessChain ||
+           opcode == SpvOpInBoundsAccessChain;
+  };
+
+  if (input_opcode == SpvOpInBoundsPtrAccessChain) {
+    if (!IsInBounds(base_opcode)) return SpvOpPtrAccessChain;
+  } else if (input_opcode == SpvOpInBoundsAccessChain) {
+    if (!IsInBounds(base_opcode)) return SpvOpAccessChain;
+  }
+
+  return input_opcode;
+}
+
 bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
   assert((inst->opcode() == SpvOpPtrAccessChain ||
           inst->opcode() == SpvOpAccessChain ||
-          inst->opcode() == SpvOpInBoundsAccessChain) &&
+          inst->opcode() == SpvOpInBoundsAccessChain ||
+          inst->opcode() == SpvOpInBoundsPtrAccessChain) &&
          "Wrong opcode. Expected an access chain.");
 
   Instruction* ptr_input =
       context()->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
   if (ptr_input->opcode() != SpvOpAccessChain &&
       ptr_input->opcode() != SpvOpInBoundsAccessChain &&
-      ptr_input->opcode() != SpvOpPtrAccessChain) {
+      ptr_input->opcode() != SpvOpPtrAccessChain &&
+      ptr_input->opcode() != SpvOpInBoundsPtrAccessChain) {
     return false;
   }
 
@@ -237,13 +258,7 @@ bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
   if (!CreateNewOperands(ptr_input, inst, &new_operands)) return false;
 
   // Update the instruction.
-  if (ptr_input->opcode() == SpvOpInBoundsAccessChain &&
-      inst->opcode() != SpvOpInBoundsAccessChain) {
-    // Cannot guarantee the pointer is in bounds anymore.
-    inst->SetOpcode(SpvOpAccessChain);
-  } else {
-    inst->SetOpcode(ptr_input->opcode());
-  }
+  inst->SetOpcode(UpdateOpcode(inst->opcode(), ptr_input->opcode()));
   inst->SetInOperands(std::move(new_operands));
   context()->AnalyzeUses(inst);
   return true;
