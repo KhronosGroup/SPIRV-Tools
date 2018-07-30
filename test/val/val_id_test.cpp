@@ -3851,7 +3851,8 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Component index 8 is out of range for a result vector of size 5."));
+          "Component index 8 is out of bounds for combined (Vector1 + Vector2) "
+          "size of 5."));
 }
 
 // TODO: OpCompositeConstruct
@@ -4730,7 +4731,8 @@ TEST_F(ValidateIdWithMessage, CorrectErrorForShuffle) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Component index 4 is out of range for a result vector of size 4."));
+          "Component index 4 is out of bounds for combined (Vector1 + Vector2) "
+          "size of 4."));
   EXPECT_EQ(23, getErrorPosition().index);
 }
 

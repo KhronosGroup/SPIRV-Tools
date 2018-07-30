@@ -512,8 +512,8 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
     auto literal = inst->GetOperandAs<uint32_t>(i);
     if (literal != 0xFFFFFFFF && literal >= N) {
       return _.diag(SPV_ERROR_INVALID_ID, inst->InstructionPosition())
-             << "Component index " << literal << " is out of range for a"
-             << " result vector of size " << N << ".";
+             << "Component index " << literal << " is out of bounds for "
+             << "combined (Vector1 + Vector2) size of " << N << ".";
     }
   }
 
