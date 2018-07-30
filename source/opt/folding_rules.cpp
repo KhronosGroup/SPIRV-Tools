@@ -1909,18 +1909,28 @@ FoldingRule RedundantFMix() {
 
 // This rule handles addition of zero for integers.
 FoldingRule RedundantIAdd() {
-  return [](IRContext*, Instruction* inst,
+  return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == SpvOpIAdd && "Wrong opcode. Should be OpIAdd.");
 
     uint32_t operand = std::numeric_limits<uint32_t>::max();
-    if (constants[0] && constants[0]->IsZero())
+    const analysis::Type* operand_type = nullptr;
+    if (constants[0] && constants[0]->IsZero()) {
       operand = inst->GetSingleWordInOperand(1);
-    else if (constants[1] && constants[1]->IsZero())
+      operand_type = constants[0]->type();
+    } else if (constants[1] && constants[1]->IsZero()) {
       operand = inst->GetSingleWordInOperand(0);
+      operand_type = constants[1]->type();
+    }
 
     if (operand != std::numeric_limits<uint32_t>::max()) {
-      inst->SetOpcode(SpvOpCopyObject);
+      const analysis::Type* inst_type =
+          context->get_type_mgr()->GetType(inst->type_id());
+      if (inst_type->IsSame(operand_type)) {
+        inst->SetOpcode(SpvOpCopyObject);
+      } else {
+        inst->SetOpcode(SpvOpBitcast);
+      }
       inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {operand}}});
       return true;
     }

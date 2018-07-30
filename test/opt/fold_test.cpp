@@ -3873,6 +3873,36 @@ TEST_P(MatchingInstructionFoldingTest, Case) {
   }
 }
 
+INSTANTIATE_TEST_CASE_P(RedundantIntegerMatching, MatchingInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: Fold 0 + n (change sign)
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[uint:%\\w+]] = OpTypeInt 32 0\n" +
+            "; CHECK: %2 = OpBitcast [[uint]] %3\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpIAdd %uint %int_0 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd\n",
+        2, true),
+    // Test case 0: Fold 0 + n (change sign)
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+            "; CHECK: %2 = OpBitcast [[int]] %3\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%3 = OpLoad %int %n\n" +
+            "%2 = OpIAdd %int %uint_0 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd\n",
+        2, true)
+));
+
 INSTANTIATE_TEST_CASE_P(MergeNegateTest, MatchingInstructionFoldingTest,
 ::testing::Values(
   // Test case 0: fold consecutive fnegate

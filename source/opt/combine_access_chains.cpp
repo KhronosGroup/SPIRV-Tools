@@ -61,12 +61,6 @@ uint32_t CombineAccessChains::GetConstantValue(
     } else {
       return constant_inst->GetU32();
     }
-  } else if (constant_inst->type()->AsInteger()->width() <= 64) {
-    if (constant_inst->type()->AsInteger()->IsSigned()) {
-      return static_cast<uint32_t>(constant_inst->GetS64());
-    } else {
-      return static_cast<uint32_t>(constant_inst->GetU64());
-    }
   } else {
     assert(false);
     return 0u;
@@ -154,9 +148,6 @@ bool CombineAccessChains::CombineIndices(Instruction* ptr_input,
         constant_mgr->GetDefiningInstruction(new_value_constant);
     new_value_id = new_value_inst->result_id();
   } else if (!type->AsStruct() || combining_element_operands) {
-    // TODO(alan-baker): handle this unlikely case.
-    if (last_index_inst->type_id() != element_inst->type_id()) return false;
-
     // Generate an addition of the two indices.
     InstructionBuilder builder(
         context(), inst,
@@ -173,7 +164,7 @@ bool CombineAccessChains::CombineIndices(Instruction* ptr_input,
   return true;
 }
 
-bool CombineAccessChains::CreateNewOperands(
+bool CombineAccessChains::CreateNewInputOperands(
     Instruction* ptr_input, Instruction* inst,
     std::vector<Operand>* new_operands) {
   // Start by copying all the input operands of the feeder access chain.
@@ -202,8 +193,63 @@ bool CombineAccessChains::CreateNewOperands(
   return true;
 }
 
-bool CombineAccessChains::IsPtrAccessChain(SpvOp opcode) {
-  return opcode == SpvOpPtrAccessChain || opcode == SpvOpInBoundsPtrAccessChain;
+bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
+  assert((inst->opcode() == SpvOpPtrAccessChain ||
+          inst->opcode() == SpvOpAccessChain ||
+          inst->opcode() == SpvOpInBoundsAccessChain ||
+          inst->opcode() == SpvOpInBoundsPtrAccessChain) &&
+         "Wrong opcode. Expected an access chain.");
+
+  Instruction* ptr_input =
+      context()->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
+  if (ptr_input->opcode() != SpvOpAccessChain &&
+      ptr_input->opcode() != SpvOpInBoundsAccessChain &&
+      ptr_input->opcode() != SpvOpPtrAccessChain &&
+      ptr_input->opcode() != SpvOpInBoundsPtrAccessChain) {
+    return false;
+  }
+
+  if (Has64BitIndices(inst) || Has64BitIndices(ptr_input)) return false;
+
+  // Handles the following cases:
+  // 1. |ptr_input| is an index-less access chain. Replace the pointer
+  //    in |inst| with |ptr_input|'s pointer.
+  // 2. |inst| is a index-less access chain. Change |inst| to an
+  //    OpCopyObject.
+  // 3. |inst| is not a pointer access chain.
+  //    |inst|'s indices are appended to |ptr_input|'s indices.
+  // 4. |ptr_input| is not pointer access chain.
+  //    |inst| is a pointer access chain.
+  //    |inst|'s element operand is combined with the last index in
+  //    |ptr_input| to form a new operand.
+  // 5. |ptr_input| is a pointer access chain.
+  //    Like the above scenario, |inst|'s element operand is combined
+  //    with |ptr_input|'s last index. This results is either a
+  //    combined element operand or combined regular index.
+
+  // TODO(alan-baker): Support this properly. Requires analyzing the
+  // size/alignment of the type and converting the stride into an element
+  // index.
+  uint32_t array_stride = GetArrayStride(ptr_input);
+  if (array_stride != 0) return false;
+
+  if (ptr_input->NumInOperands() == 1) {
+    // The input is effectively a no-op.
+    inst->SetInOperand(0, {ptr_input->GetSingleWordInOperand(0)});
+  } else if (inst->NumInOperands() == 1) {
+    // |inst| is a no-op, change it to a copy. Instruction simplification will
+    // clean it up.
+    inst->SetOpcode(SpvOpCopyObject);
+  } else {
+    std::vector<Operand> new_operands;
+    if (!CreateNewInputOperands(ptr_input, inst, &new_operands)) return false;
+
+    // Update the instruction.
+    inst->SetOpcode(UpdateOpcode(inst->opcode(), ptr_input->opcode()));
+    inst->SetInOperands(std::move(new_operands));
+    context()->AnalyzeUses(inst);
+  }
+  return true;
 }
 
 SpvOp CombineAccessChains::UpdateOpcode(SpvOp base_opcode, SpvOp input_opcode) {
@@ -221,47 +267,20 @@ SpvOp CombineAccessChains::UpdateOpcode(SpvOp base_opcode, SpvOp input_opcode) {
   return input_opcode;
 }
 
-bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
-  assert((inst->opcode() == SpvOpPtrAccessChain ||
-          inst->opcode() == SpvOpAccessChain ||
-          inst->opcode() == SpvOpInBoundsAccessChain ||
-          inst->opcode() == SpvOpInBoundsPtrAccessChain) &&
-         "Wrong opcode. Expected an access chain.");
+bool CombineAccessChains::IsPtrAccessChain(SpvOp opcode) {
+  return opcode == SpvOpPtrAccessChain || opcode == SpvOpInBoundsPtrAccessChain;
+}
 
-  Instruction* ptr_input =
-      context()->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
-  if (ptr_input->opcode() != SpvOpAccessChain &&
-      ptr_input->opcode() != SpvOpInBoundsAccessChain &&
-      ptr_input->opcode() != SpvOpPtrAccessChain &&
-      ptr_input->opcode() != SpvOpInBoundsPtrAccessChain) {
-    return false;
+bool CombineAccessChains::Has64BitIndices(Instruction* inst) {
+  for (uint32_t i = 1; i < inst->NumInOperands(); ++i) {
+    Instruction* index_inst =
+        context()->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(i));
+    const analysis::Type* index_type =
+        context()->get_type_mgr()->GetType(index_inst->type_id());
+    if (!index_type->AsInteger() || index_type->AsInteger()->width() != 32)
+      return true;
   }
-
-  // Handles the following cases:
-  // 1. |inst| is not a pointer access chain.
-  //    |inst|'s indices are appended to |ptr_input|'s indices.
-  // 2. |ptr_input| is not pointer access chain.
-  //    |inst|'s element operand is combined with the last index in
-  //    |ptr_input| to form a new operand.
-  // 3. |ptr_input| is a pointer access chain.
-  //    Like the above scenario, |inst|'s element operand is combined
-  //    with |ptr_input|'s last index. This results is either a
-  //    combined element operand or combined regular index.
-
-  // TODO(alan-baker): Support this properly. Requires analyzing the
-  // size/alignment of the type and converting the stride into an element
-  // index.
-  uint32_t array_stride = GetArrayStride(ptr_input);
-  if (array_stride != 0) return false;
-
-  std::vector<Operand> new_operands;
-  if (!CreateNewOperands(ptr_input, inst, &new_operands)) return false;
-
-  // Update the instruction.
-  inst->SetOpcode(UpdateOpcode(inst->opcode(), ptr_input->opcode()));
-  inst->SetInOperands(std::move(new_operands));
-  context()->AnalyzeUses(inst);
-  return true;
+  return false;
 }
 
 }  // namespace opt

@@ -634,6 +634,117 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<CombineAccessChains>(text, true);
 }
+
+TEST_F(CombineAccessChainsTest, NoIndexAccessChains) {
+  const std::string text = R"(
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK-NOT: OpConstant
+; CHECK: [[gep:%\w+]] = OpAccessChain {{%\w+}} [[var]]
+; CHECK: OpAccessChain {{%\w+}} [[var]]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%var = OpVariable %ptr_Workgroup_uint Workgroup
+%void_func = OpTypeFunction %void
+%func = OpFunction %void None %void_func
+%1 = OpLabel
+%gep1 = OpAccessChain %ptr_Workgroup_uint %var
+%gep2 = OpAccessChain %ptr_Workgroup_uint %gep1
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
+
+TEST_F(CombineAccessChainsTest, NoIndexPtrAccessChains) {
+  const std::string text = R"(
+; CHECK: [[int0:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[gep:%\w+]] = OpPtrAccessChain {{%\w+}} [[var]] [[int0]]
+; CHECK: OpCopyObject {{%\w+}} [[gep]]
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%var = OpVariable %ptr_Workgroup_uint Workgroup
+%void_func = OpTypeFunction %void
+%func = OpFunction %void None %void_func
+%1 = OpLabel
+%gep1 = OpPtrAccessChain %ptr_Workgroup_uint %var %uint_0
+%gep2 = OpAccessChain %ptr_Workgroup_uint %gep1
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
+
+TEST_F(CombineAccessChainsTest, NoIndexPtrAccessChains2) {
+  const std::string text = R"(
+; CHECK: [[int0:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: OpPtrAccessChain {{%\w+}} [[var]] [[int0]]
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%var = OpVariable %ptr_Workgroup_uint Workgroup
+%void_func = OpTypeFunction %void
+%func = OpFunction %void None %void_func
+%1 = OpLabel
+%gep1 = OpAccessChain %ptr_Workgroup_uint %var
+%gep2 = OpPtrAccessChain %ptr_Workgroup_uint %gep1 %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
+
+TEST_F(CombineAccessChainsTest, CombineMixedSign) {
+  const std::string text = R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[uint2:%\w+]] = OpConstant [[uint]] 2
+; CHECK: OpInBoundsPtrAccessChain {{%\w+}} [[var]] [[uint2]]
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability Addresses
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%int = OpTypeInt 32 1
+%uint_1 = OpConstant %uint 1
+%int_1 = OpConstant %int 1
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%var = OpVariable %ptr_Workgroup_uint Workgroup
+%void_func = OpTypeFunction %void
+%func = OpFunction %void None %void_func
+%1 = OpLabel
+%gep1 = OpInBoundsPtrAccessChain %ptr_Workgroup_uint %var %uint_1
+%gep2 = OpInBoundsPtrAccessChain %ptr_Workgroup_uint %gep1 %int_1
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 }  // namespace

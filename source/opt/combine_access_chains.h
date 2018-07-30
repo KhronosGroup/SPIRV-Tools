@@ -36,7 +36,7 @@ class CombineAccessChains : public Pass {
 
  private:
   // Combine access chains in |function|. Blocks are processed in reverse
-  // post-order.
+  // post-order. Returns true if the function is modified.
   bool ProcessFunction(Function& function);
 
   // Combines an access chain (normal, in bounds or pointer) |inst| if its base
@@ -50,13 +50,14 @@ class CombineAccessChains : public Pass {
   // Returns the array stride of |inst|'s type.
   uint32_t GetArrayStride(const Instruction* inst);
 
-  // Returns the type by resolving the index operands |inst|.
+  // Returns the type by resolving the index operands |inst|. |inst| must be an
+  // access chain instruction.
   const analysis::Type* GetIndexedType(Instruction* inst);
 
   // Populates |new_operands| with the operands for the combined access chain.
   // Returns false if the access chains cannot be combined.
-  bool CreateNewOperands(Instruction* ptr_input, Instruction* inst,
-                         std::vector<Operand>* new_operands);
+  bool CreateNewInputOperands(Instruction* ptr_input, Instruction* inst,
+                              std::vector<Operand>* new_operands);
 
   // Combines the last index of |ptr_input| with the element operand of |inst|.
   // Adds the combined operand to |new_operands|.
@@ -68,6 +69,9 @@ class CombineAccessChains : public Pass {
 
   // Returns true if |opcode| is a pointer access chain.
   bool IsPtrAccessChain(SpvOp opcode);
+
+  // Returns true if |inst| (an access chain) has 64-bit indices.
+  bool Has64BitIndices(Instruction* inst);
 };
 
 }  // namespace opt
