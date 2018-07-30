@@ -304,6 +304,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateInlineExhaustivePass());
   } else if (pass_name == "inline-entry-points-opaque") {
     RegisterPass(CreateInlineOpaquePass());
+  } else if (pass_name == "combine-access-chains") {
+    RegisterPass(CreateCombineAccessChainsPass());
   } else if (pass_name == "convert-local-access-chains") {
     RegisterPass(CreateLocalAccessChainConvertPass());
   } else if (pass_name == "eliminate-dead-code-aggressive") {
