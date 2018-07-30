@@ -133,7 +133,8 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateVectorExtractDynamic(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateVectorExtractDynamic(ValidationState_t& _,
+                                          const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   const SpvOp result_opcode = _.GetIdOpcode(result_type);
@@ -160,13 +161,13 @@ spv_result_t ValidateVectorExtractDynamic(ValidationState_t& _, const Instructio
   const uint32_t index_type = _.GetOperandTypeId(inst, 3);
   if (!_.IsIntScalarType(index_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA)
-           << spvOpcodeString(opcode)
-           << ": expected Index to be int scalar";
+           << spvOpcodeString(opcode) << ": expected Index to be int scalar";
   }
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateVectorInsertDyanmic(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateVectorInsertDyanmic(ValidationState_t& _,
+                                         const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   const SpvOp result_opcode = _.GetIdOpcode(result_type);
@@ -194,14 +195,13 @@ spv_result_t ValidateVectorInsertDyanmic(ValidationState_t& _, const Instruction
   const uint32_t index_type = _.GetOperandTypeId(inst, 4);
   if (!_.IsIntScalarType(index_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA)
-           << spvOpcodeString(opcode)
-           << ": expected Index to be int scalar";
+           << spvOpcodeString(opcode) << ": expected Index to be int scalar";
   }
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateCompositeConstruct(ValidationState_t& _, const Instruction* inst) {
-
+spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
+                                        const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   const uint32_t num_operands = static_cast<uint32_t>(inst->operands().size());
   const uint32_t result_type = inst->type_id();
@@ -209,8 +209,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _, const Instruction*
   switch (result_opcode) {
     case SpvOpTypeVector: {
       const uint32_t num_result_components = _.GetDimension(result_type);
-      const uint32_t result_component_type =
-          _.GetComponentType(result_type);
+      const uint32_t result_component_type = _.GetComponentType(result_type);
       uint32_t given_component_count = 0;
 
       if (num_operands <= 3) {
@@ -221,8 +220,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _, const Instruction*
 
       for (uint32_t operand_index = 2; operand_index < num_operands;
            ++operand_index) {
-        const uint32_t operand_type =
-            _.GetOperandTypeId(inst, operand_index);
+        const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
         if (operand_type == result_component_type) {
           ++given_component_count;
         } else {
@@ -252,9 +250,8 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _, const Instruction*
       uint32_t result_num_cols = 0;
       uint32_t result_col_type = 0;
       uint32_t result_component_type = 0;
-      if (!_.GetMatrixTypeInfo(result_type, &result_num_rows,
-                               &result_num_cols, &result_col_type,
-                               &result_component_type)) {
+      if (!_.GetMatrixTypeInfo(result_type, &result_num_rows, &result_num_cols,
+                               &result_col_type, &result_component_type)) {
         assert(0);
       }
 
@@ -267,8 +264,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _, const Instruction*
 
       for (uint32_t operand_index = 2; operand_index < num_operands;
            ++operand_index) {
-        const uint32_t operand_type =
-            _.GetOperandTypeId(inst, operand_index);
+        const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
         if (operand_type != result_col_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << spvOpcodeString(opcode)
@@ -305,8 +301,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _, const Instruction*
       const uint32_t result_component_type = array_inst->word(2);
       for (uint32_t operand_index = 2; operand_index < num_operands;
            ++operand_index) {
-        const uint32_t operand_type =
-            _.GetOperandTypeId(inst, operand_index);
+        const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
         if (operand_type != result_component_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << spvOpcodeString(opcode)
@@ -331,8 +326,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _, const Instruction*
 
       for (uint32_t operand_index = 2; operand_index < num_operands;
            ++operand_index) {
-        const uint32_t operand_type =
-            _.GetOperandTypeId(inst, operand_index);
+        const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
         const uint32_t member_type = struct_inst->word(operand_index);
         if (operand_type != member_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
@@ -353,10 +347,10 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _, const Instruction*
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateCompositeExtract(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateCompositeExtract(ValidationState_t& _,
+                                      const Instruction* inst) {
   uint32_t member_type = 0;
-  if (spv_result_t error =
-          GetExtractInsertValueType(_, inst, &member_type)) {
+  if (spv_result_t error = GetExtractInsertValueType(_, inst, &member_type)) {
     return error;
   }
 
@@ -373,7 +367,8 @@ spv_result_t ValidateCompositeExtract(ValidationState_t& _, const Instruction* i
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateCompositeInsert(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateCompositeInsert(ValidationState_t& _,
+                                     const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   const uint32_t object_type = _.GetOperandTypeId(inst, 2);
   const uint32_t composite_type = _.GetOperandTypeId(inst, 3);
@@ -381,13 +376,12 @@ spv_result_t ValidateCompositeInsert(ValidationState_t& _, const Instruction* in
   if (result_type != composite_type) {
     return _.diag(SPV_ERROR_INVALID_DATA)
            << "The Result Type must be the same as Composite type in Op"
-           << spvOpcodeString(opcode) << " yielding Result Id "
-           << result_type << ".";
+           << spvOpcodeString(opcode) << " yielding Result Id " << result_type
+           << ".";
   }
 
   uint32_t member_type = 0;
-  if (spv_result_t error =
-          GetExtractInsertValueType(_, inst, &member_type)) {
+  if (spv_result_t error = GetExtractInsertValueType(_, inst, &member_type)) {
     return error;
   }
 
@@ -408,8 +402,7 @@ spv_result_t ValidateCopyObject(ValidationState_t& _, const Instruction* inst) {
   const uint32_t result_type = inst->type_id();
   if (!spvOpcodeGeneratesType(_.GetIdOpcode(result_type))) {
     return _.diag(SPV_ERROR_INVALID_DATA)
-           << spvOpcodeString(opcode)
-           << ": expected Result Type to be a type";
+           << spvOpcodeString(opcode) << ": expected Result Type to be a type";
   }
 
   const uint32_t operand_type = _.GetOperandTypeId(inst, 2);
