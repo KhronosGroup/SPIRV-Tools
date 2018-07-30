@@ -1336,6 +1336,200 @@ OpExtension "SPV_KHR_vulkan_memory_model"
                         "used with the VulkanKHR memory model."));
 }
 
+TEST_F(ValidateAtomics, OutputMemoryKHRRequiresVulkanMemoryModelKHR) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 4100
+%5 = OpTypeFunction %2
+%workgroup = OpConstant %3 2
+%ptr = OpTypePointer Workgroup %3
+%var = OpVariable %ptr Workgroup
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpAtomicStore %var %workgroup %semantics %workgroup
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicStore: Memory Semantics OutputMemoryKHR "
+                        "requires capability VulkanMemoryModelKHR"));
+}
+
+TEST_F(ValidateAtomics, MakeAvailableKHRRequiresVulkanMemoryModelKHR) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 8196
+%5 = OpTypeFunction %2
+%workgroup = OpConstant %3 2
+%ptr = OpTypePointer Workgroup %3
+%var = OpVariable %ptr Workgroup
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpAtomicStore %var %workgroup %semantics %workgroup
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicStore: Memory Semantics MakeAvailableKHR "
+                        "requires capability VulkanMemoryModelKHR"));
+}
+
+TEST_F(ValidateAtomics, MakeVisibleKHRRequiresVulkanMemoryModelKHR) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 16386
+%5 = OpTypeFunction %2
+%workgroup = OpConstant %3 2
+%ptr = OpTypePointer Workgroup %3
+%var = OpVariable %ptr Workgroup
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+%ld = OpAtomicLoad %3 %var %workgroup %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicLoad: Memory Semantics MakeVisibleKHR requires "
+                        "capability VulkanMemoryModelKHR"));
+}
+
+TEST_F(ValidateAtomics, MakeAvailableKHRRequiresReleaseSemantics) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 8448
+%5 = OpTypeFunction %2
+%workgroup = OpConstant %3 2
+%ptr = OpTypePointer Workgroup %3
+%var = OpVariable %ptr Workgroup
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpAtomicStore %var %workgroup %semantics %workgroup
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicStore: MakeAvailableKHR Memory Semantics also requires "
+                "either Release or AcquireRelease Memory Semantics"));
+}
+
+TEST_F(ValidateAtomics, MakeVisibleKHRRequiresAcquireSemantics) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 16640
+%5 = OpTypeFunction %2
+%workgroup = OpConstant %3 2
+%ptr = OpTypePointer Workgroup %3
+%var = OpVariable %ptr Workgroup
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+%ld = OpAtomicLoad %3 %var %workgroup %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicLoad: MakeVisibleKHR Memory Semantics also requires "
+                "either Acquire or AcquireRelease Memory Semantics"));
+}
+
+TEST_F(ValidateAtomics, MakeAvailableKHRRequiresStorageSemantics) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 8196
+%5 = OpTypeFunction %2
+%workgroup = OpConstant %3 2
+%ptr = OpTypePointer Workgroup %3
+%var = OpVariable %ptr Workgroup
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+OpAtomicStore %var %workgroup %semantics %workgroup
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicStore: expected Memory Semantics to include a storage class"));
+}
+
+TEST_F(ValidateAtomics, MakeVisibleKHRRequiresStorageSemantics) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %1 "func"
+%2 = OpTypeVoid
+%3 = OpTypeInt 32 0
+%semantics = OpConstant %3 16386
+%5 = OpTypeFunction %2
+%workgroup = OpConstant %3 2
+%ptr = OpTypePointer Workgroup %3
+%var = OpVariable %ptr Workgroup
+%1 = OpFunction %2 None %5
+%7 = OpLabel
+%ld = OpAtomicLoad %3 %var %workgroup %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicLoad: expected Memory Semantics to include a storage class"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

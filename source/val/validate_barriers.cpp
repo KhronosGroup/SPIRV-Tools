@@ -153,6 +153,30 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
                                              "the VulkanKHR memory model.";
   }
 
+  if (value & SpvMemorySemanticsOutputMemoryKHRMask &&
+      !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics OutputMemoryKHR requires capability "
+           << "VulkanMemoryModelKHR";
+  }
+
+  if (value & SpvMemorySemanticsMakeAvailableKHRMask &&
+      !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics MakeAvailableKHR requires capability "
+           << "VulkanMemoryModelKHR";
+  }
+
+  if (value & SpvMemorySemanticsMakeVisibleKHRMask &&
+      !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics MakeVisibleKHR requires capability "
+           << "VulkanMemoryModelKHR";
+  }
+
   const size_t num_memory_order_set_bits = spvtools::utils::CountSetBits(
       value & (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
                SpvMemorySemanticsAcquireReleaseMask |
@@ -165,11 +189,30 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
               "set: Acquire, Release, AcquireRelease or SequentiallyConsistent";
   }
 
+  if (value & SpvMemorySemanticsMakeAvailableKHRMask &&
+      !(value & (SpvMemorySemanticsReleaseMask |
+                 SpvMemorySemanticsAcquireReleaseMask))) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": MakeAvailableKHR Memory Semantics also requires either "
+              "Release or AcquireRelease Memory Semantics";
+  }
+
+  if (value & SpvMemorySemanticsMakeVisibleKHRMask &&
+      !(value & (SpvMemorySemanticsAcquireMask |
+                 SpvMemorySemanticsAcquireReleaseMask))) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": MakeVisibleKHR Memory Semantics also requires either Acquire "
+              "or AcquireRelease Memory Semantics";
+  }
+
   if (spvIsVulkanEnv(_.context()->target_env)) {
     const bool includes_storage_class =
         value & (SpvMemorySemanticsUniformMemoryMask |
                  SpvMemorySemanticsWorkgroupMemoryMask |
-                 SpvMemorySemanticsImageMemoryMask);
+                 SpvMemorySemanticsImageMemoryMask |
+                 SpvMemorySemanticsOutputMemoryKHRMask);
 
     if (opcode == SpvOpMemoryBarrier && !num_memory_order_set_bits) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -195,6 +238,24 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
                 "storage class if Memory Semantics is not None";
     }
 #endif
+  }
+
+  if (value & (SpvMemorySemanticsMakeAvailableKHRMask |
+               SpvMemorySemanticsMakeVisibleKHRMask)) {
+    const bool includes_storage_class =
+        value & (SpvMemorySemanticsUniformMemoryMask |
+                 SpvMemorySemanticsSubgroupMemoryMask |
+                 SpvMemorySemanticsWorkgroupMemoryMask |
+                 SpvMemorySemanticsCrossWorkgroupMemoryMask |
+                 SpvMemorySemanticsAtomicCounterMemoryMask |
+                 SpvMemorySemanticsImageMemoryMask |
+                 SpvMemorySemanticsOutputMemoryKHRMask);
+
+    if (!includes_storage_class) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << spvOpcodeString(opcode)
+             << ": expected Memory Semantics to include a storage class";
+    }
   }
 
   // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.

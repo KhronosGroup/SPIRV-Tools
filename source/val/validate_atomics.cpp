@@ -121,6 +121,30 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
               "AtomicStorage";
   }
 
+  if (flags & SpvMemorySemanticsOutputMemoryKHRMask &&
+      !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics OutputMemoryKHR requires capability "
+           << "VulkanMemoryModelKHR";
+  }
+
+  if (flags & SpvMemorySemanticsMakeAvailableKHRMask &&
+      !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics MakeAvailableKHR requires capability "
+           << "VulkanMemoryModelKHR";
+  }
+
+  if (flags & SpvMemorySemanticsMakeVisibleKHRMask &&
+      !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": Memory Semantics MakeVisibleKHR requires capability "
+           << "VulkanMemoryModelKHR";
+  }
+
   if (opcode == SpvOpAtomicFlagClear &&
       (flags & SpvMemorySemanticsAcquireMask ||
        flags & SpvMemorySemanticsAcquireReleaseMask)) {
@@ -155,6 +179,42 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Vulkan spec disallows OpAtomicStore with Memory Semantics "
                 "Acquire, AcquireRelease and SequentiallyConsistent";
+    }
+  }
+
+  if (flags & SpvMemorySemanticsMakeAvailableKHRMask &&
+      !(flags & (SpvMemorySemanticsReleaseMask |
+                 SpvMemorySemanticsAcquireReleaseMask))) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": MakeAvailableKHR Memory Semantics also requires either "
+              "Release or AcquireRelease Memory Semantics";
+  }
+
+  if (flags & SpvMemorySemanticsMakeVisibleKHRMask &&
+      !(flags & (SpvMemorySemanticsAcquireMask |
+                 SpvMemorySemanticsAcquireReleaseMask))) {
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << spvOpcodeString(opcode)
+           << ": MakeVisibleKHR Memory Semantics also requires either Acquire "
+              "or AcquireRelease Memory Semantics";
+  }
+
+  if (flags & (SpvMemorySemanticsMakeAvailableKHRMask |
+               SpvMemorySemanticsMakeVisibleKHRMask)) {
+    const bool includes_storage_class =
+        flags & (SpvMemorySemanticsUniformMemoryMask |
+                 SpvMemorySemanticsSubgroupMemoryMask |
+                 SpvMemorySemanticsWorkgroupMemoryMask |
+                 SpvMemorySemanticsCrossWorkgroupMemoryMask |
+                 SpvMemorySemanticsAtomicCounterMemoryMask |
+                 SpvMemorySemanticsImageMemoryMask |
+                 SpvMemorySemanticsOutputMemoryKHRMask);
+
+    if (!includes_storage_class) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << spvOpcodeString(opcode)
+             << ": expected Memory Semantics to include a storage class";
     }
   }
 
