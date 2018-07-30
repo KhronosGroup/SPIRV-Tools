@@ -372,7 +372,7 @@ TEST_F(ValidateImage, TypeImageWrongSampledType) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: expected Sampled Type to be either void or "
+              HasSubstr("Expected Sampled Type to be either void or "
                         "numerical scalar "
                         "type"));
 }
@@ -386,7 +386,7 @@ TEST_F(ValidateImage, TypeImageVoidSampledTypeVulkan) {
   CompileSuccessfully(code, env);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: expected Sampled Type to be a 32-bit int "
+              HasSubstr("Expected Sampled Type to be a 32-bit int "
                         "or float scalar type for Vulkan environment"));
 }
 
@@ -399,7 +399,7 @@ TEST_F(ValidateImage, TypeImageU64SampledTypeVulkan) {
   CompileSuccessfully(code, env);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: expected Sampled Type to be a 32-bit int "
+              HasSubstr("Expected Sampled Type to be a 32-bit int "
                         "or float scalar type for Vulkan environment"));
 }
 
@@ -411,7 +411,7 @@ TEST_F(ValidateImage, TypeImageWrongDepth) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: invalid Depth 3 (must be 0, 1 or 2)"));
+              HasSubstr("Invalid Depth 3 (must be 0, 1 or 2)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongArrayed) {
@@ -422,7 +422,7 @@ TEST_F(ValidateImage, TypeImageWrongArrayed) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: invalid Arrayed 2 (must be 0 or 1)"));
+              HasSubstr("Invalid Arrayed 2 (must be 0 or 1)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongMS) {
@@ -433,7 +433,7 @@ TEST_F(ValidateImage, TypeImageWrongMS) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: invalid MS 2 (must be 0 or 1)"));
+              HasSubstr("Invalid MS 2 (must be 0 or 1)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongSampled) {
@@ -444,7 +444,7 @@ TEST_F(ValidateImage, TypeImageWrongSampled) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: invalid Sampled 3 (must be 0, 1 or 2)"));
+              HasSubstr("Invalid Sampled 3 (must be 0, 1 or 2)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongSampledForSubpassData) {
@@ -456,7 +456,7 @@ TEST_F(ValidateImage, TypeImageWrongSampledForSubpassData) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: Dim SubpassData requires Sampled to be 2"));
+              HasSubstr("Dim SubpassData requires Sampled to be 2"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongFormatForSubpassData) {
@@ -468,7 +468,7 @@ TEST_F(ValidateImage, TypeImageWrongFormatForSubpassData) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("TypeImage: Dim SubpassData requires format Unknown"));
+              HasSubstr("Dim SubpassData requires format Unknown"));
 }
 
 TEST_F(ValidateImage, TypeSampledImageNotImage) {
@@ -478,9 +478,8 @@ TEST_F(ValidateImage, TypeSampledImageNotImage) {
 
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("TypeSampledImage: expected Image to be of type OpTypeImage"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, SampledImageSuccess) {
@@ -515,9 +514,8 @@ TEST_F(ValidateImage, SampledImageWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Result Type to be OpTypeSampledImage: SampledImage"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampledImageNotImage) {
@@ -530,9 +528,8 @@ TEST_F(ValidateImage, SampledImageNotImage) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image to be of type OpTypeImage: SampledImage"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, SampledImageImageNotForSampling) {
@@ -544,10 +541,8 @@ TEST_F(ValidateImage, SampledImageImageNotForSampling) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected Image 'Sampled' parameter to be 0 or 1: SampledImage"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled' parameter to be 0 or 1"));
 }
 
 TEST_F(ValidateImage, SampledImageVulkanUnknownSampled) {
@@ -561,8 +556,8 @@ TEST_F(ValidateImage, SampledImageVulkanUnknownSampled) {
   CompileSuccessfully(GenerateShaderCode(body, "", "Fragment", env), env);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image 'Sampled' parameter to be 1 for Vulkan "
-                        "environment: SampledImage"));
+              HasSubstr("Expected Image 'Sampled' parameter to "
+                        "be 1 for Vulkan environment."));
 }
 
 TEST_F(ValidateImage, SampledImageNotSampler) {
@@ -574,9 +569,8 @@ TEST_F(ValidateImage, SampledImageNotSampler) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Sampler to be of type OpTypeSampler: SampledImage"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sampler to be of type OpTypeSampler"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodSuccess) {
@@ -607,8 +601,7 @@ TEST_F(ValidateImage, SampleImplicitLodWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float vector type: "
-                        "ImageSampleImplicitLod"));
+              HasSubstr("Expected Result Type to be int or float vector type"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodWrongNumComponentsResultType) {
@@ -622,8 +615,7 @@ TEST_F(ValidateImage, SampleImplicitLodWrongNumComponentsResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to have 4 components: "
-                        "ImageSampleImplicitLod"));
+              HasSubstr("Expected Result Type to have 4 components"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodNotSampledImage) {
@@ -636,8 +628,7 @@ TEST_F(ValidateImage, SampleImplicitLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageSampleImplicitLod"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodWrongSampledType) {
@@ -652,8 +643,7 @@ TEST_F(ValidateImage, SampleImplicitLodWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type components: "
-                        "ImageSampleImplicitLod"));
+                        "Result Type components"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodVoidSampledType) {
@@ -679,8 +669,7 @@ TEST_F(ValidateImage, SampleImplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageSampleImplicitLod"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodCoordinateSizeTooSmall) {
@@ -695,8 +684,7 @@ TEST_F(ValidateImage, SampleImplicitLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 2 components, "
-                        "but given only 1: "
-                        "ImageSampleImplicitLod"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodSuccessShader) {
@@ -754,8 +742,7 @@ TEST_F(ValidateImage, SampleExplicitLodWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float vector type: "
-                        "ImageSampleExplicitLod"));
+              HasSubstr("Expected Result Type to be int or float vector type"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodWrongNumComponentsResultType) {
@@ -769,8 +756,7 @@ TEST_F(ValidateImage, SampleExplicitLodWrongNumComponentsResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to have 4 components: "
-                        "ImageSampleExplicitLod"));
+              HasSubstr("Expected Result Type to have 4 components"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodNotSampledImage) {
@@ -783,8 +769,7 @@ TEST_F(ValidateImage, SampleExplicitLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageSampleExplicitLod"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodWrongSampledType) {
@@ -799,8 +784,7 @@ TEST_F(ValidateImage, SampleExplicitLodWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type components: "
-                        "ImageSampleExplicitLod"));
+                        "Result Type components"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodVoidSampledType) {
@@ -826,8 +810,7 @@ TEST_F(ValidateImage, SampleExplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageSampleExplicitLod"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodCoordinateSizeTooSmall) {
@@ -842,8 +825,7 @@ TEST_F(ValidateImage, SampleExplicitLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 2 components, "
-                        "but given only 1: "
-                        "ImageSampleExplicitLod"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodBias) {
@@ -858,8 +840,8 @@ TEST_F(ValidateImage, SampleExplicitLodBias) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Image Operand Bias can only be used with ImplicitLod opcodes: "
-                "ImageSampleExplicitLod"));
+      HasSubstr(
+          "Image Operand Bias can only be used with ImplicitLod opcodes"));
 }
 
 TEST_F(ValidateImage, LodAndGrad) {
@@ -875,8 +857,7 @@ TEST_F(ValidateImage, LodAndGrad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Image Operand bits Lod and Grad cannot be set at the same time: "
-          "ImageSampleExplicitLod"));
+          "Image Operand bits Lod and Grad cannot be set at the same time"));
 }
 
 TEST_F(ValidateImage, ImplicitLodWithLod) {
@@ -892,7 +873,7 @@ TEST_F(ValidateImage, ImplicitLodWithLod) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Image Operand Lod can only be used with ExplicitLod opcodes "
-                "and OpImageFetch: ImageSampleImplicitLod"));
+                "and OpImageFetch"));
 }
 
 TEST_F(ValidateImage, LodWrongType) {
@@ -906,7 +887,7 @@ TEST_F(ValidateImage, LodWrongType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image Operand Lod to be float scalar when "
-                        "used with ExplicitLod: ImageSampleExplicitLod"));
+                        "used with ExplicitLod"));
 }
 
 TEST_F(ValidateImage, LodWrongDim) {
@@ -920,8 +901,7 @@ TEST_F(ValidateImage, LodWrongDim) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Lod requires 'Dim' parameter to be 1D, "
-                        "2D, 3D or Cube: "
-                        "ImageSampleExplicitLod"));
+                        "2D, 3D or Cube"));
 }
 
 TEST_F(ValidateImage, LodMultisampled) {
@@ -934,8 +914,7 @@ TEST_F(ValidateImage, LodMultisampled) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image Operand Lod requires 'MS' parameter to be 0: "
-                        "ImageSampleExplicitLod"));
+              HasSubstr("Image Operand Lod requires 'MS' parameter to be 0"));
 }
 
 TEST_F(ValidateImage, MinLodIncompatible) {
@@ -951,7 +930,7 @@ TEST_F(ValidateImage, MinLodIncompatible) {
       getDiagnosticString(),
       HasSubstr(
           "Image Operand MinLod can only be used with ImplicitLod opcodes or "
-          "together with Image Operand Grad: ImageSampleExplicitLod"));
+          "together with Image Operand Grad"));
 }
 
 TEST_F(ValidateImage, ImplicitLodWithGrad) {
@@ -966,8 +945,8 @@ TEST_F(ValidateImage, ImplicitLodWithGrad) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Image Operand Grad can only be used with ExplicitLod opcodes: "
-                "ImageSampleImplicitLod"));
+      HasSubstr(
+          "Image Operand Grad can only be used with ExplicitLod opcodes"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLod3DArrayedMultisampledSuccess) {
@@ -1010,8 +989,7 @@ TEST_F(ValidateImage, SampleImplicitLodBiasWrongType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand Bias to be float scalar: "
-                        "ImageSampleImplicitLod"));
+              HasSubstr("Expected Image Operand Bias to be float scalar"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodBiasWrongDim) {
@@ -1026,8 +1004,7 @@ TEST_F(ValidateImage, SampleImplicitLodBiasWrongDim) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Bias requires 'Dim' parameter to be 1D, "
-                        "2D, 3D or Cube: "
-                        "ImageSampleImplicitLod"));
+                        "2D, 3D or Cube"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodBiasMultisampled) {
@@ -1041,8 +1018,7 @@ TEST_F(ValidateImage, SampleImplicitLodBiasMultisampled) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image Operand Bias requires 'MS' parameter to be 0: "
-                        "ImageSampleImplicitLod"));
+              HasSubstr("Image Operand Bias requires 'MS' parameter to be 0"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodGradDxWrongType) {
@@ -1057,8 +1033,7 @@ TEST_F(ValidateImage, SampleExplicitLodGradDxWrongType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected both Image Operand Grad ids to be float "
-                        "scalars or vectors: "
-                        "ImageSampleExplicitLod"));
+                        "scalars or vectors"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodGradDyWrongType) {
@@ -1073,8 +1048,7 @@ TEST_F(ValidateImage, SampleExplicitLodGradDyWrongType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected both Image Operand Grad ids to be float "
-                        "scalars or vectors: "
-                        "ImageSampleExplicitLod"));
+                        "scalars or vectors"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodGradDxWrongSize) {
@@ -1090,8 +1064,7 @@ TEST_F(ValidateImage, SampleExplicitLodGradDxWrongSize) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Expected Image Operand Grad dx to have 3 components, but given 2: "
-          "ImageSampleExplicitLod"));
+          "Expected Image Operand Grad dx to have 3 components, but given 2"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodGradDyWrongSize) {
@@ -1107,8 +1080,7 @@ TEST_F(ValidateImage, SampleExplicitLodGradDyWrongSize) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Expected Image Operand Grad dy to have 3 components, but given 2: "
-          "ImageSampleExplicitLod"));
+          "Expected Image Operand Grad dy to have 3 components, but given 2"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodGradMultisampled) {
@@ -1122,8 +1094,7 @@ TEST_F(ValidateImage, SampleExplicitLodGradMultisampled) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image Operand Grad requires 'MS' parameter to be 0: "
-                        "ImageSampleExplicitLod"));
+              HasSubstr("Image Operand Grad requires 'MS' parameter to be 0"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodConstOffsetCubeDim) {
@@ -1139,8 +1110,7 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetCubeDim) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Image Operand ConstOffset cannot be used with Cube Image 'Dim': "
-          "ImageSampleImplicitLod"));
+          "Image Operand ConstOffset cannot be used with Cube Image 'Dim'"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongType) {
@@ -1156,8 +1126,7 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongType) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Expected Image Operand ConstOffset to be int scalar or vector: "
-          "ImageSampleImplicitLod"));
+          "Expected Image Operand ConstOffset to be int scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongSize) {
@@ -1172,8 +1141,7 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongSize) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image Operand ConstOffset to have 3 "
-                        "components, but given 2: "
-                        "ImageSampleImplicitLod"));
+                        "components, but given 2"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodConstOffsetNotConst) {
@@ -1189,8 +1157,7 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetNotConst) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image Operand ConstOffset to be a const object: "
-                "ImageSampleImplicitLod"));
+      HasSubstr("Expected Image Operand ConstOffset to be a const object"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodOffsetCubeDim) {
@@ -1205,8 +1172,7 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetCubeDim) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Image Operand Offset cannot be used with Cube Image 'Dim': "
-                "ImageSampleImplicitLod"));
+      HasSubstr("Image Operand Offset cannot be used with Cube Image 'Dim'"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodOffsetWrongType) {
@@ -1221,8 +1187,7 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetWrongType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image Operand Offset to be int scalar or vector: "
-                "ImageSampleImplicitLod"));
+      HasSubstr("Expected Image Operand Offset to be int scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodOffsetWrongSize) {
@@ -1238,8 +1203,7 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetWrongSize) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Expected Image Operand Offset to have 3 components, but given 2: "
-          "ImageSampleImplicitLod"));
+          "Expected Image Operand Offset to have 3 components, but given 2"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodMoreThanOneOffset) {
@@ -1254,8 +1218,7 @@ TEST_F(ValidateImage, SampleImplicitLodMoreThanOneOffset) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operands Offset, ConstOffset, ConstOffsets "
-                        "cannot be used together: "
-                        "ImageSampleImplicitLod"));
+                        "cannot be used together"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodMinLodWrongType) {
@@ -1269,8 +1232,7 @@ TEST_F(ValidateImage, SampleImplicitLodMinLodWrongType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand MinLod to be float scalar: "
-                        "ImageSampleImplicitLod"));
+              HasSubstr("Expected Image Operand MinLod to be float scalar"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodMinLodWrongDim) {
@@ -1285,8 +1247,7 @@ TEST_F(ValidateImage, SampleImplicitLodMinLodWrongDim) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand MinLod requires 'Dim' parameter to be "
-                        "1D, 2D, 3D or Cube: "
-                        "ImageSampleImplicitLod"));
+                        "1D, 2D, 3D or Cube"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodMinLodMultisampled) {
@@ -1299,9 +1260,9 @@ TEST_F(ValidateImage, SampleImplicitLodMinLodMultisampled) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image Operand MinLod requires 'MS' parameter to be 0: "
-                        "ImageSampleImplicitLod"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Image Operand MinLod requires 'MS' parameter to be 0"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodSuccess2D) {
@@ -1344,8 +1305,7 @@ TEST_F(ValidateImage, SampleProjExplicitLodWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float vector type: "
-                        "ImageSampleProjExplicitLod"));
+              HasSubstr("Expected Result Type to be int or float vector type"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodWrongNumComponentsResultType) {
@@ -1359,8 +1319,7 @@ TEST_F(ValidateImage, SampleProjExplicitLodWrongNumComponentsResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to have 4 components: "
-                        "ImageSampleProjExplicitLod"));
+              HasSubstr("Expected Result Type to have 4 components"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodNotSampledImage) {
@@ -1373,8 +1332,7 @@ TEST_F(ValidateImage, SampleProjExplicitLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageSampleProjExplicitLod"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodWrongSampledType) {
@@ -1389,8 +1347,7 @@ TEST_F(ValidateImage, SampleProjExplicitLodWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type components: "
-                        "ImageSampleProjExplicitLod"));
+                        "Result Type components"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodVoidSampledType) {
@@ -1416,8 +1373,7 @@ TEST_F(ValidateImage, SampleProjExplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageSampleProjExplicitLod"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodCoordinateSizeTooSmall) {
@@ -1432,8 +1388,7 @@ TEST_F(ValidateImage, SampleProjExplicitLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 3 components, "
-                        "but given only 2: "
-                        "ImageSampleProjExplicitLod"));
+                        "but given only 2"));
 }
 
 TEST_F(ValidateImage, SampleProjImplicitLodSuccess) {
@@ -1464,8 +1419,7 @@ TEST_F(ValidateImage, SampleProjImplicitLodWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float vector type: "
-                        "ImageSampleProjImplicitLod"));
+              HasSubstr("Expected Result Type to be int or float vector type"));
 }
 
 TEST_F(ValidateImage, SampleProjImplicitLodWrongNumComponentsResultType) {
@@ -1479,8 +1433,7 @@ TEST_F(ValidateImage, SampleProjImplicitLodWrongNumComponentsResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to have 4 components: "
-                        "ImageSampleProjImplicitLod"));
+              HasSubstr("Expected Result Type to have 4 components"));
 }
 
 TEST_F(ValidateImage, SampleProjImplicitLodNotSampledImage) {
@@ -1493,8 +1446,7 @@ TEST_F(ValidateImage, SampleProjImplicitLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageSampleProjImplicitLod"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampleProjImplicitLodWrongSampledType) {
@@ -1509,8 +1461,7 @@ TEST_F(ValidateImage, SampleProjImplicitLodWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type components: "
-                        "ImageSampleProjImplicitLod"));
+                        "Result Type components"));
 }
 
 TEST_F(ValidateImage, SampleProjImplicitLodVoidSampledType) {
@@ -1536,8 +1487,7 @@ TEST_F(ValidateImage, SampleProjImplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageSampleProjImplicitLod"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleProjImplicitLodCoordinateSizeTooSmall) {
@@ -1552,8 +1502,7 @@ TEST_F(ValidateImage, SampleProjImplicitLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 3 components, "
-                        "but given only 2: "
-                        "ImageSampleProjImplicitLod"));
+                        "but given only 2"));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodSuccess) {
@@ -1584,8 +1533,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float scalar type: "
-                        "ImageSampleDrefImplicitLod"));
+              HasSubstr("Expected Result Type to be int or float scalar type"));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodNotSampledImage) {
@@ -1598,8 +1546,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageSampleDrefImplicitLod"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodWrongSampledType) {
@@ -1614,8 +1561,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type: "
-                "ImageSampleDrefImplicitLod"));
+      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type"));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodVoidSampledType) {
@@ -1630,8 +1576,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodVoidSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type: "
-                "ImageSampleDrefImplicitLod"));
+      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type"));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodWrongCoordinateType) {
@@ -1645,8 +1590,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageSampleDrefImplicitLod"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodCoordinateSizeTooSmall) {
@@ -1661,8 +1605,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 2 components, "
-                        "but given only 1: "
-                        "ImageSampleDrefImplicitLod"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodWrongDrefType) {
@@ -1676,8 +1619,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongDrefType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSampleDrefImplicitLod: "
-                        "Expected Dref to be of 32-bit float type"));
+              HasSubstr("Expected Dref to be of 32-bit float type"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodSuccess) {
@@ -1707,8 +1649,7 @@ TEST_F(ValidateImage, SampleDrefExplicitLodWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float scalar type: "
-                        "ImageSampleDrefExplicitLod"));
+              HasSubstr("Expected Result Type to be int or float scalar type"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodNotSampledImage) {
@@ -1721,8 +1662,7 @@ TEST_F(ValidateImage, SampleDrefExplicitLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageSampleDrefExplicitLod"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodWrongSampledType) {
@@ -1737,8 +1677,7 @@ TEST_F(ValidateImage, SampleDrefExplicitLodWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type: "
-                "ImageSampleDrefExplicitLod"));
+      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodVoidSampledType) {
@@ -1753,8 +1692,7 @@ TEST_F(ValidateImage, SampleDrefExplicitLodVoidSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type: "
-                "ImageSampleDrefExplicitLod"));
+      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodWrongCoordinateType) {
@@ -1768,8 +1706,7 @@ TEST_F(ValidateImage, SampleDrefExplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageSampleDrefExplicitLod"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodCoordinateSizeTooSmall) {
@@ -1784,8 +1721,7 @@ TEST_F(ValidateImage, SampleDrefExplicitLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 3 components, "
-                        "but given only 2: "
-                        "ImageSampleDrefExplicitLod"));
+                        "but given only 2"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodWrongDrefType) {
@@ -1799,8 +1735,7 @@ TEST_F(ValidateImage, SampleDrefExplicitLodWrongDrefType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSampleDrefExplicitLod: "
-                        "Expected Dref to be of 32-bit float type"));
+              HasSubstr("Expected Dref to be of 32-bit float type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodSuccess) {
@@ -1831,8 +1766,7 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float scalar type: "
-                        "ImageSampleProjDrefImplicitLod"));
+              HasSubstr("Expected Result Type to be int or float scalar type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodNotSampledImage) {
@@ -1845,8 +1779,7 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageSampleProjDrefImplicitLod"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongSampledType) {
@@ -1861,8 +1794,7 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type: "
-                "ImageSampleProjDrefImplicitLod"));
+      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodVoidSampledType) {
@@ -1877,8 +1809,7 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodVoidSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type: "
-                "ImageSampleProjDrefImplicitLod"));
+      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongCoordinateType) {
@@ -1892,8 +1823,7 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageSampleProjDrefImplicitLod"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodCoordinateSizeTooSmall) {
@@ -1908,8 +1838,7 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 3 components, "
-                        "but given only 2: "
-                        "ImageSampleProjDrefImplicitLod"));
+                        "but given only 2"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongDrefType) {
@@ -1923,8 +1852,7 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongDrefType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSampleProjDrefImplicitLod: "
-                        "Expected Dref to be of 32-bit float type"));
+              HasSubstr("Expected Dref to be of 32-bit float type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodSuccess) {
@@ -1954,8 +1882,7 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float scalar type: "
-                        "ImageSampleProjDrefExplicitLod"));
+              HasSubstr("Expected Result Type to be int or float scalar type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodNotSampledImage) {
@@ -1968,8 +1895,7 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageSampleProjDrefExplicitLod"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodWrongSampledType) {
@@ -1984,8 +1910,7 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type: "
-                "ImageSampleProjDrefExplicitLod"));
+      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodVoidSampledType) {
@@ -2000,8 +1925,7 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodVoidSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type: "
-                "ImageSampleProjDrefExplicitLod"));
+      HasSubstr("Expected Image 'Sampled Type' to be the same as Result Type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodWrongCoordinateType) {
@@ -2015,8 +1939,7 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageSampleProjDrefExplicitLod"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodCoordinateSizeTooSmall) {
@@ -2031,8 +1954,7 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 2 components, "
-                        "but given only 1: "
-                        "ImageSampleProjDrefExplicitLod"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, FetchSuccess) {
@@ -2054,8 +1976,7 @@ TEST_F(ValidateImage, FetchWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float vector type: "
-                        "ImageFetch"));
+              HasSubstr("Expected Result Type to be int or float vector type"));
 }
 
 TEST_F(ValidateImage, FetchWrongNumComponentsResultType) {
@@ -2066,9 +1987,8 @@ TEST_F(ValidateImage, FetchWrongNumComponentsResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Result Type to have 4 components: ImageFetch"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to have 4 components"));
 }
 
 TEST_F(ValidateImage, FetchNotImage) {
@@ -2081,9 +2001,8 @@ TEST_F(ValidateImage, FetchNotImage) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image to be of type OpTypeImage: ImageFetch"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, FetchNotSampled) {
@@ -2094,9 +2013,8 @@ TEST_F(ValidateImage, FetchNotSampled) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled' parameter to be 1: ImageFetch"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled' parameter to be 1"));
 }
 
 TEST_F(ValidateImage, FetchCube) {
@@ -2107,8 +2025,7 @@ TEST_F(ValidateImage, FetchCube) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image 'Dim' cannot be Cube: ImageFetch"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Image 'Dim' cannot be Cube"));
 }
 
 TEST_F(ValidateImage, FetchWrongSampledType) {
@@ -2121,8 +2038,7 @@ TEST_F(ValidateImage, FetchWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type components: "
-                        "ImageFetch"));
+                        "Result Type components"));
 }
 
 TEST_F(ValidateImage, FetchVoidSampledType) {
@@ -2146,8 +2062,7 @@ TEST_F(ValidateImage, FetchWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be int scalar or vector: "
-                        "ImageFetch"));
+              HasSubstr("Expected Coordinate to be int scalar or vector"));
 }
 
 TEST_F(ValidateImage, FetchCoordinateSizeTooSmall) {
@@ -2160,8 +2075,7 @@ TEST_F(ValidateImage, FetchCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 2 components, "
-                        "but given only 1: "
-                        "ImageFetch"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, FetchLodNotInt) {
@@ -2201,8 +2115,7 @@ TEST_F(ValidateImage, GatherWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int or float vector type: "
-                        "ImageGather"));
+              HasSubstr("Expected Result Type to be int or float vector type"));
 }
 
 TEST_F(ValidateImage, GatherWrongNumComponentsResultType) {
@@ -2216,8 +2129,7 @@ TEST_F(ValidateImage, GatherWrongNumComponentsResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to have 4 components: "
-                        "ImageGather"));
+              HasSubstr("Expected Result Type to have 4 components"));
 }
 
 TEST_F(ValidateImage, GatherNotSampledImage) {
@@ -2230,8 +2142,7 @@ TEST_F(ValidateImage, GatherNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage: "
-                "ImageGather"));
+      HasSubstr("Expected Sampled Image to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, GatherWrongSampledType) {
@@ -2246,8 +2157,7 @@ TEST_F(ValidateImage, GatherWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type components: "
-                        "ImageGather"));
+                        "Result Type components"));
 }
 
 TEST_F(ValidateImage, GatherVoidSampledType) {
@@ -2273,8 +2183,7 @@ TEST_F(ValidateImage, GatherWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector: "
-                        "ImageGather"));
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, GatherCoordinateSizeTooSmall) {
@@ -2289,8 +2198,7 @@ TEST_F(ValidateImage, GatherCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 4 components, "
-                        "but given only 1: "
-                        "ImageGather"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, GatherWrongComponentType) {
@@ -2304,8 +2212,7 @@ TEST_F(ValidateImage, GatherWrongComponentType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Component to be 32-bit int scalar: "
-                        "ImageGather"));
+              HasSubstr("Expected Component to be 32-bit int scalar"));
 }
 
 TEST_F(ValidateImage, GatherComponentNot32Bit) {
@@ -2319,8 +2226,7 @@ TEST_F(ValidateImage, GatherComponentNot32Bit) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Component to be 32-bit int scalar: "
-                        "ImageGather"));
+              HasSubstr("Expected Component to be 32-bit int scalar"));
 }
 
 TEST_F(ValidateImage, GatherDimCube) {
@@ -2336,8 +2242,7 @@ TEST_F(ValidateImage, GatherDimCube) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Image Operand ConstOffsets cannot be used with Cube Image 'Dim': "
-          "ImageGather"));
+          "Image Operand ConstOffsets cannot be used with Cube Image 'Dim'"));
 }
 
 TEST_F(ValidateImage, GatherConstOffsetsNotArray) {
@@ -2352,8 +2257,8 @@ TEST_F(ValidateImage, GatherConstOffsetsNotArray) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image Operand ConstOffsets to be an array of size 4: "
-                "ImageGather"));
+      HasSubstr(
+          "Expected Image Operand ConstOffsets to be an array of size 4"));
 }
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayWrongSize) {
@@ -2368,8 +2273,8 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayWrongSize) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image Operand ConstOffsets to be an array of size 4: "
-                "ImageGather"));
+      HasSubstr(
+          "Expected Image Operand ConstOffsets to be an array of size 4"));
 }
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayNotVector) {
@@ -2384,8 +2289,7 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayNotVector) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image Operand ConstOffsets array componenets "
-                        "to be int vectors "
-                        "of size 2: ImageGather"));
+                        "to be int vectors of size 2"));
 }
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayVectorWrongSize) {
@@ -2400,8 +2304,7 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayVectorWrongSize) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image Operand ConstOffsets array componenets "
-                        "to be int vectors "
-                        "of size 2: ImageGather"));
+                        "to be int vectors of size 2"));
 }
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayNotConst) {
@@ -2417,8 +2320,7 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayNotConst) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image Operand ConstOffsets to be a const object: "
-                "ImageGather"));
+      HasSubstr("Expected Image Operand ConstOffsets to be a const object"));
 }
 
 TEST_F(ValidateImage, NotGatherWithConstOffsets) {
@@ -2435,7 +2337,7 @@ TEST_F(ValidateImage, NotGatherWithConstOffsets) {
       getDiagnosticString(),
       HasSubstr(
           "Image Operand ConstOffsets can only be used with OpImageGather "
-          "and OpImageDrefGather: ImageSampleImplicitLod"));
+          "and OpImageDrefGather"));
 }
 
 TEST_F(ValidateImage, DrefGatherSuccess) {
@@ -2463,8 +2365,7 @@ TEST_F(ValidateImage, DrefGatherVoidSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type components: "
-                        "ImageDrefGather"));
+                        "Result Type components"));
 }
 
 TEST_F(ValidateImage, DrefGatherWrongDrefType) {
@@ -2478,8 +2379,7 @@ TEST_F(ValidateImage, DrefGatherWrongDrefType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageDrefGather: "
-                        "Expected Dref to be of 32-bit float type"));
+              HasSubstr("Expected Dref to be of 32-bit float type"));
 }
 
 TEST_F(ValidateImage, ReadSuccess1) {
@@ -2535,8 +2435,7 @@ TEST_F(ValidateImage, ReadNeedCapabilityStorageImageReadWithoutFormat) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Capability StorageImageReadWithoutFormat is required "
-                        "to read storage "
-                        "image: ImageRead"));
+                        "to read storage image"));
 }
 
 TEST_F(ValidateImage, ReadNeedCapabilityImage1D) {
@@ -2549,8 +2448,7 @@ TEST_F(ValidateImage, ReadNeedCapabilityImage1D) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Capability Image1D is required to access storage image: ImageRead"));
+      HasSubstr("Capability Image1D is required to access storage image"));
 }
 
 TEST_F(ValidateImage, ReadNeedCapabilityImageCubeArray) {
@@ -2564,8 +2462,7 @@ TEST_F(ValidateImage, ReadNeedCapabilityImageCubeArray) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Capability ImageCubeArray is required to access storage image: "
-          "ImageRead"));
+          "Capability ImageCubeArray is required to access storage image"));
 }
 
 // TODO(atgoo@github.com) Disabled until the spec is clarified.
@@ -2578,10 +2475,8 @@ TEST_F(ValidateImage, DISABLED_ReadWrongResultType) {
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected Result Type to be int or float vector type: ImageRead"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be int or float vector type"));
 }
 
 // TODO(atgoo@github.com) Disabled until the spec is clarified.
@@ -2594,9 +2489,8 @@ TEST_F(ValidateImage, DISABLED_ReadWrongNumComponentsResultType) {
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Result Type to have 4 components: ImageRead"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to have 4 components"));
 }
 
 TEST_F(ValidateImage, ReadNotImage) {
@@ -2609,7 +2503,7 @@ TEST_F(ValidateImage, ReadNotImage) {
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image to be of type OpTypeImage: ImageRead"));
+              HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, ReadImageSampled) {
@@ -2621,9 +2515,8 @@ TEST_F(ValidateImage, ReadImageSampled) {
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled' parameter to be 0 or 2: ImageRead"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled' parameter to be 0 or 2"));
 }
 
 TEST_F(ValidateImage, ReadWrongSampledType) {
@@ -2637,8 +2530,7 @@ TEST_F(ValidateImage, ReadWrongSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type components: "
-                        "ImageRead"));
+                        "Result Type components"));
 }
 
 TEST_F(ValidateImage, ReadVoidSampledType) {
@@ -2663,9 +2555,8 @@ TEST_F(ValidateImage, ReadWrongCoordinateType) {
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Coordinate to be int scalar or vector: ImageRead"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Coordinate to be int scalar or vector"));
 }
 
 TEST_F(ValidateImage, ReadCoordinateSizeTooSmall) {
@@ -2679,8 +2570,7 @@ TEST_F(ValidateImage, ReadCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 2 components, "
-                        "but given only 1: "
-                        "ImageRead"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, WriteSuccess1) {
@@ -2738,7 +2628,7 @@ TEST_F(ValidateImage, WriteSubpassData) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image 'Dim' cannot be SubpassData: ImageWrite"));
+              HasSubstr("Image 'Dim' cannot be SubpassData"));
 }
 
 TEST_F(ValidateImage, WriteNeedCapabilityStorageImageWriteWithoutFormat) {
@@ -2753,7 +2643,7 @@ TEST_F(ValidateImage, WriteNeedCapabilityStorageImageWriteWithoutFormat) {
       getDiagnosticString(),
       HasSubstr(
           "Capability StorageImageWriteWithoutFormat is required to write to "
-          "storage image: ImageWrite"));
+          "storage image"));
 }
 
 TEST_F(ValidateImage, WriteNeedCapabilityImage1D) {
@@ -2766,7 +2656,7 @@ TEST_F(ValidateImage, WriteNeedCapabilityImage1D) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Capability Image1D is required to access storage "
-                        "image: ImageWrite"));
+                        "image"));
 }
 
 TEST_F(ValidateImage, WriteNeedCapabilityImageCubeArray) {
@@ -2780,8 +2670,7 @@ TEST_F(ValidateImage, WriteNeedCapabilityImageCubeArray) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Capability ImageCubeArray is required to access storage image: "
-          "ImageWrite"));
+          "Capability ImageCubeArray is required to access storage image"));
 }
 
 TEST_F(ValidateImage, WriteNotImage) {
@@ -2792,9 +2681,8 @@ TEST_F(ValidateImage, WriteNotImage) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image to be of type OpTypeImage: ImageWrite"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, WriteImageSampled) {
@@ -2806,9 +2694,8 @@ TEST_F(ValidateImage, WriteImageSampled) {
   const std::string extra = "\nOpCapability StorageImageWriteWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image 'Sampled' parameter to be 0 or 2: ImageWrite"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled' parameter to be 0 or 2"));
 }
 
 TEST_F(ValidateImage, WriteWrongCoordinateType) {
@@ -2820,9 +2707,8 @@ TEST_F(ValidateImage, WriteWrongCoordinateType) {
   const std::string extra = "\nOpCapability StorageImageWriteWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Coordinate to be int scalar or vector: ImageWrite"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Coordinate to be int scalar or vector"));
 }
 
 TEST_F(ValidateImage, WriteCoordinateSizeTooSmall) {
@@ -2836,8 +2722,7 @@ TEST_F(ValidateImage, WriteCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 2 components, "
-                        "but given only 1: "
-                        "ImageWrite"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, WriteTexelWrongType) {
@@ -2849,10 +2734,8 @@ TEST_F(ValidateImage, WriteTexelWrongType) {
   const std::string extra = "\nOpCapability StorageImageWriteWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected Texel to be int or float vector or scalar: ImageWrite"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Texel to be int or float vector or scalar"));
 }
 
 TEST_F(ValidateImage, DISABLED_WriteTexelNotVector4) {
@@ -2865,7 +2748,7 @@ TEST_F(ValidateImage, DISABLED_WriteTexelNotVector4) {
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Texel to have 4 components: ImageWrite"));
+              HasSubstr("Expected Texel to have 4 components"));
 }
 
 TEST_F(ValidateImage, WriteTexelWrongComponentType) {
@@ -2880,8 +2763,7 @@ TEST_F(ValidateImage, WriteTexelWrongComponentType) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Expected Image 'Sampled Type' to be the same as Texel components: "
-          "ImageWrite"));
+          "Expected Image 'Sampled Type' to be the same as Texel components"));
 }
 
 TEST_F(ValidateImage, WriteSampleNotInteger) {
@@ -2894,8 +2776,7 @@ TEST_F(ValidateImage, WriteSampleNotInteger) {
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand Sample to be int scalar: "
-                        "ImageWrite"));
+              HasSubstr("Expected Image Operand Sample to be int scalar"));
 }
 
 TEST_F(ValidateImage, SampleNotMultisampled) {
@@ -2909,8 +2790,7 @@ TEST_F(ValidateImage, SampleNotMultisampled) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Image Operand Sample requires non-zero 'MS' parameter: ImageWrite"));
+      HasSubstr("Image Operand Sample requires non-zero 'MS' parameter"));
 }
 
 TEST_F(ValidateImage, SampleWrongOpcode) {
@@ -2926,8 +2806,7 @@ TEST_F(ValidateImage, SampleWrongOpcode) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Sample can only be used with "
                         "OpImageFetch, OpImageRead, OpImageWrite, "
-                        "OpImageSparseFetch and OpImageSparseRead: "
-                        "ImageSampleExplicitLod"));
+                        "OpImageSparseFetch and OpImageSparseRead"));
 }
 
 TEST_F(ValidateImage, SampleImageToImageSuccess) {
@@ -2953,7 +2832,7 @@ TEST_F(ValidateImage, SampleImageToImageWrongResultType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be OpTypeImage: Image"));
+              HasSubstr("Expected Result Type to be OpTypeImage"));
 }
 
 TEST_F(ValidateImage, SampleImageToImageNotSampledImage) {
@@ -2966,8 +2845,7 @@ TEST_F(ValidateImage, SampleImageToImageNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Expected Sample Image to be of type OpTypeSampleImage: Image"));
+      HasSubstr("Expected Sample Image to be of type OpTypeSampleImage"));
 }
 
 TEST_F(ValidateImage, SampleImageToImageNotTheSameImageType) {
@@ -2982,7 +2860,7 @@ TEST_F(ValidateImage, SampleImageToImageNotTheSameImageType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Sample Image image type to be equal to "
-                        "Result Type: Image"));
+                        "Result Type"));
 }
 
 TEST_F(ValidateImage, QueryFormatSuccess) {
@@ -3003,10 +2881,8 @@ TEST_F(ValidateImage, QueryFormatWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected Result Type to be int scalar type: ImageQueryFormat"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be int scalar type"));
 }
 
 TEST_F(ValidateImage, QueryFormatNotImage) {
@@ -3019,10 +2895,8 @@ TEST_F(ValidateImage, QueryFormatNotImage) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected operand to be of type OpTypeImage: ImageQueryFormat"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected operand to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, QueryOrderSuccess) {
@@ -3043,9 +2917,8 @@ TEST_F(ValidateImage, QueryOrderWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Result Type to be int scalar type: ImageQueryOrder"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be int scalar type"));
 }
 
 TEST_F(ValidateImage, QueryOrderNotImage) {
@@ -3058,9 +2931,8 @@ TEST_F(ValidateImage, QueryOrderNotImage) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected operand to be of type OpTypeImage: ImageQueryOrder"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected operand to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, QuerySizeLodSuccess) {
@@ -3081,9 +2953,9 @@ TEST_F(ValidateImage, QuerySizeLodWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int scalar or vector type: "
-                        "ImageQuerySizeLod"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Result Type to be int scalar or vector type"));
 }
 
 TEST_F(ValidateImage, QuerySizeLodResultTypeWrongSize) {
@@ -3094,10 +2966,8 @@ TEST_F(ValidateImage, QuerySizeLodResultTypeWrongSize) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Result Type has 1 components, but 2 expected: ImageQuerySizeLod"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result Type has 1 components, but 2 expected"));
 }
 
 TEST_F(ValidateImage, QuerySizeLodNotImage) {
@@ -3110,9 +2980,8 @@ TEST_F(ValidateImage, QuerySizeLodNotImage) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image to be of type OpTypeImage: ImageQuerySizeLod"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, QuerySizeLodWrongImageDim) {
@@ -3123,9 +2992,8 @@ TEST_F(ValidateImage, QuerySizeLodWrongImageDim) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Image 'Dim' must be 1D, 2D, 3D or Cube: ImageQuerySizeLod"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image 'Dim' must be 1D, 2D, 3D or Cube"));
 }
 
 TEST_F(ValidateImage, QuerySizeLodMultisampled) {
@@ -3136,8 +3004,7 @@ TEST_F(ValidateImage, QuerySizeLodMultisampled) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image 'MS' must be 0: ImageQuerySizeLod"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Image 'MS' must be 0"));
 }
 
 TEST_F(ValidateImage, QuerySizeLodWrongLodType) {
@@ -3149,8 +3016,7 @@ TEST_F(ValidateImage, QuerySizeLodWrongLodType) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Level of Detail to be int scalar: "
-                        "ImageQuerySizeLod"));
+              HasSubstr("Expected Level of Detail to be int scalar"));
 }
 
 TEST_F(ValidateImage, QuerySizeSuccess) {
@@ -3171,9 +3037,9 @@ TEST_F(ValidateImage, QuerySizeWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to be int scalar or vector type: "
-                        "ImageQuerySize"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Result Type to be int scalar or vector type"));
 }
 
 TEST_F(ValidateImage, QuerySizeNotImage) {
@@ -3186,9 +3052,8 @@ TEST_F(ValidateImage, QuerySizeNotImage) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image to be of type OpTypeImage: ImageQuerySize"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
 // TODO(atgoo@github.com) Add more tests for OpQuerySize.
@@ -3228,9 +3093,8 @@ TEST_F(ValidateImage, QueryLodWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Result Type to be float vector type: ImageQueryLod"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be float vector type"));
 }
 
 TEST_F(ValidateImage, QueryLodResultTypeWrongSize) {
@@ -3243,9 +3107,8 @@ TEST_F(ValidateImage, QueryLodResultTypeWrongSize) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Result Type to have 2 components: ImageQueryLod"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to have 2 components"));
 }
 
 TEST_F(ValidateImage, QueryLodNotSampledImage) {
@@ -3258,8 +3121,7 @@ TEST_F(ValidateImage, QueryLodNotSampledImage) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image operand to be of type OpTypeSampledImage: "
-                "ImageQueryLod"));
+      HasSubstr("Expected Image operand to be of type OpTypeSampledImage"));
 }
 
 TEST_F(ValidateImage, QueryLodWrongDim) {
@@ -3272,9 +3134,8 @@ TEST_F(ValidateImage, QueryLodWrongDim) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Image 'Dim' must be 1D, 2D, 3D or Cube: ImageQueryLod"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image 'Dim' must be 1D, 2D, 3D or Cube"));
 }
 
 TEST_F(ValidateImage, QueryLodWrongCoordinateType) {
@@ -3287,10 +3148,8 @@ TEST_F(ValidateImage, QueryLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected Coordinate to be float scalar or vector: ImageQueryLod"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Coordinate to be float scalar or vector"));
 }
 
 TEST_F(ValidateImage, QueryLodCoordinateSizeTooSmall) {
@@ -3305,8 +3164,7 @@ TEST_F(ValidateImage, QueryLodCoordinateSizeTooSmall) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Coordinate to have at least 2 components, "
-                        "but given only 1: "
-                        "ImageQueryLod"));
+                        "but given only 1"));
 }
 
 TEST_F(ValidateImage, QueryLevelsSuccess) {
@@ -3327,10 +3185,8 @@ TEST_F(ValidateImage, QueryLevelsWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected Result Type to be int scalar type: ImageQueryLevels"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be int scalar type"));
 }
 
 TEST_F(ValidateImage, QueryLevelsNotImage) {
@@ -3343,9 +3199,8 @@ TEST_F(ValidateImage, QueryLevelsNotImage) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image to be of type OpTypeImage: ImageQueryLevels"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, QueryLevelsWrongDim) {
@@ -3356,9 +3211,8 @@ TEST_F(ValidateImage, QueryLevelsWrongDim) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Image 'Dim' must be 1D, 2D, 3D or Cube: ImageQueryLevels"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image 'Dim' must be 1D, 2D, 3D or Cube"));
 }
 
 TEST_F(ValidateImage, QuerySamplesSuccess) {
@@ -3379,8 +3233,7 @@ TEST_F(ValidateImage, QuerySamplesNot2D) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image 'Dim' must be 2D: ImageQuerySamples"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Image 'Dim' must be 2D"));
 }
 
 TEST_F(ValidateImage, QuerySamplesNotMultisampled) {
@@ -3391,8 +3244,7 @@ TEST_F(ValidateImage, QuerySamplesNotMultisampled) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Image 'MS' must be 1: ImageQuerySamples"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Image 'MS' must be 1"));
 }
 
 TEST_F(ValidateImage, QueryLodWrongExecutionModel) {
@@ -3452,10 +3304,8 @@ TEST_F(ValidateImage, ReadSubpassDataWrongExecutionModel) {
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Vertex").c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Dim SubpassData requires Fragment execution model: ImageRead"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Dim SubpassData requires Fragment execution model"));
 }
 
 TEST_F(ValidateImage, SparseSampleImplicitLodSuccess) {
@@ -3486,8 +3336,7 @@ TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotStruct) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseSampleImplicitLod: "
-                        "expected Result Type to be OpTypeStruct"));
+              HasSubstr("Expected Result Type to be OpTypeStruct"));
 }
 
 TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotTwoMembers1) {
@@ -3501,8 +3350,8 @@ TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotTwoMembers1) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseSampleImplicitLod: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an int "
+                        "scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotTwoMembers2) {
@@ -3516,8 +3365,8 @@ TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotTwoMembers2) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseSampleImplicitLod: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeFirstMemberNotInt) {
@@ -3531,8 +3380,8 @@ TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeFirstMemberNotInt) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseSampleImplicitLod: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeTexelNotVector) {
@@ -3547,7 +3396,7 @@ TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeTexelNotVector) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type's second member to be int or "
-                        "float vector type: ImageSparseSampleImplicitLod"));
+                        "float vector type"));
 }
 
 TEST_F(ValidateImage, SparseSampleImplicitLodWrongNumComponentsTexel) {
@@ -3562,7 +3411,7 @@ TEST_F(ValidateImage, SparseSampleImplicitLodWrongNumComponentsTexel) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type's second member to have 4 "
-                        "components: ImageSparseSampleImplicitLod"));
+                        "components"));
 }
 
 TEST_F(ValidateImage, SparseSampleImplicitLodWrongComponentTypeTexel) {
@@ -3577,8 +3426,7 @@ TEST_F(ValidateImage, SparseSampleImplicitLodWrongComponentTypeTexel) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type's second member components: "
-                        "ImageSparseSampleImplicitLod"));
+                        "Result Type's second member components"));
 }
 
 TEST_F(ValidateImage, SparseSampleDrefImplicitLodSuccess) {
@@ -3609,8 +3457,7 @@ TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotStruct) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseSampleDrefImplicitLod: "
-                        "expected Result Type to be OpTypeStruct"));
+              HasSubstr("Expected Result Type to be OpTypeStruct"));
 }
 
 TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotTwoMembers1) {
@@ -3625,8 +3472,8 @@ TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotTwoMembers1) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ImageSparseSampleDrefImplicitLod: expected Result Type "
-                "to be a struct containing an int scalar and a texel"));
+      HasSubstr("Expected Result Type to be a struct containing an int scalar "
+                "and a texel"));
 }
 
 TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotTwoMembers2) {
@@ -3641,8 +3488,8 @@ TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotTwoMembers2) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ImageSparseSampleDrefImplicitLod: expected Result Type "
-                "to be a struct containing an int scalar and a texel"));
+      HasSubstr("Expected Result Type to be a struct containing an int scalar "
+                "and a texel"));
 }
 
 TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeFirstMemberNotInt) {
@@ -3657,8 +3504,8 @@ TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeFirstMemberNotInt) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ImageSparseSampleDrefImplicitLod: expected Result Type "
-                "to be a struct containing an int scalar and a texel"));
+      HasSubstr("Expected Result Type to be a struct containing an int scalar "
+                "and a texel"));
 }
 
 TEST_F(ValidateImage, SparseSampleDrefImplicitLodDifferentSampledType) {
@@ -3673,8 +3520,7 @@ TEST_F(ValidateImage, SparseSampleDrefImplicitLodDifferentSampledType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type's second member: "
-                        "ImageSparseSampleDrefImplicitLod"));
+                        "Result Type's second member"));
 }
 
 TEST_F(ValidateImage, SparseFetchSuccess) {
@@ -3696,8 +3542,7 @@ TEST_F(ValidateImage, SparseFetchResultTypeNotStruct) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseFetch: "
-                        "expected Result Type to be OpTypeStruct"));
+              HasSubstr("Expected Result Type to be OpTypeStruct"));
 }
 
 TEST_F(ValidateImage, SparseFetchResultTypeNotTwoMembers1) {
@@ -3709,8 +3554,8 @@ TEST_F(ValidateImage, SparseFetchResultTypeNotTwoMembers1) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseFetch: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseFetchResultTypeNotTwoMembers2) {
@@ -3722,8 +3567,8 @@ TEST_F(ValidateImage, SparseFetchResultTypeNotTwoMembers2) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseFetch: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseFetchResultTypeFirstMemberNotInt) {
@@ -3735,8 +3580,8 @@ TEST_F(ValidateImage, SparseFetchResultTypeFirstMemberNotInt) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseFetch: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseFetchResultTypeTexelNotVector) {
@@ -3749,7 +3594,7 @@ TEST_F(ValidateImage, SparseFetchResultTypeTexelNotVector) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type's second member to be int or "
-                        "float vector type: ImageSparseFetch"));
+                        "float vector type"));
 }
 
 TEST_F(ValidateImage, SparseFetchWrongNumComponentsTexel) {
@@ -3762,7 +3607,7 @@ TEST_F(ValidateImage, SparseFetchWrongNumComponentsTexel) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type's second member to have 4 "
-                        "components: ImageSparseFetch"));
+                        "components"));
 }
 
 TEST_F(ValidateImage, SparseFetchWrongComponentTypeTexel) {
@@ -3775,8 +3620,7 @@ TEST_F(ValidateImage, SparseFetchWrongComponentTypeTexel) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type's second member components: "
-                        "ImageSparseFetch"));
+                        "Result Type's second member components"));
 }
 
 TEST_F(ValidateImage, SparseReadSuccess) {
@@ -3800,8 +3644,7 @@ TEST_F(ValidateImage, SparseReadResultTypeNotStruct) {
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseRead: "
-                        "expected Result Type to be OpTypeStruct"));
+              HasSubstr("Expected Result Type to be OpTypeStruct"));
 }
 
 TEST_F(ValidateImage, SparseReadResultTypeNotTwoMembers1) {
@@ -3814,8 +3657,8 @@ TEST_F(ValidateImage, SparseReadResultTypeNotTwoMembers1) {
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseRead: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseReadResultTypeNotTwoMembers2) {
@@ -3828,8 +3671,8 @@ TEST_F(ValidateImage, SparseReadResultTypeNotTwoMembers2) {
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseRead: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseReadResultTypeFirstMemberNotInt) {
@@ -3842,8 +3685,8 @@ TEST_F(ValidateImage, SparseReadResultTypeFirstMemberNotInt) {
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseRead: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseReadResultTypeTexelWrongType) {
@@ -3857,7 +3700,7 @@ TEST_F(ValidateImage, SparseReadResultTypeTexelWrongType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type's second member to be int or "
-                        "float scalar or vector type: ImageSparseRead"));
+                        "float scalar or vector type"));
 }
 
 TEST_F(ValidateImage, SparseReadWrongComponentTypeTexel) {
@@ -3871,8 +3714,7 @@ TEST_F(ValidateImage, SparseReadWrongComponentTypeTexel) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type's second member components: "
-                        "ImageSparseRead"));
+                        "Result Type's second member components"));
 }
 
 TEST_F(ValidateImage, SparseReadSubpassDataNotAllowed) {
@@ -3912,8 +3754,7 @@ TEST_F(ValidateImage, SparseGatherResultTypeNotStruct) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseGather: "
-                        "expected Result Type to be OpTypeStruct"));
+              HasSubstr("Expected Result Type to be OpTypeStruct"));
 }
 
 TEST_F(ValidateImage, SparseGatherResultTypeNotTwoMembers1) {
@@ -3927,8 +3768,8 @@ TEST_F(ValidateImage, SparseGatherResultTypeNotTwoMembers1) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseGather: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an int "
+                        "scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseGatherResultTypeNotTwoMembers2) {
@@ -3942,8 +3783,8 @@ TEST_F(ValidateImage, SparseGatherResultTypeNotTwoMembers2) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseGather: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an int "
+                        "scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseGatherResultTypeFirstMemberNotInt) {
@@ -3957,8 +3798,8 @@ TEST_F(ValidateImage, SparseGatherResultTypeFirstMemberNotInt) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseGather: expected Result Type "
-                        "to be a struct containing an int scalar and a texel"));
+              HasSubstr("Expected Result Type to be a struct containing an "
+                        "int scalar and a texel"));
 }
 
 TEST_F(ValidateImage, SparseGatherResultTypeTexelNotVector) {
@@ -3973,7 +3814,7 @@ TEST_F(ValidateImage, SparseGatherResultTypeTexelNotVector) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type's second member to be int or "
-                        "float vector type: ImageSparseGather"));
+                        "float vector type"));
 }
 
 TEST_F(ValidateImage, SparseGatherWrongNumComponentsTexel) {
@@ -3988,7 +3829,7 @@ TEST_F(ValidateImage, SparseGatherWrongNumComponentsTexel) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type's second member to have 4 "
-                        "components: ImageSparseGather"));
+                        "components"));
 }
 
 TEST_F(ValidateImage, SparseGatherWrongComponentTypeTexel) {
@@ -4003,8 +3844,7 @@ TEST_F(ValidateImage, SparseGatherWrongComponentTypeTexel) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image 'Sampled Type' to be the same as "
-                        "Result Type's second member components: "
-                        "ImageSparseGather"));
+                        "Result Type's second member components"));
 }
 
 TEST_F(ValidateImage, SparseTexelsResidentSuccess) {
@@ -4024,8 +3864,7 @@ TEST_F(ValidateImage, SparseTexelsResidentResultTypeNotBool) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImageSparseTexelsResident: "
-                        "expected Result Type to be bool scalar type"));
+              HasSubstr("Expected Result Type to be bool scalar type"));
 }
 
 }  // namespace
