@@ -236,6 +236,7 @@ bool CombineAccessChains::CombineAccessChain(Instruction* inst) {
   if (ptr_input->NumInOperands() == 1) {
     // The input is effectively a no-op.
     inst->SetInOperand(0, {ptr_input->GetSingleWordInOperand(0)});
+    context()->AnalyzeUses(inst);
   } else if (inst->NumInOperands() == 1) {
     // |inst| is a no-op, change it to a copy. Instruction simplification will
     // clean it up.
