@@ -296,8 +296,15 @@ class ValidationState_t {
 
   const AssemblyGrammar& grammar() const { return grammar_; }
 
-  /// Registers the instruction
-  void RegisterInstruction(const spv_parsed_instruction_t& inst);
+  /// Inserts the instruction into the list of ordered instructions in the file.
+  Instruction* AddOrderedInstruction(const spv_parsed_instruction_t* inst);
+
+  /// Registers the instruction. This will add the instruction to the list of
+  /// definitions and register sampled image consumers.
+  void RegisterInstruction(Instruction* inst);
+
+  /// Registers the debug instruction information.
+  void RegisterDebugInstruction(const Instruction* inst);
 
   /// Registers the decoration for the given <id>
   void RegisterDecorationForId(uint32_t id, const Decoration& dec) {

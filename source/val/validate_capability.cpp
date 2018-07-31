@@ -220,19 +220,17 @@ bool IsEnabledByCapabilityOpenCL_2_0(ValidationState_t& _,
 
 // Validates that capability declarations use operands allowed in the current
 // context.
-spv_result_t CapabilityPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst) {
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  if (opcode != SpvOpCapability) return SPV_SUCCESS;
+spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
+  if (inst->opcode() != SpvOpCapability) return SPV_SUCCESS;
 
-  assert(inst->num_operands == 1);
+  assert(inst->operands().size() == 1);
 
-  const spv_parsed_operand_t& operand = inst->operands[0];
+  const spv_parsed_operand_t& operand = inst->operand(0);
 
   assert(operand.num_words == 1);
-  assert(operand.offset < inst->num_words);
+  assert(operand.offset < inst->words().size());
 
-  const uint32_t capability = inst->words[operand.offset];
+  const uint32_t capability = inst->word(operand.offset);
   const auto capability_str = [&_, capability]() {
     spv_operand_desc desc = nullptr;
     if (_.grammar().lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, capability,
