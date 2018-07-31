@@ -424,7 +424,7 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
                                    const Instruction* inst) {
   auto resultType = _.FindDef(inst->type_id());
   if (!resultType || resultType->opcode() != SpvOpTypeVector) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst->InstructionPosition())
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Result Type of OpVectorShuffle must be"
            << " OpTypeVector. Found Op"
            << spvOpcodeString(static_cast<SpvOp>(resultType->opcode())) << ".";
@@ -435,7 +435,7 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
   auto componentCount = inst->operands().size() - 4;
   auto resultVectorDimension = resultType->GetOperandAs<uint32_t>(2);
   if (componentCount != resultVectorDimension) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst->InstructionPosition())
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpVectorShuffle component literals count does not match "
               "Result Type <id> '"
            << _.getIdName(resultType->id()) << "'s vector component count.";
@@ -448,21 +448,21 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
   auto vector2Object = _.FindDef(inst->GetOperandAs<uint32_t>(3));
   auto vector2Type = _.FindDef(vector2Object->type_id());
   if (!vector1Type || vector1Type->opcode() != SpvOpTypeVector) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst->InstructionPosition())
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The type of Vector 1 must be OpTypeVector.";
   }
   if (!vector2Type || vector2Type->opcode() != SpvOpTypeVector) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst->InstructionPosition())
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The type of Vector 2 must be OpTypeVector.";
   }
 
   auto resultComponentType = resultType->GetOperandAs<uint32_t>(1);
   if (vector1Type->GetOperandAs<uint32_t>(1) != resultComponentType) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst->InstructionPosition())
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Component Type of Vector 1 must be the same as ResultType.";
   }
   if (vector2Type->GetOperandAs<uint32_t>(1) != resultComponentType) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst->InstructionPosition())
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Component Type of Vector 2 must be the same as ResultType.";
   }
 
@@ -474,7 +474,7 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
   for (size_t i = firstLiteralIndex; i < inst->operands().size(); ++i) {
     auto literal = inst->GetOperandAs<uint32_t>(i);
     if (literal != 0xFFFFFFFF && literal >= N) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst->InstructionPosition())
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Component index " << literal << " is out of bounds for "
              << "combined (Vector1 + Vector2) size of " << N << ".";
     }
