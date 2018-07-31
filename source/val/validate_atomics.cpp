@@ -35,7 +35,7 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
   std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
 
   if (!is_int32) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode) << ": expected Scope to be 32-bit int";
   }
 
@@ -48,7 +48,7 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
   if (spvIsVulkanEnv(_.context()->target_env)) {
     if (value != SpvScopeDevice && value != SpvScopeWorkgroup &&
         value != SpvScopeInvocation) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << spvOpcodeString(opcode)
              << ": in Vulkan environment memory scope is limited to Device, "
                 "Workgroup and Invocation";
@@ -73,7 +73,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
       _.EvalInt32IfConst(memory_semantics_id);
 
   if (!is_int32) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": expected Memory Semantics to be 32-bit int";
   }
@@ -87,7 +87,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
           (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
            SpvMemorySemanticsAcquireReleaseMask |
            SpvMemorySemanticsSequentiallyConsistentMask)) > 1) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": no more than one of the following Memory Semantics bits can "
               "be set at the same time: Acquire, Release, AcquireRelease or "
@@ -96,14 +96,14 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
 
   if (flags & SpvMemorySemanticsUniformMemoryMask &&
       !_.HasCapability(SpvCapabilityShader)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": Memory Semantics UniformMemory requires capability Shader";
   }
 
   if (flags & SpvMemorySemanticsAtomicCounterMemoryMask &&
       !_.HasCapability(SpvCapabilityAtomicStorage)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": Memory Semantics UniformMemory requires capability "
               "AtomicStorage";
@@ -112,7 +112,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   if (opcode == SpvOpAtomicFlagClear &&
       (flags & SpvMemorySemanticsAcquireMask ||
        flags & SpvMemorySemanticsAcquireReleaseMask)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Memory Semantics Acquire and AcquireRelease cannot be used with "
            << spvOpcodeString(opcode);
   }
@@ -120,7 +120,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   if (opcode == SpvOpAtomicCompareExchange && operand_index == 5 &&
       (flags & SpvMemorySemanticsReleaseMask ||
        flags & SpvMemorySemanticsAcquireReleaseMask)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": Memory Semantics Release and AcquireRelease cannot be used "
               "for operand Unequal";
@@ -131,7 +131,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
         (flags & SpvMemorySemanticsReleaseMask ||
          flags & SpvMemorySemanticsAcquireReleaseMask ||
          flags & SpvMemorySemanticsSequentiallyConsistentMask)) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Vulkan spec disallows OpAtomicLoad with Memory Semantics "
                 "Release, AcquireRelease and SequentiallyConsistent";
     }
@@ -140,7 +140,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
         (flags & SpvMemorySemanticsAcquireMask ||
          flags & SpvMemorySemanticsAcquireReleaseMask ||
          flags & SpvMemorySemanticsSequentiallyConsistentMask)) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Vulkan spec disallows OpAtomicStore with Memory Semantics "
                 "Acquire, AcquireRelease and SequentiallyConsistent";
     }
@@ -180,13 +180,13 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
            opcode == SpvOpAtomicCompareExchange)) {
         if (!_.IsFloatScalarType(result_type) &&
             !_.IsIntScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Result Type to be int or float scalar type";
         }
       } else if (opcode == SpvOpAtomicFlagTestAndSet) {
         if (!_.IsBoolScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Result Type to be bool scalar type";
         }
@@ -194,13 +194,13 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
         assert(result_type == 0);
       } else {
         if (!_.IsIntScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Result Type to be int scalar type";
         }
         if (spvIsVulkanEnv(_.context()->target_env) &&
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": according to the Vulkan spec atomic Result Type needs "
                     "to be a 32-bit int scalar type";
@@ -214,7 +214,7 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
       uint32_t data_type = 0;
       uint32_t storage_class = 0;
       if (!_.GetPointerTypeInfo(pointer_type, &data_type, &storage_class)) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(opcode)
                << ": expected Pointer to be of type OpTypePointer";
       }
@@ -229,7 +229,7 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
         case SpvStorageClassStorageBuffer:
           break;
         default:
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Pointer Storage Class to be Uniform, "
                     "Workgroup, CrossWorkgroup, Generic, AtomicCounter, Image "
@@ -239,20 +239,20 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
       if (opcode == SpvOpAtomicFlagTestAndSet ||
           opcode == SpvOpAtomicFlagClear) {
         if (!_.IsIntScalarType(data_type) || _.GetBitWidth(data_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Pointer to point to a value of 32-bit int type";
         }
       } else if (opcode == SpvOpAtomicStore) {
         if (!_.IsFloatScalarType(data_type) && !_.IsIntScalarType(data_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Pointer to be a pointer to int or float "
                  << "scalar type";
         }
       } else {
         if (data_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Pointer to point to a value of type Result "
                     "Type";
@@ -276,7 +276,7 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
       if (opcode == SpvOpAtomicStore) {
         const uint32_t value_type = _.GetOperandTypeId(inst, 3);
         if (value_type != data_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Value type and the type pointed to by Pointer "
                     "to"
@@ -288,7 +288,7 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
                  opcode != SpvOpAtomicFlagClear) {
         const uint32_t value_type = _.GetOperandTypeId(inst, operand_index++);
         if (value_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Value to be of type Result Type";
         }
@@ -299,7 +299,7 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t comparator_type =
             _.GetOperandTypeId(inst, operand_index++);
         if (comparator_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << ": expected Comparator to be of type Result Type";
         }
