@@ -209,8 +209,8 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
           if (_.GetIdOpcode(operand_type) != SpvOpTypeVector ||
               _.GetComponentType(operand_type) != result_component_type) {
             return _.diag(SPV_ERROR_INVALID_DATA)
-                   << "Expected Constituents to be scalars or vectors of "
-                   << "the same type as Result Type components";
+                   << "Expected Constituents to be scalars or vectors of"
+                   << " the same type as Result Type components";
           }
 
           given_component_count += _.GetDimension(operand_type);
