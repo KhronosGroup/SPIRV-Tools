@@ -250,11 +250,11 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     return error;
 
   if (!vstate->has_memory_model_specified())
-    return vstate->diag(SPV_ERROR_INVALID_LAYOUT)
+    return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
            << "Missing required OpMemoryModel instruction.";
 
   if (vstate->in_function_body())
-    return vstate->diag(SPV_ERROR_INVALID_LAYOUT)
+    return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
            << "Missing OpFunctionEnd at end of module.";
 
   // TODO(umar): Add validation checks which require the parsing of the entire
@@ -268,7 +268,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
               bind(&ValidationState_t::getIdName, std::ref(*vstate), _1));
 
     auto id_str = ss.str();
-    return vstate->diag(SPV_ERROR_INVALID_ID)
+    return vstate->diag(SPV_ERROR_INVALID_ID, nullptr)
            << "The following forward referenced IDs have not been defined:\n"
            << id_str.substr(0, id_str.size() - 1);
   }
@@ -295,13 +295,14 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   // OpFunctionCall instruction.
   if (vstate->entry_points().empty() &&
       !vstate->HasCapability(SpvCapabilityLinkage)) {
-    return vstate->diag(SPV_ERROR_INVALID_BINARY)
+    return vstate->diag(SPV_ERROR_INVALID_BINARY, nullptr)
            << "No OpEntryPoint instruction was found. This is only allowed if "
               "the Linkage capability is being used.";
   }
   for (const auto& entry_point : vstate->entry_points()) {
     if (vstate->IsFunctionCallTarget(entry_point)) {
-      return vstate->diag(SPV_ERROR_INVALID_BINARY)
+      return vstate->diag(SPV_ERROR_INVALID_BINARY,
+                          vstate->FindDef(entry_point))
              << "A function (" << entry_point
              << ") may not be targeted by both an OpEntryPoint instruction and "
                 "an OpFunctionCall instruction.";
