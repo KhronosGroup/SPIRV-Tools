@@ -398,8 +398,7 @@ OpReturn
   CompileSuccessfully(s);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              StrEq("Missing OpFunctionEnd at end of module.\n"
-                    "  OpReturn\n"));
+              StrEq("Missing OpFunctionEnd at end of module."));
 }
 
 TEST_F(ValidateLayout, MissingFunctionEndForFunctionPrototype) {
@@ -415,8 +414,7 @@ OpMemoryModel Logical GLSL450
   CompileSuccessfully(s);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              StrEq("Missing OpFunctionEnd at end of module.\n"
-                    "  %3 = OpFunction %void None %2\n"));
+              StrEq("Missing OpFunctionEnd at end of module."));
 }
 
 using ValidateOpFunctionParameter = spvtest::ValidateBase<int>;
