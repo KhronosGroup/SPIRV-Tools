@@ -112,7 +112,7 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _, const Instruction* inst);
 spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst);
 
 /// Performs Id and SSA validation of a module
-spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst);
+spv_result_t IdPass(ValidationState_t& _, Instruction* inst);
 
 /// Performs validation of the Data Rules subsection of 2.16.1 Universal
 /// Validation Rules.
@@ -171,8 +171,7 @@ spv_result_t NonUniformPass(ValidationState_t& _, const Instruction* inst);
 
 // Validates that capability declarations use operands allowed in the current
 // context.
-spv_result_t CapabilityPass(ValidationState_t& _,
-                            const spv_parsed_instruction_t* inst);
+spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of primitive instructions.
 spv_result_t PrimitivesPass(ValidationState_t& _, const Instruction* inst);

@@ -83,35 +83,6 @@ spv_result_t setHeader(void* user_data, spv_endianness_t endian, uint32_t magic,
   return SPV_SUCCESS;
 }
 
-// Improves diagnostic messages by collecting names of IDs
-// NOTE: This function returns void and is not involved in validation
-void DebugInstructionPass(ValidationState_t& _,
-                          const spv_parsed_instruction_t* inst) {
-  switch (inst->opcode) {
-    case SpvOpName: {
-      const uint32_t target = *(inst->words + inst->operands[0].offset);
-      const char* str =
-          reinterpret_cast<const char*>(inst->words + inst->operands[1].offset);
-      _.AssignNameToId(target, str);
-    } break;
-    case SpvOpMemberName: {
-      const uint32_t target = *(inst->words + inst->operands[0].offset);
-      const char* str =
-          reinterpret_cast<const char*>(inst->words + inst->operands[2].offset);
-      _.AssignNameToId(target, str);
-    } break;
-    case SpvOpSourceContinued:
-    case SpvOpSource:
-    case SpvOpSourceExtension:
-    case SpvOpString:
-    case SpvOpLine:
-    case SpvOpNoLine:
-
-    default:
-      break;
-  }
-}
-
 // Parses OpExtension instruction and registers extension.
 void RegisterExtension(ValidationState_t& _,
                        const spv_parsed_instruction_t* inst) {
@@ -166,14 +137,11 @@ spv_result_t ProcessInstruction(void* user_data,
     _.AddFunctionCallTarget(inst->words[3]);
   }
 
-  DebugInstructionPass(_, inst);
-  if (auto error = CapabilityPass(_, inst)) return error;
-  // The IdPass check registers instructions and, therefore, must be called
-  // before any instruction lookups are performed.
-  if (auto error = IdPass(_, inst)) return error;
+  auto* instruction = _.AddOrderedInstruction(inst);
+  _.RegisterDebugInstruction(instruction);
 
-  const Instruction* instruction = &(_.ordered_instructions().back());
-
+  if (auto error = CapabilityPass(_, instruction)) return error;
+  if (auto error = IdPass(_, instruction)) return error;
   if (auto error = DataRulesPass(_, instruction)) return error;
   if (auto error = ModuleLayoutPass(_, instruction)) return error;
   if (auto error = CfgPass(_, instruction)) return error;

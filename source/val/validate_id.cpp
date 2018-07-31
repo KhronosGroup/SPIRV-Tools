@@ -2140,20 +2140,19 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
 // Performs SSA validation on the IDs of an instruction. The
 // can_have_forward_declared_ids  functor should return true if the
 // instruction operand's ID can be forward referenced.
-spv_result_t IdPass(ValidationState_t& _,
-                    const spv_parsed_instruction_t* inst) {
+spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
   auto can_have_forward_declared_ids =
-      spvOperandCanBeForwardDeclaredFunction(static_cast<SpvOp>(inst->opcode));
+      spvOperandCanBeForwardDeclaredFunction(inst->opcode());
 
   // Keep track of a result id defined by this instruction.  0 means it
   // does not define an id.
   uint32_t result_id = 0;
 
-  for (unsigned i = 0; i < inst->num_operands; i++) {
-    const spv_parsed_operand_t& operand = inst->operands[i];
+  for (unsigned i = 0; i < inst->operands().size(); i++) {
+    const spv_parsed_operand_t& operand = inst->operand(i);
     const spv_operand_type_t& type = operand.type;
     // We only care about Id operands, which are a single word.
-    const uint32_t operand_word = inst->words[operand.offset];
+    const uint32_t operand_word = inst->word(operand.offset);
 
     auto ret = SPV_ERROR_INTERNAL;
     switch (type) {
@@ -2162,8 +2161,7 @@ spv_result_t IdPass(ValidationState_t& _,
         //
         // Defer undefined-forward-reference removal until after we've analyzed
         // the remaining operands to this instruction.  Deferral only matters
-        // for
-        // OpPhi since it's the only case where it defines its own forward
+        // for OpPhi since it's the only case where it defines its own forward
         // reference.  Other instructions that can have forward references
         // either don't define a value or the forward reference is to a function
         // Id (and hence defined outside of a function body).
@@ -2191,14 +2189,12 @@ spv_result_t IdPass(ValidationState_t& _,
         ret = SPV_SUCCESS;
         break;
     }
-    if (SPV_SUCCESS != ret) {
-      return ret;
-    }
+    if (SPV_SUCCESS != ret) return ret;
   }
-  if (result_id) {
-    _.RemoveIfForwardDeclared(result_id);
-  }
-  _.RegisterInstruction(*inst);
+  if (result_id) _.RemoveIfForwardDeclared(result_id);
+
+  _.RegisterInstruction(inst);
+
   return SPV_SUCCESS;
 }
 

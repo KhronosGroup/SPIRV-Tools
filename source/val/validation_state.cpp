@@ -445,36 +445,64 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   return SPV_SUCCESS;
 }
 
-void ValidationState_t::RegisterInstruction(
-    const spv_parsed_instruction_t& inst) {
+Instruction* ValidationState_t::AddOrderedInstruction(
+    const spv_parsed_instruction_t* inst) {
   if (in_function_body()) {
-    ordered_instructions_.emplace_back(&inst, &current_function(),
+    ordered_instructions_.emplace_back(inst, &current_function(),
                                        current_function().current_block());
     if (in_block() &&
-        spvOpcodeIsBlockTerminator(static_cast<SpvOp>(inst.opcode))) {
+        spvOpcodeIsBlockTerminator(static_cast<SpvOp>(inst->opcode))) {
       current_function().current_block()->set_terminator(
           &ordered_instructions_.back());
     }
   } else {
-    ordered_instructions_.emplace_back(&inst, nullptr, nullptr);
+    ordered_instructions_.emplace_back(inst, nullptr, nullptr);
   }
   ordered_instructions_.back().SetInstructionPosition(instruction_counter_);
+  return &ordered_instructions_.back();
+}
 
-  uint32_t id = ordered_instructions_.back().id();
-  if (id) {
-    all_definitions_.insert(make_pair(id, &ordered_instructions_.back()));
+// Improves diagnostic messages by collecting names of IDs
+void ValidationState_t::RegisterDebugInstruction(const Instruction* inst) {
+  switch (inst->opcode()) {
+    case SpvOpName: {
+      const auto target = inst->GetOperandAs<uint32_t>(0);
+      const auto* str = reinterpret_cast<const char*>(inst->words().data() +
+                                                      inst->operand(1).offset);
+      AssignNameToId(target, str);
+      break;
+    }
+    case SpvOpMemberName: {
+      const auto target = inst->GetOperandAs<uint32_t>(0);
+      const auto* str = reinterpret_cast<const char*>(inst->words().data() +
+                                                      inst->operand(2).offset);
+      AssignNameToId(target, str);
+      break;
+    }
+    case SpvOpSourceContinued:
+    case SpvOpSource:
+    case SpvOpSourceExtension:
+    case SpvOpString:
+    case SpvOpLine:
+    case SpvOpNoLine:
+    default:
+      break;
   }
+}
+
+void ValidationState_t::RegisterInstruction(Instruction* inst) {
+  if (inst->id()) all_definitions_.insert(make_pair(inst->id(), inst));
 
   // If the instruction is using an OpTypeSampledImage as an operand, it should
   // be recorded. The validator will ensure that all usages of an
   // OpTypeSampledImage and its definition are in the same basic block.
-  for (uint16_t i = 0; i < inst.num_operands; ++i) {
-    const spv_parsed_operand_t& operand = inst.operands[i];
+  for (uint16_t i = 0; i < inst->operands().size(); ++i) {
+    const spv_parsed_operand_t& operand = inst->operand(i);
     if (SPV_OPERAND_TYPE_ID == operand.type) {
-      const uint32_t operand_word = inst.words[operand.offset];
+      const uint32_t operand_word = inst->word(operand.offset);
       Instruction* operand_inst = FindDef(operand_word);
       if (operand_inst && SpvOpSampledImage == operand_inst->opcode()) {
-        RegisterSampledImageConsumer(operand_word, inst.result_id);
+        RegisterSampledImageConsumer(operand_word, inst->id());
       }
     }
   }
