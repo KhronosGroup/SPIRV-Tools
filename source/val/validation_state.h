@@ -508,7 +508,7 @@ class ValidationState_t {
  private:
   ValidationState_t(const ValidationState_t&);
 
-  /// Deprecated. Use the Instruction variant instead of this one.
+  /// Deprecated.  Use the Instruction variant instead.
   DiagnosticStream diag(spv_result_t error_code, int instruction_counter) const;
 
   const spv_const_context context_;
