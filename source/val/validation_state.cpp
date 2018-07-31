@@ -297,18 +297,9 @@ bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
   return IsInstructionInLayoutSection(current_layout_section_, op);
 }
 
-DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
-  return diag(error_code, instruction_counter_);
-}
-
 DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
                                          const Instruction* inst) const {
   int instruction_counter = inst ? inst->InstructionPosition() : -1;
-  return diag(error_code, instruction_counter);
-}
-
-DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
-                                         int instruction_counter) const {
   std::string disassembly;
   if (instruction_counter >= 0 && static_cast<size_t>(instruction_counter) <=
                                       ordered_instructions_.size()) {

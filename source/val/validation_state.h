@@ -163,7 +163,6 @@ class ValidationState_t {
   /// Determines if the op instruction is part of the current section
   bool IsOpcodeInCurrentLayoutSection(SpvOp op);
 
-  DiagnosticStream diag(spv_result_t error_code) const;
   DiagnosticStream diag(spv_result_t error_code, const Instruction* inst) const;
 
   /// Returns the function states
@@ -517,9 +516,6 @@ class ValidationState_t {
 
  private:
   ValidationState_t(const ValidationState_t&);
-
-  /// Deprecated.  Use the Instruction variant instead.
-  DiagnosticStream diag(spv_result_t error_code, int instruction_counter) const;
 
   const spv_const_context context_;
 
