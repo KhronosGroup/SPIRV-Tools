@@ -43,7 +43,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
   const uint32_t num_indices = num_words - word_index;
   const uint32_t kCompositeExtractInsertMaxNumIndices = 255;
   if (num_indices > kCompositeExtractInsertMaxNumIndices) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "The number of indexes in Op" << spvOpcodeString(opcode)
            << " may not exceed " << kCompositeExtractInsertMaxNumIndices
            << ". Found " << num_indices << " indexes.";
@@ -51,7 +51,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
 
   *member_type = _.GetTypeId(inst->word(composite_id_index));
   if (*member_type == 0) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Composite to be an object of composite type";
   }
 
@@ -64,7 +64,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
         *member_type = type_inst->word(2);
         const uint32_t vector_size = type_inst->word(3);
         if (component_index >= vector_size) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Vector access is out of bounds, vector size is "
                  << vector_size << ", but access index is " << component_index;
         }
@@ -74,7 +74,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
         *member_type = type_inst->word(2);
         const uint32_t num_cols = type_inst->word(3);
         if (component_index >= num_cols) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Matrix access is out of bounds, matrix has " << num_cols
                  << " columns, but access index is " << component_index;
         }
@@ -93,7 +93,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
           assert(0 && "Array type definition is corrupt");
         }
         if (component_index >= array_size) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Array access is out of bounds, array size is "
                  << array_size << ", but access index is " << component_index;
         }
@@ -107,7 +107,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
       case SpvOpTypeStruct: {
         const size_t num_struct_members = type_inst->words().size() - 2;
         if (component_index >= num_struct_members) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Index is out of bounds, can not find index "
                  << component_index << " in the structure <id> '"
                  << type_inst->id() << "'. This structure has "
@@ -118,7 +118,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
         break;
       }
       default:
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Reached non-composite type while indexes still remain to "
                   "be traversed.";
     }
@@ -132,25 +132,26 @@ spv_result_t ValidateVectorExtractDynamic(ValidationState_t& _,
   const uint32_t result_type = inst->type_id();
   const SpvOp result_opcode = _.GetIdOpcode(result_type);
   if (!spvOpcodeIsScalarType(result_opcode)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type to be a scalar type";
   }
 
   const uint32_t vector_type = _.GetOperandTypeId(inst, 2);
   const SpvOp vector_opcode = _.GetIdOpcode(vector_type);
   if (vector_opcode != SpvOpTypeVector) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Vector type to be OpTypeVector";
   }
 
   if (_.GetComponentType(vector_type) != result_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Vector component type to be equal to Result Type";
   }
 
   const uint32_t index_type = _.GetOperandTypeId(inst, 3);
   if (!_.IsIntScalarType(index_type)) {
-    return _.diag(SPV_ERROR_INVALID_DATA) << "Expected Index to be int scalar";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Index to be int scalar";
   }
   return SPV_SUCCESS;
 }
@@ -160,26 +161,27 @@ spv_result_t ValidateVectorInsertDyanmic(ValidationState_t& _,
   const uint32_t result_type = inst->type_id();
   const SpvOp result_opcode = _.GetIdOpcode(result_type);
   if (result_opcode != SpvOpTypeVector) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type to be OpTypeVector";
   }
 
   const uint32_t vector_type = _.GetOperandTypeId(inst, 2);
   if (vector_type != result_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Vector type to be equal to Result Type";
   }
 
   const uint32_t component_type = _.GetOperandTypeId(inst, 3);
   if (_.GetComponentType(result_type) != component_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Component type to be equal to Result Type "
            << "component type";
   }
 
   const uint32_t index_type = _.GetOperandTypeId(inst, 4);
   if (!_.IsIntScalarType(index_type)) {
-    return _.diag(SPV_ERROR_INVALID_DATA) << "Expected Index to be int scalar";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Index to be int scalar";
   }
   return SPV_SUCCESS;
 }
@@ -196,7 +198,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
       uint32_t given_component_count = 0;
 
       if (num_operands <= 3) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected number of constituents to be at least 2";
       }
 
@@ -208,7 +210,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
         } else {
           if (_.GetIdOpcode(operand_type) != SpvOpTypeVector ||
               _.GetComponentType(operand_type) != result_component_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << "Expected Constituents to be scalars or vectors of"
                    << " the same type as Result Type components";
           }
@@ -218,7 +220,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
       }
 
       if (num_result_components != given_component_count) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected total number of given components to be equal "
                << "to the size of Result Type vector";
       }
@@ -236,7 +238,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
       }
 
       if (result_num_cols + 2 != num_operands) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected total number of Constituents to be equal "
                << "to the number of columns of Result Type matrix";
       }
@@ -245,7 +247,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
            ++operand_index) {
         const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
         if (operand_type != result_col_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Expected Constituent type to be equal to the column "
                  << "type Result Type matrix";
         }
@@ -270,7 +272,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
       }
 
       if (array_size + 2 != num_operands) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected total number of Constituents to be equal "
                << "to the number of elements of Result Type array";
       }
@@ -280,7 +282,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
            ++operand_index) {
         const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
         if (operand_type != result_component_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Expected Constituent type to be equal to the column "
                  << "type Result Type array";
         }
@@ -294,7 +296,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
       assert(struct_inst->opcode() == SpvOpTypeStruct);
 
       if (struct_inst->operands().size() + 1 != num_operands) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected total number of Constituents to be equal "
                << "to the number of members of Result Type struct";
       }
@@ -304,7 +306,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
         const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
         const uint32_t member_type = struct_inst->word(operand_index);
         if (operand_type != member_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Expected Constituent type to be equal to the "
                  << "corresponding member type of Result Type struct";
         }
@@ -313,7 +315,7 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
       break;
     }
     default: {
-      return _.diag(SPV_ERROR_INVALID_DATA)
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Result Type to be a composite type";
     }
   }
@@ -329,7 +331,7 @@ spv_result_t ValidateCompositeExtract(ValidationState_t& _,
 
   const uint32_t result_type = inst->type_id();
   if (result_type != member_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Result type (Op" << spvOpcodeString(_.GetIdOpcode(result_type))
            << ") does not match the type that results from indexing into "
               "the composite (Op"
@@ -345,7 +347,7 @@ spv_result_t ValidateCompositeInsert(ValidationState_t& _,
   const uint32_t composite_type = _.GetOperandTypeId(inst, 3);
   const uint32_t result_type = inst->type_id();
   if (result_type != composite_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "The Result Type must be the same as Composite type in Op"
            << spvOpcodeString(opcode) << " yielding Result Id " << result_type
            << ".";
@@ -357,7 +359,7 @@ spv_result_t ValidateCompositeInsert(ValidationState_t& _,
   }
 
   if (object_type != member_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "The Object type (Op"
            << spvOpcodeString(_.GetIdOpcode(object_type))
            << ") does not match the type that results from indexing into the "
@@ -370,13 +372,13 @@ spv_result_t ValidateCompositeInsert(ValidationState_t& _,
 spv_result_t ValidateCopyObject(ValidationState_t& _, const Instruction* inst) {
   const uint32_t result_type = inst->type_id();
   if (!spvOpcodeGeneratesType(_.GetIdOpcode(result_type))) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type to be a type";
   }
 
   const uint32_t operand_type = _.GetOperandTypeId(inst, 2);
   if (operand_type != result_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type and Operand type to be the same";
   }
   return SPV_SUCCESS;
@@ -390,7 +392,7 @@ spv_result_t ValidateTranspose(ValidationState_t& _, const Instruction* inst) {
   const uint32_t result_type = inst->type_id();
   if (!_.GetMatrixTypeInfo(result_type, &result_num_rows, &result_num_cols,
                            &result_col_type, &result_component_type)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type to be a matrix type";
   }
 
@@ -401,19 +403,19 @@ spv_result_t ValidateTranspose(ValidationState_t& _, const Instruction* inst) {
   uint32_t matrix_component_type = 0;
   if (!_.GetMatrixTypeInfo(matrix_type, &matrix_num_rows, &matrix_num_cols,
                            &matrix_col_type, &matrix_component_type)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Matrix to be of type OpTypeMatrix";
   }
 
   if (result_component_type != matrix_component_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected component types of Matrix and Result Type to be "
            << "identical";
   }
 
   if (result_num_rows != matrix_num_cols ||
       result_num_cols != matrix_num_rows) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected number of columns and the column size of Matrix "
            << "to be the reverse of those of Result Type";
   }
