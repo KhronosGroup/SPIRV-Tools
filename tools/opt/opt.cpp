@@ -448,7 +448,7 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
 // the string "|argv[argi]|" is returned.
 std::string CanonicalizeFlag(const char** argv, int argc, int* argi) {
   const char* cur_arg = argv[*argi];
-  const char* next_arg = (*(argi + 1) < argc) ? argv[*argi + 1] : nullptr;
+  const char* next_arg = (*argi + 1 < argc) ? argv[*argi + 1] : nullptr;
   std::ostringstream canonical_arg;
   canonical_arg << cur_arg;
 
