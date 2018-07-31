@@ -39,7 +39,7 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
             case SpvOpLine:
               break;
             default:
-              return _.diag(SPV_ERROR_INVALID_DATA)
+              return _.diag(SPV_ERROR_INVALID_DATA, &(*i))
                      << "OpPhi must appear before all non-OpPhi instructions "
                      << "(except for OpLine, which can be mixed with OpPhi).";
           }
@@ -52,7 +52,7 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
             case SpvOpBranchConditional:
               break;
             default:
-              return _.diag(SPV_ERROR_INVALID_DATA)
+              return _.diag(SPV_ERROR_INVALID_DATA, &(*i))
                      << "OpLoopMerge must immediately precede either an "
                      << "OpBranch or OpBranchConditional instruction. "
                      << "OpLoopMerge must be the second-to-last instruction in "
@@ -67,7 +67,7 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
             case SpvOpSwitch:
               break;
             default:
-              return _.diag(SPV_ERROR_INVALID_DATA)
+              return _.diag(SPV_ERROR_INVALID_DATA, &(*i))
                      << "OpSelectionMerge must immediately precede either an "
                      << "OpBranchConditional or OpSwitch instruction. "
                      << "OpSelectionMerge must be the second-to-last "
