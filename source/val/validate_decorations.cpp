@@ -336,7 +336,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
   auto fail = [&vstate, struct_id, storage_class_str, decoration_str,
                blockRules](uint32_t member_idx) -> DiagnosticStream {
     DiagnosticStream ds =
-        std::move(vstate.diag(SPV_ERROR_INVALID_ID)
+        std::move(vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(struct_id))
                   << "Structure id " << struct_id << " decorated as "
                   << decoration_str << " for variable in " << storage_class_str
                   << " storage class must follow standard "
@@ -538,14 +538,16 @@ spv_result_t CheckLinkageAttrOfFunctions(ValidationState_t& vstate) {
       // A function declaration (an OpFunction with no basic blocks), must have
       // a Linkage Attributes Decoration with the Import Linkage Type.
       if (!hasImportLinkageAttribute(function.id(), vstate)) {
-        return vstate.diag(SPV_ERROR_INVALID_BINARY)
+        return vstate.diag(SPV_ERROR_INVALID_BINARY,
+                           vstate.FindDef(function.id()))
                << "Function declaration (id " << function.id()
                << ") must have a LinkageAttributes decoration with the Import "
                   "Linkage type.";
       }
     } else {
       if (hasImportLinkageAttribute(function.id(), vstate)) {
-        return vstate.diag(SPV_ERROR_INVALID_BINARY)
+        return vstate.diag(SPV_ERROR_INVALID_BINARY,
+                           vstate.FindDef(function.id()))
                << "Function definition (id " << function.id()
                << ") may not be decorated with Import Linkage type.";
       }
@@ -565,7 +567,7 @@ spv_result_t CheckImportedVariableInitialization(ValidationState_t& vstate) {
     auto variable_instr = vstate.FindDef(global_var_id);
     if (variable_instr->words().size() == 5u &&
         hasImportLinkageAttribute(global_var_id, vstate)) {
-      return vstate.diag(SPV_ERROR_INVALID_ID)
+      return vstate.diag(SPV_ERROR_INVALID_ID, variable_instr)
              << "A module-scope OpVariable with initialization value "
                 "cannot be marked with the Import Linkage Type.";
     }
@@ -580,7 +582,7 @@ spv_result_t CheckBuiltInVariable(uint32_t var_id, ValidationState_t& vstate) {
     if (spvIsVulkanEnv(vstate.context()->target_env)) {
       if (d.dec_type() == SpvDecorationLocation ||
           d.dec_type() == SpvDecorationComponent) {
-        return vstate.diag(SPV_ERROR_INVALID_ID)
+        return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                << "A BuiltIn variable (id " << var_id
                << ") cannot have any Location or Component decorations";
       }
@@ -599,7 +601,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
       for (auto interface : desc.interfaces) {
         Instruction* var_instr = vstate.FindDef(interface);
         if (SpvOpVariable != var_instr->opcode()) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
+          return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                  << "Interfaces passed to OpEntryPoint must be of type "
                     "OpTypeVariable. Found Op"
                  << spvOpcodeString(var_instr->opcode()) << ".";
@@ -615,7 +617,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
             static_cast<SpvStorageClass>(var_instr->word(3));
         if (storage_class != SpvStorageClassInput &&
             storage_class != SpvStorageClassOutput) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
+          return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                  << "OpEntryPoint interfaces must be OpVariables with "
                     "Storage Class of Input(1) or Output(3). Found Storage "
                     "Class "
@@ -635,7 +637,8 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
         }
       }
       if (num_builtin_inputs > 1 || num_builtin_outputs > 1) {
-        return vstate.diag(SPV_ERROR_INVALID_BINARY)
+        return vstate.diag(SPV_ERROR_INVALID_BINARY,
+                           vstate.FindDef(entry_point))
                << "There must be at most one object per Storage Class that can "
                   "contain a structure type containing members decorated with "
                   "BuiltIn, consumed per entry-point. Entry Point id "
@@ -647,7 +650,8 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
         if (SpvDecorationLinkageAttributes == decoration.dec_type()) {
           const char* linkage_name =
               reinterpret_cast<const char*>(&decoration.params()[0]);
-          return vstate.diag(SPV_ERROR_INVALID_BINARY)
+          return vstate.diag(SPV_ERROR_INVALID_BINARY,
+                             vstate.FindDef(entry_point))
                  << "The LinkageAttributes Decoration (Linkage name: "
                  << linkage_name << ") cannot be applied to function id "
                  << entry_point
@@ -688,7 +692,7 @@ spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
     const auto secondaryTypePtr = vstate.FindDef(typePtr->word(2));
     if (SpvOpTypeRuntimeArray == secondaryTypePtr->opcode() ||
         SpvOpTypeArray == secondaryTypePtr->opcode()) {
-      return vstate.diag(SPV_ERROR_INVALID_ID)
+      return vstate.diag(SPV_ERROR_INVALID_ID, inst)
              << "Only a single level of array is allowed for descriptor "
                 "set variables";
     }
@@ -811,27 +815,27 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
             const char* deco_str = blockDeco ? "Block" : "BufferBlock";
             spv_result_t recursive_status = SPV_SUCCESS;
             if (isMissingOffsetInStruct(id, vstate)) {
-              return vstate.diag(SPV_ERROR_INVALID_ID)
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with Offset decorations.";
             } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
-              return vstate.diag(SPV_ERROR_INVALID_ID)
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must not use GLSLShared decoration.";
             } else if (hasDecoration(id, SpvDecorationGLSLPacked, vstate)) {
-              return vstate.diag(SPV_ERROR_INVALID_ID)
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must not use GLSLPacked decoration.";
             } else if (!checkForRequiredDecoration(id, SpvDecorationArrayStride,
                                                    SpvOpTypeArray, vstate)) {
-              return vstate.diag(SPV_ERROR_INVALID_ID)
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with ArrayStride "
                         "decorations.";
             } else if (!checkForRequiredDecoration(id,
                                                    SpvDecorationMatrixStride,
                                                    SpvOpTypeMatrix, vstate)) {
-              return vstate.diag(SPV_ERROR_INVALID_ID)
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with MatrixStride "
                         "decorations.";
