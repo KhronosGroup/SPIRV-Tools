@@ -2,20 +2,30 @@ Revision history for SPIRV-Tools
 
 v2018.5-dev 2018-07-08
  - General:
+   - Support Chromium GN build
+   - Use Kokoro bots:
+     - Disable Travis-CI bots
+     - Disable AppVeyor VisualStudio Release builds. Keep VS 2017 Debug build
+   - Don't check export symbols on OSX (Darwin): some installations don't have 'objdump'
    - Reorganize source files and namespaces
    - Fixes for ClangTidy, and whitespace (passes 'git cl presumit --all -uf')
    - Fix unused param compile warnings/errors when Effcee not present
-   - WIP: Use Kokoro bots:
-     - Disable Travis-CI bots
-     - Disable AppVeyor VisualStudio Release builds. Keep VS 2017 Debug build
+   - Avoid including time headers when timer functionality is disabled
    - #1688: Use binary mode on stdin; fixes "spirv-dis <foo.spv" on Windows
  - Optimizer
+   - Add API to register passes by string name
    - Fold a vector shuffle feeding a vector shuffle
+   - Add -combine-access-chains transform
    - Refactor how IRContext is handled by passes
+   - Improve bookkeeping for instruction result type and result id
    - #1721: Fix size bug when folding vector shuffles
    - #1722: Fix size infinite loop when folding vector shuffles
    - #1724: Fix finding a constant of a specific type
+   - #1727: Dead branch elim: Reorder blocks if needed to satisfy dominance rule
+   - #1729: Handle VariablePointers cases in various optimizations
+   - #1731: Fix vector shuffle with literal id indicating undef value
  - Validator
+   - Improve error messages
    - Use libspirv::Instruction where possible
    - Add option to skip all block layout checks
    - #1685: Vulkan permits non-monotonic offsets for block members
