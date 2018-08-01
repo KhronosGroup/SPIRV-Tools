@@ -140,9 +140,6 @@ class ValidationState_t {
   /// Returns true if the id has been defined
   bool IsDefinedId(uint32_t id) const;
 
-  /// Increments the instruction count. Used for diagnostic
-  int increment_instruction_count();
-
   /// Increments the total number of instructions in the file.
   void increment_total_instructions() { total_instructions_++; }
 
@@ -530,9 +527,6 @@ class ValidationState_t {
   size_t total_instructions_ = 0;
   /// The total number of functions in the binary.
   size_t total_functions_ = 0;
-
-  /// Tracks the number of instructions evaluated by the validator
-  int instruction_counter_;
 
   /// IDs which have been forward declared but have not been defined
   std::unordered_set<uint32_t> unresolved_forward_ids_;
