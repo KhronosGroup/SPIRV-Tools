@@ -963,7 +963,7 @@ TEST_P(ValidateCFG, BranchingToNonLoopHeaderBlockBad) {
         getDiagnosticString(),
         MatchesRegex("Back-edges \\(.\\[f\\] -> .\\[split\\]\\) can only "
                      "be formed between a block and a loop header.\n"
-                     "  OpFunctionEnd\n"));
+                     "  %f = OpLabel\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -993,7 +993,7 @@ TEST_P(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
                 MatchesRegex(
                     "Back-edges \\(.\\[split\\] -> .\\[split\\]\\) can only be "
                     "formed between a block and a loop header.\n"
-                    "  OpFunctionEnd\n"));
+                    "  %split = OpLabel\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }

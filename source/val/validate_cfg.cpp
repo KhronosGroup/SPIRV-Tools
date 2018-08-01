@@ -193,7 +193,7 @@ spv_result_t FindCaseFallThrough(
           continue;
         }
 
-        return _.diag(SPV_ERROR_INVALID_CFG)
+        return _.diag(SPV_ERROR_INVALID_CFG, target_block->label())
                << "Case construct that targets "
                << _.getIdName(target_block->id())
                << " has invalid branch to block " << _.getIdName(block->id())
@@ -244,7 +244,7 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
     // OpSwitch must dominate all its case constructs.
     if (header->reachable() && target_block->reachable() &&
         !header->dominates(*target_block)) {
-      return _.diag(SPV_ERROR_INVALID_CFG)
+      return _.diag(SPV_ERROR_INVALID_CFG, header->label())
              << "Selection header " << _.getIdName(header->id())
              << " does not dominate its case construct " << _.getIdName(target);
     }
@@ -330,7 +330,7 @@ spv_result_t StructuredControlFlowChecks(
     uint32_t header_block;
     tie(back_edge_block, header_block) = back_edge;
     if (!function->IsBlockType(header_block, kBlockTypeLoop)) {
-      return _.diag(SPV_ERROR_INVALID_CFG)
+      return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(back_edge_block))
              << "Back-edges (" << _.getIdName(back_edge_block) << " -> "
              << _.getIdName(header_block)
              << ") can only be formed between a block and a loop header.";
