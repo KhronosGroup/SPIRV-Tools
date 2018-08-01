@@ -253,8 +253,8 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
         !IsEnabledByExtension(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
              << "Capability " << capability_str()
-             << " is not allowed by Vulkan 1.0 specification "
-             << "(or requires extension)";
+             << " is not allowed by Vulkan 1.0 specification"
+             << " (or requires extension)";
     }
   } else if (env == SPV_ENV_VULKAN_1_1) {
     if (!IsSupportGuaranteedVulkan_1_1(capability) &&
