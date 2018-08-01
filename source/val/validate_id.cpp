@@ -2086,7 +2086,7 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
             if (use->opcode() == SpvOpPhi) {
               phi_instructions.insert(use);
             } else if (!block->dominates(*use->block())) {
-              return _.diag(SPV_ERROR_INVALID_ID)
+              return _.diag(SPV_ERROR_INVALID_ID, use_block->label())
                      << "ID " << _.getIdName(definition.first)
                      << " defined in block " << _.getIdName(block->id())
                      << " does not dominate its use in block "
@@ -2101,7 +2101,7 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
         for (auto use : definition.second->uses()) {
           const Instruction* inst = use.first;
           if (inst->function() && inst->function() != func) {
-            return _.diag(SPV_ERROR_INVALID_ID)
+            return _.diag(SPV_ERROR_INVALID_ID, _.FindDef(func->id()))
                    << "ID " << _.getIdName(definition.first)
                    << " used in function "
                    << _.getIdName(inst->function()->id())
@@ -2125,7 +2125,7 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
           phi->function()->GetBlock(phi->word(i + 1)).first;
       if (variable->block() && parent->reachable() &&
           !variable->block()->dominates(*parent)) {
-        return _.diag(SPV_ERROR_INVALID_ID)
+        return _.diag(SPV_ERROR_INVALID_ID, phi)
                << "In OpPhi instruction " << _.getIdName(phi->id()) << ", ID "
                << _.getIdName(variable->id())
                << " definition does not dominate its parent "
@@ -2180,7 +2180,7 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
         } else if (can_have_forward_declared_ids(i)) {
           ret = _.ForwardDeclareId(operand_word);
         } else {
-          ret = _.diag(SPV_ERROR_INVALID_ID)
+          ret = _.diag(SPV_ERROR_INVALID_ID, inst)
                 << "ID " << _.getIdName(operand_word)
                 << " has not been defined";
         }
