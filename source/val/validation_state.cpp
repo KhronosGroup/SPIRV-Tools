@@ -295,7 +295,7 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
                                          const Instruction* inst) const {
   std::string disassembly;
   if (inst)
-    disassembly = Disassemble(ordered_instructions_[inst->LineNum() - 1]);
+    disassembly = Disassemble(*inst);
 
   return DiagnosticStream({0, 0, inst ? inst->LineNum() : 0},
                           context_->consumer, disassembly, error_code);
