@@ -14,6 +14,8 @@
 
 #include "source/val/validate.h"
 
+#include <algorithm>
+
 #include "source/opcode.h"
 #include "source/val/instruction.h"
 #include "source/val/validation_state.h"
@@ -118,8 +120,8 @@ bool HasConflictingMemberOffsets(
             return decoration.struct_member_index() ==
                    rhs.struct_member_index();
           };
-          auto i = find_if(type2_decorations.begin(), type2_decorations.end(),
-                           compare);
+          auto i = std::find_if(type2_decorations.begin(),
+                                type2_decorations.end(), compare);
           if (i != type2_decorations.end() &&
               decoration.params().front() != i->params().front()) {
             return true;
