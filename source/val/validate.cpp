@@ -280,6 +280,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   if (auto error = CheckIdDefinitionDominateUse(*vstate)) return error;
   if (auto error = ValidateDecorations(*vstate)) return error;
   if (auto error = ValidateInterfaces(*vstate)) return error;
+  if (auto error = ValidateMemoryInstructions(*vstate)) return error;
 
   // Entry point validation. Based on 2.16.1 (Universal Validation Rules) of the
   // SPIRV spec:
