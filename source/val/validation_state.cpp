@@ -18,6 +18,7 @@
 #include <stack>
 
 #include "opcode.h"
+#include "spirv-tools/libspirv.h"
 #include "spirv_target_env.h"
 #include "val/basic_block.h"
 #include "val/construct.h"
@@ -134,6 +135,16 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
   return out;
 }
 
+// Counts the number of instructions and functions in the file.
+spv_result_t CountInstructions(void* user_data,
+                               const spv_parsed_instruction_t* inst) {
+  ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
+  if (inst->opcode == SpvOpFunction) _.increment_total_functions();
+  _.increment_total_instructions();
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 ValidationState_t::ValidationState_t(const spv_const_context ctx,
@@ -180,6 +191,21 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
     default:
       break;
   }
+
+  // Only attempt to count if we have words, otherwise let the other validation
+  // fail and generate an error.
+  if (num_words > 0) {
+    // Count the number of instructions in the binary.
+    spvBinaryParse(ctx, this, words, num_words,
+                   /* parsed_header = */ nullptr, CountInstructions,
+                   /* diagnostic = */ nullptr);
+    preallocateStorage();
+  }
+}
+
+void ValidationState_t::preallocateStorage() {
+  ordered_instructions_.reserve(total_instructions_);
+  module_functions_.reserve(total_functions_);
 }
 
 spv_result_t ValidationState_t::ForwardDeclareId(uint32_t id) {
@@ -293,7 +319,7 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
                           error_code);
 }
 
-std::deque<Function>& ValidationState_t::functions() {
+std::vector<Function>& ValidationState_t::functions() {
   return module_functions_;
 }
 

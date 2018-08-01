@@ -220,9 +220,11 @@ class StatsAggregator {
   void ProcessConstant() {
     const val::Instruction& inst = GetCurrentInstruction();
     if (inst.opcode() != SpvOpConstant) return;
+
     const uint32_t type_id = inst.GetOperandAs<uint32_t>(0);
     const auto type_decl_it = vstate_->all_definitions().find(type_id);
     assert(type_decl_it != vstate_->all_definitions().end());
+
     const val::Instruction& type_decl_inst = *type_decl_it->second;
     const SpvOp type_op = type_decl_inst.opcode();
     if (type_op == SpvOpTypeInt) {
