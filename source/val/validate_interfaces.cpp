@@ -82,7 +82,7 @@ spv_result_t check_interface_variable(ValidationState_t& _, Instruction* var) {
         }
       }
       if (!found) {
-        return _.diag(SPV_ERROR_INVALID_ID)
+        return _.diag(SPV_ERROR_INVALID_ID, var)
                << (var->word(3u) == SpvStorageClassInput ? "Input" : "Output")
                << " variable id <" << var->id() << "> is used by entry point '"
                << desc.name << "' id <" << id
