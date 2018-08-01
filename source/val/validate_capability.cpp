@@ -251,7 +251,7 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
     if (!IsSupportGuaranteedVulkan_1_0(capability) &&
         !IsSupportOptionalVulkan_1_0(capability) &&
         !IsEnabledByExtension(_, capability)) {
-      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
              << "Capability " << capability_str()
              << " is not allowed by Vulkan 1.0 specification"
              << " (or requires extension)";
@@ -260,7 +260,7 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
     if (!IsSupportGuaranteedVulkan_1_1(capability) &&
         !IsSupportOptionalVulkan_1_1(capability) &&
         !IsEnabledByExtension(_, capability)) {
-      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
              << "Capability " << capability_str()
              << " is not allowed by Vulkan 1.1 specification"
              << " (or requires extension)";
@@ -270,7 +270,7 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
         !IsSupportOptionalOpenCL_1_2(capability) &&
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_1_2(_, capability)) {
-      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
              << "Capability " << capability_str()
              << " is not allowed by OpenCL 1.2 " << opencl_profile
              << " Profile specification"
@@ -282,7 +282,7 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
         !IsSupportOptionalOpenCL_1_2(capability) &&
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
-      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
              << "Capability " << capability_str()
              << " is not allowed by OpenCL 2.0/2.1 " << opencl_profile
              << " Profile specification"
@@ -293,7 +293,7 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
         !IsSupportOptionalOpenCL_1_2(capability) &&
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
-      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
              << "Capability " << capability_str()
              << " is not allowed by OpenCL 2.2 " << opencl_profile
              << " Profile specification"
