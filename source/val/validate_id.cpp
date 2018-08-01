@@ -1480,17 +1480,16 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
 
 }  // namespace
 
-spv_result_t UpdateIdUse(ValidationState_t& _) {
-  for (const auto& inst : _.ordered_instructions()) {
-    for (auto& operand : inst.operands()) {
-      const spv_operand_type_t& type = operand.type;
-      const uint32_t operand_id = inst.word(operand.offset);
-      if (spvIsIdType(type) && type != SPV_OPERAND_TYPE_RESULT_ID) {
-        if (auto def = _.FindDef(operand_id))
-          def->RegisterUse(&inst, operand.offset);
-      }
+spv_result_t UpdateIdUse(ValidationState_t& _, const Instruction* inst) {
+  for (auto& operand : inst->operands()) {
+    const spv_operand_type_t& type = operand.type;
+    const uint32_t operand_id = inst->word(operand.offset);
+    if (spvIsIdType(type) && type != SPV_OPERAND_TYPE_RESULT_ID) {
+      if (auto def = _.FindDef(operand_id))
+        def->RegisterUse(inst, operand.offset);
     }
   }
+
   return SPV_SUCCESS;
 }
 

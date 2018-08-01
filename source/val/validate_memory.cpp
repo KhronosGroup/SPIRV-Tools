@@ -561,36 +561,34 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
 
 }  // namespace
 
-spv_result_t ValidateMemoryInstructions(ValidationState_t& _) {
-  for (auto& inst : _.ordered_instructions()) {
-    switch (inst.opcode()) {
-      case SpvOpVariable:
-        if (auto error = ValidateVariable(_, inst)) return error;
-        break;
-      case SpvOpLoad:
-        if (auto error = ValidateLoad(_, inst)) return error;
-        break;
-      case SpvOpStore:
-        if (auto error = ValidateStore(_, inst)) return error;
-        break;
-      case SpvOpCopyMemory:
-        if (auto error = ValidateCopyMemory(_, inst)) return error;
-        break;
-      case SpvOpCopyMemorySized:
-        if (auto error = ValidateCopyMemorySized(_, inst)) return error;
-        break;
-      case SpvOpAccessChain:
-      case SpvOpInBoundsAccessChain:
-      case SpvOpPtrAccessChain:
-      case SpvOpInBoundsPtrAccessChain:
-        if (auto error = ValidateAccessChain(_, inst)) return error;
-        break;
-      case SpvOpImageTexelPointer:
-      case SpvOpArrayLength:
-      case SpvOpGenericPtrMemSemantics:
-      default:
-        break;
-    }
+spv_result_t ValidateMemoryInstructions(ValidationState_t& _, const Instruction* inst) {
+  switch (inst->opcode()) {
+    case SpvOpVariable:
+      if (auto error = ValidateVariable(_, *inst)) return error;
+      break;
+    case SpvOpLoad:
+      if (auto error = ValidateLoad(_, *inst)) return error;
+      break;
+    case SpvOpStore:
+      if (auto error = ValidateStore(_, *inst)) return error;
+      break;
+    case SpvOpCopyMemory:
+      if (auto error = ValidateCopyMemory(_, *inst)) return error;
+      break;
+    case SpvOpCopyMemorySized:
+      if (auto error = ValidateCopyMemorySized(_, *inst)) return error;
+      break;
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpPtrAccessChain:
+    case SpvOpInBoundsPtrAccessChain:
+      if (auto error = ValidateAccessChain(_, *inst)) return error;
+      break;
+    case SpvOpImageTexelPointer:
+    case SpvOpArrayLength:
+    case SpvOpGenericPtrMemSemantics:
+    default:
+      break;
   }
 
   return SPV_SUCCESS;
