@@ -22,7 +22,7 @@ if (build_with_chromium) {
 }
 
 template("spvtools_core_tables") {
-  assert(defined(invoker.version), "Need version in $target_name generation.")
+  assert(defined(invoker.version), "Need version in $target_name generation")
 
   action("spvtools_core_tables_" + target_name) {
     script = "utils/generate_grammar_tables.py"
