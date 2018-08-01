@@ -238,16 +238,16 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   }
 
   // Look for OpExtension instructions and register extensions.
-  // Diagnostics if any will be produced in the next pass (ProcessInstruction).
   spvBinaryParse(&context, vstate, words, num_words,
                  /* parsed_header = */ nullptr, ProcessExtensions,
                  /* diagnostic = */ nullptr);
 
-  // NOTE: Parse the module and perform inline validation checks. These
-  // checks do not require the the knowledge of the whole module.
+  // Parse the module and perform inline validation checks. These checks do
+  // not require the the knowledge of the whole module.
   if (auto error = spvBinaryParse(&context, vstate, words, num_words, setHeader,
-                                  ProcessInstruction, pDiagnostic))
+                                  ProcessInstruction, pDiagnostic)) {
     return error;
+  }
 
   if (!vstate->has_memory_model_specified())
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
