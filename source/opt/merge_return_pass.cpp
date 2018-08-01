@@ -198,7 +198,11 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
     std::vector<Instruction*> users_to_update;
     context()->get_def_use_mgr()->ForEachUser(
         &inst, [&users_to_update, &dom_tree, inst_bb, this](Instruction* user) {
-          if (!dom_tree->Dominates(inst_bb, context()->get_instr_block(user))) {
+          BasicBlock* user_bb = context()->get_instr_block(user);
+          // If |user_bb| is nullptr, then |user| is not in the function.  It is
+          // something like an OpName or decoration, which should not be
+          // replaced with the result of the OpPhi.
+          if (user_bb && !dom_tree->Dominates(inst_bb, user_bb)) {
             users_to_update.push_back(user);
           }
         });
