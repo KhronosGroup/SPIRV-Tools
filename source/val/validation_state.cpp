@@ -294,8 +294,7 @@ bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
 DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
                                          const Instruction* inst) const {
   std::string disassembly;
-  if (inst)
-    disassembly = Disassemble(*inst);
+  if (inst) disassembly = Disassemble(*inst);
 
   return DiagnosticStream({0, 0, inst ? inst->LineNum() : 0},
                           context_->consumer, disassembly, error_code);
