@@ -40,7 +40,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
     switch (_.current_layout_section()) {
       case kLayoutMemoryModel:
         if (opcode != SpvOpMemoryModel) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << spvOpcodeString(opcode)
                  << " cannot appear before the memory model instruction";
         }
@@ -67,7 +67,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
     switch (opcode) {
       case SpvOpFunction: {
         if (_.in_function_body()) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "Cannot declare a function in a function body";
         }
         auto control_mask = inst->GetOperandAs<SpvFunctionControlMask>(2);
@@ -84,12 +84,12 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
 
       case SpvOpFunctionParameter:
         if (_.in_function_body() == false) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Function parameter "
-                                                     "instructions must be in "
-                                                     "a function body";
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << "Function parameter instructions must be in a "
+                    "function body";
         }
         if (_.current_function().block_count() != 0) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "Function parameters must only appear immediately after "
                     "the function definition";
         }
@@ -100,18 +100,18 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
 
       case SpvOpFunctionEnd:
         if (_.in_function_body() == false) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "Function end instructions must be in a function body";
         }
         if (_.in_block()) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "Function end cannot be called in blocks";
         }
         if (_.current_function().block_count() == 0 &&
             _.current_layout_section() == kLayoutFunctionDefinitions) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Function declarations "
-                                                     "must appear before "
-                                                     "function definitions.";
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << "Function declarations must appear before "
+                    "function definitions.";
         }
         if (_.current_layout_section() == kLayoutFunctionDeclarations) {
           if (auto error = _.current_function().RegisterSetFunctionDeclType(
@@ -129,11 +129,11 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         // definition so set the function to a declaration and update the
         // module section
         if (_.in_function_body() == false) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "Label instructions must be in a function body";
         }
         if (_.in_block()) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "A block must end with a branch instruction.";
         }
         if (_.current_layout_section() == kLayoutFunctionDeclarations) {
@@ -147,18 +147,18 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
       default:
         if (_.current_layout_section() == kLayoutFunctionDeclarations &&
             _.in_function_body()) {
-          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "A function must begin with a label";
         } else {
           if (_.in_block() == false) {
-            return _.diag(SPV_ERROR_INVALID_LAYOUT)
+            return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                    << spvOpcodeString(opcode) << " must appear in a block";
           }
         }
         break;
     }
   } else {
-    return _.diag(SPV_ERROR_INVALID_LAYOUT)
+    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
            << spvOpcodeString(opcode)
            << " cannot appear in a function declaration";
   }
