@@ -268,11 +268,11 @@ TEST_F(MergeReturnPassTest, StructuredControlFlowWithUnreachableMerge) {
 ; CHECK: OpSelectionMerge [[merge_lab:%\w+]]
 ; CHECK: OpBranchConditional [[cond:%\w+]] [[if_lab:%\w+]] [[then_lab:%\w+]]
 ; CHECK: [[if_lab]] = OpLabel
-; CHECK-Next: OpStore [[var]] [[true]]
-; CHECK-Next: OpBranch
+; CHECK-NEXT: OpStore [[var]] [[true]]
+; CHECK-NEXT: OpBranch
 ; CHECK: [[then_lab]] = OpLabel
-; CHECK-Next: OpStore [[var]] [[true]]
-; CHECK-Next: OpBranch [[merge_lab]]
+; CHECK-NEXT: OpStore [[var]] [[true]]
+; CHECK-NEXT: OpBranch [[merge_lab]]
 ; CHECK: OpReturn
 OpCapability Addresses
 OpCapability Shader
@@ -310,11 +310,10 @@ TEST_F(MergeReturnPassTest, StructuredControlFlowAddPhi) {
 ; CHECK: OpBranchConditional [[cond:%\w+]] [[if_lab:%\w+]] [[then_lab:%\w+]]
 ; CHECK: [[if_lab]] = OpLabel
 ; CHECK-NEXT: [[add:%\w+]] = OpIAdd [[type:%\w+]]
-; CHECK-Next: OpStore [[var]] [[true]]
-; CHECK-Next: OpBranch
+; CHECK-NEXT: OpBranch
 ; CHECK: [[then_lab]] = OpLabel
-; CHECK-Next: OpStore [[var]] [[true]]
-; CHECK-Next: OpBranch [[merge_lab]]
+; CHECK-NEXT: OpStore [[var]] [[true]]
+; CHECK-NEXT: OpBranch [[merge_lab]]
 ; CHECK: [[merge_lab]] = OpLabel
 ; CHECK-NEXT: [[phi:%\w+]] = OpPhi [[type]] [[add]] [[if_lab]] [[undef:%\w+]] [[then_lab]]
 ; CHECK: OpIAdd [[type]] [[phi]] [[phi]]
@@ -360,11 +359,10 @@ TEST_F(MergeReturnPassTest, StructuredControlDecoration) {
 ; CHECK: OpBranchConditional [[cond:%\w+]] [[if_lab:%\w+]] [[then_lab:%\w+]]
 ; CHECK: [[if_lab]] = OpLabel
 ; CHECK-NEXT: [[dec_id]] = OpIAdd [[type:%\w+]]
-; CHECK-Next: OpStore [[var]] [[true]]
-; CHECK-Next: OpBranch
+; CHECK-NEXT: OpBranch
 ; CHECK: [[then_lab]] = OpLabel
-; CHECK-Next: OpStore [[var]] [[true]]
-; CHECK-Next: OpBranch [[merge_lab]]
+; CHECK-NEXT: OpStore [[var]] [[true]]
+; CHECK-NEXT: OpBranch [[merge_lab]]
 ; CHECK: [[merge_lab]] = OpLabel
 ; CHECK: OpReturn
 OpCapability Addresses
@@ -408,11 +406,10 @@ TEST_F(MergeReturnPassTest, StructuredControlDecoration2) {
 ; CHECK: OpBranchConditional [[cond:%\w+]] [[if_lab:%\w+]] [[then_lab:%\w+]]
 ; CHECK: [[if_lab]] = OpLabel
 ; CHECK-NEXT: [[dec_id]] = OpIAdd [[type:%\w+]]
-; CHECK-Next: OpStore [[var]] [[true]]
-; CHECK-Next: OpBranch
+; CHECK-NEXT: OpBranch
 ; CHECK: [[then_lab]] = OpLabel
-; CHECK-Next: OpStore [[var]] [[true]]
-; CHECK-Next: OpBranch [[merge_lab]]
+; CHECK-NEXT: OpStore [[var]] [[true]]
+; CHECK-NEXT: OpBranch [[merge_lab]]
 ; CHECK: [[merge_lab]] = OpLabel
 ; CHECK-NEXT: [[phi:%\w+]] = OpPhi [[type]] [[dec_id]] [[if_lab]] [[undef:%\w+]] [[then_lab]]
 ; CHECK: OpIAdd [[type]] [[phi]] [[phi]]
