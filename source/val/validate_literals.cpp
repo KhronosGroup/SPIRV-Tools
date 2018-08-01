@@ -85,7 +85,7 @@ spv_result_t LiteralsPass(ValidationState_t& _, const Instruction* inst) {
     const bool signedness = operand.number_kind == SPV_NUMBER_SIGNED_INT;
 
     if (!VerifyUpperBits(upper_word, remaining_value_bits, signedness)) {
-      return _.diag(SPV_ERROR_INVALID_VALUE)
+      return _.diag(SPV_ERROR_INVALID_VALUE, inst)
              << "The high-order bits of a literal number in instruction <id> "
              << inst->id() << " must be 0 for a floating-point type, "
              << "or 0 for an integer type with Signedness of 0, "
