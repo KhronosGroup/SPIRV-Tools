@@ -50,14 +50,14 @@ spv_result_t PrimitivesPass(ValidationState_t& _, const Instruction* inst) {
       const uint32_t stream_id = inst->word(1);
       const uint32_t stream_type = _.GetTypeId(stream_id);
       if (!_.IsIntScalarType(stream_type)) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(opcode)
                << ": expected Stream to be int scalar";
       }
 
       const SpvOp stream_opcode = _.GetIdOpcode(stream_id);
       if (!spvOpcodeIsConstant(stream_opcode)) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(opcode)
                << ": expected Stream to be constant instruction";
       }
