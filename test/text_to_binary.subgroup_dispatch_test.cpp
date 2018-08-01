@@ -24,7 +24,6 @@ namespace spvtools {
 namespace {
 
 using ::spvtest::MakeInstruction;
-using std::vector;
 using ::testing::Eq;
 
 using OpGetKernelLocalSizeForSubgroupCountTest = spvtest::TextToBinaryTest;

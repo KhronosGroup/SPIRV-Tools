@@ -18,7 +18,6 @@ namespace spvtools {
 namespace {
 
 using GetTargetTest = ::testing::TestWithParam<spv_target_env>;
-using std::vector;
 using ::testing::ValuesIn;
 
 TEST_P(GetTargetTest, Default) {
@@ -33,9 +32,9 @@ TEST_P(GetTargetTest, InvalidPointerTable) {
 }
 
 INSTANTIATE_TEST_CASE_P(OperandTableGet, GetTargetTest,
-                        ValuesIn(vector<spv_target_env>{SPV_ENV_UNIVERSAL_1_0,
-                                                        SPV_ENV_UNIVERSAL_1_1,
-                                                        SPV_ENV_VULKAN_1_0}), );
+                        ValuesIn(std::vector<spv_target_env>{
+                            SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                            SPV_ENV_VULKAN_1_0}), );
 
 TEST(OperandString, AllAreDefinedExceptVariable) {
   // None has no string, so don't test it.

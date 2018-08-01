@@ -30,8 +30,6 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using std::make_pair;
-
 // Distinguish between row and column major matrix layouts.
 enum MatrixLayout { kRowMajor, kColumnMajor };
 
@@ -200,7 +198,8 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
       for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
            memberIdx < numMembers; ++memberIdx) {
         const auto id = members[memberIdx];
-        const auto& constraint = constraints[make_pair(member_id, memberIdx)];
+        const auto& constraint =
+            constraints[std::make_pair(member_id, memberIdx)];
         baseAlignment = std::max(
             baseAlignment,
             getBaseAlignment(id, roundUp, constraint, constraints, vstate));
@@ -284,7 +283,7 @@ uint32_t getSize(uint32_t member_id, bool roundUp,
       // This check depends on the fact that all members have offsets.  This
       // has been checked earlier in the flow.
       assert(offset != 0xffffffff);
-      const auto& constraint = constraints[make_pair(lastMember, lastIdx)];
+      const auto& constraint = constraints[std::make_pair(lastMember, lastIdx)];
       return offset +
              getSize(lastMember, roundUp, constraint, constraints, vstate);
     }
@@ -390,7 +389,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
     const auto offset = member_offset.offset;
     auto id = members[member_offset.member];
     const LayoutConstraints& constraint =
-        constraints[make_pair(struct_id, uint32_t(memberIdx))];
+        constraints[std::make_pair(struct_id, uint32_t(memberIdx))];
     const auto alignment =
         getBaseAlignment(id, blockRules, constraint, constraints, vstate);
     const auto inst = vstate.FindDef(id);
@@ -714,7 +713,7 @@ void ComputeMemberConstraintsForStruct(MemberConstraints* constraints,
   for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
        memberIdx < numMembers; memberIdx++) {
     LayoutConstraints& constraint =
-        (*constraints)[make_pair(struct_id, memberIdx)];
+        (*constraints)[std::make_pair(struct_id, memberIdx)];
     constraint = inherited;
     for (auto& decoration : vstate.id_decorations(struct_id)) {
       if (decoration.struct_member_index() == (int)memberIdx) {

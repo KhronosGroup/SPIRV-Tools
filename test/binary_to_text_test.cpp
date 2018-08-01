@@ -27,8 +27,6 @@ namespace {
 using spvtest::AutoText;
 using spvtest::ScopedContext;
 using spvtest::TextToBinaryTest;
-using std::get;
-using std::tuple;
 using ::testing::Combine;
 using ::testing::Eq;
 using ::testing::HasSubstr;
@@ -227,13 +225,13 @@ OpExecutionMode %1 LocalSizeHint 100 200 300
 }
 
 using RoundTripInstructionsTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<tuple<spv_target_env, std::string>>>;
+    ::testing::TestWithParam<std::tuple<spv_target_env, std::string>>>;
 
 TEST_P(RoundTripInstructionsTest, Sample) {
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(get<1>(GetParam()),
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(std::get<1>(GetParam()),
                                           SPV_BINARY_TO_TEXT_OPTION_NONE,
-                                          get<0>(GetParam())),
-              Eq(get<1>(GetParam())));
+                                          std::get<0>(GetParam())),
+              Eq(std::get<1>(GetParam())));
 }
 
 // clang-format off

@@ -23,13 +23,6 @@
 #include "val/construct.h"
 #include "val/function.h"
 
-using std::deque;
-using std::make_pair;
-using std::pair;
-using std::string;
-using std::unordered_map;
-using std::vector;
-
 namespace spvtools {
 namespace val {
 namespace {
@@ -208,11 +201,11 @@ bool ValidationState_t::IsForwardPointer(uint32_t id) const {
   return (forward_pointer_ids_.find(id) != forward_pointer_ids_.end());
 }
 
-void ValidationState_t::AssignNameToId(uint32_t id, string name) {
+void ValidationState_t::AssignNameToId(uint32_t id, std::string name) {
   operand_names_[id] = name;
 }
 
-string ValidationState_t::getIdName(uint32_t id) const {
+std::string ValidationState_t::getIdName(uint32_t id) const {
   std::stringstream out;
   out << id;
   if (operand_names_.find(id) != end(operand_names_)) {
@@ -221,9 +214,9 @@ string ValidationState_t::getIdName(uint32_t id) const {
   return out.str();
 }
 
-string ValidationState_t::getIdOrName(uint32_t id) const {
+std::string ValidationState_t::getIdOrName(uint32_t id) const {
   std::stringstream out;
-  if (operand_names_.find(id) != end(operand_names_)) {
+  if (operand_names_.find(id) != std::end(operand_names_)) {
     out << operand_names_.at(id);
   } else {
     out << id;
@@ -235,14 +228,14 @@ size_t ValidationState_t::unresolved_forward_id_count() const {
   return unresolved_forward_ids_.size();
 }
 
-vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
-  vector<uint32_t> out(begin(unresolved_forward_ids_),
-                       end(unresolved_forward_ids_));
+std::vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
+  std::vector<uint32_t> out(std::begin(unresolved_forward_ids_),
+                            std::end(unresolved_forward_ids_));
   return out;
 }
 
 bool ValidationState_t::IsDefinedId(uint32_t id) const {
-  return all_definitions_.find(id) != end(all_definitions_);
+  return all_definitions_.find(id) != std::end(all_definitions_);
 }
 
 const Instruction* ValidationState_t::FindDef(uint32_t id) const {
@@ -300,7 +293,9 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
                           error_code);
 }
 
-deque<Function>& ValidationState_t::functions() { return module_functions_; }
+std::deque<Function>& ValidationState_t::functions() {
+  return module_functions_;
+}
 
 Function& ValidationState_t::current_function() {
   assert(in_function_body());
@@ -497,7 +492,7 @@ void ValidationState_t::RegisterDebugInstruction(const Instruction* inst) {
 }
 
 void ValidationState_t::RegisterInstruction(Instruction* inst) {
-  if (inst->id()) all_definitions_.insert(make_pair(inst->id(), inst));
+  if (inst->id()) all_definitions_.insert(std::make_pair(inst->id(), inst));
 
   // If the instruction is using an OpTypeSampledImage as an operand, it should
   // be recorded. The validator will ensure that all usages of an

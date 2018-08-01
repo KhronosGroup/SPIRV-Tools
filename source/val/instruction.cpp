@@ -16,8 +16,6 @@
 
 #include <utility>
 
-using std::make_pair;
-
 namespace spvtools {
 namespace val {
 
@@ -47,7 +45,7 @@ Instruction::Instruction(const spv_parsed_instruction_t* inst,
       uses_() {}
 
 void Instruction::RegisterUse(const Instruction* inst, uint32_t index) {
-  uses_.push_back(make_pair(inst, index));
+  uses_.push_back(std::make_pair(inst, index));
 }
 
 }  // namespace val

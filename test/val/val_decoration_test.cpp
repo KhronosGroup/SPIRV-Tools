@@ -23,15 +23,13 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using std::string;
-using std::vector;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 
 using ValidateDecorations = spvtest::ValidateBase<bool>;
 
 TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
-  string spirv = R"(
+  std::string spirv = R"(
     OpCapability Shader
     OpCapability Linkage
     OpMemoryModel Logical GLSL450
@@ -45,13 +43,14 @@ TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Must have 2 decorations.
-  EXPECT_THAT(vstate_->id_decorations(id),
-              Eq(vector<Decoration>{Decoration(SpvDecorationArrayStride, {4}),
-                                    Decoration(SpvDecorationUniform)}));
+  EXPECT_THAT(
+      vstate_->id_decorations(id),
+      Eq(std::vector<Decoration>{Decoration(SpvDecorationArrayStride, {4}),
+                                 Decoration(SpvDecorationUniform)}));
 }
 
 TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
-  string spirv = R"(
+  std::string spirv = R"(
     OpCapability Shader
     OpCapability Linkage
     OpMemoryModel Logical GLSL450
@@ -72,18 +71,19 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
   const uint32_t arr_id = 1;
   EXPECT_THAT(
       vstate_->id_decorations(arr_id),
-      Eq(vector<Decoration>{Decoration(SpvDecorationArrayStride, {4})}));
+      Eq(std::vector<Decoration>{Decoration(SpvDecorationArrayStride, {4})}));
 
   // The struct must have 3 decorations.
   const uint32_t struct_id = 2;
-  EXPECT_THAT(vstate_->id_decorations(struct_id),
-              Eq(vector<Decoration>{Decoration(SpvDecorationNonReadable, {}, 2),
-                                    Decoration(SpvDecorationOffset, {2}, 2),
-                                    Decoration(SpvDecorationBufferBlock)}));
+  EXPECT_THAT(
+      vstate_->id_decorations(struct_id),
+      Eq(std::vector<Decoration>{Decoration(SpvDecorationNonReadable, {}, 2),
+                                 Decoration(SpvDecorationOffset, {2}, 2),
+                                 Decoration(SpvDecorationBufferBlock)}));
 }
 
 TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -109,7 +109,7 @@ TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 
   // Decoration group has 3 decorations.
-  auto expected_decorations = vector<Decoration>{
+  auto expected_decorations = std::vector<Decoration>{
       Decoration(SpvDecorationDescriptorSet, {0}),
       Decoration(SpvDecorationNonWritable), Decoration(SpvDecorationRestrict)};
 
@@ -122,7 +122,7 @@ TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
 }
 
 TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -139,7 +139,7 @@ TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Decoration group has 1 decoration.
   auto expected_decorations =
-      vector<Decoration>{Decoration(SpvDecorationOffset, {3}, 3)};
+      std::vector<Decoration>{Decoration(SpvDecorationOffset, {3}, 3)};
 
   // Decoration group is applied to id 2, 3, and 4.
   EXPECT_THAT(vstate_->id_decorations(2), Eq(expected_decorations));
@@ -148,7 +148,7 @@ TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
 }
 
 TEST_F(ValidateDecorations, LinkageImportUsedForInitializedVariableBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -165,7 +165,7 @@ TEST_F(ValidateDecorations, LinkageImportUsedForInitializedVariableBad) {
                         "cannot be marked with the Import Linkage Type."));
 }
 TEST_F(ValidateDecorations, LinkageExportUsedForInitializedVariableGood) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -180,7 +180,7 @@ TEST_F(ValidateDecorations, LinkageExportUsedForInitializedVariableGood) {
 }
 
 TEST_F(ValidateDecorations, StructAllMembersHaveBuiltInDecorationsGood) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -197,7 +197,7 @@ TEST_F(ValidateDecorations, StructAllMembersHaveBuiltInDecorationsGood) {
 }
 
 TEST_F(ValidateDecorations, MixedBuiltInDecorationsBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -219,7 +219,7 @@ TEST_F(ValidateDecorations, MixedBuiltInDecorationsBad) {
 }
 
 TEST_F(ValidateDecorations, StructContainsBuiltInStructBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -242,7 +242,7 @@ TEST_F(ValidateDecorations, StructContainsBuiltInStructBad) {
 }
 
 TEST_F(ValidateDecorations, StructContainsNonBuiltInStructGood) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -255,7 +255,7 @@ TEST_F(ValidateDecorations, StructContainsNonBuiltInStructGood) {
 }
 
 TEST_F(ValidateDecorations, MultipleBuiltInObjectsConsumedByOpEntryPointBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Geometry
                OpMemoryModel Logical GLSL450
@@ -287,7 +287,7 @@ TEST_F(ValidateDecorations, MultipleBuiltInObjectsConsumedByOpEntryPointBad) {
 
 TEST_F(ValidateDecorations,
        OneBuiltInObjectPerStorageClassConsumedByOpEntryPointGood) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Geometry
                OpMemoryModel Logical GLSL450
@@ -314,7 +314,7 @@ TEST_F(ValidateDecorations,
 }
 
 TEST_F(ValidateDecorations, NoBuiltInObjectsConsumedByOpEntryPointGood) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Geometry
                OpMemoryModel Logical GLSL450
@@ -339,7 +339,7 @@ TEST_F(ValidateDecorations, NoBuiltInObjectsConsumedByOpEntryPointGood) {
 }
 
 TEST_F(ValidateDecorations, EntryPointFunctionHasLinkageAttributeBad) {
-  string spirv = R"(
+  std::string spirv = R"(
       OpCapability Shader
       OpCapability Linkage
       OpMemoryModel Logical GLSL450
@@ -362,7 +362,7 @@ TEST_F(ValidateDecorations, EntryPointFunctionHasLinkageAttributeBad) {
 }
 
 TEST_F(ValidateDecorations, FunctionDeclarationWithoutImportLinkageBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -380,7 +380,7 @@ TEST_F(ValidateDecorations, FunctionDeclarationWithoutImportLinkageBad) {
 }
 
 TEST_F(ValidateDecorations, FunctionDeclarationWithImportLinkageGood) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -395,7 +395,7 @@ TEST_F(ValidateDecorations, FunctionDeclarationWithImportLinkageGood) {
 }
 
 TEST_F(ValidateDecorations, FunctionDeclarationWithExportLinkageBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -414,7 +414,7 @@ TEST_F(ValidateDecorations, FunctionDeclarationWithExportLinkageBad) {
 }
 
 TEST_F(ValidateDecorations, FunctionDefinitionWithImportLinkageBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -434,7 +434,7 @@ TEST_F(ValidateDecorations, FunctionDefinitionWithImportLinkageBad) {
 }
 
 TEST_F(ValidateDecorations, FunctionDefinitionWithoutImportLinkageGood) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
@@ -727,7 +727,7 @@ TEST_F(ValidateDecorations, ArrayOfArraysOfDescriptorSetsIsDisallowed) {
 }
 
 TEST_F(ValidateDecorations, BlockMissingOffsetBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -754,7 +754,7 @@ TEST_F(ValidateDecorations, BlockMissingOffsetBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockMissingOffsetBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -781,7 +781,7 @@ TEST_F(ValidateDecorations, BufferBlockMissingOffsetBad) {
 }
 
 TEST_F(ValidateDecorations, BlockNestedStructMissingOffsetBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -816,7 +816,7 @@ TEST_F(ValidateDecorations, BlockNestedStructMissingOffsetBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockNestedStructMissingOffsetBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -851,7 +851,7 @@ TEST_F(ValidateDecorations, BufferBlockNestedStructMissingOffsetBad) {
 }
 
 TEST_F(ValidateDecorations, BlockGLSLSharedBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -880,7 +880,7 @@ TEST_F(ValidateDecorations, BlockGLSLSharedBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockGLSLSharedBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -909,7 +909,7 @@ TEST_F(ValidateDecorations, BufferBlockGLSLSharedBad) {
 }
 
 TEST_F(ValidateDecorations, BlockNestedStructGLSLSharedBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -944,7 +944,7 @@ TEST_F(ValidateDecorations, BlockNestedStructGLSLSharedBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLSharedBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -979,7 +979,7 @@ TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLSharedBad) {
 }
 
 TEST_F(ValidateDecorations, BlockGLSLPackedBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1008,7 +1008,7 @@ TEST_F(ValidateDecorations, BlockGLSLPackedBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockGLSLPackedBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1037,7 +1037,7 @@ TEST_F(ValidateDecorations, BufferBlockGLSLPackedBad) {
 }
 
 TEST_F(ValidateDecorations, BlockNestedStructGLSLPackedBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1072,7 +1072,7 @@ TEST_F(ValidateDecorations, BlockNestedStructGLSLPackedBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLPackedBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1107,7 +1107,7 @@ TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLPackedBad) {
 }
 
 TEST_F(ValidateDecorations, BlockMissingArrayStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1139,7 +1139,7 @@ TEST_F(ValidateDecorations, BlockMissingArrayStrideBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockMissingArrayStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1171,7 +1171,7 @@ TEST_F(ValidateDecorations, BufferBlockMissingArrayStrideBad) {
 }
 
 TEST_F(ValidateDecorations, BlockNestedStructMissingArrayStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1208,7 +1208,7 @@ TEST_F(ValidateDecorations, BlockNestedStructMissingArrayStrideBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockNestedStructMissingArrayStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1245,7 +1245,7 @@ TEST_F(ValidateDecorations, BufferBlockNestedStructMissingArrayStrideBad) {
 }
 
 TEST_F(ValidateDecorations, BlockMissingMatrixStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1276,7 +1276,7 @@ TEST_F(ValidateDecorations, BlockMissingMatrixStrideBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockMissingMatrixStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1307,7 +1307,7 @@ TEST_F(ValidateDecorations, BufferBlockMissingMatrixStrideBad) {
 }
 
 TEST_F(ValidateDecorations, BlockMissingMatrixStrideArrayBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1341,7 +1341,7 @@ TEST_F(ValidateDecorations, BlockMissingMatrixStrideArrayBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockMissingMatrixStrideArrayBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1375,7 +1375,7 @@ TEST_F(ValidateDecorations, BufferBlockMissingMatrixStrideArrayBad) {
 }
 
 TEST_F(ValidateDecorations, BlockNestedStructMissingMatrixStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1411,7 +1411,7 @@ TEST_F(ValidateDecorations, BlockNestedStructMissingMatrixStrideBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockNestedStructMissingMatrixStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1447,7 +1447,7 @@ TEST_F(ValidateDecorations, BufferBlockNestedStructMissingMatrixStrideBad) {
 }
 
 TEST_F(ValidateDecorations, BlockStandardUniformBufferLayout) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1509,7 +1509,7 @@ TEST_F(ValidateDecorations, BlockStandardUniformBufferLayout) {
 
 TEST_F(ValidateDecorations, BlockLayoutPermitsTightVec3ScalarPackingGood) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1539,7 +1539,7 @@ TEST_F(ValidateDecorations, BlockLayoutPermitsTightVec3ScalarPackingGood) {
 
 TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1574,7 +1574,7 @@ TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {
 TEST_F(ValidateDecorations,
        BlockLayoutPermitsTightScalarVec3PackingWithRelaxedLayoutGood) {
   // Same as previous test, but with explicit option to relax block layout.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1608,7 +1608,7 @@ TEST_F(ValidateDecorations,
        BlockLayoutPermitsTightScalarVec3PackingBadOffsetWithRelaxedLayoutBad) {
   // Same as previous test, but with the vector not aligned to its scalar
   // element. Use offset 5 instead of a multiple of 4.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1647,7 +1647,7 @@ TEST_F(ValidateDecorations,
        BlockLayoutPermitsTightScalarVec3PackingWithVulkan1_1Good) {
   // Same as previous test, but with Vulkan 1.1.  Vulkan 1.1 included
   // VK_KHR_relaxed_block_layout in core.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1677,7 +1677,7 @@ TEST_F(ValidateDecorations,
 }
 
 TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
-  string spirv = R"(
+  std::string spirv = R"(
              OpCapability Shader
              OpCapability StorageUniform16
              OpExtension "SPV_KHR_16bit_storage"
@@ -1720,7 +1720,7 @@ TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
 TEST_F(ValidateDecorations, BlockArrayBaseAlignmentGood) {
   // For uniform buffer, Array base alignment is 16, and ArrayStride
   // must be a multiple of 16.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1752,7 +1752,7 @@ TEST_F(ValidateDecorations, BlockArrayBaseAlignmentGood) {
 
 TEST_F(ValidateDecorations, BlockArrayBadAlignmentBad) {
   // For uniform buffer, Array base alignment is 16.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1791,7 +1791,7 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithRelaxedLayoutStillBad) {
   // For uniform buffer, Array base alignment is 16, and ArrayStride
   // must be a multiple of 16.  This case uses relaxed block layout.  Relaxed
   // layout only relaxes rules for vector alignment, not array alignment.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1831,7 +1831,7 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithRelaxedLayoutStillBad) {
 TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithVulkan1_1StillBad) {
   // Same as previous test, but with Vulkan 1.1, which includes
   // VK_KHR_relaxed_block_layout in core.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1874,7 +1874,7 @@ TEST_F(ValidateDecorations, PushConstantArrayBaseAlignmentGood) {
   // layout(push_constant) uniform S { vec2 v; float arr[2]; } u;
   // void main() { }
 
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1906,7 +1906,7 @@ TEST_F(ValidateDecorations, PushConstantArrayBaseAlignmentGood) {
 
 TEST_F(ValidateDecorations, PushConstantArrayBadAlignmentBad) {
   // Like the previous test, but with offset 7 instead of 8.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1944,7 +1944,7 @@ TEST_F(ValidateDecorations, PushConstantArrayBadAlignmentBad) {
 TEST_F(ValidateDecorations,
        PushConstantLayoutPermitsTightVec3ScalarPackingGood) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -1973,7 +1973,7 @@ TEST_F(ValidateDecorations,
 TEST_F(ValidateDecorations,
        PushConstantLayoutForbidsTightScalarVec3PackingBad) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
@@ -2007,7 +2007,7 @@ TEST_F(ValidateDecorations,
 TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBaseAlignmentGood) {
   // Spot check buffer rules when using StorageBuffer storage class with Block
   // decoration.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpExtension "SPV_KHR_storage_buffer_storage_class"
                OpMemoryModel Logical GLSL450
@@ -2042,7 +2042,7 @@ TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBaseAlignmentGood) {
 
 TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBadAlignmentBad) {
   // Like the previous test, but with offset 7.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpExtension "SPV_KHR_storage_buffer_storage_class"
                OpMemoryModel Logical GLSL450
@@ -2081,7 +2081,7 @@ TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBadAlignmentBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockStandardStorageBufferLayout) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2144,7 +2144,7 @@ TEST_F(ValidateDecorations, BufferBlockStandardStorageBufferLayout) {
 TEST_F(ValidateDecorations,
        StorageBufferLayoutPermitsTightVec3ScalarPackingGood) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpExtension "SPV_KHR_storage_buffer_storage_class"
                OpMemoryModel Logical GLSL450
@@ -2176,7 +2176,7 @@ TEST_F(ValidateDecorations,
 TEST_F(ValidateDecorations,
        StorageBufferLayoutForbidsTightScalarVec3PackingBad) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpExtension "SPV_KHR_storage_buffer_storage_class"
                OpMemoryModel Logical GLSL450
@@ -2212,7 +2212,7 @@ TEST_F(ValidateDecorations,
 
 TEST_F(ValidateDecorations,
        BlockStandardUniformBufferLayoutIncorrectOffset0Bad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2279,7 +2279,7 @@ TEST_F(ValidateDecorations,
 
 TEST_F(ValidateDecorations,
        BlockStandardUniformBufferLayoutIncorrectOffset1Bad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2345,7 +2345,7 @@ TEST_F(ValidateDecorations,
 }
 
 TEST_F(ValidateDecorations, BlockUniformBufferLayoutIncorrectArrayStrideBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2413,7 +2413,7 @@ TEST_F(ValidateDecorations, BlockUniformBufferLayoutIncorrectArrayStrideBad) {
 
 TEST_F(ValidateDecorations,
        BufferBlockStandardStorageBufferLayoutImproperStraddleBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2448,7 +2448,7 @@ TEST_F(ValidateDecorations,
 TEST_F(ValidateDecorations,
        BlockUniformBufferLayoutOffsetInsideArrayPaddingBad) {
   // In this case the 2nd member fits entirely within the padding.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2488,7 +2488,7 @@ TEST_F(ValidateDecorations,
 TEST_F(ValidateDecorations,
        BlockUniformBufferLayoutOffsetInsideStructPaddingBad) {
   // In this case the 2nd member fits entirely within the padding.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
@@ -2520,7 +2520,7 @@ TEST_F(ValidateDecorations,
 }
 
 TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBadUniversal1_0) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2555,7 +2555,7 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBadUniversal1_0) {
 }
 
 TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBadOpenGL4_5) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2590,7 +2590,7 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBadOpenGL4_5) {
 }
 
 TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderGoodVulkan1_1) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2620,7 +2620,7 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderGoodVulkan1_1) {
 }
 
 TEST_F(ValidateDecorations, BlockLayoutOffsetOverlapBad) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2657,7 +2657,7 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOverlapBad) {
 }
 
 TEST_F(ValidateDecorations, BufferBlockEmptyStruct) {
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2700,7 +2700,7 @@ TEST_F(ValidateDecorations, RowMajorMatrixTightPackingGood) {
   // d -> 60 ; d fits at bytes 12-15 after offset of c. Tight (vec3;float)
   // packing
 
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %1 "main"
@@ -2739,7 +2739,7 @@ TEST_F(ValidateDecorations, ArrayArrayRowMajorMatrixTightPackingGood) {
   // Like the previous case, but we have an array of arrays of matrices.
   // The RowMajor decoration goes on the struct member (surprisingly).
 
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %1 "main"
@@ -2783,7 +2783,7 @@ TEST_F(ValidateDecorations, ArrayArrayRowMajorMatrixTightPackingGood) {
 
 TEST_F(ValidateDecorations, ArrayArrayRowMajorMatrixNextMemberOverlapsBad) {
   // Like the previous case, but the offset of member 2 overlaps the matrix.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %1 "main"
@@ -2840,7 +2840,7 @@ TEST_F(ValidateDecorations, StorageBufferArraySizeCalculationPackGood) {
   // } B;
   // void main() {}
 
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %1 "main"
@@ -2874,7 +2874,7 @@ TEST_F(ValidateDecorations, StorageBufferArraySizeCalculationPackGood) {
 TEST_F(ValidateDecorations, StorageBufferArraySizeCalculationPackBad) {
   // Like previous but, the offset of the second member is too small.
 
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %1 "main"
@@ -2914,7 +2914,7 @@ TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackGood) {
   // Like the corresponding buffer block case, but the array padding must
   // count for the last element as well, and so the offset of the second
   // member must be at least 64.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %1 "main"
@@ -2948,7 +2948,7 @@ TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackGood) {
 TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackBad) {
   // Like previous but, the offset of the second member is too small.
 
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %1 "main"
@@ -2988,7 +2988,7 @@ TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackBad) {
 TEST_F(ValidateDecorations, LayoutNotCheckedWhenSkipBlockLayout) {
   // Checks that block layout is not verified in skipping block layout mode.
   // Even for obviously wrong layout.
-  string spirv = R"(
+  std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main"
