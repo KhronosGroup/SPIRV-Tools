@@ -49,6 +49,7 @@
 #include "markv_model.h"
 #include "opcode.h"
 #include "operand.h"
+#include "source/assembly_grammar.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv_endian.h"
 #include "spirv_validator_options.h"
@@ -58,7 +59,6 @@
 #include "util/parse_number.h"
 #include "val/instruction.h"
 #include "val/validate.h"
-#include "val/validation_state.h"
 
 namespace spvtools {
 namespace comp {

@@ -15,7 +15,6 @@
 #ifndef LIBSPIRV_OPERAND_H_
 #define LIBSPIRV_OPERAND_H_
 
-#include <deque>
 #include <functional>
 
 #include "spirv-tools/libspirv.h"

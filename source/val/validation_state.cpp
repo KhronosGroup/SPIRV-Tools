@@ -18,17 +18,11 @@
 #include <stack>
 
 #include "opcode.h"
+#include "spirv-tools/libspirv.h"
 #include "spirv_target_env.h"
 #include "val/basic_block.h"
 #include "val/construct.h"
 #include "val/function.h"
-
-using std::deque;
-using std::make_pair;
-using std::pair;
-using std::string;
-using std::unordered_map;
-using std::vector;
 
 namespace spvtools {
 namespace val {
@@ -141,6 +135,16 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
   return out;
 }
 
+// Counts the number of instructions and functions in the file.
+spv_result_t CountInstructions(void* user_data,
+                               const spv_parsed_instruction_t* inst) {
+  ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
+  if (inst->opcode == SpvOpFunction) _.increment_total_functions();
+  _.increment_total_instructions();
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 ValidationState_t::ValidationState_t(const spv_const_context ctx,
@@ -187,6 +191,21 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
     default:
       break;
   }
+
+  // Only attempt to count if we have words, otherwise let the other validation
+  // fail and generate an error.
+  if (num_words > 0) {
+    // Count the number of instructions in the binary.
+    spvBinaryParse(ctx, this, words, num_words,
+                   /* parsed_header = */ nullptr, CountInstructions,
+                   /* diagnostic = */ nullptr);
+    preallocateStorage();
+  }
+}
+
+void ValidationState_t::preallocateStorage() {
+  ordered_instructions_.reserve(total_instructions_);
+  module_functions_.reserve(total_functions_);
 }
 
 spv_result_t ValidationState_t::ForwardDeclareId(uint32_t id) {
@@ -208,11 +227,11 @@ bool ValidationState_t::IsForwardPointer(uint32_t id) const {
   return (forward_pointer_ids_.find(id) != forward_pointer_ids_.end());
 }
 
-void ValidationState_t::AssignNameToId(uint32_t id, string name) {
+void ValidationState_t::AssignNameToId(uint32_t id, std::string name) {
   operand_names_[id] = name;
 }
 
-string ValidationState_t::getIdName(uint32_t id) const {
+std::string ValidationState_t::getIdName(uint32_t id) const {
   std::stringstream out;
   out << id;
   if (operand_names_.find(id) != end(operand_names_)) {
@@ -221,7 +240,7 @@ string ValidationState_t::getIdName(uint32_t id) const {
   return out.str();
 }
 
-string ValidationState_t::getIdOrName(uint32_t id) const {
+std::string ValidationState_t::getIdOrName(uint32_t id) const {
   std::stringstream out;
   if (operand_names_.find(id) != end(operand_names_)) {
     out << operand_names_.at(id);
@@ -235,9 +254,9 @@ size_t ValidationState_t::unresolved_forward_id_count() const {
   return unresolved_forward_ids_.size();
 }
 
-vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
-  vector<uint32_t> out(begin(unresolved_forward_ids_),
-                       end(unresolved_forward_ids_));
+std::vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
+  std::vector<uint32_t> out(std::begin(unresolved_forward_ids_),
+                            std::end(unresolved_forward_ids_));
   return out;
 }
 
@@ -300,7 +319,9 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
                           error_code);
 }
 
-deque<Function>& ValidationState_t::functions() { return module_functions_; }
+std::vector<Function>& ValidationState_t::functions() {
+  return module_functions_;
+}
 
 Function& ValidationState_t::current_function() {
   assert(in_function_body());
@@ -497,7 +518,7 @@ void ValidationState_t::RegisterDebugInstruction(const Instruction* inst) {
 }
 
 void ValidationState_t::RegisterInstruction(Instruction* inst) {
-  if (inst->id()) all_definitions_.insert(make_pair(inst->id(), inst));
+  if (inst->id()) all_definitions_.insert(std::make_pair(inst->id(), inst));
 
   // If the instruction is using an OpTypeSampledImage as an operand, it should
   // be recorded. The validator will ensure that all usages of an

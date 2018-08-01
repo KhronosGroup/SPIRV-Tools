@@ -15,7 +15,6 @@
 #ifndef LIBSPIRV_VAL_VALIDATIONSTATE_H_
 #define LIBSPIRV_VAL_VALIDATIONSTATE_H_
 
-#include <deque>
 #include <set>
 #include <string>
 #include <tuple>
@@ -144,6 +143,17 @@ class ValidationState_t {
   /// Increments the instruction count. Used for diagnostic
   int increment_instruction_count();
 
+  /// Increments the total number of instructions in the file.
+  void increment_total_instructions() { total_instructions_++; }
+
+  /// Increments the total number of functions in the file.
+  void increment_total_functions() { total_functions_++; }
+
+  /// Allocates internal storage. Note, calling this will invalidate any
+  /// pointers to |ordered_instructions_| or |module_functions_| and, hence,
+  /// should only be called at the beginning of validation.
+  void preallocateStorage();
+
   /// Returns the current layout section which is being processed
   ModuleLayoutSection current_layout_section() const;
 
@@ -157,7 +167,7 @@ class ValidationState_t {
   DiagnosticStream diag(spv_result_t error_code, const Instruction* inst) const;
 
   /// Returns the function states
-  std::deque<Function>& functions();
+  std::vector<Function>& functions();
 
   /// Returns the function states
   Function& current_function();
@@ -355,8 +365,8 @@ class ValidationState_t {
   /// nullptr
   Instruction* FindDef(uint32_t id);
 
-  /// Returns a deque of instructions in the order they appear in the binary
-  const std::deque<Instruction>& ordered_instructions() const {
+  /// Returns the instructions in the order they appear in the binary
+  const std::vector<Instruction>& ordered_instructions() const {
     return ordered_instructions_;
   }
 
@@ -520,6 +530,11 @@ class ValidationState_t {
   const uint32_t* words_;
   const size_t num_words_;
 
+  /// The total number of instructions in the binary.
+  size_t total_instructions_ = 0;
+  /// The total number of functions in the binary.
+  size_t total_functions_ = 0;
+
   /// Tracks the number of instructions evaluated by the validator
   int instruction_counter_;
 
@@ -542,7 +557,7 @@ class ValidationState_t {
   /// A list of functions in the module.
   /// Pointers to objects in this container are guaranteed to be stable and
   /// valid until the end of lifetime of the validation state.
-  std::deque<Function> module_functions_;
+  std::vector<Function> module_functions_;
 
   /// Capabilities declared in the module
   CapabilitySet module_capabilities_;
@@ -551,9 +566,7 @@ class ValidationState_t {
   ExtensionSet module_extensions_;
 
   /// List of all instructions in the order they appear in the binary
-  /// Pointers to objects in this container are guaranteed to be stable and
-  /// valid until the end of lifetime of the validation state.
-  std::deque<Instruction> ordered_instructions_;
+  std::vector<Instruction> ordered_instructions_;
 
   /// Instructions that can be referenced by Ids
   std::unordered_map<uint32_t, Instruction*> all_definitions_;
