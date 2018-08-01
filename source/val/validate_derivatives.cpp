@@ -40,14 +40,14 @@ spv_result_t DerivativesPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpDPdyCoarse:
     case SpvOpFwidthCoarse: {
       if (!_.IsFloatScalarOrVectorType(result_type)) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected Result Type to be float scalar or vector type: "
                << spvOpcodeString(opcode);
       }
 
       const uint32_t p_type = _.GetOperandTypeId(inst, 2);
       if (p_type != result_type) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected P type and Result Type to be the same: "
                << spvOpcodeString(opcode);
       }
