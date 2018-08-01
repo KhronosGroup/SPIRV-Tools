@@ -43,7 +43,7 @@ spv_result_t TypeUniquePass(ValidationState_t& _, const Instruction* inst) {
     }
 
     if (!_.RegisterUniqueTypeDeclaration(inst)) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Duplicate non-aggregate type declarations are not allowed."
              << " Opcode: " << spvOpcodeString(SpvOp(inst->opcode()))
              << " id: " << inst->id();
