@@ -36,7 +36,7 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(scope);
 
   if (!is_int32) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": expected Execution Scope to be a 32-bit int";
   }
@@ -48,16 +48,16 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   if (spvIsVulkanEnv(_.context()->target_env) &&
       _.context()->target_env != SPV_ENV_VULKAN_1_0 &&
       value != SpvScopeSubgroup) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": in Vulkan environment Execution scope is limited to "
               "Subgroup";
   }
 
   if (value != SpvScopeSubgroup && value != SpvScopeWorkgroup) {
-    return _.diag(SPV_ERROR_INVALID_DATA) << spvOpcodeString(opcode)
-                                          << ": Execution scope is limited to "
-                                             "Subgroup or Workgroup";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << spvOpcodeString(opcode)
+           << ": Execution scope is limited to Subgroup or Workgroup";
   }
 
   return SPV_SUCCESS;
