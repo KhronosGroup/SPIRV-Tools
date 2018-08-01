@@ -29,11 +29,7 @@ namespace {
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
-using std::pair;
-using std::string;
-using std::stringstream;
-
-using ValidateSSA = spvtest::ValidateBase<pair<string, bool>>;
+using ValidateSSA = spvtest::ValidateBase<std::pair<std::string, bool>>;
 
 TEST_F(ValidateSSA, Default) {
   char str[] = R"(
@@ -550,14 +546,14 @@ TEST_F(ValidateSSA, ForwardBranchConditionalMissingTargetBad) {
 
 // Since Int8 requires the Kernel capability, the signedness of int types may
 // not be "1".
-const string kHeader = R"(
+const std::string kHeader = R"(
 OpCapability Int8
 OpCapability DeviceEnqueue
 OpCapability Linkage
 OpMemoryModel Logical OpenCL
 )";
 
-const string kBasicTypes = R"(
+const std::string kBasicTypes = R"(
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %int8t  =  OpTypeInt 8 0
@@ -570,7 +566,7 @@ const string kBasicTypes = R"(
 %false     = OpConstantFalse %boolt
 )";
 
-const string kKernelTypesAndConstants = R"(
+const std::string kKernelTypesAndConstants = R"(
 %queuet  = OpTypeQueue
 
 %three   = OpConstant %uintt 3
@@ -595,14 +591,14 @@ const string kKernelTypesAndConstants = R"(
 %kfunct = OpTypeFunction %voidt %intptrt
 )";
 
-const string kKernelSetup = R"(
+const std::string kKernelSetup = R"(
 %dqueue = OpGetDefaultQueue %queuet
 %ndval  = OpBuildNDRange %ndt %gl %local %offset
 %revent = OpUndef %eventt
 
 )";
 
-const string kKernelDefinition = R"(
+const std::string kKernelDefinition = R"(
 %kfunc  = OpFunction %voidt None %kfunct
 %iparam = OpFunctionParameter %intptrt
 %kfuncl = OpLabel
@@ -612,8 +608,8 @@ const string kKernelDefinition = R"(
 )";
 
 TEST_F(ValidateSSA, EnqueueKernelGood) {
-  string str = kHeader + kBasicTypes + kKernelTypesAndConstants +
-               kKernelDefinition + R"(
+  std::string str = kHeader + kBasicTypes + kKernelTypesAndConstants +
+                    kKernelDefinition + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
                 )" + kKernelSetup + R"(
@@ -628,11 +624,11 @@ TEST_F(ValidateSSA, EnqueueKernelGood) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelGood) {
-  string str = kHeader + kBasicTypes + kKernelTypesAndConstants + R"(
+  std::string str = kHeader + kBasicTypes + kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
                 )" +
-               kKernelSetup + R"(
+                    kKernelSetup + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -644,8 +640,8 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelGood) {
 }
 
 TEST_F(ValidateSSA, EnqueueMissingFunctionBad) {
-  string str = kHeader + "OpName %kfunc \"kfunc\"" + kBasicTypes +
-               kKernelTypesAndConstants + R"(
+  std::string str = kHeader + "OpName %kfunc \"kfunc\"" + kBasicTypes +
+                    kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
                 )" + kKernelSetup + R"(
@@ -660,25 +656,25 @@ TEST_F(ValidateSSA, EnqueueMissingFunctionBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("kfunc"));
 }
 
-string forwardKernelNonDominantParameterBaseCode(string name = string()) {
-  string op_name;
+std::string forwardKernelNonDominantParameterBaseCode(
+    std::string name = std::string()) {
+  std::string op_name;
   if (name.empty()) {
     op_name = "";
   } else {
     op_name = "\nOpName %" + name + " \"" + name + "\"\n";
   }
-  string out = kHeader + op_name + kBasicTypes + kKernelTypesAndConstants +
-               kKernelDefinition +
-               R"(
+  std::string out = kHeader + op_name + kBasicTypes + kKernelTypesAndConstants +
+                    kKernelDefinition +
+                    R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
-                )" +
-               kKernelSetup;
+                )" + kKernelSetup;
   return out;
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelMissingParameter1Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("missing") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("missing") + R"(
                 %err    = OpEnqueueKernel %missing %dqueue %flags %ndval
                                         %nevent %event %revent %kfunc %firstp
                                         %psize %palign %lsize
@@ -691,7 +687,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelMissingParameter1Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter2Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("dqueue2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("dqueue2") + R"(
                 %err     = OpEnqueueKernel %uintt %dqueue2 %flags %ndval
                                             %nevent %event %revent %kfunc
                                             %firstp %psize %palign %lsize
@@ -705,7 +701,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter2Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter3Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("ndval2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("ndval2") + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval2
                                         %nevent %event %revent %kfunc %firstp
                                         %psize %palign %lsize
@@ -719,7 +715,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter3Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter4Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("nevent2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("nevent2") + R"(
               %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent2
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -733,7 +729,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter4Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter5Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("event2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("event2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event2 %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -747,7 +743,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter5Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter6Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("revent2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("revent2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent2 %kfunc %firstp %psize
                                         %palign %lsize
@@ -761,7 +757,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter6Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter8Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("firstp2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("firstp2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp2 %psize
                                         %palign %lsize
@@ -775,7 +771,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter8Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter9Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("psize2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("psize2") + R"(
               %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize2
                                         %palign %lsize
@@ -789,7 +785,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter9Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter10Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("palign2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("palign2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign2 %lsize
@@ -803,7 +799,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter10Bad) {
 }
 
 TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter11Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode("lsize2") + R"(
+  std::string str = forwardKernelNonDominantParameterBaseCode("lsize2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize2
@@ -819,7 +815,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter11Bad) {
 
 static const bool kWithNDrange = true;
 static const bool kNoNDrange = false;
-pair<string, bool> cases[] = {
+std::pair<std::string, bool> cases[] = {
     {"OpGetKernelNDrangeSubGroupCount", kWithNDrange},
     {"OpGetKernelNDrangeMaxSubGroupSize", kWithNDrange},
     {"OpGetKernelWorkGroupSize", kNoNDrange},
@@ -827,17 +823,17 @@ pair<string, bool> cases[] = {
 
 INSTANTIATE_TEST_CASE_P(KernelArgs, ValidateSSA, ::testing::ValuesIn(cases), );
 
-static const string return_instructions = R"(
+static const std::string return_instructions = R"(
   OpReturn
   OpFunctionEnd
 )";
 
 TEST_P(ValidateSSA, GetKernelGood) {
-  string instruction = GetParam().first;
+  std::string instruction = GetParam().first;
   bool with_ndrange = GetParam().second;
-  string ndrange_param = with_ndrange ? " %ndval " : " ";
+  std::string ndrange_param = with_ndrange ? " %ndval " : " ";
 
-  stringstream ss;
+  std::stringstream ss;
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode() + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign"
@@ -849,12 +845,12 @@ TEST_P(ValidateSSA, GetKernelGood) {
 }
 
 TEST_P(ValidateSSA, ForwardGetKernelGood) {
-  string instruction = GetParam().first;
+  std::string instruction = GetParam().first;
   bool with_ndrange = GetParam().second;
-  string ndrange_param = with_ndrange ? " %ndval " : " ";
+  std::string ndrange_param = with_ndrange ? " %ndval " : " ";
 
   // clang-format off
-  string str = kHeader + kBasicTypes + kKernelTypesAndConstants +
+  std::string str = kHeader + kBasicTypes + kKernelTypesAndConstants +
                R"(
             %main    = OpFunction %voidt None %vfunct
             %mainl   = OpLabel
@@ -869,11 +865,11 @@ TEST_P(ValidateSSA, ForwardGetKernelGood) {
 }
 
 TEST_P(ValidateSSA, ForwardGetKernelMissingDefinitionBad) {
-  string instruction = GetParam().first;
+  std::string instruction = GetParam().first;
   bool with_ndrange = GetParam().second;
-  string ndrange_param = with_ndrange ? " %ndval " : " ";
+  std::string ndrange_param = with_ndrange ? " %ndval " : " ";
 
-  stringstream ss;
+  std::stringstream ss;
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode("missing") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%missing %firstp %psize %palign"
@@ -886,11 +882,11 @@ TEST_P(ValidateSSA, ForwardGetKernelMissingDefinitionBad) {
 }
 
 TEST_P(ValidateSSA, ForwardGetKernelNDrangeSubGroupCountMissingParameter1Bad) {
-  string instruction = GetParam().first;
+  std::string instruction = GetParam().first;
   bool with_ndrange = GetParam().second;
-  string ndrange_param = with_ndrange ? " %ndval " : " ";
+  std::string ndrange_param = with_ndrange ? " %ndval " : " ";
 
-  stringstream ss;
+  std::stringstream ss;
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode("missing") + " %numsg = "
      << instruction + " %missing" + ndrange_param + "%kfunc %firstp %psize %palign"
@@ -904,11 +900,11 @@ TEST_P(ValidateSSA, ForwardGetKernelNDrangeSubGroupCountMissingParameter1Bad) {
 
 TEST_P(ValidateSSA,
        ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
-  string instruction = GetParam().first;
+  std::string instruction = GetParam().first;
   bool with_ndrange = GetParam().second;
-  string ndrange_param = with_ndrange ? " %ndval2 " : " ";
+  std::string ndrange_param = with_ndrange ? " %ndval2 " : " ";
 
-  stringstream ss;
+  std::stringstream ss;
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode("ndval2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign"
@@ -925,11 +921,11 @@ TEST_P(ValidateSSA,
 
 TEST_P(ValidateSSA,
        ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
-  string instruction = GetParam().first;
+  std::string instruction = GetParam().first;
   bool with_ndrange = GetParam().second;
-  string ndrange_param = with_ndrange ? " %ndval " : " ";
+  std::string ndrange_param = with_ndrange ? " %ndval " : " ";
 
-  stringstream ss;
+  std::stringstream ss;
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode("firstp2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp2 %psize %palign"
@@ -944,11 +940,11 @@ TEST_P(ValidateSSA,
 
 TEST_P(ValidateSSA,
        ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
-  string instruction = GetParam().first;
+  std::string instruction = GetParam().first;
   bool with_ndrange = GetParam().second;
-  string ndrange_param = with_ndrange ? " %ndval " : " ";
+  std::string ndrange_param = with_ndrange ? " %ndval " : " ";
 
-  stringstream ss;
+  std::stringstream ss;
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode("psize2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize2 %palign"
@@ -963,11 +959,11 @@ TEST_P(ValidateSSA,
 
 TEST_P(ValidateSSA,
        ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
-  string instruction = GetParam().first;
+  std::string instruction = GetParam().first;
   bool with_ndrange = GetParam().second;
-  string ndrange_param = with_ndrange ? " %ndval " : " ";
+  std::string ndrange_param = with_ndrange ? " %ndval " : " ";
 
-  stringstream ss;
+  std::stringstream ss;
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode("palign2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign2"
@@ -983,8 +979,8 @@ TEST_P(ValidateSSA,
 }
 
 TEST_F(ValidateSSA, PhiGood) {
-  string str = kHeader + kBasicTypes +
-               R"(
+  std::string str = kHeader + kBasicTypes +
+                    R"(
 %func      = OpFunction %voidt None %vfunct
 %preheader = OpLabel
 %init      = OpCopyObject %uintt %zero
@@ -1006,8 +1002,8 @@ TEST_F(ValidateSSA, PhiGood) {
 }
 
 TEST_F(ValidateSSA, PhiMissingTypeBad) {
-  string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
+                    R"(
 %func      = OpFunction %voidt None %vfunct
 %preheader = OpLabel
 %init      = OpCopyObject %uintt %zero
@@ -1030,8 +1026,8 @@ TEST_F(ValidateSSA, PhiMissingTypeBad) {
 }
 
 TEST_F(ValidateSSA, PhiMissingIdBad) {
-  string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
+                    R"(
 %func      = OpFunction %voidt None %vfunct
 %preheader = OpLabel
 %init      = OpCopyObject %uintt %zero
@@ -1054,8 +1050,8 @@ TEST_F(ValidateSSA, PhiMissingIdBad) {
 }
 
 TEST_F(ValidateSSA, PhiMissingLabelBad) {
-  string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
+                    R"(
 %func      = OpFunction %voidt None %vfunct
 %preheader = OpLabel
 %init      = OpCopyObject %uintt %zero
@@ -1078,8 +1074,8 @@ TEST_F(ValidateSSA, PhiMissingLabelBad) {
 }
 
 TEST_F(ValidateSSA, IdDominatesItsUseGood) {
-  string str = kHeader + kBasicTypes +
-               R"(
+  std::string str = kHeader + kBasicTypes +
+                    R"(
 %func      = OpFunction %voidt None %vfunct
 %entry     = OpLabel
 %cond      = OpSLessThan %boolt %one %ten
@@ -1102,12 +1098,12 @@ TEST_F(ValidateSSA, IdDominatesItsUseGood) {
 }
 
 TEST_F(ValidateSSA, IdDoesNotDominateItsUseBad) {
-  string str = kHeader +
-               "OpName %eleven \"eleven\"\n"
-               "OpName %true_block \"true_block\"\n"
-               "OpName %false_block \"false_block\"" +
-               kBasicTypes +
-               R"(
+  std::string str = kHeader +
+                    "OpName %eleven \"eleven\"\n"
+                    "OpName %true_block \"true_block\"\n"
+                    "OpName %false_block \"false_block\"" +
+                    kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
 %cond        = OpSLessThan %boolt %one %ten
@@ -1134,8 +1130,8 @@ TEST_F(ValidateSSA, IdDoesNotDominateItsUseBad) {
 }
 
 TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
-  string str = kHeader + kBasicTypes +
-               R"(
+  std::string str = kHeader + kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
 %var_one     = OpVariable %intptrt Function %one
@@ -1162,8 +1158,8 @@ TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
 
 TEST_F(ValidateSSA,
        PhiUseDoesntDominateUseOfPhiOperandUsedBeforeDefinitionBad) {
-  string str = kHeader + "OpName %inew \"inew\"" + kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %inew \"inew\"" + kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
 %var_one     = OpVariable %intptrt Function %one
@@ -1193,10 +1189,10 @@ TEST_F(ValidateSSA,
 }
 
 TEST_F(ValidateSSA, PhiUseMayComeFromNonDominatingBlockGood) {
-  string str = kHeader + "OpName %if_true \"if_true\"\n" +
-               "OpName %exit \"exit\"\n" + "OpName %copy \"copy\"\n" +
-               kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %if_true \"if_true\"\n" +
+                    "OpName %exit \"exit\"\n" + "OpName %copy \"copy\"\n" +
+                    kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
                OpBranchConditional %false %if_true %exit
@@ -1223,9 +1219,9 @@ TEST_F(ValidateSSA, PhiUsesItsOwnDefinitionGood) {
   //
   // Non-phi instructions can't use their own definitions, as
   // already checked in test DominateUsageSameInstructionBad.
-  string str = kHeader + "OpName %loop \"loop\"\n" +
-               "OpName %value \"value\"\n" + kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %loop \"loop\"\n" +
+                    "OpName %value \"value\"\n" + kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
                OpBranch %loop
@@ -1242,11 +1238,12 @@ TEST_F(ValidateSSA, PhiUsesItsOwnDefinitionGood) {
 }
 
 TEST_F(ValidateSSA, PhiVariableDefNotDominatedByParentBlockBad) {
-  string str = kHeader + "OpName %if_true \"if_true\"\n" +
-               "OpName %if_false \"if_false\"\n" + "OpName %exit \"exit\"\n" +
-               "OpName %value \"phi\"\n" + "OpName %true_copy \"true_copy\"\n" +
-               "OpName %false_copy \"false_copy\"\n" + kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %if_true \"if_true\"\n" +
+                    "OpName %if_false \"if_false\"\n" +
+                    "OpName %exit \"exit\"\n" + "OpName %value \"phi\"\n" +
+                    "OpName %true_copy \"true_copy\"\n" +
+                    "OpName %false_copy \"false_copy\"\n" + kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
                OpBranchConditional %false %if_true %if_false
@@ -1277,8 +1274,8 @@ TEST_F(ValidateSSA, PhiVariableDefNotDominatedByParentBlockBad) {
 }
 
 TEST_F(ValidateSSA, PhiVariableDefDominatesButNotDefinedInParentBlock) {
-  string str = kHeader + "OpName %if_true \"if_true\"\n" + kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %if_true \"if_true\"\n" + kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
                OpBranchConditional %false %if_true %if_false
@@ -1307,8 +1304,8 @@ TEST_F(ValidateSSA, PhiVariableDefDominatesButNotDefinedInParentBlock) {
 
 TEST_F(ValidateSSA,
        DominanceCheckIgnoresUsesInUnreachableBlocksDefInBlockGood) {
-  string str = kHeader + kBasicTypes +
-               R"(
+  std::string str = kHeader + kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
 %def         = OpCopyObject %boolt %false
@@ -1325,8 +1322,9 @@ TEST_F(ValidateSSA,
 }
 
 TEST_F(ValidateSSA, PhiVariableUnreachableDefNotInParentBlock) {
-  string str = kHeader + "OpName %unreachable \"unreachable\"\n" + kBasicTypes +
-               R"(
+  std::string str = kHeader + "OpName %unreachable \"unreachable\"\n" +
+                    kBasicTypes +
+                    R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
                OpBranch %if_false
@@ -1355,8 +1353,8 @@ TEST_F(ValidateSSA, PhiVariableUnreachableDefNotInParentBlock) {
 
 TEST_F(ValidateSSA,
        DominanceCheckIgnoresUsesInUnreachableBlocksDefIsParamGood) {
-  string str = kHeader + kBasicTypes +
-               R"(
+  std::string str = kHeader + kBasicTypes +
+                    R"(
 %void_fn_int = OpTypeFunction %voidt %uintt
 %func        = OpFunction %voidt None %void_fn_int
 %int_param   = OpFunctionParameter %uintt
@@ -1374,11 +1372,11 @@ TEST_F(ValidateSSA,
 }
 
 TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
-  string str = kHeader +
-               "OpName %first \"first\"\n"
-               "OpName %func \"func\"\n" +
-               "OpName %func2 \"func2\"\n" + kBasicTypes +
-               R"(
+  std::string str = kHeader +
+                    "OpName %first \"first\"\n"
+                    "OpName %func \"func\"\n" +
+                    "OpName %func2 \"func2\"\n" + kBasicTypes +
+                    R"(
 %viifunct  = OpTypeFunction %voidt %uintt %uintt
 %func      = OpFunction %voidt None %viifunct
 %first     = OpFunctionParameter %uintt
@@ -1406,7 +1404,7 @@ TEST_F(ValidateSSA, TypeForwardPointerForwardReference) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/429
   //
   // ForwardPointers can references instructions that have not been defined
-  string str = R"(
+  std::string str = R"(
                OpCapability Kernel
                OpCapability Addresses
                OpCapability Linkage
@@ -1422,7 +1420,7 @@ TEST_F(ValidateSSA, TypeForwardPointerForwardReference) {
 }
 
 TEST_F(ValidateSSA, TypeStructForwardReference) {
-  string str = R"(
+  std::string str = R"(
                OpCapability Kernel
                OpCapability Addresses
                OpCapability Linkage

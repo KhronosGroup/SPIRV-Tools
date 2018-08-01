@@ -25,7 +25,6 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using std::string;
 using ::testing::HasSubstr;
 
 using ValidationStateTest = spvtest::ValidateBase<bool>;
@@ -45,7 +44,7 @@ const char kVoidFVoid[] =
 
 // Tests that the instruction count in ValidationState is correct.
 TEST_F(ValidationStateTest, CheckNumInstructions) {
-  string spirv = string(header) + "%int = OpTypeInt 32 0";
+  std::string spirv = std::string(header) + "%int = OpTypeInt 32 0";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   EXPECT_EQ(size_t(4), vstate_->ordered_instructions().size());
@@ -53,7 +52,7 @@ TEST_F(ValidationStateTest, CheckNumInstructions) {
 
 // Tests that the number of global variables in ValidationState is correct.
 TEST_F(ValidationStateTest, CheckNumGlobalVars) {
-  string spirv = string(header) + R"(
+  std::string spirv = std::string(header) + R"(
      %int = OpTypeInt 32 0
 %_ptr_int = OpTypePointer Input %int
    %var_1 = OpVariable %_ptr_int Input
@@ -66,7 +65,7 @@ TEST_F(ValidationStateTest, CheckNumGlobalVars) {
 
 // Tests that the number of local variables in ValidationState is correct.
 TEST_F(ValidationStateTest, CheckNumLocalVars) {
-  string spirv = string(header) + R"(
+  std::string spirv = std::string(header) + R"(
  %int      = OpTypeInt 32 0
  %_ptr_int = OpTypePointer Function %int
  %voidt    = OpTypeVoid
@@ -86,7 +85,7 @@ TEST_F(ValidationStateTest, CheckNumLocalVars) {
 
 // Tests that the "id bound" in ValidationState is correct.
 TEST_F(ValidationStateTest, CheckIdBound) {
-  string spirv = string(header) + R"(
+  std::string spirv = std::string(header) + R"(
  %int      = OpTypeInt 32 0
  %voidt    = OpTypeVoid
   )";
@@ -97,8 +96,9 @@ TEST_F(ValidationStateTest, CheckIdBound) {
 
 // Tests that the entry_points in ValidationState is correct.
 TEST_F(ValidationStateTest, CheckEntryPoints) {
-  string spirv = string(header) + " OpEntryPoint Vertex %func \"shader\"" +
-                 string(kVoidFVoid);
+  std::string spirv = std::string(header) +
+                      " OpEntryPoint Vertex %func \"shader\"" +
+                      std::string(kVoidFVoid);
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   EXPECT_EQ(size_t(1), vstate_->entry_points().size());

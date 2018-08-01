@@ -33,14 +33,12 @@ using ::testing::Not;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-using std::string;
-
-using ValidateKnownExtensions = spvtest::ValidateBase<string>;
-using ValidateUnknownExtensions = spvtest::ValidateBase<string>;
+using ValidateKnownExtensions = spvtest::ValidateBase<std::string>;
+using ValidateUnknownExtensions = spvtest::ValidateBase<std::string>;
 using ValidateExtensionCapabilities = spvtest::ValidateBase<bool>;
 
 // Returns expected error string if |extension| is not recognized.
-string GetErrorString(const std::string& extension) {
+std::string GetErrorString(const std::string& extension) {
   return "Found unrecognized extension " + extension;
 }
 
@@ -71,7 +69,7 @@ INSTANTIATE_TEST_CASE_P(FailSilently, ValidateUnknownExtensions,
 
 TEST_P(ValidateKnownExtensions, ExpectSuccess) {
   const std::string extension = GetParam();
-  const string str =
+  const std::string str =
       "OpCapability Shader\nOpCapability Linkage\nOpExtension \"" + extension +
       "\"\nOpMemoryModel Logical GLSL450";
   CompileSuccessfully(str.c_str());
@@ -81,7 +79,7 @@ TEST_P(ValidateKnownExtensions, ExpectSuccess) {
 
 TEST_P(ValidateUnknownExtensions, FailSilently) {
   const std::string extension = GetParam();
-  const string str =
+  const std::string str =
       "OpCapability Shader\nOpCapability Linkage\nOpExtension \"" + extension +
       "\"\nOpMemoryModel Logical GLSL450";
   CompileSuccessfully(str.c_str());
@@ -90,7 +88,7 @@ TEST_P(ValidateUnknownExtensions, FailSilently) {
 }
 
 TEST_F(ValidateExtensionCapabilities, DeclCapabilitySuccess) {
-  const string str =
+  const std::string str =
       "OpCapability Shader\nOpCapability Linkage\nOpCapability DeviceGroup\n"
       "OpExtension \"SPV_KHR_device_group\""
       "\nOpMemoryModel Logical GLSL450";
@@ -99,7 +97,7 @@ TEST_F(ValidateExtensionCapabilities, DeclCapabilitySuccess) {
 }
 
 TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailure) {
-  const string str =
+  const std::string str =
       "OpCapability Shader\nOpCapability Linkage\nOpCapability DeviceGroup\n"
       "\nOpMemoryModel Logical GLSL450";
   CompileSuccessfully(str.c_str());
@@ -110,16 +108,16 @@ TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailure) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("SPV_KHR_device_group"));
 }
 
-using ValidateAMDShaderBallotCapabilities = spvtest::ValidateBase<string>;
+using ValidateAMDShaderBallotCapabilities = spvtest::ValidateBase<std::string>;
 
 // Returns a vector of strings for the prefix of a SPIR-V assembly shader
 // that can use the group instructions introduced by SPV_AMD_shader_ballot.
-std::vector<string> ShaderPartsForAMDShaderBallot() {
-  return std::vector<string>{R"(
+std::vector<std::string> ShaderPartsForAMDShaderBallot() {
+  return std::vector<std::string>{R"(
   OpCapability Shader
   OpCapability Linkage
   )",
-                             R"(
+                                  R"(
   OpMemoryModel Logical GLSL450
   %float = OpTypeFloat 32
   %uint = OpTypeInt 32 0
@@ -139,8 +137,8 @@ std::vector<string> ShaderPartsForAMDShaderBallot() {
 // Returns a list of SPIR-V assembly strings, where each uses only types
 // and IDs that can fit with a shader made from parts from the result
 // of ShaderPartsForAMDShaderBallot.
-std::vector<string> AMDShaderBallotGroupInstructions() {
-  return std::vector<string>{
+std::vector<std::string> AMDShaderBallotGroupInstructions() {
+  return std::vector<std::string>{
       "%iadd_reduce = OpGroupIAddNonUniformAMD %uint %scope Reduce %uint_const",
       "%iadd_iscan = OpGroupIAddNonUniformAMD %uint %scope InclusiveScan "
       "%uint_const",
@@ -197,8 +195,9 @@ TEST_P(ValidateAMDShaderBallotCapabilities, ExpectSuccess) {
   // Succeed because the module specifies the SPV_AMD_shader_ballot extension.
   auto parts = ShaderPartsForAMDShaderBallot();
 
-  const string assembly = parts[0] + "OpExtension \"SPV_AMD_shader_ballot\"\n" +
-                          parts[1] + GetParam() + "\nOpReturn OpFunctionEnd";
+  const std::string assembly =
+      parts[0] + "OpExtension \"SPV_AMD_shader_ballot\"\n" + parts[1] +
+      GetParam() + "\nOpReturn OpFunctionEnd";
 
   CompileSuccessfully(assembly.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
@@ -212,7 +211,7 @@ TEST_P(ValidateAMDShaderBallotCapabilities, ExpectFailure) {
   // extension.
   auto parts = ShaderPartsForAMDShaderBallot();
 
-  const string assembly =
+  const std::string assembly =
       parts[0] + parts[1] + GetParam() + "\nOpReturn OpFunctionEnd";
 
   CompileSuccessfully(assembly.c_str());
@@ -222,9 +221,10 @@ TEST_P(ValidateAMDShaderBallotCapabilities, ExpectFailure) {
   // Find just the opcode name, skipping over the "Op" part.
   auto prefix_with_opcode = GetParam().substr(GetParam().find("Group"));
   auto opcode = prefix_with_opcode.substr(0, prefix_with_opcode.find(' '));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr(string("Opcode " + opcode +
-                               " requires one of these capabilities: Groups")));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(std::string("Opcode " + opcode +
+                            " requires one of these capabilities: Groups")));
 }
 
 INSTANTIATE_TEST_CASE_P(ExpectFailure, ValidateAMDShaderBallotCapabilities,
@@ -244,10 +244,10 @@ using ValidateExtIntoCore = spvtest::ValidateBase<ExtIntoCoreCase>;
 // functionalities that introduced in extensions but became core SPIR-V later.
 
 TEST_P(ValidateExtIntoCore, DoNotAskForExtensionInLaterVersion) {
-  const string code = string(R"(
+  const std::string code = std::string(R"(
                OpCapability Shader
                OpCapability )") +
-                      GetParam().cap + R"(
+                           GetParam().cap + R"(
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main" %builtin
                OpDecorate %builtin BuiltIn )" + GetParam().builtin + R"(
@@ -267,14 +267,14 @@ TEST_P(ValidateExtIntoCore, DoNotAskForExtensionInLaterVersion) {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(GetParam().env));
   } else {
     ASSERT_NE(SPV_SUCCESS, ValidateInstructions(GetParam().env));
-    const string message = getDiagnosticString();
+    const std::string message = getDiagnosticString();
     if (spvIsVulkanEnv(GetParam().env)) {
-      EXPECT_THAT(message, HasSubstr(string(GetParam().cap) +
+      EXPECT_THAT(message, HasSubstr(std::string(GetParam().cap) +
                                      " is not allowed by Vulkan"));
-      EXPECT_THAT(message, HasSubstr(string("or requires extension")));
+      EXPECT_THAT(message, HasSubstr(std::string("or requires extension")));
     } else {
       EXPECT_THAT(message,
-                  HasSubstr(string("requires one of these extensions: ") +
+                  HasSubstr(std::string("requires one of these extensions: ") +
                             GetParam().ext));
     }
   }

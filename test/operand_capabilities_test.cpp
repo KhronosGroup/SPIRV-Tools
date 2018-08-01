@@ -25,8 +25,6 @@ namespace spvtools {
 namespace {
 
 using spvtest::ElementsIn;
-using std::get;
-using std::tuple;
 using ::testing::Combine;
 using ::testing::Eq;
 using ::testing::TestWithParam;
@@ -42,23 +40,23 @@ struct EnumCapabilityCase {
 
 // Test fixture for testing EnumCapabilityCases.
 using EnumCapabilityTest =
-    TestWithParam<tuple<spv_target_env, EnumCapabilityCase>>;
+    TestWithParam<std::tuple<spv_target_env, EnumCapabilityCase>>;
 
 TEST_P(EnumCapabilityTest, Sample) {
-  const auto env = get<0>(GetParam());
+  const auto env = std::get<0>(GetParam());
   const auto context = spvContextCreate(env);
   const AssemblyGrammar grammar(context);
   spv_operand_desc entry;
 
   ASSERT_EQ(SPV_SUCCESS,
-            grammar.lookupOperand(get<1>(GetParam()).type,
-                                  get<1>(GetParam()).value, &entry));
+            grammar.lookupOperand(std::get<1>(GetParam()).type,
+                                  std::get<1>(GetParam()).value, &entry));
   const auto cap_set = grammar.filterCapsAgainstTargetEnv(
       entry->capabilities, entry->numCapabilities);
 
   EXPECT_THAT(ElementsIn(cap_set),
-              Eq(ElementsIn(get<1>(GetParam()).expected_capabilities)))
-      << " capability value " << get<1>(GetParam()).value;
+              Eq(ElementsIn(std::get<1>(GetParam()).expected_capabilities)))
+      << " capability value " << std::get<1>(GetParam()).value;
   spvContextDestroy(context);
 }
 

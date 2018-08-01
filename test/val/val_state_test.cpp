@@ -32,8 +32,6 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using std::vector;
-
 // This is all we need for these tests.
 static uint32_t kFakeBinary[] = {0};
 

@@ -22,13 +22,12 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using std::string;
 using testing::HasSubstr;
 
 using ValidateWebGPU = spvtest::ValidateBase<bool>;
 
 TEST_F(ValidateWebGPU, OpUndefIsDisallowed) {
-  string spirv = R"(
+  std::string spirv = R"(
     OpCapability Shader
     OpCapability Linkage
     OpMemoryModel Logical GLSL450
