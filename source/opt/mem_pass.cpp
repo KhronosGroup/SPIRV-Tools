@@ -178,7 +178,7 @@ void MemPass::AddStores(uint32_t ptr_id, std::queue<Instruction*>* insts) {
 }
 
 void MemPass::DCEInst(Instruction* inst,
-                      const function<void(Instruction*)>& call_back) {
+                      const std::function<void(Instruction*)>& call_back) {
   std::queue<Instruction*> deadInsts;
   deadInsts.push(inst);
   while (!deadInsts.empty()) {
@@ -310,7 +310,7 @@ bool MemPass::IsTargetVar(uint32_t varId) {
 //           [ ... ]
 //           %30 = OpPhi %int %int_42 %13 %50 %14 %50 %15
 void MemPass::RemovePhiOperands(
-    Instruction* phi, const unordered_set<BasicBlock*>& reachable_blocks) {
+    Instruction* phi, const std::unordered_set<BasicBlock*>& reachable_blocks) {
   std::vector<Operand> keep_operands;
   uint32_t type_id = 0;
   // The id of an undefined value we've generated.

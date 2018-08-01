@@ -242,7 +242,7 @@ std::string ValidationState_t::getIdName(uint32_t id) const {
 
 std::string ValidationState_t::getIdOrName(uint32_t id) const {
   std::stringstream out;
-  if (operand_names_.find(id) != end(operand_names_)) {
+  if (operand_names_.find(id) != std::end(operand_names_)) {
     out << operand_names_.at(id);
   } else {
     out << id;
@@ -261,7 +261,7 @@ std::vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
 }
 
 bool ValidationState_t::IsDefinedId(uint32_t id) const {
-  return all_definitions_.find(id) != end(all_definitions_);
+  return all_definitions_.find(id) != std::end(all_definitions_);
 }
 
 const Instruction* ValidationState_t::FindDef(uint32_t id) const {

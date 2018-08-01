@@ -33,22 +33,6 @@
 #include "source/val/function.h"
 #include "source/val/validation_state.h"
 
-using std::find;
-using std::function;
-using std::get;
-using std::ignore;
-using std::make_pair;
-using std::make_tuple;
-using std::numeric_limits;
-using std::pair;
-using std::string;
-using std::tie;
-using std::transform;
-using std::tuple;
-using std::unordered_map;
-using std::unordered_set;
-using std::vector;
-
 namespace spvtools {
 namespace val {
 
@@ -86,13 +70,14 @@ spv_result_t MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
 /// Update the continue construct's exit blocks once the backedge blocks are
 /// identified in the CFG.
 void UpdateContinueConstructExitBlocks(
-    Function& function, const vector<pair<uint32_t, uint32_t>>& back_edges) {
+    Function& function,
+    const std::vector<std::pair<uint32_t, uint32_t>>& back_edges) {
   auto& constructs = function.constructs();
   // TODO(umar): Think of a faster way to do this
   for (auto& edge : back_edges) {
     uint32_t back_edge_block_id;
     uint32_t loop_header_block_id;
-    tie(back_edge_block_id, loop_header_block_id) = edge;
+    std::tie(back_edge_block_id, loop_header_block_id) = edge;
     auto is_this_header = [=](Construct& c) {
       return c.type() == ConstructType::kLoop &&
              c.entry_block()->id() == loop_header_block_id;
@@ -105,15 +90,17 @@ void UpdateContinueConstructExitBlocks(
         assert(continue_construct->type() == ConstructType::kContinue);
 
         BasicBlock* back_edge_block;
-        tie(back_edge_block, ignore) = function.GetBlock(back_edge_block_id);
+        std::tie(back_edge_block, std::ignore) =
+            function.GetBlock(back_edge_block_id);
         continue_construct->set_exit(back_edge_block);
       }
     }
   }
 }
 
-tuple<string, string, string> ConstructNames(ConstructType type) {
-  string construct_name, header_name, exit_name;
+std::tuple<std::string, std::string, std::string> ConstructNames(
+    ConstructType type) {
+  std::string construct_name, header_name, exit_name;
 
   switch (type) {
     case ConstructType::kSelection:
@@ -140,16 +127,16 @@ tuple<string, string, string> ConstructNames(ConstructType type) {
       assert(1 == 0 && "Not defined type");
   }
 
-  return make_tuple(construct_name, header_name, exit_name);
+  return std::make_tuple(construct_name, header_name, exit_name);
 }
 
 /// Constructs an error message for construct validation errors
-string ConstructErrorString(const Construct& construct,
-                            const string& header_string,
-                            const string& exit_string,
-                            const string& dominate_text) {
-  string construct_name, header_name, exit_name;
-  tie(construct_name, header_name, exit_name) =
+std::string ConstructErrorString(const Construct& construct,
+                                 const std::string& header_string,
+                                 const std::string& exit_string,
+                                 const std::string& dominate_text) {
+  std::string construct_name, header_name, exit_name;
+  std::tie(construct_name, header_name, exit_name) =
       ConstructNames(construct.type());
 
   // TODO(umar): Add header block for continue constructs to error message
@@ -319,7 +306,7 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
 
 spv_result_t StructuredControlFlowChecks(
     const ValidationState_t& _, Function* function,
-    const vector<pair<uint32_t, uint32_t>>& back_edges) {
+    const std::vector<std::pair<uint32_t, uint32_t>>& back_edges) {
   /// Check all backedges target only loop headers and have exactly one
   /// back-edge branching to it
 
@@ -328,7 +315,7 @@ spv_result_t StructuredControlFlowChecks(
   for (auto back_edge : back_edges) {
     uint32_t back_edge_block;
     uint32_t header_block;
-    tie(back_edge_block, header_block) = back_edge;
+    std::tie(back_edge_block, header_block) = back_edge;
     if (!function->IsBlockType(header_block, kBlockTypeLoop)) {
       return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(back_edge_block))
              << "Back-edges (" << _.getIdName(back_edge_block) << " -> "
@@ -358,8 +345,8 @@ spv_result_t StructuredControlFlowChecks(
     auto merge = construct.exit_block();
 
     if (header->reachable() && !merge) {
-      string construct_name, header_name, exit_name;
-      tie(construct_name, header_name, exit_name) =
+      std::string construct_name, header_name, exit_name;
+      std::tie(construct_name, header_name, exit_name) =
           ConstructNames(construct.type());
       return _.diag(SPV_ERROR_INTERNAL, _.FindDef(header->id()))
              << "Construct " + construct_name + " with " + header_name + " " +
@@ -403,8 +390,8 @@ spv_result_t StructuredControlFlowChecks(
       if (block == header) continue;
       for (auto pred : *block->predecessors()) {
         if (pred->reachable() && !construct_blocks.count(pred)) {
-          string construct_name, header_name, exit_name;
-          tie(construct_name, header_name, exit_name) =
+          std::string construct_name, header_name, exit_name;
+          std::tie(construct_name, header_name, exit_name) =
               ConstructNames(construct.type());
           return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(pred->id()))
                  << "block <ID> " << pred->id() << " branches to the "
@@ -431,7 +418,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
   for (auto& function : _.functions()) {
     // Check all referenced blocks are defined within a function
     if (function.undefined_block_count() != 0) {
-      string undef_blocks("{");
+      std::string undef_blocks("{");
       bool first = true;
       for (auto undefined_block : function.undefined_blocks()) {
         undef_blocks += _.getIdName(undefined_block);
@@ -452,9 +439,9 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     // We want to analyze all the blocks in the function, even in degenerate
     // control flow cases including unreachable blocks.  So use the augmented
     // CFG to ensure we cover all the blocks.
-    vector<const BasicBlock*> postorder;
-    vector<const BasicBlock*> postdom_postorder;
-    vector<pair<uint32_t, uint32_t>> back_edges;
+    std::vector<const BasicBlock*> postorder;
+    std::vector<const BasicBlock*> postdom_postorder;
+    std::vector<std::pair<uint32_t, uint32_t>> back_edges;
     auto ignore_block = [](const BasicBlock*) {};
     auto ignore_edge = [](const BasicBlock*, const BasicBlock*) {};
     if (!function.ordered_blocks().empty()) {
@@ -575,7 +562,7 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
     } break;
 
     case SpvOpSwitch: {
-      vector<uint32_t> cases;
+      std::vector<uint32_t> cases;
       for (size_t i = 1; i < inst->operands().size(); i += 2) {
         uint32_t target = inst->GetOperandAs<uint32_t>(i);
         CFG_ASSERT(FirstBlockAssert, target);
@@ -596,7 +583,7 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpKill:
     case SpvOpReturnValue:
     case SpvOpUnreachable:
-      _.current_function().RegisterBlockEnd(vector<uint32_t>(), opcode);
+      _.current_function().RegisterBlockEnd(std::vector<uint32_t>(), opcode);
       if (opcode == SpvOpKill) {
         _.current_function().RegisterExecutionModelLimitation(
             SpvExecutionModelFragment,

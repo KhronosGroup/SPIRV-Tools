@@ -18,8 +18,6 @@
 #include <utility>
 #include <vector>
 
-using std::vector;
-
 namespace spvtools {
 namespace val {
 
@@ -55,7 +53,8 @@ BasicBlock* BasicBlock::immediate_post_dominator() {
   return immediate_post_dominator_;
 }
 
-void BasicBlock::RegisterSuccessors(const vector<BasicBlock*>& next_blocks) {
+void BasicBlock::RegisterSuccessors(
+    const std::vector<BasicBlock*>& next_blocks) {
   for (auto& block : next_blocks) {
     block->predecessors_.push_back(this);
     successors_.push_back(block);

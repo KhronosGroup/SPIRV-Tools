@@ -27,8 +27,6 @@ namespace {
 using ::testing::HasSubstr;
 using ::testing::Not;
 
-using std::string;
-
 using ValidateArithmetics = spvtest::ValidateBase<bool>;
 
 std::string GenerateCode(const std::string& main_body) {

@@ -26,20 +26,19 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using std::string;
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
 using ValidateLimits = spvtest::ValidateBase<bool>;
 
-string header = R"(
+std::string header = R"(
      OpCapability Shader
      OpCapability Linkage
      OpMemoryModel Logical GLSL450
 )";
 
 TEST_F(ValidateLimits, IdLargerThanBoundBad) {
-  string str = header + R"(
+  std::string str = header + R"(
 ;  %i32 has ID 1
 %i32    = OpTypeInt 32 1
 %c      = OpConstant %i32 100
@@ -57,7 +56,7 @@ TEST_F(ValidateLimits, IdLargerThanBoundBad) {
 }
 
 TEST_F(ValidateLimits, IdEqualToBoundBad) {
-  string str = header + R"(
+  std::string str = header + R"(
 ;  %i32 has ID 1
 %i32    = OpTypeInt 32 1
 %c      = OpConstant %i32 100
@@ -694,7 +693,7 @@ TEST_F(ValidateLimits, CustomizedControlFlowDepthBad) {
 // continue target is the loop iteself. It also exercises the case where a loop
 // is unreachable.
 TEST_F(ValidateLimits, ControlFlowNoEntryToLoopGood) {
-  string str = header + R"(
+  std::string str = header + R"(
            OpName %entry "entry"
            OpName %loop "loop"
            OpName %exit "exit"

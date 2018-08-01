@@ -42,14 +42,6 @@
 #include "source/val/validation_state.h"
 #include "spirv-tools/libspirv.h"
 
-using std::function;
-using std::ostream_iterator;
-using std::string;
-using std::stringstream;
-using std::transform;
-using std::vector;
-using std::placeholders::_1;
-
 namespace spvtools {
 namespace val {
 namespace {
@@ -165,7 +157,7 @@ spv_result_t ProcessInstruction(void* user_data,
 }
 
 void printDot(const ValidationState_t& _, const BasicBlock& other) {
-  string block_string;
+  std::string block_string;
   if (other.successors()->empty()) {
     block_string += "end ";
   } else {
@@ -199,7 +191,7 @@ void PrintBlocks(ValidationState_t& _, Function func) {
 
 UNUSED(void PrintDotGraph(ValidationState_t& _, Function func)) {
   if (func.first_block()) {
-    string func_name(_.getIdOrName(func.id()));
+    std::string func_name(_.getIdOrName(func.id()));
     printf("digraph %s {\n", func_name.c_str());
     PrintBlocks(_, func);
     printf("}\n");
@@ -261,11 +253,13 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   // module. Use the information from the ProcessInstruction pass to make the
   // checks.
   if (vstate->unresolved_forward_id_count() > 0) {
-    stringstream ss;
-    vector<uint32_t> ids = vstate->UnresolvedForwardIds();
+    std::stringstream ss;
+    std::vector<uint32_t> ids = vstate->UnresolvedForwardIds();
 
-    transform(begin(ids), end(ids), ostream_iterator<string>(ss, " "),
-              bind(&ValidationState_t::getIdName, std::ref(*vstate), _1));
+    transform(std::begin(ids), std::end(ids),
+              std::ostream_iterator<std::string>(ss, " "),
+              bind(&ValidationState_t::getIdName, std::ref(*vstate),
+                   std::placeholders::_1));
 
     auto id_str = ss.str();
     return vstate->diag(SPV_ERROR_INVALID_ID, nullptr)

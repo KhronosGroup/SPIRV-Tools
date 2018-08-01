@@ -34,13 +34,6 @@
 #include "source/val/validation_state.h"
 #include "spirv-tools/libspirv.h"
 
-using std::function;
-using std::ignore;
-using std::make_pair;
-using std::pair;
-using std::unordered_set;
-using std::vector;
-
 namespace spvtools {
 namespace val {
 namespace {
@@ -50,8 +43,9 @@ class idUsage {
   idUsage(spv_const_context context, const spv_instruction_t* pInsts,
           const uint64_t instCountArg, const SpvMemoryModel memoryModelArg,
           const SpvAddressingModel addressingModelArg,
-          const ValidationState_t& module, const vector<uint32_t>& entry_points,
-          spv_position positionArg, const MessageConsumer& consumer)
+          const ValidationState_t& module,
+          const std::vector<uint32_t>& entry_points, spv_position positionArg,
+          const MessageConsumer& consumer)
       : targetEnv(context->target_env),
         opcodeTable(context->opcode_table),
         operandTable(context->operand_table),
@@ -82,7 +76,7 @@ class idUsage {
   spv_position position;
   const MessageConsumer& consumer_;
   const ValidationState_t& module_;
-  vector<uint32_t> entry_points_;
+  std::vector<uint32_t> entry_points_;
 
   // Returns true if the two instructions represent structs that, as far as the
   // validator can tell, have the exact same data layout.
@@ -101,8 +95,8 @@ class idUsage {
   bool HaveSameLayoutDecorations(const Instruction* type1,
                                  const Instruction* type2);
   bool HasConflictingMemberOffsets(
-      const vector<Decoration>& type1_decorations,
-      const vector<Decoration>& type2_decorations) const;
+      const std::vector<Decoration>& type1_decorations,
+      const std::vector<Decoration>& type2_decorations) const;
 };
 
 #define DIAG(inst)                                                          \
@@ -367,8 +361,8 @@ bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t*,
 // constant-defining instruction (either OpConstant or
 // OpSpecConstant). typeWords are the words of the constant's-type-defining
 // OpTypeInt.
-bool aboveZero(const vector<uint32_t>& constWords,
-               const vector<uint32_t>& typeWords) {
+bool aboveZero(const std::vector<uint32_t>& constWords,
+               const std::vector<uint32_t>& typeWords) {
   const uint32_t width = typeWords[2];
   const bool is_signed = typeWords[3] > 0;
   const uint32_t loWord = constWords[3];
@@ -807,7 +801,7 @@ bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t* inst,
 // True if instruction defines a type that can have a null value, as defined by
 // the SPIR-V spec.  Tracks composite-type components through module to check
 // nullability transitively.
-bool IsTypeNullable(const vector<uint32_t>& instruction,
+bool IsTypeNullable(const std::vector<uint32_t>& instruction,
                     const ValidationState_t& module) {
   uint16_t opcode;
   uint16_t word_count;
@@ -2009,8 +2003,8 @@ bool idUsage::HaveSameLayoutDecorations(const Instruction* type1,
 }
 
 bool idUsage::HasConflictingMemberOffsets(
-    const vector<Decoration>& type1_decorations,
-    const vector<Decoration>& type2_decorations) const {
+    const std::vector<Decoration>& type1_decorations,
+    const std::vector<Decoration>& type2_decorations) const {
   {
     // We are interested in conflicting decoration.  If a decoration is in one
     // list but not the other, then we will assume the code is correct.  We are
@@ -2071,7 +2065,7 @@ spv_result_t UpdateIdUse(ValidationState_t& _) {
 /// NOTE: This function does NOT check module scoped functions which are
 /// checked during the initial binary parse in the IdPass below
 spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
-  unordered_set<const Instruction*> phi_instructions;
+  std::unordered_set<const Instruction*> phi_instructions;
   for (const auto& definition : _.all_definitions()) {
     // Check only those definitions defined in a function
     if (const Function* func = definition.second->function()) {

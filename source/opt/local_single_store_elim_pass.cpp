@@ -116,7 +116,7 @@ void LocalSingleStoreElimPass::InitExtensionWhiteList() {
   });
 }
 bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {
-  vector<Instruction*> users;
+  std::vector<Instruction*> users;
   FindUses(var_inst, &users);
 
   Instruction* store_inst = FindSingleStoreAndCheckUses(var_inst, users);
@@ -129,7 +129,7 @@ bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {
 }
 
 Instruction* LocalSingleStoreElimPass::FindSingleStoreAndCheckUses(
-    Instruction* var_inst, const vector<Instruction*>& users) const {
+    Instruction* var_inst, const std::vector<Instruction*>& users) const {
   // Make sure there is exactly 1 store.
   Instruction* store_inst = nullptr;
 
