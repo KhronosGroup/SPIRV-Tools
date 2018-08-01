@@ -98,7 +98,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450NMax:
       case GLSLstd450NClamp: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
@@ -107,7 +107,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
              ++operand_index) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
@@ -128,7 +128,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450FindUMsb:
       case GLSLstd450FindSMsb: {
         if (!_.IsIntScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be an int scalar or vector type";
         }
@@ -140,20 +140,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
              ++operand_index) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (!_.IsIntScalarOrVectorType(operand_type)) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected all operands to be int scalars or vectors";
           }
 
           if (result_type_dimension != _.GetDimension(operand_type)) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected all operands to have the same dimension as "
                    << "Result Type";
           }
 
           if (result_type_bit_width != _.GetBitWidth(operand_type)) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected all operands to have the same bit width as "
                    << "Result Type";
@@ -162,7 +162,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
           if (ext_inst_key == GLSLstd450FindUMsb ||
               ext_inst_key == GLSLstd450FindSMsb) {
             if (result_type_bit_width != 32) {
-              return _.diag(SPV_ERROR_INVALID_DATA)
+              return _.diag(SPV_ERROR_INVALID_DATA, inst)
                      << ext_inst_name() << ": "
                      << "this instruction is currently limited to 32-bit width "
                      << "components";
@@ -193,7 +193,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450Atan2:
       case GLSLstd450Pow: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 16 or 32-bit scalar or "
                     "vector float type";
@@ -201,7 +201,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t result_type_bit_width = _.GetBitWidth(result_type);
         if (result_type_bit_width != 16 && result_type_bit_width != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 16 or 32-bit scalar or "
                     "vector float type";
@@ -211,7 +211,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
              ++operand_index) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
@@ -229,13 +229,13 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         if (!_.GetMatrixTypeInfo(x_type, &num_rows, &num_cols, &col_type,
                                  &component_type) ||
             num_rows != num_cols) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X to be a square matrix";
         }
 
         if (result_type != component_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X component type to be equal to "
                  << "Result Type";
@@ -251,14 +251,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         if (!_.GetMatrixTypeInfo(result_type, &num_rows, &num_cols, &col_type,
                                  &component_type) ||
             num_rows != num_cols) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a square matrix";
         }
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (result_type != x_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X type to be equal to Result Type";
         }
@@ -267,7 +267,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case GLSLstd450Modf: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or vector float type";
         }
@@ -276,7 +276,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t i_type = _.GetOperandTypeId(inst, 5);
 
         if (x_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X type to be equal to Result Type";
         }
@@ -284,13 +284,13 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t i_storage_class = 0;
         uint32_t i_data_type = 0;
         if (!_.GetPointerTypeInfo(i_type, &i_data_type, &i_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand I to be a pointer";
         }
 
         if (i_data_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand I data type to be equal to Result Type";
         }
@@ -304,7 +304,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             result_types.size() != 2 ||
             !_.IsFloatScalarOrVectorType(result_types[0]) ||
             result_types[1] != result_types[0]) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a struct with two identical "
                  << "scalar or vector float type members";
@@ -312,7 +312,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (x_type != result_types[0]) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X type to be equal to members of "
                  << "Result Type struct";
@@ -322,7 +322,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case GLSLstd450Frexp: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or vector float type";
         }
@@ -331,7 +331,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t exp_type = _.GetOperandTypeId(inst, 5);
 
         if (x_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X type to be equal to Result Type";
         }
@@ -340,7 +340,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t exp_data_type = 0;
         if (!_.GetPointerTypeInfo(exp_type, &exp_data_type,
                                   &exp_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Exp to be a pointer";
         }
@@ -351,7 +351,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             (_.HasExtension(kSPV_AMD_gpu_shader_int16) &&
              _.GetBitWidth(exp_data_type) != 16 &&
              _.GetBitWidth(exp_data_type) != 32)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Exp data type to be a "
                  << (_.HasExtension(kSPV_AMD_gpu_shader_int16)
@@ -361,7 +361,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         }
 
         if (_.GetDimension(result_type) != _.GetDimension(exp_data_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Exp data type to have the same component "
                  << "number as Result Type";
@@ -372,7 +372,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case GLSLstd450Ldexp: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or vector float type";
         }
@@ -381,20 +381,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t exp_type = _.GetOperandTypeId(inst, 5);
 
         if (x_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X type to be equal to Result Type";
         }
 
         if (!_.IsIntScalarOrVectorType(exp_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Exp to be a 32-bit int scalar "
                  << "or vector type";
         }
 
         if (_.GetDimension(result_type) != _.GetDimension(exp_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Exp to have the same component "
                  << "number as Result Type";
@@ -416,7 +416,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
              _.GetBitWidth(result_types[1]) != 32) ||
             _.GetDimension(result_types[0]) !=
                 _.GetDimension(result_types[1])) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a struct with two members, "
                  << "first member a float scalar or vector, second member a "
@@ -429,7 +429,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (x_type != result_types[0]) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X type to be equal to the first member "
                  << "of Result Type struct";
@@ -441,7 +441,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450PackUnorm4x8: {
         if (!_.IsIntScalarType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be 32-bit int scalar type";
         }
@@ -449,7 +449,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatVectorType(v_type) || _.GetDimension(v_type) != 4 ||
             _.GetBitWidth(v_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand V to be a 32-bit float vector of size 4";
         }
@@ -461,7 +461,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450PackHalf2x16: {
         if (!_.IsIntScalarType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be 32-bit int scalar type";
         }
@@ -469,7 +469,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatVectorType(v_type) || _.GetDimension(v_type) != 2 ||
             _.GetBitWidth(v_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand V to be a 32-bit float vector of size 2";
         }
@@ -479,7 +479,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450PackDouble2x32: {
         if (!_.IsFloatScalarType(result_type) ||
             _.GetBitWidth(result_type) != 64) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be 64-bit float scalar type";
         }
@@ -487,7 +487,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsIntVectorType(v_type) || _.GetDimension(v_type) != 2 ||
             _.GetBitWidth(v_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand V to be a 32-bit int vector of size 2";
         }
@@ -499,7 +499,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatVectorType(result_type) ||
             _.GetDimension(result_type) != 4 ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 32-bit float vector of size "
                     "4";
@@ -507,7 +507,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsIntScalarType(v_type) || _.GetBitWidth(v_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to be a 32-bit int scalar";
         }
@@ -520,7 +520,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatVectorType(result_type) ||
             _.GetDimension(result_type) != 2 ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 32-bit float vector of size "
                     "2";
@@ -528,7 +528,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsIntScalarType(v_type) || _.GetBitWidth(v_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to be a 32-bit int scalar";
         }
@@ -539,7 +539,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntVectorType(result_type) ||
             _.GetDimension(result_type) != 2 ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 32-bit int vector of size "
                     "2";
@@ -547,7 +547,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarType(v_type) || _.GetBitWidth(v_type) != 64) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand V to be a 64-bit float scalar";
         }
@@ -556,20 +556,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case GLSLstd450Length: {
         if (!_.IsFloatScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(x_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X to be of float scalar or vector type";
         }
 
         if (result_type != _.GetComponentType(x_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X component type to be equal to Result "
                     "Type";
@@ -579,20 +579,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case GLSLstd450Distance: {
         if (!_.IsFloatScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
         const uint32_t p0_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(p0_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P0 to be of float scalar or vector type";
         }
 
         if (result_type != _.GetComponentType(p0_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P0 component type to be equal to "
                  << "Result Type";
@@ -600,20 +600,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t p1_type = _.GetOperandTypeId(inst, 5);
         if (!_.IsFloatScalarOrVectorType(p1_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P1 to be of float scalar or vector type";
         }
 
         if (result_type != _.GetComponentType(p1_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P1 component type to be equal to "
                  << "Result Type";
         }
 
         if (_.GetDimension(p0_type) != _.GetDimension(p1_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operands P0 and P1 to have the same number of "
                  << "components";
@@ -623,13 +623,13 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case GLSLstd450Cross: {
         if (!_.IsFloatVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float vector type";
         }
 
         if (_.GetDimension(result_type) != 3) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to have 3 components";
         }
@@ -638,13 +638,13 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t y_type = _.GetOperandTypeId(inst, 5);
 
         if (x_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X type to be equal to Result Type";
         }
 
         if (y_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Y type to be equal to Result Type";
         }
@@ -653,7 +653,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case GLSLstd450Refract: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
@@ -663,19 +663,19 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t eta_type = _.GetOperandTypeId(inst, 6);
 
         if (result_type != i_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand I to be of type equal to Result Type";
         }
 
         if (result_type != n_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand N to be of type equal to Result Type";
         }
 
         if (!_.IsFloatScalarType(eta_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Eta to be a float scalar";
         }
@@ -686,14 +686,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450InterpolateAtSample:
       case GLSLstd450InterpolateAtOffset: {
         if (!_.HasCapability(SpvCapabilityInterpolationFunction)) {
-          return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+          return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
                  << ext_inst_name()
                  << " requires capability InterpolationFunction";
         }
 
         if (!_.IsFloatScalarOrVectorType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 32-bit float scalar "
                  << "or vector type";
@@ -704,19 +704,19 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t interpolant_data_type = 0;
         if (!_.GetPointerTypeInfo(interpolant_type, &interpolant_data_type,
                                   &interpolant_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Interpolant to be a pointer";
         }
 
         if (result_type != interpolant_data_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Interpolant data type to be equal to Result Type";
         }
 
         if (interpolant_storage_class != SpvStorageClassInput) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Interpolant storage class to be Input";
         }
@@ -725,7 +725,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
           const uint32_t sample_type = _.GetOperandTypeId(inst, 5);
           if (!_.IsIntScalarType(sample_type) ||
               _.GetBitWidth(sample_type) != 32) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected Sample to be 32-bit integer";
           }
@@ -736,7 +736,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
           if (!_.IsFloatVectorType(offset_type) ||
               _.GetDimension(offset_type) != 2 ||
               _.GetBitWidth(offset_type) != 32) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected Offset to be a vector of 2 32-bit floats";
           }
@@ -750,12 +750,12 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       case GLSLstd450IMix: {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Extended instruction GLSLstd450IMix is not supported";
       }
 
       case GLSLstd450Bad: {
-        return _.diag(SPV_ERROR_INVALID_DATA)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Encountered extended instruction GLSLstd450Bad";
       }
 
@@ -862,14 +862,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Smoothstep:
       case OpenCLLIB::Sign: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -879,7 +879,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
              ++operand_index) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
@@ -893,14 +893,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Sincos:
       case OpenCLLIB::Remquo: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -909,7 +909,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t operand_index = 4;
         const uint32_t x_type = _.GetOperandTypeId(inst, operand_index++);
         if (result_type != x_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected type of operand X to be equal to Result Type";
         }
@@ -917,7 +917,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         if (ext_inst_key == OpenCLLIB::Remquo) {
           const uint32_t y_type = _.GetOperandTypeId(inst, operand_index++);
           if (result_type != y_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected type of operand Y to be equal to Result Type";
           }
@@ -927,7 +927,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_storage_class = 0;
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected the last operand to be a pointer";
         }
@@ -936,14 +936,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != SpvStorageClassCrossWorkgroup &&
             p_storage_class != SpvStorageClassWorkgroup &&
             p_storage_class != SpvStorageClassFunction) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected storage class of the pointer to be Generic, "
                     "CrossWorkgroup, Workgroup or Function";
         }
 
         if (result_type != p_data_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected data type of the pointer to be equal to Result "
                     "Type";
@@ -954,14 +954,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Frexp:
       case OpenCLLIB::Lgamma_r: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -969,7 +969,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (result_type != x_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected type of operand X to be equal to Result Type";
         }
@@ -978,7 +978,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_storage_class = 0;
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected the last operand to be a pointer";
         }
@@ -987,7 +987,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != SpvStorageClassCrossWorkgroup &&
             p_storage_class != SpvStorageClassWorkgroup &&
             p_storage_class != SpvStorageClassFunction) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected storage class of the pointer to be Generic, "
                     "CrossWorkgroup, Workgroup or Function";
@@ -995,14 +995,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         if (!_.IsIntScalarOrVectorType(p_data_type) ||
             _.GetBitWidth(p_data_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected data type of the pointer to be a 32-bit int "
                     "scalar or vector type";
         }
 
         if (_.GetDimension(p_data_type) != num_components) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected data type of the pointer to have the same number "
                     "of components as Result Type";
@@ -1013,7 +1013,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Ilogb: {
         if (!_.IsIntScalarOrVectorType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 32-bit int scalar or vector "
                     "type";
@@ -1021,7 +1021,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1029,13 +1029,13 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(x_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X to be a float scalar or vector";
         }
 
         if (_.GetDimension(x_type) != num_components) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X to have the same number of components "
                     "as Result Type";
@@ -1047,14 +1047,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Pown:
       case OpenCLLIB::Rootn: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1062,7 +1062,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (result_type != x_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected type of operand X to be equal to Result Type";
         }
@@ -1070,13 +1070,13 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t exp_type = _.GetOperandTypeId(inst, 5);
         if (!_.IsIntScalarOrVectorType(exp_type) ||
             _.GetBitWidth(exp_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected the exponent to be a 32-bit int scalar or vector";
         }
 
         if (_.GetDimension(exp_type) != num_components) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected the exponent to have the same number of "
                     "components as Result Type";
@@ -1086,14 +1086,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case OpenCLLIB::Nan: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1101,20 +1101,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t nancode_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsIntScalarOrVectorType(nancode_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Nancode to be an int scalar or vector type";
         }
 
         if (_.GetDimension(nancode_type) != num_components) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Nancode to have the same number of components as "
                     "Result Type";
         }
 
         if (_.GetBitWidth(result_type) != _.GetBitWidth(nancode_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Nancode to have the same bit width as Result "
                     "Type";
@@ -1151,14 +1151,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::UMul_hi:
       case OpenCLLIB::UMad_hi: {
         if (!_.IsIntScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be an int scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1168,7 +1168,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
              ++operand_index) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
@@ -1180,7 +1180,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::U_Upsample:
       case OpenCLLIB::S_Upsample: {
         if (!_.IsIntScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be an int scalar or vector "
                     "type";
@@ -1189,7 +1189,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t result_num_components = _.GetDimension(result_type);
         if (result_num_components > 4 && result_num_components != 8 &&
             result_num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1198,7 +1198,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t result_bit_width = _.GetBitWidth(result_type);
         if (result_bit_width != 16 && result_bit_width != 32 &&
             result_bit_width != 64) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected bit width of Result Type components to be 16, 32 "
                     "or 64";
@@ -1208,20 +1208,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t lo_type = _.GetOperandTypeId(inst, 5);
 
         if (hi_type != lo_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Hi and Lo operands to have the same type";
         }
 
         if (result_num_components != _.GetDimension(hi_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Hi and Lo operands to have the same number of "
                     "components as Result Type";
         }
 
         if (result_bit_width != 2 * _.GetBitWidth(hi_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected bit width of components of Hi and Lo operands to "
                     "be half of the bit width of components of Result Type";
@@ -1235,7 +1235,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::UMul24: {
         if (!_.IsIntScalarOrVectorType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 32-bit int scalar or vector "
                     "type";
@@ -1243,7 +1243,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1253,7 +1253,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
              ++operand_index) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
@@ -1264,14 +1264,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case OpenCLLIB::Cross: {
         if (!_.IsFloatVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components != 3 && num_components != 4) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to have 3 or 4 components";
         }
@@ -1280,13 +1280,13 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t y_type = _.GetOperandTypeId(inst, 5);
 
         if (x_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X type to be equal to Result Type";
         }
 
         if (y_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Y type to be equal to Result Type";
         }
@@ -1296,27 +1296,27 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Distance:
       case OpenCLLIB::Fast_distance: {
         if (!_.IsFloatScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
         const uint32_t p0_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(p0_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P0 to be of float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(p0_type);
         if (num_components > 4) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P0 to have no more than 4 components";
         }
 
         if (result_type != _.GetComponentType(p0_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P0 component type to be equal to "
                  << "Result Type";
@@ -1324,7 +1324,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t p1_type = _.GetOperandTypeId(inst, 5);
         if (p0_type != p1_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operands P0 and P1 to be of the same type";
         }
@@ -1334,27 +1334,27 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Length:
       case OpenCLLIB::Fast_length: {
         if (!_.IsFloatScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
         const uint32_t p_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(p_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to be a float scalar or vector";
         }
 
         const uint32_t num_components = _.GetDimension(p_type);
         if (num_components > 4) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to have no more than 4 components";
         }
 
         if (result_type != _.GetComponentType(p_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P component type to be equal to Result "
                     "Type";
@@ -1365,21 +1365,21 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Normalize:
       case OpenCLLIB::Fast_normalize: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to have no more than 4 components";
         }
 
         const uint32_t p_type = _.GetOperandTypeId(inst, 4);
         if (p_type != result_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P type to be equal to Result Type";
         }
@@ -1389,7 +1389,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Bitselect: {
         if (!_.IsFloatScalarOrVectorType(result_type) &&
             !_.IsIntScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be an int or float scalar or "
                     "vector type";
@@ -1397,7 +1397,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1407,7 +1407,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
              ++operand_index) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
@@ -1419,7 +1419,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Select: {
         if (!_.IsFloatScalarOrVectorType(result_type) &&
             !_.IsIntScalarOrVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be an int or float scalar or "
                     "vector type";
@@ -1427,7 +1427,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1438,32 +1438,32 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t c_type = _.GetOperandTypeId(inst, 6);
 
         if (result_type != a_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand A type to be equal to Result Type";
         }
 
         if (result_type != b_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand B type to be equal to Result Type";
         }
 
         if (!_.IsIntScalarOrVectorType(c_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand C to be an int scalar or vector";
         }
 
         if (num_components != _.GetDimension(c_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand C to have the same number of components "
                     "as Result Type";
         }
 
         if (_.GetBitWidth(result_type) != _.GetBitWidth(c_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand C to have the same bit width as Result "
                     "Type";
@@ -1474,14 +1474,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Vloadn: {
         if (!_.IsFloatVectorType(result_type) &&
             !_.IsIntVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be an int or float vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to have 2, 3, 4, 8 or 16 components";
         }
@@ -1491,14 +1491,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name()
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
@@ -1508,21 +1508,21 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_storage_class = 0;
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to be a pointer";
         }
 
         if (p_storage_class != SpvStorageClassUniformConstant &&
             p_storage_class != SpvStorageClassGeneric) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P storage class to be UniformConstant or "
                     "Generic";
         }
 
         if (_.GetComponentType(result_type) != p_data_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be equal to component "
                     "type of Result Type";
@@ -1530,7 +1530,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t n_value = inst->word(7);
         if (num_components != n_value) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected literal N to be equal to the number of "
                     "components of Result Type";
@@ -1540,7 +1540,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case OpenCLLIB::Vstoren: {
         if (_.GetIdOpcode(result_type) != SpvOpTypeVoid) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": expected Result Type to be void";
         }
 
@@ -1549,28 +1549,28 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t p_type = _.GetOperandTypeId(inst, 6);
 
         if (!_.IsFloatVectorType(data_type) && !_.IsIntVectorType(data_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Data to be an int or float vector";
         }
 
         const uint32_t num_components = _.GetDimension(data_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Data to have 2, 3, 4, 8 or 16 components";
         }
 
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name()
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
@@ -1580,19 +1580,19 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_storage_class = 0;
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to be a pointer";
         }
 
         if (p_storage_class != SpvStorageClassGeneric) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P storage class to be Generic";
         }
 
         if (_.GetComponentType(data_type) != p_data_type) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be equal to the type of "
                     "operand Data components";
@@ -1602,7 +1602,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case OpenCLLIB::Vload_half: {
         if (!_.IsFloatScalarType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float scalar type";
         }
@@ -1612,14 +1612,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name()
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
@@ -1629,7 +1629,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_storage_class = 0;
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to be a pointer";
         }
@@ -1639,7 +1639,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != SpvStorageClassCrossWorkgroup &&
             p_storage_class != SpvStorageClassWorkgroup &&
             p_storage_class != SpvStorageClassFunction) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P storage class to be UniformConstant, "
                     "Generic, CrossWorkgroup, Workgroup or Function";
@@ -1647,7 +1647,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         if (!_.IsFloatScalarType(p_data_type) ||
             _.GetBitWidth(p_data_type) != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
         }
@@ -1657,14 +1657,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Vload_halfn:
       case OpenCLLIB::Vloada_halfn: {
         if (!_.IsFloatVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a float vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to have 2, 3, 4, 8 or 16 components";
         }
@@ -1674,14 +1674,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name()
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
@@ -1691,7 +1691,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_storage_class = 0;
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to be a pointer";
         }
@@ -1701,7 +1701,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != SpvStorageClassCrossWorkgroup &&
             p_storage_class != SpvStorageClassWorkgroup &&
             p_storage_class != SpvStorageClassFunction) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P storage class to be UniformConstant, "
                     "Generic, CrossWorkgroup, Workgroup or Function";
@@ -1709,14 +1709,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         if (!_.IsFloatScalarType(p_data_type) ||
             _.GetBitWidth(p_data_type) != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
         }
 
         const uint32_t n_value = inst->word(7);
         if (num_components != n_value) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected literal N to be equal to the number of "
                     "components of Result Type";
@@ -1731,7 +1731,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Vstorea_halfn:
       case OpenCLLIB::Vstorea_halfn_r: {
         if (_.GetIdOpcode(result_type) != SpvOpTypeVoid) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": expected Result Type to be void";
         }
 
@@ -1744,14 +1744,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             ext_inst_key == OpenCLLIB::Vstore_half_r) {
           if (!_.IsFloatScalarType(data_type) ||
               (data_type_bit_width != 32 && data_type_bit_width != 64)) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected Data to be a 32 or 64-bit float scalar";
           }
         } else {
           if (!_.IsFloatVectorType(data_type) ||
               (data_type_bit_width != 32 && data_type_bit_width != 64)) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected Data to be a 32 or 64-bit float vector";
           }
@@ -1759,7 +1759,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
           const uint32_t num_components = _.GetDimension(data_type);
           if (num_components > 4 && num_components != 8 &&
               num_components != 16) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected Data to have 2, 3, 4, 8 or 16 components";
           }
@@ -1767,14 +1767,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name()
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
@@ -1784,7 +1784,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_storage_class = 0;
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P to be a pointer";
         }
@@ -1793,7 +1793,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != SpvStorageClassCrossWorkgroup &&
             p_storage_class != SpvStorageClassWorkgroup &&
             p_storage_class != SpvStorageClassFunction) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P storage class to be Generic, "
                     "CrossWorkgroup, Workgroup or Function";
@@ -1801,7 +1801,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         if (!_.IsFloatScalarType(p_data_type) ||
             _.GetBitWidth(p_data_type) != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
         }
@@ -1814,7 +1814,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Shuffle2: {
         if (!_.IsFloatVectorType(result_type) &&
             !_.IsIntVectorType(result_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be an int or float vector type";
         }
@@ -1822,7 +1822,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t result_num_components = _.GetDimension(result_type);
         if (result_num_components != 2 && result_num_components != 4 &&
             result_num_components != 8 && result_num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to have 2, 4, 8 or 16 components";
         }
@@ -1833,7 +1833,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         if (ext_inst_key == OpenCLLIB::Shuffle2) {
           const uint32_t y_type = _.GetOperandTypeId(inst, operand_index++);
           if (x_type != y_type) {
-            return _.diag(SPV_ERROR_INVALID_DATA)
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": "
                    << "expected operands X and Y to be of the same type";
           }
@@ -1843,7 +1843,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
             _.GetOperandTypeId(inst, operand_index++);
 
         if (!_.IsFloatVectorType(x_type) && !_.IsIntVectorType(x_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X to be an int or float vector";
         }
@@ -1851,7 +1851,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t x_num_components = _.GetDimension(x_type);
         if (x_num_components != 2 && x_num_components != 4 &&
             x_num_components != 8 && x_num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X to have 2, 4, 8 or 16 components";
         }
@@ -1859,20 +1859,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t result_component_type = _.GetComponentType(result_type);
 
         if (result_component_type != _.GetComponentType(x_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand X and Result Type to have equal "
                     "component types";
         }
 
         if (!_.IsIntVectorType(shuffle_mask_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Shuffle Mask to be an int vector";
         }
 
         if (result_num_components != _.GetDimension(shuffle_mask_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Shuffle Mask to have the same number of "
                     "components as Result Type";
@@ -1880,7 +1880,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         if (_.GetBitWidth(result_component_type) !=
             _.GetBitWidth(shuffle_mask_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Shuffle Mask components to have the same "
                     "bit width as Result Type components";
@@ -1891,7 +1891,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Printf: {
         if (!_.IsIntScalarType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a 32-bit int type";
         }
@@ -1901,20 +1901,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t format_data_type = 0;
         if (!_.GetPointerTypeInfo(format_type, &format_data_type,
                                   &format_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Format to be a pointer";
         }
 
         if (format_storage_class != SpvStorageClassUniformConstant) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Format storage class to be UniformConstant";
         }
 
         if (!_.IsIntScalarType(format_data_type) ||
             _.GetBitWidth(format_data_type) != 8) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Format data type to be 8-bit int";
         }
@@ -1923,7 +1923,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
       case OpenCLLIB::Prefetch: {
         if (_.GetIdOpcode(result_type) != SpvOpTypeVoid) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": expected Result Type to be void";
         }
 
@@ -1933,20 +1933,20 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_storage_class = 0;
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Ptr to be a pointer";
         }
 
         if (p_storage_class != SpvStorageClassCrossWorkgroup) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Ptr storage class to be CrossWorkgroup";
         }
 
         if (!_.IsFloatScalarOrVectorType(p_data_type) &&
             !_.IsIntScalarOrVectorType(p_data_type)) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Ptr data type to be int or float scalar or "
                     "vector";
@@ -1954,7 +1954,7 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t num_components = _.GetDimension(p_data_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
@@ -1962,14 +1962,14 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
 
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name()
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(num_elements_type) ||
             _.GetBitWidth(num_elements_type) != size_t_bit_width) {
-          return _.diag(SPV_ERROR_INVALID_DATA)
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand Num Elements to be of type size_t ("
                  << size_t_bit_width
