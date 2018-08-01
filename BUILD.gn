@@ -577,7 +577,7 @@ static_library("spvtools_opt") {
   configs += [ "//build/config/compiler:no_chromium_code" ]
 }
 
-static_library("SPIRV-Tools") {
+group("SPIRV-Tools") {
   deps = [
     ":spvtools",
     ":spvtools_opt",
