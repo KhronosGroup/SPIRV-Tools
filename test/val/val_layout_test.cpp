@@ -125,7 +125,7 @@ INSTANTIATE_TEST_CASE_P(InstructionsOrder,
     // validation error. Therefore, "Lines to compile" for some instructions
     // are not "All" in the below.
     //
-    //                                  | Instruction                | Line(s) valid          | Lines to compile
+    //                                            | Instruction                | Line(s) valid          | Lines to compile
     ::testing::Values(std::make_tuple(std::string("OpCapability")              , Equals<0>              , Range<0, 2>())
                     , std::make_tuple(std::string("OpExtension")               , Equals<1>              , All)
                     , std::make_tuple(std::string("OpExtInstImport")           , Equals<2>              , All)
