@@ -80,7 +80,7 @@ class idUsage {
 };
 
 #define DIAG(inst)                                                          \
-  position->index = inst ? inst->InstructionPosition() : -1;                \
+  position->index = inst ? inst->LineNum() : -1;                            \
   std::string disassembly;                                                  \
   if (inst) {                                                               \
     disassembly = module_.Disassemble(                                      \

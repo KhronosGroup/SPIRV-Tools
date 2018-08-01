@@ -155,7 +155,6 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       options_(opt),
       words_(words),
       num_words_(num_words),
-      instruction_counter_(0),
       unresolved_forward_ids_{},
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
@@ -276,11 +275,6 @@ Instruction* ValidationState_t::FindDef(uint32_t id) {
   return it->second;
 }
 
-// Increments the instruction count. Used for diagnostic
-int ValidationState_t::increment_instruction_count() {
-  return instruction_counter_++;
-}
-
 ModuleLayoutSection ValidationState_t::current_layout_section() const {
   return current_layout_section_;
 }
@@ -299,15 +293,11 @@ bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
 
 DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
                                          const Instruction* inst) const {
-  int instruction_counter = inst ? inst->InstructionPosition() : -1;
   std::string disassembly;
-  if (instruction_counter >= 0 && static_cast<size_t>(instruction_counter) <=
-                                      ordered_instructions_.size()) {
-    disassembly = Disassemble(ordered_instructions_[instruction_counter - 1]);
-  }
-  size_t pos = instruction_counter >= 0 ? instruction_counter : 0;
-  return DiagnosticStream({0, 0, pos}, context_->consumer, disassembly,
-                          error_code);
+  if (inst) disassembly = Disassemble(*inst);
+
+  return DiagnosticStream({0, 0, inst ? inst->LineNum() : 0},
+                          context_->consumer, disassembly, error_code);
 }
 
 std::vector<Function>& ValidationState_t::functions() {
@@ -476,7 +466,7 @@ Instruction* ValidationState_t::AddOrderedInstruction(
   } else {
     ordered_instructions_.emplace_back(inst, nullptr, nullptr);
   }
-  ordered_instructions_.back().SetInstructionPosition(instruction_counter_);
+  ordered_instructions_.back().SetLineNum(ordered_instructions_.size());
   return &ordered_instructions_.back();
 }
 
