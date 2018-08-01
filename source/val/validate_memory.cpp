@@ -565,8 +565,6 @@ spv_result_t ValidateMemoryInstructions(ValidationState_t& _) {
       case SpvOpVariable:
         if (auto error = ValidateVariable(_, inst)) return error;
         break;
-      case SpvOpImageTexelPointer:
-        break;
       case SpvOpLoad:
         if (auto error = ValidateLoad(_, inst)) return error;
         break;
@@ -585,6 +583,7 @@ spv_result_t ValidateMemoryInstructions(ValidationState_t& _) {
       case SpvOpInBoundsPtrAccessChain:
         if (auto error = ValidateAccessChain(_, inst)) return error;
         break;
+      case SpvOpImageTexelPointer:
       case SpvOpArrayLength:
       case SpvOpGenericPtrMemSemantics:
       default:
