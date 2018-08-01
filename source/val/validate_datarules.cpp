@@ -44,12 +44,12 @@ spv_result_t ValidateVecNumComponents(ValidationState_t& _,
     if (_.HasCapability(SpvCapabilityVector16)) {
       return SPV_SUCCESS;
     }
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Having " << num_components << " components for "
            << spvOpcodeString(inst->opcode())
            << " requires the Vector16 capability";
   }
-  return _.diag(SPV_ERROR_INVALID_DATA)
+  return _.diag(SPV_ERROR_INVALID_DATA, inst)
          << "Illegal number of components (" << num_components << ") for "
          << spvOpcodeString(inst->opcode());
 }
@@ -69,7 +69,7 @@ spv_result_t ValidateFloatSize(ValidationState_t& _, const Instruction* inst) {
     if (_.features().declare_float16_type) {
       return SPV_SUCCESS;
     }
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Using a 16-bit floating point "
            << "type requires the Float16 or Float16Buffer capability,"
               " or an extension that explicitly enables 16-bit floating point.";
@@ -78,11 +78,11 @@ spv_result_t ValidateFloatSize(ValidationState_t& _, const Instruction* inst) {
     if (_.HasCapability(SpvCapabilityFloat64)) {
       return SPV_SUCCESS;
     }
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Using a 64-bit floating point "
            << "type requires the Float64 capability.";
   }
-  return _.diag(SPV_ERROR_INVALID_DATA)
+  return _.diag(SPV_ERROR_INVALID_DATA, inst)
          << "Invalid number of bits (" << num_bits << ") used for OpTypeFloat.";
 }
 
@@ -100,7 +100,7 @@ spv_result_t ValidateIntSize(ValidationState_t& _, const Instruction* inst) {
     if (_.features().declare_int8_type) {
       return SPV_SUCCESS;
     }
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Using an 8-bit integer type requires the Int8 capability,"
               " or an extension that explicitly enables 8-bit integers.";
   }
@@ -108,7 +108,7 @@ spv_result_t ValidateIntSize(ValidationState_t& _, const Instruction* inst) {
     if (_.features().declare_int16_type) {
       return SPV_SUCCESS;
     }
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Using a 16-bit integer type requires the Int16 capability,"
               " or an extension that explicitly enables 16-bit integers.";
   }
@@ -116,10 +116,10 @@ spv_result_t ValidateIntSize(ValidationState_t& _, const Instruction* inst) {
     if (_.HasCapability(SpvCapabilityInt64)) {
       return SPV_SUCCESS;
     }
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Using a 64-bit integer type requires the Int64 capability.";
   }
-  return _.diag(SPV_ERROR_INVALID_DATA)
+  return _.diag(SPV_ERROR_INVALID_DATA, inst)
          << "Invalid number of bits (" << num_bits << ") used for OpTypeInt.";
 }
 
@@ -131,7 +131,7 @@ spv_result_t ValidateMatrixColumnType(ValidationState_t& _,
   auto type_id = inst->GetOperandAs<const uint32_t>(1);
   auto col_type_instr = _.FindDef(type_id);
   if (col_type_instr->opcode() != SpvOpTypeVector) {
-    return _.diag(SPV_ERROR_INVALID_ID)
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Columns in a matrix must be of type vector.";
   }
 
@@ -141,9 +141,9 @@ spv_result_t ValidateMatrixColumnType(ValidationState_t& _,
       col_type_instr->words()[col_type_instr->operands()[1].offset];
   auto comp_type_instruction = _.FindDef(comp_type_id);
   if (comp_type_instruction->opcode() != SpvOpTypeFloat) {
-    return _.diag(SPV_ERROR_INVALID_DATA) << "Matrix types can only be "
-                                             "parameterized with "
-                                             "floating-point types.";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Matrix types can only be "
+                                                   "parameterized with "
+                                                   "floating-point types.";
   }
   return SPV_SUCCESS;
 }
@@ -154,9 +154,9 @@ spv_result_t ValidateMatrixNumCols(ValidationState_t& _,
   // Operand 2 is the number of columns in the matrix.
   auto num_cols = inst->GetOperandAs<const uint32_t>(2);
   if (num_cols != 2 && num_cols != 3 && num_cols != 4) {
-    return _.diag(SPV_ERROR_INVALID_DATA) << "Matrix types can only be "
-                                             "parameterized as having only 2, "
-                                             "3, or 4 columns.";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Matrix types can only be "
+                                                   "parameterized as having "
+                                                   "only 2, 3, or 4 columns.";
   }
   return SPV_SUCCESS;
 }
@@ -169,9 +169,9 @@ spv_result_t ValidateSpecConstNumerical(ValidationState_t& _,
   auto type_instruction = _.FindDef(type_id);
   auto type_opcode = type_instruction->opcode();
   if (type_opcode != SpvOpTypeInt && type_opcode != SpvOpTypeFloat) {
-    return _.diag(SPV_ERROR_INVALID_DATA) << "Specialization constant must be "
-                                             "an integer or floating-point "
-                                             "number.";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Specialization constant "
+                                                   "must be an integer or "
+                                                   "floating-point number.";
   }
   return SPV_SUCCESS;
 }
@@ -182,8 +182,8 @@ spv_result_t ValidateSpecConstBoolean(ValidationState_t& _,
   // Find out the type that we're specializing to.
   auto type_instruction = _.FindDef(inst->type_id());
   if (type_instruction->opcode() != SpvOpTypeBool) {
-    return _.diag(SPV_ERROR_INVALID_ID) << "Specialization constant must be "
-                                           "a boolean type.";
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Specialization constant must be a boolean type.";
   }
   return SPV_SUCCESS;
 }
@@ -206,7 +206,7 @@ spv_result_t ValidateStruct(ValidationState_t& _, const Instruction* inst) {
     auto type_id = inst->GetOperandAs<const uint32_t>(i);
     auto type_instruction = _.FindDef(type_id);
     if (type_instruction == nullptr && !_.IsForwardPointer(type_id)) {
-      return _.diag(SPV_ERROR_INVALID_ID)
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Forward reference operands in an OpTypeStruct must first be "
                 "declared using OpTypeForwardPointer.";
     }
