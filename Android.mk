@@ -53,6 +53,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_image.cpp \
 		source/val/validate_interfaces.cpp \
 		source/val/validate_instruction.cpp \
+		source/val/validate_memory.cpp \
 		source/val/validate_layout.cpp \
 		source/val/validate_literals.cpp \
 		source/val/validate_logicals.cpp \
