@@ -101,6 +101,18 @@ class ValidationState_t {
   /// Returns the command line options
   spv_const_validator_options options() const { return options_; }
 
+  /// Sets the ID of the generator for this module.
+  void setGenerator(uint32_t gen) { generator_ = gen; }
+
+  /// Returns the ID of the generator for this module.
+  uint32_t generator() const { return generator_; }
+
+  /// Sets the SPIR-V version of this module.
+  void setVersion(uint32_t ver) { version_ = ver; }
+
+  /// Gets the SPIR-V version of this module.
+  uint32_t version() const { return version_; }
+
   /// Forward declares the id in the module
   spv_result_t ForwardDeclareId(uint32_t id);
 
@@ -522,6 +534,12 @@ class ValidationState_t {
   /// The SPIR-V binary module we're validating.
   const uint32_t* words_;
   const size_t num_words_;
+
+  /// The generator of the SPIR-V.
+  uint32_t generator_ = 0;
+
+  /// The version of the SPIR-V.
+  uint32_t version_ = 0;
 
   /// The total number of instructions in the binary.
   size_t total_instructions_ = 0;

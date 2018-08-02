@@ -59,19 +59,15 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
 // TODO(umar): Validate header
 // TODO(umar): The binary parser validates the magic word, and the length of the
 // header, but nothing else.
-spv_result_t setHeader(void* user_data, spv_endianness_t endian, uint32_t magic,
+spv_result_t setHeader(void* user_data, spv_endianness_t, uint32_t,
                        uint32_t version, uint32_t generator, uint32_t id_bound,
-                       uint32_t reserved) {
+                       uint32_t) {
   // Record the ID bound so that the validator can ensure no ID is out of bound.
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
   _.setIdBound(id_bound);
+  _.setGenerator(generator);
+  _.setVersion(version);
 
-  (void)endian;
-  (void)magic;
-  (void)version;
-  (void)generator;
-  (void)id_bound;
-  (void)reserved;
   return SPV_SUCCESS;
 }
 
@@ -352,11 +348,6 @@ spv_result_t ValidateBinaryAndKeepValidationState(
 
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, vstate->get());
-}
-
-spv_result_t ValidateInstructionAndUpdateValidationState(
-    ValidationState_t* vstate, const spv_parsed_instruction_t* inst) {
-  return ProcessInstruction(vstate, inst);
 }
 
 }  // namespace val
