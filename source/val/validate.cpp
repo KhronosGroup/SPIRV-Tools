@@ -157,16 +157,15 @@ UNUSED(void PrintDotGraph(ValidationState_t& _, Function func)) {
 }
 
 spv_result_t ValidateForwardDecls(ValidationState_t& _) {
-  if (_.unresolved_forward_id_count() == 0)
-    return SPV_SUCCESS;
+  if (_.unresolved_forward_id_count() == 0) return SPV_SUCCESS;
 
   std::stringstream ss;
   std::vector<uint32_t> ids = _.UnresolvedForwardIds();
 
-  std::transform(std::begin(ids), std::end(ids),
-                 std::ostream_iterator<std::string>(ss, " "),
-                 bind(&ValidationState_t::getIdName, std::ref(_),
-                      std::placeholders::_1));
+  std::transform(
+      std::begin(ids), std::end(ids),
+      std::ostream_iterator<std::string>(ss, " "),
+      bind(&ValidationState_t::getIdName, std::ref(_), std::placeholders::_1));
 
   auto id_str = ss.str();
   return _.diag(SPV_ERROR_INVALID_ID, nullptr)
@@ -254,8 +253,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
       if (inst->opcode() == SpvOpEntryPoint) {
         const auto entry_point = inst->GetOperandAs<uint32_t>(1);
         const auto execution_model = inst->GetOperandAs<SpvExecutionModel>(0);
-        const char* str =
-            reinterpret_cast<const char*>(inst->words().data() + inst->operand(2).offset);
+        const char* str = reinterpret_cast<const char*>(
+            inst->words().data() + inst->operand(2).offset);
 
         ValidationState_t::EntryPointDescription desc;
         desc.name = str;
@@ -264,18 +263,17 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
         for (size_t j = 3; j < inst->operands().size(); ++j)
           desc.interfaces.push_back(inst->word(inst->operand(j).offset));
 
-        vstate->RegisterEntryPoint(entry_point, execution_model, std::move(desc));
+        vstate->RegisterEntryPoint(entry_point, execution_model,
+                                   std::move(desc));
       }
       if (inst->opcode() == SpvOpFunctionCall)
         vstate->AddFunctionCallTarget(inst->GetOperandAs<uint32_t>(2));
 
       if (vstate->in_function_body()) {
-
         inst->set_function(&(vstate->current_function()));
         inst->set_block(vstate->current_function().current_block());
 
-        if (vstate->in_block() &&
-            spvOpcodeIsBlockTerminator(inst->opcode())) {
+        if (vstate->in_block() && spvOpcodeIsBlockTerminator(inst->opcode())) {
           vstate->current_function().current_block()->set_terminator(inst);
         }
       }

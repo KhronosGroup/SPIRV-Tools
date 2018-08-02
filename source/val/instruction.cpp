@@ -33,9 +33,7 @@ void Instruction::RegisterUse(const Instruction* inst, uint32_t index) {
 bool operator<(const Instruction& lhs, const Instruction& rhs) {
   return lhs.id() < rhs.id();
 }
-bool operator<(const Instruction& lhs, uint32_t rhs) {
-  return lhs.id() < rhs;
-}
+bool operator<(const Instruction& lhs, uint32_t rhs) { return lhs.id() < rhs; }
 bool operator==(const Instruction& lhs, const Instruction& rhs) {
   return lhs.id() == rhs.id();
 }
