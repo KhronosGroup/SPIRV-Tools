@@ -30,6 +30,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
                      (data[i + 3]) << 24;
   }
 
+  optimizer.RegisterPerformancePasses();
   optimizer.Run(input.data(), input.size(), &input);
 
   return 0;
