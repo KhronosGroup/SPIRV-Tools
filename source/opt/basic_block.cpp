@@ -214,7 +214,30 @@ BasicBlock* BasicBlock::SplitBasicBlock(IRContext* context, uint32_t label_id,
   new_block->insts_.Splice(new_block->end(), &insts_, iter, end());
   new_block->SetParent(GetParent());
 
+  context->AnalyzeDefUse(new_block->GetLabelInst());
+
+  // Update the phi nodes in the successor blocks to reference the new block id.
+  new_block->ForEachSuccessorLabel(
+      [new_block, this, context](const uint32_t label) {
+        BasicBlock* target_bb = context->get_instr_block(label);
+        target_bb->ForEachPhiInst(
+            [this, new_block, context](Instruction* phi_inst) {
+              bool changed = false;
+              for (uint32_t i = 1; i < phi_inst->NumInOperands(); i += 2) {
+                if (phi_inst->GetSingleWordInOperand(i) == this->id()) {
+                  changed = true;
+                  phi_inst->SetInOperand(i, {new_block->id()});
+                }
+              }
+
+              if (changed) {
+                context->UpdateDefUse(phi_inst);
+              }
+            });
+      });
+
   if (context->AreAnalysesValid(IRContext::kAnalysisInstrToBlockMapping)) {
+    context->set_instr_block(new_block->GetLabelInst(), new_block);
     new_block->ForEachInst([new_block, context](Instruction* inst) {
       context->set_instr_block(inst, new_block);
     });
