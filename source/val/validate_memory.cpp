@@ -561,7 +561,8 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
 
 }  // namespace
 
-spv_result_t ValidateMemoryInstructions(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateMemoryInstructions(ValidationState_t& _,
+                                        const Instruction* inst) {
   switch (inst->opcode()) {
     case SpvOpVariable:
       if (auto error = ValidateVariable(_, *inst)) return error;

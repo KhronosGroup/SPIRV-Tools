@@ -91,7 +91,8 @@ spv_result_t ValidateInterfaces(ValidationState_t& _);
 ///
 /// @param[in] _ the validation state of the module
 /// @return SPV_SUCCESS if no errors are found.
-spv_result_t ValidateMemoryInstructions(ValidationState_t& _, const Instruction* inst);
+spv_result_t ValidateMemoryInstructions(ValidationState_t& _,
+                                        const Instruction* inst);
 
 /// @brief Updates the immediate dominator for each of the block edges
 ///

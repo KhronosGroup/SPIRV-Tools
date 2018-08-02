@@ -244,7 +244,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     const auto& instruction = vstate->ordered_instructions()[i];
 
     if (auto error = UpdateIdUse(*vstate, &instruction)) return error;
-    if (auto error = ValidateMemoryInstructions(*vstate, &instruction)) return error;
+    if (auto error = ValidateMemoryInstructions(*vstate, &instruction))
+      return error;
 
     // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
     // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
