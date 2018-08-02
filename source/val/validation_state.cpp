@@ -455,17 +455,7 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
 
 Instruction* ValidationState_t::AddOrderedInstruction(
     const spv_parsed_instruction_t* inst) {
-  if (in_function_body()) {
-    ordered_instructions_.emplace_back(inst, &current_function(),
-                                       current_function().current_block());
-    if (in_block() &&
-        spvOpcodeIsBlockTerminator(static_cast<SpvOp>(inst->opcode))) {
-      current_function().current_block()->set_terminator(
-          &ordered_instructions_.back());
-    }
-  } else {
-    ordered_instructions_.emplace_back(inst, nullptr, nullptr);
-  }
+  ordered_instructions_.emplace_back(inst);
   ordered_instructions_.back().SetLineNum(ordered_instructions_.size());
   return &ordered_instructions_.back();
 }
