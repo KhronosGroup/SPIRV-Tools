@@ -11,7 +11,7 @@ compile_commands.json
 /out
 /TAGS
 /third_party/llvm-build/
-/testing/libfuzzer/
+/testing
 /tools/clang/
 /utils/clang-format-diff.py
 
