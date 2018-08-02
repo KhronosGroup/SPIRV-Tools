@@ -27,56 +27,56 @@
 namespace spvtools {
 namespace val {
 
-spv_result_t ValidateAdjacency(ValidationState_t& _) {
+spv_result_t ValidateAdjacency(ValidationState_t& _, size_t idx) {
   const auto& instructions = _.ordered_instructions();
-  for (auto i = instructions.cbegin(); i != instructions.cend(); ++i) {
-    switch (i->opcode()) {
-      case SpvOpPhi:
-        if (i != instructions.cbegin()) {
-          switch (prev(i)->opcode()) {
-            case SpvOpLabel:
-            case SpvOpPhi:
-            case SpvOpLine:
-              break;
-            default:
-              return _.diag(SPV_ERROR_INVALID_DATA, &(*i))
-                     << "OpPhi must appear before all non-OpPhi instructions "
-                     << "(except for OpLine, which can be mixed with OpPhi).";
-          }
+  const auto& inst = instructions[idx];
+
+  switch (inst.opcode()) {
+    case SpvOpPhi:
+      if (idx > 0) {
+        switch (instructions[idx - 1].opcode()) {
+          case SpvOpLabel:
+          case SpvOpPhi:
+          case SpvOpLine:
+            break;
+          default:
+            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                   << "OpPhi must appear before all non-OpPhi instructions "
+                   << "(except for OpLine, which can be mixed with OpPhi).";
         }
-        break;
-      case SpvOpLoopMerge:
-        if (next(i) != instructions.cend()) {
-          switch (next(i)->opcode()) {
-            case SpvOpBranch:
-            case SpvOpBranchConditional:
-              break;
-            default:
-              return _.diag(SPV_ERROR_INVALID_DATA, &(*i))
-                     << "OpLoopMerge must immediately precede either an "
-                     << "OpBranch or OpBranchConditional instruction. "
-                     << "OpLoopMerge must be the second-to-last instruction in "
-                     << "its block.";
-          }
+      }
+      break;
+    case SpvOpLoopMerge:
+      if (idx != (instructions.size() - 1)) {
+        switch (instructions[idx + 1].opcode()) {
+          case SpvOpBranch:
+          case SpvOpBranchConditional:
+            break;
+          default:
+            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                   << "OpLoopMerge must immediately precede either an "
+                   << "OpBranch or OpBranchConditional instruction. "
+                   << "OpLoopMerge must be the second-to-last instruction in "
+                   << "its block.";
         }
-        break;
-      case SpvOpSelectionMerge:
-        if (next(i) != instructions.cend()) {
-          switch (next(i)->opcode()) {
-            case SpvOpBranchConditional:
-            case SpvOpSwitch:
-              break;
-            default:
-              return _.diag(SPV_ERROR_INVALID_DATA, &(*i))
-                     << "OpSelectionMerge must immediately precede either an "
-                     << "OpBranchConditional or OpSwitch instruction. "
-                     << "OpSelectionMerge must be the second-to-last "
-                     << "instruction in its block.";
-          }
+      }
+      break;
+    case SpvOpSelectionMerge:
+      if (idx != (instructions.size() - 1)) {
+        switch (instructions[idx + 1].opcode()) {
+          case SpvOpBranchConditional:
+          case SpvOpSwitch:
+            break;
+          default:
+            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                   << "OpSelectionMerge must immediately precede either an "
+                   << "OpBranchConditional or OpSwitch instruction. "
+                   << "OpSelectionMerge must be the second-to-last "
+                   << "instruction in its block.";
         }
-      default:
-        break;
-    }
+      }
+    default:
+      break;
   }
 
   return SPV_SUCCESS;

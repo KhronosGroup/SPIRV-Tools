@@ -240,6 +240,18 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     return error;
   }
 
+  for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
+    const auto& instruction = vstate->ordered_instructions()[i];
+
+    if (auto error = UpdateIdUse(*vstate, &instruction)) return error;
+    if (auto error = ValidateMemoryInstructions(*vstate, &instruction))
+      return error;
+
+    // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
+    // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
+    if (auto error = ValidateAdjacency(*vstate, i)) return error;
+  }
+
   if (!vstate->has_memory_model_specified())
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
            << "Missing required OpMemoryModel instruction.";
@@ -268,18 +280,13 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   vstate->ComputeFunctionToEntryPointMapping();
 
-  // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
-  // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
-  if (auto error = ValidateAdjacency(*vstate)) return error;
-
   // CFG checks are performed after the binary has been parsed
   // and the CFGPass has collected information about the control flow
   if (auto error = PerformCfgChecks(*vstate)) return error;
-  if (auto error = UpdateIdUse(*vstate)) return error;
   if (auto error = CheckIdDefinitionDominateUse(*vstate)) return error;
   if (auto error = ValidateDecorations(*vstate)) return error;
   if (auto error = ValidateInterfaces(*vstate)) return error;
-  if (auto error = ValidateMemoryInstructions(*vstate)) return error;
+  if (auto error = ValidateBuiltIns(*vstate)) return error;
 
   // Entry point validation. Based on 2.16.1 (Universal Validation Rules) of the
   // SPIRV spec:
@@ -324,8 +331,6 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   if (auto error = spvValidateIDs(instructions.data(), instructions.size(),
                                   *vstate, &position))
     return error;
-
-  if (auto error = ValidateBuiltIns(*vstate)) return error;
 
   return SPV_SUCCESS;
 }
