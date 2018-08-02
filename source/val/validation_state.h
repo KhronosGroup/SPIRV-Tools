@@ -102,7 +102,7 @@ class ValidationState_t {
   spv_const_validator_options options() const { return options_; }
 
   /// Sets the ID of the generator for this module.
-  void setGenerator(uint32_t generator) { generator_ = generator; }
+  void setGenerator(uint32_t gen) { generator_ = gen; }
 
   /// Returns the ID of the generator for this module.
   uint32_t generator() const { return generator_; }
