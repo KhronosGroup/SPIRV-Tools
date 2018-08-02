@@ -217,7 +217,7 @@ BasicBlock* BasicBlock::SplitBasicBlock(IRContext* context, uint32_t label_id,
   context->AnalyzeDefUse(new_block->GetLabelInst());
 
   // Update the phi nodes in the successor blocks to reference the new block id.
-  new_block->ForEachSuccessorLabel(
+  const_cast<const BasicBlock*>(new_block)->ForEachSuccessorLabel(
       [new_block, this, context](const uint32_t label) {
         BasicBlock* target_bb = context->get_instr_block(label);
         target_bb->ForEachPhiInst(
