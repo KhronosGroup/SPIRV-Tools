@@ -176,9 +176,9 @@ spv_result_t ValidateForwardDecls(ValidationState_t& _) {
 // Entry point validation. Based on 2.16.1 (Universal Validation Rules) of the
 // SPIRV spec:
 // * There is at least one OpEntryPoint instruction, unless the Linkage
-// capability is being used.
+//   capability is being used.
 // * No function can be targeted by both an OpEntryPoint instruction and an
-// OpFunctionCall instruction.
+//   OpFunctionCall instruction.
 spv_result_t ValidateEntryPoints(ValidationState_t& _) {
   _.ComputeFunctionToEntryPointMapping();
 
