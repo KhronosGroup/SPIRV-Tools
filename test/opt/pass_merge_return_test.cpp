@@ -443,6 +443,49 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
+
+TEST_F(MergeReturnPassTest, SplitBlockUsedInPhi) {
+  const std::string before =
+      R"(
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK: OpSelectionMerge [[merge1:%\w+]] None
+; CHECK: [[merge1]] = OpLabel
+; CHECK: OpBranchConditional %{{\w+}} %{{\w+}} [[old_merge:%\w+]]
+; CHECK: [[old_merge]] = OpLabel
+; CHECK-NEXT: OpSelectionMerge [[merge2:%\w+]]
+; CHECK-NEXT: OpBranchConditional %false [[side_node:%\w+]] [[merge2]]
+; CHECK: [[merge2]] = OpLabel
+; CHECK-NEXT: OpPhi %bool %false [[old_merge]] %true [[side_node]]
+               OpCapability Addresses
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "simple_shader"
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+      %false = OpConstantFalse %bool
+       %true = OpConstantTrue %bool
+          %6 = OpTypeFunction %void
+          %1 = OpFunction %void None %6
+          %7 = OpLabel
+               OpSelectionMerge %8 None
+               OpBranchConditional %false %9 %8
+          %9 = OpLabel
+               OpReturn
+          %8 = OpLabel
+               OpSelectionMerge %10 None
+               OpBranchConditional %false %11 %10
+         %11 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+         %12 = OpPhi %bool %false %8 %true %11
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
+}
 #endif
 
 TEST_F(MergeReturnPassTest, StructuredControlFlowBothMergeAndHeader) {

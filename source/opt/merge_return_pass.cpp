@@ -321,7 +321,7 @@ void MergeReturnPass::PredicateBlock(
   // If this block is a header block, predicate the entire structured subgraph.
   // This can act recursively.
 
-  // If |block| is a loop head, then the back edge must jump to the original
+  // If |block| is a loop header, then the back edge must jump to the original
   // code, not the new header.
   if (block->GetLoopMergeInst()) {
     cfg()->SplitLoopHeader(block);
@@ -364,9 +364,7 @@ void MergeReturnPass::PredicateBlock(
   predicated->insert(new_merge);
   new_merge->SetParent(function_);
 
-  // Register the new labels.
-  get_def_use_mgr()->AnalyzeInstDef(old_body->GetLabelInst());
-  context()->set_instr_block(old_body->GetLabelInst(), old_body);
+  // Register the new label.
   get_def_use_mgr()->AnalyzeInstDef(new_merge->GetLabelInst());
   context()->set_instr_block(new_merge->GetLabelInst(), new_merge);
 
