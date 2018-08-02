@@ -773,7 +773,7 @@ if (!build_with_chromium) {
   group("fuzzers") {
     testonly = true
     deps = [
-      "//testing/fuzzers",
+      "test/fuzzers",
     ]
   }
 }
