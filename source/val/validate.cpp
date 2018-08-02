@@ -268,7 +268,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
       }
       if (inst->opcode() == SpvOpFunctionCall) {
         if (!vstate->in_function_body()) {
-          return vstate->diag(SPV_ERROR_INVALID_LAYOUT)
+          return vstate->diag(SPV_ERROR_INVALID_LAYOUT, &instruction)
                << "A FunctionCall must happen within a function body.";
         }
 
