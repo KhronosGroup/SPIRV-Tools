@@ -219,11 +219,6 @@ spv_result_t ValidateBinaryAndKeepValidationState(
     const uint32_t* words, const size_t num_words, spv_diagnostic* pDiagnostic,
     std::unique_ptr<ValidationState_t>* vstate);
 
-// Performs validation for a single instruction and updates given validation
-// state.
-spv_result_t ValidateInstructionAndUpdateValidationState(
-    ValidationState_t* vstate, const spv_parsed_instruction_t* inst);
-
 }  // namespace val
 }  // namespace spvtools
 
