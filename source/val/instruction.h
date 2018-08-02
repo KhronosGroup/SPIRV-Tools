@@ -51,7 +51,7 @@ class Instruction {
   /// Returns the BasicBlock where the instruction was defined. nullptr if it
   /// was defined outside of a BasicBlock
   const BasicBlock* block() const { return block_; }
-  void set_block(BasicBlock* block) { block_ = block; }
+  void set_block(BasicBlock* b) { block_ = b; }
 
   /// Returns a vector of pairs of all references to this instruction's result
   /// id. The first element is the instruction in which this result id was
