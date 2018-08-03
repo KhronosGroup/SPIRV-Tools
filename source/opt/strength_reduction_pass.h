@@ -15,10 +15,10 @@
 #ifndef LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
 #define LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
 
-#include "def_use_manager.h"
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

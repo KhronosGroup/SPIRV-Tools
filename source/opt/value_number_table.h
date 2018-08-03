@@ -17,7 +17,8 @@
 
 #include <cstdint>
 #include <unordered_map>
-#include "instruction.h"
+
+#include "source/opt/instruction.h"
 
 namespace spvtools {
 namespace opt {

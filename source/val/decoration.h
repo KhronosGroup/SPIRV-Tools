@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "latest_version_spirv_header.h"
+#include "source/latest_version_spirv_header.h"
 
 namespace spvtools {
 namespace val {

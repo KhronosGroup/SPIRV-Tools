@@ -15,7 +15,9 @@
 #ifndef LIBSPIRV_OPT_COMBINE_ACCESS_CHAINS_H_
 #define LIBSPIRV_OPT_COMBINE_ACCESS_CHAINS_H_
 
-#include "pass.h"
+#include <vector>
+
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

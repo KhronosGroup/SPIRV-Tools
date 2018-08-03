@@ -15,8 +15,8 @@
 #ifndef LIBSPIRV_OPT_PRIVATE_TO_LOCAL_PASS_H_
 #define LIBSPIRV_OPT_PRIVATE_TO_LOCAL_PASS_H_
 
-#include "ir_context.h"
-#include "pass.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

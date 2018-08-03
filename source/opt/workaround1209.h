@@ -15,7 +15,7 @@
 #ifndef LIBSPIRV_OPT_WORKAROUND1209_H_
 #define LIBSPIRV_OPT_WORKAROUND1209_H_
 
-#include "pass.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

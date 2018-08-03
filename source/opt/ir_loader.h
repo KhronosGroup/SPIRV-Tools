@@ -16,11 +16,13 @@
 #define LIBSPIRV_OPT_IR_LOADER_H_
 
 #include <memory>
+#include <string>
+#include <vector>
 
-#include "basic_block.h"
-#include "instruction.h"
-#include "module.h"
-#include "spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/libspirv.hpp"
+#include "source/opt/basic_block.h"
+#include "source/opt/instruction.h"
+#include "source/opt/module.h"
 
 namespace spvtools {
 namespace opt {

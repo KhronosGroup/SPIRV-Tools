@@ -18,9 +18,9 @@
 #include <iostream>
 #include <vector>
 
+#include "include/spirv-tools/libspirv.hpp"
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
-#include "spirv-tools/libspirv.hpp"
 #include "tools/io.h"
 
 void print_usage(char* argv0) {

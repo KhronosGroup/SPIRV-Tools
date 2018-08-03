@@ -14,13 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "local_single_block_elim_pass.h"
+#include "source/opt/local_single_block_elim_pass.h"
 
-#include "iterator.h"
+#include <vector>
+
+#include "source/opt/iterator.h"
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 
 const uint32_t kStoreValIdInIdx = 1;

@@ -14,9 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "inline_pass.h"
+#include "source/opt/inline_pass.h"
 
-#include "cfa.h"
+#include <unordered_set>
+#include <utility>
+
+#include "source/cfa.h"
 
 // Indices of operands in SPIR-V instructions
 

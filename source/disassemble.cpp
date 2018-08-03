@@ -21,20 +21,21 @@
 #include <iomanip>
 #include <memory>
 #include <unordered_map>
+#include <utility>
 
-#include "assembly_grammar.h"
-#include "binary.h"
-#include "diagnostic.h"
-#include "disassemble.h"
-#include "ext_inst.h"
-#include "name_mapper.h"
-#include "opcode.h"
-#include "parsed_operand.h"
-#include "print.h"
-#include "spirv-tools/libspirv.h"
-#include "spirv_constant.h"
-#include "spirv_endian.h"
-#include "util/hex_float.h"
+#include "include/spirv-tools/libspirv.h"
+#include "source/assembly_grammar.h"
+#include "source/binary.h"
+#include "source/diagnostic.h"
+#include "source/disassemble.h"
+#include "source/ext_inst.h"
+#include "source/name_mapper.h"
+#include "source/opcode.h"
+#include "source/parsed_operand.h"
+#include "source/print.h"
+#include "source/spirv_constant.h"
+#include "source/spirv_endian.h"
+#include "source/util/hex_float.h"
 
 namespace {
 

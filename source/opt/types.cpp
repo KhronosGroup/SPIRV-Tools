@@ -18,7 +18,7 @@
 #include <sstream>
 #include <unordered_set>
 
-#include "types.h"
+#include "source/opt/types.h"
 
 namespace spvtools {
 namespace opt {

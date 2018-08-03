@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <limits>
 #include <string>
 #include <vector>
 
 #include "gmock/gmock.h"
+#include "include/spirv-tools/libspirv.h"
 #include "source/util/parse_number.h"
-#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace utils {

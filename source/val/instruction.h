@@ -21,8 +21,8 @@
 #include <utility>
 #include <vector>
 
-#include "spirv-tools/libspirv.h"
-#include "table.h"
+#include "include/spirv-tools/libspirv.h"
+#include "source/table.h"
 
 namespace spvtools {
 namespace val {

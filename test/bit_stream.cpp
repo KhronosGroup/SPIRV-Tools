@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "util/bit_stream.h"
+#include "source/util/bit_stream.h"
 
 namespace spvtools {
 namespace utils {

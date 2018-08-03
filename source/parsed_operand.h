@@ -16,7 +16,8 @@
 #define LIBSPIRV_PARSED_OPERAND_H_
 
 #include <ostream>
-#include "spirv-tools/libspirv.h"
+
+#include "include/spirv-tools/libspirv.h"
 
 namespace spvtools {
 

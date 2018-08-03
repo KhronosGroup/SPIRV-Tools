@@ -18,8 +18,11 @@
 #include <stdint.h>
 
 #include <iomanip>
+#include <string>
 #include <vector>
 
+#include "gtest/gtest.h"
+#include "include/spirv-tools/libspirv.h"
 #include "source/assembly_grammar.h"
 #include "source/binary.h"
 #include "source/diagnostic.h"
@@ -29,9 +32,6 @@
 #include "source/text.h"
 #include "source/text_handler.h"
 #include "source/val/validate.h"
-#include "spirv-tools/libspirv.h"
-
-#include <gtest/gtest.h>
 
 #ifdef __ANDROID__
 #include <sstream>

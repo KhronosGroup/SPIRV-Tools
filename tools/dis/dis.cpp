@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "spirv-tools/libspirv.h"
+#include "include/spirv-tools/libspirv.h"
 #include "tools/io.h"
 
 static void print_usage(char* argv0) {

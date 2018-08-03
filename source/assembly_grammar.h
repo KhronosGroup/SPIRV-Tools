@@ -15,11 +15,11 @@
 #ifndef LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 #define LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 
-#include "enum_set.h"
-#include "latest_version_spirv_header.h"
-#include "operand.h"
-#include "spirv-tools/libspirv.h"
-#include "table.h"
+#include "include/spirv-tools/libspirv.h"
+#include "source/enum_set.h"
+#include "source/latest_version_spirv_header.h"
+#include "source/operand.h"
+#include "source/table.h"
 
 namespace spvtools {
 

@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "fold_spec_constant_op_and_composite_pass.h"
+#include "source/opt/fold_spec_constant_op_and_composite_pass.h"
 
 #include <algorithm>
 #include <initializer_list>
 #include <tuple>
 
-#include "constants.h"
-#include "fold.h"
-#include "ir_context.h"
-#include "make_unique.h"
+#include "source/opt/constants.h"
+#include "source/opt/fold.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/make_unique.h"
 
 namespace spvtools {
 namespace opt {

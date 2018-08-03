@@ -16,11 +16,12 @@
 #define LIBSPIRV_TEST_LINK_LINK_TEST
 
 #include <iostream>
+#include <string>
+#include <vector>
 
+#include "include/spirv-tools/linker.hpp"
 #include "source/spirv_constant.h"
-#include "unit_spirv.h"
-
-#include "spirv-tools/linker.hpp"
+#include "test/unit_spirv.h"
 
 namespace spvtest {
 

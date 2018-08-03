@@ -17,6 +17,8 @@
 #include "source/val/validate.h"
 
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "source/diagnostic.h"
 #include "source/latest_version_glsl_std_450_header.h"

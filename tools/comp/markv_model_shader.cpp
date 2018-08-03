@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "markv_model_shader.h"
+#include "tools/comp/markv_model_shader.h"
 
 #include <algorithm>
 #include <map>
@@ -53,7 +53,7 @@ inline uint32_t CombineOpcodeAndNumOperands(uint32_t opcode,
 // --codegen_literal_string_huffman_codecs --codegen_non_id_word_huffman_codecs
 // --codegen_id_descriptor_huffman_codecs -o
 // ~/SPIRV-Tools/source/comp/markv_autogen.inc
-#include "markv_model_shader_default_autogen.inc"
+#include "tools/comp/markv_model_shader_default_autogen.inc"
 
 }  // namespace
 

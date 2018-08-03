@@ -15,11 +15,16 @@
 #ifndef LIBSPIRV_OPT_SSA_REWRITE_PASS_H_
 #define LIBSPIRV_OPT_SSA_REWRITE_PASS_H_
 
-#include "basic_block.h"
-#include "ir_context.h"
-#include "mem_pass.h"
-
+#include <queue>
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "source/opt/basic_block.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/mem_pass.h"
 
 namespace spvtools {
 namespace opt {

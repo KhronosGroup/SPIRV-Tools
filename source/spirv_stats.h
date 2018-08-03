@@ -18,9 +18,10 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
-#include "spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 

@@ -16,17 +16,18 @@
 #define LIBSPIRV_OPT_CONSTANTS_H_
 
 #include <cinttypes>
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "make_unique.h"
-#include "module.h"
-#include "type_manager.h"
-#include "types.h"
-#include "util/hex_float.h"
+#include "source/opt/make_unique.h"
+#include "source/opt/module.h"
+#include "source/opt/type_manager.h"
+#include "source/opt/types.h"
+#include "source/util/hex_float.h"
 
 namespace spvtools {
 namespace opt {

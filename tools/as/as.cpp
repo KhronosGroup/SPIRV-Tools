@@ -16,8 +16,8 @@
 #include <cstring>
 #include <vector>
 
+#include "include/spirv-tools/libspirv.h"
 #include "source/spirv_target_env.h"
-#include "spirv-tools/libspirv.h"
 #include "tools/io.h"
 
 void print_usage(char* argv0) {

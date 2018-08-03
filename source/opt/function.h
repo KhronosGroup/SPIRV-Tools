@@ -18,12 +18,13 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
-#include "basic_block.h"
-#include "instruction.h"
-#include "iterator.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/instruction.h"
+#include "source/opt/iterator.h"
 
 namespace spvtools {
 namespace opt {

@@ -15,9 +15,9 @@
 #ifndef LIBSPIRV_OPT_FEATURE_MANAGER_H_
 #define LIBSPIRV_OPT_FEATURE_MANAGER_H_
 
-#include "assembly_grammar.h"
-#include "extensions.h"
-#include "module.h"
+#include "source/assembly_grammar.h"
+#include "source/extensions.h"
+#include "source/opt/module.h"
 
 namespace spvtools {
 namespace opt {

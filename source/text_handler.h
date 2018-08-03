@@ -16,15 +16,18 @@
 #define LIBSPIRV_TEXT_HANDLER_H_
 
 #include <iomanip>
+#include <set>
 #include <sstream>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 
-#include "diagnostic.h"
-#include "instruction.h"
-#include "message.h"
-#include "spirv-tools/libspirv.h"
-#include "text.h"
+#include "include/spirv-tools/libspirv.h"
+#include "source/diagnostic.h"
+#include "source/instruction.h"
+#include "source/message.h"
+#include "source/text.h"
 
 namespace spvtools {
 

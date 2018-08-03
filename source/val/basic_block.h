@@ -15,14 +15,13 @@
 #ifndef LIBSPIRV_VAL_BASICBLOCK_H_
 #define LIBSPIRV_VAL_BASICBLOCK_H_
 
-#include "latest_version_spirv_header.h"
-
 #include <cstdint>
-
 #include <bitset>
 #include <functional>
 #include <memory>
 #include <vector>
+
+#include "source/latest_version_spirv_header.h"
 
 namespace spvtools {
 namespace val {

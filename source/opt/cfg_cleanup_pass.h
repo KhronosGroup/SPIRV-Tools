@@ -15,9 +15,9 @@
 #ifndef LIBSPIRV_OPT_CFG_CLEANUP_PASS_H_
 #define LIBSPIRV_OPT_CFG_CLEANUP_PASS_H_
 
-#include "function.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/function.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
 
 namespace spvtools {
 namespace opt {

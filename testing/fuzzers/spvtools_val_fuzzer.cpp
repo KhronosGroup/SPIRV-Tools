@@ -13,8 +13,9 @@
 // limitations under the License.
 
 #include <cstdint>
+#include <vector>
 
-#include "spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/libspirv.hpp"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   spvtools::SpirvTools tools(SPV_ENV_UNIVERSAL_1_3);

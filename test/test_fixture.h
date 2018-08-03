@@ -15,7 +15,10 @@
 #ifndef LIBSPIRV_TEST_TEST_FIXTURE_H_
 #define LIBSPIRV_TEST_TEST_FIXTURE_H_
 
-#include "unit_spirv.h"
+#include <string>
+#include <vector>
+
+#include "test/unit_spirv.h"
 
 namespace spvtest {
 

@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_VAL_VALIDATIONSTATE_H_
 #define LIBSPIRV_VAL_VALIDATIONSTATE_H_
 
+#include <map>
 #include <set>
 #include <string>
 #include <tuple>
@@ -22,17 +23,17 @@
 #include <unordered_set>
 #include <vector>
 
-#include "assembly_grammar.h"
-#include "decoration.h"
-#include "diagnostic.h"
-#include "disassemble.h"
-#include "enum_set.h"
-#include "latest_version_spirv_header.h"
-#include "spirv-tools/libspirv.h"
-#include "spirv_definition.h"
-#include "spirv_validator_options.h"
-#include "val/function.h"
-#include "val/instruction.h"
+#include "include/spirv-tools/libspirv.h"
+#include "source/assembly_grammar.h"
+#include "source/diagnostic.h"
+#include "source/disassemble.h"
+#include "source/enum_set.h"
+#include "source/latest_version_spirv_header.h"
+#include "source/spirv_definition.h"
+#include "source/spirv_validator_options.h"
+#include "source/val/decoration.h"
+#include "source/val/function.h"
+#include "source/val/instruction.h"
 
 namespace spvtools {
 namespace val {

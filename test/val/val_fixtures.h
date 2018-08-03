@@ -17,9 +17,12 @@
 #ifndef LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
 #define LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
 
+#include <memory>
+#include <string>
+
 #include "source/val/validation_state.h"
-#include "test_fixture.h"
-#include "unit_spirv.h"
+#include "test/test_fixture.h"
+#include "test/unit_spirv.h"
 
 namespace spvtest {
 

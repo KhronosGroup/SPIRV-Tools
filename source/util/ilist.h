@@ -20,7 +20,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "ilist_node.h"
+#include "source/util/ilist_node.h"
 
 namespace spvtools {
 namespace utils {

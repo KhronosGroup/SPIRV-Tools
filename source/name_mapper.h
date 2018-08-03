@@ -20,8 +20,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "assembly_grammar.h"
-#include "spirv-tools/libspirv.h"
+#include "include/spirv-tools/libspirv.h"
+#include "source/assembly_grammar.h"
 
 namespace spvtools {
 

@@ -15,11 +15,11 @@
 #ifndef LIBSPIRV_TABLE_H_
 #define LIBSPIRV_TABLE_H_
 
-#include "latest_version_spirv_header.h"
+#include "source/latest_version_spirv_header.h"
 
-#include "extensions.h"
-#include "message.h"
-#include "spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/libspirv.hpp"
+#include "source/extensions.h"
+#include "source/message.h"
 
 typedef struct spv_opcode_desc_t {
   const char* name;

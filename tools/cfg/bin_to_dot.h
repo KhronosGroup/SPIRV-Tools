@@ -16,7 +16,7 @@
 #define BIN_TO_DOT_H_
 
 #include <iostream>
-#include "spirv-tools/libspirv.h"
+#include "include/spirv-tools/libspirv.h"
 
 // Dumps the control flow graph for the given module to the output stream.
 // Returns SPV_SUCCESS on succes.

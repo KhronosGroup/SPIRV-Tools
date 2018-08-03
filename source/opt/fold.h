@@ -18,10 +18,10 @@
 #include <cstdint>
 #include <vector>
 
-#include "const_folding_rules.h"
-#include "constants.h"
-#include "def_use_manager.h"
-#include "folding_rules.h"
+#include "source/opt/const_folding_rules.h"
+#include "source/opt/constants.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/folding_rules.h"
 
 namespace spvtools {
 namespace opt {

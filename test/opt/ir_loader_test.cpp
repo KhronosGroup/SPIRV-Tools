@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <gtest/gtest.h>
 #include <algorithm>
+#include <memory>
+#include <string>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
-#include "message.h"
-#include "opt/build_module.h"
-#include "opt/ir_context.h"
-#include "spirv-tools/libspirv.hpp"
+#include "gtest/gtest.h"
+#include "include/spirv-tools/libspirv.hpp"
+#include "source/message.h"
+#include "source/opt/build_module.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace opt {

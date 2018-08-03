@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/libspirv.hpp"
 
 // Asserts the given condition is true. Otherwise, sends a message to the
 // consumer and exits the problem with failure code. Accepts the following

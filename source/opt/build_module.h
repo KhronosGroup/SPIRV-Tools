@@ -18,9 +18,9 @@
 #include <memory>
 #include <string>
 
-#include "ir_context.h"
-#include "module.h"
-#include "spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/libspirv.hpp"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
 
 namespace spvtools {
 

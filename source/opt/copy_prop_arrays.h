@@ -15,7 +15,10 @@
 #ifndef LIBSPIRV_OPT_COPY_PROP_H_
 #define LIBSPIRV_OPT_COPY_PROP_H_
 
-#include "mem_pass.h"
+#include <memory>
+#include <vector>
+
+#include "source/opt/mem_pass.h"
 
 namespace spvtools {
 namespace opt {

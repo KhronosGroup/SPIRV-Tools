@@ -16,10 +16,10 @@
 #include <iostream>
 #include <vector>
 
+#include "include/spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/linker.hpp"
 #include "source/spirv_target_env.h"
 #include "source/table.h"
-#include "spirv-tools/libspirv.hpp"
-#include "spirv-tools/linker.hpp"
 #include "tools/io.h"
 
 void print_usage(char* argv0) {

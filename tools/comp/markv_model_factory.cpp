@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "markv_model_factory.h"
+#include "tools/comp/markv_model_factory.h"
 
-#include "markv_model_shader.h"
+#include "tools/comp/markv_model_shader.h"
 
 namespace spvtools {
 namespace comp {

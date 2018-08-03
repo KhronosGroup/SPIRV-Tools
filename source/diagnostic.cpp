@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "diagnostic.h"
+#include "source/diagnostic.h"
 
 #include <cassert>
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <utility>
 
-#include "table.h"
+#include "source/table.h"
 
 // Diagnostic API
 

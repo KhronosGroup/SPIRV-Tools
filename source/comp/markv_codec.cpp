@@ -26,39 +26,41 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <list>
+#include <map>
 #include <memory>
 #include <numeric>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include "latest_version_glsl_std_450_header.h"
-#include "latest_version_opencl_std_header.h"
-#include "latest_version_spirv_header.h"
-
-#include "binary.h"
-#include "diagnostic.h"
-#include "enum_string_mapping.h"
-#include "ext_inst.h"
-#include "extensions.h"
-#include "id_descriptor.h"
-#include "instruction.h"
-#include "markv.h"
-#include "markv_model.h"
-#include "opcode.h"
-#include "operand.h"
+#include "include/spirv-tools/libspirv.h"
 #include "source/assembly_grammar.h"
-#include "spirv-tools/libspirv.h"
-#include "spirv_endian.h"
-#include "spirv_validator_options.h"
-#include "util/bit_stream.h"
-#include "util/huffman_codec.h"
-#include "util/move_to_front.h"
-#include "util/parse_number.h"
-#include "val/instruction.h"
-#include "val/validate.h"
+#include "source/binary.h"
+#include "source/comp/markv.h"
+#include "source/comp/markv_model.h"
+#include "source/diagnostic.h"
+#include "source/enum_string_mapping.h"
+#include "source/ext_inst.h"
+#include "source/extensions.h"
+#include "source/id_descriptor.h"
+#include "source/instruction.h"
+#include "source/latest_version_glsl_std_450_header.h"
+#include "source/latest_version_opencl_std_header.h"
+#include "source/latest_version_spirv_header.h"
+#include "source/opcode.h"
+#include "source/operand.h"
+#include "source/spirv_endian.h"
+#include "source/spirv_validator_options.h"
+#include "source/util/bit_stream.h"
+#include "source/util/huffman_codec.h"
+#include "source/util/move_to_front.h"
+#include "source/util/parse_number.h"
+#include "source/val/instruction.h"
+#include "source/val/validate.h"
 
 namespace spvtools {
 namespace comp {

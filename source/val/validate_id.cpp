@@ -20,10 +20,12 @@
 #include <iostream>
 #include <iterator>
 #include <stack>
+#include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "include/spirv-tools/libspirv.h"
 #include "source/diagnostic.h"
 #include "source/instruction.h"
 #include "source/message.h"
@@ -32,7 +34,6 @@
 #include "source/spirv_validator_options.h"
 #include "source/val/function.h"
 #include "source/val/validation_state.h"
-#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace val {

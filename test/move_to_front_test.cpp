@@ -15,9 +15,11 @@
 #include <algorithm>
 #include <iostream>
 #include <set>
+#include <string>
+#include <vector>
 
 #include "gmock/gmock.h"
-#include "util/move_to_front.h"
+#include "source/util/move_to_front.h"
 
 namespace spvtools {
 namespace utils {

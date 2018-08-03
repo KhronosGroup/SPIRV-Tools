@@ -16,12 +16,13 @@
 #define LIBSPIRV_OPT_REMOVE_DUPLICATES_PASS_H_
 
 #include <unordered_map>
+#include <vector>
 
-#include "decoration_manager.h"
-#include "def_use_manager.h"
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/decoration_manager.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

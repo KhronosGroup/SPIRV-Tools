@@ -16,9 +16,10 @@
 #define LIBSPIRV_OPERAND_H_
 
 #include <functional>
+#include <vector>
 
-#include "spirv-tools/libspirv.h"
-#include "table.h"
+#include "include/spirv-tools/libspirv.h"
+#include "source/table.h"
 
 // A sequence of operand types.
 //

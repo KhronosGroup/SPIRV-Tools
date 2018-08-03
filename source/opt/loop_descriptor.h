@@ -21,12 +21,13 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include "opt/basic_block.h"
-#include "opt/dominator_analysis.h"
-#include "opt/module.h"
-#include "opt/tree_iterator.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/dominator_analysis.h"
+#include "source/opt/module.h"
+#include "source/opt/tree_iterator.h"
 
 namespace spvtools {
 namespace opt {

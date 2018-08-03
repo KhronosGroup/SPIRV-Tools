@@ -15,10 +15,10 @@
 #ifndef LIBSPIRV_OPT_ELIMINATE_DEAD_FUNCTIONS_PASS_H_
 #define LIBSPIRV_OPT_ELIMINATE_DEAD_FUNCTIONS_PASS_H_
 
-#include "def_use_manager.h"
-#include "function.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/function.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
 
 namespace spvtools {
 namespace opt {

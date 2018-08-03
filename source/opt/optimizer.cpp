@@ -12,15 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "spirv-tools/optimizer.hpp"
+#include "include/spirv-tools/optimizer.hpp"
 
-#include "build_module.h"
-#include "log.h"
-#include "make_unique.h"
-#include "pass_manager.h"
-#include "passes.h"
-#include "reduce_load_size.h"
-#include "simplification_pass.h"
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include "source/opt/build_module.h"
+#include "source/opt/log.h"
+#include "source/opt/make_unique.h"
+#include "source/opt/pass_manager.h"
+#include "source/opt/passes.h"
+#include "source/opt/reduce_load_size.h"
+#include "source/opt/simplification_pass.h"
 
 namespace spvtools {
 

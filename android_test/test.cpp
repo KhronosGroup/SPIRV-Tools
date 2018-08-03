@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include <memory>
-#include "spirv-tools/libspirv.hpp"
-#include "spirv-tools/optimizer.hpp"
+#include "include/spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/optimizer.hpp"
 
 void android_main(struct android_app* /*state*/) {
   spvtools::SpirvTools tools(SPV_ENV_UNIVERSAL_1_2);

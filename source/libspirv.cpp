@@ -12,9 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "spirv-tools/libspirv.hpp"
+#include "include/spirv-tools/libspirv.hpp"
 
-#include "table.h"
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "source/table.h"
 
 namespace spvtools {
 

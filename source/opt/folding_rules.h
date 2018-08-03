@@ -16,9 +16,10 @@
 #define LIBSPIRV_UTIL_FOLDING_RULES_H_
 
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
-#include "constants.h"
+#include "source/opt/constants.h"
 
 namespace spvtools {
 namespace opt {

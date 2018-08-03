@@ -17,8 +17,8 @@
 
 #include <string>
 
-#include "extensions.h"
-#include "latest_version_spirv_header.h"
+#include "source/extensions.h"
+#include "source/latest_version_spirv_header.h"
 
 namespace spvtools {
 
