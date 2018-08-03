@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_VAL_DECORATION_H_
-#define LIBSPIRV_VAL_DECORATION_H_
+#ifndef SOURCE_VAL_DECORATION_H_
+#define SOURCE_VAL_DECORATION_H_
 
 #include <cstdint>
 #include <unordered_map>
@@ -86,4 +86,4 @@ class Decoration {
 }  // namespace val
 }  // namespace spvtools
 
-#endif  /// LIBSPIRV_VAL_DECORATION_H_
+#endif  // SOURCE_VAL_DECORATION_H_

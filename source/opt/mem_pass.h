@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_MEM_PASS_H_
-#define LIBSPIRV_OPT_MEM_PASS_H_
+#ifndef SOURCE_OPT_MEM_PASS_H_
+#define SOURCE_OPT_MEM_PASS_H_
 
 #include <algorithm>
 #include <list>
@@ -160,4 +160,4 @@ class MemPass : public Pass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_MEM_PASS_H_
+#endif  // SOURCE_OPT_MEM_PASS_H_

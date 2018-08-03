@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOOP_UNSWITCH_PASS_H_
-#define LIBSPIRV_OPT_LOOP_UNSWITCH_PASS_H_
+#ifndef SOURCE_OPT_LOOP_UNSWITCH_PASS_H_
+#define SOURCE_OPT_LOOP_UNSWITCH_PASS_H_
 
 #include "source/opt/loop_descriptor.h"
 #include "source/opt/pass.h"
@@ -40,4 +40,4 @@ class LoopUnswitchPass : public Pass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // !LIBSPIRV_OPT_LOOP_UNSWITCH_PASS_H_
+#endif  // SOURCE_OPT_LOOP_UNSWITCH_PASS_H_

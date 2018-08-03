@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_UTIL_STRING_UTILS_H_
-#define LIBSPIRV_UTIL_STRING_UTILS_H_
+#ifndef SOURCE_UTIL_STRING_UTILS_H_
+#define SOURCE_UTIL_STRING_UTILS_H_
 
 #include <sstream>
 #include <string>
@@ -40,4 +40,4 @@ std::string CardinalToOrdinal(size_t cardinal);
 }  // namespace utils
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_UTIL_STRING_UTILS_H_
+#endif  // SOURCE_UTIL_STRING_UTILS_H_

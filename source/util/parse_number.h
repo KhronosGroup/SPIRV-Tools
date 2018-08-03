@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_UTIL_PARSE_NUMBER_H_
-#define LIBSPIRV_UTIL_PARSE_NUMBER_H_
+#ifndef SOURCE_UTIL_PARSE_NUMBER_H_
+#define SOURCE_UTIL_PARSE_NUMBER_H_
 
 #include <functional>
 #include <string>
@@ -249,4 +249,4 @@ EncodeNumberStatus ParseAndEncodeNumber(const char* text,
 }  // namespace utils
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_UTIL_PARSE_NUMBER_H_
+#endif  // SOURCE_UTIL_PARSE_NUMBER_H_

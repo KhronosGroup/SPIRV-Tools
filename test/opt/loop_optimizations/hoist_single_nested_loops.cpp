@@ -22,7 +22,6 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using namespace spvtools;
 using ::testing::UnorderedElementsAre;
 
 using PassClassTest = PassTest<::testing::Test>;

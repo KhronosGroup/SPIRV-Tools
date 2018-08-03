@@ -71,7 +71,11 @@ if(("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MAT
   set(COMPILER_IS_LIKE_GNU TRUE)
 endif()
 if(${COMPILER_IS_LIKE_GNU})
-  set(SPIRV_WARNINGS -Wall -Wextra -Wnon-virtual-dtor -Wno-missing-field-initializers -Wno-self-assign)
+  set(SPIRV_WARNINGS -Wall -Wextra -Wnon-virtual-dtor -Wno-missing-field-initializers)
+
+  if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(SPIRV_WARNINGS ${SPIRV_WARNINGS} -Wno-self-assign)
+  endif()
 
   option(SPIRV_WARN_EVERYTHING "Enable -Weverything" ${SPIRV_WARN_EVERYTHING})
   if(${SPIRV_WARN_EVERYTHING})

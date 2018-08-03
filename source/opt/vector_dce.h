@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_VECTOR_DCE_H_
-#define LIBSPIRV_OPT_VECTOR_DCE_H_
+#ifndef SOURCE_OPT_VECTOR_DCE_H_
+#define SOURCE_OPT_VECTOR_DCE_H_
 
 #include <unordered_map>
 #include <vector>
@@ -146,4 +146,4 @@ class VectorDCE : public MemPass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_VECTOR_DCE_H_
+#endif  // SOURCE_OPT_VECTOR_DCE_H_

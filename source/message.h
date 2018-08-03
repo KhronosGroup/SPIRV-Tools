@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_MESSAGE_H_
-#define SPIRV_TOOLS_MESSAGE_H_
+#ifndef SOURCE_MESSAGE_H_
+#define SOURCE_MESSAGE_H_
 
 #include <string>
 
@@ -30,4 +30,4 @@ std::string StringifyMessage(spv_message_level_t level, const char* source,
 
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_MESSAGE_H_
+#endif  // SOURCE_MESSAGE_H_

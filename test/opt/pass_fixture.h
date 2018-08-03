@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_TEST_OPT_PASS_FIXTURE_H_
-#define LIBSPIRV_TEST_OPT_PASS_FIXTURE_H_
+#ifndef TEST_OPT_PASS_FIXTURE_H_
+#define TEST_OPT_PASS_FIXTURE_H_
 
 #include <iostream>
 #include <memory>
@@ -243,4 +243,4 @@ class PassTest : public TestT {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_TEST_OPT_PASS_FIXTURE_H_
+#endif  // TEST_OPT_PASS_FIXTURE_H_

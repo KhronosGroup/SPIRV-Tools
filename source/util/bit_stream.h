@@ -14,8 +14,8 @@
 
 // Contains utils for reading, writing and debug printing bit streams.
 
-#ifndef LIBSPIRV_UTIL_BIT_STREAM_H_
-#define LIBSPIRV_UTIL_BIT_STREAM_H_
+#ifndef SOURCE_UTIL_BIT_STREAM_H_
+#define SOURCE_UTIL_BIT_STREAM_H_
 
 #include <algorithm>
 #include <bitset>
@@ -447,4 +447,4 @@ class BitReaderWord64 : public BitReaderInterface {
 }  // namespace utils
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_UTIL_BIT_STREAM_H_
+#endif  // SOURCE_UTIL_BIT_STREAM_H_

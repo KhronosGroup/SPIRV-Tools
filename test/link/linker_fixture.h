@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_TEST_LINK_LINK_TEST
-#define LIBSPIRV_TEST_LINK_LINK_TEST
+#ifndef TEST_LINK_LINKER_FIXTURE_H_
+#define TEST_LINK_LINKER_FIXTURE_H_
 
 #include <iostream>
 #include <string>
@@ -122,4 +122,4 @@ class LinkerTest : public ::testing::Test {
 
 }  // namespace spvtest
 
-#endif  // LIBSPIRV_TEST_LINK_LINK_TEST
+#endif  // TEST_LINK_LINKER_FIXTURE_H_

@@ -14,8 +14,8 @@
 
 // Contains utils for reading, writing and debug printing bit streams.
 
-#ifndef LIBSPIRV_UTIL_HUFFMAN_CODEC_H_
-#define LIBSPIRV_UTIL_HUFFMAN_CODEC_H_
+#ifndef SOURCE_UTIL_HUFFMAN_CODEC_H_
+#define SOURCE_UTIL_HUFFMAN_CODEC_H_
 
 #include <algorithm>
 #include <cassert>
@@ -386,4 +386,4 @@ class HuffmanCodec {
 }  // namespace utils
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_UTIL_HUFFMAN_CODEC_H_
+#endif  // SOURCE_UTIL_HUFFMAN_CODEC_H_

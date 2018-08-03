@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_TABLE_H_
-#define LIBSPIRV_TABLE_H_
+#ifndef SOURCE_TABLE_H_
+#define SOURCE_TABLE_H_
 
 #include "source/latest_version_spirv_header.h"
 
@@ -130,4 +130,4 @@ spv_result_t spvOperandTableGet(spv_operand_table* table, spv_target_env env);
 // Populates *table with entries for env.
 spv_result_t spvExtInstTableGet(spv_ext_inst_table* table, spv_target_env env);
 
-#endif  // LIBSPIRV_TABLE_H_
+#endif  // SOURCE_TABLE_H_

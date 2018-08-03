@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_ENUM_STRING_MAPPING_H_
-#define LIBSPIRV_ENUM_STRING_MAPPING_H_
+#ifndef SOURCE_ENUM_STRING_MAPPING_H_
+#define SOURCE_ENUM_STRING_MAPPING_H_
 
 #include <string>
 
@@ -33,4 +33,4 @@ const char* CapabilityToString(SpvCapability capability);
 
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_ENUM_STRING_MAPPING_H_
+#endif  // SOURCE_ENUM_STRING_MAPPING_H_

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_VAL_INSTRUCTION_H_
-#define LIBSPIRV_VAL_INSTRUCTION_H_
+#ifndef SOURCE_VAL_INSTRUCTION_H_
+#define SOURCE_VAL_INSTRUCTION_H_
 
 #include <cassert>
 #include <cstdint>
@@ -137,4 +137,4 @@ struct hash<spvtools::val::Instruction> {
 
 }  // namespace std
 
-#endif  // LIBSPIRV_VAL_INSTRUCTION_H_
+#endif  // SOURCE_VAL_INSTRUCTION_H_

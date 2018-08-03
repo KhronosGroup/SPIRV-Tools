@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_UTIL_COMPOSITE_PASS_H_
-#define LIBSPIRV_UTIL_COMPOSITE_PASS_H_
+#ifndef SOURCE_OPT_COMPOSITE_H_
+#define SOURCE_OPT_COMPOSITE_H_
 
 #include <algorithm>
 #include <map>
@@ -48,4 +48,4 @@ bool ExtInsConflict(const std::vector<uint32_t>& extIndices,
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_UTIL_COMPOSITE_PASS_H_
+#endif  // SOURCE_OPT_COMPOSITE_H_

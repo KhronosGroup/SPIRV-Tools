@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_DECORATION_MANAGER_H_
-#define LIBSPIRV_OPT_DECORATION_MANAGER_H_
+#ifndef SOURCE_OPT_DECORATION_MANAGER_H_
+#define SOURCE_OPT_DECORATION_MANAGER_H_
 
 #include <functional>
 #include <unordered_map>
@@ -133,4 +133,4 @@ class DecorationManager {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_DECORATION_MANAGER_H_
+#endif  // SOURCE_OPT_DECORATION_MANAGER_H_

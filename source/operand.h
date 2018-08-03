@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPERAND_H_
-#define LIBSPIRV_OPERAND_H_
+#ifndef SOURCE_OPERAND_H_
+#define SOURCE_OPERAND_H_
 
 #include <functional>
 #include <vector>
@@ -138,4 +138,4 @@ bool spvIsIdType(spv_operand_type_t type);
 std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     SpvOp opcode);
 
-#endif  // LIBSPIRV_OPERAND_H_
+#endif  // SOURCE_OPERAND_H_

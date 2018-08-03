@@ -555,4 +555,4 @@ class LoopDependenceAnalysis {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // SOURCE_OPT_LOOP_DEPENDENCE_H__
+#endif  // SOURCE_OPT_LOOP_DEPENDENCE_H_

@@ -18,8 +18,8 @@
 // make it more similar to other compressed SPIR-V files to further improve
 // compression of the dataset.
 
-#ifndef SPIRV_TOOLS_MARKV_HPP_
-#define SPIRV_TOOLS_MARKV_HPP_
+#ifndef SOURCE_COMP_MARKV_H_
+#define SOURCE_COMP_MARKV_H_
 
 #include <string>
 #include <vector>
@@ -73,4 +73,4 @@ spv_result_t MarkvToSpirv(
 }  // namespace comp
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_MARKV_HPP_
+#endif  // SOURCE_COMP_MARKV_H_

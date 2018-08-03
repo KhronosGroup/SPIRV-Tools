@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_VAL_BASICBLOCK_H_
-#define LIBSPIRV_VAL_BASICBLOCK_H_
+#ifndef SOURCE_VAL_BASIC_BLOCK_H_
+#define SOURCE_VAL_BASIC_BLOCK_H_
 
 #include <cstdint>
 #include <bitset>
@@ -244,4 +244,4 @@ bool operator!=(const BasicBlock::DominatorIterator& lhs,
 }  // namespace val
 }  // namespace spvtools
 
-#endif  /// LIBSPIRV_VAL_BASICBLOCK_H_
+#endif  // SOURCE_VAL_BASIC_BLOCK_H_

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_REFLECT_H_
-#define LIBSPIRV_OPT_REFLECT_H_
+#ifndef SOURCE_OPT_REFLECT_H_
+#define SOURCE_OPT_REFLECT_H_
 
 #include "source/latest_version_spirv_header.h"
 
@@ -62,4 +62,4 @@ inline bool IsTerminatorInst(SpvOp opcode) {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_REFLECT_H_
+#endif  // SOURCE_OPT_REFLECT_H_

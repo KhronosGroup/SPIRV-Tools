@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_CONST_FOLDING_RULES_H_
-#define LIBSPIRV_OPT_CONST_FOLDING_RULES_H_
+#ifndef SOURCE_OPT_CONST_FOLDING_RULES_H_
+#define SOURCE_OPT_CONST_FOLDING_RULES_H_
 
 #include <unordered_map>
 #include <vector>
@@ -77,4 +77,4 @@ class ConstantFoldingRules {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_CONST_FOLDING_RULES_H_
+#endif  // SOURCE_OPT_CONST_FOLDING_RULES_H_

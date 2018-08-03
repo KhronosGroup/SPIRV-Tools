@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_VAL_FUNCTION_H_
-#define LIBSPIRV_VAL_FUNCTION_H_
+#ifndef SOURCE_VAL_FUNCTION_H_
+#define SOURCE_VAL_FUNCTION_H_
 
 #include <functional>
 #include <list>
@@ -357,4 +357,4 @@ class Function {
 }  // namespace val
 }  // namespace spvtools
 
-#endif  /// LIBSPIRV_VAL_FUNCTION_H_
+#endif  // SOURCE_VAL_FUNCTION_H_

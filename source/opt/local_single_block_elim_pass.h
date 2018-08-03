@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
-#define LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
+#ifndef SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
+#define SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
 
 #include <algorithm>
 #include <map>
@@ -102,4 +102,4 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
+#endif  // SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOOP_DESCRIPTORS_H_
-#define LIBSPIRV_OPT_LOOP_DESCRIPTORS_H_
+#ifndef SOURCE_OPT_LOOP_DESCRIPTOR_H_
+#define SOURCE_OPT_LOOP_DESCRIPTOR_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -569,4 +569,4 @@ class LoopDescriptor {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOOP_DESCRIPTORS_H_
+#endif  // SOURCE_OPT_LOOP_DESCRIPTOR_H_

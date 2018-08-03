@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_BINARY_H_
-#define LIBSPIRV_BINARY_H_
+#ifndef SOURCE_BINARY_H_
+#define SOURCE_BINARY_H_
 
 #include "include/spirv-tools/libspirv.h"
 #include "source/spirv_definition.h"
@@ -33,4 +33,4 @@ spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
 // replacement for C11's strnlen_s which might not exist in all environments.
 size_t spv_strnlen_s(const char* str, size_t strsz);
 
-#endif  // LIBSPIRV_BINARY_H_
+#endif  // SOURCE_BINARY_H_

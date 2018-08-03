@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_TOOLS_STATS_STATS_ANALYZER_H_
-#define LIBSPIRV_TOOLS_STATS_STATS_ANALYZER_H_
+#ifndef TOOLS_STATS_STATS_ANALYZER_H_
+#define TOOLS_STATS_STATS_ANALYZER_H_
 
 #include <string>
 #include <unordered_map>
@@ -78,4 +78,4 @@ class StatsAnalyzer {
   std::unordered_map<uint32_t, double> opcode_freq_;
 };
 
-#endif  // LIBSPIRV_TOOLS_STATS_STATS_ANALYZER_H_
+#endif  // TOOLS_STATS_STATS_ANALYZER_H_

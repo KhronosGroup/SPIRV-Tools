@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_UTIL_MOVE_TO_FRONT_H_
-#define LIBSPIRV_UTIL_MOVE_TO_FRONT_H_
+#ifndef SOURCE_UTIL_MOVE_TO_FRONT_H_
+#define SOURCE_UTIL_MOVE_TO_FRONT_H_
 
 #include <algorithm>
 #include <cassert>
@@ -825,4 +825,4 @@ void MoveToFront<Val>::UpdateNode(uint32_t node) {
 }  // namespace utils
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_UTIL_MOVE_TO_FRONT_H_
+#endif  // SOURCE_UTIL_MOVE_TO_FRONT_H_
