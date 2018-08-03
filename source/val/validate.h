@@ -136,10 +136,8 @@ spv_result_t ValidateDecorations(ValidationState_t& _);
 /// Performs validation of built-in variables.
 spv_result_t ValidateBuiltIns(const ValidationState_t& _);
 
-/// Validates that type declarations are unique, unless multiple declarations
-/// of the same data type are allowed by the specification.
-/// (see section 2.8 Types and Variables)
-spv_result_t TypeUniquePass(ValidationState_t& _, const Instruction* inst);
+/// Validates type instructions.
+spv_result_t TypePass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of arithmetic instructions.
 spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst);
