@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build_overrides/spirv_tools.gni")
+
 import("//testing/test.gni")
 import("//build_overrides/build.gni")
 
-if (build_with_chromium) {
-  spirv_headers = "//third_party/spirv-headers/src"
-} else {
-  spirv_headers = "external/spirv-headers"
-}
+spirv_headers = spirv_tools_spirv_headers_dir
 
 template("spvtools_core_tables") {
   assert(defined(invoker.version), "Need version in $target_name generation.")
@@ -589,28 +587,28 @@ group("SPIRV-Tools") {
 }
 
 if (!build_with_chromium) {
-  googletest_dir = "//external/googletest/"
+  googletest_dir = spirv_tools_googletest_dir
 
   config("gtest_config") {
     include_dirs = [
-      googletest_dir + "googletest",
-      googletest_dir + "googletest/include",
+      "${googletest_dir}/googletest",
+      "${googletest_dir}/googletest/include",
     ]
   }
 
   static_library("gtest") {
     testonly = true
     sources = [
-      googletest_dir + "googletest/src/gtest-all.cc",
+      "${googletest_dir}/googletest/src/gtest-all.cc",
     ]
     public_configs = [ ":gtest_config" ]
   }
 
   config("gmock_config") {
     include_dirs = [
-      googletest_dir + "googlemock",
-      googletest_dir + "googlemock/include",
-      googletest_dir + "googletest/include",
+      "${googletest_dir}/googlemock",
+      "${googletest_dir}/googlemock/include",
+      "${googletest_dir}/googletest/include",
     ]
     if (is_clang) {
       # TODO: Can remove this if/when the issue is fixed.
@@ -622,7 +620,7 @@ if (!build_with_chromium) {
   static_library("gmock") {
     testonly = true
     sources = [
-      googletest_dir + "googlemock/src/gmock-all.cc",
+      "${googletest_dir}/googlemock/src/gmock-all.cc",
     ]
     public_configs = [ ":gmock_config" ]
   }
@@ -710,7 +708,7 @@ test("spvtools_test") {
       ":gmock",
       ":gtest",
     ]
-    sources += [ googletest_dir + "googletest/src/gtest_main.cc" ]
+    sources += [ "${googletest_dir}/googletest/src/gtest_main.cc" ]
   }
 
   configs += [
@@ -719,7 +717,7 @@ test("spvtools_test") {
   ]
 }
 
-if (!build_with_chromium) {
+if (spirv_tools_standalone) {
   group("fuzzers") {
     testonly = true
     deps = [
