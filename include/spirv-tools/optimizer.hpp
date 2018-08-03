@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_OPTIMIZER_HPP_
-#define SPIRV_TOOLS_OPTIMIZER_HPP_
+#ifndef INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
+#define INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
 
 #include <memory>
 #include <ostream>
@@ -643,4 +643,4 @@ Optimizer::PassToken CreateCombineAccessChainsPass();
 
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_OPTIMIZER_HPP_
+#endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

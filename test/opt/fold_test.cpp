@@ -5767,7 +5767,7 @@ TEST_P(MatchingInstructionWithNoResultFoldingTest, Case) {
   // Fold the instruction to test.
   Instruction* inst = nullptr;
   Function* func = &*context->module()->begin();
-  for(auto& bb : *func) {
+  for (auto& bb : *func) {
     Instruction* terminator = bb.terminator();
     if (terminator->IsReturnOrAbort()) {
       inst = terminator->PreviousNode();

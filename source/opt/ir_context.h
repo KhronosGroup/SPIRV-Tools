@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_IR_CONTEXT_H
-#define SPIRV_TOOLS_IR_CONTEXT_H
+#ifndef SOURCE_OPT_IR_CONTEXT_H_
+#define SOURCE_OPT_IR_CONTEXT_H_
 
 #include "assembly_grammar.h"
 #include "cfg.h"
@@ -849,4 +849,4 @@ IRContext::GetNames(uint32_t id) {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_IR_CONTEXT_H
+#endif  // SOURCE_OPT_IR_CONTEXT_H_

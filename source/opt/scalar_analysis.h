@@ -310,4 +310,4 @@ inline std::pair<SExpression, int64_t> operator/(SENode* lhs, SExpression rhs) {
 
 }  // namespace opt
 }  // namespace spvtools
-#endif  // SOURCE_OPT_SCALAR_ANALYSIS_H__
+#endif  // SOURCE_OPT_SCALAR_ANALYSIS_H_

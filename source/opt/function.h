@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_CONSTRUCTS_H_
-#define LIBSPIRV_OPT_CONSTRUCTS_H_
+#ifndef SOURCE_OPT_FUNCTION_H_
+#define SOURCE_OPT_FUNCTION_H_
 
 #include <algorithm>
 #include <functional>
@@ -186,4 +186,4 @@ inline void Function::SetFunctionEnd(std::unique_ptr<Instruction> end_inst) {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_CONSTRUCTS_H_
+#endif  // SOURCE_OPT_FUNCTION_H_
