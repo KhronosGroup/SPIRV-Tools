@@ -744,10 +744,11 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst) {
           }
         }
 
-        _.current_function().RegisterExecutionModelLimitation(
-            SpvExecutionModelFragment,
-            ext_inst_name() +
-                std::string(" requires Fragment execution model"));
+        _.function(inst->function()->id())
+            ->RegisterExecutionModelLimitation(
+                SpvExecutionModelFragment,
+                ext_inst_name() +
+                    std::string(" requires Fragment execution model"));
         break;
       }
 
