@@ -242,9 +242,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     return error;
   }
 
-  for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
-    auto& instruction = vstate->ordered_instructions()[i];
-
+  for (auto& instruction : vstate->ordered_instructions()) {
     {
       // In order to do this work outside of Process Instruction we need to be
       // able to, briefly, de-const the instruction.
