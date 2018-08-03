@@ -17,8 +17,8 @@
 #include <sstream>
 #include <string>
 
-#include "latest_version_spirv_header.h"
-#include "test_fixture.h"
+#include "source/latest_version_spirv_header.h"
+#include "test/test_fixture.h"
 #include "tools/stats/stats_analyzer.h"
 
 namespace spvtools {

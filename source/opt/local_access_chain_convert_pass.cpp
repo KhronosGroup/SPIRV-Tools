@@ -14,10 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "local_access_chain_convert_pass.h"
+#include "source/opt/local_access_chain_convert_pass.h"
 
-#include "ir_context.h"
-#include "iterator.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/iterator.h"
 
 namespace spvtools {
 namespace opt {

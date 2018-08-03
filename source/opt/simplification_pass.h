@@ -15,9 +15,9 @@
 #ifndef SOURCE_OPT_SIMPLIFICATION_PASS_H_
 #define SOURCE_OPT_SIMPLIFICATION_PASS_H_
 
-#include "function.h"
-#include "ir_context.h"
-#include "pass.h"
+#include "source/opt/function.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

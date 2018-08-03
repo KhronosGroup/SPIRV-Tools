@@ -17,13 +17,14 @@
 
 #include <memory>
 #include <ostream>
+#include <utility>
 #include <vector>
 
-#include "log.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/log.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
 
-#include "ir_context.h"
+#include "source/opt/ir_context.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {

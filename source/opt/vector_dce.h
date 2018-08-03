@@ -15,8 +15,11 @@
 #ifndef SOURCE_OPT_VECTOR_DCE_H_
 #define SOURCE_OPT_VECTOR_DCE_H_
 
-#include <util/bit_vector.h>
-#include "mem_pass.h"
+#include <unordered_map>
+#include <vector>
+
+#include "source/opt/mem_pass.h"
+#include "source/util/bit_vector.h"
 
 namespace spvtools {
 namespace opt {

@@ -16,9 +16,9 @@
 #include <memory>
 #include <set>
 
-#include "cfa.h"
-#include "dominator_tree.h"
-#include "ir_context.h"
+#include "source/cfa.h"
+#include "source/opt/dominator_tree.h"
+#include "source/opt/ir_context.h"
 
 // Calculates the dominator or postdominator tree for a given function.
 // 1 - Compute the successors and predecessors for each BasicBlock. We add a

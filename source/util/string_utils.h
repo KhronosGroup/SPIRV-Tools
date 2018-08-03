@@ -18,7 +18,7 @@
 #include <sstream>
 #include <string>
 
-#include "util/string_utils.h"
+#include "source/util/string_utils.h"
 
 namespace spvtools {
 namespace utils {

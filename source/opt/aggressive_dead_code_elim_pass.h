@@ -17,18 +17,21 @@
 #ifndef SOURCE_OPT_AGGRESSIVE_DEAD_CODE_ELIM_PASS_H_
 #define SOURCE_OPT_AGGRESSIVE_DEAD_CODE_ELIM_PASS_H_
 
-#include <util/bit_vector.h>
 #include <algorithm>
+#include <list>
 #include <map>
 #include <queue>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
+#include "source/util/bit_vector.h"
 
 namespace spvtools {
 namespace opt {

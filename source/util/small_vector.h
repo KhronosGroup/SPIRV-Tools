@@ -17,9 +17,11 @@
 
 #include <cassert>
 #include <iostream>
+#include <memory>
+#include <utility>
 #include <vector>
 
-#include "opt/make_unique.h"
+#include "source/opt/make_unique.h"
 
 namespace spvtools {
 namespace utils {

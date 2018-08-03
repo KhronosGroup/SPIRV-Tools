@@ -262,7 +262,6 @@ config("spvtools_config") {
   include_dirs = [
     ".",
     "include",
-    "source",
     "$target_gen_dir",
     "${spirv_headers}/include",
   ]

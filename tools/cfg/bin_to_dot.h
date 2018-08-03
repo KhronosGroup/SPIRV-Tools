@@ -16,6 +16,7 @@
 #define TOOLS_CFG_BIN_TO_DOT_H_
 
 #include <iostream>
+
 #include "spirv-tools/libspirv.h"
 
 // Dumps the control flow graph for the given module to the output stream.

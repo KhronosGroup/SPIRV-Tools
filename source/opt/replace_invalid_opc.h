@@ -15,7 +15,9 @@
 #ifndef SOURCE_OPT_REPLACE_INVALID_OPC_H_
 #define SOURCE_OPT_REPLACE_INVALID_OPC_H_
 
-#include "pass.h"
+#include <string>
+
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

@@ -15,14 +15,13 @@
 #ifndef SOURCE_VAL_BASIC_BLOCK_H_
 #define SOURCE_VAL_BASIC_BLOCK_H_
 
-#include "latest_version_spirv_header.h"
-
 #include <cstdint>
-
 #include <bitset>
 #include <functional>
 #include <memory>
 #include <vector>
+
+#include "source/latest_version_spirv_header.h"
 
 namespace spvtools {
 namespace val {

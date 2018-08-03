@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "type_manager.h"
+#include "source/opt/type_manager.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <utility>
 
-#include "ir_context.h"
-#include "log.h"
-#include "make_unique.h"
-#include "reflect.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/log.h"
+#include "source/opt/make_unique.h"
+#include "source/opt/reflect.h"
 
 namespace spvtools {
 namespace opt {

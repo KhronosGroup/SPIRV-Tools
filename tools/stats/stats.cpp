@@ -17,12 +17,13 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <vector>
 
 #include "source/spirv_stats.h"
 #include "source/table.h"
 #include "spirv-tools/libspirv.h"
-#include "stats_analyzer.h"
 #include "tools/io.h"
+#include "tools/stats/stats_analyzer.h"
 
 using spvtools::SpirvStats;
 

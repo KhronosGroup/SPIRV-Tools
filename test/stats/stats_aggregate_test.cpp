@@ -15,10 +15,11 @@
 // Tests for unique type declaration rules validator.
 
 #include <string>
+#include <unordered_map>
 
 #include "source/spirv_stats.h"
-#include "test_fixture.h"
-#include "unit_spirv.h"
+#include "test/test_fixture.h"
+#include "test/unit_spirv.h"
 
 namespace spvtools {
 namespace {

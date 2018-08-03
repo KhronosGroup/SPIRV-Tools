@@ -15,7 +15,10 @@
 #ifndef SOURCE_OPT_COPY_PROP_ARRAYS_H_
 #define SOURCE_OPT_COPY_PROP_ARRAYS_H_
 
-#include "mem_pass.h"
+#include <memory>
+#include <vector>
+
+#include "source/opt/mem_pass.h"
 
 namespace spvtools {
 namespace opt {

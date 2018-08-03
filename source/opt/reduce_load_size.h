@@ -15,9 +15,11 @@
 #ifndef SOURCE_OPT_REDUCE_LOAD_SIZE_H_
 #define SOURCE_OPT_REDUCE_LOAD_SIZE_H_
 
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
+#include <unordered_map>
+
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

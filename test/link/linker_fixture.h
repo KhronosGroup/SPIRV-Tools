@@ -16,11 +16,12 @@
 #define TEST_LINK_LINKER_FIXTURE_H_
 
 #include <iostream>
+#include <string>
+#include <vector>
 
 #include "source/spirv_constant.h"
-#include "unit_spirv.h"
-
 #include "spirv-tools/linker.hpp"
+#include "test/unit_spirv.h"
 
 namespace spvtest {
 

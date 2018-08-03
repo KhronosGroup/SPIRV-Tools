@@ -16,21 +16,22 @@
 #define TEST_OPT_PASS_FIXTURE_H_
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
+#include "source/opt/build_module.h"
+#include "source/opt/make_unique.h"
+#include "source/opt/pass_manager.h"
+#include "source/opt/passes.h"
+#include "spirv-tools/libspirv.hpp"
 
 #ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"
 #endif
-
-#include "opt/build_module.h"
-#include "opt/make_unique.h"
-#include "opt/pass_manager.h"
-#include "opt/passes.h"
-#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

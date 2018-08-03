@@ -19,14 +19,16 @@
 #include <list>
 #include <map>
 #include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include "latest_version_spirv_header.h"
+#include "source/latest_version_spirv_header.h"
+#include "source/val/basic_block.h"
+#include "source/val/construct.h"
 #include "spirv-tools/libspirv.h"
-#include "val/basic_block.h"
-#include "val/construct.h"
 
 namespace spvtools {
 namespace val {

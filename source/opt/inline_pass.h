@@ -20,12 +20,13 @@
 #include <algorithm>
 #include <list>
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
-#include "decoration_manager.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/decoration_manager.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "val/validation_state.h"
+#include "source/val/validation_state.h"
 
 #include <cassert>
 #include <stack>
+#include <utility>
 
-#include "opcode.h"
+#include "source/opcode.h"
+#include "source/spirv_target_env.h"
+#include "source/val/basic_block.h"
+#include "source/val/construct.h"
+#include "source/val/function.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv_target_env.h"
-#include "val/basic_block.h"
-#include "val/construct.h"
-#include "val/function.h"
 
 namespace spvtools {
 namespace val {

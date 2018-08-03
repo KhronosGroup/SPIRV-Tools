@@ -15,10 +15,10 @@
 #ifndef SOURCE_TABLE_H_
 #define SOURCE_TABLE_H_
 
-#include "latest_version_spirv_header.h"
+#include "source/latest_version_spirv_header.h"
 
-#include "extensions.h"
-#include "message.h"
+#include "source/extensions.h"
+#include "source/message.h"
 #include "spirv-tools/libspirv.hpp"
 
 typedef struct spv_opcode_desc_t {

@@ -24,7 +24,7 @@
 #include <sstream>
 #include <vector>
 
-#include "bitutils.h"
+#include "source/util/bitutils.h"
 
 #ifndef __GNUC__
 #define GCC_VERSION 0

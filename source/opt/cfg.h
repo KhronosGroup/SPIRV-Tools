@@ -15,12 +15,13 @@
 #ifndef SOURCE_OPT_CFG_H_
 #define SOURCE_OPT_CFG_H_
 
-#include "basic_block.h"
-
 #include <algorithm>
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
+
+#include "source/opt/basic_block.h"
 
 namespace spvtools {
 namespace opt {

@@ -19,12 +19,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include "constants.h"
-#include "def_use_manager.h"
-#include "ir_context.h"
-#include "module.h"
-#include "pass.h"
-#include "type_manager.h"
+#include "source/opt/constants.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
+#include "source/opt/type_manager.h"
 
 namespace spvtools {
 namespace opt {

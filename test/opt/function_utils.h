@@ -15,8 +15,8 @@
 #ifndef TEST_OPT_FUNCTION_UTILS_H_
 #define TEST_OPT_FUNCTION_UTILS_H_
 
-#include "opt/function.h"
-#include "opt/module.h"
+#include "source/opt/function.h"
+#include "source/opt/module.h"
 
 namespace spvtest {
 

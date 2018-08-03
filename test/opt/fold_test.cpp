@@ -11,23 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <limits>
 #include <memory>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-#include <opt/fold.h>
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+#include "source/opt/build_module.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/fold.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "spirv-tools/libspirv.hpp"
+#include "test/opt/pass_utils.h"
 
 #ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"
 #endif
-
-#include "opt/build_module.h"
-#include "opt/def_use_manager.h"
-#include "opt/ir_context.h"
-#include "opt/module.h"
-#include "pass_utils.h"
-#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

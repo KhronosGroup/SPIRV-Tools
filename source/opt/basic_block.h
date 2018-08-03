@@ -22,12 +22,13 @@
 #include <iterator>
 #include <memory>
 #include <ostream>
+#include <string>
 #include <utility>
 #include <vector>
 
-#include "instruction.h"
-#include "instruction_list.h"
-#include "iterator.h"
+#include "source/opt/instruction.h"
+#include "source/opt/instruction_list.h"
+#include "source/opt/iterator.h"
 
 namespace spvtools {
 namespace opt {

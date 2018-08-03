@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "loop_unswitch_pass.h"
+#include "source/opt/loop_unswitch_pass.h"
 
 #include <functional>
 #include <list>
@@ -23,16 +23,16 @@
 #include <utility>
 #include <vector>
 
-#include "basic_block.h"
-#include "dominator_tree.h"
-#include "fold.h"
-#include "function.h"
-#include "instruction.h"
-#include "ir_builder.h"
-#include "ir_context.h"
-#include "loop_descriptor.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/dominator_tree.h"
+#include "source/opt/fold.h"
+#include "source/opt/function.h"
+#include "source/opt/instruction.h"
+#include "source/opt/ir_builder.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/loop_descriptor.h"
 
-#include "loop_utils.h"
+#include "source/opt/loop_utils.h"
 
 namespace spvtools {
 namespace opt {

@@ -14,7 +14,11 @@
 
 #include "spirv-tools/libspirv.hpp"
 
-#include "table.h"
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "source/table.h"
 
 namespace spvtools {
 
