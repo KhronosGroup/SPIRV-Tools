@@ -303,198 +303,198 @@ bool idUsage::isValid<SpvOpExecutionMode>(const spv_instruction_t* inst,
   return true;
 }
 
-template <>
-bool idUsage::isValid<SpvOpTypeVector>(const spv_instruction_t* inst,
-                                       const spv_opcode_desc) {
-  auto componentIndex = 2;
-  auto componentType = module_.FindDef(inst->words[componentIndex]);
-  if (!componentType || !spvOpcodeIsScalarType(componentType->opcode())) {
-    DIAG(componentType) << "OpTypeVector Component Type <id> '"
-                        << module_.getIdName(inst->words[componentIndex])
-                        << "' is not a scalar type.";
-    return false;
-  }
-  return true;
-}
+// template <>
+// bool idUsage::isValid<SpvOpTypeVector>(const spv_instruction_t* inst,
+//                                       const spv_opcode_desc) {
+//  auto componentIndex = 2;
+//  auto componentType = module_.FindDef(inst->words[componentIndex]);
+//  if (!componentType || !spvOpcodeIsScalarType(componentType->opcode())) {
+//    DIAG(componentType) << "OpTypeVector Component Type <id> '"
+//                        << module_.getIdName(inst->words[componentIndex])
+//                        << "' is not a scalar type.";
+//    return false;
+//  }
+//  return true;
+//}
 
-template <>
-bool idUsage::isValid<SpvOpTypeMatrix>(const spv_instruction_t* inst,
-                                       const spv_opcode_desc) {
-  auto columnTypeIndex = 2;
-  auto columnType = module_.FindDef(inst->words[columnTypeIndex]);
-  if (!columnType || SpvOpTypeVector != columnType->opcode()) {
-    DIAG(columnType) << "OpTypeMatrix Column Type <id> '"
-                     << module_.getIdName(inst->words[columnTypeIndex])
-                     << "' is not a vector.";
-    return false;
-  }
-  return true;
-}
+// template <>
+// bool idUsage::isValid<SpvOpTypeMatrix>(const spv_instruction_t* inst,
+//                                       const spv_opcode_desc) {
+//  auto columnTypeIndex = 2;
+//  auto columnType = module_.FindDef(inst->words[columnTypeIndex]);
+//  if (!columnType || SpvOpTypeVector != columnType->opcode()) {
+//    DIAG(columnType) << "OpTypeMatrix Column Type <id> '"
+//                     << module_.getIdName(inst->words[columnTypeIndex])
+//                     << "' is not a vector.";
+//    return false;
+//  }
+//  return true;
+//}
 
-template <>
-bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t*,
-                                        const spv_opcode_desc) {
-  // OpTypeSampler takes no arguments in Rev31 and beyond.
-  return true;
-}
+// template <>
+// bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t*,
+//                                        const spv_opcode_desc) {
+//  // OpTypeSampler takes no arguments in Rev31 and beyond.
+//  return true;
+//}
 
 // True if the integer constant is > 0. constWords are words of the
 // constant-defining instruction (either OpConstant or
 // OpSpecConstant). typeWords are the words of the constant's-type-defining
 // OpTypeInt.
-bool aboveZero(const std::vector<uint32_t>& constWords,
-               const std::vector<uint32_t>& typeWords) {
-  const uint32_t width = typeWords[2];
-  const bool is_signed = typeWords[3] > 0;
-  const uint32_t loWord = constWords[3];
-  if (width > 32) {
-    // The spec currently doesn't allow integers wider than 64 bits.
-    const uint32_t hiWord = constWords[4];  // Must exist, per spec.
-    if (is_signed && (hiWord >> 31)) return false;
-    return (loWord | hiWord) > 0;
-  } else {
-    if (is_signed && (loWord >> 31)) return false;
-    return loWord > 0;
-  }
-}
+// bool aboveZero(const std::vector<uint32_t>& constWords,
+//               const std::vector<uint32_t>& typeWords) {
+//  const uint32_t width = typeWords[2];
+//  const bool is_signed = typeWords[3] > 0;
+//  const uint32_t loWord = constWords[3];
+//  if (width > 32) {
+//    // The spec currently doesn't allow integers wider than 64 bits.
+//    const uint32_t hiWord = constWords[4];  // Must exist, per spec.
+//    if (is_signed && (hiWord >> 31)) return false;
+//    return (loWord | hiWord) > 0;
+//  } else {
+//    if (is_signed && (loWord >> 31)) return false;
+//    return loWord > 0;
+//  }
+//}
 
-template <>
-bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
-                                      const spv_opcode_desc) {
-  auto elementTypeIndex = 2;
-  auto elementType = module_.FindDef(inst->words[elementTypeIndex]);
-  if (!elementType || !spvOpcodeGeneratesType(elementType->opcode())) {
-    DIAG(elementType) << "OpTypeArray Element Type <id> '"
-                      << module_.getIdName(inst->words[elementTypeIndex])
-                      << "' is not a type.";
-    return false;
-  }
-  auto lengthIndex = 3;
-  auto length = module_.FindDef(inst->words[lengthIndex]);
-  if (!length || !spvOpcodeIsConstant(length->opcode())) {
-    DIAG(length) << "OpTypeArray Length <id> '"
-                 << module_.getIdName(inst->words[lengthIndex])
-                 << "' is not a scalar constant type.";
-    return false;
-  }
+// template <>
+// bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
+//                                      const spv_opcode_desc) {
+//  auto elementTypeIndex = 2;
+//  auto elementType = module_.FindDef(inst->words[elementTypeIndex]);
+//  if (!elementType || !spvOpcodeGeneratesType(elementType->opcode())) {
+//    DIAG(elementType) << "OpTypeArray Element Type <id> '"
+//                      << module_.getIdName(inst->words[elementTypeIndex])
+//                      << "' is not a type.";
+//    return false;
+//  }
+//  auto lengthIndex = 3;
+//  auto length = module_.FindDef(inst->words[lengthIndex]);
+//  if (!length || !spvOpcodeIsConstant(length->opcode())) {
+//    DIAG(length) << "OpTypeArray Length <id> '"
+//                 << module_.getIdName(inst->words[lengthIndex])
+//                 << "' is not a scalar constant type.";
+//    return false;
+//  }
+//
+//  // NOTE: Check the initialiser value of the constant
+//  auto constInst = length->words();
+//  auto constResultTypeIndex = 1;
+//  auto constResultType = module_.FindDef(constInst[constResultTypeIndex]);
+//  if (!constResultType || SpvOpTypeInt != constResultType->opcode()) {
+//    DIAG(length) << "OpTypeArray Length <id> '"
+//                 << module_.getIdName(inst->words[lengthIndex])
+//                 << "' is not a constant integer type.";
+//    return false;
+//  }
+//
+//  switch (length->opcode()) {
+//    case SpvOpSpecConstant:
+//    case SpvOpConstant:
+//      if (aboveZero(length->words(), constResultType->words())) break;
+//    // Else fall through!
+//    case SpvOpConstantNull: {
+//      DIAG(length) << "OpTypeArray Length <id> '"
+//                   << module_.getIdName(inst->words[lengthIndex])
+//                   << "' default value must be at least 1.";
+//      return false;
+//    }
+//    case SpvOpSpecConstantOp:
+//      // Assume it's OK, rather than try to evaluate the operation.
+//      break;
+//    default:
+//      assert(0 && "bug in spvOpcodeIsConstant() or result type isn't int");
+//  }
+//  return true;
+//}
 
-  // NOTE: Check the initialiser value of the constant
-  auto constInst = length->words();
-  auto constResultTypeIndex = 1;
-  auto constResultType = module_.FindDef(constInst[constResultTypeIndex]);
-  if (!constResultType || SpvOpTypeInt != constResultType->opcode()) {
-    DIAG(length) << "OpTypeArray Length <id> '"
-                 << module_.getIdName(inst->words[lengthIndex])
-                 << "' is not a constant integer type.";
-    return false;
-  }
+// template <>
+// bool idUsage::isValid<SpvOpTypeRuntimeArray>(const spv_instruction_t* inst,
+//                                             const spv_opcode_desc) {
+//  auto elementTypeIndex = 2;
+//  auto elementType = module_.FindDef(inst->words[elementTypeIndex]);
+//  if (!elementType || !spvOpcodeGeneratesType(elementType->opcode())) {
+//    DIAG(elementType) << "OpTypeRuntimeArray Element Type <id> '"
+//                      << module_.getIdName(inst->words[elementTypeIndex])
+//                      << "' is not a type.";
+//    return false;
+//  }
+//  return true;
+//}
 
-  switch (length->opcode()) {
-    case SpvOpSpecConstant:
-    case SpvOpConstant:
-      if (aboveZero(length->words(), constResultType->words())) break;
-    // Else fall through!
-    case SpvOpConstantNull: {
-      DIAG(length) << "OpTypeArray Length <id> '"
-                   << module_.getIdName(inst->words[lengthIndex])
-                   << "' default value must be at least 1.";
-      return false;
-    }
-    case SpvOpSpecConstantOp:
-      // Assume it's OK, rather than try to evaluate the operation.
-      break;
-    default:
-      assert(0 && "bug in spvOpcodeIsConstant() or result type isn't int");
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpTypeRuntimeArray>(const spv_instruction_t* inst,
-                                             const spv_opcode_desc) {
-  auto elementTypeIndex = 2;
-  auto elementType = module_.FindDef(inst->words[elementTypeIndex]);
-  if (!elementType || !spvOpcodeGeneratesType(elementType->opcode())) {
-    DIAG(elementType) << "OpTypeRuntimeArray Element Type <id> '"
-                      << module_.getIdName(inst->words[elementTypeIndex])
-                      << "' is not a type.";
-    return false;
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
-                                       const spv_opcode_desc) {
-  ValidationState_t& vstate = const_cast<ValidationState_t&>(module_);
-  const uint32_t struct_id = inst->words[1];
-  auto structType = module_.FindDef(struct_id);
-  for (size_t memberTypeIndex = 2; memberTypeIndex < inst->words.size();
-       ++memberTypeIndex) {
-    auto memberTypeId = inst->words[memberTypeIndex];
-    auto memberType = module_.FindDef(memberTypeId);
-    if (!memberType || !spvOpcodeGeneratesType(memberType->opcode())) {
-      DIAG(memberType) << "OpTypeStruct Member Type <id> '"
-                       << module_.getIdName(inst->words[memberTypeIndex])
-                       << "' is not a type.";
-      return false;
-    }
-    if (SpvOpTypeStruct == memberType->opcode() &&
-        module_.IsStructTypeWithBuiltInMember(memberTypeId)) {
-      DIAG(memberType)
-          << "Structure <id> " << module_.getIdName(memberTypeId)
-          << " contains members with BuiltIn decoration. Therefore this "
-             "structure may not be contained as a member of another structure "
-             "type. Structure <id> "
-          << module_.getIdName(struct_id) << " contains structure <id> "
-          << module_.getIdName(memberTypeId) << ".";
-      return false;
-    }
-    if (module_.IsForwardPointer(memberTypeId)) {
-      if (memberType->opcode() != SpvOpTypePointer) {
-        DIAG(memberType) << "Found a forward reference to a non-pointer "
-                            "type in OpTypeStruct instruction.";
-        return false;
-      }
-      // If we're dealing with a forward pointer:
-      // Find out the type that the pointer is pointing to (must be struct)
-      // word 3 is the <id> of the type being pointed to.
-      auto typePointingTo = module_.FindDef(memberType->words()[3]);
-      if (typePointingTo && typePointingTo->opcode() != SpvOpTypeStruct) {
-        // Forward declared operands of a struct may only point to a struct.
-        DIAG(memberType)
-            << "A forward reference operand in an OpTypeStruct must be an "
-               "OpTypePointer that points to an OpTypeStruct. "
-               "Found OpTypePointer that points to Op"
-            << spvOpcodeString(static_cast<SpvOp>(typePointingTo->opcode()))
-            << ".";
-        return false;
-      }
-    }
-  }
-  std::unordered_set<uint32_t> built_in_members;
-  for (auto decoration : vstate.id_decorations(struct_id)) {
-    if (decoration.dec_type() == SpvDecorationBuiltIn &&
-        decoration.struct_member_index() != Decoration::kInvalidMember) {
-      built_in_members.insert(decoration.struct_member_index());
-    }
-  }
-  int num_struct_members = static_cast<int>(inst->words.size() - 2);
-  int num_builtin_members = static_cast<int>(built_in_members.size());
-  if (num_builtin_members > 0 && num_builtin_members != num_struct_members) {
-    DIAG(structType)
-        << "When BuiltIn decoration is applied to a structure-type member, "
-           "all members of that structure type must also be decorated with "
-           "BuiltIn (No allowed mixing of built-in variables and "
-           "non-built-in variables within a single structure). Structure id "
-        << struct_id << " does not meet this requirement.";
-    return false;
-  }
-  if (num_builtin_members > 0) {
-    vstate.RegisterStructTypeWithBuiltInMember(struct_id);
-  }
-  return true;
-}
+// template <>
+// bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
+//                                       const spv_opcode_desc) {
+//  ValidationState_t& vstate = const_cast<ValidationState_t&>(module_);
+//  const uint32_t struct_id = inst->words[1];
+//  auto structType = module_.FindDef(struct_id);
+//  for (size_t memberTypeIndex = 2; memberTypeIndex < inst->words.size();
+//       ++memberTypeIndex) {
+//    auto memberTypeId = inst->words[memberTypeIndex];
+//    auto memberType = module_.FindDef(memberTypeId);
+//    if (!memberType || !spvOpcodeGeneratesType(memberType->opcode())) {
+//      DIAG(memberType) << "OpTypeStruct Member Type <id> '"
+//                       << module_.getIdName(inst->words[memberTypeIndex])
+//                       << "' is not a type.";
+//      return false;
+//    }
+//    if (SpvOpTypeStruct == memberType->opcode() &&
+//        module_.IsStructTypeWithBuiltInMember(memberTypeId)) {
+//      DIAG(memberType)
+//          << "Structure <id> " << module_.getIdName(memberTypeId)
+//          << " contains members with BuiltIn decoration. Therefore this "
+//             "structure may not be contained as a member of another structure
+//             " "type. Structure <id> "
+//          << module_.getIdName(struct_id) << " contains structure <id> "
+//          << module_.getIdName(memberTypeId) << ".";
+//      return false;
+//    }
+//    if (module_.IsForwardPointer(memberTypeId)) {
+//      if (memberType->opcode() != SpvOpTypePointer) {
+//        DIAG(memberType) << "Found a forward reference to a non-pointer "
+//                            "type in OpTypeStruct instruction.";
+//        return false;
+//      }
+//      // If we're dealing with a forward pointer:
+//      // Find out the type that the pointer is pointing to (must be struct)
+//      // word 3 is the <id> of the type being pointed to.
+//      auto typePointingTo = module_.FindDef(memberType->words()[3]);
+//      if (typePointingTo && typePointingTo->opcode() != SpvOpTypeStruct) {
+//        // Forward declared operands of a struct may only point to a struct.
+//        DIAG(memberType)
+//            << "A forward reference operand in an OpTypeStruct must be an "
+//               "OpTypePointer that points to an OpTypeStruct. "
+//               "Found OpTypePointer that points to Op"
+//            << spvOpcodeString(static_cast<SpvOp>(typePointingTo->opcode()))
+//            << ".";
+//        return false;
+//      }
+//    }
+//  }
+//  std::unordered_set<uint32_t> built_in_members;
+//  for (auto decoration : vstate.id_decorations(struct_id)) {
+//    if (decoration.dec_type() == SpvDecorationBuiltIn &&
+//        decoration.struct_member_index() != Decoration::kInvalidMember) {
+//      built_in_members.insert(decoration.struct_member_index());
+//    }
+//  }
+//  int num_struct_members = static_cast<int>(inst->words.size() - 2);
+//  int num_builtin_members = static_cast<int>(built_in_members.size());
+//  if (num_builtin_members > 0 && num_builtin_members != num_struct_members) {
+//    DIAG(structType)
+//        << "When BuiltIn decoration is applied to a structure-type member, "
+//           "all members of that structure type must also be decorated with "
+//           "BuiltIn (No allowed mixing of built-in variables and "
+//           "non-built-in variables within a single structure). Structure id "
+//        << struct_id << " does not meet this requirement.";
+//    return false;
+//  }
+//  if (num_builtin_members > 0) {
+//    vstate.RegisterStructTypeWithBuiltInMember(struct_id);
+//  }
+//  return true;
+//}
 
 template <>
 bool idUsage::isValid<SpvOpTypePointer>(const spv_instruction_t* inst,
@@ -1441,12 +1441,12 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpGroupMemberDecorate)
     CASE(OpEntryPoint)
     CASE(OpExecutionMode)
-    CASE(OpTypeVector)
-    CASE(OpTypeMatrix)
-    CASE(OpTypeSampler)
-    CASE(OpTypeArray)
-    CASE(OpTypeRuntimeArray)
-    CASE(OpTypeStruct)
+    // CASE(OpTypeVector)
+    // CASE(OpTypeMatrix)
+    // CASE(OpTypeSampler)
+    // CASE(OpTypeArray)
+    // CASE(OpTypeRuntimeArray)
+    // CASE(OpTypeStruct)
     CASE(OpTypePointer)
     CASE(OpTypeFunction)
     CASE(OpTypePipe)

@@ -284,7 +284,10 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
       if (auto error = IdPass(*vstate, inst)) return error;
     }
+  }
 
+  for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
+    auto& instruction = vstate->ordered_instructions()[i];
     if (auto error = CapabilityPass(*vstate, &instruction)) return error;
     if (auto error = DataRulesPass(*vstate, &instruction)) return error;
     if (auto error = ModuleLayoutPass(*vstate, &instruction)) return error;
@@ -317,23 +320,35 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   // Validate individual opcodes.
   for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
     auto& instruction = vstate->ordered_instructions()[i];
-    if (auto error = TypeUniquePass(*vstate, &instruction)) return error;
-    if (auto error = ArithmeticsPass(*vstate, &instruction)) return error;
-    if (auto error = CompositesPass(*vstate, &instruction)) return error;
-    if (auto error = ConversionPass(*vstate, &instruction)) return error;
-    if (auto error = DerivativesPass(*vstate, &instruction)) return error;
-    if (auto error = LogicalsPass(*vstate, &instruction)) return error;
-    if (auto error = BitwisePass(*vstate, &instruction)) return error;
+
+    // Keep these passes in the order they appear in the SPIR-V specification
+    // sections to maintain test consistency.
+    // Miscellaneous
+    // Debug
+    // Annotation
     if (auto error = ExtInstPass(*vstate, &instruction)) return error;
-    if (auto error = ImagePass(*vstate, &instruction)) return error;
-    if (auto error = AtomicsPass(*vstate, &instruction)) return error;
-    if (auto error = BarriersPass(*vstate, &instruction)) return error;
-    if (auto error = PrimitivesPass(*vstate, &instruction)) return error;
-    if (auto error = LiteralsPass(*vstate, &instruction)) return error;
-    if (auto error = NonUniformPass(*vstate, &instruction)) return error;
+    // Mode Setting
+    if (auto error = TypePass(*vstate, &instruction)) return error;
+    // Constants
     if (auto error = ValidateMemoryInstructions(*vstate, &instruction))
       return error;
+    // Functions
+    if (auto error = ImagePass(*vstate, &instruction)) return error;
+    if (auto error = ConversionPass(*vstate, &instruction)) return error;
+    if (auto error = CompositesPass(*vstate, &instruction)) return error;
+    if (auto error = ArithmeticsPass(*vstate, &instruction)) return error;
+    if (auto error = BitwisePass(*vstate, &instruction)) return error;
+    if (auto error = LogicalsPass(*vstate, &instruction)) return error;
+    if (auto error = DerivativesPass(*vstate, &instruction)) return error;
+    if (auto error = AtomicsPass(*vstate, &instruction)) return error;
+    if (auto error = PrimitivesPass(*vstate, &instruction)) return error;
+    if (auto error = BarriersPass(*vstate, &instruction)) return error;
+    // Group
+    // Device-Side Enqueue
+    // Pipe
+    if (auto error = NonUniformPass(*vstate, &instruction)) return error;
 
+    if (auto error = LiteralsPass(*vstate, &instruction)) return error;
     // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
     // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
     if (auto error = ValidateAdjacency(*vstate, i)) return error;

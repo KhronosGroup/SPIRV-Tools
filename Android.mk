@@ -59,7 +59,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_logicals.cpp \
 		source/val/validate_non_uniform.cpp \
 		source/val/validate_primitives.cpp \
-		source/val/validate_type_unique.cpp
+		source/val/validate_type.cpp
 
 SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/aggressive_dead_code_elim_pass.cpp \

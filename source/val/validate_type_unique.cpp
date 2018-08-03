@@ -29,29 +29,29 @@ namespace val {
 // (see section 2.8 Types and Variables)
 // Doesn't do anything if SPV_VAL_ignore_type_decl_unique was declared in the
 // module.
-spv_result_t TypeUniquePass(ValidationState_t& _, const Instruction* inst) {
-  if (_.HasExtension(Extension::kSPV_VALIDATOR_ignore_type_decl_unique))
-    return SPV_SUCCESS;
-
-  const SpvOp opcode = inst->opcode();
-
-  if (spvOpcodeGeneratesType(opcode)) {
-    if (opcode == SpvOpTypeArray || opcode == SpvOpTypeRuntimeArray ||
-        opcode == SpvOpTypeStruct || opcode == SpvOpTypePointer) {
-      // Duplicate declarations of aggregates are allowed.
-      return SPV_SUCCESS;
-    }
-
-    if (!_.RegisterUniqueTypeDeclaration(inst)) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Duplicate non-aggregate type declarations are not allowed."
-             << " Opcode: " << spvOpcodeString(SpvOp(inst->opcode()))
-             << " id: " << inst->id();
-    }
-  }
-
-  return SPV_SUCCESS;
-}
+// spv_result_t TypeUniquePass(ValidationState_t& _, const Instruction* inst) {
+//  if (_.HasExtension(Extension::kSPV_VALIDATOR_ignore_type_decl_unique))
+//    return SPV_SUCCESS;
+//
+//  const SpvOp opcode = inst->opcode();
+//
+//  if (spvOpcodeGeneratesType(opcode)) {
+//    if (opcode == SpvOpTypeArray || opcode == SpvOpTypeRuntimeArray ||
+//        opcode == SpvOpTypeStruct || opcode == SpvOpTypePointer) {
+//      // Duplicate declarations of aggregates are allowed.
+//      return SPV_SUCCESS;
+//    }
+//
+//    if (!_.RegisterUniqueTypeDeclaration(inst)) {
+//      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+//             << "Duplicate non-aggregate type declarations are not allowed."
+//             << " Opcode: " << spvOpcodeString(SpvOp(inst->opcode()))
+//             << " id: " << inst->id();
+//    }
+//  }
+//
+//  return SPV_SUCCESS;
+//}
 
 }  // namespace val
 }  // namespace spvtools
