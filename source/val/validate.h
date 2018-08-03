@@ -16,6 +16,7 @@
 #define SOURCE_VAL_VALIDATE_H_
 
 #include <functional>
+#include <memory>
 #include <utility>
 #include <vector>
 

@@ -15,6 +15,7 @@
 #ifndef TEST_OPT_PASS_UTILS_H_
 #define TEST_OPT_PASS_UTILS_H_
 
+#include <algorithm>
 #include <functional>
 #include <iterator>
 #include <string>

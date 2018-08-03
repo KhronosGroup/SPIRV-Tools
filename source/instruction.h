@@ -18,7 +18,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "latest_version_spirv_header.h"
+#include "source/latest_version_spirv_header.h"
 #include "spirv-tools/libspirv.h"
 
 // Describes an instruction.

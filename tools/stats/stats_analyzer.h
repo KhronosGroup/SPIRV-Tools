@@ -15,6 +15,7 @@
 #ifndef TOOLS_STATS_STATS_ANALYZER_H_
 #define TOOLS_STATS_STATS_ANALYZER_H_
 
+#include <string>
 #include <unordered_map>
 
 #include "source/spirv_stats.h"

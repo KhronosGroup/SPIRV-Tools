@@ -21,8 +21,8 @@
 #include <utility>
 #include <vector>
 
-#include "cfg.h"
-#include "tree_iterator.h"
+#include "source/opt/cfg.h"
+#include "source/opt/tree_iterator.h"
 
 namespace spvtools {
 namespace opt {

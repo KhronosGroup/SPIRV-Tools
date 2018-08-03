@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <spirv_validator_options.h>
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -20,14 +19,15 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <vector>
 
-#include "opt/log.h"
-#include "opt/loop_peeling.h"
-#include "opt/set_spec_constant_default_value_pass.h"
+#include "source/message.h"
+#include "source/opt/log.h"
+#include "source/opt/loop_peeling.h"
+#include "source/opt/set_spec_constant_default_value_pass.h"
+#include "source/spirv_validator_options.h"
 #include "spirv-tools/optimizer.hpp"
-
-#include "message.h"
 #include "tools/io.h"
 
 namespace {

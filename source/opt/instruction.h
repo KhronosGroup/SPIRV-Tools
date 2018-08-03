@@ -17,17 +17,19 @@
 
 #include <cassert>
 #include <functional>
+#include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
-#include "opcode.h"
-#include "operand.h"
-#include "util/ilist_node.h"
-#include "util/small_vector.h"
+#include "source/opcode.h"
+#include "source/operand.h"
+#include "source/util/ilist_node.h"
+#include "source/util/small_vector.h"
 
-#include "latest_version_glsl_std_450_header.h"
-#include "latest_version_spirv_header.h"
-#include "reflect.h"
+#include "source/latest_version_glsl_std_450_header.h"
+#include "source/latest_version_spirv_header.h"
+#include "source/opt/reflect.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {

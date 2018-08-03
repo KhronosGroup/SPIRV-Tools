@@ -20,8 +20,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "instruction.h"
-#include "module.h"
+#include "source/opt/instruction.h"
+#include "source/opt/module.h"
 
 namespace spvtools {
 namespace opt {

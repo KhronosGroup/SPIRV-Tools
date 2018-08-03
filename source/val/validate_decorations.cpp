@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "source/diagnostic.h"
 #include "source/opcode.h"

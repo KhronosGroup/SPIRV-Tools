@@ -16,12 +16,15 @@
 #define SOURCE_OPT_SCALAR_REPLACEMENT_PASS_H_
 
 #include <cstdio>
-
-#include "function.h"
-#include "pass.h"
-#include "type_manager.h"
-
+#include <memory>
 #include <queue>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+#include "source/opt/function.h"
+#include "source/opt/pass.h"
+#include "source/opt/type_manager.h"
 
 namespace spvtools {
 namespace opt {

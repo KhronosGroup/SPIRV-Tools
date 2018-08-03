@@ -20,8 +20,8 @@
 #include <utility>
 #include <vector>
 
-#include "function.h"
-#include "types.h"
+#include "source/opt/function.h"
+#include "source/opt/types.h"
 
 namespace spvtools {
 namespace opt {

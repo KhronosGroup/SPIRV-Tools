@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "spirv-tools/optimizer.hpp"
 #include "spirv/1.1/spirv.h"
 

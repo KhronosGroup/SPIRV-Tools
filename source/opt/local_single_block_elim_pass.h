@@ -20,14 +20,15 @@
 #include <algorithm>
 #include <map>
 #include <queue>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "mem_pass.h"
-#include "module.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
 
 namespace spvtools {
 namespace opt {

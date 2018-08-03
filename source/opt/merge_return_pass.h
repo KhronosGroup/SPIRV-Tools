@@ -15,12 +15,13 @@
 #ifndef SOURCE_OPT_MERGE_RETURN_PASS_H_
 #define SOURCE_OPT_MERGE_RETURN_PASS_H_
 
-#include "basic_block.h"
-#include "function.h"
-#include "mem_pass.h"
-
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "source/opt/basic_block.h"
+#include "source/opt/function.h"
+#include "source/opt/mem_pass.h"
 
 namespace spvtools {
 namespace opt {

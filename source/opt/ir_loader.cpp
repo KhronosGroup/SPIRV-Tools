@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ir_loader.h"
+#include "source/opt/ir_loader.h"
 
-#include "log.h"
-#include "reflect.h"
+#include <utility>
+
+#include "source/opt/log.h"
+#include "source/opt/reflect.h"
 
 namespace spvtools {
 namespace opt {

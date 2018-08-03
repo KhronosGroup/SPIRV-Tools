@@ -18,11 +18,12 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include "module.h"
+#include "source/opt/module.h"
+#include "source/opt/types.h"
 #include "spirv-tools/libspirv.hpp"
-#include "types.h"
 
 namespace spvtools {
 namespace opt {

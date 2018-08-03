@@ -15,9 +15,10 @@
 #ifndef SOURCE_OPT_CONST_FOLDING_RULES_H_
 #define SOURCE_OPT_CONST_FOLDING_RULES_H_
 
+#include <unordered_map>
 #include <vector>
 
-#include "constants.h"
+#include "source/opt/constants.h"
 
 namespace spvtools {
 namespace opt {

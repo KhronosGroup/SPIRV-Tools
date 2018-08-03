@@ -18,8 +18,8 @@
 #include <climits>
 #include <unordered_map>
 
-#include "decoration_manager.h"
-#include "mem_pass.h"
+#include "source/opt/decoration_manager.h"
+#include "source/opt/mem_pass.h"
 
 namespace spvtools {
 namespace opt {

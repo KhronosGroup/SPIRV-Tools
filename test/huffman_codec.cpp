@@ -14,14 +14,17 @@
 
 // Contains utils for reading, writing and debug printing bit streams.
 
+#include <algorithm>
 #include <map>
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "gmock/gmock.h"
-#include "util/bit_stream.h"
-#include "util/huffman_codec.h"
+#include "source/util/bit_stream.h"
+#include "source/util/huffman_codec.h"
 
 namespace spvtools {
 namespace utils {

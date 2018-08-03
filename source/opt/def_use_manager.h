@@ -18,10 +18,11 @@
 #include <list>
 #include <set>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
-#include "instruction.h"
-#include "module.h"
+#include "source/opt/instruction.h"
+#include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {

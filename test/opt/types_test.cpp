@@ -13,12 +13,12 @@
 // limitations under the License.
 
 #include <memory>
+#include <utility>
 #include <vector>
 
-#include <gtest/gtest.h>
-
-#include "opt/make_unique.h"
-#include "opt/types.h"
+#include "gtest/gtest.h"
+#include "source/opt/make_unique.h"
+#include "source/opt/types.h"
 
 namespace spvtools {
 namespace opt {

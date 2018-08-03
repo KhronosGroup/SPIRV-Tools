@@ -15,10 +15,10 @@
 #ifndef SOURCE_OPCODE_H_
 #define SOURCE_OPCODE_H_
 
-#include "instruction.h"
-#include "latest_version_spirv_header.h"
+#include "source/instruction.h"
+#include "source/latest_version_spirv_header.h"
+#include "source/table.h"
 #include "spirv-tools/libspirv.h"
-#include "table.h"
 
 // Returns the name of a registered SPIR-V generator as a null-terminated
 // string. If the generator is not known, then returns the string "Unknown".

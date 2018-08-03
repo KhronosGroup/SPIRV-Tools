@@ -18,7 +18,7 @@
 #include <sstream>
 #include <type_traits>
 
-#include "util/bit_stream.h"
+#include "source/util/bit_stream.h"
 
 namespace spvtools {
 namespace utils {

@@ -15,8 +15,8 @@
 #ifndef SOURCE_OPT_LOOP_UNSWITCH_PASS_H_
 #define SOURCE_OPT_LOOP_UNSWITCH_PASS_H_
 
-#include "opt/loop_descriptor.h"
-#include "opt/pass.h"
+#include "source/opt/loop_descriptor.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

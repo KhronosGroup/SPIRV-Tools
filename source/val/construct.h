@@ -15,11 +15,11 @@
 #ifndef SOURCE_VAL_CONSTRUCT_H_
 #define SOURCE_VAL_CONSTRUCT_H_
 
-#include "val/basic_block.h"
-
 #include <cstdint>
 #include <set>
 #include <vector>
+
+#include "source/val/basic_block.h"
 
 namespace spvtools {
 namespace val {

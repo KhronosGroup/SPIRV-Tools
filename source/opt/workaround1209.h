@@ -15,7 +15,7 @@
 #ifndef SOURCE_OPT_WORKAROUND1209_H_
 #define SOURCE_OPT_WORKAROUND1209_H_
 
-#include "pass.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "util/parse_number.h"
+#include "source/util/parse_number.h"
 
 #include <functional>
 #include <iomanip>
@@ -21,7 +21,7 @@
 #include <string>
 #include <tuple>
 
-#include "util/hex_float.h"
+#include "source/util/hex_float.h"
 
 namespace spvtools {
 namespace utils {

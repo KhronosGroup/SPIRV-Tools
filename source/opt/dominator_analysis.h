@@ -18,7 +18,7 @@
 #include <cstdint>
 #include <map>
 
-#include "dominator_tree.h"
+#include "source/opt/dominator_tree.h"
 
 namespace spvtools {
 namespace opt {

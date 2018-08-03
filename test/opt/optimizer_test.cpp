@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <gmock/gmock.h>
+#include <string>
+#include <vector>
 
+#include "gmock/gmock.h"
 #include "spirv-tools/libspirv.hpp"
 #include "spirv-tools/optimizer.hpp"
-
-#include "pass_fixture.h"
+#include "test/opt/pass_fixture.h"
 
 namespace spvtools {
 namespace opt {

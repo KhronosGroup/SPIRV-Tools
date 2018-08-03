@@ -14,10 +14,10 @@
 
 // This file contains utility functions for spv_parsed_operand_t.
 
-#include "parsed_operand.h"
+#include "source/parsed_operand.h"
 
 #include <cassert>
-#include "util/hex_float.h"
+#include "source/util/hex_float.h"
 
 namespace spvtools {
 

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <cstdint>
+#include <vector>
 
 #include "spirv-tools/libspirv.hpp"
 

@@ -14,9 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "common_uniform_elim_pass.h"
-#include "cfa.h"
-#include "ir_context.h"
+#include "source/opt/common_uniform_elim_pass.h"
+#include "source/cfa.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace opt {

@@ -18,14 +18,14 @@
 
 #include <cassert>
 #include <functional>
+#include <memory>
 #include <utility>
 #include <vector>
 
-#include "instruction.h"
-#include "operand.h"
-#include "util/ilist.h"
-
-#include "latest_version_spirv_header.h"
+#include "source/latest_version_spirv_header.h"
+#include "source/operand.h"
+#include "source/opt/instruction.h"
+#include "source/util/ilist.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {

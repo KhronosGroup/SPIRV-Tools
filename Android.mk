@@ -305,7 +305,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := SPIRV-Tools
 LOCAL_C_INCLUDES := \
 		$(LOCAL_PATH)/include \
-		$(LOCAL_PATH)/source \
 		$(LOCAL_PATH)/external/spirv-headers/include \
 		$(SPVTOOLS_OUT_PATH)
 LOCAL_EXPORT_C_INCLUDES := \

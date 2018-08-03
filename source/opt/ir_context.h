@@ -15,25 +15,30 @@
 #ifndef SOURCE_OPT_IR_CONTEXT_H_
 #define SOURCE_OPT_IR_CONTEXT_H_
 
-#include "assembly_grammar.h"
-#include "cfg.h"
-#include "constants.h"
-#include "decoration_manager.h"
-#include "def_use_manager.h"
-#include "dominator_analysis.h"
-#include "feature_manager.h"
-#include "fold.h"
-#include "loop_descriptor.h"
-#include "module.h"
-#include "register_pressure.h"
-#include "scalar_analysis.h"
-#include "type_manager.h"
-#include "value_number_table.h"
-
 #include <algorithm>
 #include <iostream>
 #include <limits>
+#include <map>
+#include <memory>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "source/assembly_grammar.h"
+#include "source/opt/cfg.h"
+#include "source/opt/constants.h"
+#include "source/opt/decoration_manager.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/dominator_analysis.h"
+#include "source/opt/feature_manager.h"
+#include "source/opt/fold.h"
+#include "source/opt/loop_descriptor.h"
+#include "source/opt/module.h"
+#include "source/opt/register_pressure.h"
+#include "source/opt/scalar_analysis.h"
+#include "source/opt/type_manager.h"
+#include "source/opt/value_number_table.h"
 
 namespace spvtools {
 namespace opt {
