@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_ENUM_SET_H
-#define LIBSPIRV_ENUM_SET_H
+#ifndef SOURCE_ENUM_SET_H_
+#define SOURCE_ENUM_SET_H_
 
 #include <cstdint>
 #include <functional>
@@ -169,4 +169,4 @@ using CapabilitySet = EnumSet<SpvCapability>;
 
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_ENUM_SET_H
+#endif  // SOURCE_ENUM_SET_H_

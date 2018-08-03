@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_TEST_UNITSPIRV_H_
-#define LIBSPIRV_TEST_UNITSPIRV_H_
+#ifndef TEST_UNIT_SPIRV_H_
+#define TEST_UNIT_SPIRV_H_
 
 #include <stdint.h>
 
@@ -231,4 +231,4 @@ inline std::vector<SpvCapability> ElementsIn(
 }
 
 }  // namespace spvtest
-#endif  // LIBSPIRV_TEST_UNITSPIRV_H_
+#endif  // TEST_UNIT_SPIRV_H_

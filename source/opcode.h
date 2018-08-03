@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPCODE_H_
-#define LIBSPIRV_OPCODE_H_
+#ifndef SOURCE_OPCODE_H_
+#define SOURCE_OPCODE_H_
 
 #include "instruction.h"
 #include "latest_version_spirv_header.h"
@@ -125,4 +125,4 @@ bool spvOpcodeIsNonUniformGroupOperation(SpvOp opcode);
 // Returns true if the opcode with vector inputs could be divided into a series
 // of independent scalar operations that would give the same result.
 bool spvOpcodeIsScalarizable(SpvOp opcode);
-#endif  // LIBSPIRV_OPCODE_H_
+#endif  // SOURCE_OPCODE_H_

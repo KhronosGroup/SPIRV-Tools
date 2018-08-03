@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_INSTRUCTION_H_
-#define LIBSPIRV_OPT_INSTRUCTION_H_
+#ifndef SOURCE_OPT_INSTRUCTION_H_
+#define SOURCE_OPT_INSTRUCTION_H_
 
 #include <cassert>
 #include <functional>
@@ -730,4 +730,4 @@ bool Instruction::IsConstant() const {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_INSTRUCTION_H_
+#endif  // SOURCE_OPT_INSTRUCTION_H_

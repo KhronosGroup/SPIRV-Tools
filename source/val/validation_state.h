@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_VAL_VALIDATIONSTATE_H_
-#define LIBSPIRV_VAL_VALIDATIONSTATE_H_
+#ifndef SOURCE_VAL_VALIDATION_STATE_H_
+#define SOURCE_VAL_VALIDATION_STATE_H_
 
 #include <set>
 #include <string>
@@ -647,4 +647,4 @@ class ValidationState_t {
 }  // namespace val
 }  // namespace spvtools
 
-#endif  /// LIBSPIRV_VAL_VALIDATIONSTATE_H_
+#endif  // SOURCE_VAL_VALIDATION_STATE_H_

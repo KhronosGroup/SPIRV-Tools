@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_TEST_OPT_MODULE_UTILS_H_
-#define LIBSPIRV_TEST_OPT_MODULE_UTILS_H_
+#ifndef TEST_OPT_MODULE_UTILS_H_
+#define TEST_OPT_MODULE_UTILS_H_
 
 #include <vector>
 #include "opt/module.h"
@@ -31,4 +31,4 @@ inline uint32_t GetIdBound(const spvtools::opt::Module& m) {
 
 }  // namespace spvtest
 
-#endif  // LIBSPIRV_TEST_OPT_MODULE_UTILS_H_
+#endif  // TEST_OPT_MODULE_UTILS_H_

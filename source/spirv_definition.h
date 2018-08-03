@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_SPIRV_DEFINITION_H_
-#define LIBSPIRV_SPIRV_DEFINITION_H_
+#ifndef SOURCE_SPIRV_DEFINITION_H_
+#define SOURCE_SPIRV_DEFINITION_H_
 
 #include <cstdint>
 
@@ -30,4 +30,4 @@ typedef struct spv_header_t {
   const uint32_t* instructions;  // NOTE: Unfixed pointer to instruciton stream
 } spv_header_t;
 
-#endif  // LIBSPIRV_SPIRV_DEFINITION_H_
+#endif  // SOURCE_SPIRV_DEFINITION_H_
