@@ -30,8 +30,6 @@
 #include "message.h"
 #include "tools/io.h"
 
-using namespace spvtools;
-
 namespace {
 
 // Status and actions to perform after parsing command-line arguments.
@@ -371,8 +369,8 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
                        std::vector<std::string>* file_flags) {
   const char* fname = strchr(oconfig_flag, '=');
   if (fname == nullptr || fname[0] != '=') {
-    Errorf(opt_diagnostic, nullptr, {}, "Invalid -Oconfig flag %s",
-           oconfig_flag);
+    spvtools::Errorf(opt_diagnostic, nullptr, {}, "Invalid -Oconfig flag %s",
+                     oconfig_flag);
     return false;
   }
   fname++;
@@ -380,7 +378,8 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
   std::ifstream input_file;
   input_file.open(fname);
   if (input_file.fail()) {
-    Errorf(opt_diagnostic, nullptr, {}, "Could not open file '%s'", fname);
+    spvtools::Errorf(opt_diagnostic, nullptr, {}, "Could not open file '%s'",
+                     fname);
     return false;
   }
 
@@ -395,9 +394,10 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
   return true;
 }
 
-OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
-                     const char** in_file, const char** out_file,
-                     spv_validator_options options, bool* skip_validator);
+OptStatus ParseFlags(int argc, const char** argv,
+                     spvtools::Optimizer* optimizer, const char** in_file,
+                     const char** out_file, spv_validator_options options,
+                     bool* skip_validator);
 
 // Parses and handles the -Oconfig flag. |prog_name| contains the name of
 // the spirv-opt binary (used to build a new argv vector for the recursive
@@ -406,15 +406,15 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
 //
 // This returns the same OptStatus instance returned by ParseFlags.
 OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
-                           Optimizer* optimizer, const char** in_file,
+                           spvtools::Optimizer* optimizer, const char** in_file,
                            const char** out_file) {
   std::vector<std::string> flags;
   flags.push_back(prog_name);
 
   std::vector<std::string> file_flags;
   if (!ReadFlagsFromFile(opt_flag, &file_flags)) {
-    Error(opt_diagnostic, nullptr, {},
-          "Could not read optimizer flags from configuration file");
+    spvtools::Error(opt_diagnostic, nullptr, {},
+                    "Could not read optimizer flags from configuration file");
     return {OPT_STOP, 1};
   }
   flags.insert(flags.end(), file_flags.begin(), file_flags.end());
@@ -422,8 +422,9 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
   const char** new_argv = new const char*[flags.size()];
   for (size_t i = 0; i < flags.size(); i++) {
     if (flags[i].find("-Oconfig=") != std::string::npos) {
-      Error(opt_diagnostic, nullptr, {},
-            "Flag -Oconfig= may not be used inside the configuration file");
+      spvtools::Error(
+          opt_diagnostic, nullptr, {},
+          "Flag -Oconfig= may not be used inside the configuration file");
       return {OPT_STOP, 1};
     }
     new_argv[i] = flags[i].c_str();
@@ -482,16 +483,17 @@ std::string CanonicalizeFlag(const char** argv, int argc, int* argi) {
 // The name of the output file in |out_file|. The return value indicates whether
 // optimization should continue and a status code indicating an error or
 // success.
-OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
-                     const char** in_file, const char** out_file,
-                     spv_validator_options options, bool* skip_validator) {
+OptStatus ParseFlags(int argc, const char** argv,
+                     spvtools::Optimizer* optimizer, const char** in_file,
+                     const char** out_file, spv_validator_options options,
+                     bool* skip_validator) {
   std::vector<std::string> pass_flags;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
       if (0 == strcmp(cur_arg, "--version")) {
-        Logf(opt_diagnostic, SPV_MSG_INFO, nullptr, {}, "%s\n",
-             spvSoftwareVersionDetailsString());
+        spvtools::Logf(opt_diagnostic, SPV_MSG_INFO, nullptr, {}, "%s\n",
+                       spvSoftwareVersionDetailsString());
         return {OPT_STOP, 0};
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         PrintUsage(argv[0]);
@@ -508,8 +510,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         if (!*in_file) {
           *in_file = cur_arg;
         } else {
-          Error(opt_diagnostic, nullptr, {},
-                "More than one input file specified");
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "More than one input file specified");
           return {OPT_STOP, 1};
         }
       } else if (0 == strncmp(cur_arg, "-Oconfig=", sizeof("-Oconfig=") - 1)) {
@@ -539,8 +541,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
       if (!*in_file) {
         *in_file = cur_arg;
       } else {
-        Error(opt_diagnostic, nullptr, {},
-              "More than one input file specified");
+        spvtools::Error(opt_diagnostic, nullptr, {},
+                        "More than one input file specified");
         return {OPT_STOP, 1};
       }
     }
@@ -567,7 +569,7 @@ int main(int argc, const char** argv) {
   optimizer.SetMessageConsumer([](spv_message_level_t level, const char* source,
                                   const spv_position_t& position,
                                   const char* message) {
-    std::cerr << StringifyMessage(level, source, position, message)
+    std::cerr << spvtools::StringifyMessage(level, source, position, message)
               << std::endl;
   });
 
@@ -579,7 +581,7 @@ int main(int argc, const char** argv) {
   }
 
   if (out_file == nullptr) {
-    Error(opt_diagnostic, nullptr, {}, "-o required");
+    spvtools::Error(opt_diagnostic, nullptr, {}, "-o required");
     return 1;
   }
 

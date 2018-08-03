@@ -23,7 +23,6 @@ LINT_FILTERS = [
   "-build/include",
   "-build/include_order",
   "-build/include_what_you_use",
-  "-build/namespaces",
   "-build/storage_class",
   "-readability/braces",
   "-readability/casting",
