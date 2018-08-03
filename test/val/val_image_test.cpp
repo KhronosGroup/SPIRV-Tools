@@ -359,7 +359,6 @@ OpMemoryModel Logical GLSL450
   if (include_entry_point) {
     ss << "OpEntryPoint Fragment %main \"main\"";
   }
-  // OpEntryPoint Fragment %main "main"
   ss << R"(
 %void = OpTypeVoid
 %func = OpTypeFunction %void
