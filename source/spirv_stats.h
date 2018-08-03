@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_SPIRV_STATS_H_
-#define LIBSPIRV_SPIRV_STATS_H_
+#ifndef SOURCE_SPIRV_STATS_H_
+#define SOURCE_SPIRV_STATS_H_
 
 #include <map>
 #include <string>
@@ -127,4 +127,4 @@ spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
 
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_SPIRV_STATS_H_
+#endif  // SOURCE_SPIRV_STATS_H_

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
+#ifndef SOURCE_OPT_PASSES_H_
+#define SOURCE_OPT_PASSES_H_
 
 // A single header to include all passes.
 
@@ -63,4 +63,4 @@
 #include "unify_const_pass.h"
 #include "vector_dce.h"
 #include "workaround1209.h"
-#endif  // LIBSPIRV_OPT_PASSES_H_
+#endif  // SOURCE_OPT_PASSES_H_

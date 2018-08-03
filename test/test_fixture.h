@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_TEST_TEST_FIXTURE_H_
-#define LIBSPIRV_TEST_TEST_FIXTURE_H_
+#ifndef TEST_TEST_FIXTURE_H_
+#define TEST_TEST_FIXTURE_H_
 
 #include "unit_spirv.h"
 
@@ -179,4 +179,4 @@ using TextToBinaryTest = TextToBinaryTestBase<::testing::Test>;
 using RoundTripTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
-#endif  // LIBSPIRV_TEST_TEST_FIXTURE_H_
+#endif  // TEST_TEST_FIXTURE_H_

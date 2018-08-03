@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_DEAD_VARIABLE_ELIMINATION_H
-#define SPIRV_TOOLS_DEAD_VARIABLE_ELIMINATION_H
+#ifndef SOURCE_OPT_DEAD_VARIABLE_ELIMINATION_H_
+#define SOURCE_OPT_DEAD_VARIABLE_ELIMINATION_H_
 
 #include <climits>
 #include <unordered_map>
@@ -52,4 +52,4 @@ class DeadVariableElimination : public MemPass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_DEAD_VARIABLE_ELIMINATION_H
+#endif  // SOURCE_OPT_DEAD_VARIABLE_ELIMINATION_H_

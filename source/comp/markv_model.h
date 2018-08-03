@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_COMP_MARKV_MODEL_H_
-#define LIBSPIRV_COMP_MARKV_MODEL_H_
+#ifndef SOURCE_COMP_MARKV_MODEL_H_
+#define SOURCE_COMP_MARKV_MODEL_H_
 
 #include <map>
 #include <unordered_set>
@@ -231,4 +231,4 @@ class MarkvModel {
 }  // namespace comp
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_COMP_MARKV_MODEL_H_
+#endif  // SOURCE_COMP_MARKV_MODEL_H_

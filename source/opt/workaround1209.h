@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_WORKAROUND1209_H_
-#define LIBSPIRV_OPT_WORKAROUND1209_H_
+#ifndef SOURCE_OPT_WORKAROUND1209_H_
+#define SOURCE_OPT_WORKAROUND1209_H_
 
 #include "pass.h"
 
@@ -38,4 +38,4 @@ class Workaround1209 : public Pass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_WORKAROUND1209_H_
+#endif  // SOURCE_OPT_WORKAROUND1209_H_

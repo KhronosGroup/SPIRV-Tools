@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_REDUNDANCY_ELIMINATION_H_
-#define LIBSPIRV_OPT_REDUNDANCY_ELIMINATION_H_
+#ifndef SOURCE_OPT_REDUNDANCY_ELIMINATION_H_
+#define SOURCE_OPT_REDUNDANCY_ELIMINATION_H_
 
 #include "ir_context.h"
 #include "local_redundancy_elimination.h"
@@ -51,4 +51,4 @@ class RedundancyEliminationPass : public LocalRedundancyEliminationPass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_REDUNDANCY_ELIMINATION_H_
+#endif  // SOURCE_OPT_REDUNDANCY_ELIMINATION_H_

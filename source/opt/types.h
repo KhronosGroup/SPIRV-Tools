@@ -14,8 +14,8 @@
 
 // This file provides a class hierarchy for representing SPIR-V types.
 
-#ifndef LIBSPIRV_OPT_TYPES_H_
-#define LIBSPIRV_OPT_TYPES_H_
+#ifndef SOURCE_OPT_TYPES_H_
+#define SOURCE_OPT_TYPES_H_
 
 #include <map>
 #include <memory>
@@ -599,4 +599,4 @@ DefineParameterlessType(NamedBarrier, named_barrier);
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_TYPES_H_
+#endif  // SOURCE_OPT_TYPES_H_
