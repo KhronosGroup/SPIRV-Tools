@@ -22,11 +22,11 @@
 #include <unordered_set>
 #include <utility>
 
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/opt/basic_block.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/module.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

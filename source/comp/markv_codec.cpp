@@ -37,7 +37,6 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/assembly_grammar.h"
 #include "source/binary.h"
 #include "source/comp/markv.h"
@@ -61,6 +60,7 @@
 #include "source/util/parse_number.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace comp {

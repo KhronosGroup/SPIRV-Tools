@@ -21,11 +21,11 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/opt/build_module.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/module.h"
+#include "spirv-tools/libspirv.hpp"
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
 

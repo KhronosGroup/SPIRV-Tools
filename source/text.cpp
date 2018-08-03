@@ -28,7 +28,6 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/assembly_grammar.h"
 #include "source/binary.h"
 #include "source/diagnostic.h"
@@ -43,6 +42,7 @@
 #include "source/text_handler.h"
 #include "source/util/bitutils.h"
 #include "source/util/parse_number.h"
+#include "spirv-tools/libspirv.h"
 
 bool spvIsValidIDCharacter(const char value) {
   return value == '_' || 0 != ::isalnum(value);

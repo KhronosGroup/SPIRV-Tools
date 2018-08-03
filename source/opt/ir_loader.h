@@ -19,10 +19,10 @@
 #include <string>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/opt/basic_block.h"
 #include "source/opt/instruction.h"
 #include "source/opt/module.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

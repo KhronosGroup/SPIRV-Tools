@@ -22,9 +22,9 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/latest_version_spirv_header.h"
 #include "source/util/huffman_codec.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace comp {

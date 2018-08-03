@@ -23,7 +23,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/assembly_grammar.h"
 #include "source/binary.h"
 #include "source/diagnostic.h"
@@ -36,6 +35,7 @@
 #include "source/spirv_constant.h"
 #include "source/spirv_endian.h"
 #include "source/util/hex_float.h"
+#include "spirv-tools/libspirv.h"
 
 namespace {
 

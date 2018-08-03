@@ -17,9 +17,9 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "include/spirv-tools/libspirv.h"
 #include "source/opt/instruction.h"
 #include "source/opt/ir_context.h"
+#include "spirv-tools/libspirv.h"
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
 #include "test/unit_spirv.h"

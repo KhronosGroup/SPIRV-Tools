@@ -27,10 +27,10 @@
 #include "source/util/ilist_node.h"
 #include "source/util/small_vector.h"
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_spirv_header.h"
 #include "source/opt/reflect.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace opt {

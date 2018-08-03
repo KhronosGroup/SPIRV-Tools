@@ -22,12 +22,12 @@
 #include <string>
 #include <vector>
 
-#include "include/spirv-tools/optimizer.hpp"
 #include "source/message.h"
 #include "source/opt/log.h"
 #include "source/opt/loop_peeling.h"
 #include "source/opt/set_spec_constant_default_value_pass.h"
 #include "source/spirv_validator_options.h"
+#include "spirv-tools/optimizer.hpp"
 #include "tools/io.h"
 
 namespace {

@@ -20,12 +20,12 @@
 #include <algorithm>
 #include <cstdlib>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/instruction.h"
 #include "source/macro.h"
 #include "source/spirv_constant.h"
 #include "source/spirv_endian.h"
 #include "source/spirv_target_env.h"
+#include "spirv-tools/libspirv.h"
 
 namespace {
 struct OpcodeDescPtrLen {

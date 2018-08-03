@@ -20,13 +20,13 @@
 #include <tuple>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/make_unique.h"
 #include "source/opt/type_manager.h"
 #include "source/opt/types.h"
 #include "source/util/parse_number.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace opt {

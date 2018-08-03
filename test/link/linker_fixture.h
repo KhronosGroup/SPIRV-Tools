@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 
-#include "include/spirv-tools/linker.hpp"
 #include "source/spirv_constant.h"
+#include "spirv-tools/linker.hpp"
 #include "test/unit_spirv.h"
 
 namespace spvtest {

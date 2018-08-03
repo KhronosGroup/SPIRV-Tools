@@ -23,7 +23,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/assembly_grammar.h"
 #include "source/diagnostic.h"
 #include "source/disassemble.h"
@@ -34,6 +33,7 @@
 #include "source/val/decoration.h"
 #include "source/val/function.h"
 #include "source/val/instruction.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace val {

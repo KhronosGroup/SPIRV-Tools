@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "gtest/gtest.h"
-#include "include/spirv-tools/libspirv.h"
 #include "source/message.h"
 #include "source/table.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace {

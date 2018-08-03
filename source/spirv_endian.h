@@ -15,7 +15,7 @@
 #ifndef SOURCE_SPIRV_ENDIAN_H_
 #define SOURCE_SPIRV_ENDIAN_H_
 
-#include "include/spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 // Converts a word in the specified endianness to the host native endianness.
 uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endianness);

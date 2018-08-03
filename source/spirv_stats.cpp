@@ -20,7 +20,6 @@
 #include <memory>
 #include <string>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/diagnostic.h"
 #include "source/enum_string_mapping.h"
 #include "source/extensions.h"
@@ -31,6 +30,7 @@
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace {

@@ -25,7 +25,6 @@
 #include <string>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/binary.h"
 #include "source/diagnostic.h"
 #include "source/enum_string_mapping.h"
@@ -41,6 +40,7 @@
 #include "source/val/function.h"
 #include "source/val/instruction.h"
 #include "source/val/validation_state.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace val {

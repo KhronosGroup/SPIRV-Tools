@@ -17,8 +17,8 @@
 
 #include <string>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/enum_set.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 

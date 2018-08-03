@@ -19,10 +19,10 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/message.h"
 #include "source/opt/build_module.h"
 #include "source/opt/module.h"
+#include "spirv-tools/libspirv.hpp"
 #include "test/opt/module_utils.h"
 
 namespace spvtools {

@@ -20,10 +20,10 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/instruction.h"
 #include "source/message.h"
 #include "source/table.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace val {

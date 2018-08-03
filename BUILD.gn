@@ -261,6 +261,7 @@ foreach(table, spvtools_vendor_tables) {
 config("spvtools_config") {
   include_dirs = [
     ".",
+    "include",
     "$target_gen_dir",
     "${spirv_headers}/include",
   ]

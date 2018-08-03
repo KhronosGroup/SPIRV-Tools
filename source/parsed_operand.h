@@ -17,7 +17,7 @@
 
 #include <ostream>
 
-#include "include/spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 

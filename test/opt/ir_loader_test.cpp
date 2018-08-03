@@ -20,10 +20,10 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/message.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

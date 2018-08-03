@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "include/spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 namespace {
 

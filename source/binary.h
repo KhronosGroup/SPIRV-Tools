@@ -15,8 +15,8 @@
 #ifndef SOURCE_BINARY_H_
 #define SOURCE_BINARY_H_
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/spirv_definition.h"
+#include "spirv-tools/libspirv.h"
 
 // Functions
 

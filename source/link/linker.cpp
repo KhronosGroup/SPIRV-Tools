@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "include/spirv-tools/linker.hpp"
+#include "spirv-tools/linker.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -25,7 +25,6 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/assembly_grammar.h"
 #include "source/diagnostic.h"
 #include "source/opt/build_module.h"
@@ -36,6 +35,7 @@
 #include "source/opt/pass_manager.h"
 #include "source/opt/remove_duplicates_pass.h"
 #include "source/spirv_target_env.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace {

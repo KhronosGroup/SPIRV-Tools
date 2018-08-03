@@ -15,7 +15,7 @@
 #ifndef SOURCE_SPIRV_TARGET_ENV_H_
 #define SOURCE_SPIRV_TARGET_ENV_H_
 
-#include "include/spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 // Parses s into *env and returns true if successful.  If unparsable, returns
 // false and sets *env to SPV_ENV_UNIVERSAL_1_0.

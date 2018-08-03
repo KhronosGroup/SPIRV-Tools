@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.hpp"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 

@@ -19,8 +19,8 @@
 #include <string>
 #include <tuple>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/util/hex_float.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace utils {

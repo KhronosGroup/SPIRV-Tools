@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "include/spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 #include "source/latest_version_spirv_header.h"
 #include "source/parsed_operand.h"

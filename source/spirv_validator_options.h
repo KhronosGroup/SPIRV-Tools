@@ -15,7 +15,7 @@
 #ifndef SOURCE_SPIRV_VALIDATOR_OPTIONS_H_
 #define SOURCE_SPIRV_VALIDATOR_OPTIONS_H_
 
-#include "include/spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 // Return true if the command line option for the validator limit is valid (Also
 // returns the Enum for option in this case). Returns false otherwise.

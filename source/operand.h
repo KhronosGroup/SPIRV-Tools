@@ -18,8 +18,8 @@
 #include <functional>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/table.h"
+#include "spirv-tools/libspirv.h"
 
 // A sequence of operand types.
 //

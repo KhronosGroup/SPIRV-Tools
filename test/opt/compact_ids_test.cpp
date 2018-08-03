@@ -17,8 +17,8 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "include/spirv-tools/libspirv.hpp"
-#include "include/spirv-tools/optimizer.hpp"
+#include "spirv-tools/libspirv.hpp"
+#include "spirv-tools/optimizer.hpp"
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
 

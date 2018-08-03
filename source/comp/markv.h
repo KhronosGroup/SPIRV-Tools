@@ -24,8 +24,8 @@
 #include <string>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/comp/markv_model.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace comp {

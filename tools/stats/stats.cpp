@@ -19,9 +19,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/spirv_stats.h"
 #include "source/table.h"
+#include "spirv-tools/libspirv.h"
 #include "tools/io.h"
 #include "tools/stats/stats_analyzer.h"
 

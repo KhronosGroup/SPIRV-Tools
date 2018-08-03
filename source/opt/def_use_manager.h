@@ -21,9 +21,9 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/opt/instruction.h"
 #include "source/opt/module.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

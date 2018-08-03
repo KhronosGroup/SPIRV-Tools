@@ -22,11 +22,11 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/latest_version_spirv_header.h"
 #include "source/operand.h"
 #include "source/opt/instruction.h"
 #include "source/util/ilist.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace opt {

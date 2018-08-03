@@ -23,10 +23,10 @@
 #include <utility>
 #include <vector>
 
-#include "include/spirv-tools/optimizer.hpp"
 #include "source/comp/markv.h"
 #include "source/spirv_target_env.h"
 #include "source/table.h"
+#include "spirv-tools/optimizer.hpp"
 #include "tools/comp/markv_model_factory.h"
 #include "tools/io.h"
 

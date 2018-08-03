@@ -18,12 +18,12 @@
 #include <stack>
 #include <utility>
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
 #include "source/val/function.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace val {

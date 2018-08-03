@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "include/spirv-tools/optimizer.hpp"
+#include "spirv-tools/optimizer.hpp"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   spvtools::Optimizer optimizer(SPV_ENV_UNIVERSAL_1_3);

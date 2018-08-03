@@ -19,12 +19,12 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "include/spirv-tools/libspirv.hpp"
 #include "source/opt/basic_block.h"
 #include "source/opt/build_module.h"
 #include "source/opt/instruction.h"
 #include "source/opt/ir_builder.h"
 #include "source/opt/type_manager.h"
+#include "spirv-tools/libspirv.hpp"
 
 #ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"

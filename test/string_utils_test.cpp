@@ -15,8 +15,8 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "include/spirv-tools/libspirv.h"
 #include "source/util/string_utils.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace utils {

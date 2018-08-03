@@ -15,8 +15,8 @@
 #ifndef SOURCE_EXT_INST_H_
 #define SOURCE_EXT_INST_H_
 
-#include "include/spirv-tools/libspirv.h"
 #include "source/table.h"
+#include "spirv-tools/libspirv.h"
 
 // Gets the type of the extended instruction set with the specified name.
 spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name);
