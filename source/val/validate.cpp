@@ -242,9 +242,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     return error;
   }
 
-  for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
-    auto& instruction = vstate->ordered_instructions()[i];
-
+  for (auto& instruction : vstate->ordered_instructions()) {
     {
       // In order to do this work outside of Process Instruction we need to be
       // able to, briefly, de-const the instruction.
@@ -292,28 +290,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = ModuleLayoutPass(*vstate, &instruction)) return error;
     if (auto error = CfgPass(*vstate, &instruction)) return error;
     if (auto error = InstructionPass(*vstate, &instruction)) return error;
-    if (auto error = TypeUniquePass(*vstate, &instruction)) return error;
-    if (auto error = ArithmeticsPass(*vstate, &instruction)) return error;
-    if (auto error = CompositesPass(*vstate, &instruction)) return error;
-    if (auto error = ConversionPass(*vstate, &instruction)) return error;
-    if (auto error = DerivativesPass(*vstate, &instruction)) return error;
-    if (auto error = LogicalsPass(*vstate, &instruction)) return error;
-    if (auto error = BitwisePass(*vstate, &instruction)) return error;
-    if (auto error = ExtInstPass(*vstate, &instruction)) return error;
-    if (auto error = ImagePass(*vstate, &instruction)) return error;
-    if (auto error = AtomicsPass(*vstate, &instruction)) return error;
-    if (auto error = BarriersPass(*vstate, &instruction)) return error;
-    if (auto error = PrimitivesPass(*vstate, &instruction)) return error;
-    if (auto error = LiteralsPass(*vstate, &instruction)) return error;
-    if (auto error = NonUniformPass(*vstate, &instruction)) return error;
-
     if (auto error = UpdateIdUse(*vstate, &instruction)) return error;
-    if (auto error = ValidateMemoryInstructions(*vstate, &instruction))
-      return error;
-
-    // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
-    // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
-    if (auto error = ValidateAdjacency(*vstate, i)) return error;
   }
 
   if (!vstate->has_memory_model_specified())
@@ -336,6 +313,31 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   // TODO(dsinclair): Restructure ValidateBuiltins so we can move into the
   // for() above as it loops over all ordered_instructions internally.
   if (auto error = ValidateBuiltIns(*vstate)) return error;
+
+  // Validate individual opcodes.
+  for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
+    auto& instruction = vstate->ordered_instructions()[i];
+    if (auto error = TypeUniquePass(*vstate, &instruction)) return error;
+    if (auto error = ArithmeticsPass(*vstate, &instruction)) return error;
+    if (auto error = CompositesPass(*vstate, &instruction)) return error;
+    if (auto error = ConversionPass(*vstate, &instruction)) return error;
+    if (auto error = DerivativesPass(*vstate, &instruction)) return error;
+    if (auto error = LogicalsPass(*vstate, &instruction)) return error;
+    if (auto error = BitwisePass(*vstate, &instruction)) return error;
+    if (auto error = ExtInstPass(*vstate, &instruction)) return error;
+    if (auto error = ImagePass(*vstate, &instruction)) return error;
+    if (auto error = AtomicsPass(*vstate, &instruction)) return error;
+    if (auto error = BarriersPass(*vstate, &instruction)) return error;
+    if (auto error = PrimitivesPass(*vstate, &instruction)) return error;
+    if (auto error = LiteralsPass(*vstate, &instruction)) return error;
+    if (auto error = NonUniformPass(*vstate, &instruction)) return error;
+    if (auto error = ValidateMemoryInstructions(*vstate, &instruction))
+      return error;
+
+    // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
+    // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
+    if (auto error = ValidateAdjacency(*vstate, i)) return error;
+  }
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;

@@ -184,6 +184,7 @@ class ValidationState_t {
 
   /// Returns function state with the given id, or nullptr if no such function.
   const Function* function(uint32_t id) const;
+  Function* function(uint32_t id);
 
   /// Returns true if the called after a function instruction but before the
   /// function end instruction
