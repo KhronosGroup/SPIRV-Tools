@@ -180,6 +180,11 @@ class SpirvTools {
   std::unique_ptr<Impl> impl_;  // Unique pointer to implementation data.
 };
 
+// A message consumer that can be used by command line tools like spirv-opt and
+// spirv-val to display messages.
+void CLIMessageConsumer(spv_message_level_t level, const char*,
+                        const spv_position_t& position, const char* message);
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_LIBSPIRV_HPP_

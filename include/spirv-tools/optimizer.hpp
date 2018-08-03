@@ -158,6 +158,9 @@ class Optimizer {
   // It's allowed to alias |original_binary| to the start of |optimized_binary|.
   bool Run(const uint32_t* original_binary, size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary) const;
+  bool Run(const uint32_t* original_binary, size_t original_binary_size,
+           std::vector<uint32_t>* optimized_binary,
+           const ValidatorOptions& options) const;
 
   // Returns a vector of strings with all the pass names added to this
   // optimizer's pass manager. These strings are valid until the associated
