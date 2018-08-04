@@ -69,8 +69,6 @@ namespace {
 using utils::BitReaderWord64;
 using utils::BitWriterWord64;
 using utils::HuffmanCodec;
-using MoveToFront = utils::MoveToFront<uint32_t>;
-using MultiMoveToFront = utils::MultiMoveToFront<uint32_t>;
 
 const uint32_t kSpirvMagicNumber = SpvMagicNumber;
 const uint32_t kMarkvMagicNumber = 0x07230303;
@@ -532,7 +530,7 @@ class MarkvCodecBase {
   std::unordered_map<uint32_t, uint32_t> id_to_type_id_;
 
   // Container for all move-to-front sequences.
-  MultiMoveToFront multi_mtf_;
+  utils::MultiMoveToFront multi_mtf_;
 
   // Id of the current function or zero if outside of function.
   uint32_t cur_function_id_ = 0;

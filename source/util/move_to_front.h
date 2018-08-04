@@ -15,18 +15,11 @@
 #ifndef SOURCE_UTIL_MOVE_TO_FRONT_H_
 #define SOURCE_UTIL_MOVE_TO_FRONT_H_
 
-#include <algorithm>
+#include <map>
 #include <cassert>
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <ostream>
 #include <set>
-#include <sstream>
 #include <unordered_map>
-#include <unordered_set>
-#include <utility>
 #include <vector>
 
 namespace spvtools {
@@ -51,7 +44,6 @@ namespace utils {
 // node: handle used internally to access node data.
 // size: size of the subtree of a node (including the node).
 // height: distance from a node to the farthest leaf.
-template <typename Val>
 class MoveToFront {
  public:
   explicit MoveToFront(size_t reserve_capacity = 4) {
@@ -61,16 +53,16 @@ class MoveToFront {
     nodes_.emplace_back(Node());
   }
 
-  virtual ~MoveToFront() {}
+  virtual ~MoveToFront() = default;
 
   // Inserts value in the move-to-front sequence. Does nothing if the value is
   // already in the sequence. Returns true if insertion was successful.
   // The inserted value is placed at the front of the sequence (rank 1).
-  bool Insert(const Val& value);
+  bool Insert(uint32_t value);
 
   // Removes value from move-to-front sequence. Returns false iff the value
   // was not found.
-  bool Remove(const Val& value);
+  bool Remove(uint32_t value);
 
   // Computes 1-indexed rank of value in the move-to-front sequence and moves
   // the value to the front. Example:
@@ -78,7 +70,7 @@ class MoveToFront {
   // RankFromValue(8) returns 2
   // After the call: 8 4 2 1 7
   // Returns true iff the value was found in the sequence.
-  bool RankFromValue(const Val& value, uint32_t* rank);
+  bool RankFromValue(uint32_t value, uint32_t* rank);
 
   // Returns value corresponding to a 1-indexed rank in the move-to-front
   // sequence and moves the value to the front. Example:
@@ -86,14 +78,14 @@ class MoveToFront {
   // ValueFromRank(2) returns 8
   // After the call: 8 4 2 1 7
   // Returns true iff the rank is within bounds [1, GetSize()].
-  bool ValueFromRank(uint32_t rank, Val* value);
+  bool ValueFromRank(uint32_t rank, uint32_t* value);
 
   // Moves the value to the front of the sequence.
   // Returns false iff value is not in the sequence.
-  bool Promote(const Val& value);
+  bool Promote(uint32_t value);
 
   // Returns true iff the move-to-front sequence contains the value.
-  bool HasValue(const Val& value) const;
+  bool HasValue(uint32_t value) const;
 
   // Returns the number of elements in the move-to-front sequence.
   uint32_t GetSize() const { return SizeOf(root_); }
@@ -123,45 +115,21 @@ class MoveToFront {
     // Leaves have height 0, real nodes at least 1.
     uint32_t height = 0;
     // Stored value.
-    Val value = Val();
+    uint32_t value = 0;
   };
 
   // Creates node and sets correct values. Non-NIL nodes should be created only
   // through this function. If the node with this value has been created
   // previously
   // and since orphaned, reuses the old node instead of creating a new one.
-  uint32_t CreateNode(uint32_t timestamp, const Val& value) {
-    uint32_t handle = static_cast<uint32_t>(nodes_.size());
-    const auto result = value_to_node_.emplace(value, handle);
-    if (result.second) {
-      // Create new node.
-      nodes_.emplace_back(Node());
-      Node& node = nodes_.back();
-      node.timestamp = timestamp;
-      node.value = value;
-      node.size = 1;
-      // Non-NIL nodes start with height 1 because their NIL children are
-      // leaves.
-      node.height = 1;
-    } else {
-      // Reuse old node.
-      handle = result.first->second;
-      assert(!IsInTree(handle));
-      assert(ValueOf(handle) == value);
-      assert(SizeOf(handle) == 1);
-      assert(HeightOf(handle) == 1);
-      MutableTimestampOf(handle) = timestamp;
-    }
-
-    return handle;
-  }
+  uint32_t CreateNode(uint32_t timestamp, uint32_t value);
 
   // Node accessor methods. Naming is designed to be similar to natural
   // language as these functions tend to be used in sequences, for example:
   // ParentOf(LeftestDescendentOf(RightOf(node)))
 
   // Returns value of the node referenced by |handle|.
-  Val ValueOf(uint32_t node) const { return nodes_.at(node).value; }
+  uint32_t ValueOf(uint32_t node) const { return nodes_.at(node).value; }
 
   // Returns left child of |node|.
   uint32_t LeftOf(uint32_t node) const { return nodes_.at(node).left; }
@@ -185,7 +153,7 @@ class MoveToFront {
   uint32_t HeightOf(uint32_t node) const { return nodes_.at(node).height; }
 
   // Returns mutable reference to value of |node|.
-  Val& MutableValueOf(uint32_t node) {
+  uint32_t& MutableValueOf(uint32_t node) {
     assert(node);
     return nodes_.at(node).value;
   }
@@ -305,19 +273,18 @@ class MoveToFront {
   std::vector<Node> nodes_;
 
   // Maps ids to node handles.
-  std::unordered_map<Val, uint32_t> value_to_node_;
+  std::unordered_map<uint32_t, uint32_t> value_to_node_;
 
   // Cache for the last accessed value in the sequence.
-  Val last_accessed_value_ = Val();
+  uint32_t last_accessed_value_ = 0;
   bool last_accessed_value_valid_ = false;
 };
 
-template <typename Val>
 class MultiMoveToFront {
  public:
   // Inserts |value| to sequence with handle |mtf|.
   // Returns false if |mtf| already has |value|.
-  bool Insert(uint64_t mtf, const Val& value) {
+  bool Insert(uint64_t mtf, uint32_t value) {
     if (GetMtf(mtf).Insert(value)) {
       val_to_mtfs_[value].insert(mtf);
       return true;
@@ -327,7 +294,7 @@ class MultiMoveToFront {
 
   // Removes |value| from sequence with handle |mtf|.
   // Returns false if |mtf| doesn't have |value|.
-  bool Remove(uint64_t mtf, const Val& value) {
+  bool Remove(uint64_t mtf, uint32_t value) {
     if (GetMtf(mtf).Remove(value)) {
       val_to_mtfs_[value].erase(mtf);
       return true;
@@ -337,7 +304,7 @@ class MultiMoveToFront {
   }
 
   // Removes |value| from all sequences which have it.
-  void RemoveFromAll(const Val& value) {
+  void RemoveFromAll(uint32_t value) {
     auto it = val_to_mtfs_.find(value);
     if (it == val_to_mtfs_.end()) return;
 
@@ -351,13 +318,13 @@ class MultiMoveToFront {
 
   // Computes rank of |value| in sequence |mtf|.
   // Returns false if |mtf| doesn't have |value|.
-  bool RankFromValue(uint64_t mtf, const Val& value, uint32_t* rank) {
+  bool RankFromValue(uint64_t mtf, uint32_t value, uint32_t* rank) {
     return GetMtf(mtf).RankFromValue(value, rank);
   }
 
   // Finds |value| with |rank| in sequence |mtf|.
   // Returns false if |rank| is out of bounds.
-  bool ValueFromRank(uint64_t mtf, uint32_t rank, Val* value) {
+  bool ValueFromRank(uint64_t mtf, uint32_t rank, uint32_t* value) {
     return GetMtf(mtf).ValueFromRank(rank, value);
   }
 
@@ -365,7 +332,7 @@ class MultiMoveToFront {
   uint32_t GetSize(uint64_t mtf) { return GetMtf(mtf).GetSize(); }
 
   // Promotes |value| in all sequences which have it.
-  void Promote(const Val& value) {
+  void Promote(uint32_t value) {
     const auto it = val_to_mtfs_.find(value);
     if (it == val_to_mtfs_.end()) return;
 
@@ -376,14 +343,14 @@ class MultiMoveToFront {
   }
 
   // Inserts |value| in sequence |mtf| or promotes if it's already there.
-  void InsertOrPromote(uint64_t mtf, const Val& value) {
+  void InsertOrPromote(uint64_t mtf, uint32_t value) {
     if (!Insert(mtf, value)) {
       GetMtf(mtf).Promote(value);
     }
   }
 
   // Returns if |mtf| sequence has |value|.
-  bool HasValue(uint64_t mtf, const Val& value) {
+  bool HasValue(uint64_t mtf, uint32_t value) {
     return GetMtf(mtf).HasValue(value);
   }
 
@@ -391,7 +358,7 @@ class MultiMoveToFront {
   // Returns actual MoveToFront object corresponding to |handle|.
   // As multiple operations are often performed consecutively for the same
   // sequence, the last returned value is cached.
-  MoveToFront<Val>& GetMtf(uint64_t handle) {
+  MoveToFront& GetMtf(uint64_t handle) {
     if (!cached_mtf_ || cached_handle_ != handle) {
       cached_handle_ = handle;
       cached_mtf_ = &mtfs_[handle];
@@ -401,426 +368,15 @@ class MultiMoveToFront {
   }
 
   // Container holding MoveToFront objects. Map key is sequence handle.
-  std::map<uint64_t, MoveToFront<Val>> mtfs_;
+  std::map<uint64_t, MoveToFront> mtfs_;
 
   // Container mapping value to sequences which contain that value.
-  std::unordered_map<Val, std::set<uint64_t>> val_to_mtfs_;
+  std::unordered_map<uint32_t, std::set<uint64_t>> val_to_mtfs_;
 
   // Cache for the last accessed sequence.
   uint64_t cached_handle_ = 0;
-  MoveToFront<Val>* cached_mtf_ = nullptr;
+  MoveToFront* cached_mtf_ = nullptr;
 };
-
-template <typename Val>
-bool MoveToFront<Val>::Insert(const Val& value) {
-  auto it = value_to_node_.find(value);
-  if (it != value_to_node_.end() && IsInTree(it->second)) return false;
-
-  const uint32_t old_size = GetSize();
-  (void)old_size;
-
-  InsertNode(CreateNode(next_timestamp_++, value));
-
-  last_accessed_value_ = value;
-  last_accessed_value_valid_ = true;
-
-  assert(value_to_node_.count(value));
-  assert(old_size + 1 == GetSize());
-  return true;
-}
-
-template <typename Val>
-bool MoveToFront<Val>::Remove(const Val& value) {
-  auto it = value_to_node_.find(value);
-  if (it == value_to_node_.end()) return false;
-
-  if (!IsInTree(it->second)) return false;
-
-  if (last_accessed_value_ == value) last_accessed_value_valid_ = false;
-
-  const uint32_t orphan = RemoveNode(it->second);
-  (void)orphan;
-  // The node of |value| is still alive but it's orphaned now. Can still be
-  // reused later.
-  assert(!IsInTree(orphan));
-  assert(ValueOf(orphan) == value);
-  return true;
-}
-
-template <typename Val>
-bool MoveToFront<Val>::RankFromValue(const Val& value, uint32_t* rank) {
-  if (last_accessed_value_valid_ && last_accessed_value_ == value) {
-    *rank = 1;
-    return true;
-  }
-
-  const uint32_t old_size = GetSize();
-  if (old_size == 1) {
-    if (ValueOf(root_) == value) {
-      *rank = 1;
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  const auto it = value_to_node_.find(value);
-  if (it == value_to_node_.end()) {
-    return false;
-  }
-
-  uint32_t target = it->second;
-
-  if (!IsInTree(target)) {
-    return false;
-  }
-
-  uint32_t node = target;
-  *rank = 1 + SizeOf(LeftOf(node));
-  while (node) {
-    if (IsRightChild(node)) *rank += 1 + SizeOf(LeftOf(ParentOf(node)));
-    node = ParentOf(node);
-  }
-
-  // Don't update timestamp if the node has rank 1.
-  if (*rank != 1) {
-    // Update timestamp and reposition the node.
-    target = RemoveNode(target);
-    assert(ValueOf(target) == value);
-    assert(old_size == GetSize() + 1);
-    MutableTimestampOf(target) = next_timestamp_++;
-    InsertNode(target);
-    assert(old_size == GetSize());
-  }
-
-  last_accessed_value_ = value;
-  last_accessed_value_valid_ = true;
-  return true;
-}
-
-template <typename Val>
-bool MoveToFront<Val>::HasValue(const Val& value) const {
-  const auto it = value_to_node_.find(value);
-  if (it == value_to_node_.end()) {
-    return false;
-  }
-
-  return IsInTree(it->second);
-}
-
-template <typename Val>
-bool MoveToFront<Val>::Promote(const Val& value) {
-  if (last_accessed_value_valid_ && last_accessed_value_ == value) {
-    return true;
-  }
-
-  const uint32_t old_size = GetSize();
-  if (old_size == 1) return ValueOf(root_) == value;
-
-  const auto it = value_to_node_.find(value);
-  if (it == value_to_node_.end()) {
-    return false;
-  }
-
-  uint32_t target = it->second;
-
-  if (!IsInTree(target)) {
-    return false;
-  }
-
-  // Update timestamp and reposition the node.
-  target = RemoveNode(target);
-  assert(ValueOf(target) == value);
-  assert(old_size == GetSize() + 1);
-  MutableTimestampOf(target) = next_timestamp_++;
-  InsertNode(target);
-  assert(old_size == GetSize());
-
-  last_accessed_value_ = value;
-  last_accessed_value_valid_ = true;
-  return true;
-}
-
-template <typename Val>
-bool MoveToFront<Val>::ValueFromRank(uint32_t rank, Val* value) {
-  if (last_accessed_value_valid_ && rank == 1) {
-    *value = last_accessed_value_;
-    return true;
-  }
-
-  const uint32_t old_size = GetSize();
-  if (rank <= 0 || rank > old_size) {
-    return false;
-  }
-
-  if (old_size == 1) {
-    *value = ValueOf(root_);
-    return true;
-  }
-
-  const bool update_timestamp = (rank != 1);
-
-  uint32_t node = root_;
-  while (node) {
-    const uint32_t left_subtree_num_nodes = SizeOf(LeftOf(node));
-    if (rank == left_subtree_num_nodes + 1) {
-      // This is the node we are looking for.
-      // Don't update timestamp if the node has rank 1.
-      if (update_timestamp) {
-        node = RemoveNode(node);
-        assert(old_size == GetSize() + 1);
-        MutableTimestampOf(node) = next_timestamp_++;
-        InsertNode(node);
-        assert(old_size == GetSize());
-      }
-      *value = ValueOf(node);
-      last_accessed_value_ = *value;
-      last_accessed_value_valid_ = true;
-      return true;
-    }
-
-    if (rank < left_subtree_num_nodes + 1) {
-      // Descend into the left subtree. The rank is still valid.
-      node = LeftOf(node);
-    } else {
-      // Descend into the right subtree. We leave behind the left subtree and
-      // the current node, adjust the |rank| accordingly.
-      rank -= left_subtree_num_nodes + 1;
-      node = RightOf(node);
-    }
-  }
-
-  assert(0);
-  return false;
-}
-
-template <typename Val>
-void MoveToFront<Val>::InsertNode(uint32_t node) {
-  assert(!IsInTree(node));
-  assert(SizeOf(node) == 1);
-  assert(HeightOf(node) == 1);
-  assert(TimestampOf(node));
-
-  if (!root_) {
-    root_ = node;
-    return;
-  }
-
-  uint32_t iter = root_;
-  uint32_t parent = 0;
-
-  // Will determine if |node| will become the right or left child after
-  // insertion (but before balancing).
-  bool right_child = true;
-
-  // Find the node which will become |node|'s parent after insertion
-  // (but before balancing).
-  while (iter) {
-    parent = iter;
-    assert(TimestampOf(iter) != TimestampOf(node));
-    right_child = TimestampOf(iter) > TimestampOf(node);
-    iter = right_child ? RightOf(iter) : LeftOf(iter);
-  }
-
-  assert(parent);
-
-  // Connect node and parent.
-  MutableParentOf(node) = parent;
-  if (right_child)
-    MutableRightOf(parent) = node;
-  else
-    MutableLeftOf(parent) = node;
-
-  // Insertion is finished. Start the balancing process.
-  bool needs_rebalancing = true;
-  parent = ParentOf(node);
-
-  while (parent) {
-    UpdateNode(parent);
-
-    if (needs_rebalancing) {
-      const int parent_balance = BalanceOf(parent);
-
-      if (RightOf(parent) == node) {
-        // Added node to the right subtree.
-        if (parent_balance > 1) {
-          // Parent is right heavy, rotate left.
-          if (BalanceOf(node) < 0) RotateRight(node);
-          parent = RotateLeft(parent);
-        } else if (parent_balance == 0 || parent_balance == -1) {
-          // Parent is balanced or left heavy, no need to balance further.
-          needs_rebalancing = false;
-        }
-      } else {
-        // Added node to the left subtree.
-        if (parent_balance < -1) {
-          // Parent is left heavy, rotate right.
-          if (BalanceOf(node) > 0) RotateLeft(node);
-          parent = RotateRight(parent);
-        } else if (parent_balance == 0 || parent_balance == 1) {
-          // Parent is balanced or right heavy, no need to balance further.
-          needs_rebalancing = false;
-        }
-      }
-    }
-
-    assert(BalanceOf(parent) >= -1 && (BalanceOf(parent) <= 1));
-
-    node = parent;
-    parent = ParentOf(parent);
-  }
-}
-
-template <typename Val>
-uint32_t MoveToFront<Val>::RemoveNode(uint32_t node) {
-  if (LeftOf(node) && RightOf(node)) {
-    // If |node| has two children, then use another node as scapegoat and swap
-    // their contents. We pick the scapegoat on the side of the tree which has
-    // more nodes.
-    const uint32_t scapegoat = SizeOf(LeftOf(node)) >= SizeOf(RightOf(node))
-                                   ? RightestDescendantOf(LeftOf(node))
-                                   : LeftestDescendantOf(RightOf(node));
-    assert(scapegoat);
-    std::swap(MutableValueOf(node), MutableValueOf(scapegoat));
-    std::swap(MutableTimestampOf(node), MutableTimestampOf(scapegoat));
-    value_to_node_[ValueOf(node)] = node;
-    value_to_node_[ValueOf(scapegoat)] = scapegoat;
-    node = scapegoat;
-  }
-
-  // |node| may have only one child at this point.
-  assert(!RightOf(node) || !LeftOf(node));
-
-  uint32_t parent = ParentOf(node);
-  uint32_t child = RightOf(node) ? RightOf(node) : LeftOf(node);
-
-  // Orphan |node| and reconnect parent and child.
-  if (child) MutableParentOf(child) = parent;
-
-  if (parent) {
-    if (LeftOf(parent) == node)
-      MutableLeftOf(parent) = child;
-    else
-      MutableRightOf(parent) = child;
-  }
-
-  MutableParentOf(node) = 0;
-  MutableLeftOf(node) = 0;
-  MutableRightOf(node) = 0;
-  UpdateNode(node);
-  const uint32_t orphan = node;
-
-  if (root_ == node) root_ = child;
-
-  // Removal is finished. Start the balancing process.
-  bool needs_rebalancing = true;
-  node = child;
-
-  while (parent) {
-    UpdateNode(parent);
-
-    if (needs_rebalancing) {
-      const int parent_balance = BalanceOf(parent);
-
-      if (parent_balance == 1 || parent_balance == -1) {
-        // The height of the subtree was not changed.
-        needs_rebalancing = false;
-      } else {
-        if (RightOf(parent) == node) {
-          // Removed node from the right subtree.
-          if (parent_balance < -1) {
-            // Parent is left heavy, rotate right.
-            const uint32_t sibling = LeftOf(parent);
-            if (BalanceOf(sibling) > 0) RotateLeft(sibling);
-            parent = RotateRight(parent);
-          }
-        } else {
-          // Removed node from the left subtree.
-          if (parent_balance > 1) {
-            // Parent is right heavy, rotate left.
-            const uint32_t sibling = RightOf(parent);
-            if (BalanceOf(sibling) < 0) RotateRight(sibling);
-            parent = RotateLeft(parent);
-          }
-        }
-      }
-    }
-
-    assert(BalanceOf(parent) >= -1 && (BalanceOf(parent) <= 1));
-
-    node = parent;
-    parent = ParentOf(parent);
-  }
-
-  return orphan;
-}
-
-template <typename Val>
-uint32_t MoveToFront<Val>::RotateLeft(const uint32_t node) {
-  const uint32_t pivot = RightOf(node);
-  assert(pivot);
-
-  // LeftOf(pivot) gets attached to node in place of pivot.
-  MutableRightOf(node) = LeftOf(pivot);
-  if (RightOf(node)) MutableParentOf(RightOf(node)) = node;
-
-  // Pivot gets attached to ParentOf(node) in place of node.
-  MutableParentOf(pivot) = ParentOf(node);
-  if (!ParentOf(node))
-    root_ = pivot;
-  else if (IsLeftChild(node))
-    MutableLeftOf(ParentOf(node)) = pivot;
-  else
-    MutableRightOf(ParentOf(node)) = pivot;
-
-  // Node is child of pivot.
-  MutableLeftOf(pivot) = node;
-  MutableParentOf(node) = pivot;
-
-  // Update both node and pivot. Pivot is the new parent of node, so node should
-  // be updated first.
-  UpdateNode(node);
-  UpdateNode(pivot);
-
-  return pivot;
-}
-
-template <typename Val>
-uint32_t MoveToFront<Val>::RotateRight(const uint32_t node) {
-  const uint32_t pivot = LeftOf(node);
-  assert(pivot);
-
-  // RightOf(pivot) gets attached to node in place of pivot.
-  MutableLeftOf(node) = RightOf(pivot);
-  if (LeftOf(node)) MutableParentOf(LeftOf(node)) = node;
-
-  // Pivot gets attached to ParentOf(node) in place of node.
-  MutableParentOf(pivot) = ParentOf(node);
-  if (!ParentOf(node))
-    root_ = pivot;
-  else if (IsLeftChild(node))
-    MutableLeftOf(ParentOf(node)) = pivot;
-  else
-    MutableRightOf(ParentOf(node)) = pivot;
-
-  // Node is child of pivot.
-  MutableRightOf(pivot) = node;
-  MutableParentOf(node) = pivot;
-
-  // Update both node and pivot. Pivot is the new parent of node, so node should
-  // be updated first.
-  UpdateNode(node);
-  UpdateNode(pivot);
-
-  return pivot;
-}
-
-template <typename Val>
-void MoveToFront<Val>::UpdateNode(uint32_t node) {
-  MutableSizeOf(node) = 1 + SizeOf(LeftOf(node)) + SizeOf(RightOf(node));
-  MutableHeightOf(node) =
-      1 + std::max(HeightOf(LeftOf(node)), HeightOf(RightOf(node)));
-}
 
 }  // namespace utils
 }  // namespace spvtools
