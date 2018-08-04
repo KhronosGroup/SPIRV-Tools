@@ -15,16 +15,11 @@
 #ifndef SOURCE_COMP_MARKV_MODEL_H_
 #define SOURCE_COMP_MARKV_MODEL_H_
 
-#include <map>
-#include <memory>
-#include <string>
 #include <unordered_set>
-#include <utility>
-#include <vector>
 
 #include "source/latest_version_spirv_header.h"
 #include "source/util/huffman_codec.h"
-#include "spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace comp {

@@ -21,14 +21,12 @@
 #ifndef SOURCE_COMP_MARKV_H_
 #define SOURCE_COMP_MARKV_H_
 
-#include <string>
-#include <vector>
-
-#include "source/comp/markv_model.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace comp {
+
+class MarkvModel;
 
 struct MarkvCodecOptions {
   bool validate_spirv_binary = false;
