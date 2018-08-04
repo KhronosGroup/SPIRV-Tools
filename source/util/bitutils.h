@@ -40,12 +40,12 @@ template <typename T, size_t First = 0, size_t Num = 0>
 struct SetBits {
   static_assert(First < sizeof(T) * 8,
                 "Tried to set a bit that is shifted too far.");
-  const static T get = (T(1) << First) | SetBits<T, First + 1, Num - 1>::get;
+  static const T get = (T(1) << First) | SetBits<T, First + 1, Num - 1>::get;
 };
 
 template <typename T, size_t Last>
 struct SetBits<T, Last, 0> {
-  const static T get = T(0);
+  static const T get = T(0);
 };
 
 // This is all compile-time so we can put our tests right here.

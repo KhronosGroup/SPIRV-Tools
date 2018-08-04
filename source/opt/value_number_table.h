@@ -51,7 +51,8 @@ class ValueTableHash {
 // the scope.
 class ValueNumberTable {
  public:
-  ValueNumberTable(IRContext* ctx) : context_(ctx), next_value_number_(1) {
+  explicit ValueNumberTable(IRContext* ctx)
+      : context_(ctx), next_value_number_(1) {
     BuildDominatorTreeValueNumberTable();
   }
 

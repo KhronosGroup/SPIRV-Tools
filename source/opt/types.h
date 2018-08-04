@@ -92,7 +92,7 @@ class Type {
     kNamedBarrier,
   };
 
-  Type(Kind k) : kind_(k) {}
+  explicit Type(Kind k) : kind_(k) {}
 
   virtual ~Type() {}
 
@@ -232,7 +232,7 @@ class Integer : public Type {
 
 class Float : public Type {
  public:
-  Float(uint32_t w) : Type(kFloat), width_(w) {}
+  explicit Float(uint32_t w) : Type(kFloat), width_(w) {}
   Float(const Float&) = default;
 
   std::string str() const override;
@@ -333,7 +333,8 @@ class Image : public Type {
 
 class SampledImage : public Type {
  public:
-  SampledImage(Type* image) : Type(kSampledImage), image_type_(image) {}
+  explicit SampledImage(Type* image)
+      : Type(kSampledImage), image_type_(image) {}
   SampledImage(const SampledImage&) = default;
 
   std::string str() const override;
@@ -377,7 +378,7 @@ class Array : public Type {
 
 class RuntimeArray : public Type {
  public:
-  RuntimeArray(Type* element_type);
+  explicit RuntimeArray(Type* element_type);
   RuntimeArray(const RuntimeArray&) = default;
 
   std::string str() const override;
@@ -399,7 +400,7 @@ class RuntimeArray : public Type {
 
 class Struct : public Type {
  public:
-  Struct(const std::vector<const Type*>& element_types);
+  explicit Struct(const std::vector<const Type*>& element_types);
   Struct(const Struct&) = default;
 
   // Adds a decoration to the member at the given index.  The first word is the
@@ -445,7 +446,7 @@ class Struct : public Type {
 
 class Opaque : public Type {
  public:
-  Opaque(std::string n) : Type(kOpaque), name_(std::move(n)) {}
+  explicit Opaque(std::string n) : Type(kOpaque), name_(std::move(n)) {}
   Opaque(const Opaque&) = default;
 
   std::string str() const override;
@@ -516,7 +517,7 @@ class Function : public Type {
 
 class Pipe : public Type {
  public:
-  Pipe(SpvAccessQualifier qualifier)
+  explicit Pipe(SpvAccessQualifier qualifier)
       : Type(kPipe), access_qualifier_(qualifier) {}
   Pipe(const Pipe&) = default;
 

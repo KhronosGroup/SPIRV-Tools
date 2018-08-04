@@ -53,7 +53,7 @@ class SmallVector {
 
   SmallVector(SmallVector&& that) : SmallVector() { *this = std::move(that); }
 
-  SmallVector(const std::vector<T>& vec) : SmallVector() {
+  explicit SmallVector(const std::vector<T>& vec) : SmallVector() {
     if (vec.size() > small_size) {
       large_data_.reset(new std::vector<T>(vec));
     } else {
@@ -64,7 +64,7 @@ class SmallVector {
     }
   }
 
-  SmallVector(std::vector<T>&& vec) : SmallVector() {
+  explicit SmallVector(std::vector<T>&& vec) : SmallVector() {
     if (vec.size() > small_size) {
       large_data_.reset(new std::vector<T>(std::move(vec)));
     } else {

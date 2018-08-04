@@ -171,7 +171,7 @@ class LivenessAnalysis {
       std::unordered_map<const Function*, RegisterLiveness>;
 
  public:
-  LivenessAnalysis(IRContext* context) : context_(context) {}
+  explicit LivenessAnalysis(IRContext* context) : context_(context) {}
 
   // Computes the liveness analysis for the function |f| and cache the result.
   // If the analysis was performed for this function, then the cached analysis

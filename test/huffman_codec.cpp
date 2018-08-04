@@ -42,7 +42,7 @@ const std::map<std::string, uint32_t>& GetTestSet() {
 
 class TestBitReader {
  public:
-  TestBitReader(const std::string& bits) : bits_(bits) {}
+  explicit TestBitReader(const std::string& bits) : bits_(bits) {}
 
   bool ReadBit(bool* bit) {
     if (pos_ < bits_.length()) {

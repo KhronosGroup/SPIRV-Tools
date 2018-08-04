@@ -33,7 +33,7 @@ class BitVector {
 
  public:
   // Creates a bit vector contianing 0s.
-  BitVector(uint32_t reserved_size = kInitialNumBits)
+  explicit BitVector(uint32_t reserved_size = kInitialNumBits)
       : bits_((reserved_size - 1) / kBitContainerSize + 1, 0) {}
 
   // Sets the |i|th bit to 1.  Returns the |i|th bit before it was set.

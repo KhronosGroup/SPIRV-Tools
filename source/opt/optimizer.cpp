@@ -31,7 +31,7 @@
 namespace spvtools {
 
 struct Optimizer::PassToken::Impl {
-  Impl(std::unique_ptr<opt::Pass> p) : pass(std::move(p)) {}
+  explicit Impl(std::unique_ptr<opt::Pass> p) : pass(std::move(p)) {}
 
   std::unique_ptr<opt::Pass> pass;  // Internal implementation pass.
 };

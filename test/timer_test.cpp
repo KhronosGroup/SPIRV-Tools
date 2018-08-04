@@ -26,7 +26,7 @@ namespace {
 // CPU/WALL/USR/SYS time, RSS delta, and the delta of the number of page faults.
 class MockTimer : public Timer {
  public:
-  MockTimer(std::ostream* out, bool measure_mem_usage = false)
+  explicit MockTimer(std::ostream* out, bool measure_mem_usage = false)
       : Timer(out, measure_mem_usage) {}
   double CPUTime() override { return 0.019123; }
   double WallTime() override { return 0.019723; }
@@ -87,7 +87,8 @@ TEST(MockTimer, TestScopedTimer) {
 // |count_stop_|.
 class MockCumulativeTimer : public CumulativeTimer {
  public:
-  MockCumulativeTimer(std::ostream* out, bool measure_mem_usage = false)
+  explicit MockCumulativeTimer(std::ostream* out,
+                               bool measure_mem_usage = false)
       : CumulativeTimer(out, measure_mem_usage), count_stop_(0) {}
   double CPUTime() override { return count_stop_ * 0.019123; }
   double WallTime() override { return count_stop_ * 0.019723; }

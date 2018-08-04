@@ -30,7 +30,7 @@ using spvtools::SpirvStats;
 namespace {
 
 struct ScopedContext {
-  ScopedContext(spv_target_env env) : context(spvContextCreate(env)) {}
+  explicit ScopedContext(spv_target_env env) : context(spvContextCreate(env)) {}
   ~ScopedContext() { spvContextDestroy(context); }
   spv_context context;
 };

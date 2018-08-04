@@ -19,13 +19,11 @@ for more details about the presubmit API built into depot_tools.
 """
 
 LINT_FILTERS = [
-  "-build/storage_class",
   "-readability/braces",
   "-readability/casting",
   "-readability/fn_size",
   "-readability/inheritance",
   "-readability/todo",
-  "-runtime/explicit",
   "-runtime/int",
   "-runtime/printf",
   "-runtime/references",

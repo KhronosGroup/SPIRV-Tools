@@ -106,7 +106,7 @@ SpvStorageClass GetStorageClass(const Instruction& inst) {
 // ValidationState_t to be made available to other users.
 class BuiltInsValidator {
  public:
-  BuiltInsValidator(const ValidationState_t& vstate) : _(vstate) {}
+  explicit BuiltInsValidator(const ValidationState_t& vstate) : _(vstate) {}
 
   // Run validation.
   spv_result_t Run();

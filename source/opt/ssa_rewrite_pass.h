@@ -39,7 +39,7 @@ namespace opt {
 // (https://link.springer.com/chapter/10.1007/978-3-642-37051-9_6)
 class SSARewriter {
  public:
-  SSARewriter(MemPass* pass)
+  explicit SSARewriter(MemPass* pass)
       : pass_(pass), first_phi_id_(pass_->get_module()->IdBound()) {}
 
   // Rewrites SSA-target variables in function |fp| into SSA.  This is the
