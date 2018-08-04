@@ -135,7 +135,7 @@ class IntrusiveList {
 
    protected:
     iterator_template() = delete;
-    inline iterator_template(T* node) { node_ = node; }
+    explicit iterator_template(T* node) { node_ = node; }
     T* node_;
 
     friend IntrusiveList;

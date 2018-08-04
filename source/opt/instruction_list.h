@@ -57,9 +57,10 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
 
   class iterator : public utils::IntrusiveList<Instruction>::iterator {
    public:
-    iterator(const utils::IntrusiveList<Instruction>::iterator& i)
+    explicit iterator(const utils::IntrusiveList<Instruction>::iterator& i)
         : utils::IntrusiveList<Instruction>::iterator(i) {}
-    iterator(Instruction* i) : utils::IntrusiveList<Instruction>::iterator(i) {}
+    explicit iterator(Instruction* i)
+        : utils::IntrusiveList<Instruction>::iterator(i) {}
 
     // DEPRECATED: Please use MoveBefore with an InstructionList instead.
     //

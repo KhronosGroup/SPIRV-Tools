@@ -93,7 +93,7 @@ enum UsageStatus {
 //                               std::cout.
 class Timer {
  public:
-  Timer(std::ostream* out, bool measure_mem_usage = false)
+  explicit Timer(std::ostream* out, bool measure_mem_usage = false)
       : report_stream_(out),
         usage_status_(kSucceeded),
         measure_mem_usage_(measure_mem_usage) {}
@@ -293,7 +293,7 @@ class ScopedTimer {
 //
 class CumulativeTimer : public Timer {
  public:
-  CumulativeTimer(std::ostream* out, bool measure_mem_usage = false)
+  explicit CumulativeTimer(std::ostream* out, bool measure_mem_usage = false)
       : Timer(out, measure_mem_usage),
         cpu_time_(0),
         wall_time_(0),

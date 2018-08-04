@@ -35,7 +35,7 @@ class ScalarReplacementPass : public Pass {
   static const uint32_t kDefaultLimit = 100;
 
  public:
-  ScalarReplacementPass(uint32_t limit = kDefaultLimit)
+  explicit ScalarReplacementPass(uint32_t limit = kDefaultLimit)
       : max_num_elements_(limit) {
     name_[0] = '\0';
     strcat(name_, "scalar-replacement=");

@@ -114,7 +114,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
         unique_id_(0) {}
 
   // Creates a default OpNop instruction.
-  Instruction(IRContext*);
+  explicit Instruction(IRContext*);
   // Creates an instruction with the given opcode |op| and no additional logical
   // operands.
   Instruction(IRContext*, SpvOp);

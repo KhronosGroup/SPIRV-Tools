@@ -245,7 +245,7 @@ class LoopPeelingPass : public Pass {
     std::vector<std::tuple<const Loop*, PeelDirection, uint32_t>> peeled_loops_;
   };
 
-  LoopPeelingPass(LoopPeelingStats* stats = nullptr) : stats_(stats) {}
+  explicit LoopPeelingPass(LoopPeelingStats* stats = nullptr) : stats_(stats) {}
 
   // Sets the loop peeling growth threshold. If the code size increase is above
   // |code_grow_threshold|, the loop will not be peeled. The code size is

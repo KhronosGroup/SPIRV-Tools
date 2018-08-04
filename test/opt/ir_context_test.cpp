@@ -33,7 +33,7 @@ using ::testing::Each;
 
 class DummyPassPreservesNothing : public Pass {
  public:
-  DummyPassPreservesNothing(Status s) : Pass(), status_to_return_(s) {}
+  explicit DummyPassPreservesNothing(Status s) : Pass(), status_to_return_(s) {}
 
   const char* name() const override { return "dummy-pass"; }
   Status Process() override { return status_to_return_; }
@@ -44,7 +44,7 @@ class DummyPassPreservesNothing : public Pass {
 
 class DummyPassPreservesAll : public Pass {
  public:
-  DummyPassPreservesAll(Status s) : Pass(), status_to_return_(s) {}
+  explicit DummyPassPreservesAll(Status s) : Pass(), status_to_return_(s) {}
 
   const char* name() const override { return "dummy-pass"; }
   Status Process() override { return status_to_return_; }
@@ -59,7 +59,7 @@ class DummyPassPreservesAll : public Pass {
 
 class DummyPassPreservesFirst : public Pass {
  public:
-  DummyPassPreservesFirst(Status s) : Pass(), status_to_return_(s) {}
+  explicit DummyPassPreservesFirst(Status s) : Pass(), status_to_return_(s) {}
 
   const char* name() const override { return "dummy-pass"; }
   Status Process() override { return status_to_return_; }

@@ -175,7 +175,7 @@ class ScalarEvolutionAnalysis {
 class SExpression {
  public:
   // Implicit on purpose !
-  SExpression(SENode* node)
+  explicit SExpression(SENode* node)
       : node_(node->GetParentAnalysis()->SimplifyExpression(node)),
         scev_(node->GetParentAnalysis()) {}
 

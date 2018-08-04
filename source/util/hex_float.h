@@ -38,7 +38,7 @@ namespace utils {
 
 class Float16 {
  public:
-  Float16(uint16_t v) : val(v) {}
+  explicit Float16(uint16_t v) : val(v) {}
   Float16() = default;
   static bool isNan(const Float16& val) {
     return ((val.val & 0x7C00) == 0x7C00) && ((val.val & 0x3FF) != 0);
@@ -142,11 +142,13 @@ class FloatProxy {
 
   // Intentionally non-explicit. This is a proxy type so
   // implicit conversions allow us to use it more transparently.
-  FloatProxy(T val) { data_ = FloatProxyTraits<T>::getBitsFromFloat(val); }
+  explicit FloatProxy(T val) {
+    data_ = FloatProxyTraits<T>::getBitsFromFloat(val);
+  }
 
   // Intentionally non-explicit. This is a proxy type so
   // implicit conversions allow us to use it more transparently.
-  FloatProxy(uint_type val) { data_ = val; }
+  explicit FloatProxy(uint_type val) { data_ = val; }
 
   // This is helpful to have and is guaranteed not to stomp bits.
   FloatProxy<T> operator-() const {

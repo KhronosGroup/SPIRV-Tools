@@ -103,7 +103,7 @@ class DefUseManager {
   // will be communicated to the outside via the given message |consumer|. This
   // instance only keeps a reference to the |consumer|, so the |consumer| should
   // outlive this instance.
-  DefUseManager(Module* module) { AnalyzeDefUse(module); }
+  explicit DefUseManager(Module* module) { AnalyzeDefUse(module); }
 
   DefUseManager(const DefUseManager&) = delete;
   DefUseManager(DefUseManager&&) = delete;

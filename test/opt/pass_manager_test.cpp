@@ -33,9 +33,9 @@ using ::testing::Eq;
 // A null pass whose construtors accept arguments
 class NullPassWithArgs : public NullPass {
  public:
-  NullPassWithArgs(uint32_t) {}
-  NullPassWithArgs(std::string) {}
-  NullPassWithArgs(const std::vector<int>&) {}
+  explicit NullPassWithArgs(uint32_t) {}
+  explicit NullPassWithArgs(std::string) {}
+  explicit NullPassWithArgs(const std::vector<int>&) {}
   NullPassWithArgs(const std::vector<int>&, uint32_t) {}
 
   const char* name() const override { return "null-with-args"; }

@@ -127,7 +127,7 @@ class Constant {
       ConstantManager* const_mgr) const;
 
  protected:
-  Constant(const Type* ty) : type_(ty) {}
+  explicit Constant(const Type* ty) : type_(ty) {}
 
   // The type of this constant.
   const Type* type_;
@@ -300,7 +300,7 @@ class CompositeConstant : public Constant {
   }
 
  protected:
-  CompositeConstant(const Type* ty) : Constant(ty), components_() {}
+  explicit CompositeConstant(const Type* ty) : Constant(ty), components_() {}
   CompositeConstant(const Type* ty,
                     const std::vector<const Constant*>& components)
       : Constant(ty), components_(components) {}
@@ -312,7 +312,7 @@ class CompositeConstant : public Constant {
 // Struct type constant.
 class StructConstant : public CompositeConstant {
  public:
-  StructConstant(const Struct* ty) : CompositeConstant(ty) {}
+  explicit StructConstant(const Struct* ty) : CompositeConstant(ty) {}
   StructConstant(const Struct* ty,
                  const std::vector<const Constant*>& components)
       : CompositeConstant(ty, components) {}
@@ -334,7 +334,7 @@ class StructConstant : public CompositeConstant {
 // Vector type constant.
 class VectorConstant : public CompositeConstant {
  public:
-  VectorConstant(const Vector* ty)
+  explicit VectorConstant(const Vector* ty)
       : CompositeConstant(ty), component_type_(ty->element_type()) {}
   VectorConstant(const Vector* ty,
                  const std::vector<const Constant*>& components)
@@ -367,7 +367,7 @@ class VectorConstant : public CompositeConstant {
 // Matrix type constant.
 class MatrixConstant : public CompositeConstant {
  public:
-  MatrixConstant(const Matrix* ty)
+  explicit MatrixConstant(const Matrix* ty)
       : CompositeConstant(ty), component_type_(ty->element_type()) {}
   MatrixConstant(const Matrix* ty,
                  const std::vector<const Constant*>& components)
@@ -400,7 +400,7 @@ class MatrixConstant : public CompositeConstant {
 // Array type constant.
 class ArrayConstant : public CompositeConstant {
  public:
-  ArrayConstant(const Array* ty) : CompositeConstant(ty) {}
+  explicit ArrayConstant(const Array* ty) : CompositeConstant(ty) {}
   ArrayConstant(const Array* ty, const std::vector<const Constant*>& components)
       : CompositeConstant(ty, components) {}
   ArrayConstant(const Array* ty, std::vector<const Constant*>&& components)
@@ -421,7 +421,7 @@ class ArrayConstant : public CompositeConstant {
 // Null type constant.
 class NullConstant : public Constant {
  public:
-  NullConstant(const Type* ty) : Constant(ty) {}
+  explicit NullConstant(const Type* ty) : Constant(ty) {}
   NullConstant* AsNullConstant() override { return this; }
   const NullConstant* AsNullConstant() const override { return this; }
 
@@ -492,7 +492,7 @@ struct ConstantEqual {
 // This class represents a pool of constants.
 class ConstantManager {
  public:
-  ConstantManager(IRContext* ctx);
+  explicit ConstantManager(IRContext* ctx);
 
   IRContext* context() const { return ctx_; }
 
