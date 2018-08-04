@@ -192,7 +192,7 @@ bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
       user->SetInOperand(in_operand_pos, {after});
     }
     AnalyzeUses(user);
-  };
+  }
 
   return true;
 }

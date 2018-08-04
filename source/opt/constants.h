@@ -117,7 +117,7 @@ class Constant {
   int64_t GetS64() const;
 
   // Returns true if the constant is a zero or a composite containing 0s.
-  virtual bool IsZero() const { return false; };
+  virtual bool IsZero() const { return false; }
 
   const Type* type() const { return type_; }
 
@@ -481,10 +481,11 @@ struct ConstantEqual {
       const auto& composite2 = c2->AsCompositeConstant();
       return composite2 &&
              composite1->GetComponents() == composite2->GetComponents();
-    } else if (c1->AsNullConstant())
+    } else if (c1->AsNullConstant()) {
       return c2->AsNullConstant() != nullptr;
-    else
+    } else {
       assert(false && "Tried to compare two invalid Constant instances.");
+    }
     return false;
   }
 };
