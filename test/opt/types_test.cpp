@@ -28,7 +28,7 @@ namespace {
 // Fixture class providing some element types.
 class SameTypeTest : public ::testing::Test {
  protected:
-  virtual void SetUp() override {
+  void SetUp() override {
     void_t_.reset(new Void());
     u32_t_.reset(new Integer(32, false));
     f64_t_.reset(new Float(64));

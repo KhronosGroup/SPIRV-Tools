@@ -23,7 +23,6 @@ LINT_FILTERS = [
   "-readability/braces",
   "-readability/casting",
   "-readability/fn_size",
-  "-readability/inheritance",
   "-readability/todo",
   "-runtime/explicit",
   "-runtime/int",
