@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/util/move_to_front.h"
+#include "source/comp/move_to_front.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -23,7 +23,7 @@
 #include <utility>
 
 namespace spvtools {
-namespace utils {
+namespace comp {
 
 bool MoveToFront::Insert(uint32_t value) {
   auto it = value_to_node_.find(value);
@@ -452,5 +452,5 @@ void MoveToFront::UpdateNode(uint32_t node) {
       1 + std::max(HeightOf(LeftOf(node)), HeightOf(RightOf(node)));
 }
 
-}  // namespace utils
+}  // namespace comp
 }  // namespace spvtools

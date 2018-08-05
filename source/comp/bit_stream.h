@@ -14,8 +14,8 @@
 
 // Contains utils for reading, writing and debug printing bit streams.
 
-#ifndef SOURCE_UTIL_BIT_STREAM_H_
-#define SOURCE_UTIL_BIT_STREAM_H_
+#ifndef SOURCE_COMP_BIT_STREAM_H_
+#define SOURCE_COMP_BIT_STREAM_H_
 
 #include <algorithm>
 #include <bitset>
@@ -27,7 +27,7 @@
 #include <vector>
 
 namespace spvtools {
-namespace utils {
+namespace comp {
 
 // Terminology:
 // Bits - usually used for a uint64 word, first bit is the lowest.
@@ -272,7 +272,7 @@ class BitReaderWord64 : public BitReaderInterface {
   std::function<void(const std::string&)> callback_;
 };
 
-}  // namespace utils
+}  // namespace comp
 }  // namespace spvtools
 
-#endif  // SOURCE_UTIL_BIT_STREAM_H_
+#endif  // SOURCE_COMP_BIT_STREAM_H_

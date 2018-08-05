@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/comp/bit_stream.h"
 #include "source/comp/markv.h"
 #include "source/comp/markv_codec.h"
 #include "source/comp/markv_logger.h"
-#include "source/util/bit_stream.h"
 
 #ifndef SOURCE_COMP_MARKV_DECODER_H_
 #define SOURCE_COMP_MARKV_DECODER_H_
@@ -151,7 +151,7 @@ class MarkvDecoder : public MarkvCodec {
   std::vector<uint32_t> spirv_;
 
   // Bit stream containing encoded data.
-  utils::BitReaderWord64 reader_;
+  BitReaderWord64 reader_;
 
   // Temporary storage for operands of the currently parsed instruction.
   // Valid until next DecodeInstruction call.
