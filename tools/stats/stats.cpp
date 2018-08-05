@@ -19,13 +19,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "source/spirv_stats.h"
 #include "source/table.h"
 #include "spirv-tools/libspirv.h"
 #include "tools/io.h"
+#include "tools/stats/spirv_stats.h"
 #include "tools/stats/stats_analyzer.h"
-
-using spvtools::SpirvStats;
 
 namespace {
 
@@ -83,7 +81,6 @@ int main(int argc, char** argv) {
 
   bool expect_output_path = false;
   bool verbose = false;
-  bool export_text = true;
 
   std::vector<const char*> paths;
   const char* output_path = nullptr;
@@ -126,7 +123,7 @@ int main(int argc, char** argv) {
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_1);
   spvtools::SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
-  spvtools::SpirvStats stats;
+  spvtools::stats::SpirvStats stats;
   stats.opcode_markov_hist.resize(1);
 
   for (size_t index = 0; index < paths.size(); ++index) {
@@ -140,15 +137,15 @@ int main(int argc, char** argv) {
     std::vector<uint32_t> contents;
     if (!ReadFile<uint32_t>(path, "rb", &contents)) return 1;
 
-    if (SPV_SUCCESS != spvtools::AggregateStats(*ctx.context, contents.data(),
-                                                contents.size(), nullptr,
-                                                &stats)) {
+    if (SPV_SUCCESS !=
+        spvtools::stats::AggregateStats(*ctx.context, contents.data(),
+                                        contents.size(), nullptr, &stats)) {
       std::cerr << "error: Failed to aggregate stats for " << path << std::endl;
       return 1;
     }
   }
 
-  StatsAnalyzer analyzer(stats);
+  spvtools::stats::StatsAnalyzer analyzer(stats);
 
   std::ofstream fout;
   if (output_path) {
@@ -160,27 +157,24 @@ int main(int argc, char** argv) {
   }
 
   std::ostream& out = fout.is_open() ? fout : std::cout;
+  out << std::endl;
+  analyzer.WriteVersion(out);
+  analyzer.WriteGenerator(out);
 
-  if (export_text) {
-    out << std::endl;
-    analyzer.WriteVersion(out);
-    analyzer.WriteGenerator(out);
+  out << std::endl;
+  analyzer.WriteCapability(out);
 
-    out << std::endl;
-    analyzer.WriteCapability(out);
+  out << std::endl;
+  analyzer.WriteExtension(out);
 
-    out << std::endl;
-    analyzer.WriteExtension(out);
+  out << std::endl;
+  analyzer.WriteOpcode(out);
 
-    out << std::endl;
-    analyzer.WriteOpcode(out);
+  out << std::endl;
+  analyzer.WriteOpcodeMarkov(out);
 
-    out << std::endl;
-    analyzer.WriteOpcodeMarkov(out);
-
-    out << std::endl;
-    analyzer.WriteConstantLiterals(out);
-  }
+  out << std::endl;
+  analyzer.WriteConstantLiterals(out);
 
   return 0;
 }

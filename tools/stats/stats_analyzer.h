@@ -18,11 +18,14 @@
 #include <string>
 #include <unordered_map>
 
-#include "source/spirv_stats.h"
+#include "tools/stats/spirv_stats.h"
+
+namespace spvtools {
+namespace stats {
 
 class StatsAnalyzer {
  public:
-  explicit StatsAnalyzer(const spvtools::SpirvStats& stats);
+  explicit StatsAnalyzer(const SpirvStats& stats);
 
   // Writes respective histograms to |out|.
   void WriteVersion(std::ostream& out);
@@ -38,7 +41,7 @@ class StatsAnalyzer {
   void WriteOpcodeMarkov(std::ostream& out);
 
  private:
-  const spvtools::SpirvStats& stats_;
+  const SpirvStats& stats_;
 
   uint32_t num_modules_;
 
@@ -48,5 +51,8 @@ class StatsAnalyzer {
   std::unordered_map<std::string, double> extension_freq_;
   std::unordered_map<uint32_t, double> opcode_freq_;
 };
+
+}  // namespace stats
+}  // namespace spvtools
 
 #endif  // TOOLS_STATS_STATS_ANALYZER_H_

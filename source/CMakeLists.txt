@@ -275,7 +275,6 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/print.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_stats.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_validator_options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/table.cpp
