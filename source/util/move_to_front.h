@@ -15,9 +15,9 @@
 #ifndef SOURCE_UTIL_MOVE_TO_FRONT_H_
 #define SOURCE_UTIL_MOVE_TO_FRONT_H_
 
-#include <map>
 #include <cassert>
 #include <cstdint>
+#include <map>
 #include <set>
 #include <unordered_map>
 #include <vector>
