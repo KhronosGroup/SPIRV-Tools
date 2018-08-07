@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+<<<<<<< HEAD
 #include "source/latest_version_spirv_header.h"
 
 #include "source/enum_set.h"
@@ -27,6 +28,17 @@
 #include "source/val/function.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
+=======
+#include "latest_version_spirv_header.h"
+
+#include "enum_set.h"
+#include "extensions.h"
+#include "spirv_validator_options.h"
+#include "val/construct.h"
+#include "val/function.h"
+#include "val/validate.h"
+#include "val/validation_state.h"
+>>>>>>> Formatting fixes
 
 namespace spvtools {
 namespace val {
