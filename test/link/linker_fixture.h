@@ -61,7 +61,7 @@ class LinkerTest : public ::testing::Test {
     tools_.SetMessageConsumer(consumer);
   }
 
-  virtual void TearDown() override { error_message_.clear(); }
+  void TearDown() override { error_message_.clear(); }
 
   // Assembles each of the given strings into SPIR-V binaries before linking
   // them together. SPV_ERROR_INVALID_TEXT is returned if the assembling failed
