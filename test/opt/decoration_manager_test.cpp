@@ -63,7 +63,7 @@ class DecorationManagerTest : public ::testing::Test {
     tools_.SetMessageConsumer(consumer_);
   }
 
-  virtual void TearDown() override { error_message_.clear(); }
+  void TearDown() override { error_message_.clear(); }
 
   DecorationManager* GetDecorationManager(const std::string& text) {
     context_ = BuildModule(SPV_ENV_UNIVERSAL_1_2, consumer_, text);

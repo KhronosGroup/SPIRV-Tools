@@ -26,7 +26,7 @@ class EntryPointsAmountTest : public spvtest::LinkerTest {
  public:
   EntryPointsAmountTest() { binaries.reserve(0xFFFF); }
 
-  virtual void SetUp() override {
+  void SetUp() override {
     binaries.push_back({SpvMagicNumber,
                         SpvVersion,
                         SPV_GENERATOR_CODEPLAY,
@@ -103,7 +103,7 @@ class EntryPointsAmountTest : public spvtest::LinkerTest {
       binaries.push_back(binary);
     }
   }
-  virtual void TearDown() override { binaries.clear(); }
+  void TearDown() override { binaries.clear(); }
 
   spvtest::Binaries binaries;
 };
