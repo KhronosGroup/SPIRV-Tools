@@ -284,6 +284,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
       if (auto error = IdPass(*vstate, inst)) return error;
     }
+
     if (auto error = CapabilityPass(*vstate, &instruction)) return error;
     if (auto error = DataRulesPass(*vstate, &instruction)) return error;
     if (auto error = ModuleLayoutPass(*vstate, &instruction)) return error;
@@ -330,7 +331,6 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = PrimitivesPass(*vstate, &instruction)) return error;
     if (auto error = LiteralsPass(*vstate, &instruction)) return error;
     if (auto error = NonUniformPass(*vstate, &instruction)) return error;
-
     if (auto error = ValidateMemoryInstructions(*vstate, &instruction))
       return error;
 
