@@ -332,14 +332,16 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction& inst) {
   }
 
   if (inst.opcode() == SpvOpCopyMemory) {
-    const auto target_type = _.FindDef(target_pointer_type->words()[3]);
+    const auto target_type =
+        _.FindDef(target_pointer_type->GetOperandAs<uint32_t>(2));
     if (!target_type || target_type->opcode() == SpvOpTypeVoid) {
       return _.diag(SPV_ERROR_INVALID_ID, &inst)
              << "Target operand <id> '" << _.getIdName(target_id)
              << "' cannot be a void pointer.";
     }
 
-    const auto source_type = _.FindDef(source_pointer_type->words()[3]);
+    const auto source_type =
+        _.FindDef(source_pointer_type->GetOperandAs<uint32_t>(2));
     if (!source_type || source_type->opcode() == SpvOpTypeVoid) {
       return _.diag(SPV_ERROR_INVALID_ID, &inst)
              << "Source operand <id> '" << _.getIdName(source_id)
@@ -353,8 +355,7 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction& inst) {
              << _.getIdName(source_type->id()) << "'s type.";
     }
   } else {
-    const auto size_index = 2;
-    const auto size_id = inst.GetOperandAs<uint32_t>(size_index);
+    const auto size_id = inst.GetOperandAs<uint32_t>(2);
     const auto size = _.FindDef(size_id);
     if (!size) {
       return _.diag(SPV_ERROR_INVALID_ID, &inst)
