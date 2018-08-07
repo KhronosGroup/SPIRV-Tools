@@ -14,6 +14,7 @@
 
 #include "source/comp/markv_decoder.h"
 
+#include <cstring>
 #include <iterator>
 #include <numeric>
 
