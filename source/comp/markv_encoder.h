@@ -20,6 +20,8 @@
 #ifndef SOURCE_COMP_MARKV_ENCODER_H_
 #define SOURCE_COMP_MARKV_ENCODER_H_
 
+#include <cstring>
+
 namespace spvtools {
 namespace comp {
 
