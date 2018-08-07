@@ -302,9 +302,9 @@ bool IsValidTypeForComponentWiseOperation(const analysis::Type* type) {
   } else if (auto* it = type->AsInteger()) {
     if (it->width() == 32) return true;
   } else if (auto* vt = type->AsVector()) {
-    if (vt->element_type()->AsBool())
+    if (vt->element_type()->AsBool()) {
       return true;
-    else if (auto* vit = vt->element_type()->AsInteger()) {
+    } else if (auto* vit = vt->element_type()->AsInteger()) {
       if (vit->width() == 32) return true;
     }
   }

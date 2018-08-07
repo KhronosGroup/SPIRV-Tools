@@ -278,8 +278,9 @@ DominatorTreeNode* DominatorTree::GetOrInsertNode(BasicBlock* bb) {
   if (node_iter == nodes_.end()) {
     dtn = &nodes_.emplace(std::make_pair(bb->id(), DominatorTreeNode{bb}))
                .first->second;
-  } else
+  } else {
     dtn = &node_iter->second;
+  }
 
   return dtn;
 }

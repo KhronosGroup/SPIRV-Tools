@@ -731,8 +731,10 @@ class LoopUnswitch {
         context_->KillInst(merge);
       }
       dead_loops[loop] = loop->GetParent();
-    } else
+    } else {
       dead_loops[loop] = loop;
+    }
+
     // For each loop, check if we killed it. If we did, find a suitable parent
     // for its children.
     for (Loop& sub_loop :

@@ -765,7 +765,7 @@ class MarkvDecoder : public MarkvCodecBase {
     const bool result = reader_.ReadBits(&bits, 1);
     if (result) *bit = bits ? true : false;
     return result;
-  };
+  }
 
   // Returns ReadBit bound to the class object.
   std::function<bool(bool*)> GetReadBitCallback() {
