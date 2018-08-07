@@ -208,6 +208,8 @@ add_spvtools_unittest(
 add_spvtools_unittest(
   TARGET move_to_front
   SRCS move_to_front_test.cpp
+    ../source/util/move_to_front.h
+    ../source/util/move_to_front.cpp
   LIBS ${SPIRV_TOOLS})
 
 add_subdirectory(comp)
