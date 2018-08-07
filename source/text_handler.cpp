@@ -107,9 +107,9 @@ spv_result_t getWord(spv_text text, spv_position position, std::string* word) {
       return SPV_SUCCESS;
     }
     const char ch = text->str[position->index];
-    if (ch == '\\')
+    if (ch == '\\') {
       escaping = !escaping;
-    else {
+    } else {
       switch (ch) {
         case '"':
           if (!escaping) quoting = !quoting;

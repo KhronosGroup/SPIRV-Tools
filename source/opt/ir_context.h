@@ -267,7 +267,7 @@ class IRContext {
       BuildDecorationManager();
     }
     return decoration_mgr_.get();
-  };
+  }
 
   // Returns a pointer to the constant manager.  If no constant manager has been
   // created yet, it creates one.  NOTE: Once created, the constant manager

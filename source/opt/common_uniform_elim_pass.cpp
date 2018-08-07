@@ -284,7 +284,7 @@ bool CommonUniformElimPass::UniformAccessChainConvert(Function* func) {
       inst = ReplaceAndDeleteLoad(inst, replId, ptrInst);
       inst = inst->InsertBefore(std::move(newInsts));
       modified = true;
-    };
+    }
   }
   return modified;
 }
