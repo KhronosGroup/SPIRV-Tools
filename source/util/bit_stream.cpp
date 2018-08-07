@@ -197,41 +197,6 @@ bool ReadVariableWidthSigned(BitReaderInterface* reader, T* val,
 
 }  // namespace
 
-size_t Log2U64(uint64_t val) {
-  size_t res = 0;
-
-  if (val & 0xFFFFFFFF00000000) {
-    val >>= 32;
-    res |= 32;
-  }
-
-  if (val & 0xFFFF0000) {
-    val >>= 16;
-    res |= 16;
-  }
-
-  if (val & 0xFF00) {
-    val >>= 8;
-    res |= 8;
-  }
-
-  if (val & 0xF0) {
-    val >>= 4;
-    res |= 4;
-  }
-
-  if (val & 0xC) {
-    val >>= 2;
-    res |= 2;
-  }
-
-  if (val & 0x2) {
-    res |= 1;
-  }
-
-  return res;
-}
-
 void BitWriterInterface::WriteVariableWidthU64(uint64_t val,
                                                size_t chunk_length) {
   WriteVariableWidthUnsigned(this, val, chunk_length);
@@ -247,39 +212,9 @@ void BitWriterInterface::WriteVariableWidthU16(uint16_t val,
   WriteVariableWidthUnsigned(this, val, chunk_length);
 }
 
-void BitWriterInterface::WriteVariableWidthU8(uint8_t val,
-                                              size_t chunk_length) {
-  WriteVariableWidthUnsigned(this, val, chunk_length);
-}
-
 void BitWriterInterface::WriteVariableWidthS64(int64_t val, size_t chunk_length,
                                                size_t zigzag_exponent) {
   WriteVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
-}
-
-void BitWriterInterface::WriteVariableWidthS32(int32_t val, size_t chunk_length,
-                                               size_t zigzag_exponent) {
-  WriteVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
-}
-
-void BitWriterInterface::WriteVariableWidthS16(int16_t val, size_t chunk_length,
-                                               size_t zigzag_exponent) {
-  WriteVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
-}
-
-void BitWriterInterface::WriteVariableWidthS8(int8_t val, size_t chunk_length,
-                                              size_t zigzag_exponent) {
-  WriteVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
-}
-
-void BitWriterInterface::WriteFixedWidth(uint64_t val, uint64_t max_val) {
-  if (val > max_val) {
-    assert(0 && "WriteFixedWidth: value too wide");
-    return;
-  }
-
-  const size_t num_bits = 1 + Log2U64(max_val);
-  WriteBits(val, num_bits);
 }
 
 BitWriterWord64::BitWriterWord64(size_t reserve_bits) : end_(0) {
@@ -340,34 +275,9 @@ bool BitReaderInterface::ReadVariableWidthU16(uint16_t* val,
   return ReadVariableWidthUnsigned(this, val, chunk_length);
 }
 
-bool BitReaderInterface::ReadVariableWidthU8(uint8_t* val,
-                                             size_t chunk_length) {
-  return ReadVariableWidthUnsigned(this, val, chunk_length);
-}
-
 bool BitReaderInterface::ReadVariableWidthS64(int64_t* val, size_t chunk_length,
                                               size_t zigzag_exponent) {
   return ReadVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
-}
-
-bool BitReaderInterface::ReadVariableWidthS32(int32_t* val, size_t chunk_length,
-                                              size_t zigzag_exponent) {
-  return ReadVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
-}
-
-bool BitReaderInterface::ReadVariableWidthS16(int16_t* val, size_t chunk_length,
-                                              size_t zigzag_exponent) {
-  return ReadVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
-}
-
-bool BitReaderInterface::ReadVariableWidthS8(int8_t* val, size_t chunk_length,
-                                             size_t zigzag_exponent) {
-  return ReadVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
-}
-
-bool BitReaderInterface::ReadFixedWidth(uint64_t* val, uint64_t max_val) {
-  const size_t num_bits = 1 + Log2U64(max_val);
-  return ReadBits(val, num_bits) == num_bits;
 }
 
 BitReaderWord64::BitReaderWord64(std::vector<uint64_t>&& buffer)
