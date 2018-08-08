@@ -175,6 +175,9 @@ spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst);
 /// Validates correctness of non-uniform group instructions.
 spv_result_t NonUniformPass(ValidationState_t& _, const Instruction* inst);
 
+/// Validates correctness of debug instructions.
+spv_result_t DebugPass(ValidationState_t& _, const Instruction* inst);
+
 // Validates that capability declarations use operands allowed in the current
 // context.
 spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst);
