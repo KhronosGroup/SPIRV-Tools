@@ -283,6 +283,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_adjacency.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_annotation.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_arithmetics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_atomics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_barriers.cpp
