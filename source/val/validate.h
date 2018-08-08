@@ -188,6 +188,9 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst);
 /// Validates correctness of primitive instructions.
 spv_result_t PrimitivesPass(ValidationState_t& _, const Instruction* inst);
 
+/// Validates correctness of mode setting instructions.
+spv_result_t ModeSettingPass(ValidationState_t& _, const Instruction* inst);
+
 /// @brief Validate the ID usage of the instruction stream
 ///
 /// @param[in] pInsts stream of instructions
