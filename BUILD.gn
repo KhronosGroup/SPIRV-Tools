@@ -359,6 +359,7 @@ static_library("spvtools_val") {
     "source/val/validate.cpp",
     "source/val/validate.h",
     "source/val/validate_adjacency.cpp",
+    "source/val/validate_annotation.cpp",
     "source/val/validate_arithmetics.cpp",
     "source/val/validate_atomics.cpp",
     "source/val/validate_barriers.cpp",

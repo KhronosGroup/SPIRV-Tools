@@ -322,7 +322,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     // sections to maintain test consistency.
     // Miscellaneous
     if (auto error = DebugPass(*vstate, &instruction)) return error;
-    // Annotation
+    if (auto error = AnnotationPass(*vstate, &instruction)) return error;
     if (auto error = ExtInstPass(*vstate, &instruction)) return error;
     // Mode Setting
     if (auto error = TypePass(*vstate, &instruction)) return error;
