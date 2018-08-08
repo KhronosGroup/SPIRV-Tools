@@ -92,126 +92,6 @@ class idUsage {
   helper
 
 template <>
-bool idUsage::isValid<SpvOpDecorate>(const spv_instruction_t* inst,
-                                     const spv_opcode_desc) {
-  auto decorationIndex = 2;
-  auto decoration = inst->words[decorationIndex];
-  if (decoration == SpvDecorationSpecId) {
-    auto targetIndex = 1;
-    auto target = module_.FindDef(inst->words[targetIndex]);
-    if (!target || !spvOpcodeIsScalarSpecConstant(target->opcode())) {
-      DIAG(target) << "OpDecorate SpectId decoration target <id> '"
-                   << module_.getIdName(inst->words[decorationIndex])
-                   << "' is not a scalar specialization constant.";
-      return false;
-    }
-  }
-  // TODO: Add validations for all decorations.
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t* inst,
-                                           const spv_opcode_desc) {
-  auto structTypeIndex = 1;
-  auto structType = module_.FindDef(inst->words[structTypeIndex]);
-  if (!structType || SpvOpTypeStruct != structType->opcode()) {
-    DIAG(structType) << "OpMemberDecorate Structure type <id> '"
-                     << module_.getIdName(inst->words[structTypeIndex])
-                     << "' is not a struct type.";
-    return false;
-  }
-  auto memberIndex = 2;
-  auto member = inst->words[memberIndex];
-  auto memberCount = static_cast<uint32_t>(structType->words().size() - 2);
-  if (memberCount < member) {
-    DIAG(structType) << "Index " << member
-                     << " provided in OpMemberDecorate for struct <id> "
-                     << module_.getIdName(inst->words[structTypeIndex])
-                     << " is out of bounds. The structure has " << memberCount
-                     << " members. Largest valid index is " << memberCount - 1
-                     << ".";
-    return false;
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpDecorationGroup>(const spv_instruction_t* inst,
-                                            const spv_opcode_desc) {
-  auto decorationGroupIndex = 1;
-  auto decorationGroup = module_.FindDef(inst->words[decorationGroupIndex]);
-
-  for (auto pair : decorationGroup->uses()) {
-    auto use = pair.first;
-    if (use->opcode() != SpvOpDecorate && use->opcode() != SpvOpGroupDecorate &&
-        use->opcode() != SpvOpGroupMemberDecorate &&
-        use->opcode() != SpvOpName) {
-      DIAG(decorationGroup) << "Result id of OpDecorationGroup can only "
-                            << "be targeted by OpName, OpGroupDecorate, "
-                            << "OpDecorate, and OpGroupMemberDecorate";
-      return false;
-    }
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpGroupDecorate>(const spv_instruction_t* inst,
-                                          const spv_opcode_desc) {
-  auto decorationGroupIndex = 1;
-  auto decorationGroup = module_.FindDef(inst->words[decorationGroupIndex]);
-  if (!decorationGroup || SpvOpDecorationGroup != decorationGroup->opcode()) {
-    DIAG(decorationGroup) << "OpGroupDecorate Decoration group <id> '"
-                          << module_.getIdName(
-                                 inst->words[decorationGroupIndex])
-                          << "' is not a decoration group.";
-    return false;
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpGroupMemberDecorate>(const spv_instruction_t* inst,
-                                                const spv_opcode_desc) {
-  auto decorationGroupIndex = 1;
-  auto decorationGroup = module_.FindDef(inst->words[decorationGroupIndex]);
-  if (!decorationGroup || SpvOpDecorationGroup != decorationGroup->opcode()) {
-    DIAG(decorationGroup) << "OpGroupMemberDecorate Decoration group <id> '"
-                          << module_.getIdName(
-                                 inst->words[decorationGroupIndex])
-                          << "' is not a decoration group.";
-    return false;
-  }
-  // Grammar checks ensures that the number of arguments to this instruction
-  // is an odd number: 1 decoration group + (id,literal) pairs.
-  for (size_t i = 2; i + 1 < inst->words.size(); i = i + 2) {
-    const uint32_t struct_id = inst->words[i];
-    const uint32_t index = inst->words[i + 1];
-    auto struct_instr = module_.FindDef(struct_id);
-    if (!struct_instr || SpvOpTypeStruct != struct_instr->opcode()) {
-      DIAG(struct_instr) << "OpGroupMemberDecorate Structure type <id> '"
-                         << module_.getIdName(struct_id)
-                         << "' is not a struct type.";
-      return false;
-    }
-    const uint32_t num_struct_members =
-        static_cast<uint32_t>(struct_instr->words().size() - 2);
-    if (index >= num_struct_members) {
-      DIAG(struct_instr)
-          << "Index " << index
-          << " provided in OpGroupMemberDecorate for struct <id> "
-          << module_.getIdName(struct_id)
-          << " is out of bounds. The structure has " << num_struct_members
-          << " members. Largest valid index is " << num_struct_members - 1
-          << ".";
-      return false;
-    }
-  }
-  return true;
-}
-
-template <>
 bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
   auto entryPointIndex = 2;
@@ -1144,11 +1024,6 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
   case Spv##OpCode:  \
     return isValid<Spv##OpCode>(inst, opcodeEntry);
   switch (inst->opcode) {
-    CASE(OpDecorate)
-    CASE(OpMemberDecorate)
-    CASE(OpDecorationGroup)
-    CASE(OpGroupDecorate)
-    CASE(OpGroupMemberDecorate)
     CASE(OpEntryPoint)
     CASE(OpExecutionMode)
     CASE(OpConstantTrue)

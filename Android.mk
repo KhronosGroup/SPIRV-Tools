@@ -36,6 +36,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validation_state.cpp \
 		source/val/validate.cpp \
 		source/val/validate_adjacency.cpp \
+		source/val/validate_annotation.cpp \
 		source/val/validate_arithmetics.cpp \
 		source/val/validate_atomics.cpp \
 		source/val/validate_barriers.cpp \
