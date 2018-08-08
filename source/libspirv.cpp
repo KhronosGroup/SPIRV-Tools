@@ -128,25 +128,4 @@ bool SpirvTools::Validate(const uint32_t* binary, const size_t binary_size,
   return valid;
 }
 
-void CLIMessageConsumer(spv_message_level_t level, const char*,
-                        const spv_position_t& position, const char* message) {
-  switch (level) {
-    case SPV_MSG_FATAL:
-    case SPV_MSG_INTERNAL_ERROR:
-    case SPV_MSG_ERROR:
-      std::cerr << "error: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    case SPV_MSG_WARNING:
-      std::cout << "warning: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    case SPV_MSG_INFO:
-      std::cout << "info: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    default:
-      break;
-  }
-}
 }  // namespace spvtools

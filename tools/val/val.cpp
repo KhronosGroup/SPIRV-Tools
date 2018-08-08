@@ -20,6 +20,7 @@
 
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
+#include "source/util/cli_consumer.h"
 #include "spirv-tools/libspirv.hpp"
 #include "tools/io.h"
 
@@ -164,7 +165,7 @@ int main(int argc, char** argv) {
   if (!ReadFile<uint32_t>(inFile, "rb", &contents)) return 1;
 
   spvtools::SpirvTools tools(target_env);
-  tools.SetMessageConsumer(spvtools::CLIMessageConsumer);
+  tools.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   bool succeed = tools.Validate(contents.data(), contents.size(), options);
 

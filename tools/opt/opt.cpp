@@ -27,6 +27,7 @@
 #include "source/opt/loop_peeling.h"
 #include "source/opt/set_spec_constant_default_value_pass.h"
 #include "source/spirv_validator_options.h"
+#include "source/util/cli_consumer.h"
 #include "spirv-tools/optimizer.hpp"
 #include "tools/io.h"
 
@@ -568,7 +569,7 @@ int main(int argc, const char** argv) {
   spvtools::ValidatorOptions options;
 
   spvtools::Optimizer optimizer(target_env);
-  optimizer.SetMessageConsumer(spvtools::CLIMessageConsumer);
+  optimizer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   OptStatus status = ParseFlags(argc, argv, &optimizer, &in_file, &out_file,
                                 &options, &skip_validator);

@@ -219,6 +219,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bitutils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_stream.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_vector.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/util/cli_consumer.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/parse_number.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/small_vector.h
@@ -256,6 +257,7 @@ set(SPIRV_SOURCES
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_stream.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_vector.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/util/cli_consumer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/util/parse_number.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/util/string_utils.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.cpp
