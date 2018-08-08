@@ -1037,23 +1037,6 @@ TEST_F(ValidateIdWithMessage,
                         "component count does not match Result Type <id> '4's "
                         "vector component count."));
 }
-TEST_F(ValidateIdWithMessage, OpConstantCompositeMatrixColumnTypeBad) {
-  std::string spirv = kGLSL450MemoryModel + R"(
- %1 = OpTypeInt 32 0
- %2 = OpTypeFloat 32
- %3 = OpTypeVector %1 2
- %4 = OpTypeVector %3 2
- %5 = OpTypeMatrix %2 2
- %6 = OpConstant %1 42
- %7 = OpConstant %2 3.14
- %8 = OpConstantComposite %3 %6 %6
- %9 = OpConstantComposite %4 %7 %7
-%10 = OpConstantComposite %5 %8 %9)";
-  CompileSuccessfully(spirv.c_str());
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Columns in a matrix must be of type vector."));
-}
 TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
