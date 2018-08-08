@@ -14,6 +14,8 @@
 //
 #include "source/val/validate.h"
 
+#include <algorithm>
+
 #include "source/opcode.h"
 #include "source/val/instruction.h"
 #include "source/val/validation_state.h"
