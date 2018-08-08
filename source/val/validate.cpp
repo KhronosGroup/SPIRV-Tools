@@ -284,10 +284,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
       if (auto error = IdPass(*vstate, inst)) return error;
     }
-  }
 
-  for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
-    auto& instruction = vstate->ordered_instructions()[i];
     if (auto error = CapabilityPass(*vstate, &instruction)) return error;
     if (auto error = DataRulesPass(*vstate, &instruction)) return error;
     if (auto error = ModuleLayoutPass(*vstate, &instruction)) return error;

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2018 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -217,6 +217,50 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateTypePointer(ValidationState_t& _,
+                                 const Instruction* inst) {
+  const auto type_id = inst->GetOperandAs<uint32_t>(2);
+  const auto type = _.FindDef(type_id);
+  if (!type || !spvOpcodeGeneratesType(type->opcode())) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpTypePointer Type <id> '" << _.getIdName(type_id)
+           << "' is not a type.";
+  }
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateTypeFunction(ValidationState_t& _,
+                                  const Instruction* inst) {
+  const auto return_type_id = inst->GetOperandAs<uint32_t>(1);
+  const auto return_type = _.FindDef(return_type_id);
+  if (!return_type || !spvOpcodeGeneratesType(return_type->opcode())) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpTypeFunction Return Type <id> '" << _.getIdName(return_type_id)
+           << "' is not a type.";
+  }
+  size_t num_args = 0;
+  for (size_t param_type_index = 2; param_type_index < inst->operands().size();
+       ++param_type_index, ++num_args) {
+    const auto param_id = inst->GetOperandAs<uint32_t>(param_type_index);
+    const auto param_type = _.FindDef(param_id);
+    if (!param_type || !spvOpcodeGeneratesType(param_type->opcode())) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpTypeFunction Parameter Type <id> '" << _.getIdName(param_id)
+             << "' is not a type.";
+    }
+  }
+  const uint32_t num_function_args_limit =
+      _.options()->universal_limits_.max_function_args;
+  if (num_args > num_function_args_limit) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpTypeFunction may not take more than "
+           << num_function_args_limit << " arguments. OpTypeFunction <id> '"
+           << _.getIdName(inst->GetOperandAs<uint32_t>(0)) << "' has "
+           << num_args << " arguments.";
+  }
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t TypePass(ValidationState_t& _, const Instruction* inst) {
@@ -241,10 +285,11 @@ spv_result_t TypePass(ValidationState_t& _, const Instruction* inst) {
       if (auto error = ValidateTypeStruct(_, inst)) return error;
       break;
     case SpvOpTypePointer:
-    case SpvOpTypeFunction:
-    case SpvOpTypePipe:
+      if (auto error = ValidateTypePointer(_, inst)) return error;
       break;
-    case SpvOpTypeSampler:
+    case SpvOpTypeFunction:
+      if (auto error = ValidateTypeFunction(_, inst)) return error;
+      break;
     default:
       break;
   }
