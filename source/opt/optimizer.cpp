@@ -448,6 +448,20 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
 bool Optimizer::Run(const uint32_t* original_binary,
                     const size_t original_binary_size,
                     std::vector<uint32_t>* optimized_binary) const {
+  return Run(original_binary, original_binary_size, optimized_binary,
+             ValidatorOptions());
+}
+
+bool Optimizer::Run(const uint32_t* original_binary,
+                    const size_t original_binary_size,
+                    std::vector<uint32_t>* optimized_binary,
+                    const ValidatorOptions& options) const {
+  spvtools::SpirvTools tools(impl_->target_env);
+  tools.SetMessageConsumer(impl_->pass_manager.consumer());
+  if (!tools.Validate(original_binary, original_binary_size, options)) {
+    return false;
+  }
+
   std::unique_ptr<opt::IRContext> context = BuildModule(
       impl_->target_env, consumer(), original_binary, original_binary_size);
   if (context == nullptr) return false;
