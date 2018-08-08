@@ -20,9 +20,9 @@
 
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
-#include "source/util/cli_consumer.h"
 #include "spirv-tools/libspirv.hpp"
 #include "tools/io.h"
+#include "tools/util/cli_consumer.h"
 
 void print_usage(char* argv0) {
   printf(
