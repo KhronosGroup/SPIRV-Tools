@@ -92,59 +92,6 @@ class idUsage {
   helper
 
 template <>
-bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
-                                       const spv_opcode_desc) {
-  auto entryPointIndex = 2;
-  auto entryPoint = module_.FindDef(inst->words[entryPointIndex]);
-  if (!entryPoint || SpvOpFunction != entryPoint->opcode()) {
-    DIAG(entryPoint) << "OpEntryPoint Entry Point <id> '"
-                     << module_.getIdName(inst->words[entryPointIndex])
-                     << "' is not a function.";
-    return false;
-  }
-  // don't check kernel function signatures
-  const SpvExecutionModel executionModel = SpvExecutionModel(inst->words[1]);
-  if (executionModel != SpvExecutionModelKernel) {
-    // TODO: Check the entry point signature is void main(void), may be subject
-    // to change
-    auto entryPointType = module_.FindDef(entryPoint->words()[4]);
-    if (!entryPointType || 3 != entryPointType->words().size()) {
-      DIAG(entryPoint) << "OpEntryPoint Entry Point <id> '"
-                       << module_.getIdName(inst->words[entryPointIndex])
-                       << "'s function parameter count is not zero.";
-      return false;
-    }
-  }
-
-  auto returnType = module_.FindDef(entryPoint->type_id());
-  if (!returnType || SpvOpTypeVoid != returnType->opcode()) {
-    DIAG(entryPoint) << "OpEntryPoint Entry Point <id> '"
-                     << module_.getIdName(inst->words[entryPointIndex])
-                     << "'s function return type is not void.";
-    return false;
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpExecutionMode>(const spv_instruction_t* inst,
-                                          const spv_opcode_desc) {
-  auto entryPointIndex = 1;
-  auto entryPointID = inst->words[entryPointIndex];
-  auto found =
-      std::find(entry_points_.cbegin(), entry_points_.cend(), entryPointID);
-  if (found == entry_points_.cend()) {
-    DIAG(module_.FindDef(entryPointID))
-        << "OpExecutionMode Entry Point <id> '"
-        << module_.getIdName(inst->words[entryPointIndex])
-        << "' is not the Entry Point "
-           "operand of an OpEntryPoint.";
-    return false;
-  }
-  return true;
-}
-
-template <>
 bool idUsage::isValid<SpvOpConstantTrue>(const spv_instruction_t* inst,
                                          const spv_opcode_desc) {
   auto resultTypeIndex = 1;
@@ -1024,8 +971,6 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
   case Spv##OpCode:  \
     return isValid<Spv##OpCode>(inst, opcodeEntry);
   switch (inst->opcode) {
-    CASE(OpEntryPoint)
-    CASE(OpExecutionMode)
     CASE(OpConstantTrue)
     CASE(OpConstantFalse)
     CASE(OpConstantComposite)
