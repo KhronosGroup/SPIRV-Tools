@@ -92,45 +92,6 @@ class idUsage {
   helper
 
 template <>
-bool idUsage::isValid<SpvOpMemberName>(const spv_instruction_t* inst,
-                                       const spv_opcode_desc) {
-  auto typeIndex = 1;
-  auto type = module_.FindDef(inst->words[typeIndex]);
-  if (!type || SpvOpTypeStruct != type->opcode()) {
-    DIAG(type) << "OpMemberName Type <id> '"
-               << module_.getIdName(inst->words[typeIndex])
-               << "' is not a struct type.";
-    return false;
-  }
-  auto memberIndex = 2;
-  auto member = inst->words[memberIndex];
-  auto memberCount = (uint32_t)(type->words().size() - 2);
-  if (memberCount <= member) {
-    DIAG(module_.FindDef(member))
-        << "OpMemberName Member <id> '"
-        << module_.getIdName(inst->words[memberIndex])
-        << "' index is larger than Type <id> '" << module_.getIdName(type->id())
-        << "'s member count.";
-    return false;
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpLine>(const spv_instruction_t* inst,
-                                 const spv_opcode_desc) {
-  auto fileIndex = 1;
-  auto file = module_.FindDef(inst->words[fileIndex]);
-  if (!file || SpvOpString != file->opcode()) {
-    DIAG(file) << "OpLine Target <id> '"
-               << module_.getIdName(inst->words[fileIndex])
-               << "' is not an OpString.";
-    return false;
-  }
-  return true;
-}
-
-template <>
 bool idUsage::isValid<SpvOpDecorate>(const spv_instruction_t* inst,
                                      const spv_opcode_desc) {
   auto decorationIndex = 2;
@@ -1183,8 +1144,6 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
   case Spv##OpCode:  \
     return isValid<Spv##OpCode>(inst, opcodeEntry);
   switch (inst->opcode) {
-    CASE(OpMemberName)
-    CASE(OpLine)
     CASE(OpDecorate)
     CASE(OpMemberDecorate)
     CASE(OpDecorationGroup)

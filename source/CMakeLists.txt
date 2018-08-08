@@ -293,6 +293,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_composites.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_conversion.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_datarules.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_debug.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_decorations.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_derivatives.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_ext_inst.cpp

@@ -46,6 +46,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_composites.cpp \
 		source/val/validate_conversion.cpp \
 		source/val/validate_datarules.cpp \
+		source/val/validate_debug.cpp \
 		source/val/validate_decorations.cpp \
 		source/val/validate_derivatives.cpp \
 		source/val/validate_ext_inst.cpp \
