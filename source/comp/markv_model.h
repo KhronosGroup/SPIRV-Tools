@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,16 +15,11 @@
 #ifndef SOURCE_COMP_MARKV_MODEL_H_
 #define SOURCE_COMP_MARKV_MODEL_H_
 
-#include <map>
-#include <memory>
-#include <string>
 #include <unordered_set>
-#include <utility>
-#include <vector>
 
 #include "source/latest_version_spirv_header.h"
 #include "source/util/huffman_codec.h"
-#include "spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace comp {
