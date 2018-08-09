@@ -30,6 +30,7 @@
 
 // Base class for MARK-V encoder and decoder. Contains common functionality
 // such as:
+//
 // - Validator connection and validation state.
 // - SPIR-V grammar and helper functions.
 
