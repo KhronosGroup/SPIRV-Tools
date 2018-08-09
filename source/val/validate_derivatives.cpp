@@ -55,9 +55,10 @@ spv_result_t DerivativesPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       _.current_function().RegisterExecutionModelLimitation(
-          SpvExecutionModelFragment, std::string(
+          SpvExecutionModelFragment,
+          std::string(
               "Derivative instructions require Fragment execution model: ") +
-          spvOpcodeString(opcode));
+              spvOpcodeString(opcode));
       break;
     }
 
