@@ -15,6 +15,14 @@
 if(SPIRV_BUILD_COMPRESSION)
   add_library(SPIRV-Tools-comp
       markv_codec.cpp
+      markv_codec.h
+      markv.cpp
+      markv.h
+      markv_decoder.cpp
+      markv_decoder.h
+      markv_encoder.cpp
+      markv_encoder.h
+      markv_logger.h
       ${CMAKE_CURRENT_SOURCE_DIR}/../util/move_to_front.h
       ${CMAKE_CURRENT_SOURCE_DIR}/../util/move_to_front.cpp)
 

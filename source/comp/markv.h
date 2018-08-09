@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,14 +21,12 @@
 #ifndef SOURCE_COMP_MARKV_H_
 #define SOURCE_COMP_MARKV_H_
 
-#include <string>
-#include <vector>
-
-#include "source/comp/markv_model.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace comp {
+
+class MarkvModel;
 
 struct MarkvCodecOptions {
   bool validate_spirv_binary = false;
