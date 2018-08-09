@@ -1095,10 +1095,11 @@ spv_result_t ValidateImageRead(ValidationState_t& _, const Instruction* inst) {
              << "Image Dim SubpassData cannot be used with ImageSparseRead";
     }
 
-    _.current_function().RegisterExecutionModelLimitation(
-        SpvExecutionModelFragment,
-        std::string("Dim SubpassData requires Fragment execution model: ") +
-            spvOpcodeString(opcode));
+    _.function(inst->function()->id())
+        ->RegisterExecutionModelLimitation(
+            SpvExecutionModelFragment,
+            std::string("Dim SubpassData requires Fragment execution model: ") +
+                spvOpcodeString(opcode));
   }
 
   if (_.GetIdOpcode(info.sampled_type) != SpvOpTypeVoid) {
@@ -1387,9 +1388,10 @@ spv_result_t ValidateImageQueryFormatOrOrder(ValidationState_t& _,
 
 spv_result_t ValidateImageQueryLod(ValidationState_t& _,
                                    const Instruction* inst) {
-  _.current_function().RegisterExecutionModelLimitation(
-      SpvExecutionModelFragment,
-      "OpImageQueryLod requires Fragment execution model");
+  _.function(inst->function()->id())
+      ->RegisterExecutionModelLimitation(
+          SpvExecutionModelFragment,
+          "OpImageQueryLod requires Fragment execution model");
 
   const uint32_t result_type = inst->type_id();
   if (!_.IsFloatVectorType(result_type)) {
@@ -1512,9 +1514,10 @@ spv_result_t ValidateImageSparseTexelsResident(ValidationState_t& _,
 spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   if (IsImplicitLod(opcode)) {
-    _.current_function().RegisterExecutionModelLimitation(
-        SpvExecutionModelFragment,
-        "ImplicitLod instructions require Fragment execution model");
+    _.function(inst->function()->id())
+        ->RegisterExecutionModelLimitation(
+            SpvExecutionModelFragment,
+            "ImplicitLod instructions require Fragment execution model");
   }
 
   switch (opcode) {

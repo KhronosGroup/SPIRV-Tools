@@ -321,6 +321,12 @@ const Function* ValidationState_t::function(uint32_t id) const {
   return it->second;
 }
 
+Function* ValidationState_t::function(uint32_t id) {
+  auto it = id_to_function_.find(id);
+  if (it == id_to_function_.end()) return nullptr;
+  return it->second;
+}
+
 bool ValidationState_t::in_function_body() const { return in_function_; }
 
 bool ValidationState_t::in_block() const {

@@ -36,6 +36,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validation_state.cpp \
 		source/val/validate.cpp \
 		source/val/validate_adjacency.cpp \
+		source/val/validate_annotation.cpp \
 		source/val/validate_arithmetics.cpp \
 		source/val/validate_atomics.cpp \
 		source/val/validate_barriers.cpp \
@@ -46,6 +47,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_composites.cpp \
 		source/val/validate_conversion.cpp \
 		source/val/validate_datarules.cpp \
+		source/val/validate_debug.cpp \
 		source/val/validate_decorations.cpp \
 		source/val/validate_derivatives.cpp \
 		source/val/validate_ext_inst.cpp \
@@ -54,12 +56,13 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_interfaces.cpp \
 		source/val/validate_instruction.cpp \
 		source/val/validate_memory.cpp \
+		source/val/validate_mode_setting.cpp \
 		source/val/validate_layout.cpp \
 		source/val/validate_literals.cpp \
 		source/val/validate_logicals.cpp \
 		source/val/validate_non_uniform.cpp \
 		source/val/validate_primitives.cpp \
-		source/val/validate_type_unique.cpp
+		source/val/validate_type.cpp
 
 SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/aggressive_dead_code_elim_pass.cpp \

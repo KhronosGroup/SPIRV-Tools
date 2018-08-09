@@ -41,17 +41,28 @@ std::string kOpCapabilitySetup = R"(
      OpCapability Shader
      OpCapability Linkage
      OpCapability Addresses
-     OpCapability Pipes
-     OpCapability LiteralSampler
-     OpCapability DeviceEnqueue
-     OpCapability Vector16
      OpCapability Int8
      OpCapability Int16
      OpCapability Int64
      OpCapability Float64
+     OpCapability LiteralSampler
+     OpCapability Pipes
+     OpCapability DeviceEnqueue
+     OpCapability Vector16
 )";
 
 std::string kGLSL450MemoryModel = kOpCapabilitySetup + R"(
+     OpMemoryModel Logical GLSL450
+)";
+
+std::string kNoKernelGLSL450MemoryModel = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Addresses
+     OpCapability Int8
+     OpCapability Int16
+     OpCapability Int64
+     OpCapability Float64
      OpMemoryModel Logical GLSL450
 )";
 
@@ -1025,23 +1036,6 @@ TEST_F(ValidateIdWithMessage,
               HasSubstr("OpConstantComposite Constituent <id> '10' vector "
                         "component count does not match Result Type <id> '4's "
                         "vector component count."));
-}
-TEST_F(ValidateIdWithMessage, OpConstantCompositeMatrixColumnTypeBad) {
-  std::string spirv = kGLSL450MemoryModel + R"(
- %1 = OpTypeInt 32 0
- %2 = OpTypeFloat 32
- %3 = OpTypeVector %1 2
- %4 = OpTypeVector %3 2
- %5 = OpTypeMatrix %2 2
- %6 = OpConstant %1 42
- %7 = OpConstant %2 3.14
- %8 = OpConstantComposite %3 %6 %6
- %9 = OpConstantComposite %4 %7 %7
-%10 = OpConstantComposite %5 %8 %9)";
-  CompileSuccessfully(spirv.c_str());
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Columns in a matrix must be of type vector."));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -2584,6 +2578,49 @@ TEST_F(ValidateIdWithMessage, OpCopyMemoryGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
+TEST_F(ValidateIdWithMessage, OpCopyMemoryNonPointerTarget) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Uniform %2
+%4 = OpTypeFunction %1 %2 %3
+%5 = OpFunction %1 None %4
+%6 = OpFunctionParameter %2
+%7 = OpFunctionParameter %3
+%8 = OpLabel
+OpCopyMemory %6 %7
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target operand <id> '6' is not a pointer."));
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemoryNonPointerSource) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Uniform %2
+%4 = OpTypeFunction %1 %2 %3
+%5 = OpFunction %1 None %4
+%6 = OpFunctionParameter %2
+%7 = OpFunctionParameter %3
+%8 = OpLabel
+OpCopyMemory %7 %6
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Source operand <id> '6' is not a pointer."));
+}
+
 TEST_F(ValidateIdWithMessage, OpCopyMemoryBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
@@ -2604,11 +2641,54 @@ TEST_F(ValidateIdWithMessage, OpCopyMemoryBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpCopyMemory Target <id> '5's type does not match "
+              HasSubstr("Target <id> '5's type does not match "
                         "Source <id> '2's type."));
 }
 
-// TODO: OpCopyMemorySized
+TEST_F(ValidateIdWithMessage, OpCopyMemoryVoidTarget) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Uniform %1
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFunction %1 %2 %3
+%6 = OpFunction %1 None %5
+%7 = OpFunctionParameter %3
+%8 = OpFunctionParameter %4
+%9 = OpLabel
+OpCopyMemory %7 %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target operand <id> '7' cannot be a void pointer."));
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemoryVoidSource) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Uniform %1
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFunction %1 %2 %3
+%6 = OpFunction %1 None %5
+%7 = OpFunctionParameter %3
+%8 = OpFunctionParameter %4
+%9 = OpLabel
+OpCopyMemory %8 %7
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Source operand <id> '7' cannot be a void pointer."));
+}
+
 TEST_F(ValidateIdWithMessage, OpCopyMemorySizedGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
@@ -2644,7 +2724,7 @@ TEST_F(ValidateIdWithMessage, OpCopyMemorySizedTargetBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpCopyMemorySized Target <id> '9' is not a pointer."));
+              HasSubstr("Target operand <id> '9' is not a pointer."));
 }
 TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSourceBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -2663,7 +2743,7 @@ TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSourceBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpCopyMemorySized Source <id> '6' is not a pointer."));
+              HasSubstr("Source operand <id> '6' is not a pointer."));
 }
 TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -2682,9 +2762,9 @@ TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeBad) {
       OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpCopyMemorySized Size <id> '6's variable type is not "
-                        "an integer type."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Size operand <id> '6' must be a scalar integer type."));
 }
 TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeTypeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -2707,8 +2787,173 @@ TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpCopyMemorySized Size <id> '9's type is not an integer type."));
+      HasSubstr("Size operand <id> '9' must be a scalar integer type."));
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeConstantNull) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstantNull %2
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFloat 32
+%6 = OpTypePointer UniformConstant %5
+%7 = OpTypeFunction %1 %4 %6
+%8 = OpFunction %1 None %7
+%9 = OpFunctionParameter %4
+%10 = OpFunctionParameter %6
+%11 = OpLabel
+OpCopyMemorySized %9 %10 %3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Size operand <id> '3' cannot be a constant zero."));
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeConstantZero) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 0
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFloat 32
+%6 = OpTypePointer UniformConstant %5
+%7 = OpTypeFunction %1 %4 %6
+%8 = OpFunction %1 None %7
+%9 = OpFunctionParameter %4
+%10 = OpFunctionParameter %6
+%11 = OpLabel
+OpCopyMemorySized %9 %10 %3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Size operand <id> '3' cannot be a constant zero."));
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeConstantZero64) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 64 0
+%3 = OpConstant %2 0
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFloat 32
+%6 = OpTypePointer UniformConstant %5
+%7 = OpTypeFunction %1 %4 %6
+%8 = OpFunction %1 None %7
+%9 = OpFunctionParameter %4
+%10 = OpFunctionParameter %6
+%11 = OpLabel
+OpCopyMemorySized %9 %10 %3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Size operand <id> '3' cannot be a constant zero."));
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeConstantNegative) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 1
+%3 = OpConstant %2 -1
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFloat 32
+%6 = OpTypePointer UniformConstant %5
+%7 = OpTypeFunction %1 %4 %6
+%8 = OpFunction %1 None %7
+%9 = OpFunctionParameter %4
+%10 = OpFunctionParameter %6
+%11 = OpLabel
+OpCopyMemorySized %9 %10 %3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Size operand <id> '3' cannot have the sign bit set to 1."));
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeConstantNegative64) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 64 1
+%3 = OpConstant %2 -1
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFloat 32
+%6 = OpTypePointer UniformConstant %5
+%7 = OpTypeFunction %1 %4 %6
+%8 = OpFunction %1 None %7
+%9 = OpFunctionParameter %4
+%10 = OpFunctionParameter %6
+%11 = OpLabel
+OpCopyMemorySized %9 %10 %3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Size operand <id> '3' cannot have the sign bit set to 1."));
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeUnsignedNegative) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 2147483648
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFloat 32
+%6 = OpTypePointer UniformConstant %5
+%7 = OpTypeFunction %1 %4 %6
+%8 = OpFunction %1 None %7
+%9 = OpFunctionParameter %4
+%10 = OpFunctionParameter %6
+%11 = OpLabel
+OpCopyMemorySized %9 %10 %3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeUnsignedNegative64) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 64 0
+%3 = OpConstant %2 9223372036854775808
+%4 = OpTypePointer Uniform %2
+%5 = OpTypeFloat 32
+%6 = OpTypePointer UniformConstant %5
+%7 = OpTypeFunction %1 %4 %6
+%8 = OpFunction %1 None %7
+%9 = OpFunctionParameter %4
+%10 = OpFunctionParameter %6
+%11 = OpLabel
+OpCopyMemorySized %9 %10 %3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 const char kDeeplyNestedStructureSetup[] = R"(
@@ -4639,10 +4884,9 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpDecorate SpectId decoration target <id> '1' is not a "
-                "scalar specialization constant."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpDecorate SpecId decoration target <id> '1' is not a "
+                        "scalar specialization constant."));
 }
 
 TEST_F(ValidateIdWithMessage, SpecIdTargetOpSpecConstantOpBad) {
@@ -4661,10 +4905,9 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpDecorate SpectId decoration target <id> '1' is not a "
-                "scalar specialization constant."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpDecorate SpecId decoration target <id> '1' is not a "
+                        "scalar specialization constant."));
 }
 
 TEST_F(ValidateIdWithMessage, SpecIdTargetOpSpecConstantCompositeBad) {
@@ -4682,10 +4925,9 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpDecorate SpectId decoration target <id> '1' is not a "
-                "scalar specialization constant."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpDecorate SpecId decoration target <id> '1' is not a "
+                        "scalar specialization constant."));
 }
 
 TEST_F(ValidateIdWithMessage, SpecIdTargetGood) {

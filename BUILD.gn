@@ -359,6 +359,7 @@ static_library("spvtools_val") {
     "source/val/validate.cpp",
     "source/val/validate.h",
     "source/val/validate_adjacency.cpp",
+    "source/val/validate_annotation.cpp",
     "source/val/validate_arithmetics.cpp",
     "source/val/validate_atomics.cpp",
     "source/val/validate_barriers.cpp",
@@ -369,6 +370,7 @@ static_library("spvtools_val") {
     "source/val/validate_composites.cpp",
     "source/val/validate_conversion.cpp",
     "source/val/validate_datarules.cpp",
+    "source/val/validate_debug.cpp",
     "source/val/validate_decorations.cpp",
     "source/val/validate_derivatives.cpp",
     "source/val/validate_ext_inst.cpp",
@@ -380,9 +382,10 @@ static_library("spvtools_val") {
     "source/val/validate_literals.cpp",
     "source/val/validate_logicals.cpp",
     "source/val/validate_memory.cpp",
+    "source/val/validate_mode_setting.cpp",
     "source/val/validate_non_uniform.cpp",
     "source/val/validate_primitives.cpp",
-    "source/val/validate_type_unique.cpp",
+    "source/val/validate_type.cpp",
     "source/val/validation_state.cpp",
   ]
 
