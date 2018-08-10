@@ -319,7 +319,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     // Constants
     if (auto error = ValidateMemoryInstructions(*vstate, &instruction))
       return error;
-    // Functions
+    if (auto error = FunctionPass(*vstate, &instruction)) return error;
     if (auto error = ImagePass(*vstate, &instruction)) return error;
     if (auto error = ConversionPass(*vstate, &instruction)) return error;
     if (auto error = CompositesPass(*vstate, &instruction)) return error;
@@ -352,6 +352,11 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   // TODO(dsinclair): Restructure ValidateBuiltins so we can move into the
   // for() above as it loops over all ordered_instructions internally.
   if (auto error = ValidateBuiltIns(*vstate)) return error;
+  // These checks must be performed after individual opcode checks because
+  // those checks register the limitation checked here.
+  for (const auto inst : vstate->ordered_instructions()) {
+    if (auto error = ValidateExecutionLimitations(*vstate, &inst)) return error;
+  }
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
