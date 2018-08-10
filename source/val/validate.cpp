@@ -329,7 +329,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     // Constants
     if (auto error = ValidateMemoryInstructions(*vstate, &instruction))
       return error;
-    // Functions
+    if (auto error = FunctionPass(*vstate, &instruction)) return error;
     if (auto error = ImagePass(*vstate, &instruction)) return error;
     if (auto error = ConversionPass(*vstate, &instruction)) return error;
     if (auto error = CompositesPass(*vstate, &instruction)) return error;
@@ -351,6 +351,10 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
     if (auto error = ValidateAdjacency(*vstate, i)) return error;
   }
+
+  // These checks must be performed after individual opcode checks because
+  // those checks register the limitation checked here.
+  if (auto error = ValidateExecutionLimitations(*vstate)) return error;
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;

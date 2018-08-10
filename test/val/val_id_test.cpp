@@ -2651,7 +2651,7 @@ TEST_F(ValidateIdWithMessage, OpCopyMemoryVoidTarget) {
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Uniform %1
 %4 = OpTypePointer Uniform %2
-%5 = OpTypeFunction %1 %2 %3
+%5 = OpTypeFunction %1 %3 %4
 %6 = OpFunction %1 None %5
 %7 = OpFunctionParameter %3
 %8 = OpFunctionParameter %4
@@ -2673,7 +2673,7 @@ TEST_F(ValidateIdWithMessage, OpCopyMemoryVoidSource) {
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Uniform %1
 %4 = OpTypePointer Uniform %2
-%5 = OpTypeFunction %1 %2 %3
+%5 = OpTypeFunction %1 %3 %4
 %6 = OpFunction %1 None %5
 %7 = OpFunctionParameter %3
 %8 = OpFunctionParameter %4
@@ -3550,7 +3550,7 @@ TEST_F(ValidateIdWithMessage, OpFunctionResultTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpFunction Result Type <id> '2' does not match the "
-                        "Function Type <id> '2's return type."));
+                        "Function Type's return type <id> '1'."));
 }
 TEST_F(ValidateIdWithMessage, OpReturnValueTypeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(

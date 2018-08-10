@@ -194,6 +194,14 @@ spv_result_t PrimitivesPass(ValidationState_t& _, const Instruction* inst);
 /// Validates correctness of mode setting instructions.
 spv_result_t ModeSettingPass(ValidationState_t& _, const Instruction* inst);
 
+/// Validates correctness of function instructions.
+spv_result_t FunctionPass(ValidationState_t& _, const Instruction* inst);
+
+/// Validates execution limitations.
+///
+/// Verifies execution models are allowed for all functionality they contain.
+spv_result_t ValidateExecutionLimitations(ValidationState_t& _);
+
 /// @brief Validate the ID usage of the instruction stream
 ///
 /// @param[in] pInsts stream of instructions
