@@ -336,6 +336,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = ArithmeticsPass(*vstate, &instruction)) return error;
     if (auto error = BitwisePass(*vstate, &instruction)) return error;
     if (auto error = LogicalsPass(*vstate, &instruction)) return error;
+    if (auto error = ControlFlowPass(*vstate, &instruction)) return error;
     if (auto error = DerivativesPass(*vstate, &instruction)) return error;
     if (auto error = AtomicsPass(*vstate, &instruction)) return error;
     if (auto error = PrimitivesPass(*vstate, &instruction)) return error;

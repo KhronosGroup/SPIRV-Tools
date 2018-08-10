@@ -116,8 +116,11 @@ void printDominatorList(BasicBlock& block);
 /// spec.
 spv_result_t ModuleLayoutPass(ValidationState_t& _, const Instruction* inst);
 
-/// Performs Control Flow Graph validation of a module
+/// Performs Control Flow Graph validation and construction.
 spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst);
+
+/// Validates Control Flow Graph instructions.
+spv_result_t ControlFlowPass(ValidationState_t& _, const Instruction* inst);
 
 /// Performs Id and SSA validation of a module
 spv_result_t IdPass(ValidationState_t& _, Instruction* inst);
