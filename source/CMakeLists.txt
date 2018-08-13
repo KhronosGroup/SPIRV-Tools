@@ -297,6 +297,8 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_decorations.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_derivatives.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_ext_inst.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_execution_limitations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_function.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_id.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_image.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_interfaces.cpp
