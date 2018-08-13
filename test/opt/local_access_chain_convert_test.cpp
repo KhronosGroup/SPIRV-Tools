@@ -471,7 +471,7 @@ OpFunctionEnd
   SinglePassRunAndMatch<LocalAccessChainConvertPass>(predefs + before, true);
 }
 
-#endif // SPIRV_EFFCEE
+#endif  // SPIRV_EFFCEE
 
 TEST_F(LocalAccessChainConvertTest, DynamicallyIndexedVarNotConverted) {
   //  #version 140
