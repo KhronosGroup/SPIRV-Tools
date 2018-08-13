@@ -3020,6 +3020,30 @@ TEST_F(ValidateDecorations, LayoutNotCheckedWhenSkipBlockLayout) {
             ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
+
+TEST_F(ValidateDecorations, EntryPointVariableWrongStorageClass) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "func" %var
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr_int_Workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_Workgroup Workgroup
+%func_ty = OpTypeFunction %void
+%1 = OpFunction %void None %func_ty
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint interfaces must be OpVariables with "
+                        "Storage Class of Input(1) or Output(3). Found Storage "
+                        "Class 4 for Entry Point id 1."));
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
