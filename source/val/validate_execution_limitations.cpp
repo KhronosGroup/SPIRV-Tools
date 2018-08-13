@@ -20,40 +20,40 @@
 namespace spvtools {
 namespace val {
 
-spv_result_t ValidateExecutionLimitations(ValidationState_t& _) {
-  for (const auto inst : _.ordered_instructions()) {
-    if (inst.opcode() == SpvOpFunction) {
-      const auto func = _.function(inst.id());
-      if (!func) {
-        return _.diag(SPV_ERROR_INTERNAL, &inst)
-               << "Internal error: missing function.";
-      }
+spv_result_t ValidateExecutionLimitations(ValidationState_t& _,
+                                          const Instruction* inst) {
+  if (inst->opcode() != SpvOpFunction) {
+    return SPV_SUCCESS;
+  }
 
-      for (uint32_t entry_id : _.FunctionEntryPoints(inst.id())) {
-        const auto* models = _.GetExecutionModels(entry_id);
-        if (models) {
-          if (models->empty()) {
-            return _.diag(SPV_ERROR_INTERNAL, &inst)
-                   << "Internal error: empty execution models.";
-          }
-          for (const auto model : *models) {
-            std::string reason;
-            if (!func->IsCompatibleWithExecutionModel(model, &reason)) {
-              return _.diag(SPV_ERROR_INVALID_ID, &inst)
-                     << "OpEntryPoint Entry Point <id> '"
-                     << _.getIdName(entry_id)
-                     << "'s callgraph contains function <id> "
-                     << _.getIdName(inst.id())
-                     << ", which cannot be used with the current execution "
-                        "model:\n"
-                     << reason;
-            }
-          }
+  const auto func = _.function(inst->id());
+  if (!func) {
+    return _.diag(SPV_ERROR_INTERNAL, inst)
+           << "Internal error: missing function id " << inst->id() << ".";
+  }
+
+  for (uint32_t entry_id : _.FunctionEntryPoints(inst->id())) {
+    const auto* models = _.GetExecutionModels(entry_id);
+    if (models) {
+      if (models->empty()) {
+        return _.diag(SPV_ERROR_INTERNAL, inst)
+               << "Internal error: empty execution models for function id "
+               << entry_id << ".";
+      }
+      for (const auto model : *models) {
+        std::string reason;
+        if (!func->IsCompatibleWithExecutionModel(model, &reason)) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "OpEntryPoint Entry Point <id> '" << _.getIdName(entry_id)
+                 << "'s callgraph contains function <id> "
+                 << _.getIdName(inst->id())
+                 << ", which cannot be used with the current execution "
+                    "model:\n"
+                 << reason;
         }
       }
     }
   }
-
   return SPV_SUCCESS;
 }
 

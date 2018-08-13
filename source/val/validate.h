@@ -200,7 +200,8 @@ spv_result_t FunctionPass(ValidationState_t& _, const Instruction* inst);
 /// Validates execution limitations.
 ///
 /// Verifies execution models are allowed for all functionality they contain.
-spv_result_t ValidateExecutionLimitations(ValidationState_t& _);
+spv_result_t ValidateExecutionLimitations(ValidationState_t& _,
+                                          const Instruction* inst);
 
 /// @brief Validate the ID usage of the instruction stream
 ///

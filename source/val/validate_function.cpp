@@ -52,10 +52,6 @@ spv_result_t ValidateFunctionParameter(ValidationState_t& _,
   }
 
   auto func_inst = &_.ordered_instructions()[inst_num];
-  if (func_inst != inst) {
-    return _.diag(SPV_ERROR_INTERNAL, inst) << "Inconsistent line numbers.";
-  }
-
   while (--inst_num) {
     func_inst = &_.ordered_instructions()[inst_num];
     if (func_inst->opcode() == SpvOpFunction) {

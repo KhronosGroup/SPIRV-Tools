@@ -354,7 +354,9 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   // These checks must be performed after individual opcode checks because
   // those checks register the limitation checked here.
-  if (auto error = ValidateExecutionLimitations(*vstate)) return error;
+  for (const auto inst : vstate->ordered_instructions()) {
+    if (auto error = ValidateExecutionLimitations(*vstate, &inst)) return error;
+  }
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
