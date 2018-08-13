@@ -33,14 +33,14 @@
 #include "source/operand.h"
 #include "source/spirv_constant.h"
 
+namespace spvtools {
+namespace stats {
 namespace {
-
-using spvtools::SpirvStats;
 
 // Signals that the value is not in the coding scheme and a fallback method
 // needs to be used.
 const uint64_t kMarkvNoneOfTheAbove =
-    spvtools::comp::MarkvModel::GetMarkvNoneOfTheAbove();
+    comp::MarkvModel::GetMarkvNoneOfTheAbove();
 
 std::string GetVersionString(uint32_t word) {
   std::stringstream ss;
@@ -58,7 +58,7 @@ std::string GetOpcodeString(uint32_t word) {
 }
 
 std::string GetCapabilityString(uint32_t word) {
-  return spvtools::CapabilityToString(static_cast<SpvCapability>(word));
+  return CapabilityToString(static_cast<SpvCapability>(word));
 }
 
 template <class T>
@@ -230,3 +230,6 @@ void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
     }
   }
 }
+
+}  // namespace stats
+}  // namespace spvtools

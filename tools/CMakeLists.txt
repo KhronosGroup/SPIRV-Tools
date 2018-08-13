@@ -45,7 +45,10 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   add_spvtools_tool(TARGET spirv-link SRCS link/linker.cpp LIBS SPIRV-Tools-link ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-stats
 	            SRCS stats/stats.cpp
-		         stats/stats_analyzer.cpp
+		               stats/stats_analyzer.cpp
+                   stats/stats_analyzer.h
+                   stats/spirv_stats.cpp
+                   stats/spirv_stats.h
 		    LIBS ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-cfg
                     SRCS cfg/cfg.cpp
