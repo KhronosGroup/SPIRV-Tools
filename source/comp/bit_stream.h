@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <sstream>
