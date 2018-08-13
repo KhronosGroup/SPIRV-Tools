@@ -38,6 +38,26 @@ spv_result_t ValidateFunction(ValidationState_t& _, const Instruction* inst) {
            << "' does not match the Function Type's return type <id> '"
            << _.getIdName(return_id) << "'.";
   }
+
+  for (auto& pair : inst->uses()) {
+    const auto* use = pair.first;
+    const std::vector<SpvOp> acceptable = {
+        SpvOpFunctionCall,
+        SpvOpEntryPoint,
+        SpvOpEnqueueKernel,
+        SpvOpGetKernelNDrangeSubGroupCount,
+        SpvOpGetKernelNDrangeMaxSubGroupSize,
+        SpvOpGetKernelWorkGroupSize,
+        SpvOpGetKernelPreferredWorkGroupSizeMultiple,
+        SpvOpGetKernelLocalSizeForSubgroupCount,
+        SpvOpGetKernelMaxNumSubgroups};
+    if (std::find(acceptable.begin(), acceptable.end(), use->opcode()) == acceptable.end()) {
+      return _.diag(SPV_ERROR_INVALID_ID, use)
+             << "Invalid use of function result id " << _.getIdName(inst->id())
+             << ".";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
