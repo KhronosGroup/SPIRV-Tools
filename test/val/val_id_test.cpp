@@ -125,6 +125,7 @@ std::string BranchConditionalSetup = R"(
     %v4float = OpTypeVector %float 4
 
              ; constants
+       %true = OpConstantTrue %bool
          %i0 = OpConstant %int 0
          %i1 = OpConstant %int 1
          %f0 = OpConstant %float 0
@@ -3040,8 +3041,8 @@ TEST_P(AccessChainInstructionTest, AccessChainResultTypeBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%float_entry = )" +
-                      instr + R"( %float %my_matrix )" + elem +
+%float_entry = )" + instr +
+                      R"( %float %my_matrix )" + elem +
                       R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -3060,8 +3061,8 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeVoidBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%float_entry = )" +
-                      instr + " %_ptr_Private_float %void " + elem +
+%float_entry = )" + instr +
+                      " %_ptr_Private_float %void " + elem +
                       R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -3079,9 +3080,8 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeNonPtrVariableBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Private_float %_ptr_Private_float )" + elem +
+%entry = )" + instr + R"( %_ptr_Private_float %_ptr_Private_float )" +
+                      elem +
                       R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -3100,9 +3100,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Function_float %my_matrix )" + elem +
+%entry = )" + instr + R"( %_ptr_Function_float %my_matrix )" +
+                      elem +
                       R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -3121,10 +3120,9 @@ TEST_P(AccessChainInstructionTest,
        AccessChainBasePtrNotPointingToCompositeBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  std::string spirv =
-      kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
-      R"( %_ptr_Private_float %my_float_var )" + elem + R"(%int_0
+  std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
+%entry = )" + instr + R"( %_ptr_Private_float %my_float_var )" +
+                      elem + R"(%int_0
 OpReturn
 OpFunctionEnd
   )";
@@ -3142,9 +3140,8 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Private_float %my_float_var )" + elem + R"(
+%entry = )" + instr + R"( %_ptr_Private_float %my_float_var )" +
+                      elem + R"(
 OpReturn
 OpFunctionEnd
   )";
@@ -3158,9 +3155,8 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Private_mat4x3 %my_float_var )" + elem + R"(
+%entry = )" + instr + R"( %_ptr_Private_mat4x3 %my_float_var )" +
+                      elem + R"(
 OpReturn
 OpFunctionEnd
   )";
@@ -3308,10 +3304,9 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesBad) {
 TEST_P(AccessChainInstructionTest, AccessChainUndefinedIndexBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  std::string spirv =
-      kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
-      R"( %_ptr_Private_float %my_matrix )" + elem + R"(%float %int_1
+  std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
+%entry = )" + instr + R"( %_ptr_Private_float %my_matrix )" +
+                      elem + R"(%float %int_1
 OpReturn
 OpFunctionEnd
   )";
@@ -3328,8 +3323,8 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexNotConstantBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%f = )" +
-                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+%f = )" + instr + R"( %_ptr_Uniform_float %blockName_var )" +
+                      elem +
                       R"(%int_0 %spec_int %int_2
 OpReturn
 OpFunctionEnd
@@ -3348,9 +3343,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Uniform_float %blockName_var )" + elem +
+%entry = )" + instr + R"( %_ptr_Uniform_float %blockName_var )" +
+                      elem +
                       R"(%int_0 %int_1 %int_2
 OpReturn
 OpFunctionEnd
@@ -3369,9 +3363,8 @@ TEST_P(AccessChainInstructionTest, AccessChainStructTooManyIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Uniform_float %blockName_var )" + elem +
+%entry = )" + instr + R"( %_ptr_Uniform_float %blockName_var )" +
+                      elem +
                       R"(%int_0 %int_2 %int_2
 OpReturn
 OpFunctionEnd
@@ -3389,9 +3382,8 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Uniform_float %blockName_var )" + elem +
+%entry = )" + instr + R"( %_ptr_Uniform_float %blockName_var )" +
+                      elem +
                       R"(%int_3 %int_2 %int_2
 OpReturn
 OpFunctionEnd
@@ -3441,8 +3433,7 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayGood) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %runtime_arr_entry = )" +
-                      instr +
-                      R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
                       R"(%int_2 %int_0
 OpReturn
 OpFunctionEnd
@@ -3457,8 +3448,7 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %runtime_arr_entry = )" +
-                      instr +
-                      R"( %_ptr_Uniform_float %blockName_var )" + elem +
+                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
                       R"(%int_2 %int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -3477,9 +3467,8 @@ TEST_P(AccessChainInstructionTest, AccessChainMatrixMoreArgsThanNeededBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Private_float %my_matrix )" + elem +
+%entry = )" + instr + R"( %_ptr_Private_float %my_matrix )" +
+                      elem +
                       R"(%int_0 %int_1 %int_0
 OpReturn
 OpFunctionEnd
@@ -3498,9 +3487,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-                      instr +
-                      R"( %_ptr_Private_mat4x3 %my_matrix )" + elem +
+%entry = )" + instr + R"( %_ptr_Private_mat4x3 %my_matrix )" +
+                      elem +
                       R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
@@ -4409,39 +4397,27 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_CondIsScalarInt) {
 TEST_F(ValidateIdWithMessage, OpBranchConditional_TrueTargetIsNotLabel) {
   std::string spirv = BranchConditionalSetup + R"(
                    OpSelectionMerge %end None
-                   OpBranchConditional %i0 %i0 %target_f
+                   OpBranchConditional %true %i0 %target_f
   )" + BranchConditionalTail;
 
   CompileSuccessfully(spirv.c_str());
-  // EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  // EXPECT_THAT(
-  //     getDiagnosticString(),
-  //     HasSubstr("The 'True Label' operand for OpBranchConditional must be the
-  //     ID of an OpLabel instruction"));
-
-  // xxxnsubtil: this is actually caught by the ID validation instead
-  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("are referenced but not defined in function"));
+              HasSubstr("The 'True Label' operand for OpBranchConditional must "
+                        "be the ID of an OpLabel instruction"));
 }
 
 TEST_F(ValidateIdWithMessage, OpBranchConditional_FalseTargetIsNotLabel) {
   std::string spirv = BranchConditionalSetup + R"(
                    OpSelectionMerge %end None
-                   OpBranchConditional %i0 %target_t %i0
+                   OpBranchConditional %true %target_t %i0
   )" + BranchConditionalTail;
 
   CompileSuccessfully(spirv.c_str());
-  // EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  // EXPECT_THAT(
-  //     getDiagnosticString(),
-  //     HasSubstr("The 'False Label' operand for OpBranchConditional must be
-  //     the ID of an OpLabel instruction"));
-
-  // xxxnsubtil: this is actually caught by the ID validation
-  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("are referenced but not defined in function"));
+              HasSubstr("The 'False Label' operand for OpBranchConditional "
+                        "must be the ID of an OpLabel instruction"));
 }
 
 TEST_F(ValidateIdWithMessage, OpBranchConditional_NotEnoughWeights) {
