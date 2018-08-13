@@ -434,12 +434,7 @@ void RuntimeArray::ReplaceElementType(const Type* type) {
 }
 
 Struct::Struct(const std::vector<const Type*>& types)
-    : Type(kStruct), element_types_(types) {
-  for (const auto* t : types) {
-    (void)t;
-    assert(!t->AsVoid());
-  }
-}
+    : Type(kStruct), element_types_(types) {}
 
 void Struct::AddMemberDecoration(uint32_t index,
                                  std::vector<uint32_t>&& decoration) {
