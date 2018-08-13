@@ -160,7 +160,7 @@ class Optimizer {
   bool Run(const uint32_t* original_binary, size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary) const;
 
-  // Same as above, except is passes |options| to the validator when trying to
+  // Same as above, except passes |options| to the validator when trying to
   // validate the binary.  If |skip_validation| is true, then the caller is
   // guaranteeing that |original_binary| is valid, and the validator will not
   // be run.
