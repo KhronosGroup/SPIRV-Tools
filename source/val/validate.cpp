@@ -301,18 +301,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
            << "Missing OpFunctionEnd at end of module.";
 
+  // Catch undefined forward references before performing further checks.
   if (auto error = ValidateForwardDecls(*vstate)) return error;
-  if (auto error = ValidateEntryPoints(*vstate)) return error;
-
-  // CFG checks are performed after the binary has been parsed
-  // and the CFGPass has collected information about the control flow
-  if (auto error = PerformCfgChecks(*vstate)) return error;
-  if (auto error = CheckIdDefinitionDominateUse(*vstate)) return error;
-  if (auto error = ValidateDecorations(*vstate)) return error;
-  if (auto error = ValidateInterfaces(*vstate)) return error;
-  // TODO(dsinclair): Restructure ValidateBuiltins so we can move into the
-  // for() above as it loops over all ordered_instructions internally.
-  if (auto error = ValidateBuiltIns(*vstate)) return error;
 
   // Validate individual opcodes.
   for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
@@ -351,6 +341,17 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
     if (auto error = ValidateAdjacency(*vstate, i)) return error;
   }
+
+  if (auto error = ValidateEntryPoints(*vstate)) return error;
+  // CFG checks are performed after the binary has been parsed
+  // and the CFGPass has collected information about the control flow
+  if (auto error = PerformCfgChecks(*vstate)) return error;
+  if (auto error = CheckIdDefinitionDominateUse(*vstate)) return error;
+  if (auto error = ValidateDecorations(*vstate)) return error;
+  if (auto error = ValidateInterfaces(*vstate)) return error;
+  // TODO(dsinclair): Restructure ValidateBuiltins so we can move into the
+  // for() above as it loops over all ordered_instructions internally.
+  if (auto error = ValidateBuiltIns(*vstate)) return error;
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
