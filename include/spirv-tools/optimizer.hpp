@@ -151,16 +151,22 @@ class Optimizer {
   // Optimizes the given SPIR-V module |original_binary| and writes the
   // optimized binary into |optimized_binary|.
   // Returns true on successful optimization, whether or not the module is
-  // modified. Returns false if errors occur when processing |original_binary|
-  // using any of the registered passes. In that case, no further passes are
-  // executed and the contents in |optimized_binary| may be invalid.
+  // modified. Returns false if |original_binary| fails to validate or if errors
+  // occur when processing |original_binary| using any of the registered passes.
+  // In that case, no further passes are executed and the contents in
+  // |optimized_binary| may be invalid.
   //
   // It's allowed to alias |original_binary| to the start of |optimized_binary|.
   bool Run(const uint32_t* original_binary, size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary) const;
-  bool Run(const uint32_t* original_binary, size_t original_binary_size,
+
+  // Same as above, except passes |options| to the validator when trying to
+  // validate the binary.  If |skip_validation| is true, then the caller is
+  // guaranteeing that |original_binary| is valid, and the validator will not
+  // be run.
+  bool Run(const uint32_t* original_binary, const size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary,
-           const ValidatorOptions& options) const;
+           const ValidatorOptions& options, bool skip_validation = false) const;
 
   // Returns a vector of strings with all the pass names added to this
   // optimizer's pass manager. These strings are valid until the associated
