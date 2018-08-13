@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/spirv_stats.h"
+#include "tools/stats/spirv_stats.h"
 
 #include <cassert>
 
@@ -33,6 +33,7 @@
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
+namespace stats {
 namespace {
 
 // Helper class for stats aggregation. Receives as in/out parameter.
@@ -259,4 +260,5 @@ spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
   return SPV_SUCCESS;
 }
 
+}  // namespace stats
 }  // namespace spvtools

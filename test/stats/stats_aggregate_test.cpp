@@ -17,11 +17,12 @@
 #include <string>
 #include <unordered_map>
 
-#include "source/spirv_stats.h"
 #include "test/test_fixture.h"
 #include "test/unit_spirv.h"
+#include "tools/stats/spirv_stats.h"
 
 namespace spvtools {
+namespace stats {
 namespace {
 
 using spvtest::ScopedContext;
@@ -482,4 +483,5 @@ OpMemoryModel Logical GLSL450
 }
 
 }  // namespace
+}  // namespace stats
 }  // namespace spvtools

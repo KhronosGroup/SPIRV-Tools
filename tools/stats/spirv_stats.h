@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_SPIRV_STATS_H_
-#define SOURCE_SPIRV_STATS_H_
+#ifndef TOOLS_STATS_SPIRV_STATS_H_
+#define TOOLS_STATS_SPIRV_STATS_H_
 
 #include <map>
 #include <string>
@@ -24,6 +24,7 @@
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
+namespace stats {
 
 struct SpirvStats {
   // Version histogram, version_word -> count.
@@ -126,6 +127,7 @@ spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
                             const size_t num_words, spv_diagnostic* pDiagnostic,
                             SpirvStats* stats);
 
+}  // namespace stats
 }  // namespace spvtools
 
-#endif  // SOURCE_SPIRV_STATS_H_
+#endif  // TOOLS_STATS_SPIRV_STATS_H_
