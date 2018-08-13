@@ -455,10 +455,12 @@ bool Optimizer::Run(const uint32_t* original_binary,
 bool Optimizer::Run(const uint32_t* original_binary,
                     const size_t original_binary_size,
                     std::vector<uint32_t>* optimized_binary,
-                    const ValidatorOptions& options) const {
+                    const ValidatorOptions& options,
+                    bool skip_validation) const {
   spvtools::SpirvTools tools(impl_->target_env);
   tools.SetMessageConsumer(impl_->pass_manager.consumer());
-  if (!tools.Validate(original_binary, original_binary_size, options)) {
+  if (!skip_validation &&
+      !tools.Validate(original_binary, original_binary_size, options)) {
     return false;
   }
 
