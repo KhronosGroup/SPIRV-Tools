@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_UTIL_MOVE_TO_FRONT_H_
-#define SOURCE_UTIL_MOVE_TO_FRONT_H_
+#ifndef SOURCE_COMP_MOVE_TO_FRONT_H_
+#define SOURCE_COMP_MOVE_TO_FRONT_H_
 
 #include <cassert>
 #include <cstdint>
@@ -23,7 +23,7 @@
 #include <vector>
 
 namespace spvtools {
-namespace utils {
+namespace comp {
 
 // Log(n) move-to-front implementation. Implements the following functions:
 // Insert - pushes value to the front of the mtf sequence
@@ -378,7 +378,7 @@ class MultiMoveToFront {
   MoveToFront* cached_mtf_ = nullptr;
 };
 
-}  // namespace utils
+}  // namespace comp
 }  // namespace spvtools
 
-#endif  // SOURCE_UTIL_MOVE_TO_FRONT_H_
+#endif  // SOURCE_COMP_MOVE_TO_FRONT_H_

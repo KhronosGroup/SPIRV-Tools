@@ -21,11 +21,12 @@
 #include <vector>
 
 #include "source/assembly_grammar.h"
+#include "source/comp/huffman_codec.h"
 #include "source/comp/markv_model.h"
+#include "source/comp/move_to_front.h"
 #include "source/diagnostic.h"
 #include "source/id_descriptor.h"
-#include "source/util/huffman_codec.h"
-#include "source/util/move_to_front.h"
+
 #include "source/val/instruction.h"
 
 // Base class for MARK-V encoder and decoder. Contains common functionality
@@ -244,8 +245,7 @@ class MarkvCodec {
   // Returns Huffman codec for ranks of the mtf with given |handle|.
   // Different mtfs can use different rank distributions.
   // May return nullptr if the codec doesn't exist.
-  const utils::HuffmanCodec<uint32_t>* GetMtfHuffmanCodec(
-      uint64_t handle) const {
+  const HuffmanCodec<uint32_t>* GetMtfHuffmanCodec(uint64_t handle) const {
     const auto it = mtf_huffman_codecs_.find(handle);
     if (it == mtf_huffman_codecs_.end()) return nullptr;
     return it->second.get();
@@ -281,7 +281,7 @@ class MarkvCodec {
   std::unordered_map<uint32_t, uint32_t> id_to_type_id_;
 
   // Container for all move-to-front sequences.
-  utils::MultiMoveToFront multi_mtf_;
+  MultiMoveToFront multi_mtf_;
 
   // Id of the current function or zero if outside of function.
   uint32_t cur_function_id_ = 0;
@@ -316,7 +316,7 @@ class MarkvCodec {
   // Huffman codecs for move-to-front ranks. The map key is mtf handle. Doesn't
   // need to contain a different codec for every handle as most use one and the
   // same.
-  std::map<uint64_t, std::unique_ptr<utils::HuffmanCodec<uint32_t>>>
+  std::map<uint64_t, std::unique_ptr<HuffmanCodec<uint32_t>>>
       mtf_huffman_codecs_;
 
   // If not nullptr, codec will log comments on the compression process.

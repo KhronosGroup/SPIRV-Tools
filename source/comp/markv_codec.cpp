@@ -41,13 +41,13 @@ uint32_t ShortHashU32Array(const std::vector<uint32_t>& words) {
 
 // Returns a set of mtf rank codecs based on a plausible hand-coded
 // distribution.
-std::map<uint64_t, std::unique_ptr<utils::HuffmanCodec<uint32_t>>>
+std::map<uint64_t, std::unique_ptr<HuffmanCodec<uint32_t>>>
 GetMtfHuffmanCodecs() {
-  std::map<uint64_t, std::unique_ptr<utils::HuffmanCodec<uint32_t>>> codecs;
+  std::map<uint64_t, std::unique_ptr<HuffmanCodec<uint32_t>>> codecs;
 
-  std::unique_ptr<utils::HuffmanCodec<uint32_t>> codec;
+  std::unique_ptr<HuffmanCodec<uint32_t>> codec;
 
-  codec.reset(new utils::HuffmanCodec<uint32_t>(std::map<uint32_t, uint32_t>({
+  codec.reset(new HuffmanCodec<uint32_t>(std::map<uint32_t, uint32_t>({
       {0, 5},
       {1, 40},
       {2, 10},
@@ -62,7 +62,7 @@ GetMtfHuffmanCodecs() {
   })));
   codecs.emplace(kMtfAll, std::move(codec));
 
-  codec.reset(new utils::HuffmanCodec<uint32_t>(std::map<uint32_t, uint32_t>({
+  codec.reset(new HuffmanCodec<uint32_t>(std::map<uint32_t, uint32_t>({
       {1, 50},
       {2, 20},
       {3, 5},

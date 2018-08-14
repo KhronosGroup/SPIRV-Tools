@@ -14,6 +14,9 @@
 
 if(SPIRV_BUILD_COMPRESSION)
   add_library(SPIRV-Tools-comp
+      bit_stream.cpp
+      bit_stream.h
+      huffman_codec.h
       markv_codec.cpp
       markv_codec.h
       markv.cpp
@@ -23,8 +26,8 @@ if(SPIRV_BUILD_COMPRESSION)
       markv_encoder.cpp
       markv_encoder.h
       markv_logger.h
-      ${CMAKE_CURRENT_SOURCE_DIR}/../util/move_to_front.h
-      ${CMAKE_CURRENT_SOURCE_DIR}/../util/move_to_front.cpp)
+      move_to_front.h
+      move_to_front.cpp)
 
   spvtools_default_compile_options(SPIRV-Tools-comp)
   target_include_directories(SPIRV-Tools-comp

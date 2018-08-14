@@ -19,10 +19,10 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "source/util/bit_stream.h"
+#include "source/comp/bit_stream.h"
 
 namespace spvtools {
-namespace utils {
+namespace comp {
 namespace {
 
 // Converts |buffer| to a stream of '0' and '1'.
@@ -1021,5 +1021,5 @@ TEST(VariableWidthWriteRead, VariedNumbersChunkLength8) {
 }
 
 }  // namespace
-}  // namespace utils
+}  // namespace comp
 }  // namespace spvtools
