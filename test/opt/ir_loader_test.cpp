@@ -321,10 +321,11 @@ TEST(IrBuilder, KeepModuleProcessedInRightPlace) {
 // from the given |assembly|.
 void DoErrorMessageCheck(const std::string& assembly,
                          const std::string& error_message) {
-  auto consumer = [error_message, &called](
-                      spv_message_level_t level, const char* source,
-                      const spv_position_t& position,
-                      const char* m) { EXPECT_EQ(error_message, m); };
+  auto consumer = [error_message](spv_message_level_t level, const char* source,
+                                  const spv_position_t& position,
+                                  const char* m) {
+    EXPECT_EQ(error_message, m);
+  };
 
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<IRContext> context =
