@@ -332,7 +332,6 @@ static_library("spvtools") {
     "source/util/hex_float.h",
     "source/util/ilist.h",
     "source/util/ilist_node.h",
-    "source/util/move_to_front.h",
     "source/util/parse_number.cpp",
     "source/util/parse_number.h",
     "source/util/small_vector.h",
