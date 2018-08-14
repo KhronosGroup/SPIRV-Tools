@@ -495,9 +495,9 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceValue) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-      MatchesRegex("Block\\(s\\) \\{..\\} are referenced but not "
-                   "defined in function .\\[Main\\]\n"
-                   "  %Main = OpFunction %void None %10\n"))
+              MatchesRegex("Block\\(s\\) \\{..\\} are referenced but not "
+                           "defined in function .\\[Main\\]\n"
+                           "  %Main = OpFunction %void None %10\n"))
       << str;
 }
 
