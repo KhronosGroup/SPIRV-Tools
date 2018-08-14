@@ -2192,13 +2192,14 @@ TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
 %6 = OpVariable %3 UniformConstant
 %7 = OpFunction %1 None %4
 %8 = OpLabel
-     OpStore %6 %7
+%9 = OpUndef %1
+     OpStore %6 %9
      OpReturn
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpStore Object <id> '7's type is void."));
+              HasSubstr("OpStore Object <id> '9's type is void."));
 }
 TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -3575,6 +3576,22 @@ OpFunctionEnd)";
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpFunction Function Type <id> '2' is not a function type."));
+}
+
+TEST_F(ValidateIdWithMessage, OpFunctionUseBad) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+OpReturnValue %3
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid use of function result id 3."));
 }
 
 TEST_F(ValidateIdWithMessage, OpFunctionParameterGood) {
