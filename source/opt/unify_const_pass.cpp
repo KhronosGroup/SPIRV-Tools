@@ -21,7 +21,7 @@
 
 #include "source/opt/def_use_manager.h"
 #include "source/opt/ir_context.h"
-#include "source/opt/make_unique.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace opt {

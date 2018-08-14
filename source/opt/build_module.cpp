@@ -19,8 +19,8 @@
 
 #include "source/opt/ir_context.h"
 #include "source/opt/ir_loader.h"
-#include "source/opt/make_unique.h"
 #include "source/table.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace {

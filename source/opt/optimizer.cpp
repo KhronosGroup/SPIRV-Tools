@@ -22,11 +22,11 @@
 
 #include "source/opt/build_module.h"
 #include "source/opt/log.h"
-#include "source/opt/make_unique.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
 #include "source/opt/reduce_load_size.h"
 #include "source/opt/simplification_pass.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 

@@ -24,9 +24,9 @@
 
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
-#include "source/opt/make_unique.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
+#include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.hpp"
 
 #ifdef SPIRV_EFFCEE

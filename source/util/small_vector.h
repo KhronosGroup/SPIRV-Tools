@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-#include "source/opt/make_unique.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace utils {
