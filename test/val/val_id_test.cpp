@@ -4960,6 +4960,18 @@ TEST_F(ValidateIdWithMessage, CorrectErrorForShuffle) {
   EXPECT_EQ(23, getErrorPosition().index);
 }
 
+TEST_F(ValidateIdWithMessage, VoidStructMember) {
+  const std::string spirv = kGLSL450MemoryModel + R"(
+%void = OpTypeVoid
+%struct = OpTypeStruct %void
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structures cannot contain a void type."));
+}
+
 // TODO: OpLifetimeStart
 // TODO: OpLifetimeStop
 // TODO: OpAtomicInit
