@@ -161,6 +161,10 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
              << "OpTypeStruct Member Type <id> '" << _.getIdName(member_type_id)
              << "' is not a type.";
     }
+    if (member_type->opcode() == SpvOpTypeVoid) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Structures cannot contain a void type.";
+    }
     if (SpvOpTypeStruct == member_type->opcode() &&
         _.IsStructTypeWithBuiltInMember(member_type_id)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
