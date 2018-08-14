@@ -21,6 +21,7 @@
 #include <bitset>
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <sstream>
 #include <string>
