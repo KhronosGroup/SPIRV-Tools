@@ -31,6 +31,7 @@ namespace comp {
 // Encoded binary is written to an internally maintained bitstream.
 // After the last instruction is encoded, the resulting MARK-V binary can be
 // acquired by calling GetMarkvBinary().
+//
 // The encoder uses SPIR-V validator to keep internal state, therefore
 // SPIR-V binary needs to be able to pass validator checks.
 // CreateCommentsLogger() can be used to enable the encoder to write comments
