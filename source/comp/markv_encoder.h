@@ -16,6 +16,7 @@
 #include "source/comp/markv.h"
 #include "source/comp/markv_codec.h"
 #include "source/comp/markv_logger.h"
+#include "source/util/make_unique.h"
 
 #ifndef SOURCE_COMP_MARKV_ENCODER_H_
 #define SOURCE_COMP_MARKV_ENCODER_H_
@@ -57,7 +58,7 @@ class MarkvEncoder : public MarkvCodec {
   // Creates an internal logger which writes comments on the encoding process.
   void CreateLogger(MarkvLogConsumer log_consumer,
                     MarkvDebugConsumer debug_consumer) {
-    logger_.reset(new MarkvLogger(log_consumer, debug_consumer));
+    logger_.= MakeUnique<MarkvLogger>(log_consumer, debug_consumer);
     writer_.SetCallback(
         [this](const std::string& str) { logger_->AppendBitSequence(str); });
   }
@@ -91,7 +92,7 @@ class MarkvEncoder : public MarkvCodec {
   // Disassembly should contain all instructions in the module separated by
   // \n, and no header.
   void SetDisassembly(std::string&& disassembly) {
-    disassembly_.reset(new std::stringstream(std::move(disassembly)));
+    disassembly_ = MakeUnique<std::stringstream>(std::move(disassembly));
   }
 
   // Extracts the next instruction line from the disassembly and logs it.

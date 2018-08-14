@@ -21,6 +21,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "source/util/make_unique.h"
+
 namespace spvtools {
 namespace comp {
 namespace {
@@ -42,8 +44,8 @@ MarkvModelShaderLite::MarkvModelShaderLite() {
   const uint16_t kVersionNumber = 1;
   SetModelVersion(kVersionNumber);
 
-  opcode_and_num_operands_huffman_codec_.reset(
-      new HuffmanCodec<uint64_t>(GetOpcodeAndNumOperandsHist()));
+  opcode_and_num_operands_huffman_codec_ =
+      MakeUnique<HuffmanCodec<uint64_t>>(GetOpcodeAndNumOperandsHist());
 
   id_fallback_strategy_ = IdFallbackStrategy::kShortDescriptor;
 }
@@ -52,8 +54,8 @@ MarkvModelShaderMid::MarkvModelShaderMid() {
   const uint16_t kVersionNumber = 1;
   SetModelVersion(kVersionNumber);
 
-  opcode_and_num_operands_huffman_codec_.reset(
-      new HuffmanCodec<uint64_t>(GetOpcodeAndNumOperandsHist()));
+  opcode_and_num_operands_huffman_codec_ =
+      MakeUnique<HuffmanCodec<uint64_t>>(GetOpcodeAndNumOperandsHist());
   non_id_word_huffman_codecs_ = GetNonIdWordHuffmanCodecs();
   id_descriptor_huffman_codecs_ = GetIdDescriptorHuffmanCodecs();
   descriptors_with_coding_scheme_ = GetDescriptorsWithCodingScheme();
@@ -66,8 +68,8 @@ MarkvModelShaderMax::MarkvModelShaderMax() {
   const uint16_t kVersionNumber = 1;
   SetModelVersion(kVersionNumber);
 
-  opcode_and_num_operands_huffman_codec_.reset(
-      new HuffmanCodec<uint64_t>(GetOpcodeAndNumOperandsHist()));
+  opcode_and_num_operands_huffman_codec_ =
+      MakeUnique<HuffmanCodec<uint64_t>>(GetOpcodeAndNumOperandsHist());
   opcode_and_num_operands_markov_huffman_codecs_ =
       GetOpcodeAndNumOperandsMarkovHuffmanCodecs();
   non_id_word_huffman_codecs_ = GetNonIdWordHuffmanCodecs();

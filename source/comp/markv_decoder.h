@@ -16,6 +16,7 @@
 #include "source/comp/markv.h"
 #include "source/comp/markv_codec.h"
 #include "source/comp/markv_logger.h"
+#include "source/util/make_unique.h"
 
 #ifndef SOURCE_COMP_MARKV_DECODER_H_
 #define SOURCE_COMP_MARKV_DECODER_H_
@@ -44,7 +45,7 @@ class MarkvDecoder : public MarkvCodec {
   // Creates an internal logger which writes comments on the decoding process.
   void CreateLogger(MarkvLogConsumer log_consumer,
                     MarkvDebugConsumer debug_consumer) {
-    logger_.reset(new MarkvLogger(log_consumer, debug_consumer));
+    logger_ = MakeUnique<MarkvLogger>(log_consumer, debug_consumer);
   }
 
   // Decodes SPIR-V from MARK-V and stores the words in |spirv_binary|.

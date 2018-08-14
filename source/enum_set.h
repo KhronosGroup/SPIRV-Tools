@@ -22,6 +22,7 @@
 #include <utility>
 
 #include "source/latest_version_spirv_header.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 
@@ -152,7 +153,7 @@ class EnumSet {
   // allocated if one doesn't exist yet.  Returns overflow_set_.
   OverflowSetType& Overflow() {
     if (overflow_.get() == nullptr) {
-      overflow_.reset(new OverflowSetType);
+      overflow_ = MakeUnique<OverflowSetType>();
     }
     return *overflow_;
   }
