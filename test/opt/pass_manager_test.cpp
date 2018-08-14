@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "source/opt/make_unique.h"
+#include "source/util/make_unique.h"
 #include "test/opt/module_utils.h"
 #include "test/opt/pass_fixture.h"
 

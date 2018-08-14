@@ -332,6 +332,7 @@ static_library("spvtools") {
     "source/util/hex_float.h",
     "source/util/ilist.h",
     "source/util/ilist_node.h",
+    "source/util/make_unique.h",
     "source/util/parse_number.cpp",
     "source/util/parse_number.h",
     "source/util/small_vector.h",
@@ -508,7 +509,6 @@ static_library("spvtools_opt") {
     "source/opt/loop_unswitch_pass.h",
     "source/opt/loop_utils.cpp",
     "source/opt/loop_utils.h",
-    "source/opt/make_unique.h",
     "source/opt/mem_pass.cpp",
     "source/opt/mem_pass.h",
     "source/opt/merge_return_pass.cpp",
@@ -695,6 +695,8 @@ test("spvtools_test") {
 
   deps = [
     ":spvtools",
+    ":spvtools_language_header_unified1",
+    ":spvtools_val",
   ]
 
   if (build_with_chromium) {

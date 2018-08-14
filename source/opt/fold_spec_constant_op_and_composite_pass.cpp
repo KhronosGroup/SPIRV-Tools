@@ -21,7 +21,7 @@
 #include "source/opt/constants.h"
 #include "source/opt/fold.h"
 #include "source/opt/ir_context.h"
-#include "source/opt/make_unique.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace opt {
