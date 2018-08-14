@@ -14,6 +14,8 @@
 
 #include "source/val/validate.h"
 
+#include <algorithm>
+
 #include "source/opcode.h"
 #include "source/val/instruction.h"
 #include "source/val/validation_state.h"
@@ -51,7 +53,8 @@ spv_result_t ValidateFunction(ValidationState_t& _, const Instruction* inst) {
         SpvOpGetKernelPreferredWorkGroupSizeMultiple,
         SpvOpGetKernelLocalSizeForSubgroupCount,
         SpvOpGetKernelMaxNumSubgroups};
-    if (std::find(acceptable.begin(), acceptable.end(), use->opcode()) == acceptable.end()) {
+    if (std::find(acceptable.begin(), acceptable.end(), use->opcode()) ==
+        acceptable.end()) {
       return _.diag(SPV_ERROR_INVALID_ID, use)
              << "Invalid use of function result id " << _.getIdName(inst->id())
              << ".";
