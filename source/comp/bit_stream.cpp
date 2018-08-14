@@ -18,10 +18,10 @@
 #include <sstream>
 #include <type_traits>
 
-#include "source/util/bit_stream.h"
+#include "source/comp/bit_stream.h"
 
 namespace spvtools {
-namespace utils {
+namespace comp {
 namespace {
 
 // Returns if the system is little-endian. Unfortunately only works during
@@ -344,5 +344,5 @@ bool BitReaderWord64::OnlyZeroesLeft() const {
   return !remaining_bits;
 }
 
-}  // namespace utils
+}  // namespace comp
 }  // namespace spvtools

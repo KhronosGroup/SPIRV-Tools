@@ -19,10 +19,10 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "source/util/move_to_front.h"
+#include "source/comp/move_to_front.h"
 
 namespace spvtools {
-namespace utils {
+namespace comp {
 namespace {
 
 // Class used to test the inner workings of MoveToFront.
@@ -824,5 +824,5 @@ TEST(MoveToFront, LargerScale) {
 }
 
 }  // namespace
-}  // namespace utils
+}  // namespace comp
 }  // namespace spvtools
