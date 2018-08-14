@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_OPT_MAKE_UNIQUE_H_
-#define SOURCE_OPT_MAKE_UNIQUE_H_
+#ifndef SOURCE_UTIL_MAKE_UNIQUE_H_
+#define SOURCE_UTIL_MAKE_UNIQUE_H_
 
 #include <memory>
 #include <utility>
@@ -27,4 +27,4 @@ std::unique_ptr<T> MakeUnique(Args&&... args) {
 
 }  // namespace spvtools
 
-#endif  // SOURCE_OPT_MAKE_UNIQUE_H_
+#endif  // SOURCE_UTIL_MAKE_UNIQUE_H_

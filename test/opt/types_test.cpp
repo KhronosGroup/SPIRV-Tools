@@ -29,12 +29,13 @@ namespace {
 class SameTypeTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    void_t_.reset(new Void());
-    u32_t_.reset(new Integer(32, false));
-    f64_t_.reset(new Float(64));
-    v3u32_t_.reset(new Vector(u32_t_.get(), 3));
-    image_t_.reset(new Image(f64_t_.get(), SpvDim2D, 1, 1, 0, 0,
-                             SpvImageFormatR16, SpvAccessQualifierReadWrite));
+    void_t_ = MakeUnique<Void>();
+    u32_t_ = MakeUnique<Integer>(32, false);
+    f64_t_ = MakeUnique<Float>(64);
+    v3u32_t_ = MakeUnique<Vector>(u32_t_.get(), 3);
+    image_t_ =
+        MakeUnique<Image>(f64_t_.get(), SpvDim2D, 1, 1, 0, 0, SpvImageFormatR16,
+                          SpvAccessQualifierReadWrite);
   }
 
   // Element types to be used for constructing other types for testing.
