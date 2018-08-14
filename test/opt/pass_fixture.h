@@ -191,7 +191,7 @@ class PassTest : public TestT {
 
   // Renews the pass manager, including clearing all previously added passes.
   void RenewPassManger() {
-    manager_.reset(new PassManager());
+    manager_ = MakeUnique<PassManager>();
     manager_->SetMessageConsumer(consumer_);
   }
 

@@ -22,6 +22,7 @@
 #include <tuple>
 
 #include "source/util/hex_float.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace utils {
@@ -34,7 +35,7 @@ class ErrorMsgStream {
  public:
   explicit ErrorMsgStream(std::string* error_msg_sink)
       : error_msg_sink_(error_msg_sink) {
-    if (error_msg_sink_) stream_.reset(new std::ostringstream());
+    if (error_msg_sink_) stream_ = MakeUnique<std::ostringstream>();
   }
   ~ErrorMsgStream() {
     if (error_msg_sink_ && stream_) *error_msg_sink_ = stream_->str();

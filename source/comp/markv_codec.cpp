@@ -22,6 +22,7 @@
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_opencl_std_header.h"
 #include "source/opcode.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace comp {
@@ -47,7 +48,7 @@ GetMtfHuffmanCodecs() {
 
   std::unique_ptr<HuffmanCodec<uint32_t>> codec;
 
-  codec.reset(new HuffmanCodec<uint32_t>(std::map<uint32_t, uint32_t>({
+  codec = MakeUnique<HuffmanCodec<uint32_t>>(std::map<uint32_t, uint32_t>({
       {0, 5},
       {1, 40},
       {2, 10},
@@ -59,10 +60,10 @@ GetMtfHuffmanCodecs() {
       {8, 3},
       {9, 3},
       {MarkvCodec::kMtfRankEncodedByValueSignal, 10},
-  })));
+  }));
   codecs.emplace(kMtfAll, std::move(codec));
 
-  codec.reset(new HuffmanCodec<uint32_t>(std::map<uint32_t, uint32_t>({
+  codec = MakeUnique<HuffmanCodec<uint32_t>>(std::map<uint32_t, uint32_t>({
       {1, 50},
       {2, 20},
       {3, 5},
@@ -73,7 +74,7 @@ GetMtfHuffmanCodecs() {
       {8, 1},
       {9, 1},
       {MarkvCodec::kMtfRankEncodedByValueSignal, 10},
-  })));
+  }));
   codecs.emplace(kMtfGenericNonZeroRank, std::move(codec));
 
   return codecs;

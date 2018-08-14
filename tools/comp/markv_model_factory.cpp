@@ -14,6 +14,7 @@
 
 #include "tools/comp/markv_model_factory.h"
 
+#include "source/util/make_unique.h"
 #include "tools/comp/markv_model_shader.h"
 
 namespace spvtools {
@@ -23,15 +24,15 @@ std::unique_ptr<MarkvModel> CreateMarkvModel(MarkvModelType type) {
   std::unique_ptr<MarkvModel> model;
   switch (type) {
     case kMarkvModelShaderLite: {
-      model.reset(new MarkvModelShaderLite());
+      model = MakeUnique<MarkvModelShaderLite>();
       break;
     }
     case kMarkvModelShaderMid: {
-      model.reset(new MarkvModelShaderMid());
+      model = MakeUnique<MarkvModelShaderMid>();
       break;
     }
     case kMarkvModelShaderMax: {
-      model.reset(new MarkvModelShaderMax());
+      model = MakeUnique<MarkvModelShaderMax>();
       break;
     }
     case kMarkvModelUnknown: {

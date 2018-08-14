@@ -35,6 +35,7 @@
 #include "source/spirv_constant.h"
 #include "source/spirv_endian.h"
 #include "source/util/hex_float.h"
+#include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.h"
 
 namespace {
@@ -419,8 +420,8 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper;
   spvtools::NameMapper name_mapper = spvtools::GetTrivialNameMapper();
   if (options & SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) {
-    friendly_mapper.reset(
-        new spvtools::FriendlyNameMapper(&hijack_context, code, wordCount));
+    friendly_mapper = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
+        &hijack_context, code, wordCount);
     name_mapper = friendly_mapper->GetNameMapper();
   }
 
@@ -452,8 +453,8 @@ std::string spvtools::spvInstructionBinaryToText(const spv_target_env env,
   std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper;
   spvtools::NameMapper name_mapper = spvtools::GetTrivialNameMapper();
   if (options & SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) {
-    friendly_mapper.reset(
-        new spvtools::FriendlyNameMapper(context, code, wordCount));
+    friendly_mapper = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
+        context, code, wordCount);
     name_mapper = friendly_mapper->GetNameMapper();
   }
 
