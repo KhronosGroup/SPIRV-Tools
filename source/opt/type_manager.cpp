@@ -448,7 +448,8 @@ Type* TypeManager::RebuildType(const Type& type) {
 #define DefineNoSubtypeCase(kind)             \
   case Type::k##kind:                         \
     rebuilt_ty.reset(type.Clone().release()); \
-    break;
+    return type_pool_.insert(std::move(rebuilt_ty)).first->get();
+
     DefineNoSubtypeCase(Void);
     DefineNoSubtypeCase(Bool);
     DefineNoSubtypeCase(Integer);
