@@ -18,7 +18,6 @@
 #include "source/latest_version_spirv_header.h"
 
 #include "source/extensions.h"
-#include "source/message.h"
 #include "spirv-tools/libspirv.hpp"
 
 typedef struct spv_opcode_desc_t {

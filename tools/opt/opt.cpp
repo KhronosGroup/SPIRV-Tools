@@ -22,7 +22,6 @@
 #include <string>
 #include <vector>
 
-#include "source/message.h"
 #include "source/opt/log.h"
 #include "source/opt/loop_peeling.h"
 #include "source/opt/set_spec_constant_default_value_pass.h"

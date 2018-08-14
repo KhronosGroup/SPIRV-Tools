@@ -15,7 +15,6 @@
 #include "source/opt/log.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "source/message.h"
 
 namespace spvtools {
 namespace {

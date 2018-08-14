@@ -25,7 +25,6 @@
 
 #include "source/diagnostic.h"
 #include "source/instruction.h"
-#include "source/message.h"
 #include "source/text.h"
 #include "spirv-tools/libspirv.h"
 
