@@ -21,8 +21,8 @@
 
 #include "source/opt/ir_context.h"
 #include "source/opt/log.h"
-#include "source/opt/make_unique.h"
 #include "source/opt/reflect.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace opt {

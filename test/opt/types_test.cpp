@@ -17,8 +17,8 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "source/opt/make_unique.h"
 #include "source/opt/types.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace opt {

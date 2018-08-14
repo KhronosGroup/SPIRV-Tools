@@ -31,10 +31,10 @@
 #include "source/opt/compact_ids_pass.h"
 #include "source/opt/decoration_manager.h"
 #include "source/opt/ir_loader.h"
-#include "source/opt/make_unique.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/remove_duplicates_pass.h"
 #include "source/spirv_target_env.h"
+#include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {

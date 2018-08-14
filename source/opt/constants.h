@@ -23,11 +23,11 @@
 #include <utility>
 #include <vector>
 
-#include "source/opt/make_unique.h"
 #include "source/opt/module.h"
 #include "source/opt/type_manager.h"
 #include "source/opt/types.h"
 #include "source/util/hex_float.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace opt {

@@ -21,9 +21,9 @@
 
 #include "source/enum_string_mapping.h"
 #include "source/extensions.h"
-#include "source/opt/make_unique.h"
 #include "source/opt/reflect.h"
 #include "source/opt/types.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace opt {
