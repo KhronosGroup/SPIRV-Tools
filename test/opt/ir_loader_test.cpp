@@ -321,9 +321,8 @@ TEST(IrBuilder, KeepModuleProcessedInRightPlace) {
 // from the given |assembly|.
 void DoErrorMessageCheck(const std::string& assembly,
                          const std::string& error_message) {
-  auto consumer = [error_message](spv_message_level_t level, const char* source,
-                                  const spv_position_t& position,
-                                  const char* m) {
+  auto consumer = [error_message](spv_message_level_t, const char*,
+                                  const spv_position_t&, const char* m) {
     EXPECT_EQ(error_message, m);
   };
 
