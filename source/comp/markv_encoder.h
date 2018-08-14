@@ -58,7 +58,7 @@ class MarkvEncoder : public MarkvCodec {
   // Creates an internal logger which writes comments on the encoding process.
   void CreateLogger(MarkvLogConsumer log_consumer,
                     MarkvDebugConsumer debug_consumer) {
-    logger_.= MakeUnique<MarkvLogger>(log_consumer, debug_consumer);
+    logger_ = MakeUnique<MarkvLogger>(log_consumer, debug_consumer);
     writer_.SetCallback(
         [this](const std::string& str) { logger_->AppendBitSequence(str); });
   }
