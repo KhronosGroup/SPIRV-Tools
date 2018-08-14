@@ -58,14 +58,14 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
               << diagnostic->position.column + 1 << ": " << diagnostic->error
               << "\n";
     return SPV_SUCCESS;
-  } else {
-    // NOTE: Assume this is a binary position
-    std::cerr << "error: ";
-    if (diagnostic->position.index > 0)
-      std::cerr << diagnostic->position.index << ": ";
-    std::cerr << diagnostic->error << "\n";
-    return SPV_SUCCESS;
   }
+
+  // NOTE: Assume this is a binary position
+  std::cerr << "error: ";
+  if (diagnostic->position.index > 0)
+    std::cerr << diagnostic->position.index << ": ";
+  std::cerr << diagnostic->error << "\n";
+  return SPV_SUCCESS;
 }
 
 namespace spvtools {
