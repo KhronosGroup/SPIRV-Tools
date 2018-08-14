@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "source/instruction.h"
-#include "source/message.h"
 #include "source/table.h"
 #include "spirv-tools/libspirv.h"
 

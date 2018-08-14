@@ -20,7 +20,6 @@
 
 #include "gmock/gmock.h"
 #include "source/latest_version_opencl_std_header.h"
-#include "source/message.h"
 #include "source/table.h"
 #include "test/test_fixture.h"
 #include "test/unit_spirv.h"

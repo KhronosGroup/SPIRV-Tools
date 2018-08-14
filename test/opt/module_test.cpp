@@ -19,7 +19,6 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "source/message.h"
 #include "source/opt/build_module.h"
 #include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"

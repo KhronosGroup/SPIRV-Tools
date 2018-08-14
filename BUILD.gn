@@ -301,7 +301,6 @@ static_library("spvtools") {
     "source/instruction.h",
     "source/libspirv.cpp",
     "source/macro.h",
-    "source/message.cpp",
     "source/name_mapper.cpp",
     "source/name_mapper.h",
     "source/opcode.cpp",

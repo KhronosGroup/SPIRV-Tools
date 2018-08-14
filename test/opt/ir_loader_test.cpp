@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "source/message.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "spirv-tools/libspirv.hpp"
@@ -322,11 +321,10 @@ TEST(IrBuilder, KeepModuleProcessedInRightPlace) {
 // from the given |assembly|.
 void DoErrorMessageCheck(const std::string& assembly,
                          const std::string& error_message) {
-  auto consumer = [error_message](spv_message_level_t level, const char* source,
-                                  const spv_position_t& position,
-                                  const char* m) {
-    EXPECT_EQ(error_message, StringifyMessage(level, source, position, m));
-  };
+  auto consumer = [error_message, &called](
+                      spv_message_level_t level, const char* source,
+                      const spv_position_t& position,
+                      const char* m) { EXPECT_EQ(error_message, m); };
 
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<IRContext> context =
@@ -336,13 +334,12 @@ void DoErrorMessageCheck(const std::string& assembly,
 
 TEST(IrBuilder, FunctionInsideFunction) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\n%5 = OpFunction %4 None %6",
-                      "error: <instruction>:2:0:0: function inside function");
+                      "function inside function");
 }
 
 TEST(IrBuilder, MismatchOpFunctionEnd) {
   DoErrorMessageCheck("OpFunctionEnd",
-                      "error: <instruction>:1:0:0: OpFunctionEnd without "
-                      "corresponding OpFunction");
+                      "OpFunctionEnd without corresponding OpFunction");
 }
 
 TEST(IrBuilder, OpFunctionEndInsideBasicBlock) {
@@ -350,12 +347,12 @@ TEST(IrBuilder, OpFunctionEndInsideBasicBlock) {
       "%2 = OpFunction %1 None %3\n"
       "%4 = OpLabel\n"
       "OpFunctionEnd",
-      "error: <instruction>:3:0:0: OpFunctionEnd inside basic block");
+      "OpFunctionEnd inside basic block");
 }
 
 TEST(IrBuilder, BasicBlockOutsideFunction) {
   DoErrorMessageCheck("OpCapability Shader\n%1 = OpLabel",
-                      "error: <instruction>:2:0:0: OpLabel outside function");
+                      "OpLabel outside function");
 }
 
 TEST(IrBuilder, OpLabelInsideBasicBlock) {
@@ -363,26 +360,22 @@ TEST(IrBuilder, OpLabelInsideBasicBlock) {
       "%2 = OpFunction %1 None %3\n"
       "%4 = OpLabel\n"
       "%5 = OpLabel",
-      "error: <instruction>:3:0:0: OpLabel inside basic block");
+      "OpLabel inside basic block");
 }
 
 TEST(IrBuilder, TerminatorOutsideFunction) {
-  DoErrorMessageCheck(
-      "OpReturn",
-      "error: <instruction>:1:0:0: terminator instruction outside function");
+  DoErrorMessageCheck("OpReturn", "terminator instruction outside function");
 }
 
 TEST(IrBuilder, TerminatorOutsideBasicBlock) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\nOpReturn",
-                      "error: <instruction>:2:0:0: terminator instruction "
-                      "outside basic block");
+                      "terminator instruction outside basic block");
 }
 
 TEST(IrBuilder, NotAllowedInstAppearingInFunction) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\n%5 = OpVariable %4 Function",
-                      "error: <instruction>:2:0:0: Non-OpFunctionParameter "
-                      "(opcode: 59) found inside function but outside basic "
-                      "block");
+                      "Non-OpFunctionParameter (opcode: 59) found inside "
+                      "function but outside basic block");
 }
 
 TEST(IrBuilder, UniqueIds) {

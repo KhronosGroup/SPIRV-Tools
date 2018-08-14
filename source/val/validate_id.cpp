@@ -27,7 +27,6 @@
 
 #include "source/diagnostic.h"
 #include "source/instruction.h"
-#include "source/message.h"
 #include "source/opcode.h"
 #include "source/operand.h"
 #include "source/spirv_validator_options.h"
