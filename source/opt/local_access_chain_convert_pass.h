@@ -86,11 +86,12 @@ class LocalAccessChainConvertPass : public MemPass {
       const Instruction* ptrInst, uint32_t valId,
       std::vector<std::unique_ptr<Instruction>>* newInsts);
 
-  // For the (constant index) access chain |ptrInst|, create an
-  // equivalent load and extract. Append to |newInsts|.
-  uint32_t GenAccessChainLoadReplacement(
-      const Instruction* ptrInst,
-      std::vector<std::unique_ptr<Instruction>>* newInsts);
+  // For the (constant index) access chain |address_inst|, create an
+  // equivalent load and extract that replaces |original_load|.  The result id
+  // of the extract will be the same as the original result id of
+  // |original_load|.
+  void ReplaceAccessChainLoad(const Instruction* address_inst,
+                              Instruction* original_load);
 
   // Return true if all indices of access chain |acp| are OpConstant integers
   bool IsConstantIndexAccessChain(const Instruction* acp) const;
