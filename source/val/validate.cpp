@@ -290,6 +290,12 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = ModuleLayoutPass(*vstate, &instruction)) return error;
     if (auto error = CfgPass(*vstate, &instruction)) return error;
     if (auto error = InstructionPass(*vstate, &instruction)) return error;
+
+    // Now that all of the checks are done, update the state.
+    {
+      Instruction* inst = const_cast<Instruction*>(&instruction);
+      vstate->RegisterInstruction(inst);
+    }
     if (auto error = UpdateIdUse(*vstate, &instruction)) return error;
   }
 
