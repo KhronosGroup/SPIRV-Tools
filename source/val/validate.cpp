@@ -243,44 +243,48 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   }
 
   for (auto& instruction : vstate->ordered_instructions()) {
-    // In order to do this work outside of Process Instruction we need to be
-    // able to, briefly, de-const the instruction.
-    Instruction* inst = const_cast<Instruction*>(&instruction);
+    {
+      // In order to do this work outside of Process Instruction we need to be
+      // able to, briefly, de-const the instruction.
+      Instruction* inst = const_cast<Instruction*>(&instruction);
 
-    if (inst->opcode() == SpvOpEntryPoint) {
-      const auto entry_point = inst->GetOperandAs<uint32_t>(1);
-      const auto execution_model = inst->GetOperandAs<SpvExecutionModel>(0);
-      const char* str = reinterpret_cast<const char*>(inst->words().data() +
-                                                      inst->operand(2).offset);
+      if (inst->opcode() == SpvOpEntryPoint) {
+        const auto entry_point = inst->GetOperandAs<uint32_t>(1);
+        const auto execution_model = inst->GetOperandAs<SpvExecutionModel>(0);
+        const char* str = reinterpret_cast<const char*>(
+            inst->words().data() + inst->operand(2).offset);
 
-      ValidationState_t::EntryPointDescription desc;
-      desc.name = str;
+        ValidationState_t::EntryPointDescription desc;
+        desc.name = str;
 
-      std::vector<uint32_t> interfaces;
-      for (size_t j = 3; j < inst->operands().size(); ++j)
-        desc.interfaces.push_back(inst->word(inst->operand(j).offset));
+        std::vector<uint32_t> interfaces;
+        for (size_t j = 3; j < inst->operands().size(); ++j)
+          desc.interfaces.push_back(inst->word(inst->operand(j).offset));
 
-      vstate->RegisterEntryPoint(entry_point, execution_model, std::move(desc));
-    }
-    if (inst->opcode() == SpvOpFunctionCall) {
-      if (!vstate->in_function_body()) {
-        return vstate->diag(SPV_ERROR_INVALID_LAYOUT, &instruction)
-               << "A FunctionCall must happen within a function body.";
+        vstate->RegisterEntryPoint(entry_point, execution_model,
+                                   std::move(desc));
+      }
+      if (inst->opcode() == SpvOpFunctionCall) {
+        if (!vstate->in_function_body()) {
+          return vstate->diag(SPV_ERROR_INVALID_LAYOUT, &instruction)
+                 << "A FunctionCall must happen within a function body.";
+        }
+
+        vstate->AddFunctionCallTarget(inst->GetOperandAs<uint32_t>(2));
       }
 
-      vstate->AddFunctionCallTarget(inst->GetOperandAs<uint32_t>(2));
-    }
+      if (vstate->in_function_body()) {
+        inst->set_function(&(vstate->current_function()));
+        inst->set_block(vstate->current_function().current_block());
 
-    if (vstate->in_function_body()) {
-      inst->set_function(&(vstate->current_function()));
-      inst->set_block(vstate->current_function().current_block());
-
-      if (vstate->in_block() && spvOpcodeIsBlockTerminator(inst->opcode())) {
-        vstate->current_function().current_block()->set_terminator(inst);
+        if (vstate->in_block() && spvOpcodeIsBlockTerminator(inst->opcode())) {
+          vstate->current_function().current_block()->set_terminator(inst);
+        }
       }
+
+      if (auto error = IdPass(*vstate, inst)) return error;
     }
 
-    if (auto error = IdPass(*vstate, inst)) return error;
     if (auto error = CapabilityPass(*vstate, &instruction)) return error;
     if (auto error = DataRulesPass(*vstate, &instruction)) return error;
     if (auto error = ModuleLayoutPass(*vstate, &instruction)) return error;
@@ -288,7 +292,10 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = InstructionPass(*vstate, &instruction)) return error;
 
     // Now that all of the checks are done, update the state.
-    vstate->RegisterInstruction(inst);
+    {
+      Instruction* inst = const_cast<Instruction*>(&instruction);
+      vstate->RegisterInstruction(inst);
+    }
     if (auto error = UpdateIdUse(*vstate, &instruction)) return error;
   }
 
