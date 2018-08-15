@@ -529,6 +529,17 @@ TEST_F(ValidateData, missing_forward_pointer_decl) {
               HasSubstr("must first be declared using OpTypeForwardPointer"));
 }
 
+TEST_F(ValidateData, missing_forward_pointer_decl_self_reference) {
+  std::string str = header_with_addresses + R"(
+%uintt = OpTypeInt 32 0
+%3 = OpTypeStruct %3 %uintt
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must first be declared using OpTypeForwardPointer"));
+}
+
 TEST_F(ValidateData, forward_pointer_missing_definition) {
   std::string str = header_with_addresses + R"(
 OpTypeForwardPointer %_ptr_Generic_struct_A Generic

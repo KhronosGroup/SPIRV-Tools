@@ -817,8 +817,6 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
   }
   if (result_id) _.RemoveIfForwardDeclared(result_id);
 
-  _.RegisterInstruction(inst);
-
   return SPV_SUCCESS;
 }
 
