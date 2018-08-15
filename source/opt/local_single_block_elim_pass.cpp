@@ -78,6 +78,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
             if (prev_store != var2store_.end() &&
                 instructions_to_save.count(prev_store->second) == 0) {
               instructions_to_kill.push_back(prev_store->second);
+              modified = true;
             }
 
             bool kill_store = false;
