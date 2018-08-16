@@ -150,6 +150,8 @@ void MergeReturnPass::CreateReturn(BasicBlock* block) {
     Instruction* var_inst = block->terminator();
     context()->AnalyzeDefUse(var_inst);
     context()->set_instr_block(var_inst, block);
+    context()->get_decoration_mgr()->CloneDecorations(
+        return_value_->result_id(), loadId, {SpvDecorationRelaxedPrecision});
 
     block->AddInstruction(MakeUnique<Instruction>(
         context(), SpvOpReturnValue, 0, 0,
@@ -656,6 +658,9 @@ void MergeReturnPass::AddReturnValue() {
   return_value_ = &*entry_block->begin();
   context()->AnalyzeDefUse(return_value_);
   context()->set_instr_block(return_value_, entry_block);
+
+  context()->get_decoration_mgr()->CloneDecorations(
+      function_->result_id(), var_id, {SpvDecorationRelaxedPrecision});
 }
 
 void MergeReturnPass::AddReturnFlag() {
