@@ -220,7 +220,8 @@ class MergeReturnPass : public MemPass {
   // not be executed because the original code would have already returned. This
   // involves adding new selections constructs to jump around these
   // instructions.
-  void PredicateBlocks(const std::vector<BasicBlock*>& return_blocks);
+  void PredicateBlocks(BasicBlock* return_block,
+                       std::unordered_set<BasicBlock*>* predicated);
 
   // Add the predication code (see |PredicateBlocks|) to |tail_block| if it
   // requires predication.  |tail_block| and any new blocks that are known to

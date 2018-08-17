@@ -87,8 +87,32 @@ void MergeReturnPass::ProcessStructured(
     }
   }
 
-  // Predicate successors of the original return blocks as necessary.
-  PredicateBlocks(return_blocks);
+  state_.clear();
+  state_.emplace_back(nullptr, nullptr);
+  std::unordered_set<BasicBlock*> predicated;
+  for (auto block : order) {
+    if (cfg()->IsPseudoEntryBlock(block) || cfg()->IsPseudoExitBlock(block)) {
+      continue;
+    }
+
+    auto blockId = block->GetLabelInst()->result_id();
+    if (blockId == CurrentState().CurrentMergeId()) {
+      // Pop the current state as we've hit the merge
+      state_.pop_back();
+    }
+
+    // Predicate successors of the original return blocks as necessary.
+    if (std::find(return_blocks.begin(), return_blocks.end(), block) != return_blocks.end()) {
+      PredicateBlocks(block, &predicated);
+    }
+
+    // Generate state for next block
+    if (Instruction* mergeInst = block->GetMergeInst()) {
+      Instruction* loopMergeInst = block->GetLoopMergeInst();
+      if (!loopMergeInst) loopMergeInst = state_.back().LoopMergeInst();
+      state_.emplace_back(loopMergeInst, mergeInst);
+    }
+  }
 
   // We have not kept the dominator tree up-to-date.
   // Invalidate it at this point to make sure it will be rebuilt.
@@ -250,8 +274,8 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
   }
 }
 
-void MergeReturnPass::PredicateBlocks(
-    const std::vector<BasicBlock*>& return_blocks) {
+void MergeReturnPass::PredicateBlocks(BasicBlock* return_block,
+                                      std::unordered_set<BasicBlock*>* predicated) {
   // The CFG is being modified as the function proceeds so avoid caching
   // successors.
   std::vector<BasicBlock*> stack;
@@ -262,30 +286,26 @@ void MergeReturnPass::PredicateBlocks(
     });
   };
 
+  add_successors(return_block);
+
   std::unordered_set<BasicBlock*> seen;
-  std::unordered_set<BasicBlock*> predicated;
-  for (auto b : return_blocks) {
-    seen.clear();
-    add_successors(b);
+  while (!stack.empty()) {
+    BasicBlock* block = stack.back();
+    assert(block);
+    stack.pop_back();
 
-    while (!stack.empty()) {
-      BasicBlock* block = stack.back();
-      assert(block);
-      stack.pop_back();
+    if (block == return_block) continue;
+    if (block == final_return_block_) continue;
+    if (!seen.insert(block).second) continue;
+    if (!predicated->insert(block).second) continue;
 
-      if (block == b) continue;
-      if (block == final_return_block_) continue;
-      if (!seen.insert(block).second) continue;
-      if (!predicated.insert(block).second) continue;
-
-      // Skip structured subgraphs.
-      BasicBlock* next = block;
-      while (next->GetMergeInst()) {
-        next = context()->get_instr_block(next->MergeBlockIdIfAny());
-      }
-      add_successors(next);
-      PredicateBlock(block, next, &predicated);
+    // Skip structured subgraphs.
+    BasicBlock* next = block;
+    while (next->GetMergeInst()) {
+      next = context()->get_instr_block(next->MergeBlockIdIfAny());
     }
+    add_successors(next);
+    PredicateBlock(block, next, predicated);
   }
 }
 
