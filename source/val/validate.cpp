@@ -46,16 +46,6 @@ namespace spvtools {
 namespace val {
 namespace {
 
-spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
-                            const uint64_t count,
-                            const ValidationState_t& state,
-                            spv_position position) {
-  position->index = SPV_INDEX_INSTRUCTION;
-  if (auto error = spvValidateInstructionIDs(pInsts, count, state, position))
-    return error;
-  return SPV_SUCCESS;
-}
-
 // TODO(umar): Validate header
 // TODO(umar): The binary parser validates the magic word, and the length of the
 // header, but nothing else.
@@ -363,28 +353,6 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   for (const auto inst : vstate->ordered_instructions()) {
     if (auto error = ValidateExecutionLimitations(*vstate, &inst)) return error;
   }
-
-  // NOTE: Copy each instruction for easier processing
-  std::vector<spv_instruction_t> instructions;
-  // Expect average instruction length to be a bit over 2 words.
-  instructions.reserve(binary->wordCount / 2);
-  uint64_t index = SPV_INDEX_INSTRUCTION;
-  while (index < binary->wordCount) {
-    uint16_t wordCount;
-    uint16_t opcode;
-    spvOpcodeSplit(spvFixWord(binary->code[index], endian), &wordCount,
-                   &opcode);
-    spv_instruction_t inst;
-    spvInstructionCopy(&binary->code[index], static_cast<SpvOp>(opcode),
-                       wordCount, endian, &inst);
-    instructions.emplace_back(std::move(inst));
-    index += wordCount;
-  }
-
-  position.index = SPV_INDEX_INSTRUCTION;
-  if (auto error = spvValidateIDs(instructions.data(), instructions.size(),
-                                  *vstate, &position))
-    return error;
 
   return SPV_SUCCESS;
 }
