@@ -853,6 +853,158 @@ OpFunctionEnd
   SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
+TEST_F(MergeReturnPassTest, NestedLoopMerge) {
+  const std::string before =
+      R"(               OpCapability SampledBuffer
+               OpCapability StorageImageExtendedFormats
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "CS"
+               OpExecutionMode %2 LocalSize 8 8 1
+               OpSource HLSL 600
+               OpName %function "function"
+       %uint = OpTypeInt 32 0
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+       %bool = OpTypeBool
+       %true = OpConstantTrue %bool
+%_ptr_Function_uint = OpTypePointer Function %uint
+ %_struct_13 = OpTypeStruct %v3uint %v3uint %v3uint %uint %uint %uint %uint %uint %uint
+          %2 = OpFunction %void None %6
+         %14 = OpLabel
+         %15 = OpFunctionCall %void %function
+               OpReturn
+               OpFunctionEnd
+   %function = OpFunction %void None %6
+         %16 = OpLabel
+         %17 = OpVariable %_ptr_Function_uint Function
+         %18 = OpVariable %_ptr_Function_uint Function
+               OpStore %17 %uint_0
+               OpBranch %19
+         %19 = OpLabel
+         %20 = OpLoad %uint %17
+         %21 = OpULessThan %bool %20 %uint_1
+               OpLoopMerge %22 %23 DontUnroll
+               OpBranchConditional %21 %24 %22
+         %24 = OpLabel
+               OpStore %18 %uint_1
+               OpBranch %25
+         %25 = OpLabel
+         %26 = OpLoad %uint %18
+         %27 = OpINotEqual %bool %26 %uint_0
+               OpLoopMerge %28 %29 DontUnroll
+               OpBranchConditional %27 %30 %28
+         %30 = OpLabel
+               OpSelectionMerge %31 None
+               OpBranchConditional %true %32 %31
+         %32 = OpLabel
+               OpReturn
+         %31 = OpLabel
+               OpStore %18 %uint_1
+               OpBranch %29
+         %29 = OpLabel
+               OpBranch %25
+         %28 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+         %33 = OpLoad %uint %17
+         %34 = OpIAdd %uint %33 %uint_1
+               OpStore %17 %34
+               OpBranch %19
+         %22 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability SampledBuffer
+OpCapability StorageImageExtendedFormats
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "CS"
+OpExecutionMode %2 LocalSize 8 8 1
+OpSource HLSL 600
+OpName %function "function"
+%uint = OpTypeInt 32 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%v3uint = OpTypeVector %uint 3
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_struct_13 = OpTypeStruct %v3uint %v3uint %v3uint %uint %uint %uint %uint %uint %uint
+%false = OpConstantFalse %bool
+%_ptr_Function_bool = OpTypePointer Function %bool
+%2 = OpFunction %void None %6
+%14 = OpLabel
+%15 = OpFunctionCall %void %function
+OpReturn
+OpFunctionEnd
+%function = OpFunction %void None %6
+%16 = OpLabel
+%38 = OpVariable %_ptr_Function_bool Function %false
+%17 = OpVariable %_ptr_Function_uint Function
+%18 = OpVariable %_ptr_Function_uint Function
+OpStore %17 %uint_0
+OpBranch %19
+%19 = OpLabel
+%20 = OpLoad %uint %17
+%21 = OpULessThan %bool %20 %uint_1
+OpLoopMerge %22 %23 DontUnroll
+OpBranchConditional %21 %24 %22
+%24 = OpLabel
+OpStore %18 %uint_1
+OpBranch %25
+%25 = OpLabel
+%26 = OpLoad %uint %18
+%27 = OpINotEqual %bool %26 %uint_0
+OpLoopMerge %28 %29 DontUnroll
+OpBranchConditional %27 %30 %28
+%30 = OpLabel
+OpSelectionMerge %31 None
+OpBranchConditional %true %32 %31
+%32 = OpLabel
+OpStore %38 %true
+OpBranch %28
+%31 = OpLabel
+OpStore %18 %uint_1
+OpBranch %29
+%29 = OpLabel
+OpBranch %25
+%28 = OpLabel
+%40 = OpLoad %bool %38
+OpBranchConditional %40 %22 %39
+%39 = OpLabel
+OpBranch %23
+%23 = OpLabel
+%33 = OpLoad %uint %17
+%34 = OpIAdd %uint %33 %uint_1
+OpStore %17 %34
+OpBranch %19
+%22 = OpLabel
+%43 = OpLoad %bool %38
+OpSelectionMerge %42 None
+OpBranchConditional %43 %42 %41
+%41 = OpLabel
+OpStore %38 %true
+OpBranch %42
+%42 = OpLabel
+OpBranch %35
+%35 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
