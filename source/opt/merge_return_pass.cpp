@@ -200,7 +200,8 @@ void MergeReturnPass::BranchToBlock(BasicBlock* block, uint32_t target) {
   cfg()->AddEdge(block->id(), target);
 }
 
-void MergeReturnPass::UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target) {
+void MergeReturnPass::UpdatePhiNodes(BasicBlock* new_source,
+                                     BasicBlock* target) {
   // A new edge is being added from |new_source| to |target|, so go through
   // |target|'s phi nodes add an undef incoming value for |new_source|.
   target->ForEachPhiInst([this, new_source](Instruction* inst) {
@@ -212,8 +213,7 @@ void MergeReturnPass::UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target)
 
   const auto& target_pred = cfg()->preds(target->id());
   if (target_pred.size() == 1) {
-    MarkForNewPhiNodes(target,
-                       context()->get_instr_block(target_pred[0]));
+    MarkForNewPhiNodes(target, context()->get_instr_block(target_pred[0]));
   }
 }
 
@@ -287,14 +287,15 @@ void MergeReturnPass::PredicateBlocks(
   }
 
   BasicBlock* block = nullptr;
-    const BasicBlock* const_block = const_cast<const BasicBlock*>(return_block);
-    const_block->ForEachSuccessorLabel(
-        [this, &block](const uint32_t idx) {
-          BasicBlock* succ_block = context()->get_instr_block(idx);
-          assert(block == nullptr);
-          block = succ_block;
-        });
-  assert(block && "Return blocks should have returns already replaced by a single unconditional branch.");
+  const BasicBlock* const_block = const_cast<const BasicBlock*>(return_block);
+  const_block->ForEachSuccessorLabel([this, &block](const uint32_t idx) {
+    BasicBlock* succ_block = context()->get_instr_block(idx);
+    assert(block == nullptr);
+    block = succ_block;
+  });
+  assert(block &&
+         "Return blocks should have returns already replaced by a single "
+         "unconditional branch.");
 
   (void)(order);
 
@@ -333,15 +334,15 @@ void MergeReturnPass::PredicateBlocks(
       // block because, if |block| == |tail|, then |tail| will have multiple
       // successors.
       next = nullptr;
-      tail->ForEachSuccessorLabel(
-          [this, &next](const uint32_t idx) {
-            BasicBlock* succ_block = context()->get_instr_block(idx);
-            assert(next == nullptr && "Found block with multiple successors and no merge instruction.");
-            next = succ_block;
-          });
+      tail->ForEachSuccessorLabel([this, &next](const uint32_t idx) {
+        BasicBlock* succ_block = context()->get_instr_block(idx);
+        assert(
+            next == nullptr &&
+            "Found block with multiple successors and no merge instruction.");
+        next = succ_block;
+      });
 
       PredicateBlock(block, tail, predicated);
-
     }
     block = next;
   }
@@ -581,7 +582,6 @@ void MergeReturnPass::BreakFromConstruct(
 
   assert(old_body->begin() != old_body->end());
   assert(block->begin() != block->end());
-
 }
 
 void MergeReturnPass::RecordReturned(BasicBlock* block) {

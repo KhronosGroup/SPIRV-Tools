@@ -300,8 +300,7 @@ class MergeReturnPass : public MemPass {
   // it is mapped to it original single predcessor.  It is assumed there are no
   // values that will need a phi on the new edges.
   std::unordered_map<BasicBlock*, BasicBlock*> new_merge_nodes_;
-  void BreakFromConstruct(BasicBlock* block,
-                          BasicBlock* merge_block,
+  void BreakFromConstruct(BasicBlock* block, BasicBlock* merge_block,
                           std::unordered_set<BasicBlock*>* predicated);
   void UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target);
 };
