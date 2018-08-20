@@ -245,11 +245,11 @@ void AggressiveDCEPass::AddBranch(uint32_t labelId, BasicBlock* bp) {
 }
 
 void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
-    Instruction* loopMerge) {
-  BasicBlock* header = context()->get_instr_block(loopMerge);
+    Instruction* mergeInst) {
+  BasicBlock* header = context()->get_instr_block(mergeInst);
   uint32_t headerIndex = structured_order_index_[header];
   const uint32_t mergeId =
-      loopMerge->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
+      mergeInst->GetSingleWordInOperand(0);
   BasicBlock* merge = context()->get_instr_block(mergeId);
   uint32_t mergeIndex = structured_order_index_[merge];
   get_def_use_mgr()->ForEachUser(
@@ -265,8 +265,14 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
           if (userMerge != nullptr) AddToWorklist(userMerge);
         }
       });
+
+  if (mergeInst->opcode() != SpvOpLoopMerge) {
+    return;
+  }
+
+  // For loops we need to find the continues as well.
   const uint32_t contId =
-      loopMerge->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
+      mergeInst->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
   get_def_use_mgr()->ForEachUser(contId, [&contId, this](Instruction* user) {
     SpvOp op = user->opcode();
     if (op == SpvOpBranchConditional || op == SpvOpSwitch) {
@@ -373,7 +379,9 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
         case SpvOpSwitch:
         case SpvOpBranch:
         case SpvOpBranchConditional: {
-          if (assume_branches_live.top()) AddToWorklist(&*ii);
+          if (assume_branches_live.top()) {
+            AddToWorklist(&*ii);
+          }
         } break;
         default: {
           // Function calls, atomics, function params, function returns, etc.
@@ -426,9 +434,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       AddToWorklist(branchInst);
       Instruction* mergeInst = branch2merge_[branchInst];
       AddToWorklist(mergeInst);
-      // If in a loop, mark all its break and continue instructions live
-      if (mergeInst->opcode() == SpvOpLoopMerge)
-        AddBreaksAndContinuesToWorklist(mergeInst);
+      AddBreaksAndContinuesToWorklist(mergeInst);
     }
     // If local load, add all variable's stores if variable not already live
     if (liveInst->opcode() == SpvOpLoad) {
