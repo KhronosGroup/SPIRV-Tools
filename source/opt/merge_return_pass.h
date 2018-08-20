@@ -221,7 +221,8 @@ class MergeReturnPass : public MemPass {
   // involves adding new selections constructs to jump around these
   // instructions.
   void PredicateBlocks(BasicBlock* return_block,
-                       std::unordered_set<BasicBlock*>* predicated);
+                       const std::list<BasicBlock*>& predicated,
+                       std::unordered_set<BasicBlock*>* pSet);
 
   // Add the predication code (see |PredicateBlocks|) to |tail_block| if it
   // requires predication.  |tail_block| and any new blocks that are known to
@@ -299,6 +300,10 @@ class MergeReturnPass : public MemPass {
   // it is mapped to it original single predcessor.  It is assumed there are no
   // values that will need a phi on the new edges.
   std::unordered_map<BasicBlock*, BasicBlock*> new_merge_nodes_;
+  void BreakFromConstruct(BasicBlock* block,
+                          BasicBlock* merge_block,
+                          std::unordered_set<BasicBlock*>* predicated);
+  void UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target);
 };
 
 }  // namespace opt
