@@ -220,9 +220,6 @@ void MergeReturnPass::UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target)
 void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
                                             uint32_t predecessor,
                                             Instruction& inst) {
-
-  std::cerr << "Adding new phi nodes for inst " << inst.PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) << std::endl;
-
   DominatorAnalysis* dom_tree =
       context()->GetDominatorAnalysis(merge_block->GetParent());
   BasicBlock* inst_bb = context()->get_instr_block(&inst);
@@ -784,10 +781,8 @@ void MergeReturnPass::AddNewPhiNodes(BasicBlock* bb, BasicBlock* pred,
   // Insert as a stopping point.  We do not have to add anything in the block
   // or above because the header dominates |bb|.
 
-      std::cerr << "In AddNewPhiNodes, bb=" << bb->id() << "\n";
   BasicBlock* current_bb = pred;
   while (current_bb != nullptr && current_bb->id() != header_id) {
-    std::cerr << "\t- current_bb=" << current_bb->id() << "\n";
     for (Instruction& inst : *current_bb) {
       CreatePhiNodesForInst(bb, pred->id(), inst);
     }
