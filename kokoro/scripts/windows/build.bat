@@ -65,13 +65,15 @@ ninja
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 echo "Build Completed %DATE% %TIME%"
 
-:: #########################################
-:: Run the tests.
-:: #########################################
-echo "Running Tests... %DATE% %TIME%"
-ctest -C %BUILD_TYPE% --output-on-failure --timeout 300
-if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
-echo "Tests Completed %DATE% %TIME%"
+:: ################################################
+:: Run the tests (We no longer run tests on VS2013)
+:: ################################################
+if NOT %VS_VERSION% == 2013 (
+  echo "Running Tests... %DATE% %TIME%"
+  ctest -C %BUILD_TYPE% --output-on-failure --timeout 300
+  if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+  echo "Tests Completed %DATE% %TIME%"
+)
 
 :: Clean up some directories.
 rm -rf %SRC%\build
