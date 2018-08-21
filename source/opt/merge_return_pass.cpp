@@ -104,7 +104,7 @@ void MergeReturnPass::ProcessStructured(
     // Predicate successors of the original return blocks as necessary.
     if (std::find(return_blocks.begin(), return_blocks.end(), block) !=
         return_blocks.end()) {
-      PredicateBlocks(block, order, &predicated);
+      PredicateBlocks(block, &predicated);
     }
 
     // Generate state for next block
@@ -277,8 +277,7 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
 }
 
 void MergeReturnPass::PredicateBlocks(
-    BasicBlock* return_block, const std::list<BasicBlock*>& order,
-    std::unordered_set<BasicBlock*>* predicated) {
+    BasicBlock* return_block, std::unordered_set<BasicBlock*>* predicated) {
   // The CFG is being modified as the function proceeds so avoid caching
   // successors.
 
@@ -296,8 +295,6 @@ void MergeReturnPass::PredicateBlocks(
   assert(block &&
          "Return blocks should have returns already replaced by a single "
          "unconditional branch.");
-
-  (void)(order);
 
   auto state = state_.rbegin();
   std::unordered_set<BasicBlock*> seen;

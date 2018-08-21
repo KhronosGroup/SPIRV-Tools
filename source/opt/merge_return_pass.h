@@ -221,7 +221,6 @@ class MergeReturnPass : public MemPass {
   // involves adding new selections constructs to jump around these
   // instructions.
   void PredicateBlocks(BasicBlock* return_block,
-                       const std::list<BasicBlock*>& predicated,
                        std::unordered_set<BasicBlock*>* pSet);
 
   // Add the predication code (see |PredicateBlocks|) to |tail_block| if it
