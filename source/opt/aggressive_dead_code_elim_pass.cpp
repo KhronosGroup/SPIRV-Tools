@@ -246,10 +246,12 @@ void AggressiveDCEPass::AddBranch(uint32_t labelId, BasicBlock* bp) {
 
 void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
     Instruction* mergeInst) {
+  assert(mergeInst->opcode() == SpvOpSelectionMerge ||
+         mergeInst->opcode() == SpvOpLoopMerge);
+
   BasicBlock* header = context()->get_instr_block(mergeInst);
   uint32_t headerIndex = structured_order_index_[header];
-  const uint32_t mergeId =
-      mergeInst->GetSingleWordInOperand(0);
+  const uint32_t mergeId = mergeInst->GetSingleWordInOperand(0);
   BasicBlock* merge = context()->get_instr_block(mergeId);
   uint32_t mergeIndex = structured_order_index_[merge];
   get_def_use_mgr()->ForEachUser(
@@ -451,7 +453,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       if (varId != 0) {
         ProcessLoad(varId);
       }
-    // If function call, treat as if it loads from all pointer arguments
+      // If function call, treat as if it loads from all pointer arguments
     } else if (liveInst->opcode() == SpvOpFunctionCall) {
       liveInst->ForEachInId([this](const uint32_t* iid) {
         // Skip non-ptr args
@@ -460,11 +462,11 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
         (void)GetPtr(*iid, &varId);
         ProcessLoad(varId);
       });
-    // If function parameter, treat as if it's result id is loaded from
+      // If function parameter, treat as if it's result id is loaded from
     } else if (liveInst->opcode() == SpvOpFunctionParameter) {
       ProcessLoad(liveInst->result_id());
-    // We treat an OpImageTexelPointer as a load of the pointer, and
-    // that value is manipulated to get the result.
+      // We treat an OpImageTexelPointer as a load of the pointer, and
+      // that value is manipulated to get the result.
     } else if (liveInst->opcode() == SpvOpImageTexelPointer) {
       uint32_t varId;
       (void)GetPtr(liveInst, &varId);
