@@ -331,13 +331,14 @@ void MergeReturnPass::PredicateBlocks(
       // block because, if |block| == |tail|, then |tail| will have multiple
       // successors.
       next = nullptr;
-      tail->ForEachSuccessorLabel([this, &next](const uint32_t idx) {
-        BasicBlock* succ_block = context()->get_instr_block(idx);
-        assert(
-            next == nullptr &&
-            "Found block with multiple successors and no merge instruction.");
-        next = succ_block;
-      });
+      const_cast<const BasicBlock*>(tail)->ForEachSuccessorLabel(
+          [this, &next](const uint32_t idx) {
+            BasicBlock* succ_block = context()->get_instr_block(idx);
+            assert(next == nullptr &&
+                   "Found block with multiple successors and no merge "
+                   "instruction.");
+            next = succ_block;
+          });
 
       PredicateBlock(block, tail, predicated);
     }
