@@ -315,7 +315,11 @@ void MergeReturnPass::PredicateBlocks(
         state++;
       }
       BreakFromConstruct(block, next, predicated, order);
-    } else if (state->InStructuredFlow()) {
+    } else if (false && state->InStructuredFlow()) {
+      // TODO(#1861): This is disabled until drivers are fixed to accept
+      // conditional exits from a selection construct.  Reenable tests when
+      // this code is turned back on.
+
       next = context()->get_instr_block(state->CurrentMergeId());
       state++;
       BreakFromConstruct(block, next, predicated, order);
