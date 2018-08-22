@@ -215,19 +215,29 @@ class MergeReturnPass : public MemPass {
   bool RequiresPredication(const BasicBlock* block,
                            const BasicBlock* tail_block) const;
 
-  // For every basic block that is reachable from a basic block in
-  // |return_blocks|, extra code is added to jump around any code that should
-  // not be executed because the original code would have already returned. This
-  // involves adding new selections constructs to jump around these
-  // instructions.
+  // For every basic block that is reachable from |return_block|, extra code is
+  // added to jump around any code that should not be executed because the
+  // original code would have already returned. This involves adding new
+  // selections constructs to jump around these instructions.
+  //
+  // If new blocks are created the will be added to |order|.
   void PredicateBlocks(BasicBlock* return_block,
-                       std::unordered_set<BasicBlock*>* pSet);
+                       std::unordered_set<BasicBlock*>* pSet,
+                       std::list<BasicBlock*>* order);
+
+  // Add a conditional branch at the start of |block| that either jumps to
+  // |merge_block| or the original code in |block| depending on the value in
+  // |return_flag_|.
+  void BreakFromConstruct(BasicBlock* block, BasicBlock* merge_block,
+                          std::unordered_set<BasicBlock*>* predicated,
+                          std::list<BasicBlock*>* order);
 
   // Add the predication code (see |PredicateBlocks|) to |tail_block| if it
   // requires predication.  |tail_block| and any new blocks that are known to
   // not require predication will be added to |predicated|.
   void PredicateBlock(BasicBlock* block, BasicBlock* tail_block,
-                      std::unordered_set<BasicBlock*>* predicated);
+                      std::unordered_set<BasicBlock*>* predicated,
+                      std::list<BasicBlock*>* order);
 
   // Add an |OpReturn| or |OpReturnValue| to the end of |block|.  If an
   // |OpReturnValue| is needed, the return value is loaded from |return_value_|.
@@ -270,6 +280,12 @@ class MergeReturnPass : public MemPass {
     }
   }
 
+  // Modifies existing OpPhi instruction in |target| block to account for the
+  // new edge from |new_source|.  The value for that edge will be an Undef. If
+  // |target| only had a single predcessor, then it is marked as needing new phi
+  // nodes.  See |MarkForNewPhiNodes|.
+  void UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target);
+
   StructuredControlState& CurrentState() { return state_.back(); }
 
   // A stack used to keep track of the innermost contain loop and selection
@@ -294,14 +310,12 @@ class MergeReturnPass : public MemPass {
   // The basic block that is suppose to become the contain the only return value
   // after processing the current function.
   BasicBlock* final_return_block_;
+
   // This map contains the set of nodes that use to have a single predcessor,
   // but now have more.  They will need new OpPhi nodes.  For each of the nodes,
   // it is mapped to it original single predcessor.  It is assumed there are no
   // values that will need a phi on the new edges.
   std::unordered_map<BasicBlock*, BasicBlock*> new_merge_nodes_;
-  void BreakFromConstruct(BasicBlock* block, BasicBlock* merge_block,
-                          std::unordered_set<BasicBlock*>* predicated);
-  void UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target);
 };
 
 }  // namespace opt
