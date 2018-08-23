@@ -95,7 +95,7 @@ void MergeReturnPass::ProcessStructured(
       continue;
     }
 
-    auto blockId = block->GetLabelInst()->result_id();
+    auto blockId = block->id();
     if (blockId == CurrentState().CurrentMergeId()) {
       // Pop the current state as we've hit the merge
       state_.pop_back();
@@ -104,7 +104,7 @@ void MergeReturnPass::ProcessStructured(
     // Predicate successors of the original return blocks as necessary.
     if (std::find(return_blocks.begin(), return_blocks.end(), block) !=
         return_blocks.end()) {
-      PredicateBlocks(block, &predicated);
+      PredicateBlocks(block, &predicated, &order);
     }
 
     // Generate state for next block
@@ -202,8 +202,6 @@ void MergeReturnPass::BranchToBlock(BasicBlock* block, uint32_t target) {
 
 void MergeReturnPass::UpdatePhiNodes(BasicBlock* new_source,
                                      BasicBlock* target) {
-  // A new edge is being added from |new_source| to |target|, so go through
-  // |target|'s phi nodes add an undef incoming value for |new_source|.
   target->ForEachPhiInst([this, new_source](Instruction* inst) {
     uint32_t undefId = Type2Undef(inst->type_id());
     inst->AddOperand({SPV_OPERAND_TYPE_ID, {undefId}});
@@ -277,7 +275,8 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
 }
 
 void MergeReturnPass::PredicateBlocks(
-    BasicBlock* return_block, std::unordered_set<BasicBlock*>* predicated) {
+    BasicBlock* return_block, std::unordered_set<BasicBlock*>* predicated,
+    std::list<BasicBlock*>* order) {
   // The CFG is being modified as the function proceeds so avoid caching
   // successors.
 
@@ -308,7 +307,6 @@ void MergeReturnPass::PredicateBlocks(
 
   while (block != nullptr && block != final_return_block_) {
     if (!predicated->insert(block).second) break;
-
     // Skip structured subgraphs.
     BasicBlock* next = nullptr;
     if (state->InLoop()) {
@@ -316,11 +314,11 @@ void MergeReturnPass::PredicateBlocks(
       while (state->LoopMergeId() == next->id()) {
         state++;
       }
-      BreakFromConstruct(block, next, predicated);
+      BreakFromConstruct(block, next, predicated, order);
     } else if (state->InStructuredFlow()) {
       next = context()->get_instr_block(state->CurrentMergeId());
       state++;
-      BreakFromConstruct(block, next, predicated);
+      BreakFromConstruct(block, next, predicated, order);
     } else {
       BasicBlock* tail = block;
       while (tail->GetMergeInst()) {
@@ -340,7 +338,7 @@ void MergeReturnPass::PredicateBlocks(
             next = succ_block;
           });
 
-      PredicateBlock(block, tail, predicated);
+      PredicateBlock(block, tail, predicated, order);
     }
     block = next;
   }
@@ -364,7 +362,8 @@ bool MergeReturnPass::RequiresPredication(const BasicBlock* block,
 
 void MergeReturnPass::PredicateBlock(
     BasicBlock* block, BasicBlock* tail_block,
-    std::unordered_set<BasicBlock*>* predicated) {
+    std::unordered_set<BasicBlock*>* predicated,
+    std::list<BasicBlock*>* order) {
   if (!RequiresPredication(block, tail_block)) {
     return;
   }
@@ -403,6 +402,9 @@ void MergeReturnPass::PredicateBlock(
       function_->InsertBasicBlockAfter(std::move(new_block), block);
   predicated->insert(old_body);
 
+  // Update |order| so old_block will be traversed.
+  InsertAfterElement(block, old_body, order);
+
   if (tail_block == block) {
     tail_block = old_body;
   }
@@ -424,6 +426,9 @@ void MergeReturnPass::PredicateBlock(
       function_->InsertBasicBlockAfter(std::move(new_merge_block), tail_block);
   predicated->insert(new_merge);
   new_merge->SetParent(function_);
+
+  // Update |order| so old_block will be traversed.
+  InsertAfterElement(tail_block, new_merge, order);
 
   // Register the new label.
   get_def_use_mgr()->AnalyzeInstDef(new_merge->GetLabelInst());
@@ -502,7 +507,8 @@ void MergeReturnPass::PredicateBlock(
 
 void MergeReturnPass::BreakFromConstruct(
     BasicBlock* block, BasicBlock* merge_block,
-    std::unordered_set<BasicBlock*>* predicated) {
+    std::unordered_set<BasicBlock*>* predicated,
+    std::list<BasicBlock*>* order) {
   // Make sure the cfg is build here.  If we don't then it becomes very hard
   // to know which new blocks need to be updated.
   context()->BuildInvalidAnalyses(IRContext::kAnalysisCFG);
@@ -537,9 +543,12 @@ void MergeReturnPass::BreakFromConstruct(
       function_->InsertBasicBlockAfter(std::move(new_block), block);
   predicated->insert(old_body);
 
+  // Update |order| so old_block will be traversed.
+  InsertAfterElement(block, old_body, order);
+
   // Within the new header we need the following:
   // 1. Load of the return status flag
-  // 2. Branch to new merge (true) or old body (false)
+  // 2. Branch to |merge_block| (true) or old body (false)
   // 3. Update OpPhi instructions in |merge_block|.
   //
   // Sine we are branching to the merge block of the current construct, there is
@@ -791,6 +800,15 @@ void MergeReturnPass::AddNewPhiNodes(BasicBlock* bb, BasicBlock* pred,
 void MergeReturnPass::MarkForNewPhiNodes(BasicBlock* block,
                                          BasicBlock* single_original_pred) {
   new_merge_nodes_[block] = single_original_pred;
+}
+
+void MergeReturnPass::InsertAfterElement(BasicBlock* element,
+                                         BasicBlock* new_element,
+                                         std::list<BasicBlock*>* list) {
+  auto pos = std::find(list->begin(), list->end(), element);
+  assert(pos != list->end());
+  ++pos;
+  list->insert(pos, new_element);
 }
 
 }  // namespace opt
