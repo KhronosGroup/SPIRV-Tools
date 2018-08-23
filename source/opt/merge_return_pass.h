@@ -289,16 +289,15 @@ class MergeReturnPass : public MemPass {
 
   // Modifies existing OpPhi instruction in |target| block to account for the
   // new edge from |new_source|.  The value for that edge will be an Undef. If
-  // |target| only had a single predecessor, then it is marked as needing new phi
-  // nodes.  See |MarkForNewPhiNodes|.
+  // |target| only had a single predecessor, then it is marked as needing new
+  // phi nodes.  See |MarkForNewPhiNodes|.
   void UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target);
 
   StructuredControlState& CurrentState() { return state_.back(); }
 
   // Inserts |new_element| into |list| after the first occurrence of |element|.
   // |element| must be in |list| at least once.
-  void InsertAfterElement(BasicBlock* element,
-                          BasicBlock* new_element,
+  void InsertAfterElement(BasicBlock* element, BasicBlock* new_element,
                           std::list<BasicBlock*>* list);
 
   // A stack used to keep track of the innermost contain loop and selection
