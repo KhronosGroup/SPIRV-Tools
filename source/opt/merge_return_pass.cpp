@@ -403,10 +403,7 @@ void MergeReturnPass::PredicateBlock(
   predicated->insert(old_body);
 
   // Update |order| so old_block will be traversed.
-  auto pos = std::find(order->begin(), order->end(), block);
-  assert(pos != order->end());
-  ++pos;
-  order->insert(pos, old_body);
+  InsertAfterElement(block, old_body, order);
 
   if (tail_block == block) {
     tail_block = old_body;
@@ -431,10 +428,7 @@ void MergeReturnPass::PredicateBlock(
   new_merge->SetParent(function_);
 
   // Update |order| so old_block will be traversed.
-  pos = std::find(order->begin(), order->end(), tail_block);
-  assert(pos != order->end());
-  ++pos;
-  order->insert(pos, new_merge);
+  InsertAfterElement(tail_block, new_merge, order);
 
   // Register the new label.
   get_def_use_mgr()->AnalyzeInstDef(new_merge->GetLabelInst());
@@ -550,10 +544,7 @@ void MergeReturnPass::BreakFromConstruct(
   predicated->insert(old_body);
 
   // Update |order| so old_block will be traversed.
-  auto pos = std::find(order->begin(), order->end(), block);
-  assert(pos != order->end());
-  ++pos;
-  order->insert(pos, old_body);
+  InsertAfterElement(block, old_body, order);
 
   // Within the new header we need the following:
   // 1. Load of the return status flag
@@ -809,6 +800,15 @@ void MergeReturnPass::AddNewPhiNodes(BasicBlock* bb, BasicBlock* pred,
 void MergeReturnPass::MarkForNewPhiNodes(BasicBlock* block,
                                          BasicBlock* single_original_pred) {
   new_merge_nodes_[block] = single_original_pred;
+}
+
+void MergeReturnPass::InsertAfterElement(BasicBlock* element,
+                                         BasicBlock* new_element,
+                                         std::list<BasicBlock*>* list) {
+  auto pos = std::find(list->begin(), list->end(), element);
+  assert(pos != list->end());
+  ++pos;
+  list->insert(pos, new_element);
 }
 
 }  // namespace opt
