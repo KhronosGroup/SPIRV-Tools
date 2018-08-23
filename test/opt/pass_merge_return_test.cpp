@@ -488,6 +488,71 @@ TEST_F(MergeReturnPassTest, SplitBlockUsedInPhi) {
 
   SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
+
+TEST_F(MergeReturnPassTest, UpdateOrderWhenPredicating) {
+  const std::string before =
+      R"(
+; CHECK: OpFunction
+; CHECK: OpFunction
+; CHECK: OpSelectionMerge [[m1:%\w+]] None
+; CHECK-NOT: OpReturn
+; CHECK: [[m1]] = OpLabel
+; CHECK: OpSelectionMerge [[m2:%\w+]] None
+; CHECK: OpSelectionMerge [[m3:%\w+]] None
+; CHECK: OpSelectionMerge [[m4:%\w+]] None
+; CHECK: OpLabel
+; CHECK-NEXT: OpStore
+; CHECK-NEXT: OpBranch [[m4]]
+; CHECK: [[m4]] = OpLabel
+; CHECK-NEXT: [[ld4:%\w+]] = OpLoad %bool
+; CHECK-NEXT: OpBranchConditional [[ld4]] [[m3]]
+; CHECK: [[m3]] = OpLabel
+; CHECK-NEXT: [[ld3:%\w+]] = OpLoad %bool
+; CHECK-NEXT: OpBranchConditional [[ld3]] [[m2]]
+; CHECK: [[m2]] = OpLabel
+               OpCapability SampledBuffer
+               OpCapability StorageImageExtendedFormats
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "PS_DebugTiles"
+               OpExecutionMode %1 OriginUpperLeft
+               OpSource HLSL 600
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %1 = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpFunctionCall %void %7
+               OpReturn
+               OpFunctionEnd
+          %7 = OpFunction %void None %3
+          %8 = OpLabel
+          %9 = OpUndef %bool
+               OpSelectionMerge %10 None
+               OpBranchConditional %9 %11 %10
+         %11 = OpLabel
+               OpReturn
+         %10 = OpLabel
+         %12 = OpUndef %bool
+               OpSelectionMerge %13 None
+               OpBranchConditional %12 %14 %15
+         %15 = OpLabel
+         %16 = OpUndef %bool
+               OpSelectionMerge %17 None
+               OpBranchConditional %16 %18 %17
+         %18 = OpLabel
+               OpReturn
+         %17 = OpLabel
+               OpBranch %13
+         %14 = OpLabel
+               OpReturn
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
+}
 #endif
 
 TEST_F(MergeReturnPassTest, StructuredControlFlowBothMergeAndHeader) {
