@@ -489,6 +489,9 @@ TEST_F(MergeReturnPassTest, SplitBlockUsedInPhi) {
   SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
 
+// TODO(#1861): Reenable these test when the breaks from selection constructs
+// are reenabled.
+/*
 TEST_F(MergeReturnPassTest, UpdateOrderWhenPredicating) {
   const std::string before =
       R"(
@@ -553,6 +556,7 @@ TEST_F(MergeReturnPassTest, UpdateOrderWhenPredicating) {
 
   SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
+*/
 #endif
 
 TEST_F(MergeReturnPassTest, StructuredControlFlowBothMergeAndHeader) {
@@ -638,6 +642,9 @@ OpFunctionEnd
   SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
+// TODO(#1861): Reenable these test when the breaks from selection constructs
+// are reenabled.
+/*
 TEST_F(MergeReturnPassTest, NestedSelectionMerge) {
   const std::string before =
       R"(
@@ -917,6 +924,7 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
+*/
 
 TEST_F(MergeReturnPassTest, NestedLoopMerge) {
   const std::string before =
