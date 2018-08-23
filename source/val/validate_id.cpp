@@ -185,24 +185,27 @@ spv_result_t UpdateIdUse(ValidationState_t& _, const Instruction* inst) {
 /// NOTE: This function does NOT check module scoped functions which are
 /// checked during the initial binary parse in the IdPass below
 spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
-  std::unordered_set<const Instruction*> phi_instructions;
-  for (const auto& definition : _.all_definitions()) {
-    // Check only those definitions defined in a function
-    if (const Function* func = definition.second->function()) {
-      if (const BasicBlock* block = definition.second->block()) {
+  std::vector<const Instruction*> phi_instructions;
+  std::unordered_set<uint32_t> phi_ids;
+  for (const auto& inst : _.ordered_instructions()) {
+    if (inst.id() == 0) continue;
+    if (const Function* func = inst.function()) {
+      if (const BasicBlock* block = inst.block()) {
         if (!block->reachable()) continue;
         // If the Id is defined within a block then make sure all references to
         // that Id appear in a blocks that are dominated by the defining block
-        for (auto& use_index_pair : definition.second->uses()) {
+        for (auto& use_index_pair : inst.uses()) {
           const Instruction* use = use_index_pair.first;
           if (const BasicBlock* use_block = use->block()) {
             if (use_block->reachable() == false) continue;
             if (use->opcode() == SpvOpPhi) {
-              phi_instructions.insert(use);
+              if (phi_ids.insert(use->id()).second) {
+                phi_instructions.push_back(use);
+              }
             } else if (!block->dominates(*use->block())) {
               return _.diag(SPV_ERROR_INVALID_ID, use_block->label())
-                     << "ID " << _.getIdName(definition.first)
-                     << " defined in block " << _.getIdName(block->id())
+                     << "ID " << _.getIdName(inst.id()) << " defined in block "
+                     << _.getIdName(block->id())
                      << " does not dominate its use in block "
                      << _.getIdName(use_block->id());
             }
@@ -212,13 +215,12 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
         // If the Ids defined within a function but not in a block(i.e. function
         // parameters, block ids), then make sure all references to that Id
         // appear within the same function
-        for (auto use : definition.second->uses()) {
-          const Instruction* inst = use.first;
-          if (inst->function() && inst->function() != func) {
+        for (auto use : inst.uses()) {
+          const Instruction* user = use.first;
+          if (user->function() && user->function() != func) {
             return _.diag(SPV_ERROR_INVALID_ID, _.FindDef(func->id()))
-                   << "ID " << _.getIdName(definition.first)
-                   << " used in function "
-                   << _.getIdName(inst->function()->id())
+                   << "ID " << _.getIdName(inst.id()) << " used in function "
+                   << _.getIdName(user->function()->id())
                    << " is used outside of it's defining function "
                    << _.getIdName(func->id());
           }
