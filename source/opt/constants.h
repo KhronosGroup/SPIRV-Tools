@@ -582,14 +582,13 @@ class ConstantManager {
     auto ret = const_pool_.insert(cst.get());
     if (ret.second) {
       owned_constants_.emplace_back(std::move(cst));
-    }  // else delete |cst|.
+    }
     return *ret.first;
   }
 
   // A helper function to get a vector of Constant instances with the specified
   // ids. If it can not find the Constant instance for any one of the ids,
   // it returns an empty vector.
-
   std::vector<const Constant*> GetConstantsFromIds(
       const std::vector<uint32_t>& ids) const;
 
