@@ -494,6 +494,7 @@ struct ConstantEqual {
 class ConstantManager {
  public:
   ConstantManager(IRContext* ctx);
+  ~ConstantManager();
 
   IRContext* context() const { return ctx_; }
 

@@ -112,6 +112,12 @@ ConstantManager::ConstantManager(IRContext* ctx) : ctx_(ctx) {
   }
 }
 
+ConstantManager::~ConstantManager() {
+  for (auto it = const_pool_.begin(); it != const_pool_.end(); ++it) {
+    delete *it;
+  }
+}
+
 Type* ConstantManager::GetType(const Instruction* inst) const {
   return context()->get_type_mgr()->GetType(inst->type_id());
 }
