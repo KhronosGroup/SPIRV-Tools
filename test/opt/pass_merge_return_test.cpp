@@ -1078,6 +1078,82 @@ OpFunctionEnd
   SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
+TEST_F(MergeReturnPassTest, ReturnValueDecoration) {
+  const std::string before =
+      R"(OpCapability Linkage
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %11 "simple_shader"
+OpDecorate %7 RelaxedPrecision
+%12 = OpTypeVoid
+%1 = OpTypeInt 32 0
+%2 = OpTypeBool
+%3 = OpConstantFalse %2
+%4 = OpConstant %1 0
+%5 = OpConstant %1 1
+%6 = OpTypeFunction %1
+%13 = OpTypeFunction %12
+%11 = OpFunction %12 None %13
+%l1 = OpLabel
+OpReturn
+OpFunctionEnd
+%7 = OpFunction %1 None %6
+%8 = OpLabel
+OpBranchConditional %3 %9 %10
+%9 = OpLabel
+OpReturnValue %4
+%10 = OpLabel
+OpReturnValue %5
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Linkage
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %11 "simple_shader"
+OpDecorate %7 RelaxedPrecision
+OpDecorate %17 RelaxedPrecision
+OpDecorate %18 RelaxedPrecision
+%12 = OpTypeVoid
+%1 = OpTypeInt 32 0
+%2 = OpTypeBool
+%3 = OpConstantFalse %2
+%4 = OpConstant %1 0
+%5 = OpConstant %1 1
+%6 = OpTypeFunction %1
+%13 = OpTypeFunction %12
+%16 = OpTypePointer Function %1
+%19 = OpTypePointer Function %2
+%21 = OpConstantTrue %2
+%11 = OpFunction %12 None %13
+%14 = OpLabel
+OpReturn
+OpFunctionEnd
+%7 = OpFunction %1 None %6
+%8 = OpLabel
+%20 = OpVariable %19 Function %3
+%17 = OpVariable %16 Function
+OpBranchConditional %3 %9 %10
+%9 = OpLabel
+OpStore %20 %21
+OpStore %17 %4
+OpBranch %15
+%10 = OpLabel
+OpStore %20 %21
+OpStore %17 %5
+OpBranch %15
+%15 = OpLabel
+%18 = OpLoad %1 %17
+OpReturnValue %18
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
