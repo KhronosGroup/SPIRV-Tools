@@ -792,6 +792,65 @@ OpFunctionEnd
   EXPECT_EQ(ModuleToText(), expected_binary);
 }
 
+// Test cloning decoration for an id that is decorated via a group decoration.
+TEST_F(DecorationManagerTest, CloneSomeGroupDecorations) {
+  const std::string spirv = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 RelaxedPrecision
+OpDecorate %1 Restrict
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %2
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Function %3
+%5 = OpTypeVoid
+%6 = OpTypeFunction %5
+%7 = OpFunction %5 None %6
+%8 = OpLabel
+%2 = OpVariable %4 Function
+%9 = OpUndef %3
+OpReturn
+OpFunctionEnd
+)";
+  DecorationManager* decoManager = GetDecorationManager(spirv);
+  EXPECT_EQ(GetErrorMessage(), "");
+
+  // Check cloning OpDecorate including group decorations.
+  auto decorations = decoManager->GetDecorationsFor(9u, false);
+  EXPECT_EQ(GetErrorMessage(), "");
+  EXPECT_TRUE(decorations.empty());
+
+  decoManager->CloneDecorations(2u, 9u, {SpvDecorationRelaxedPrecision});
+  decorations = decoManager->GetDecorationsFor(9u, false);
+  EXPECT_THAT(GetErrorMessage(), "");
+
+  std::string expected_decorations =
+      R"(OpDecorate %9 RelaxedPrecision
+)";
+  EXPECT_EQ(ToText(decorations), expected_decorations);
+
+  const std::string expected_binary = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 RelaxedPrecision
+OpDecorate %1 Restrict
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %2
+OpDecorate %9 RelaxedPrecision
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Function %3
+%5 = OpTypeVoid
+%6 = OpTypeFunction %5
+%7 = OpFunction %5 None %6
+%8 = OpLabel
+%2 = OpVariable %4 Function
+%9 = OpUndef %3
+OpReturn
+OpFunctionEnd
+)";
+  EXPECT_EQ(ModuleToText(), expected_binary);
+}
+
 TEST_F(DecorationManagerTest, HaveTheSameDecorationsWithoutGroupsTrue) {
   const std::string spirv = R"(
 OpCapability Shader

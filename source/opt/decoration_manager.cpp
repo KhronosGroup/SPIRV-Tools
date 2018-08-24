@@ -412,13 +412,15 @@ void DecorationManager::CloneDecorations(
         decorations_to_copy.end()) {
       continue;
     }
-    // simply clone decoration and change |target-id| to |to|
+
+    // Clone decoration and change |target-id| to |to|.
     std::unique_ptr<Instruction> new_inst(inst->Clone(module_->context()));
     new_inst->SetInOperand(0, {to});
     module_->AddAnnotationInst(std::move(new_inst));
     auto decoration_iter = --module_->annotation_end();
     context->AnalyzeUses(&*decoration_iter);
   }
+
   // We need to copy the list of instructions as ForgetUses and AnalyzeUses are
   // going to modify it.
   std::vector<Instruction*> indirect_decorations =
