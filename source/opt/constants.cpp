@@ -196,19 +196,19 @@ Instruction* ConstantManager::GetDefiningInstruction(
   }
 }
 
-const Constant* ConstantManager::CreateConstant(
+std::unique_ptr<Constant> ConstantManager::CreateConstant(
     const Type* type, const std::vector<uint32_t>& literal_words_or_ids) const {
   if (literal_words_or_ids.size() == 0) {
     // Constant declared with OpConstantNull
-    return new NullConstant(type);
+    return MakeUnique<NullConstant>(type);
   } else if (auto* bt = type->AsBool()) {
     assert(literal_words_or_ids.size() == 1 &&
            "Bool constant should be declared with one operand");
-    return new BoolConstant(bt, literal_words_or_ids.front());
+    return MakeUnique<BoolConstant>(bt, literal_words_or_ids.front());
   } else if (auto* it = type->AsInteger()) {
-    return new IntConstant(it, literal_words_or_ids);
+    return MakeUnique<IntConstant>(it, literal_words_or_ids);
   } else if (auto* ft = type->AsFloat()) {
-    return new FloatConstant(ft, literal_words_or_ids);
+    return MakeUnique<FloatConstant>(ft, literal_words_or_ids);
   } else if (auto* vt = type->AsVector()) {
     auto components = GetConstantsFromIds(literal_words_or_ids);
     if (components.empty()) return nullptr;
@@ -231,19 +231,19 @@ const Constant* ConstantManager::CreateConstant(
                        return false;
                      }))
       return nullptr;
-    return new VectorConstant(vt, components);
+    return MakeUnique<VectorConstant>(vt, components);
   } else if (auto* mt = type->AsMatrix()) {
     auto components = GetConstantsFromIds(literal_words_or_ids);
     if (components.empty()) return nullptr;
-    return new MatrixConstant(mt, components);
+    return MakeUnique<MatrixConstant>(mt, components);
   } else if (auto* st = type->AsStruct()) {
     auto components = GetConstantsFromIds(literal_words_or_ids);
     if (components.empty()) return nullptr;
-    return new StructConstant(st, components);
+    return MakeUnique<StructConstant>(st, components);
   } else if (auto* at = type->AsArray()) {
     auto components = GetConstantsFromIds(literal_words_or_ids);
     if (components.empty()) return nullptr;
-    return new ArrayConstant(at, components);
+    return MakeUnique<ArrayConstant>(at, components);
   } else {
     return nullptr;
   }
@@ -344,7 +344,7 @@ std::unique_ptr<Instruction> ConstantManager::CreateCompositeInstruction(
 const Constant* ConstantManager::GetConstant(
     const Type* type, const std::vector<uint32_t>& literal_words_or_ids) {
   auto cst = CreateConstant(type, literal_words_or_ids);
-  return cst ? RegisterConstant(cst) : nullptr;
+  return cst ? RegisterConstant(std::move(cst)) : nullptr;
 }
 
 std::vector<const analysis::Constant*> Constant::GetVectorComponents(
