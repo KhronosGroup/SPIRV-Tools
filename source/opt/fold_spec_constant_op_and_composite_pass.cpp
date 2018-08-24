@@ -367,10 +367,10 @@ Instruction* FoldSpecConstantOpAndCompositePass::DoComponentWiseOperation(
         assert(false && "Failed to create constants with 32-bit word");
       }
     }
-    auto new_vec_const = MakeUnique<analysis::VectorConstant>(result_type->AsVector(),
-                                                      result_vector_components);
-    auto reg_vec_const =
-        context()->get_constant_mgr()->RegisterConstant(std::move(new_vec_const));
+    auto new_vec_const = MakeUnique<analysis::VectorConstant>(
+        result_type->AsVector(), result_vector_components);
+    auto reg_vec_const = context()->get_constant_mgr()->RegisterConstant(
+        std::move(new_vec_const));
     return context()->get_constant_mgr()->BuildInstructionAndAddToModule(
         reg_vec_const, pos);
   } else {

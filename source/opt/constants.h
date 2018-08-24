@@ -582,7 +582,7 @@ class ConstantManager {
     auto ret = const_pool_.insert(cst.get());
     if (ret.second) {
       owned_constants_.emplace_back(std::move(cst));
-    } // else delete |cst|.
+    }  // else delete |cst|.
     return *ret.first;
   }
 
