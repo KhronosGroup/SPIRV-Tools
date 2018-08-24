@@ -578,18 +578,14 @@ class ConstantManager {
   // Registers a new constant |cst| in the constant pool. If the constant
   // existed already, it returns a pointer to the previously existing Constant
   // in the pool. Otherwise, it returns |cst|.
-  const Constant* RegisterConstant(std::unique_ptr<Constant> cst) {
-    auto ret = const_pool_.insert(cst.get());
-    if (ret.second) {
-      owned_constants_.emplace_back(std::move(cst));
-    } // else delete |cst|.
+  const Constant* RegisterConstant(const Constant* cst) {
+    auto ret = const_pool_.insert(cst);
     return *ret.first;
   }
 
   // A helper function to get a vector of Constant instances with the specified
   // ids. If it can not find the Constant instance for any one of the ids,
   // it returns an empty vector.
-
   std::vector<const Constant*> GetConstantsFromIds(
       const std::vector<uint32_t>& ids) const;
 
@@ -637,7 +633,7 @@ class ConstantManager {
   // type, either Bool, Integer or Float. If any of the rules above failed, the
   // creation will fail and nullptr will be returned. If the vector is empty,
   // a NullConstant instance will be created with the given type.
-  std::unique_ptr<Constant> CreateConstant(
+  const Constant* CreateConstant(
       const Type* type,
       const std::vector<uint32_t>& literal_words_or_ids) const;
 
@@ -684,10 +680,6 @@ class ConstantManager {
 
   // The constant pool.  All created constants are registered here.
   std::unordered_set<const Constant*, ConstantHash, ConstantEqual> const_pool_;
-
-  // The constant that are owned by the constant manager.  Every constant in
-  // |const_pool_| should be in |owned_constants_| as well.
-  std::vector<std::unique_ptr<Constant>> owned_constants_;
 };
 
 }  // namespace analysis
