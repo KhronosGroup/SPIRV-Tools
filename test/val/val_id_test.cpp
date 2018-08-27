@@ -31,9 +31,9 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using spvtest::ScopedContext;
 using ::testing::HasSubstr;
 using ::testing::ValuesIn;
+using spvtest::ScopedContext;
 
 using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
 
@@ -2739,13 +2739,13 @@ TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSourceBad) {
 %7 = OpFunction %1 None %6
 %8 = OpLabel
 %9 = OpVariable %4 Function
-     OpCopyMemorySized %9 %6 %5 None
+     OpCopyMemorySized %9 %5 %5 None
      OpReturn
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Source operand <id> '6' is not a pointer."));
+              HasSubstr("Source operand <id> '5' is not a pointer."));
 }
 TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -4987,6 +4987,22 @@ TEST_F(ValidateIdWithMessage, VoidStructMember) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Structures cannot contain a void type."));
+}
+
+TEST_F(ValidateIdWithMessage, TypeFunctionBadUse) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypePointer Function %2
+%4 = OpFunction %1 None %2
+%5 = OpLabel
+     OpReturn
+     OpFunctionEnd)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid use of function type result id 2."));
 }
 
 // TODO: OpLifetimeStart

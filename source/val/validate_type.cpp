@@ -262,6 +262,17 @@ spv_result_t ValidateTypeFunction(ValidationState_t& _,
            << _.getIdName(inst->GetOperandAs<uint32_t>(0)) << "' has "
            << num_args << " arguments.";
   }
+
+  // The only valid uses of OpTypeFunction are in an OpFunction instruction.
+  for (auto& pair : inst->uses()) {
+    const auto* use = pair.first;
+    if (use->opcode() != SpvOpFunction) {
+      return _.diag(SPV_ERROR_INVALID_ID, use)
+             << "Invalid use of function type result id "
+             << _.getIdName(inst->id()) << ".";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
