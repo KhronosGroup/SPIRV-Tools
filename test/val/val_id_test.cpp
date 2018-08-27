@@ -31,9 +31,9 @@ namespace spvtools {
 namespace val {
 namespace {
 
+using spvtest::ScopedContext;
 using ::testing::HasSubstr;
 using ::testing::ValuesIn;
-using spvtest::ScopedContext;
 
 using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
 
@@ -4212,8 +4212,7 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpPhi's type <id> 3 is not a type instruction."));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 3 is not a type id"));
 }
 
 TEST_F(ValidateIdWithMessage, OpPhiSamePredecessor) {
@@ -4876,7 +4875,7 @@ OpDecorate %1 SpecId 200
 %2 = OpTypeFunction %void
 %int = OpTypeInt 32 0
 %1 = OpConstant %int 3
-%main = OpFunction %1 None %2
+%main = OpFunction %void None %2
 %4 = OpLabel
 OpReturnValue %1
 OpFunctionEnd
@@ -4897,7 +4896,7 @@ OpDecorate %1 SpecId 200
 %3 = OpConstant %int 1
 %4 = OpConstant %int 2
 %1 = OpSpecConstantOp %int IAdd %3 %4
-%main = OpFunction %1 None %2
+%main = OpFunction %void None %2
 %6 = OpLabel
 OpReturnValue %3
 OpFunctionEnd
@@ -4917,7 +4916,7 @@ OpDecorate %1 SpecId 200
 %int = OpTypeInt 32 0
 %3 = OpConstant %int 1
 %1 = OpSpecConstantComposite %int
-%main = OpFunction %1 None %2
+%main = OpFunction %void None %2
 %4 = OpLabel
 OpReturnValue %3
 OpFunctionEnd
@@ -5020,7 +5019,7 @@ TEST_F(ValidateIdWithMessage, BadTypeId) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 4 is not a type id."));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 4 is not a type id"));
 }
 
 // TODO: OpLifetimeStart

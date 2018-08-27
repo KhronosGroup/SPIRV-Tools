@@ -162,6 +162,8 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
         ret = SPV_SUCCESS;
         break;
       case SPV_OPERAND_TYPE_ID:
+      case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+      case SPV_OPERAND_TYPE_SCOPE_ID:
         if (_.IsDefinedId(operand_word)) {
           ret = SPV_SUCCESS;
         } else if (can_have_forward_declared_ids(i)) {
@@ -177,7 +179,7 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
           auto* def = _.FindDef(operand_word);
           if (!spvOpcodeGeneratesType(def->opcode())) {
             ret = _.diag(SPV_ERROR_INVALID_ID, inst)
-                  << "ID " << _.getIdName(operand_word) << " is not a type id.";
+                  << "ID " << _.getIdName(operand_word) << " is not a type id";
           } else {
             ret = SPV_SUCCESS;
           }
