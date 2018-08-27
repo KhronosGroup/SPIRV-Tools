@@ -737,6 +737,47 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Sampler to be of type OpTypeSampler";
   }
+
+  // We need to validate 2 things:
+  // * All OpSampledImage instructions must be in the same block in which their
+  // Result <id> are consumed.
+  // * Result <id> from OpSampledImage instructions must not appear as operands
+  // to OpPhi instructions or OpSelect instructions, or any instructions other
+  // than the image lookup and query instructions specified to take an operand
+  // whose type is OpTypeSampledImage.
+  std::vector<uint32_t> consumers = _.getSampledImageConsumers(inst->id());
+  if (!consumers.empty()) {
+    for (auto consumer_id : consumers) {
+      const auto consumer_instr = _.FindDef(consumer_id);
+      const auto consumer_opcode = consumer_instr->opcode();
+      if (consumer_instr->block() != inst->block()) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "All OpSampledImage instructions must be in the same block "
+                  "in "
+                  "which their Result <id> are consumed. OpSampledImage Result "
+                  "Type <id> '"
+               << _.getIdName(inst->id())
+               << "' has a consumer in a different basic "
+                  "block. The consumer instruction <id> is '"
+               << _.getIdName(consumer_id) << "'.";
+      }
+      // TODO: The following check is incomplete. We should also check that the
+      // Sampled Image is not used by instructions that should not take
+      // SampledImage as an argument. We could find the list of valid
+      // instructions by scanning for "Sampled Image" in the operand description
+      // field in the grammar file.
+      if (consumer_opcode == SpvOpPhi || consumer_opcode == SpvOpSelect) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Result <id> from OpSampledImage instruction must not appear "
+                  "as "
+                  "operands of Op"
+               << spvOpcodeString(static_cast<SpvOp>(consumer_opcode)) << "."
+               << " Found result <id> '" << _.getIdName(inst->id())
+               << "' as an operand of <id> '" << _.getIdName(consumer_id)
+               << "'.";
+      }
+    }
+  }
   return SPV_SUCCESS;
 }
 
