@@ -205,19 +205,6 @@ spv_result_t FunctionPass(ValidationState_t& _, const Instruction* inst);
 spv_result_t ValidateExecutionLimitations(ValidationState_t& _,
                                           const Instruction* inst);
 
-/// @brief Validate the ID usage of the instruction stream
-///
-/// @param[in] pInsts stream of instructions
-/// @param[in] instCount number of instructions
-/// @param[in] usedefs use-def info from module parsing
-/// @param[in,out] position current position in the stream
-///
-/// @return result code
-spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
-                                       const uint64_t instCount,
-                                       const ValidationState_t& state,
-                                       spv_position position);
-
 /// @brief Validate the ID's within a SPIR-V binary
 ///
 /// @param[in] pInstructions array of instructions
