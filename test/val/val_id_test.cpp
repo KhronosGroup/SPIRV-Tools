@@ -5005,6 +5005,24 @@ TEST_F(ValidateIdWithMessage, TypeFunctionBadUse) {
               HasSubstr("Invalid use of function type result id 2."));
 }
 
+TEST_F(ValidateIdWithMessage, BadTypeId) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+          %1 = OpTypeVoid
+          %2 = OpTypeFunction %1
+          %3 = OpTypeFloat 32
+          %4 = OpConstant %3 0
+          %5 = OpFunction %1 None %2
+          %6 = OpLabel
+          %7 = OpUndef %4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 4 is not a type id."));
+}
+
 // TODO: OpLifetimeStart
 // TODO: OpLifetimeStop
 // TODO: OpAtomicInit
