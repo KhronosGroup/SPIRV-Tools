@@ -83,10 +83,6 @@ class ValidationState_t {
     // Allow OpTypeInt with 8 bit width?
     bool declare_int8_type = false;
 
-    // Allow non-monotonic offsets for struct members?
-    // Vulkan permits this.
-    bool non_monotonic_struct_member_offsets = false;
-
     // Target environment uses relaxed block layout.
     // This is true for Vulkan 1.1 or later.
     bool env_relaxed_block_layout = false;
