@@ -350,8 +350,6 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
 
   // To check for member overlaps, we want to traverse the members in
   // offset order.
-  const bool permit_non_monotonic_member_offsets =
-      vstate.features().non_monotonic_struct_member_offsets;
   struct MemberOffsetPair {
     uint32_t member;
     uint32_t offset;
@@ -381,7 +379,6 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       });
 
   // Now scan from lowest offest to highest offset.
-  uint32_t prevOffset = 0;
   uint32_t nextValidOffset = 0;
   for (size_t ordered_member_idx = 0;
        ordered_member_idx < member_offsets.size(); ordered_member_idx++) {
@@ -416,19 +413,6 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       if (!IsAlignedTo(offset, alignment)) {
         return fail(memberIdx)
                << "at offset " << offset << " is not aligned to " << alignment;
-      }
-    }
-    // SPIR-V requires struct members to be specified in memory address order,
-    // and they should not overlap.  Vulkan relaxes that rule.
-    if (!permit_non_monotonic_member_offsets) {
-      const auto out_of_order =
-          ordered_member_idx > 0 &&
-          (memberIdx < member_offsets[ordered_member_idx - 1].member);
-      if (out_of_order) {
-        return fail(memberIdx)
-               << "at offset " << offset << " has a higher offset than member "
-               << member_offsets[ordered_member_idx - 1].member << " at offset "
-               << prevOffset;
       }
     }
     if (offset < nextValidOffset)
@@ -483,7 +467,6 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       // or array.
       nextValidOffset = align(nextValidOffset, alignment);
     }
-    prevOffset = offset;
   }
   return SPV_SUCCESS;
 }
