@@ -20,9 +20,22 @@
 
 #include "source/operand.h"
 #include "source/opt/reflect.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace opt {
+
+uint32_t Module::TakeNextIdBound() {
+  if (context()) {
+    if (id_bound() >= context()->max_id_bound()) {
+      return 0;
+    }
+  } else if (id_bound() >= kDefaultMaxIdBound) {
+    return 0;
+  }
+
+  return header_.bound++;
+}
 
 std::vector<Instruction*> Module::GetTypes() {
   std::vector<Instruction*> type_insts;

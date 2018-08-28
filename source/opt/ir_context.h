@@ -90,7 +90,8 @@ class IRContext {
         valid_analyses_(kAnalysisNone),
         constant_mgr_(nullptr),
         type_mgr_(nullptr),
-        id_to_name_(nullptr) {
+        id_to_name_(nullptr),
+        max_id_bound_(kDefaultMaxIdBound) {
     SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
   }
@@ -104,7 +105,8 @@ class IRContext {
         def_use_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
         type_mgr_(nullptr),
-        id_to_name_(nullptr) {
+        id_to_name_(nullptr),
+        max_id_bound_(kDefaultMaxIdBound) {
     SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
     InitializeCombinators();
@@ -456,6 +458,9 @@ class IRContext {
     return *inst_folder_;
   }
 
+  uint32_t max_id_bound() const { return max_id_bound_; }
+  void set_max_id_bound(uint32_t new_bound) { max_id_bound_ = new_bound; }
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -613,6 +618,9 @@ class IRContext {
   std::unique_ptr<ValueNumberTable> vn_table_;
 
   std::unique_ptr<InstructionFolder> inst_folder_;
+
+  // The maximum legal value for the id bound.
+  uint32_t max_id_bound_;
 };
 
 inline IRContext::Analysis operator|(IRContext::Analysis lhs,

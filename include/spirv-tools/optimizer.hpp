@@ -163,10 +163,11 @@ class Optimizer {
   // Same as above, except passes |options| to the validator when trying to
   // validate the binary.  If |skip_validation| is true, then the caller is
   // guaranteeing that |original_binary| is valid, and the validator will not
-  // be run.
+  // be run.  The |max_id_bound| is the limit on the max id in the module.
   bool Run(const uint32_t* original_binary, const size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary,
-           const ValidatorOptions& options, bool skip_validation = false) const;
+           const ValidatorOptions& options, bool skip_validation = false,
+           uint32_t max_id_bound = 0x3FFFFF) const;
 
   // Returns a vector of strings with all the pass names added to this
   // optimizer's pass manager. These strings are valid until the associated
