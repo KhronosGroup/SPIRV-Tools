@@ -40,13 +40,6 @@ namespace val {
 namespace {
 
 spv_result_t ValidatePhi(ValidationState_t& _, const Instruction* inst) {
-  SpvOp type_op = _.GetIdOpcode(inst->type_id());
-  if (!spvOpcodeGeneratesType(type_op)) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpPhi's type <id> " << _.getIdName(inst->type_id())
-           << " is not a type instruction.";
-  }
-
   auto block = inst->block();
   size_t num_in_ops = inst->words().size() - 3;
   if (num_in_ops % 2 != 0) {

@@ -371,11 +371,6 @@ spv_result_t ValidateCompositeInsert(ValidationState_t& _,
 
 spv_result_t ValidateCopyObject(ValidationState_t& _, const Instruction* inst) {
   const uint32_t result_type = inst->type_id();
-  if (!spvOpcodeGeneratesType(_.GetIdOpcode(result_type))) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Result Type to be a type";
-  }
-
   const uint32_t operand_type = _.GetOperandTypeId(inst, 2);
   if (operand_type != result_type) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
