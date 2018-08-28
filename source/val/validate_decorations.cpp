@@ -379,7 +379,6 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       });
 
   // Now scan from lowest offest to highest offset.
-  uint32_t prevOffset = 0;
   uint32_t nextValidOffset = 0;
   for (size_t ordered_member_idx = 0;
        ordered_member_idx < member_offsets.size(); ordered_member_idx++) {
@@ -468,7 +467,6 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       // or array.
       nextValidOffset = align(nextValidOffset, alignment);
     }
-    prevOffset = offset;
   }
   return SPV_SUCCESS;
 }
