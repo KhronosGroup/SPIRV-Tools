@@ -408,14 +408,10 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
   return true;
 }
 
-OptStatus ParseFlags(int argc,
-                     const char** argv,
-                     spvtools::Optimizer* optimizer,
-                     const char** in_file,
-                     const char** out_file,
-                     spvtools::ValidatorOptions* options,
-                     bool* skip_validator,
-                     uint32_t* max_id_bound);
+OptStatus ParseFlags(int argc, const char** argv,
+                     spvtools::Optimizer* optimizer, const char** in_file,
+                     const char** out_file, spvtools::ValidatorOptions* options,
+                     bool* skip_validator, uint32_t* max_id_bound);
 
 // Parses and handles the -Oconfig flag. |prog_name| contains the name of
 // the spirv-opt binary (used to build a new argv vector for the recursive
@@ -449,14 +445,8 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
   }
 
   bool skip_validator = false;
-  return ParseFlags(static_cast<int>(flags.size()),
-                    new_argv,
-                    optimizer,
-                    in_file,
-                    out_file,
-                    nullptr,
-                    &skip_validator,
-                    nullptr);
+  return ParseFlags(static_cast<int>(flags.size()), new_argv, optimizer,
+                    in_file, out_file, nullptr, &skip_validator, nullptr);
 }
 
 // Canonicalize the flag in |argv[argi]| of the form '--pass arg' into
@@ -507,14 +497,10 @@ std::string CanonicalizeFlag(const char** argv, int argc, int* argi) {
 // The name of the output file in |out_file|. The return value indicates whether
 // optimization should continue and a status code indicating an error or
 // success.
-OptStatus ParseFlags(int argc,
-                     const char** argv,
-                     spvtools::Optimizer* optimizer,
-                     const char** in_file,
-                     const char** out_file,
-                     spvtools::ValidatorOptions* options,
-                     bool* skip_validator,
-                     uint32_t* max_id_bound) {
+OptStatus ParseFlags(int argc, const char** argv,
+                     spvtools::Optimizer* optimizer, const char** in_file,
+                     const char** out_file, spvtools::ValidatorOptions* options,
+                     bool* skip_validator, uint32_t* max_id_bound) {
   std::vector<std::string> pass_flags;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -556,7 +542,8 @@ OptStatus ParseFlags(int argc,
         optimizer->SetTimeReport(&std::cerr);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options->SetRelaxStructStore(true);
-      } else if (0 == strncmp(cur_arg, "--max-id-bound=", sizeof("--max-id-bound=")-1)) {
+      } else if (0 == strncmp(cur_arg, "--max-id-bound=",
+                              sizeof("--max-id-bound=") - 1)) {
         auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         // Will not allow values in the range [2^31,2^32).
         *max_id_bound = static_cast<uint32_t>(atoi(split_flag.second.c_str()));
@@ -608,14 +595,8 @@ int main(int argc, const char** argv) {
   spvtools::Optimizer optimizer(target_env);
   optimizer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
-  OptStatus status = ParseFlags(argc,
-                                argv,
-                                &optimizer,
-                                &in_file,
-                                &out_file,
-                                &options,
-                                &skip_validator,
-                                &max_id_bound);
+  OptStatus status = ParseFlags(argc, argv, &optimizer, &in_file, &out_file,
+                                &options, &skip_validator, &max_id_bound);
 
   if (status.action == OPT_STOP) {
     return status.code;
