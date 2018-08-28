@@ -2522,7 +2522,7 @@ TEST_F(ValidateDecorations,
           "offset 4 overlaps previous member ending at offset 15"));
 }
 
-TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBadUniversal1_0) {
+TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderGoodUniversal1_0) {
   std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2547,17 +2547,11 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBadUniversal1_0) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+  EXPECT_EQ(SPV_SUCCESS,
             ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Structure id 3 decorated as Block for variable in Uniform storage "
-          "class must follow standard uniform buffer layout rules: member 0 at "
-          "offset 4 has a higher offset than member 1 at offset 0"));
 }
 
-TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBadOpenGL4_5) {
+TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderGoodOpenGL4_5) {
   std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2582,14 +2576,8 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderBadOpenGL4_5) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+  EXPECT_EQ(SPV_SUCCESS,
             ValidateAndRetrieveValidationState(SPV_ENV_OPENGL_4_5));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Structure id 3 decorated as Block for variable in Uniform storage "
-          "class must follow standard uniform buffer layout rules: member 0 at "
-          "offset 4 has a higher offset than member 1 at offset 0"));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutOffsetOutOfOrderGoodVulkan1_1) {
