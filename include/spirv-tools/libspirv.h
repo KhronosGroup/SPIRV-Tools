@@ -288,6 +288,12 @@ typedef enum spv_binary_to_text_options_t {
   SPV_FORCE_32_BIT_ENUM(spv_binary_to_text_options_t)
 } spv_binary_to_text_options_t;
 
+// Constants
+
+// The default id bound is to the minimum value for the id limit
+// in the spir-v specification under the section "Universal Limits".
+const uint32_t kDefaultMaxIdBound = 0x3FFFFF;
+
 // Structures
 
 // Information about an operand parsed from a binary SPIR-V module.
@@ -360,6 +366,8 @@ typedef struct spv_context_t spv_context_t;
 
 typedef struct spv_validator_options_t spv_validator_options_t;
 
+typedef struct spv_optimizer_options_t spv_optimizer_options_t;
+
 // Type Definitions
 
 typedef spv_const_binary_t* spv_const_binary;
@@ -371,6 +379,8 @@ typedef const spv_context_t* spv_const_context;
 typedef spv_context_t* spv_context;
 typedef spv_validator_options_t* spv_validator_options;
 typedef const spv_validator_options_t* spv_const_validator_options;
+typedef spv_optimizer_options_t* spv_optimizer_options;
+typedef const spv_optimizer_options_t* spv_const_optimizer_options;
 
 // Platform API
 
@@ -484,6 +494,29 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxBlockLayout(
 // uniform/storage block layout.
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSkipBlockLayout(
     spv_validator_options options, bool val);
+
+// Creates an optimizer options object with default options. Returns a valid
+// options object. The object remains valid until it is passed into
+// |spvOptimizerOptionsDestroy|.
+SPIRV_TOOLS_EXPORT spv_optimizer_options spvOptimizerOptionsCreate();
+
+// Destroys the given optimizer options object.
+SPIRV_TOOLS_EXPORT void spvOptimizerOptionsDestroy(
+    spv_optimizer_options options);
+
+// Records whether or not the optimizer should run the validator before
+// optimizing.  If |val| is true, the validator will be run.
+SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetRunValidator(
+    spv_optimizer_options options, bool val);
+
+// Records the validator options that should be passed to the validator if it is
+// run.
+SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetValidatorOptions(
+    spv_optimizer_options options, spv_validator_options val);
+
+// Records the maximum possible value for the id bound.
+SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetMaxIdBound(
+    spv_optimizer_options options, uint32_t val);
 
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
