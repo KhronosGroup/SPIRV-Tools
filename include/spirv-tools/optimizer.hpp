@@ -167,7 +167,7 @@ class Optimizer {
   bool Run(const uint32_t* original_binary, const size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary,
            const ValidatorOptions& options, bool skip_validation = false,
-           uint32_t max_id_bound = 0x3FFFFF) const;
+           uint32_t max_id_bound = kDefaultMaxIdBound) const;
 
   // Returns a vector of strings with all the pass names added to this
   // optimizer's pass manager. These strings are valid until the associated

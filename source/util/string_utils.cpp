@@ -50,8 +50,8 @@ std::pair<std::string, std::string> SplitFlagArgs(const std::string& flag) {
 
   size_t ix = flag.find('=');
   return (ix != std::string::npos)
-         ? make_pair(flag.substr(dash_ix, ix - 2), flag.substr(ix + 1))
-         : make_pair(flag.substr(dash_ix), std::string());
+             ? make_pair(flag.substr(dash_ix, ix - 2), flag.substr(ix + 1))
+             : make_pair(flag.substr(dash_ix), std::string());
 }
 
 }  // namespace utils

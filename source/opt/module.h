@@ -24,10 +24,6 @@
 #include "source/opt/instruction.h"
 #include "source/opt/iterator.h"
 
-namespace {
-const uint32_t kDefaultMaxIdBound = 4194303;
-}
-
 namespace spvtools {
 namespace opt {
 
@@ -69,7 +65,7 @@ class Module {
   // Returns the current Id bound and increases it to the next available value.
   // If the id bound has already reached its maximum value, then 0 is returned.
   // The maximum value for the id bound is obtained from the context.  If there
-  // is none, then it minimum that limit can be according to the spir-v
+  // is none, then the minimum that limit can be according to the spir-v
   // specification.
   // TODO(1841): Update the uses to check for a 0 return value.
   uint32_t TakeNextIdBound();

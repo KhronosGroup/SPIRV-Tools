@@ -19,8 +19,8 @@
 #include <ostream>
 
 #include "source/operand.h"
-#include "source/opt/reflect.h"
 #include "source/opt/ir_context.h"
+#include "source/opt/reflect.h"
 
 namespace spvtools {
 namespace opt {

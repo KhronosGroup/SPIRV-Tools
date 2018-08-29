@@ -23,10 +23,9 @@
 #include <vector>
 
 #include "source/opt/log.h"
-#include "source/opt/loop_peeling.h"
-#include "source/opt/set_spec_constant_default_value_pass.h"
 #include "source/spirv_validator_options.h"
 #include "source/util/string_utils.h"
+#include "spirv-tools/libspirv.hpp"
 #include "spirv-tools/optimizer.hpp"
 #include "tools/io.h"
 #include "tools/util/cli_consumer.h"
@@ -547,7 +546,10 @@ OptStatus ParseFlags(int argc, const char** argv,
         auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         // Will not allow values in the range [2^31,2^32).
         *max_id_bound = static_cast<uint32_t>(atoi(split_flag.second.c_str()));
-        if (*max_id_bound < 0x3FFFFF) {
+
+        // That SPIR-V mandates the minimum value for max id bound but
+        // implementations may allow higher minimum bounds.
+        if (*max_id_bound < spvtools::kDefaultMaxIdBound) {
           spvtools::Error(opt_diagnostic, nullptr, {},
                           "The max id bound must be at least 0x3FFFFF");
           return {OPT_STOP, 1};
@@ -587,7 +589,7 @@ int main(int argc, const char** argv) {
   const char* in_file = nullptr;
   const char* out_file = nullptr;
   bool skip_validator = false;
-  uint32_t max_id_bound = 0x3FFFFF;
+  uint32_t max_id_bound = spvtools::kDefaultMaxIdBound;
 
   spv_target_env target_env = kDefaultEnvironment;
   spvtools::ValidatorOptions options;

@@ -24,6 +24,10 @@
 
 namespace spvtools {
 
+// The default id bound is to the minimum value for the id limit
+// in the spir-v specification under the section "Universal Limits".
+const uint32_t kDefaultMaxIdBound = 0x3FFFFF;
+
 // Message consumer. The C strings for source and message are only alive for the
 // specific invocation.
 using MessageConsumer = std::function<void(
