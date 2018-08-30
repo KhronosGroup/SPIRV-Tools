@@ -349,6 +349,13 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // uniform buffer.
   bool IsVulkanUniformBuffer() const;
 
+  // Returns true if the instruction defines a pointer type that points to an
+  // input class.
+  bool IsStorageClassInput() const;
+  // Returns true if the instruction defines a pointer type that points to an
+  // output class.
+  bool IsStorageClassOutput() const;
+
   // Returns true if the instruction is an atom operation.
   inline bool IsAtomicOp() const;
 
