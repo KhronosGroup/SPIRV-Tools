@@ -1848,6 +1848,69 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateIdWithMessage, OpVariableContainsBoolBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%block = OpTypeStruct %bool %int
+%_ptr_Uniform_block = OpTypePointer Uniform %block
+%var = OpVariable %_ptr_Uniform_block Uniform
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%load = OpLoad %block %var
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("If OpTypeBool is stored in conjunction with OpVariable"
+                        ", it can only be used with non-externally visible "
+                        "shader Storage Classes: Workgroup, CrossWorkgroup, "
+                        "Private, and Function"));
+}
+
+TEST_F(ValidateIdWithMessage, OpVariableContainsBoolPointerGood) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%bool = OpTypeBool
+%boolptr = OpTypePointer Uniform %bool
+%int = OpTypeInt 32 0
+%block = OpTypeStruct %boolptr %int
+%_ptr_Uniform_block = OpTypePointer Uniform %block
+%var = OpVariable %_ptr_Uniform_block Uniform
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%load = OpLoad %block %var
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpVariableContainsBuiltinBoolGood) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+OpMemberDecorate %input 0 BuiltIn FrontFacing
+%bool = OpTypeBool
+%input = OpTypeStruct %bool
+%_ptr_input = OpTypePointer Input %input
+%var = OpVariable %_ptr_input Input
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%load = OpLoad %input %var
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateIdWithMessage, OpLoadGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
@@ -2991,15 +3054,14 @@ const char kDeeplyNestedStructureSetup[] = R"(
 ; }
 
 %f32arr = OpTypeRuntimeArray %float
-%bool = OpTypeBool
 %v4float = OpTypeVector %float 4
 %array5_mat4x3 = OpTypeArray %mat4x3 %int_5
 %array5_vec4 = OpTypeArray %v4float %int_5
 %_ptr_Uniform_float = OpTypePointer Uniform %float
 %_ptr_Function_vec4 = OpTypePointer Function %v4float
 %_ptr_Uniform_vec4 = OpTypePointer Uniform %v4float
-%struct_s = OpTypeStruct %bool %array5_vec4 %int %array5_mat4x3
-%struct_blockName = OpTypeStruct %struct_s %bool %f32arr
+%struct_s = OpTypeStruct %int %array5_vec4 %int %array5_mat4x3
+%struct_blockName = OpTypeStruct %struct_s %int %f32arr
 %_ptr_Uniform_blockName = OpTypePointer Uniform %struct_blockName
 %_ptr_Uniform_struct_s = OpTypePointer Uniform %struct_s
 %_ptr_Uniform_array5_mat4x3 = OpTypePointer Uniform %array5_mat4x3
@@ -3051,7 +3113,7 @@ OpFunctionEnd
   )";
 
   const std::string expected_err = "The Result Type of " + instr +
-                                   " <id> '36' must be "
+                                   " <id> '35' must be "
                                    "OpTypePointer. Found OpTypeFloat.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -3397,7 +3459,7 @@ OpFunctionEnd
   )";
   const std::string expected_err = "Index is out of bounds: " + instr +
                                    " can not find index 3 into the structure "
-                                   "<id> '26'. This structure has 3 members. "
+                                   "<id> '25'. This structure has 3 members. "
                                    "Largest valid index is 2.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());

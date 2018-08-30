@@ -139,6 +139,47 @@ bool HasConflictingMemberOffsets(
   return false;
 }
 
+// If |skip_builtin| is true, returns true if |storage| contains bool within
+// it and no storage that contains the bool is builtin.
+// If |skip_builtin| is false, returns true if |storage| contains bool within
+// it.
+bool ContainsInvalidBool(ValidationState_t& _, const Instruction* storage,
+                         bool skip_builtin) {
+  if (skip_builtin) {
+    for (const Decoration& decoration : _.id_decorations(storage->id())) {
+      if (decoration.dec_type() == SpvDecorationBuiltIn) return false;
+    }
+  }
+
+  const size_t elem_type_index = 1;
+  uint32_t elem_type_id;
+  Instruction* elem_type;
+
+  switch (storage->opcode()) {
+    case SpvOpTypeBool:
+      return true;
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeArray:
+    case SpvOpTypeRuntimeArray:
+      elem_type_id = storage->GetOperandAs<uint32_t>(elem_type_index);
+      elem_type = _.FindDef(elem_type_id);
+      return ContainsInvalidBool(_, elem_type, skip_builtin);
+    case SpvOpTypeStruct:
+      for (size_t member_type_index = 1;
+           member_type_index < storage->operands().size();
+           ++member_type_index) {
+        auto member_type_id =
+            storage->GetOperandAs<uint32_t>(member_type_index);
+        auto member_type = _.FindDef(member_type_id);
+        if (ContainsInvalidBool(_, member_type, skip_builtin)) return true;
+      }
+    default:
+      break;
+  }
+  return false;
+}
+
 spv_result_t ValidateVariable(ValidationState_t& _, const Instruction& inst) {
   auto result_type = _.FindDef(inst.type_id());
   if (!result_type || result_type->opcode() != SpvOpTypePointer) {
@@ -148,10 +189,10 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction& inst) {
   }
 
   const auto initializer_index = 3;
+  const auto storage_class_index = 2;
   if (initializer_index < inst.operands().size()) {
     const auto initializer_id = inst.GetOperandAs<uint32_t>(initializer_index);
     const auto initializer = _.FindDef(initializer_id);
-    const auto storage_class_index = 2;
     const auto is_module_scope_var =
         initializer && (initializer->opcode() == SpvOpVariable) &&
         (initializer->GetOperandAs<uint32_t>(storage_class_index) !=
@@ -165,6 +206,33 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction& inst) {
     }
   }
 
+  const auto storage_class = inst.GetOperandAs<uint32_t>(storage_class_index);
+  if (storage_class != SpvStorageClassWorkgroup &&
+      storage_class != SpvStorageClassCrossWorkgroup &&
+      storage_class != SpvStorageClassPrivate &&
+      storage_class != SpvStorageClassFunction) {
+    const auto storage_index = 2;
+    const auto storage_id = result_type->GetOperandAs<uint32_t>(storage_index);
+    const auto storage = _.FindDef(storage_id);
+    bool storage_input_or_output = storage_class == SpvStorageClassInput ||
+                                   storage_class == SpvStorageClassOutput;
+    bool builtin = false;
+    if (storage_input_or_output) {
+      for (const Decoration& decoration : _.id_decorations(inst.id())) {
+        if (decoration.dec_type() == SpvDecorationBuiltIn) {
+          builtin = true;
+          break;
+        }
+      }
+    }
+    if (!(storage_input_or_output && builtin) &&
+        ContainsInvalidBool(_, storage, storage_input_or_output)) {
+      return _.diag(SPV_ERROR_INVALID_ID, &inst)
+             << "If OpTypeBool is stored in conjunction with OpVariable, it "
+             << "can only be used with non-externally visible shader Storage "
+             << "Classes: Workgroup, CrossWorkgroup, Private, and Function";
+    }
+  }
   return SPV_SUCCESS;
 }
 

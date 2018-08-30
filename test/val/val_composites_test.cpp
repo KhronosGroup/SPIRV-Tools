@@ -149,15 +149,14 @@ OpMemoryModel Logical GLSL450
 ; }
 
 %f32arr = OpTypeRuntimeArray %float
-%bool = OpTypeBool
 %v4float = OpTypeVector %float 4
 %array5_mat4x3 = OpTypeArray %mat4x3 %int_5
 %array5_vec4 = OpTypeArray %v4float %int_5
 %_ptr_Uniform_float = OpTypePointer Uniform %float
 %_ptr_Function_vec4 = OpTypePointer Function %v4float
 %_ptr_Uniform_vec4 = OpTypePointer Uniform %v4float
-%struct_s = OpTypeStruct %bool %array5_vec4 %int %array5_mat4x3
-%struct_blockName = OpTypeStruct %struct_s %bool %f32arr
+%struct_s = OpTypeStruct %int %array5_vec4 %int %array5_mat4x3
+%struct_blockName = OpTypeStruct %struct_s %int %f32arr
 %_ptr_Uniform_blockName = OpTypePointer Uniform %struct_blockName
 %_ptr_Uniform_struct_s = OpTypePointer Uniform %struct_s
 %_ptr_Uniform_array5_mat4x3 = OpTypePointer Uniform %array5_mat4x3
@@ -1364,7 +1363,7 @@ TEST_F(ValidateComposites, CompositeExtractStructIndexOutOfBoundBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index is out of bounds, can not find index 3 in the "
-                        "structure <id> '26'. This structure has 3 members. "
+                        "structure <id> '25'. This structure has 3 members. "
                         "Largest valid index is 2."));
 }
 
@@ -1385,7 +1384,7 @@ TEST_F(ValidateComposites, CompositeInsertStructIndexOutOfBoundBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Index is out of bounds, can not find index 3 in the structure "
-                "<id> '26'. This structure has 3 members. Largest valid index "
+                "<id> '25'. This structure has 3 members. Largest valid index "
                 "is 2."));
 }
 
