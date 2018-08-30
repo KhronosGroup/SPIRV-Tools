@@ -373,6 +373,16 @@ bool Instruction::IsReadOnlyVariableKernel() const {
   return storage_class == SpvStorageClassUniformConstant;
 }
 
+bool Instruction::IsStorageClassInput() const {
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  return storage_class == SpvStorageClassInput;
+}
+
+bool Instruction::IsStorageClassOutput() const {
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  return storage_class == SpvStorageClassOutput;
+}
+
 uint32_t Instruction::GetTypeComponent(uint32_t element) const {
   uint32_t subtype = 0;
   switch (opcode()) {
