@@ -99,6 +99,13 @@ spv_result_t ValidateTypeArray(ValidationState_t& _, const Instruction* inst) {
            << "OpTypeArray Element Type <id> '" << _.getIdName(element_type_id)
            << "' is not a type.";
   }
+
+  if (element_type->opcode() == SpvOpTypeVoid) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpTypeArray Element Type <id> '" << _.getIdName(element_type_id)
+           << "' is a void type.";
+  }
+
   const auto length_index = 2;
   const auto length_id = inst->GetOperandAs<uint32_t>(length_index);
   const auto length = _.FindDef(length_id);
@@ -147,6 +154,13 @@ spv_result_t ValidateTypeRuntimeArray(ValidationState_t& _,
            << "OpTypeRuntimeArray Element Type <id> '"
            << _.getIdName(element_id) << "' is not a type.";
   }
+
+  if (element_type->opcode() == SpvOpTypeVoid) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpTypeRuntimeArray Element Type <id> '"
+           << _.getIdName(element_id) << "' is a void type.";
+  }
+
   return SPV_SUCCESS;
 }
 
