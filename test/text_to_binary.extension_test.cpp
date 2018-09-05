@@ -518,7 +518,10 @@ INSTANTIATE_TEST_CASE_P(
     // environments, and at least one specific environment.
     //
     // Note: SPV_KHR_vulkan_memory_model adds scope enum value QueueFamilyKHR.
-    // Scope enums are used in ID defini
+    // Scope enums are used in ID definitions elsewhere, that don't know they
+    // are using particular enums.  So the assembler doesn't support assembling
+    // those enums names into the corresponding values.  So there is no asm/dis
+    // tests for those enums.
     Combine(
         Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
                SPV_ENV_UNIVERSAL_1_3, SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1),
