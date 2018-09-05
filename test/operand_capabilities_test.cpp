@@ -205,12 +205,12 @@ INSTANTIATE_TEST_CASE_P(
     Dim, EnumCapabilityTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
             ValuesIn(std::vector<EnumCapabilityCase>{
-                CASE1(DIMENSIONALITY, Dim1D, Sampled1D),
-                CASE0(DIMENSIONALITY, Dim2D),
+                CASE2(DIMENSIONALITY, Dim1D, Sampled1D, Image1D),
+                CASE3(DIMENSIONALITY, Dim2D, Kernel, Shader, ImageMSArray),
                 CASE0(DIMENSIONALITY, Dim3D),
-                CASE1(DIMENSIONALITY, DimCube, Shader),
-                CASE1(DIMENSIONALITY, DimRect, SampledRect),
-                CASE1(DIMENSIONALITY, DimBuffer, SampledBuffer),
+                CASE2(DIMENSIONALITY, DimCube, Shader, ImageCubeArray),
+                CASE2(DIMENSIONALITY, DimRect, SampledRect, ImageRect),
+                CASE2(DIMENSIONALITY, DimBuffer, SampledBuffer, ImageBuffer),
                 CASE1(DIMENSIONALITY, DimSubpassData, InputAttachment),
             })), );
 
