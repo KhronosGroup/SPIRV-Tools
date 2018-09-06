@@ -16,7 +16,7 @@ import("//testing/libfuzzer/fuzzer_test.gni")
 import("//testing/test.gni")
 
 config("fuzzer_config") {
-  configs = [ "../..:spvtools_config" ]
+  configs = [ "../..:spvtools_internal_config" ]
 }
 
 group("fuzzers") {
@@ -33,10 +33,10 @@ if (!build_with_chromium || use_fuzzing_engine) {
     testonly = true
 
     deps = [
-      ":spvtools_val_fuzzer",
       ":spvtools_opt_legalization_fuzzer",
       ":spvtools_opt_performance_fuzzer",
       ":spvtools_opt_size_fuzzer",
+      ":spvtools_val_fuzzer",
     ]
   }
 }
