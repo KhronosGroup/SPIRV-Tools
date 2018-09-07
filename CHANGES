@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2018.5-dev 2018-09-07
+v2018.5 2018-09-07
  - General:
    - Support SPV_KHR_vulkan_memory_model
    - Update Dim capabilities, to match SPIR-V 1.3 Rev 4
