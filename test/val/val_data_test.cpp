@@ -605,8 +605,7 @@ TEST_F(ValidateData, ext_16bit_storage_caps_allow_free_fp_rounding_mode) {
                         cap + R"(
         OpExtension "SPV_KHR_16bit_storage"
         OpMemoryModel Logical GLSL450
-        OpDecorate %2 FPRoundingMode )" +
-                        mode + R"(
+        OpDecorate %2 FPRoundingMode )" + mode + R"(
         %1 = OpTypeFloat 32
         %2 = OpConstant %1 1.25
       )";
