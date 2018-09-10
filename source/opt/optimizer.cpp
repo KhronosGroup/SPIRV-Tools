@@ -20,13 +20,13 @@
 #include <utility>
 #include <vector>
 
+#include <source/spirv_optimizer_options.h>
 #include "source/opt/build_module.h"
 #include "source/opt/log.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
-#include "source/opt/reduce_load_size.h"
-#include "source/opt/simplification_pass.h"
 #include "source/util/make_unique.h"
+#include "source/util/string_utils.h"
 
 namespace spvtools {
 
@@ -223,29 +223,6 @@ bool Optimizer::RegisterPassesFromFlags(const std::vector<std::string>& flags) {
   return true;
 }
 
-namespace {
-
-// Splits the string |flag|, of the form '--pass_name[=pass_args]' into two
-// strings "pass_name" and "pass_args".  If |flag| has no arguments, the second
-// string will be empty.
-std::pair<std::string, std::string> SplitFlagArgs(const std::string& flag) {
-  if (flag.size() < 2) return make_pair(flag, std::string());
-
-  // Detect the last dash before the pass name. Since we have to
-  // handle single dash options (-O and -Os), count up to two dashes.
-  size_t dash_ix = 0;
-  if (flag[0] == '-' && flag[1] == '-')
-    dash_ix = 2;
-  else if (flag[0] == '-')
-    dash_ix = 1;
-
-  size_t ix = flag.find('=');
-  return (ix != std::string::npos)
-             ? make_pair(flag.substr(dash_ix, ix - 2), flag.substr(ix + 1))
-             : make_pair(flag.substr(dash_ix), std::string());
-}
-}  // namespace
-
 bool Optimizer::FlagHasValidForm(const std::string& flag) const {
   if (flag == "-O" || flag == "-Os") {
     return true;
@@ -267,7 +244,7 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
   }
 
   // Split flags of the form --pass_name=pass_args.
-  auto p = SplitFlagArgs(flag);
+  auto p = utils::SplitFlagArgs(flag);
   std::string pass_name = p.first;
   std::string pass_args = p.second;
 
@@ -458,24 +435,38 @@ bool Optimizer::Run(const uint32_t* original_binary,
                     const size_t original_binary_size,
                     std::vector<uint32_t>* optimized_binary) const {
   return Run(original_binary, original_binary_size, optimized_binary,
-             ValidatorOptions());
+             OptimizerOptions());
 }
 
 bool Optimizer::Run(const uint32_t* original_binary,
                     const size_t original_binary_size,
                     std::vector<uint32_t>* optimized_binary,
-                    const ValidatorOptions& options,
+                    const ValidatorOptions& validator_options,
                     bool skip_validation) const {
+  OptimizerOptions opt_options;
+  opt_options.set_run_validator(!skip_validation);
+  opt_options.set_validator_options(validator_options);
+  return Run(original_binary, original_binary_size, optimized_binary,
+             opt_options);
+}
+
+bool Optimizer::Run(const uint32_t* original_binary,
+                    const size_t original_binary_size,
+                    std::vector<uint32_t>* optimized_binary,
+                    const spv_optimizer_options opt_options) const {
   spvtools::SpirvTools tools(impl_->target_env);
   tools.SetMessageConsumer(impl_->pass_manager.consumer());
-  if (!skip_validation &&
-      !tools.Validate(original_binary, original_binary_size, options)) {
+  if (opt_options->run_validator_ &&
+      !tools.Validate(original_binary, original_binary_size,
+                      &opt_options->val_options_)) {
     return false;
   }
 
   std::unique_ptr<opt::IRContext> context = BuildModule(
       impl_->target_env, consumer(), original_binary, original_binary_size);
   if (context == nullptr) return false;
+
+  context->set_max_id_bound(opt_options->max_id_bound_);
 
   auto status = impl_->pass_manager.Run(context.get());
   if (status == opt::Pass::Status::SuccessWithChange ||

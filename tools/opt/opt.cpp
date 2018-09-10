@@ -23,9 +23,8 @@
 #include <vector>
 
 #include "source/opt/log.h"
-#include "source/opt/loop_peeling.h"
-#include "source/opt/set_spec_constant_default_value_pass.h"
-#include "source/spirv_validator_options.h"
+#include "source/util/string_utils.h"
+#include "spirv-tools/libspirv.hpp"
 #include "spirv-tools/optimizer.hpp"
 #include "tools/io.h"
 #include "tools/util/cli_consumer.h"
@@ -214,6 +213,10 @@ Options (in lexicographical order):
                growth threshold. The threshold prevents the loop peeling
                from happening if the code size increase created by
                the optimization is above the threshold.
+  --max-id-bound=<n>
+               Sets the maximum value for the id bound for the moudle.  The
+               default is the minimum value for this limit, 0x3FFFFF.  See
+               section 2.17 of the Spir-V specification.
   --merge-blocks
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
@@ -406,8 +409,9 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
 
 OptStatus ParseFlags(int argc, const char** argv,
                      spvtools::Optimizer* optimizer, const char** in_file,
-                     const char** out_file, spvtools::ValidatorOptions* options,
-                     bool* skip_validator);
+                     const char** out_file,
+                     spvtools::ValidatorOptions* validator_options,
+                     spvtools::OptimizerOptions* optimizer_options);
 
 // Parses and handles the -Oconfig flag. |prog_name| contains the name of
 // the spirv-opt binary (used to build a new argv vector for the recursive
@@ -440,9 +444,8 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
     new_argv[i] = flags[i].c_str();
   }
 
-  bool skip_validator = false;
   return ParseFlags(static_cast<int>(flags.size()), new_argv, optimizer,
-                    in_file, out_file, nullptr, &skip_validator);
+                    in_file, out_file, nullptr, nullptr);
 }
 
 // Canonicalize the flag in |argv[argi]| of the form '--pass arg' into
@@ -495,8 +498,9 @@ std::string CanonicalizeFlag(const char** argv, int argc, int* argi) {
 // success.
 OptStatus ParseFlags(int argc, const char** argv,
                      spvtools::Optimizer* optimizer, const char** in_file,
-                     const char** out_file, spvtools::ValidatorOptions* options,
-                     bool* skip_validator) {
+                     const char** out_file,
+                     spvtools::ValidatorOptions* validator_options,
+                     spvtools::OptimizerOptions* optimizer_options) {
   std::vector<std::string> pass_flags;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -531,13 +535,28 @@ OptStatus ParseFlags(int argc, const char** argv,
           return status;
         }
       } else if (0 == strcmp(cur_arg, "--skip-validation")) {
-        *skip_validator = true;
+        optimizer_options->set_run_validator(false);
       } else if (0 == strcmp(cur_arg, "--print-all")) {
         optimizer->SetPrintAll(&std::cerr);
       } else if (0 == strcmp(cur_arg, "--time-report")) {
         optimizer->SetTimeReport(&std::cerr);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
-        options->SetRelaxStructStore(true);
+        validator_options->SetRelaxStructStore(true);
+      } else if (0 == strncmp(cur_arg, "--max-id-bound=",
+                              sizeof("--max-id-bound=") - 1)) {
+        auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
+        // Will not allow values in the range [2^31,2^32).
+        uint32_t max_id_bound =
+            static_cast<uint32_t>(atoi(split_flag.second.c_str()));
+
+        // That SPIR-V mandates the minimum value for max id bound but
+        // implementations may allow higher minimum bounds.
+        if (max_id_bound < kDefaultMaxIdBound) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "The max id bound must be at least 0x3FFFFF");
+          return {OPT_STOP, 1};
+        }
+        optimizer_options->set_max_id_bound(max_id_bound);
       } else {
         // Some passes used to accept the form '--pass arg', canonicalize them
         // to '--pass=arg'.
@@ -546,7 +565,7 @@ OptStatus ParseFlags(int argc, const char** argv,
         // If we were requested to legalize SPIR-V generated from the HLSL
         // front-end, skip validation.
         if (0 == strcmp(cur_arg, "--legalize-hlsl")) {
-          options->SetRelaxLogicalPointer(true);
+          validator_options->SetRelaxLogicalPointer(true);
         }
       }
     } else {
@@ -575,13 +594,14 @@ int main(int argc, const char** argv) {
   bool skip_validator = false;
 
   spv_target_env target_env = kDefaultEnvironment;
-  spvtools::ValidatorOptions options;
+  spvtools::ValidatorOptions validator_options;
+  spvtools::OptimizerOptions optimizer_options;
 
   spvtools::Optimizer optimizer(target_env);
   optimizer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   OptStatus status = ParseFlags(argc, argv, &optimizer, &in_file, &out_file,
-                                &options, &skip_validator);
+                                &validator_options, &optimizer_options);
 
   if (status.action == OPT_STOP) {
     return status.code;
@@ -599,8 +619,8 @@ int main(int argc, const char** argv) {
 
   // By using the same vector as input and output, we save time in the case
   // that there was no change.
-  bool ok = optimizer.Run(binary.data(), binary.size(), &binary, options,
-                          skip_validator);
+  bool ok = optimizer.Run(binary.data(), binary.size(), &binary,
+                          validator_options, skip_validator);
 
   if (!WriteFile<uint32_t>(out_file, "wb", binary.data(), binary.size())) {
     return 1;
