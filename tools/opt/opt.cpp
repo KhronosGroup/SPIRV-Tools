@@ -215,7 +215,8 @@ Options (in lexicographical order):
                the optimization is above the threshold.
   --max-id-bound=<n>
                Sets the maximum value for the id bound for the moudle.  The
-               default is the minimum value for this limit, 4,194,303.
+               default is the minimum value for this limit, 0x3FFFFF.  See
+               section 2.17 of the Spir-V specification.
   --merge-blocks
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point

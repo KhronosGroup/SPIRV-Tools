@@ -173,7 +173,7 @@ class Optimizer {
   // for |OptimizerOptions| to see which options can be set.
   bool Run(const uint32_t* original_binary, const size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary,
-           spv_optimizer_options opt_options) const;
+           const spv_optimizer_options opt_options) const;
 
   // Returns a vector of strings with all the pass names added to this
   // optimizer's pass manager. These strings are valid until the associated
