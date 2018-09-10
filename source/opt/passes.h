@@ -56,6 +56,7 @@
 #include "source/opt/replace_invalid_opc.h"
 #include "source/opt/scalar_replacement_pass.h"
 #include "source/opt/set_spec_constant_default_value_pass.h"
+#include "source/opt/simplification_pass.h"
 #include "source/opt/ssa_rewrite_pass.h"
 #include "source/opt/strength_reduction_pass.h"
 #include "source/opt/strip_debug_info_pass.h"

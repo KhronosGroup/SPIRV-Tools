@@ -106,6 +106,36 @@ class ValidatorOptions {
   spv_validator_options options_;
 };
 
+// A C++ wrapper around an optimization options object.
+class OptimizerOptions {
+ public:
+  OptimizerOptions() : options_(spvOptimizerOptionsCreate()) {}
+  ~OptimizerOptions() { spvOptimizerOptionsDestroy(options_); }
+
+  // Allow implicit conversion to the underlying object.
+  operator spv_optimizer_options() const { return options_; }
+
+  // Records whether or not the optimizer should run the validator before
+  // optimizing.  If |run| is true, the validator will be run.
+  void set_run_validator(bool run) {
+    spvOptimizerOptionsSetRunValidator(options_, run);
+  }
+
+  // Records the validator options that should be passed to the validator if it
+  // is run.
+  void set_validator_options(const ValidatorOptions& val_options) {
+    spvOptimizerOptionsSetValidatorOptions(options_, val_options);
+  }
+
+  // Records the maximum possible value for the id bound.
+  void set_max_id_bound(uint32_t new_bound) {
+    spvOptimizerOptionsSetMaxIdBound(options_, new_bound);
+  }
+
+ private:
+  spv_optimizer_options options_;
+};
+
 // C++ interface for SPIRV-Tools functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and
 // provides methods for assembling, disassembling, and validating.
@@ -173,7 +203,7 @@ class SpirvTools {
   bool Validate(const uint32_t* binary, size_t binary_size) const;
   // Like the previous overload, but takes an options object.
   bool Validate(const uint32_t* binary, size_t binary_size,
-                const ValidatorOptions& options) const;
+                spv_validator_options options) const;
 
  private:
   struct Impl;  // Opaque struct for holding the data fields used by this class.

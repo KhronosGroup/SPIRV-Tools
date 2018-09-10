@@ -19,6 +19,7 @@ SPVTOOLS_SRC_FILES := \
 		source/print.cpp \
 		source/software_version.cpp \
 		source/spirv_endian.cpp \
+		source/spirv_optimizer_options.cpp \
 		source/spirv_target_env.cpp \
 		source/spirv_validator_options.cpp \
 		source/table.cpp \
