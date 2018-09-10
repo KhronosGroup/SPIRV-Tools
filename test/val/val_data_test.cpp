@@ -637,6 +637,32 @@ TEST_F(ValidateData, vulkan_disallow_free_fp_rounding_mode) {
   }
 }
 
+TEST_F(ValidateData, void_array) {
+  std::string str = header + R"(
+   %void = OpTypeVoid
+    %int = OpTypeInt 32 0
+  %int_5 = OpConstant %int 5
+  %array = OpTypeArray %void %int_5
+  )";
+
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpTypeArray Element Type <id> '1' is a void type."));
+}
+
+TEST_F(ValidateData, void_runtime_array) {
+  std::string str = header + R"(
+   %void = OpTypeVoid
+  %array = OpTypeRuntimeArray %void
+  )";
+
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpTypeRuntimeArray Element Type <id> '1' is a void type."));
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
