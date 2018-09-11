@@ -346,6 +346,8 @@ static_library("spvtools") {
     "source/spirv_definition.h",
     "source/spirv_endian.cpp",
     "source/spirv_endian.h",
+    "source/spirv_optimizer_options.cpp",
+    "source/spirv_optimizer_options.h",
     "source/spirv_target_env.cpp",
     "source/spirv_target_env.h",
     "source/spirv_validator_options.cpp",
