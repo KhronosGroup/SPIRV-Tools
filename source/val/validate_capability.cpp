@@ -83,6 +83,7 @@ bool IsSupportOptionalVulkan_1_0(uint32_t capability) {
     case SpvCapabilityStorageImageReadWithoutFormat:
     case SpvCapabilityStorageImageWriteWithoutFormat:
     case SpvCapabilityMultiViewport:
+    case SpvCapabilityInt64Atomics:
       return true;
   }
   return false;
