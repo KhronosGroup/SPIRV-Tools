@@ -453,7 +453,7 @@ bool Optimizer::Run(const uint32_t* original_binary,
 bool Optimizer::Run(const uint32_t* original_binary,
                     const size_t original_binary_size,
                     std::vector<uint32_t>* optimized_binary,
-                    const spv_optimizer_options opt_options) const {
+                    const spv_optimizer_options& opt_options) const {
   spvtools::SpirvTools tools(impl_->target_env);
   tools.SetMessageConsumer(impl_->pass_manager.consumer());
   if (opt_options->run_validator_ &&
