@@ -78,8 +78,13 @@ class CFG {
       BasicBlock* bb, const std::function<void(BasicBlock*)>& f);
 
   // Registers |blk| as a basic block in the cfg, this also updates the
-  // predecessor lists of each successor of |blk|.
+  // predecessor lists of each successor of |blk|. |blk| must have a terminator
+  // instruction at the end of the block.
   void RegisterBlock(BasicBlock* blk) {
+    assert(blk->begin() != blk->end() &&
+           "Basic blocks must have a terminator before registering.");
+    assert(blk->tail()->IsBlockTerminator() &&
+           "Basic blocks must have a terminator before registering.");
     uint32_t blk_id = blk->id();
     id2block_[blk_id] = blk;
     AddEdges(blk);

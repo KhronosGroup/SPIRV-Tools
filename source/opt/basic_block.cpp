@@ -212,8 +212,11 @@ BasicBlock* BasicBlock::SplitBasicBlock(IRContext* context, uint32_t label_id,
                                         iterator iter) {
   assert(!insts_.empty());
 
-  BasicBlock* new_block = new BasicBlock(MakeUnique<Instruction>(
-      context, SpvOpLabel, 0, label_id, std::initializer_list<Operand>{}));
+  std::unique_ptr<BasicBlock> new_block_temp =
+      MakeUnique<BasicBlock>(MakeUnique<Instruction>(
+          context, SpvOpLabel, 0, label_id, std::initializer_list<Operand>{}));
+  BasicBlock* new_block = new_block_temp.get();
+  function_->InsertBasicBlockAfter(std::move(new_block_temp), this);
 
   new_block->insts_.Splice(new_block->end(), &insts_, iter, end());
   new_block->SetParent(GetParent());
