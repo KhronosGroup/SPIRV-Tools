@@ -591,11 +591,12 @@ OptStatus ParseFlags(int argc, const char** argv,
 int main(int argc, const char** argv) {
   const char* in_file = nullptr;
   const char* out_file = nullptr;
-  bool skip_validator = false;
 
   spv_target_env target_env = kDefaultEnvironment;
   spvtools::ValidatorOptions validator_options;
   spvtools::OptimizerOptions optimizer_options;
+
+  optimizer_options.set_validator_options(validator_options);
 
   spvtools::Optimizer optimizer(target_env);
   optimizer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
@@ -619,8 +620,8 @@ int main(int argc, const char** argv) {
 
   // By using the same vector as input and output, we save time in the case
   // that there was no change.
-  bool ok = optimizer.Run(binary.data(), binary.size(), &binary,
-                          validator_options, skip_validator);
+  bool ok =
+      optimizer.Run(binary.data(), binary.size(), &binary, optimizer_options);
 
   if (!WriteFile<uint32_t>(out_file, "wb", binary.data(), binary.size())) {
     return 1;
