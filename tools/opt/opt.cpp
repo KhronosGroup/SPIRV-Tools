@@ -620,8 +620,8 @@ int main(int argc, const char** argv) {
 
   // By using the same vector as input and output, we save time in the case
   // that there was no change.
-  bool ok = optimizer.Run(binary.data(), binary.size(), &binary,
-                          optimizer_options);
+  bool ok =
+      optimizer.Run(binary.data(), binary.size(), &binary, optimizer_options);
 
   if (!WriteFile<uint32_t>(out_file, "wb", binary.data(), binary.size())) {
     return 1;
