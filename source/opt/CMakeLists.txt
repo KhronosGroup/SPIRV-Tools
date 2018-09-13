@@ -91,6 +91,7 @@ add_library(SPIRV-Tools-opt
   strength_reduction_pass.h
   strip_debug_info_pass.h
   strip_reflect_info_pass.h
+  struct_cfg_analysis.h
   tree_iterator.h
   type_manager.h
   types.h
@@ -175,6 +176,7 @@ add_library(SPIRV-Tools-opt
   strength_reduction_pass.cpp
   strip_debug_info_pass.cpp
   strip_reflect_info_pass.cpp
+  struct_cfg_analysis.cpp
   type_manager.cpp
   types.cpp
   unify_const_pass.cpp
