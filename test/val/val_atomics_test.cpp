@@ -47,6 +47,7 @@ OpEntryPoint Fragment %main "main"
 %f32 = OpTypeFloat 32
 %u32 = OpTypeInt 32 0
 %u64 = OpTypeInt 64 0
+%s64 = OpTypeInt 64 1
 %f32vec4 = OpTypeVector %f32 4
 
 %f32_0 = OpConstant %f32 0
@@ -54,6 +55,7 @@ OpEntryPoint Fragment %main "main"
 %u32_0 = OpConstant %u32 0
 %u32_1 = OpConstant %u32 1
 %u64_1 = OpConstant %u64 1
+%s64_1 = OpConstant %s64 1
 %f32vec4_0000 = OpConstantComposite %f32vec4 %f32_0 %f32_0 %f32_0 %f32_0
 
 %cross_device = OpConstant %u32 0
@@ -77,7 +79,9 @@ OpEntryPoint Fragment %main "main"
 %u32_var = OpVariable %u32_ptr Workgroup
 
 %u64_ptr = OpTypePointer Workgroup %u64
+%s64_ptr = OpTypePointer Workgroup %s64
 %u64_var = OpVariable %u64_ptr Workgroup
+%s64_var = OpVariable %s64_ptr Workgroup
 
 %f32vec4_ptr = OpTypePointer Workgroup %f32vec4
 %f32vec4_var = OpVariable %f32vec4_ptr Workgroup
@@ -275,6 +279,49 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanInt64) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicLoad: according to the Vulkan spec atomic "
                         "Result Type needs to be a 32-bit int scalar type"));
+}
+
+TEST_F(ValidateAtomics, VK_KHR_shader_atomic_int64Success) {
+  const std::string body = R"(
+%val1 = OpAtomicUMin %u64 %u64_var %device %relaxed %u64_1
+%val2 = OpAtomicUMax %u64 %u64_var %device %relaxed %u64_1
+%val3 = OpAtomicSMin %u64 %u64_var %device %relaxed %u64_1
+%val4 = OpAtomicSMax %u64 %u64_var %device %relaxed %u64_1
+%val5 = OpAtomicAnd %u64 %u64_var %device %relaxed %u64_1
+%val6 = OpAtomicOr %u64 %u64_var %device %relaxed %u64_1
+%val7 = OpAtomicXor %u64 %u64_var %device %relaxed %u64_1
+%val8 = OpAtomicIAdd %u64 %u64_var %device %relaxed %u64_1
+%val9 = OpAtomicExchange %u64 %u64_var %device %relaxed %u64_1
+%val10 = OpAtomicCompareExchange %u64 %u64_var %device %relaxed %relaxed %u64_1 %u64_1
+
+%val11 = OpAtomicUMin %s64 %s64_var %device %relaxed %s64_1
+%val12 = OpAtomicUMax %s64 %s64_var %device %relaxed %s64_1
+%val13 = OpAtomicSMin %s64 %s64_var %device %relaxed %s64_1
+%val14 = OpAtomicSMax %s64 %s64_var %device %relaxed %s64_1
+%val15 = OpAtomicAnd %s64 %s64_var %device %relaxed %s64_1
+%val16 = OpAtomicOr %s64 %s64_var %device %relaxed %s64_1
+%val17 = OpAtomicXor %s64 %s64_var %device %relaxed %s64_1
+%val18 = OpAtomicIAdd %s64 %s64_var %device %relaxed %s64_1
+%val19 = OpAtomicExchange %s64 %s64_var %device %relaxed %s64_1
+%val20 = OpAtomicCompareExchange %s64 %s64_var %device %relaxed %relaxed %s64_1 %s64_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "OpCapability Int64Atomics\n"),
+                      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, VK_KHR_shader_atomic_int64MissingCapability) {
+  const std::string body = R"(
+%val1 = OpAtomicUMin %u64 %u64_var %device %relaxed %u64_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicUMin: 64-bit atomics require the Int64Atomics capability"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadWrongResultType) {
