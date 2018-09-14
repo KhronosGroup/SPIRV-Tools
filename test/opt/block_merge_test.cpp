@@ -691,6 +691,45 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<BlockMergePass>(text, true);
 }
+
+TEST_F(BlockMergeTest, MergeHeaders) {
+  // Merge two headers when the second is the merge block of the first.
+  const std::string text = R"(
+; CHECK: OpFunction
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT: OpBranch [[header:%\w+]]
+; CHECK-NEXT: [[header]] = OpLabel
+; CHECK-NEXT: OpSelectionMerge [[merge:%\w+]]
+; CHECK: [[merge]] = OpLabel
+; CHEKC: OpReturn
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%functy = OpTypeFunction %void
+%otherfuncty = OpTypeFunction %bool
+%true = OpConstantTrue %bool
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpBranch %5
+%5 = OpLabel
+OpLoopMerge %8 %7 None
+OpBranch %8
+%7 = OpLabel
+OpBranch %5
+%8 = OpLabel
+OpSelectionMerge %m None
+OpBranchConditional %true %a %m
+%a = OpLabel
+OpBranch %m
+%m = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<BlockMergePass>(text, true);
+}
 #endif  // SPIRV_EFFCEE
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
