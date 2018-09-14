@@ -15,10 +15,10 @@
 #include <string>
 
 #include "gmock/gmock.h"
+#include "source/opt/struct_cfg_analysis.h"
 #include "test/opt/assembly_builder.h"
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
-#include "source/opt/struct_cfg_analysis.h"
 
 namespace spvtools {
 namespace opt {
@@ -451,8 +451,9 @@ OpFunctionEnd
 
   StructuredCFGAnalysis analysis(context.get());
 
-  // No structured control flow, so none of the basic block are in any construct.
-  for( uint32_t i = 1 ; i <=3; i++) {
+  // No structured control flow, so none of the basic block are in any
+  // construct.
+  for (uint32_t i = 1; i <= 3; i++) {
     EXPECT_EQ(analysis.ContainingConstruct(i), 0);
     EXPECT_EQ(analysis.ContainingLoop(i), 0);
     EXPECT_EQ(analysis.MergeBlock(i), 0);
