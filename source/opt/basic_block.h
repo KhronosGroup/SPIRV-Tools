@@ -209,6 +209,10 @@ class BasicBlock {
   // is always added to |options|.
   std::string PrettyPrint(uint32_t options = 0u) const;
 
+  // Dump this basic block on stderr.  Useful when running interactive
+  // debuggers.
+  void Dump() const;
+
  private:
   // The enclosing function.
   Function* function_;

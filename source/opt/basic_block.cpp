@@ -193,6 +193,10 @@ std::ostream& operator<<(std::ostream& str, const BasicBlock& block) {
   return str;
 }
 
+void BasicBlock::Dump() const {
+  std::cerr << "Basic block #" << id() << "\n" << *this << "\n ";
+}
+
 std::string BasicBlock::PrettyPrint(uint32_t options) const {
   std::ostringstream str;
   ForEachInst([&str, options](const Instruction* inst) {

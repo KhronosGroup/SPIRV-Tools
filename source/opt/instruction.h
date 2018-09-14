@@ -427,6 +427,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // rules for physical addressing.
   bool IsValidBasePointer() const;
 
+  // Dump this instruction on stderr.  Useful when running interactive
+  // debuggers.
+  void Dump() const;
+
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {

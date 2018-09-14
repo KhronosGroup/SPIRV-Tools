@@ -540,6 +540,10 @@ std::ostream& operator<<(std::ostream& str, const Instruction& inst) {
   return str;
 }
 
+void Instruction::Dump() const {
+  std::cerr << "Instruction #" << unique_id() << "\n" << *this << "\n";
+}
+
 bool Instruction::IsOpcodeCodeMotionSafe() const {
   switch (opcode_) {
     case SpvOpNop:

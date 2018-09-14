@@ -94,6 +94,10 @@ std::ostream& operator<<(std::ostream& str, const Function& func) {
   return str;
 }
 
+void Function::Dump() const {
+  std::cerr << "Function #" << result_id() << "\n" << *this << "\n";
+}
+
 std::string Function::PrettyPrint(uint32_t options) const {
   std::ostringstream str;
   ForEachInst([&str, options](const Instruction* inst) {

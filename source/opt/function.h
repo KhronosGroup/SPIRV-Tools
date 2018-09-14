@@ -125,6 +125,10 @@ class Function {
   // is always added to |options|.
   std::string PrettyPrint(uint32_t options = 0u) const;
 
+  // Dump this function on stderr.  Useful when running interactive
+  // debuggers.
+  void Dump() const;
+
  private:
   // The OpFunction instruction that begins the definition of this function.
   std::unique_ptr<Instruction> def_inst_;
