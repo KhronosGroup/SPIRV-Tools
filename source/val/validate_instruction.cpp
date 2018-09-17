@@ -531,7 +531,7 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
 
     if (_.memory_model() != SpvMemoryModelVulkanKHR &&
         _.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "VulkanMemoryModelKHR capability must only be specified if the "
                 "VulkanKHR memory model is used.";
     }
