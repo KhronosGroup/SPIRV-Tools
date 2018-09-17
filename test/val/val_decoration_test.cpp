@@ -3145,6 +3145,138 @@ OpMemberDecorate %1 1 Volatile
                         "banned when using "
                         "the Vulkan memory model."));
 }
+
+TEST_F(ValidateDecorations, FPRoundingModeGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %_ FPRoundingMode RTE
+%half = OpTypeFloat 16
+%float = OpTypeFloat 32
+%float_1_25 = OpConstant %float 1.25
+%half_ptr = OpTypePointer StorageBuffer %half
+%half_ptr_var = OpVariable %half_ptr StorageBuffer
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%_ = OpFConvert %half %float_1_25
+OpStore %half_ptr_var %_
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, FPRoundingModeNotOpFConvert) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %_ FPRoundingMode RTE
+%short = OpTypeInt 16 1
+%int = OpTypeInt 32 1
+%int_17 = OpConstant %int 17
+%short_ptr = OpTypePointer StorageBuffer %short
+%short_ptr_var = OpVariable %short_ptr StorageBuffer
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%_ = OpSConvert %short %int_17
+OpStore %short_ptr_var %_
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPRoundingMode decoration can be applied only to a "
+                        "width-only conversion instruction for floating-point "
+                        "object."));
+}
+
+TEST_F(ValidateDecorations, FPRoundingModeNotOperandOfOpStore) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %_ FPRoundingMode RTE
+%half = OpTypeFloat 16
+%float = OpTypeFloat 32
+%float_1_25 = OpConstant %float 1.25
+%half_ptr = OpTypePointer StorageBuffer %half
+%half_ptr_var = OpVariable %half_ptr StorageBuffer
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%_ = OpFConvert %half %float_1_25
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPRoundingMode decoration can be applied only to the "
+                        "Object operand of an OpStore."));
+}
+
+TEST_F(ValidateDecorations, FPRoundingModeBadStorageClass) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %_ FPRoundingMode RTE
+%half = OpTypeFloat 16
+%float = OpTypeFloat 32
+%float_1_25 = OpConstant %float 1.25
+%half_ptr = OpTypePointer Private %half
+%half_ptr_var = OpVariable %half_ptr Private
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%_ = OpFConvert %half %float_1_25
+OpStore %half_ptr_var %_
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("FPRoundingMode decoration can be applied only to the "
+                "Object operand of an OpStore in the StorageBuffer, Uniform, "
+                "PushConstant, Input, or Output Storage Classes."));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
