@@ -24,6 +24,7 @@
 #include "source/cfa.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/iterator.h"
+#include "source/opt/struct_cfg_analysis.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {
@@ -92,6 +93,8 @@ BasicBlock* DeadBranchElimPass::GetParentBlock(uint32_t id) {
 
 bool DeadBranchElimPass::MarkLiveBlocks(
     Function* func, std::unordered_set<BasicBlock*>* live_blocks) {
+  StructuredCFGAnalysis cfgAnalysis(context());
+
   std::unordered_set<BasicBlock*> continues;
   std::vector<BasicBlock*> stack;
   stack.push_back(&*func->begin());
@@ -160,7 +163,8 @@ bool DeadBranchElimPass::MarkLiveBlocks(
       Instruction* mergeInst = block->GetMergeInst();
       if (mergeInst && mergeInst->opcode() == SpvOpSelectionMerge) {
         Instruction* first_break = FindFirstExitFromSelectionMerge(
-            live_lab_id, mergeInst->GetSingleWordInOperand(0));
+            live_lab_id, mergeInst->GetSingleWordInOperand(0),
+            cfgAnalysis.LoopMergeBlock(live_lab_id));
         if (first_break == nullptr) {
           context()->KillInst(mergeInst);
         } else {
@@ -435,7 +439,7 @@ Pass::Status DeadBranchElimPass::Process() {
 }
 
 Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
-    uint32_t start_block_id, uint32_t merge_block_id) {
+    uint32_t start_block_id, uint32_t merge_block_id, uint32_t loop_merge_id) {
   // To find the "first" exit, we follow branches looking for a conditional
   // branch that is not in a nested construct and is not the header of a new
   // construct.  We follow the control flow from |start_block_id| to find the
@@ -446,14 +450,73 @@ Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
     uint32_t next_block_id = 0;
     switch (branch->opcode()) {
       case SpvOpBranchConditional:
+        next_block_id = start_block->MergeBlockIdIfAny();
+        if (next_block_id == 0) {
+          // If a possible target is the |loop_merge_id|, which is not the
+          // current merge node, then we have to continue the search with the
+          // other target.
+          for (uint32_t i = 1; i < 3; i++) {
+            if (branch->GetSingleWordInOperand(i) == loop_merge_id &&
+                loop_merge_id != merge_block_id) {
+              next_block_id = branch->GetSingleWordInOperand(3 - i);
+              break;
+            }
+          }
+
+          if (next_block_id == 0) {
+            return branch;
+          }
+        }
+        break;
       case SpvOpSwitch:
         next_block_id = start_block->MergeBlockIdIfAny();
         if (next_block_id == 0) {
-          return branch;
+          // A switch with no merge instructions can have at most 3 targets:
+          //   a. merge_block_id
+          //   b. loop_merge_id
+          //   c. 1 block inside the current region.
+          //
+          // This leads to a number of cases of what to do.
+          //
+          // 1. Does not jump to a block inside of the current construct.  In
+          // this case, there is not conditional break, so we should return
+          // |nullptr|.
+          //
+          // 2. Jumps to |merge_block_id| and a block inside the current
+          // construct.  In this case, this branch conditionally break to the
+          // end of the current construct, so return the current branch.
+          //
+          // 3.  Otherwise, this branch may break, but not to the current merge
+          // block.  So we continue with the block that is inside the loop.
+
+          bool found_break = false;
+          for (uint32_t i = 1; i < branch->NumInOperands(); i += 2) {
+            uint32_t target = branch->GetSingleWordInOperand(i);
+            if (target == merge_block_id) {
+              found_break = true;
+            } else if (target != loop_merge_id) {
+              next_block_id = branch->GetSingleWordInOperand(i);
+            }
+          }
+
+          if (next_block_id == 0) {
+            // Case 1.
+            return nullptr;
+          }
+
+          if (found_break) {
+            // Case 2.
+            return branch;
+          }
+
+          // The fall through is case 3.
         }
         break;
       case SpvOpBranch:
         next_block_id = branch->GetSingleWordInOperand(0);
+        if (next_block_id == loop_merge_id) {
+          return nullptr;
+        }
         break;
       default:
         return nullptr;
