@@ -50,7 +50,7 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
   const auto member = inst->GetOperandAs<uint32_t>(1);
   const auto member_count =
       static_cast<uint32_t>(struct_type->words().size() - 2);
-  if (member_count < member) {
+  if (member_count <= member) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Index " << member
            << " provided in OpMemberDecorate for struct <id> "

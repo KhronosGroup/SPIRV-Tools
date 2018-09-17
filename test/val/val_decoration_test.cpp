@@ -85,6 +85,29 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
                                  Decoration(SpvDecorationBufferBlock)}));
 }
 
+TEST_F(ValidateDecorations, ValidateOpMemberDecorateOutOfBound) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "Main"
+               OpMemberDecorate %_struct_2 1 RelaxedPrecision
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+  %_struct_2 = OpTypeStruct %float
+          %1 = OpFunction %void None %4
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index 1 provided in OpMemberDecorate for struct <id> "
+                        "2 is out of bounds. The structure has 1 members. "
+                        "Largest valid index is 0."));
+}
+
 TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
   std::string spirv = R"(
                OpCapability Shader
