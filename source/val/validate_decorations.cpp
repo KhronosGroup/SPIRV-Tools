@@ -860,7 +860,7 @@ spv_result_t CheckVulkanMemoryModelDeprecatedDecorations(
           str << " (member index " << member << ")";
         }
         str << " is banned when using the Vulkan memory model.";
-        return vstate.diag(SPV_ERROR_INVALID_ID) << str.str();
+        return vstate.diag(SPV_ERROR_INVALID_ID, inst) << str.str();
       }
     }
   }
