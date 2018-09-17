@@ -163,7 +163,10 @@ Contributions via merge request are welcome. Changes should:
   other contribution to GitHub.
 * Include tests to cover updated functionality.
 * C++ code should follow the [Google C++ Style Guide][cpp-style-guide].
-* Code should be formatted with `clang-format`.  Settings are defined by
+* Code should be formatted with `clang-format`.
+  [kokoro/check-format/build.sh](kokoro/check-format/build.sh)
+  shows how to download it. Note that we currently use
+  `clang-format version 5.0.0` for SPIRV-Tools. Settings are defined by
   the included [.clang-format](.clang-format) file.
 
 We intend to maintain a linear history on the GitHub `master` branch.
