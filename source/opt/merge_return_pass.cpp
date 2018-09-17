@@ -654,9 +654,7 @@ BasicBlock* MergeReturnPass::CreateContinueTarget(uint32_t header_label_id) {
   return new_block;
 }
 
-void MergeReturnPass::CreateDummyLoop(
-
-    BasicBlock* merge_target) {
+void MergeReturnPass::CreateDummyLoop(BasicBlock* merge_target) {
   std::unique_ptr<Instruction> label(
       new Instruction(context(), SpvOpLabel, 0u, TakeNextId(), {}));
 

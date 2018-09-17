@@ -200,7 +200,6 @@ BasicBlock* CFG::SplitLoopHeader(BasicBlock* bb) {
   BasicBlock* new_header =
       bb->SplitBasicBlock(context, context->TakeNextId(), iter);
 
-  // Insert the new bb in the correct position
   uint32_t new_header_id = new_header->id();
   context->AnalyzeDefUse(new_header->GetLabelInst());
 
