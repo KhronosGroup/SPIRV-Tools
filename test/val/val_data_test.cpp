@@ -614,11 +614,24 @@ TEST_F(ValidateData, ext_16bit_storage_caps_allow_free_fp_rounding_mode) {
         OpCapability Linkage
         OpCapability )") +
                         cap + R"(
+        OpExtension "SPV_KHR_storage_buffer_storage_class"
+        OpExtension "SPV_KHR_variable_pointers"
         OpExtension "SPV_KHR_16bit_storage"
         OpMemoryModel Logical GLSL450
-        OpDecorate %2 FPRoundingMode )" + mode + R"(
-        %1 = OpTypeFloat 32
-        %2 = OpConstant %1 1.25
+        OpDecorate %_ FPRoundingMode )" + mode + R"(
+        %half = OpTypeFloat 16
+        %float = OpTypeFloat 32
+        %float_1_25 = OpConstant %float 1.25
+        %half_ptr = OpTypePointer StorageBuffer %half
+        %half_ptr_var = OpVariable %half_ptr StorageBuffer
+        %void = OpTypeVoid
+        %func = OpTypeFunction %void
+        %main = OpFunction %void None %func
+        %main_entry = OpLabel
+        %_ = OpFConvert %half %float_1_25
+        OpStore %half_ptr_var %_
+        OpReturn
+        OpFunctionEnd
       )";
       CompileSuccessfully(str.c_str());
       ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -631,11 +644,24 @@ TEST_F(ValidateData, vulkan_disallow_free_fp_rounding_mode) {
     for (const auto env : {SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1}) {
       std::string str = std::string(R"(
         OpCapability Shader
+        OpExtension "SPV_KHR_storage_buffer_storage_class"
+        OpExtension "SPV_KHR_variable_pointers"
         OpMemoryModel Logical GLSL450
-        OpDecorate %2 FPRoundingMode )") +
+        OpDecorate %_ FPRoundingMode )") +
                         mode + R"(
-        %1 = OpTypeFloat 32
-        %2 = OpConstant %1 1.25
+        %half = OpTypeFloat 16
+        %float = OpTypeFloat 32
+        %float_1_25 = OpConstant %float 1.25
+        %half_ptr = OpTypePointer StorageBuffer %half
+        %half_ptr_var = OpVariable %half_ptr StorageBuffer
+        %void = OpTypeVoid
+        %func = OpTypeFunction %void
+        %main = OpFunction %void None %func
+        %main_entry = OpLabel
+        %_ = OpFConvert %half %float_1_25
+        OpStore %half_ptr_var %_
+        OpReturn
+        OpFunctionEnd
       )";
       CompileSuccessfully(str.c_str());
       ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions(env));
