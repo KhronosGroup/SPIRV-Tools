@@ -2195,8 +2195,8 @@ OpFunctionEnd
 }
 
 TEST_F(DeadBranchElimTest, SelectionMergeWithConditionalExit) {
-  // Checks  that if a selection merge construct contains a conditional branch
-  // to a loop surrounding the selection merge.
+  // Checks that if a selection merge construct contains a conditional branch
+  // to the merge node, then we keep the OpSelectionMerge on that branch.
   const std::string predefs = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -2256,7 +2256,8 @@ OpFunctionEnd
 
 TEST_F(DeadBranchElimTest, SelectionMergeWithExitToLoop) {
   // Checks  that if a selection merge construct contains a conditional branch
-  // to a loop surrounding the selection merge.
+  // to a loop surrounding the selection merge, then we do not keep the
+  // OpSelectionMerge instruction.
   const std::string predefs = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -2313,8 +2314,9 @@ OpFunctionEnd
 }
 
 TEST_F(DeadBranchElimTest, SelectionMergeWithExitToLoop2) {
-  // Checks  that if a selection merge construct contains a conditional branch
-  // to a loop surrounding the selection merge.
+  // Same as |SelectionMergeWithExitToLoop|, except the swith goes to the loop
+  // merge or the selection merge.  In this case, we do not need an
+  // OpSelectionMerge either.
   const std::string predefs = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -2367,8 +2369,10 @@ OpFunctionEnd
 }
 
 TEST_F(DeadBranchElimTest, SelectionMergeWithExitToLoop3) {
-  // Checks  that if a selection merge construct contains a conditional branch
-  // to a loop surrounding the selection merge.
+  // Checks that if a selection merge construct contains a conditional branch
+  // to the merge of a surrounding loop, the selection merge, and another block
+  // inside the selection merge, then we must keep the OpSelectionMerge
+  // instruction on that branch.
   const std::string predefs = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -2427,8 +2431,9 @@ OpFunctionEnd
 }
 
 TEST_F(DeadBranchElimTest, SelectionMergeWithExitToLoop4) {
-  // Checks  that if a selection merge construct contains a conditional branch
-  // to a loop surrounding the selection merge.
+  // Same as |SelectionMergeWithExitToLoop|, execept the branch in the selection
+  // construct is an |OpSwitch| instead of an |OpConditionalBranch|.  The
+  // OpSelectionMerge instruction is not needed in this case either.
   const std::string predefs = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
