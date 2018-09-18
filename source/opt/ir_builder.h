@@ -71,6 +71,20 @@ class InstructionBuilder {
     return AddInstruction(std::move(new_branch_merge));
   }
 
+  // Creates a new loop merge instruction.
+  // The id |merge_id| is the basic block id of the merge block.
+  // |continue_id| is the id of the continue block.
+  // |loop_control| are the loop control flags to be added to the instruction.
+  Instruction* AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
+                            uint32_t loop_control = SpvLoopControlMaskNone) {
+    std::unique_ptr<Instruction> new_branch_merge(new Instruction(
+        GetContext(), SpvOpLoopMerge, 0, 0,
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {merge_id}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {continue_id}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_LOOP_CONTROL, {loop_control}}}));
+    return AddInstruction(std::move(new_branch_merge));
+  }
+
   // Creates a new branch instruction to |label_id|.
   // Note that the user must make sure the final basic block is
   // well formed.

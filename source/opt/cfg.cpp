@@ -197,14 +197,9 @@ BasicBlock* CFG::SplitLoopHeader(BasicBlock* bb) {
     ++iter;
   }
 
-  std::unique_ptr<BasicBlock> newBlock(
-      bb->SplitBasicBlock(context, context->TakeNextId(), iter));
+  BasicBlock* new_header =
+      bb->SplitBasicBlock(context, context->TakeNextId(), iter);
 
-  // Insert the new bb in the correct position
-  auto insert_pos = header_it;
-  ++insert_pos;
-  BasicBlock* new_header = &*insert_pos.InsertBefore(std::move(newBlock));
-  new_header->SetParent(fn);
   uint32_t new_header_id = new_header->id();
   context->AnalyzeDefUse(new_header->GetLabelInst());
 
