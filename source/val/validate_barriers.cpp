@@ -148,14 +148,15 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
 
   if (_.memory_model() == SpvMemoryModelVulkanKHR &&
       value & SpvMemorySemanticsSequentiallyConsistentMask) {
-    return _.diag(SPV_ERROR_INVALID_DATA) << "SequentiallyConsistent memory "
-                                             "semantics cannot be used with "
-                                             "the VulkanKHR memory model.";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "SequentiallyConsistent memory "
+              "semantics cannot be used with "
+              "the VulkanKHR memory model.";
   }
 
   if (value & SpvMemorySemanticsOutputMemoryKHRMask &&
       !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": Memory Semantics OutputMemoryKHR requires capability "
            << "VulkanMemoryModelKHR";
@@ -163,7 +164,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
 
   if (value & SpvMemorySemanticsMakeAvailableKHRMask &&
       !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": Memory Semantics MakeAvailableKHR requires capability "
            << "VulkanMemoryModelKHR";
@@ -171,7 +172,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
 
   if (value & SpvMemorySemanticsMakeVisibleKHRMask &&
       !_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": Memory Semantics MakeVisibleKHR requires capability "
            << "VulkanMemoryModelKHR";
@@ -192,7 +193,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   if (value & SpvMemorySemanticsMakeAvailableKHRMask &&
       !(value & (SpvMemorySemanticsReleaseMask |
                  SpvMemorySemanticsAcquireReleaseMask))) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": MakeAvailableKHR Memory Semantics also requires either "
               "Release or AcquireRelease Memory Semantics";
@@ -201,7 +202,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   if (value & SpvMemorySemanticsMakeVisibleKHRMask &&
       !(value & (SpvMemorySemanticsAcquireMask |
                  SpvMemorySemanticsAcquireReleaseMask))) {
-    return _.diag(SPV_ERROR_INVALID_DATA)
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": MakeVisibleKHR Memory Semantics also requires either Acquire "
               "or AcquireRelease Memory Semantics";
@@ -252,7 +253,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
                  SpvMemorySemanticsOutputMemoryKHRMask);
 
     if (!includes_storage_class) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << spvOpcodeString(opcode)
              << ": expected Memory Semantics to include a storage class";
     }
