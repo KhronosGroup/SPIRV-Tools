@@ -3041,7 +3041,7 @@ TEST_F(ValidateImage, QuerySizeLodWrongLodType) {
 
 TEST_F(ValidateImage, QuerySizeSuccess) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%img = OpLoad %type_image_f32_2d_0010 %uniform_image_f32_2d_0010
 %res1 = OpImageQuerySize %u32vec2 %img
 )";
 
@@ -3051,7 +3051,7 @@ TEST_F(ValidateImage, QuerySizeSuccess) {
 
 TEST_F(ValidateImage, QuerySizeWrongResultType) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%img = OpLoad %type_image_f32_2d_0010 %uniform_image_f32_2d_0010
 %res1 = OpImageQuerySize %f32vec2 %img
 )";
 
@@ -3064,7 +3064,7 @@ TEST_F(ValidateImage, QuerySizeWrongResultType) {
 
 TEST_F(ValidateImage, QuerySizeNotImage) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%img = OpLoad %type_image_f32_2d_0010 %uniform_image_f32_2d_0010
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageQuerySize %u32vec2 %simg
@@ -3076,7 +3076,43 @@ TEST_F(ValidateImage, QuerySizeNotImage) {
               HasSubstr("Expected Image to be of type OpTypeImage"));
 }
 
-// TODO(atgoo@github.com) Add more tests for OpQuerySize.
+TEST_F(ValidateImage, QuerySizeDimSubpassDataBad) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_spd_0002 %uniform_image_f32_spd_0002
+%res1 = OpImageQuerySize %u32vec2 %img
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Image 'Dim' must be 1D, Buffer, 2D, Cube, 3D or Rect"));
+}
+
+TEST_F(ValidateImage, QuerySizeWrongSampling) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%res1 = OpImageQuerySize %u32vec2 %img
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Image must have either 'MS'=1 or 'Sampled'=0 or 'Sampled'=2"));
+}
+
+TEST_F(ValidateImage, QuerySizeWrongNumberOfComponents) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
+%res1 = OpImageQuerySize %u32vec2 %img
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result Type has 2 components, but 4 expected"));
+}
 
 TEST_F(ValidateImage, QueryLodSuccessKernel) {
   const std::string body = R"(
