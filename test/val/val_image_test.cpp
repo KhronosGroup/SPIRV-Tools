@@ -613,9 +613,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodWrongResultType) {
@@ -733,9 +733,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodSuccessKernel) {
@@ -1318,9 +1318,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodSuccessRect) {
@@ -1452,9 +1452,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SampleProjImplicitLodWrongResultType) {
@@ -1573,9 +1573,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodWrongResultType) {
@@ -1696,9 +1696,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodWrongResultType) {
@@ -1820,9 +1820,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongResultType) {
@@ -1943,9 +1943,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodWrongResultType) {
@@ -2036,7 +2036,7 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodCoordinateSizeTooSmall) {
 
 TEST_F(ValidateImage, FetchSuccess) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%img = OpLoad %type_image_f32_1d_0001 %uniform_image_f32_1d_0001
 %res1 = OpImageFetch %f32vec4 %img %u32vec2_01
 %res2 = OpImageFetch %f32vec4 %img %u32vec2_01 NonPrivateTexelKHR
 )";
@@ -2046,9 +2046,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, FetchWrongResultType) {
@@ -2190,9 +2190,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, GatherWrongResultType) {
@@ -2446,9 +2446,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, DrefGatherVoidSampledType) {
@@ -3425,9 +3425,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SparseSampleImplicitLodResultTypeNotStruct) {
@@ -3553,9 +3553,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SparseSampleDrefImplicitLodResultTypeNotStruct) {
@@ -3637,7 +3637,7 @@ TEST_F(ValidateImage, SparseSampleDrefImplicitLodDifferentSampledType) {
 
 TEST_F(ValidateImage, SparseFetchSuccess) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
+%img = OpLoad %type_image_f32_1d_0001 %uniform_image_f32_1d_0001
 %res1 = OpImageSparseFetch %struct_u32_f32vec4 %img %u32vec2_01
 %res2 = OpImageSparseFetch %struct_u32_f32vec4 %img %u32vec2_01 NonPrivateTexelKHR
 )";
@@ -3647,9 +3647,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SparseFetchResultTypeNotStruct) {
@@ -3864,9 +3864,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, SparseGatherResultTypeNotStruct) {
@@ -4005,9 +4005,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, MakeTexelVisibleKHRSuccessImageSparseRead) {
@@ -4022,9 +4022,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, MakeTexelVisibleKHRFailureOpcode) {
@@ -4041,9 +4041,10 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Image Operand MakeTexelVisibleKHR can only be used with "
@@ -4062,9 +4063,10 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand MakeTexelVisibleKHR requires "
                         "NonPrivateTexelKHR is also specified: OpImageRead"));
@@ -4082,9 +4084,9 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateImage, MakeTexelAvailableKHRFailureOpcode) {
@@ -4101,9 +4103,10 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand MakeTexelAvailableKHR can only be used "
                         "with OpImageWrite: OpImageSampleImplicitLod"));
@@ -4121,9 +4124,10 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
   CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment",
-                                         SPV_ENV_UNIVERSAL_1_0, "VulkanKHR")
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
                           .c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand MakeTexelAvailableKHR requires "
                         "NonPrivateTexelKHR is also specified: OpImageWrite"));
