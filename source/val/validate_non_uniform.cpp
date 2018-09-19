@@ -63,6 +63,27 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateGroupNonUniformBallotBitCount(ValidationState_t& _,
+                                                   const Instruction* inst) {
+  // Scope is already checked by ValidateExecutionScope() above.
+
+  const uint32_t result_type = inst->type_id();
+  if (!_.IsUnsignedIntScalarType(result_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Result Type to be an unsigned integer type scalar.";
+  }
+
+  const auto value = inst->GetOperandAs<uint32_t>(4);
+  const auto value_type = _.FindDef(value)->type_id();
+  if (!_.IsUnsignedIntVectorType(value_type) ||
+      _.GetDimension(value_type) != 4) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Expected Value to be a "
+                                                   "vector of four components "
+                                                   "of integer type scalar";
+  }
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 // Validates correctness of non-uniform group instructions.
@@ -74,6 +95,13 @@ spv_result_t NonUniformPass(ValidationState_t& _, const Instruction* inst) {
     if (auto error = ValidateExecutionScope(_, inst, execution_scope)) {
       return error;
     }
+  }
+
+  switch (opcode) {
+    case SpvOpGroupNonUniformBallotBitCount:
+      return ValidateGroupNonUniformBallotBitCount(_, inst);
+    default:
+      break;
   }
 
   return SPV_SUCCESS;
