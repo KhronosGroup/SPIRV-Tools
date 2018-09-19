@@ -564,14 +564,14 @@ bool UpgradeMemoryModel::IsDeviceScope(uint32_t scope_id) {
   assert(type->width() == 32 || type->width() == 64);
   if (type->width() == 32) {
     if (type->IsSigned())
-      return constant->GetS32() == SpvScopeDevice;
+      return static_cast<uint32_t>(constant->GetS32()) == SpvScopeDevice;
     else
-      return constant->GetU32() == SpvScopeDevice;
+      return static_cast<uint32_t>(constant->GetU32()) == SpvScopeDevice;
   } else {
     if (type->IsSigned())
-      return constant->GetS64() == SpvScopeDevice;
+      return static_cast<uint32_t>(constant->GetS64()) == SpvScopeDevice;
     else
-      return constant->GetU64() == SpvScopeDevice;
+      return static_cast<uint32_t>(constant->GetU64()) == SpvScopeDevice;
   }
 
   assert(false);
