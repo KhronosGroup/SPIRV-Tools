@@ -768,6 +768,7 @@ Optimizer::PassToken CreateReduceLoadSizePass() {
 Optimizer::PassToken CreateCombineAccessChainsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CombineAccessChains>());
+}
 
 Optimizer::PassToken CreateUpgradeMemoryModelPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(

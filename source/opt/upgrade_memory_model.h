@@ -43,7 +43,7 @@ struct CacheHash {
 class UpgradeMemoryModel : public Pass {
  public:
   const char* name() const override { return "upgrade-memory-model"; }
-  Status Process(ir::IRContext* context) override;
+  Status Process() override;
 
  private:
   // Used to indicate whether the operation performs an availability or
@@ -68,7 +68,7 @@ class UpgradeMemoryModel : public Pass {
 
   // Traces |inst| to determine if it is coherent and/or volatile.
   // |indices| tracks the access chain indices seen so far.
-  std::pair<bool, bool> TraceInstruction(ir::Instruction* inst,
+  std::pair<bool, bool> TraceInstruction(Instruction* inst,
                                          std::vector<uint32_t> indices,
                                          std::unordered_set<uint32_t>* visited);
 
@@ -76,7 +76,7 @@ class UpgradeMemoryModel : public Pass {
   // If |inst| is decorated by member decorations then either |value| must
   // match the index or |value| must be a maximum allowable value. The max
   // value allows any element to match.
-  bool HasDecoration(const ir::Instruction* inst, uint32_t value,
+  bool HasDecoration(const Instruction* inst, uint32_t value,
                      SpvDecoration decoration);
 
   // Returns whether |type_id| indexed via |indices| is coherent and/or
@@ -85,22 +85,22 @@ class UpgradeMemoryModel : public Pass {
                                   const std::vector<uint32_t>& indices);
 
   // Returns whether any type/element under |inst| is coherent and/or volatile.
-  std::pair<bool, bool> CheckAllTypes(const ir::Instruction* inst);
+  std::pair<bool, bool> CheckAllTypes(const Instruction* inst);
 
   // Modifies the flags of |inst| to include the new flags for the Vulkan
   // memory model. |operation_type| indicates whether flags should use
   // MakeVisible or MakeAvailable variants. |inst_type| indicates whether the
   // Pointer or Texel variants of flags should be used.
-  void UpgradeFlags(ir::Instruction* inst, uint32_t in_operand,
-                    bool is_coherent, bool is_volatile,
-                    OperationType operation_type, InstructionType inst_type);
+  void UpgradeFlags(Instruction* inst, uint32_t in_operand, bool is_coherent,
+                    bool is_volatile, OperationType operation_type,
+                    InstructionType inst_type);
 
   // Returns the result id for a constant for |scope|.
   uint32_t GetScopeConstant(SpvScope scope);
 
   // Returns the value of |index_inst|. |index_inst| must be an OpConstant of
   // integer type.g
-  uint64_t GetIndexValue(ir::Instruction* index_inst);
+  uint64_t GetIndexValue(Instruction* index_inst);
 
   // Removes coherent and volatile decorations.
   void CleanupDecorations();
@@ -109,6 +109,14 @@ class UpgradeMemoryModel : public Pass {
   // Output storage class, then all barriers are modified to include the
   // OutputMemoryKHR semantic.
   void UpgradeBarriers();
+
+  // If the Vulkan memory model is specified, device scope actually means
+  // device scope. The memory scope must be modified to be QueueFamilyKHR
+  // scope.
+  void UpgradeMemoryScope();
+
+  // Returns true if |scope_id| is SpvScopeDevice.
+  bool IsDeviceScope(uint32_t scope_id);
 
   // Caches the result of TraceInstruction. For a given result id and set of
   // indices, stores whether that combination is coherent and/or volatile.

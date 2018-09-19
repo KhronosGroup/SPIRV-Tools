@@ -14,18 +14,16 @@
 
 #include "upgrade_memory_model.h"
 
-#include "make_unique.h"
+#include "source/util/make_unique.h"
 
 #include <utility>
 
 namespace spvtools {
 namespace opt {
 
-Pass::Status UpgradeMemoryModel::Process(ir::IRContext* context) {
-  InitializeProcessing(context);
-
+Pass::Status UpgradeMemoryModel::Process() {
   // Only update Logical GLSL450 to Logical VulkanKHR.
-  ir::Instruction* memory_model = get_module()->GetMemoryModel();
+  Instruction* memory_model = get_module()->GetMemoryModel();
   if (memory_model->GetSingleWordInOperand(0u) != SpvAddressingModelLogical ||
       memory_model->GetSingleWordInOperand(1u) != SpvMemoryModelGLSL450) {
     return Pass::Status::SuccessWithoutChange;
@@ -35,6 +33,7 @@ Pass::Status UpgradeMemoryModel::Process(ir::IRContext* context) {
   UpgradeInstructions();
   CleanupDecorations();
   UpgradeBarriers();
+  UpgradeMemoryScope();
 
   return Pass::Status::SuccessWithChange;
 }
@@ -44,19 +43,19 @@ void UpgradeMemoryModel::UpgradeMemoryModelInstruction() {
   // 1. Add the OpExtension.
   // 2. Add the OpCapability.
   // 3. Modify the memory model.
-  ir::Instruction* memory_model = get_module()->GetMemoryModel();
-  get_module()->AddCapability(MakeUnique<ir::Instruction>(
+  Instruction* memory_model = get_module()->GetMemoryModel();
+  get_module()->AddCapability(MakeUnique<Instruction>(
       context(), SpvOpCapability, 0, 0,
-      std::initializer_list<ir::Operand>{
+      std::initializer_list<Operand>{
           {SPV_OPERAND_TYPE_CAPABILITY, {SpvCapabilityVulkanMemoryModelKHR}}}));
   const std::string extension = "SPV_KHR_vulkan_memory_model";
   std::vector<uint32_t> words(extension.size() / 4 + 1, 0);
   char* dst = reinterpret_cast<char*>(words.data());
   strncpy(dst, extension.c_str(), extension.size());
-  get_module()->AddExtension(MakeUnique<ir::Instruction>(
-      context(), SpvOpExtension, 0, 0,
-      std::initializer_list<ir::Operand>{
-          {SPV_OPERAND_TYPE_LITERAL_STRING, words}}));
+  get_module()->AddExtension(
+      MakeUnique<Instruction>(context(), SpvOpExtension, 0, 0,
+                              std::initializer_list<Operand>{
+                                  {SPV_OPERAND_TYPE_LITERAL_STRING, words}}));
   memory_model->SetInOperand(1u, {SpvMemoryModelVulkanKHR});
 }
 
@@ -69,16 +68,16 @@ void UpgradeMemoryModel::UpgradeInstructions() {
   // parameters are implicitly coherent in GLSL450.
 
   for (auto& func : *get_module()) {
-    func.ForEachInst([this](ir::Instruction* inst) {
+    func.ForEachInst([this](Instruction* inst) {
       bool is_coherent = false;
       bool is_volatile = false;
       bool src_coherent = false;
       bool src_volatile = false;
       bool dst_coherent = false;
       bool dst_volatile = false;
-      SpvScope scope = SpvScopeDevice;
-      SpvScope src_scope = SpvScopeDevice;
-      SpvScope dst_scope = SpvScopeDevice;
+      SpvScope scope = SpvScopeQueueFamilyKHR;
+      SpvScope src_scope = SpvScopeQueueFamilyKHR;
+      SpvScope dst_scope = SpvScopeQueueFamilyKHR;
       switch (inst->opcode()) {
         case SpvOpLoad:
         case SpvOpStore:
@@ -162,7 +161,7 @@ std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
   // that pointer points to volatile or coherent memory. Workgroup storage
   // class is implicitly coherent and cannot be decorated with volatile, so
   // short circuit that case.
-  ir::Instruction* inst = context()->get_def_use_mgr()->GetDef(id);
+  Instruction* inst = context()->get_def_use_mgr()->GetDef(id);
   analysis::Type* type = context()->get_type_mgr()->GetType(inst->type_id());
   if (type->AsPointer() &&
       type->AsPointer()->storage_class() == SpvStorageClassWorkgroup) {
@@ -176,11 +175,11 @@ std::tuple<bool, bool, SpvScope> UpgradeMemoryModel::GetInstructionAttributes(
       TraceInstruction(context()->get_def_use_mgr()->GetDef(id),
                        std::vector<uint32_t>(), &visited);
 
-  return std::make_tuple(is_coherent, is_volatile, SpvScopeDevice);
+  return std::make_tuple(is_coherent, is_volatile, SpvScopeQueueFamilyKHR);
 }
 
 std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
-    ir::Instruction* inst, std::vector<uint32_t> indices,
+    Instruction* inst, std::vector<uint32_t> indices,
     std::unordered_set<uint32_t>* visited) {
   auto iter = cache_.find(std::make_pair(inst->result_id(), indices));
   if (iter != cache_.end()) {
@@ -242,7 +241,7 @@ std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
       inst->opcode() != SpvOpFunctionParameter) {
     inst->ForEachInId([this, &is_coherent, &is_volatile, &indices,
                        &visited](const uint32_t* id_ptr) {
-      ir::Instruction* op_inst = context()->get_def_use_mgr()->GetDef(*id_ptr);
+      Instruction* op_inst = context()->get_def_use_mgr()->GetDef(*id_ptr);
       const analysis::Type* type =
           context()->get_type_mgr()->GetType(op_inst->type_id());
       if (type &&
@@ -266,9 +265,9 @@ std::pair<bool, bool> UpgradeMemoryModel::CheckType(
     uint32_t type_id, const std::vector<uint32_t>& indices) {
   bool is_coherent = false;
   bool is_volatile = false;
-  ir::Instruction* type_inst = context()->get_def_use_mgr()->GetDef(type_id);
+  Instruction* type_inst = context()->get_def_use_mgr()->GetDef(type_id);
   assert(type_inst->opcode() == SpvOpTypePointer);
-  ir::Instruction* element_inst = context()->get_def_use_mgr()->GetDef(
+  Instruction* element_inst = context()->get_def_use_mgr()->GetDef(
       type_inst->GetSingleWordInOperand(1u));
   for (int i = (int)indices.size() - 1; i >= 0; --i) {
     if (is_coherent && is_volatile) break;
@@ -278,7 +277,7 @@ std::pair<bool, bool> UpgradeMemoryModel::CheckType(
           element_inst->GetSingleWordInOperand(1u));
     } else if (element_inst->opcode() == SpvOpTypeStruct) {
       uint32_t index = indices.at(i);
-      ir::Instruction* index_inst = context()->get_def_use_mgr()->GetDef(index);
+      Instruction* index_inst = context()->get_def_use_mgr()->GetDef(index);
       assert(index_inst->opcode() == SpvOpConstant);
       uint64_t value = GetIndexValue(index_inst);
       is_coherent |= HasDecoration(element_inst, static_cast<uint32_t>(value),
@@ -307,15 +306,15 @@ std::pair<bool, bool> UpgradeMemoryModel::CheckType(
 }
 
 std::pair<bool, bool> UpgradeMemoryModel::CheckAllTypes(
-    const ir::Instruction* inst) {
-  std::unordered_set<const ir::Instruction*> visited;
-  std::vector<const ir::Instruction*> stack;
+    const Instruction* inst) {
+  std::unordered_set<const Instruction*> visited;
+  std::vector<const Instruction*> stack;
   stack.push_back(inst);
 
   bool is_coherent = false;
   bool is_volatile = false;
   while (!stack.empty()) {
-    const ir::Instruction* def = stack.back();
+    const Instruction* def = stack.back();
     stack.pop_back();
 
     if (!visited.insert(def).second) continue;
@@ -347,7 +346,7 @@ std::pair<bool, bool> UpgradeMemoryModel::CheckAllTypes(
   return std::make_pair(is_coherent, is_volatile);
 }
 
-uint64_t UpgradeMemoryModel::GetIndexValue(ir::Instruction* index_inst) {
+uint64_t UpgradeMemoryModel::GetIndexValue(Instruction* index_inst) {
   const analysis::Constant* index_constant =
       context()->get_constant_mgr()->GetConstantFromInst(index_inst);
   assert(index_constant->AsIntConstant());
@@ -366,13 +365,12 @@ uint64_t UpgradeMemoryModel::GetIndexValue(ir::Instruction* index_inst) {
   }
 }
 
-bool UpgradeMemoryModel::HasDecoration(const ir::Instruction* inst,
-                                       uint32_t value,
+bool UpgradeMemoryModel::HasDecoration(const Instruction* inst, uint32_t value,
                                        SpvDecoration decoration) {
   // If the iteration was terminated early then an appropriate decoration was
   // found.
   return !context()->get_decoration_mgr()->WhileEachDecoration(
-      inst->result_id(), decoration, [value](const ir::Instruction& i) {
+      inst->result_id(), decoration, [value](const Instruction& i) {
         if (i.opcode() == SpvOpDecorate || i.opcode() == SpvOpDecorateId) {
           return false;
         } else if (i.opcode() == SpvOpMemberDecorate) {
@@ -385,9 +383,8 @@ bool UpgradeMemoryModel::HasDecoration(const ir::Instruction* inst,
       });
 }
 
-void UpgradeMemoryModel::UpgradeFlags(ir::Instruction* inst,
-                                      uint32_t in_operand, bool is_coherent,
-                                      bool is_volatile,
+void UpgradeMemoryModel::UpgradeFlags(Instruction* inst, uint32_t in_operand,
+                                      bool is_coherent, bool is_volatile,
                                       OperationType operation_type,
                                       InstructionType inst_type) {
   if (!is_coherent && !is_volatile) return;
@@ -446,10 +443,10 @@ uint32_t UpgradeMemoryModel::GetScopeConstant(SpvScope scope) {
 void UpgradeMemoryModel::CleanupDecorations() {
   // All of the volatile and coherent decorations have been dealt with, so now
   // we can just remove them.
-  get_module()->ForEachInst([this](ir::Instruction* inst) {
+  get_module()->ForEachInst([this](Instruction* inst) {
     if (inst->result_id() != 0) {
       context()->get_decoration_mgr()->RemoveDecorationsFrom(
-          inst->result_id(), [](const ir::Instruction& dec) {
+          inst->result_id(), [](const Instruction& dec) {
             switch (dec.opcode()) {
               case SpvOpDecorate:
               case SpvOpDecorateId:
@@ -473,17 +470,17 @@ void UpgradeMemoryModel::CleanupDecorations() {
 
 void UpgradeMemoryModel::UpgradeBarriers() {
   // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function;
+  std::unordered_map<uint32_t, Function*> id2function;
   for (auto& fn : *get_module()) id2function[fn.result_id()] = &fn;
 
-  std::vector<ir::Instruction*> barriers;
+  std::vector<Instruction*> barriers;
   // Collects all the control barriers in |function|. Returns true if the
   // function operates on the Output storage class.
-  ProcessFunction CollectBarriers = [this, &barriers](ir::Function* function) {
+  ProcessFunction CollectBarriers = [this, &barriers](Function* function) {
     bool operates_on_output = false;
     for (auto& block : *function) {
       block.ForEachInst([this, &barriers,
-                         &operates_on_output](ir::Instruction* inst) {
+                         &operates_on_output](Instruction* inst) {
         if (inst->opcode() == SpvOpControlBarrier) {
           barriers.push_back(inst);
         } else if (!operates_on_output) {
@@ -498,7 +495,7 @@ void UpgradeMemoryModel::UpgradeBarriers() {
             return;
           }
           inst->ForEachInId([this, &operates_on_output](uint32_t* id_ptr) {
-            ir::Instruction* op_inst =
+            Instruction* op_inst =
                 context()->get_def_use_mgr()->GetDef(*id_ptr);
             analysis::Type* op_type =
                 context()->get_type_mgr()->GetType(op_inst->type_id());
@@ -520,7 +517,7 @@ void UpgradeMemoryModel::UpgradeBarriers() {
         for (auto barrier : barriers) {
           // Add OutputMemoryKHR to the semantics of the barriers.
           uint32_t semantics_id = barrier->GetSingleWordInOperand(2u);
-          ir::Instruction* semantics_inst =
+          Instruction* semantics_inst =
               context()->get_def_use_mgr()->GetDef(semantics_id);
           analysis::Type* semantics_type =
               context()->get_type_mgr()->GetType(semantics_inst->type_id());
@@ -537,6 +534,48 @@ void UpgradeMemoryModel::UpgradeBarriers() {
       }
       barriers.clear();
     }
+}
+
+void UpgradeMemoryModel::UpgradeMemoryScope() {
+  get_module()->ForEachInst([this](Instruction* inst) {
+    if (spvOpcodeIsAtomicOp(inst->opcode())) {
+      if (IsDeviceScope(inst->GetSingleWordInOperand(1))) {
+        inst->SetInOperand(1, {GetScopeConstant(SpvScopeQueueFamilyKHR)});
+      }
+    } else if (inst->opcode() == SpvOpControlBarrier) {
+      if (IsDeviceScope(inst->GetSingleWordInOperand(1))) {
+        inst->SetInOperand(1, {GetScopeConstant(SpvScopeQueueFamilyKHR)});
+      }
+    } else if (inst->opcode() == SpvOpMemoryBarrier) {
+      if (IsDeviceScope(inst->GetSingleWordInOperand(0))) {
+        inst->SetInOperand(0, {GetScopeConstant(SpvScopeQueueFamilyKHR)});
+      }
+    }
+  });
+}
+
+bool UpgradeMemoryModel::IsDeviceScope(uint32_t scope_id) {
+  const analysis::Constant* constant =
+      context()->get_constant_mgr()->FindDeclaredConstant(scope_id);
+  assert(constant && "Memory scope must be a constant");
+
+  const analysis::Integer* type = constant->type()->AsInteger();
+  assert(type);
+  assert(type->width() == 32 || type->width() == 64);
+  if (type->width() == 32) {
+    if (type->IsSigned())
+      return constant->GetS32() == SpvScopeDevice;
+    else
+      return constant->GetU32() == SpvScopeDevice;
+  } else {
+    if (type->IsSigned())
+      return constant->GetS64() == SpvScopeDevice;
+    else
+      return constant->GetU64() == SpvScopeDevice;
+  }
+
+  assert(false);
+  return false;
 }
 
 }  // namespace opt
