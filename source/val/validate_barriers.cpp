@@ -206,7 +206,9 @@ spv_result_t BarriersPass(ValidationState_t& _, const Instruction* inst) {
                 [](SpvExecutionModel model, std::string* message) {
                   if (model != SpvExecutionModelTessellationControl &&
                       model != SpvExecutionModelGLCompute &&
-                      model != SpvExecutionModelKernel) {
+                      model != SpvExecutionModelKernel &&
+                      model != SpvExecutionModelTaskNV &&
+                      model != SpvExecutionModelMeshNV) {
                     if (message) {
                       *message =
                           "OpControlBarrier requires one of the following "
