@@ -433,7 +433,8 @@ uint32_t UpgradeMemoryModel::GetScopeConstant(SpvScope scope) {
   uint32_t int_id = context()->get_type_mgr()->GetTypeInstruction(&int_ty);
   const analysis::Constant* constant =
       context()->get_constant_mgr()->GetConstant(
-          context()->get_type_mgr()->GetType(int_id), {scope});
+          context()->get_type_mgr()->GetType(int_id),
+          {static_cast<uint32_t>(scope)});
   return context()
       ->get_constant_mgr()
       ->GetDefiningInstruction(constant)
