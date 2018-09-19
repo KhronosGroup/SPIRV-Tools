@@ -244,6 +244,10 @@ class LoopUnrollerUtilsImpl {
   // ect).
   void AssignNewResultIds(BasicBlock* basic_block);
 
+  // Using the map built by AssignNewResultIds, replace the uses in |inst|
+  // by the id that the use maps to.
+  void RemapOperands(Instruction* inst);
+
   // Using the map built by AssignNewResultIds, for each instruction in
   // |basic_block| use
   // that map to substitute the IDs used by instructions (in the operands) with
@@ -757,6 +761,11 @@ void LoopUnrollerUtilsImpl::CloseUnrolledLoop(Loop* loop) {
   for (BasicBlock* block : loop_blocks_inorder_) {
     RemapOperands(block);
   }
+
+  // Rewrite the last phis, since they may still reference the original phi.
+  for (Instruction* last_phi : state_.previous_phis_) {
+    RemapOperands(last_phi);
+  }
 }
 
 // Uses the first loop to create a copy of the loop with new IDs.
@@ -842,19 +851,21 @@ void LoopUnrollerUtilsImpl::AssignNewResultIds(BasicBlock* basic_block) {
   }
 }
 
-// For all instructions in |basic_block| check if the operands used are from a
-// copied instruction and if so swap out the operand for the copy of it.
+void LoopUnrollerUtilsImpl::RemapOperands(Instruction* inst) {
+  auto remap_operands_to_new_ids = [this](uint32_t* id) {
+    auto itr = state_.new_inst.find(*id);
+
+    if (itr != state_.new_inst.end()) {
+      *id = itr->second;
+    }
+  };
+
+  inst->ForEachInId(remap_operands_to_new_ids);
+}
+
 void LoopUnrollerUtilsImpl::RemapOperands(BasicBlock* basic_block) {
   for (Instruction& inst : *basic_block) {
-    auto remap_operands_to_new_ids = [this](uint32_t* id) {
-      auto itr = state_.new_inst.find(*id);
-
-      if (itr != state_.new_inst.end()) {
-        *id = itr->second;
-      }
-    };
-
-    inst.ForEachInId(remap_operands_to_new_ids);
+    RemapOperands(&inst);
   }
 }
 
