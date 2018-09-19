@@ -863,7 +863,8 @@ spv_result_t BuiltInsValidator::ValidateClipOrCullDistanceAtReference(
         }
         case SpvExecutionModelTessellationControl:
         case SpvExecutionModelTessellationEvaluation:
-        case SpvExecutionModelGeometry: {
+        case SpvExecutionModelGeometry:
+        case SpvExecutionModelMeshNV: {
           if (decoration.struct_member_index() != Decoration::kInvalidMember) {
             // The outer level of array is applied on the variable.
             if (spv_result_t error = ValidateF32Arr(
@@ -1445,7 +1446,8 @@ spv_result_t BuiltInsValidator::ValidatePointSizeAtReference(
         }
         case SpvExecutionModelTessellationControl:
         case SpvExecutionModelTessellationEvaluation:
-        case SpvExecutionModelGeometry: {
+        case SpvExecutionModelGeometry:
+        case SpvExecutionModelMeshNV: {
           // PointSize can be a per-vertex variable for tessellation control,
           // tessellation evaluation and geometry shader stages. In such cases
           // variables will have an array of 32-bit floats.
@@ -1556,10 +1558,12 @@ spv_result_t BuiltInsValidator::ValidatePositionAtReference(
         }
         case SpvExecutionModelGeometry:
         case SpvExecutionModelTessellationControl:
-        case SpvExecutionModelTessellationEvaluation: {
+        case SpvExecutionModelTessellationEvaluation:
+        case SpvExecutionModelMeshNV: {
           // Position can be a per-vertex variable for tessellation control,
-          // tessellation evaluation and geometry shader stages. In such cases
-          // variables will have an array of 4-component 32-bit float vectors.
+          // tessellation evaluation, geometry and mesh shader stages. In such
+          // cases variables will have an array of 4-component 32-bit float
+          // vectors.
           if (decoration.struct_member_index() != Decoration::kInvalidMember) {
             // The array is on the variable, so this must be a 4-component
             // 32-bit float vector.
@@ -1682,7 +1686,13 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
         case SpvExecutionModelFragment:
         case SpvExecutionModelTessellationControl:
         case SpvExecutionModelTessellationEvaluation:
-        case SpvExecutionModelGeometry: {
+        case SpvExecutionModelGeometry:
+        case SpvExecutionModelMeshNV:
+        case SpvExecutionModelRayGenerationNVX:
+        case SpvExecutionModelIntersectionNVX:
+        case SpvExecutionModelAnyHitNVX:
+        case SpvExecutionModelClosestHitNVX:
+        case SpvExecutionModelMissNVX: {
           // Ok.
           break;
         }
@@ -2187,7 +2197,8 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
     for (const SpvExecutionModel execution_model : execution_models_) {
       switch (execution_model) {
         case SpvExecutionModelGeometry:
-        case SpvExecutionModelFragment: {
+        case SpvExecutionModelFragment:
+        case SpvExecutionModelMeshNV: {
           // Ok.
           break;
           case SpvExecutionModelVertex:
@@ -2270,7 +2281,9 @@ spv_result_t BuiltInsValidator::ValidateComputeShaderI32Vec3InputAtReference(
     }
 
     for (const SpvExecutionModel execution_model : execution_models_) {
-      if (execution_model != SpvExecutionModelGLCompute) {
+      if (execution_model != SpvExecutionModelGLCompute &&
+          execution_model != SpvExecutionModelTaskNV &&
+          execution_model != SpvExecutionModelMeshNV) {
         return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
                << "Vulkan spec allows BuiltIn "
                << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
@@ -2464,7 +2477,32 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInPositionPerViewNV:
     case SpvBuiltInViewportMaskPerViewNV:
     case SpvBuiltInFullyCoveredEXT:
-    case SpvBuiltInMax: {
+    case SpvBuiltInMax:
+    case SpvBuiltInTaskCountNV:
+    case SpvBuiltInPrimitiveCountNV:
+    case SpvBuiltInPrimitiveIndicesNV:
+    case SpvBuiltInClipDistancePerViewNV:
+    case SpvBuiltInCullDistancePerViewNV:
+    case SpvBuiltInLayerPerViewNV:
+    case SpvBuiltInMeshViewCountNV:
+    case SpvBuiltInMeshViewIndicesNV:
+    case SpvBuiltInBaryCoordNV:
+    case SpvBuiltInBaryCoordNoPerspNV:
+    case SpvBuiltInFragmentSizeNV:
+    case SpvBuiltInInvocationsPerPixelNV:
+    case SpvBuiltInLaunchIdNVX:
+    case SpvBuiltInLaunchSizeNVX:
+    case SpvBuiltInWorldRayOriginNVX:
+    case SpvBuiltInWorldRayDirectionNVX:
+    case SpvBuiltInObjectRayOriginNVX:
+    case SpvBuiltInObjectRayDirectionNVX:
+    case SpvBuiltInRayTminNVX:
+    case SpvBuiltInRayTmaxNVX:
+    case SpvBuiltInInstanceCustomIndexNVX:
+    case SpvBuiltInObjectToWorldNVX:
+    case SpvBuiltInWorldToObjectNVX:
+    case SpvBuiltInHitTNVX:
+    case SpvBuiltInHitKindNVX: {
       // No validation rules (for the moment).
       break;
     }
