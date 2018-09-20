@@ -5088,69 +5088,643 @@ TEST_F(ValidateIdWithMessage, BadTypeId) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 4 is not a type id"));
 }
 
-// TODO: OpLifetimeStart
-// TODO: OpLifetimeStop
-// TODO: OpAtomicInit
-// TODO: OpAtomicLoad
-// TODO: OpAtomicStore
-// TODO: OpAtomicExchange
-// TODO: OpAtomicCompareExchange
-// TODO: OpAtomicCompareExchangeWeak
-// TODO: OpAtomicIIncrement
-// TODO: OpAtomicIDecrement
-// TODO: OpAtomicIAdd
-// TODO: OpAtomicISub
-// TODO: OpAtomicUMin
-// TODO: OpAtomicUMax
-// TODO: OpAtomicAnd
-// TODO: OpAtomicOr
-// TODO: OpAtomicXor
-// TODO: OpAtomicIMin
-// TODO: OpAtomicIMax
-// TODO: OpEmitStreamVertex
-// TODO: OpEndStreamPrimitive
-// TODO: OpAsyncGroupCopy
-// TODO: OpWaitGroupEvents
-// TODO: OpGroupAll
-// TODO: OpGroupAny
-// TODO: OpGroupBroadcast
-// TODO: OpGroupIAdd
-// TODO: OpGroupFAdd
-// TODO: OpGroupFMin
-// TODO: OpGroupUMin
-// TODO: OpGroupSMin
-// TODO: OpGroupFMax
-// TODO: OpGroupUMax
-// TODO: OpGroupSMax
-// TODO: OpEnqueueMarker
-// TODO: OpEnqueueKernel
-// TODO: OpGetKernelNDrangeSubGroupCount
-// TODO: OpGetKernelNDrangeMaxSubGroupSize
-// TODO: OpGetKernelWorkGroupSize
-// TODO: OpGetKernelPreferredWorkGroupSizeMultiple
-// TODO: OpRetainEvent
-// TODO: OpReleaseEvent
-// TODO: OpCreateUserEvent
-// TODO: OpIsValidEvent
-// TODO: OpSetUserEventStatus
-// TODO: OpCaptureEventProfilingInfo
-// TODO: OpGetDefaultQueue
-// TODO: OpBuildNDRange
-// TODO: OpReadPipe
-// TODO: OpWritePipe
-// TODO: OpReservedReadPipe
-// TODO: OpReservedWritePipe
-// TODO: OpReserveReadPipePackets
-// TODO: OpReserveWritePipePackets
-// TODO: OpCommitReadPipe
-// TODO: OpCommitWritePipe
-// TODO: OpIsValidReserveId
-// TODO: OpGetNumPipePackets
-// TODO: OpGetMaxPipePackets
-// TODO: OpGroupReserveReadPipePackets
-// TODO: OpGroupReserveWritePipePackets
-// TODO: OpGroupCommitReadPipe
-// TODO: OpGroupCommitWritePipe
+TEST_F(ValidateIdWithMessage, VulkanMemoryModelLoadMakePointerVisibleGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypeFunction %1
+%6 = OpConstant %2 2
+%7 = OpFunction %1 None %5
+%8 = OpLabel
+%9 = OpLoad %2 %4 NonPrivatePointerKHR|MakePointerVisibleKHR %6
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelLoadMakePointerVisibleMissingNonPrivatePointer) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypeFunction %1
+%6 = OpConstant %2 2
+%7 = OpFunction %1 None %5
+%8 = OpLabel
+%9 = OpLoad %2 %4 MakePointerVisibleKHR %6
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR must be specified if "
+                        "MakePointerVisibleKHR is specified."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelLoadNonPrivatePointerBadStorageClass) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Private %2
+%4 = OpVariable %3 Private
+%5 = OpTypeFunction %1
+%6 = OpConstant %2 2
+%7 = OpFunction %1 None %5
+%8 = OpLabel
+%9 = OpLoad %2 %4 NonPrivatePointerKHR
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR requires a pointer in Uniform, "
+                        "Workgroup, CrossWorkgroup, Generic, Image or "
+                        "StorageBuffer storage classes."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelLoadMakePointerAvailableCannotBeUsed) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypeFunction %1
+%6 = OpConstant %2 2
+%7 = OpFunction %1 None %5
+%8 = OpLabel
+%9 = OpLoad %2 %4 NonPrivatePointerKHR|MakePointerAvailableKHR %6
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("MakePointerAvailableKHR cannot be used with OpLoad"));
+}
+
+TEST_F(ValidateIdWithMessage, VulkanMemoryModelStoreMakePointerAvailableGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Uniform %2
+%4 = OpVariable %3 Uniform
+%5 = OpTypeFunction %1
+%6 = OpConstant %2 5
+%7 = OpFunction %1 None %5
+%8 = OpLabel
+OpStore %4 %6 NonPrivatePointerKHR|MakePointerAvailableKHR %6
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelStoreMakePointerAvailableMissingNonPrivatePointer) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Uniform %2
+%4 = OpVariable %3 Uniform
+%5 = OpTypeFunction %1
+%6 = OpConstant %2 5
+%7 = OpFunction %1 None %5
+%8 = OpLabel
+OpStore %4 %6 MakePointerAvailableKHR %6
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR must be specified if "
+                        "MakePointerAvailableKHR is specified."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelStoreNonPrivatePointerBadStorageClass) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Output %2
+%4 = OpVariable %3 Output
+%5 = OpTypeFunction %1
+%6 = OpConstant %2 5
+%7 = OpFunction %1 None %5
+%8 = OpLabel
+OpStore %4 %6 NonPrivatePointerKHR
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR requires a pointer in Uniform, "
+                        "Workgroup, CrossWorkgroup, Generic, Image or "
+                        "StorageBuffer storage classes."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelStoreMakePointerVisibleCannotBeUsed) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Uniform %2
+%4 = OpVariable %3 Uniform
+%5 = OpTypeFunction %1
+%6 = OpConstant %2 5
+%7 = OpFunction %1 None %5
+%8 = OpLabel
+OpStore %4 %6 NonPrivatePointerKHR|MakePointerVisibleKHR %6
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("MakePointerVisibleKHR cannot be used with OpStore."));
+}
+
+TEST_F(ValidateIdWithMessage, VulkanMemoryModelCopyMemoryAvailable) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemory %4 %6 NonPrivatePointerKHR|MakePointerAvailableKHR %7
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage, VulkanMemoryModelCopyMemoryVisible) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemory %4 %6 NonPrivatePointerKHR|MakePointerVisibleKHR %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage, VulkanMemoryModelCopyMemoryAvailableAndVisible) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemory %4 %6 NonPrivatePointerKHR|MakePointerAvailableKHR|MakePointerVisibleKHR %7 %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemoryAvailableMissingNonPrivatePointer) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemory %4 %6 MakePointerAvailableKHR %7
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR must be specified if "
+                        "MakePointerAvailableKHR is specified."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemoryVisibleMissingNonPrivatePointer) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemory %4 %6 MakePointerVisibleKHR %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR must be specified if "
+                        "MakePointerVisibleKHR is specified."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemoryAvailableBadStorageClass) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Output %2
+%4 = OpVariable %3 Output
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemory %4 %6 NonPrivatePointerKHR
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR requires a pointer in Uniform, "
+                        "Workgroup, CrossWorkgroup, Generic, Image or "
+                        "StorageBuffer storage classes."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemoryVisibleBadStorageClass) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Input %2
+%6 = OpVariable %5 Input
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemory %4 %6 NonPrivatePointerKHR
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR requires a pointer in Uniform, "
+                        "Workgroup, CrossWorkgroup, Generic, Image or "
+                        "StorageBuffer storage classes."));
+}
+
+TEST_F(ValidateIdWithMessage, VulkanMemoryModelCopyMemorySizedAvailable) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR|MakePointerAvailableKHR %7
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage, VulkanMemoryModelCopyMemorySizedVisible) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR|MakePointerVisibleKHR %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemorySizedAvailableAndVisible) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR|MakePointerAvailableKHR|MakePointerVisibleKHR %7 %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemorySizedAvailableMissingNonPrivatePointer) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemorySized %4 %6 %7 MakePointerAvailableKHR %7
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR must be specified if "
+                        "MakePointerAvailableKHR is specified."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemorySizedVisibleMissingNonPrivatePointer) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemorySized %4 %6 %7 MakePointerVisibleKHR %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR must be specified if "
+                        "MakePointerVisibleKHR is specified."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemorySizedAvailableBadStorageClass) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Output %2
+%4 = OpVariable %3 Output
+%5 = OpTypePointer Uniform %2
+%6 = OpVariable %5 Uniform
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR requires a pointer in Uniform, "
+                        "Workgroup, CrossWorkgroup, Generic, Image or "
+                        "StorageBuffer storage classes."));
+}
+
+TEST_F(ValidateIdWithMessage,
+       VulkanMemoryModelCopyMemorySizedVisibleBadStorageClass) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Workgroup %2
+%4 = OpVariable %3 Workgroup
+%5 = OpTypePointer Input %2
+%6 = OpVariable %5 Input
+%7 = OpConstant %2 2
+%8 = OpConstant %2 5
+%9 = OpTypeFunction %1
+%10 = OpFunction %1 None %9
+%11 = OpLabel
+OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonPrivatePointerKHR requires a pointer in Uniform, "
+                        "Workgroup, CrossWorkgroup, Generic, Image or "
+                        "StorageBuffer storage classes."));
+}
 
 }  // namespace
 }  // namespace val
