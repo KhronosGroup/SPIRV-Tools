@@ -161,9 +161,10 @@ INSTANTIATE_TEST_CASE_P(
                   Geometry),
             CASE1(EXECUTION_MODE, ExecutionModeQuads, Tessellation),
             CASE1(EXECUTION_MODE, ExecutionModeIsolines, Tessellation),
-            CASE2(EXECUTION_MODE, ExecutionModeOutputVertices, Geometry,
-                  Tessellation),
-            CASE1(EXECUTION_MODE, ExecutionModeOutputPoints, Geometry),
+            CASE3(EXECUTION_MODE, ExecutionModeOutputVertices, Geometry,
+                  Tessellation, MeshShadingNV),
+            CASE2(EXECUTION_MODE, ExecutionModeOutputPoints, Geometry,
+                  MeshShadingNV),
             CASE1(EXECUTION_MODE, ExecutionModeOutputLineStrip, Geometry),
             CASE1(EXECUTION_MODE, ExecutionModeOutputTriangleStrip, Geometry),
             CASE1(EXECUTION_MODE, ExecutionModeVecTypeHint, Kernel),
@@ -490,7 +491,8 @@ INSTANTIATE_TEST_CASE_P(
             CASE1(BUILT_IN, BuiltInCullDistance, CullDistance),  // Bug 1407, 15234
             CASE1(BUILT_IN, BuiltInVertexId, Shader),
             CASE1(BUILT_IN, BuiltInInstanceId, Shader),
-            CASE2(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation),
+            CASE3(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation,
+                  RaytracingNVX),
             CASE2(BUILT_IN, BuiltInInvocationId, Geometry, Tessellation),
             CASE1(BUILT_IN, BuiltInLayer, Geometry),
             CASE1(BUILT_IN, BuiltInViewportIndex, MultiViewport),  // Bug 15234
