@@ -272,9 +272,10 @@ INSTANTIATE_TEST_CASE_P(GroupNonUniformBallotBitCountScope, GroupNonUniform,
 
 INSTANTIATE_TEST_CASE_P(
     GroupNonUniformBallotBitCountBadResultType, GroupNonUniform,
-    Combine(Values("OpGroupNonUniformBallotBitCount"), Values("%float", "%int"),
-            Values(SpvScopeSubgroup), Values("Reduce %u32vec4_null"),
-            Values("Expected Result Type to be unsigned int scalar")));
+    Combine(
+        Values("OpGroupNonUniformBallotBitCount"), Values("%float", "%int"),
+        Values(SpvScopeSubgroup), Values("Reduce %u32vec4_null"),
+        Values("Expected Result Type to be an unsigned integer type scalar.")));
 
 INSTANTIATE_TEST_CASE_P(GroupNonUniformBallotBitCountBadValue, GroupNonUniform,
                         Combine(Values("OpGroupNonUniformBallotBitCount"),

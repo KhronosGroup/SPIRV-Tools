@@ -70,7 +70,7 @@ spv_result_t ValidateGroupNonUniformBallotBitCount(ValidationState_t& _,
   const uint32_t result_type = inst->type_id();
   if (!_.IsUnsignedIntScalarType(result_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Result Type to be unsigned int scalar";
+           << "Expected Result Type to be an unsigned integer type scalar.";
   }
 
   const auto value = inst->GetOperandAs<uint32_t>(4);
