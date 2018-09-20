@@ -60,6 +60,10 @@ elif [ $CONFIG = "RELEASE_MINGW" ]
 then
   ADDITIONAL_CMAKE_FLAGS="-Dgtest_disable_pthreads=ON -DCMAKE_TOOLCHAIN_FILE=$SRC/cmake/linux-mingw-toolchain.cmake"
   SKIP_TESTS="True"
+elif [ $CONFIG = "NO_EFFCEE" ]
+then
+  ADDITIONAL_CMAKE_FLAGS="-DSPIRV_ENABLE_EFFCEE=OFF"
+  BUILD_TYPE="RelWithDebInfo"
 fi
 
 # Get NINJA.
