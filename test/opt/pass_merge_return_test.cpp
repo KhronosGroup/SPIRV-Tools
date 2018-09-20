@@ -516,7 +516,6 @@ TEST_F(MergeReturnPassTest, UpdateOrderWhenPredicating) {
   SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
 */
-#endif
 
 TEST_F(MergeReturnPassTest, StructuredControlFlowBothMergeAndHeader) {
   const std::string test =
@@ -1020,6 +1019,7 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<MergeReturnPass>(test, false);
 }
+#endif  // SPIRV_EFFCEE
 
 }  // namespace
 }  // namespace opt
