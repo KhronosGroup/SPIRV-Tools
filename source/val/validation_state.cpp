@@ -390,6 +390,7 @@ void ValidationState_t::RegisterExtension(Extension ext) {
 
   switch (ext) {
     case kSPV_AMD_gpu_shader_half_float:
+    case kSPV_AMD_gpu_shader_half_float_fetch:
       // SPV_AMD_gpu_shader_half_float enables float16 type.
       // https://github.com/KhronosGroup/SPIRV-Tools/issues/1375
       features_.declare_float16_type = true;

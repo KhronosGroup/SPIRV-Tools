@@ -290,6 +290,17 @@ TEST_F(ValidateData, storage_input_output_16_good) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateData, amd_gpu_shader_half_float_fetch_16_good) {
+  std::string str = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpExtension "SPV_AMD_gpu_shader_half_float_fetch"
+     OpMemoryModel Logical GLSL450
+     %2 = OpTypeFloat 16)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateData, int16_bad) {
   std::string str = header + "%2 = OpTypeInt 16 1";
   CompileSuccessfully(str.c_str());
