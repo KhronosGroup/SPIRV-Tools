@@ -66,7 +66,7 @@ if (NOT ${SPIRV_SKIP_TESTS})
     endforeach()
   endif()
 
-  set(SPIRV_ENABLE_EFFCEE ON)
+  option(SPIRV_ENABLE_EFFCEE "Enable effcee-based tests" ON)
   if (MSVC)
     if (MSVC_VERSION LESS 1900)
       message(STATUS "SPIRV-Tools: Need Visual Studio 2015 or later for Effcee and RE2")
