@@ -46,6 +46,7 @@ OpCapability ImageQuery
 OpCapability Int64
 OpCapability Float64
 OpCapability SparseResidency
+OpCapability ImageBuffer
 )";
 
   if (env == SPV_ENV_UNIVERSAL_1_0) {
@@ -209,6 +210,22 @@ OpCapability SparseResidency
 %type_sampler = OpTypeSampler
 %ptr_sampler = OpTypePointer UniformConstant %type_sampler
 %uniform_sampler = OpVariable %ptr_sampler UniformConstant
+
+%type_image_u32_buffer_0002_r32ui = OpTypeImage %u32 Buffer 0 0 0 2 R32ui
+%ptr_Image_u32 = OpTypePointer Image %u32
+%ptr_image_u32_buffer_0002_r32ui = OpTypePointer Private %type_image_u32_buffer_0002_r32ui
+%private_image_u32_buffer_0002_r32ui = OpVariable %ptr_image_u32_buffer_0002_r32ui Private
+
+%ptr_Image_u32arr4 = OpTypePointer Image %u32arr4
+
+%type_image_u32_spd_0002 = OpTypeImage %u32 SubpassData 0 0 0 2 Unknown
+%ptr_image_u32_spd_0002 = OpTypePointer Private %type_image_u32_spd_0002
+%private_image_u32_spd_0002 = OpVariable %ptr_image_u32_spd_0002 Private
+
+%type_image_f32_buffer_0002_r32ui = OpTypeImage %f32 Buffer 0 0 0 2 R32ui
+%ptr_Image_f32 = OpTypePointer Image %f32
+%ptr_image_f32_buffer_0002_r32ui = OpTypePointer Private %type_image_f32_buffer_0002_r32ui
+%private_image_f32_buffer_0002_r32ui = OpVariable %ptr_image_f32_buffer_0002_r32ui Private
 )";
 
   if (env == SPV_ENV_UNIVERSAL_1_0) {
@@ -591,6 +608,157 @@ TEST_F(ValidateImage, SampledImageNotSampler) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Sampler to be of type OpTypeSampler"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerSuccess) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %private_image_u32_buffer_0002_r32ui %u32_0 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, ImageTexelPointerResultTypeNotPointer) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %type_image_u32_buffer_0002_r32ui %private_image_u32_buffer_0002_r32ui %u32_0 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be OpTypePointer"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerResultTypeNotImageClass) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_image_f32_cube_0101 %private_image_u32_buffer_0002_r32ui %u32_0 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be OpTypePointer whose "
+                        "Storage Class operand is Image"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerResultTypeNotNumericNorVoid) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32arr4 %private_image_u32_buffer_0002_r32ui %u32_0 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Result Type to be OpTypePointer whose Type operand "
+                "must be a scalar numerical type or OpTypeVoid"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %type_image_f32_buffer_0002_r32ui %u32_0 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image to be OpTypePointer"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerImageNotImage) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %uniform_sampler %u32_0 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Image to be OpTypePointer with Type OpTypeImage"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerImageSampledNotResultType) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %uniform_image_f32_cube_0101 %u32_0 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled Type' to be the same as the "
+                        "Type pointed to by Result Type"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerImageDimSubpassDataBad) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %private_image_u32_spd_0002 %u32_0 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Image Dim SubpassData cannot be used with OpImageTexelPointer"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerImageCoordTypeBad) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_f32 %private_image_f32_buffer_0002_r32ui %f32_0 %f32_0
+%sum = OpAtomicIAdd %f32 %texel_ptr %f32_1 %f32_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Coordinate to be integer scalar or vector"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerImageCoordSizeBad) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %uniform_image_u32_2d_0000 %u32vec3_012 %u32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to have 2 components, but given 3"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerSampleNotIntScalar) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %private_image_u32_buffer_0002_r32ui %u32_0 %f32_0
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sample to be integer scalar"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerSampleNotZeroForImageWithMSZero) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %private_image_u32_buffer_0002_r32ui %u32_0 %u32_1
+%sum = OpAtomicIAdd %u32 %texel_ptr %u32_1 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sample for Image with MS 0 to be a valid "
+                        "<id> for the value 0"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodSuccess) {
