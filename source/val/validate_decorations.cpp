@@ -840,6 +840,34 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
+spv_result_t CheckVulkanMemoryModelDeprecatedDecorations(
+    ValidationState_t& vstate) {
+  if (vstate.memory_model() != SpvMemoryModelVulkanKHR) return SPV_SUCCESS;
+
+  std::string msg;
+  std::ostringstream str(msg);
+  for (const auto& def : vstate.all_definitions()) {
+    const auto inst = def.second;
+    const auto id = inst->id();
+    for (const auto& dec : vstate.id_decorations(id)) {
+      const auto member = dec.struct_member_index();
+      if (dec.dec_type() == SpvDecorationCoherent ||
+          dec.dec_type() == SpvDecorationVolatile) {
+        str << (dec.dec_type() == SpvDecorationCoherent ? "Coherent"
+                                                        : "Volatile");
+        str << " decoration targeting " << vstate.getIdName(id);
+        if (member != Decoration::kInvalidMember) {
+          str << " (member index " << member << ")";
+        }
+        str << " is banned when using the Vulkan memory model.";
+        return vstate.diag(SPV_ERROR_INVALID_ID, inst) << str.str();
+      }
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 // Validates that decorations have been applied properly.
@@ -849,6 +877,8 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
   if (auto error = CheckDecorationsOfBuffers(vstate)) return error;
   if (auto error = CheckLinkageAttrOfFunctions(vstate)) return error;
   if (auto error = CheckDescriptorSetArrayOfArrays(vstate)) return error;
+  if (auto error = CheckVulkanMemoryModelDeprecatedDecorations(vstate))
+    return error;
   return SPV_SUCCESS;
 }
 
