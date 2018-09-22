@@ -793,6 +793,110 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
+                                       const Instruction* inst) {
+  const auto result_type = _.FindDef(inst->type_id());
+  if (result_type->opcode() != SpvOpTypePointer) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Result Type to be OpTypePointer";
+  }
+
+  const auto storage_class = result_type->GetOperandAs<uint32_t>(1);
+  if (storage_class != SpvStorageClassImage) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Result Type to be OpTypePointer whose Storage Class "
+              "operand is Image";
+  }
+
+  const auto ptr_type = result_type->GetOperandAs<uint32_t>(2);
+  const auto ptr_opcode = _.GetIdOpcode(ptr_type);
+  if (ptr_opcode != SpvOpTypeInt && ptr_opcode != SpvOpTypeFloat &&
+      ptr_opcode != SpvOpTypeVoid) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Result Type to be OpTypePointer whose Type operand "
+              "must be a scalar numerical type or OpTypeVoid";
+  }
+
+  const auto image_ptr = _.FindDef(_.GetOperandTypeId(inst, 2));
+  if (!image_ptr || image_ptr->opcode() != SpvOpTypePointer) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Image to be OpTypePointer";
+  }
+
+  const auto image_type = image_ptr->GetOperandAs<uint32_t>(2);
+  if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Image to be OpTypePointer with Type OpTypeImage";
+  }
+
+  ImageTypeInfo info;
+  if (!GetImageTypeInfo(_, image_type, &info)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Corrupt image type definition";
+  }
+
+  if (info.sampled_type != ptr_type) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Image 'Sampled Type' to be the same as the Type "
+              "pointed to by Result Type";
+  }
+
+  if (info.dim == SpvDimSubpassData) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Image Dim SubpassData cannot be used with OpImageTexelPointer";
+  }
+
+  const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
+  if (!coord_type || !_.IsIntScalarOrVectorType(coord_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Coordinate to be integer scalar or vector";
+  }
+
+  uint32_t expected_coord_size = 0;
+  if (info.arrayed == 0) {
+    expected_coord_size = GetPlaneCoordSize(info);
+  } else if (info.arrayed == 1) {
+    switch (info.dim) {
+      case SpvDim1D:
+        expected_coord_size = 2;
+        break;
+      case SpvDimCube:
+      case SpvDim2D:
+        expected_coord_size = 3;
+        break;
+      default:
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected Image 'Dim' must be one of 1D, 2D, or Cube when "
+                  "Arrayed is 1";
+        break;
+    }
+  }
+
+  const uint32_t actual_coord_size = _.GetDimension(coord_type);
+  if (expected_coord_size != actual_coord_size) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Coordinate to have " << expected_coord_size
+           << " components, but given " << actual_coord_size;
+  }
+
+  const uint32_t sample_type = _.GetOperandTypeId(inst, 4);
+  if (!sample_type || !_.IsIntScalarType(sample_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Sample to be integer scalar";
+  }
+
+  if (info.multisampled == 0) {
+    uint64_t ms = 0;
+    if (!_.GetConstantValUint64(inst->GetOperandAs<uint32_t>(4), &ms) ||
+        ms != 0) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected Sample for Image with MS 0 to be a valid <id> for "
+                "the value 0";
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateImageLod(ValidationState_t& _, const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   uint32_t actual_result_type = 0;
@@ -1580,6 +1684,8 @@ spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst) {
       return ValidateTypeSampledImage(_, inst);
     case SpvOpSampledImage:
       return ValidateSampledImage(_, inst);
+    case SpvOpImageTexelPointer:
+      return ValidateImageTexelPointer(_, inst);
 
     case SpvOpImageSampleImplicitLod:
     case SpvOpImageSampleExplicitLod:
