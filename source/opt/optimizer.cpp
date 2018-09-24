@@ -327,11 +327,11 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
       RegisterPass(CreateScalarReplacementPass());
     } else {
       int limit = atoi(pass_args.c_str());
-      if (limit > 0) {
+      if (limit >= 0) {
         RegisterPass(CreateScalarReplacementPass(limit));
       } else {
         Error(consumer(), nullptr, {},
-              "--scalar-replacement must have no arguments or a positive "
+              "--scalar-replacement must have no arguments or a non-negative "
               "integer argument");
         return false;
       }
