@@ -326,7 +326,11 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     if (pass_args.size() == 0) {
       RegisterPass(CreateScalarReplacementPass());
     } else {
-      int limit = atoi(pass_args.c_str());
+      int limit = -1;
+      if (pass_args.find_first_not_of("0123456789") == std::string::npos) {
+        limit = atoi(pass_args.c_str());
+      }
+
       if (limit >= 0) {
         RegisterPass(CreateScalarReplacementPass(limit));
       } else {
