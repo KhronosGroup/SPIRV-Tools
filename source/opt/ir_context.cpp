@@ -107,9 +107,6 @@ Instruction* IRContext::KillInst(Instruction* inst) {
     instr_to_block_.erase(inst);
   }
   if (AreAnalysesValid(kAnalysisDecorations)) {
-    if (inst->result_id() != 0) {
-      decoration_mgr_->RemoveDecorationsFrom(inst->result_id());
-    }
     if (inst->IsDecoration()) {
       decoration_mgr_->RemoveDecoration(inst);
     }
@@ -258,12 +255,8 @@ void IRContext::AnalyzeUses(Instruction* inst) {
 }
 
 void IRContext::KillNamesAndDecorates(uint32_t id) {
-  std::vector<Instruction*> decorations =
-      get_decoration_mgr()->GetDecorationsFor(id, true);
-
-  for (Instruction* inst : decorations) {
-    KillInst(inst);
-  }
+  analysis::DecorationManager* dec_mgr = get_decoration_mgr();
+  dec_mgr->RemoveDecorationsFrom(id);
 
   std::vector<Instruction*> name_to_kill;
   for (auto name : GetNames(id)) {

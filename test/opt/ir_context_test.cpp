@@ -217,6 +217,64 @@ TEST_F(IRContextTest, KillMemberName) {
   }
 }
 
+TEST_F(IRContextTest, KillGroupDecoration) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpDecorate %3 Restrict
+          %3 = OpDecorationGroup
+               OpGroupDecorate %3 %4 %5
+          %6 = OpTypeFloat 32
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeStruct %6
+          %9 = OpTypeVoid
+         %10 = OpTypeFunction %9
+          %2 = OpFunction %9 None %10
+         %11 = OpLabel
+          %4 = OpVariable %7 Function
+          %5 = OpVariable %7 Function
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+
+  // Build the decoration manager.
+  context->get_decoration_mgr();
+
+  // Delete the second variable.
+  context->KillDef(5);
+
+  // The three decorations instructions should still be there.  The first two
+  // should be the same, but the third should have %5 removed.
+
+  // Check the OpDecorate instruction
+  auto inst = context->annotation_begin();
+  EXPECT_EQ(inst->opcode(), SpvOpDecorate);
+  EXPECT_EQ(inst->GetSingleWordInOperand(0), 3);
+
+  // Check the OpDecorationGroup Instruction
+  ++inst;
+  EXPECT_EQ(inst->opcode(), SpvOpDecorationGroup);
+  EXPECT_EQ(inst->result_id(), 3);
+
+  // Check that %5 is no longer part of the group.
+  ++inst;
+  EXPECT_EQ(inst->opcode(), SpvOpGroupDecorate);
+  EXPECT_EQ(inst->NumInOperands(), 2);
+  EXPECT_EQ(inst->GetSingleWordInOperand(0), 3);
+  EXPECT_EQ(inst->GetSingleWordInOperand(1), 4);
+
+  // Check that we are at the end.
+  ++inst;
+  EXPECT_EQ(inst, context->annotation_end());
+}
+
 TEST_F(IRContextTest, TakeNextUniqueIdIncrementing) {
   const uint32_t NUM_TESTS = 1000;
   IRContext localContext(SPV_ENV_UNIVERSAL_1_2, nullptr);
