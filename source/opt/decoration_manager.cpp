@@ -29,7 +29,9 @@ namespace analysis {
 void DecorationManager::RemoveDecorationsFrom(
     uint32_t id, std::function<bool(const Instruction&)> pred) {
   const auto ids_iter = id_to_decoration_insts_.find(id);
-  if (ids_iter == id_to_decoration_insts_.end()) return;
+  if (ids_iter == id_to_decoration_insts_.end()) {
+    return;
+  }
 
   TargetData& decorations_info = ids_iter->second;
   auto context = module_->context();
@@ -59,8 +61,14 @@ void DecorationManager::RemoveDecorationsFrom(
       if (!pred(*decoration)) group_decorations_to_keep.push_back(decoration);
     }
 
-    // If all decorations should be kept, move to the next group
-    if (group_decorations_to_keep.size() == group_decorations.size()) continue;
+    // If all decorations should be kept, then we can keep |id| part of the
+    // group.  However, if the group itself has no decorations, we should remove
+    // the id from the group.  This is needed to make |KillNameAndDecorate| work
+    // correctly when a decoration group has no decorations.
+    if (group_decorations_to_keep.size() == group_decorations.size() &&
+        group_decorations.size() != 0) {
+      continue;
+    }
 
     // Otherwise, remove |id| from the targets of |group_id|
     const uint32_t stride = inst->opcode() == SpvOpGroupDecorate ? 1u : 2u;
@@ -136,9 +144,6 @@ void DecorationManager::RemoveDecorationsFrom(
       decorations_info.indirect_decorations.empty() &&
       decorations_info.decorate_insts.empty()) {
     id_to_decoration_insts_.erase(ids_iter);
-
-    // Remove the OpDecorationGroup defining this group.
-    if (is_group) context->KillInst(context->get_def_use_mgr()->GetDef(id));
   }
 }
 
