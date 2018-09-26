@@ -54,6 +54,9 @@ class BasicBlock {
   //
   // The parent function will default to null and needs to be explicitly set by
   // the user.
+  //
+  // If the inst-to-block map in |context| is valid, then the new instructions
+  // will be inserted into the map.
   BasicBlock* Clone(IRContext*) const;
 
   // Sets the enclosing function for this basic block.

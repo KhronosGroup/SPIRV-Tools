@@ -613,18 +613,6 @@ void LoopUnrollerUtilsImpl::CopyBasicBlock(Loop* loop, const BasicBlock* itr,
   // the new ones.
   AssignNewResultIds(basic_block);
 
-  // Register the result ids with the def-use manager.  They must be registered
-  // early because these results might be referenced in existing code that will
-  // be updated, like a merge instruction.  We do not register the uses yet
-  // because they still have to be updated.
-  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
-  context_->set_instr_block(basic_block->GetLabelInst(), basic_block);
-  def_use_mgr->AnalyzeInstDef(basic_block->GetLabelInst());
-  for (auto& inst : *basic_block) {
-    def_use_mgr->AnalyzeInstDef(&inst);
-    context_->set_instr_block(&inst, basic_block);
-  }
-
   // If this is the continue block we are copying.
   if (itr == loop->GetContinueBlock()) {
     // Make the OpLoopMerge point to this block for the continue.
@@ -844,6 +832,8 @@ void LoopUnrollerUtilsImpl::AddBlocksToFunction(
 // Assign all result_ids in |basic_block| instructions to new IDs and preserve
 // the mapping of new ids to old ones.
 void LoopUnrollerUtilsImpl::AssignNewResultIds(BasicBlock* basic_block) {
+  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+
   // Label instructions aren't covered by normal traversal of the
   // instructions.
   uint32_t new_label_id = context_->TakeNextId();
@@ -851,6 +841,7 @@ void LoopUnrollerUtilsImpl::AssignNewResultIds(BasicBlock* basic_block) {
   // Assign a new id to the label.
   state_.new_inst[basic_block->GetLabelInst()->result_id()] = new_label_id;
   basic_block->GetLabelInst()->SetResultId(new_label_id);
+  def_use_mgr->AnalyzeInstDef(basic_block->GetLabelInst());
 
   for (Instruction& inst : *basic_block) {
     uint32_t old_id = inst.result_id();
@@ -862,6 +853,7 @@ void LoopUnrollerUtilsImpl::AssignNewResultIds(BasicBlock* basic_block) {
 
     // Give the instruction a new id.
     inst.SetResultId(context_->TakeNextId());
+    def_use_mgr->AnalyzeInstDef(&inst);
 
     // Save the mapping of old_id -> new_id.
     state_.new_inst[old_id] = inst.result_id();
