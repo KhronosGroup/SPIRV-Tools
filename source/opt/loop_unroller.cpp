@@ -552,7 +552,8 @@ void LoopUnrollerUtilsImpl::RemoveDeadInstructions() {
 void LoopUnrollerUtilsImpl::ReplaceInductionUseWithFinalValue(Loop* loop) {
   context_->InvalidateAnalysesExceptFor(
       IRContext::Analysis::kAnalysisLoopAnalysis |
-      IRContext::Analysis::kAnalysisDefUse);
+      IRContext::Analysis::kAnalysisDefUse |
+      IRContext::Analysis::kAnalysisInstrToBlockMapping);
 
   std::vector<Instruction*> inductions;
   loop->GetInductionVariables(inductions);
@@ -617,9 +618,11 @@ void LoopUnrollerUtilsImpl::CopyBasicBlock(Loop* loop, const BasicBlock* itr,
   // be updated, like a merge instruction.  We do not register the uses yet
   // because they still have to be updated.
   analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+  context_->set_instr_block(basic_block->GetLabelInst(), basic_block);
   def_use_mgr->AnalyzeInstDef(basic_block->GetLabelInst());
   for (auto& inst : *basic_block) {
     def_use_mgr->AnalyzeInstDef(&inst);
+    context_->set_instr_block(&inst, basic_block);
   }
 
   // If this is the continue block we are copying.
@@ -741,8 +744,10 @@ void LoopUnrollerUtilsImpl::FoldConditionBlock(BasicBlock* condition_block,
 
   context_->KillInst(&old_branch);
   // Add the new unconditional branch to the merge block.
-  InstructionBuilder builder(context_, condition_block,
-                             IRContext::Analysis::kAnalysisDefUse);
+  InstructionBuilder builder(
+      context_, condition_block,
+      IRContext::Analysis::kAnalysisDefUse |
+          IRContext::Analysis::kAnalysisInstrToBlockMapping);
   builder.AddBranch(new_target);
 }
 
