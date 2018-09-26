@@ -35,9 +35,18 @@ const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 BasicBlock* BasicBlock::Clone(IRContext* context) const {
   BasicBlock* clone = new BasicBlock(
       std::unique_ptr<Instruction>(GetLabelInst()->Clone(context)));
-  for (const auto& inst : insts_)
+  for (const auto& inst : insts_) {
     // Use the incoming context
     clone->AddInstruction(std::unique_ptr<Instruction>(inst.Clone(context)));
+  }
+
+  if (context->AreAnalysesValid(
+          IRContext::Analysis::kAnalysisInstrToBlockMapping)) {
+    for (auto& inst : *clone) {
+      context->set_instr_block(&inst, clone);
+    }
+  }
+
   return clone;
 }
 
