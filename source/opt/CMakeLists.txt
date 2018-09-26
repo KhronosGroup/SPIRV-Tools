@@ -205,3 +205,7 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
     
+if(MSVC)
+  # Enable parallel builds across four cores for this lib
+  add_definitions(/MP4)
+endif()
