@@ -594,7 +594,8 @@ void LoopUnrollerUtilsImpl::FullyUnroll(Loop* loop) {
   RemoveDeadInstructions();
   // Invalidate all analyses.
   context_->InvalidateAnalysesExceptFor(
-      IRContext::Analysis::kAnalysisLoopAnalysis);
+      IRContext::Analysis::kAnalysisLoopAnalysis |
+      IRContext::Analysis::kAnalysisDefUse);
 }
 
 // Copy a given basic block, give it a new result_id, and store the new block
@@ -676,8 +677,9 @@ void LoopUnrollerUtilsImpl::CopyBody(Loop* loop, bool eliminate_conditions) {
   // latch block on iterations after the first one will be a branch to the new
   // header and not the actual loop header. The last continue block in the loop
   // should always be a backedge to the global header.
-  Instruction& new_latch_branch = *state_.new_latch_block->tail();
-  new_latch_branch.SetInOperand(0, {loop->GetHeaderBlock()->id()});
+  Instruction* new_latch_branch = state_.new_latch_block->terminator();
+  new_latch_branch->SetInOperand(0, {loop->GetHeaderBlock()->id()});
+  context_->AnalyzeUses(new_latch_branch);
 
   std::vector<Instruction*> inductions;
   loop->GetInductionVariables(inductions);
@@ -739,7 +741,8 @@ void LoopUnrollerUtilsImpl::FoldConditionBlock(BasicBlock* condition_block,
 
   context_->KillInst(&old_branch);
   // Add the new unconditional branch to the merge block.
-  InstructionBuilder builder{context_, condition_block};
+  InstructionBuilder builder(context_, condition_block,
+                             IRContext::Analysis::kAnalysisDefUse);
   builder.AddBranch(new_target);
 }
 
@@ -750,8 +753,9 @@ void LoopUnrollerUtilsImpl::CloseUnrolledLoop(Loop* loop) {
 
   // Remove the final backedge to the header and make it point instead to the
   // merge block.
-  state_.previous_latch_block_->tail()->SetInOperand(
+  state_.previous_latch_block_->terminator()->SetInOperand(
       0, {loop->GetMergeBlock()->id()});
+  context_->UpdateDefUse(state_.previous_latch_block_->terminator());
 
   // Remove all induction variables as the phis will now be invalid. Replace all
   // uses with the constant initializer value (all uses of phis will be in
