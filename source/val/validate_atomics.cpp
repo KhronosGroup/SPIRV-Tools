@@ -209,6 +209,8 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
             case SpvOpAtomicOr:
             case SpvOpAtomicXor:
             case SpvOpAtomicIAdd:
+            case SpvOpAtomicLoad:
+            case SpvOpAtomicStore:
             case SpvOpAtomicExchange:
             case SpvOpAtomicCompareExchange: {
               if (_.GetBitWidth(result_type) == 64 &&

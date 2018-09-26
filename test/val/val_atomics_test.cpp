@@ -276,9 +276,10 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanInt64) {
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicLoad: according to the Vulkan spec atomic "
-                        "Result Type needs to be a 32-bit int scalar type"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicLoad: 64-bit atomics require the Int64Atomics capability"));
 }
 
 TEST_F(ValidateAtomics, VK_KHR_shader_atomic_int64Success) {
@@ -304,6 +305,12 @@ TEST_F(ValidateAtomics, VK_KHR_shader_atomic_int64Success) {
 %val18 = OpAtomicIAdd %s64 %s64_var %device %relaxed %s64_1
 %val19 = OpAtomicExchange %s64 %s64_var %device %relaxed %s64_1
 %val20 = OpAtomicCompareExchange %s64 %s64_var %device %relaxed %relaxed %s64_1 %s64_1
+
+%val21 = OpAtomicLoad %u64 %u64_var %device %relaxed
+%val22 = OpAtomicLoad %s64 %s64_var %device %relaxed
+
+OpAtomicStore %u64_var %device %relaxed %u64_1
+OpAtomicStore %s64_var %device %relaxed %s64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body, "OpCapability Int64Atomics\n"),
