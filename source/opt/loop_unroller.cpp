@@ -551,7 +551,9 @@ void LoopUnrollerUtilsImpl::RemoveDeadInstructions() {
 
 void LoopUnrollerUtilsImpl::ReplaceInductionUseWithFinalValue(Loop* loop) {
   context_->InvalidateAnalysesExceptFor(
-      IRContext::Analysis::kAnalysisLoopAnalysis);
+      IRContext::Analysis::kAnalysisLoopAnalysis |
+      IRContext::Analysis::kAnalysisDefUse);
+
   std::vector<Instruction*> inductions;
   loop->GetInductionVariables(inductions);
 
@@ -609,12 +611,23 @@ void LoopUnrollerUtilsImpl::CopyBasicBlock(Loop* loop, const BasicBlock* itr,
   // the new ones.
   AssignNewResultIds(basic_block);
 
+  // Register the result ids with the def-use manager.  They must be registered
+  // early because these results might be referenced in existing code that will
+  // be updated, like a merge instruction.  We do not register the uses yet
+  // because they still have to be updated.
+  analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+  def_use_mgr->AnalyzeInstDef(basic_block->GetLabelInst());
+  for (auto& inst : *basic_block) {
+    def_use_mgr->AnalyzeInstDef(&inst);
+  }
+
   // If this is the continue block we are copying.
   if (itr == loop->GetContinueBlock()) {
     // Make the OpLoopMerge point to this block for the continue.
     if (!preserve_instructions) {
       Instruction* merge_inst = loop->GetHeaderBlock()->GetLoopMergeInst();
       merge_inst->SetInOperand(1, {basic_block->id()});
+      context_->UpdateDefUse(merge_inst);
     }
 
     state_.new_continue_block = basic_block;
@@ -655,8 +668,9 @@ void LoopUnrollerUtilsImpl::CopyBody(Loop* loop, bool eliminate_conditions) {
   }
 
   // Set the previous latch block to point to the new header.
-  Instruction& latch_branch = *state_.previous_latch_block_->tail();
-  latch_branch.SetInOperand(0, {state_.new_header_block->id()});
+  Instruction* latch_branch = state_.previous_latch_block_->terminator();
+  latch_branch->SetInOperand(0, {state_.new_header_block->id()});
+  context_->UpdateDefUse(latch_branch);
 
   // As the algorithm copies the original loop blocks exactly, the tail of the
   // latch block on iterations after the first one will be a branch to the new
@@ -861,6 +875,7 @@ void LoopUnrollerUtilsImpl::RemapOperands(Instruction* inst) {
   };
 
   inst->ForEachInId(remap_operands_to_new_ids);
+  context_->AnalyzeUses(inst);
 }
 
 void LoopUnrollerUtilsImpl::RemapOperands(BasicBlock* basic_block) {
