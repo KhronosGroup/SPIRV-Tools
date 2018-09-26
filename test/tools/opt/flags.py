@@ -256,7 +256,7 @@ class TestScalarReplacementArgsNegative(expect.ErrorMessageSubstr):
   """Tests invalid arguments to --scalar-replacement."""
 
   spirv_args = ['--scalar-replacement=-10']
-  expected_error_substr = 'must have no arguments or a positive integer argument'
+  expected_error_substr = 'must have no arguments or a non-negative integer argument'
 
 
 @inside_spirv_testsuite('SpirvOptFlags')
@@ -264,7 +264,7 @@ class TestScalarReplacementArgsInvalidNumber(expect.ErrorMessageSubstr):
   """Tests invalid arguments to --scalar-replacement."""
 
   spirv_args = ['--scalar-replacement=a10f']
-  expected_error_substr = 'must have no arguments or a positive integer argument'
+  expected_error_substr = 'must have no arguments or a non-negative integer argument'
 
 
 @inside_spirv_testsuite('SpirvOptFlags')
