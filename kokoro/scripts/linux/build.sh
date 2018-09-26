@@ -73,9 +73,17 @@ export PATH="$PWD:$PATH"
 
 cd $SRC
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
-git clone --depth=1 https://github.com/google/googletest          external/googletest
+git clone           https://github.com/google/googletest          external/googletest
 git clone --depth=1 https://github.com/google/effcee              external/effcee
 git clone --depth=1 https://github.com/google/re2                 external/re2
+
+# googletest issue #1865 causes failure across several platforms.
+# Pin down the googletest version used by buildbots.
+# TODO: Remove this hack
+cd external/googletest
+git reset --hard 0fc5466dbb9e623029b1ada539717d10bd45e99e
+cd $SRC
+# End hack
 
 mkdir build && cd $SRC/build
 
