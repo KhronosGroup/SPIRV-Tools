@@ -746,9 +746,9 @@ void LoopUnrollerUtilsImpl::CloseUnrolledLoop(Loop* loop) {
 
   // Remove the final backedge to the header and make it point instead to the
   // merge block.
-  state_.previous_latch_block_->terminator()->SetInOperand(
-      0, {loop->GetMergeBlock()->id()});
-  context_->UpdateDefUse(state_.previous_latch_block_->terminator());
+  Instruction* latch_instruction = state_.previous_latch_block_->terminator();
+  latch_instruction->SetInOperand(0, {loop->GetMergeBlock()->id()});
+  context_->UpdateDefUse(latch_instruction);
 
   // Remove all induction variables as the phis will now be invalid. Replace all
   // uses with the constant initializer value (all uses of phis will be in
