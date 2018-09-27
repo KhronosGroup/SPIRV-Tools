@@ -33,13 +33,14 @@ spv_result_t ValidateAdjacency(ValidationState_t& _, size_t idx) {
 
   switch (inst.opcode()) {
     case SpvOpPhi:
+      while (idx > 0 && instructions[idx - 1].opcode() == SpvOpLine) --idx;
       if (idx > 0) {
         switch (instructions[idx - 1].opcode()) {
           case SpvOpLabel:
           case SpvOpPhi:
-          case SpvOpLine:
             break;
           default:
+            assert(instructions[idx - 1].opcode() != SpvOpLine);
             return _.diag(SPV_ERROR_INVALID_DATA, &inst)
                    << "OpPhi must appear before all non-OpPhi instructions "
                    << "(except for OpLine, which can be mixed with OpPhi).";

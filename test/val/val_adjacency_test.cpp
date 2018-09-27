@@ -196,6 +196,26 @@ OpNop
               HasSubstr("OpPhi must appear before all non-OpPhi instructions"));
 }
 
+TEST_F(ValidateAdjacency, OpPhiPreceededByOpLineAndBadOpFail) {
+  const std::string body = R"(
+OpSelectionMerge %end_label None
+OpBranchConditional %true %true_label %false_label
+%true_label = OpLabel
+OpBranch %end_label
+%false_label = OpLabel
+OpBranch %end_label
+%end_label = OpLabel
+OpNop
+OpLine %string 1 1
+%result = OpPhi %bool %true %true_label %false %false_label
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpPhi must appear before all non-OpPhi instructions"));
+}
+
 TEST_F(ValidateAdjacency, OpLoopMergePreceedsOpBranchSuccess) {
   const std::string body = R"(
 OpBranch %loop
