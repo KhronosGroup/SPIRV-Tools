@@ -27,56 +27,73 @@
 namespace spvtools {
 namespace val {
 
-spv_result_t ValidateAdjacency(ValidationState_t& _, size_t idx) {
-  const auto& instructions = _.ordered_instructions();
-  const auto& inst = instructions[idx];
+enum {
+  IN_NEW_FUNCTION,
+  IN_ENTRY_BLOCK,
+  PHI_VALID,
+  PHI_INVALID,
+};
 
-  switch (inst.opcode()) {
-    case SpvOpPhi:
-      if (idx > 0) {
-        switch (instructions[idx - 1].opcode()) {
-          case SpvOpLabel:
-          case SpvOpPhi:
-          case SpvOpLine:
-            break;
-          default:
-            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                   << "OpPhi must appear before all non-OpPhi instructions "
-                   << "(except for OpLine, which can be mixed with OpPhi).";
+spv_result_t ValidateAdjacency(ValidationState_t& _) {
+  const auto& instructions = _.ordered_instructions();
+  int phi_check = PHI_INVALID;
+
+  for (size_t i = 0; i < instructions.size(); ++i) {
+    const auto& inst = instructions[i];
+    switch (inst.opcode()) {
+      case SpvOpFunction:
+      case SpvOpFunctionParameter:
+        phi_check = IN_NEW_FUNCTION;
+        break;
+      case SpvOpLabel:
+        phi_check = phi_check == IN_NEW_FUNCTION ? IN_ENTRY_BLOCK : PHI_VALID;
+        break;
+      case SpvOpPhi:
+        if (phi_check != PHI_VALID) {
+          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                 << "OpPhi must appear within a non-entry block before all "
+                 << "non-OpPhi instructions "
+                 << "(except for OpLine, which can be mixed with OpPhi).";
         }
-      }
-      break;
-    case SpvOpLoopMerge:
-      if (idx != (instructions.size() - 1)) {
-        switch (instructions[idx + 1].opcode()) {
-          case SpvOpBranch:
-          case SpvOpBranchConditional:
-            break;
-          default:
-            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                   << "OpLoopMerge must immediately precede either an "
-                   << "OpBranch or OpBranchConditional instruction. "
-                   << "OpLoopMerge must be the second-to-last instruction in "
-                   << "its block.";
+        break;
+      case SpvOpLine:
+        break;
+      case SpvOpLoopMerge:
+        phi_check = PHI_INVALID;
+        if (i != (instructions.size() - 1)) {
+          switch (instructions[i + 1].opcode()) {
+            case SpvOpBranch:
+            case SpvOpBranchConditional:
+              break;
+            default:
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << "OpLoopMerge must immediately precede either an "
+                     << "OpBranch or OpBranchConditional instruction. "
+                     << "OpLoopMerge must be the second-to-last instruction in "
+                     << "its block.";
+          }
         }
-      }
-      break;
-    case SpvOpSelectionMerge:
-      if (idx != (instructions.size() - 1)) {
-        switch (instructions[idx + 1].opcode()) {
-          case SpvOpBranchConditional:
-          case SpvOpSwitch:
-            break;
-          default:
-            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                   << "OpSelectionMerge must immediately precede either an "
-                   << "OpBranchConditional or OpSwitch instruction. "
-                   << "OpSelectionMerge must be the second-to-last "
-                   << "instruction in its block.";
+        break;
+      case SpvOpSelectionMerge:
+        phi_check = PHI_INVALID;
+        if (i != (instructions.size() - 1)) {
+          switch (instructions[i + 1].opcode()) {
+            case SpvOpBranchConditional:
+            case SpvOpSwitch:
+              break;
+            default:
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << "OpSelectionMerge must immediately precede either an "
+                     << "OpBranchConditional or OpSwitch instruction. "
+                     << "OpSelectionMerge must be the second-to-last "
+                     << "instruction in its block.";
+          }
         }
-      }
-    default:
-      break;
+        break;
+      default:
+        phi_check = PHI_INVALID;
+        break;
+    }
   }
 
   return SPV_SUCCESS;
