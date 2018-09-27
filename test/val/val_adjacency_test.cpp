@@ -112,6 +112,7 @@ std::string GenerateShaderCode(
 %true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
 %zero = OpConstant %int 0
+%int_1 = OpConstant %int 1
 %func = OpTypeFunction %void
 %main = OpFunction %void None %func
 %main_entry = OpLabel
@@ -214,6 +215,76 @@ OpLine %string 1 1
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpPhi must appear before all non-OpPhi instructions"));
+}
+
+TEST_F(ValidateAdjacency, OpPhiFollowedByOpLineGood) {
+  const std::string body = R"(
+OpSelectionMerge %end_label None
+OpBranchConditional %true %true_label %false_label
+%true_label = OpLabel
+OpBranch %end_label
+%false_label = OpLabel
+OpBranch %end_label
+%end_label = OpLabel
+%result = OpPhi %bool %true %true_label %false %false_label
+OpLine %string 1 1
+OpNop
+OpNop
+OpLine %string 2 1
+OpNop
+OpLine %string 3 1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAdjacency, OpPhiMultipleOpLineAndOpPhiFail) {
+  const std::string body = R"(
+OpSelectionMerge %end_label None
+OpBranchConditional %true %true_label %false_label
+%true_label = OpLabel
+OpBranch %end_label
+%false_label = OpLabel
+OpBranch %end_label
+%end_label = OpLabel
+OpLine %string 1 1
+%value = OpPhi %int %zero %true_label %int_1 %false_label
+OpNop
+OpLine %string 2 1
+OpNop
+OpLine %string 3 1
+%result = OpPhi %bool %true %true_label %false %false_label
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpPhi must appear before all non-OpPhi instructions"));
+}
+
+TEST_F(ValidateAdjacency, OpPhiMultipleOpLineAndOpPhiGood) {
+  const std::string body = R"(
+OpSelectionMerge %end_label None
+OpBranchConditional %true %true_label %false_label
+%true_label = OpLabel
+OpBranch %end_label
+%false_label = OpLabel
+OpBranch %end_label
+%end_label = OpLabel
+OpLine %string 1 1
+%value = OpPhi %int %zero %true_label %int_1 %false_label
+OpLine %string 2 1
+%result = OpPhi %bool %true %true_label %false %false_label
+OpLine %string 3 1
+OpNop
+OpNop
+OpLine %string 4 1
+OpNop
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateAdjacency, OpLoopMergePreceedsOpBranchSuccess) {

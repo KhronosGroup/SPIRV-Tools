@@ -333,10 +333,12 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = NonUniformPass(*vstate, &instruction)) return error;
 
     if (auto error = LiteralsPass(*vstate, &instruction)) return error;
-    // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
-    // must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
+    // Validate the preconditions involving adjacent instructions.
     if (auto error = ValidateAdjacency(*vstate, i)) return error;
   }
+
+  // SpvOpPhi must only be preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
+  if (auto error = ValidateAdjacencyForOpPhi(*vstate)) return error;
 
   if (auto error = ValidateEntryPoints(*vstate)) return error;
   // CFG checks are performed after the binary has been parsed

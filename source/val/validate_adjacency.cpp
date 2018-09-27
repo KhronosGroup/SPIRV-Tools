@@ -27,26 +27,39 @@
 namespace spvtools {
 namespace val {
 
+spv_result_t ValidateAdjacencyForOpPhi(ValidationState_t& _) {
+  const auto& instructions = _.ordered_instructions();
+  bool valid_to_place = false;
+
+  for (size_t i = 0; i < instructions.size(); ++i) {
+    const auto& inst = instructions[i];
+    switch (inst.opcode()) {
+      case SpvOpLabel:
+        valid_to_place = true;
+        break;
+      case SpvOpPhi:
+        if (!valid_to_place) {
+          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                 << "OpPhi must appear before all non-OpPhi instructions "
+                 << "(except for OpLine, which can be mixed with OpPhi).";
+        }
+        break;
+      case SpvOpLine:
+        break;
+      default:
+        valid_to_place = false;
+        break;
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateAdjacency(ValidationState_t& _, size_t idx) {
   const auto& instructions = _.ordered_instructions();
   const auto& inst = instructions[idx];
 
   switch (inst.opcode()) {
-    case SpvOpPhi:
-      while (idx > 0 && instructions[idx - 1].opcode() == SpvOpLine) --idx;
-      if (idx > 0) {
-        switch (instructions[idx - 1].opcode()) {
-          case SpvOpLabel:
-          case SpvOpPhi:
-            break;
-          default:
-            assert(instructions[idx - 1].opcode() != SpvOpLine);
-            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                   << "OpPhi must appear before all non-OpPhi instructions "
-                   << "(except for OpLine, which can be mixed with OpPhi).";
-        }
-      }
-      break;
     case SpvOpLoopMerge:
       if (idx != (instructions.size() - 1)) {
         switch (instructions[idx + 1].opcode()) {
