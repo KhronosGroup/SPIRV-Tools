@@ -75,7 +75,7 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
 /// @param[in] _ the validation state of the module
 ///
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_DATA otherwise
-spv_result_t ValidateAdjacency(ValidationState_t& _, size_t idx);
+spv_result_t ValidateAdjacency(ValidationState_t& _);
 
 /// @brief Validates static uses of input and output variables
 ///
