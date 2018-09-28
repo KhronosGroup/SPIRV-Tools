@@ -24,19 +24,6 @@
 namespace spvtools {
 namespace opt {
 
-void BlockMergePass::KillInstAndName(Instruction* inst) {
-  std::vector<Instruction*> to_kill;
-  get_def_use_mgr()->ForEachUser(inst, [&to_kill](Instruction* user) {
-    if (user->opcode() == SpvOpName) {
-      to_kill.push_back(user);
-    }
-  });
-  for (auto i : to_kill) {
-    context()->KillInst(i);
-  }
-  context()->KillInst(inst);
-}
-
 bool BlockMergePass::MergeBlocks(Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end();) {
@@ -117,7 +104,7 @@ bool BlockMergePass::MergeBlocks(Function* func) {
       }
     }
     context()->ReplaceAllUsesWith(lab_id, bi->id());
-    KillInstAndName(sbi->GetLabelInst());
+    context()->KillInst(sbi->GetLabelInst());
     (void)sbi.Erase();
     // Reprocess block.
     modified = true;
