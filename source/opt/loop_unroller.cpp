@@ -841,7 +841,7 @@ void LoopUnrollerUtilsImpl::AssignNewResultIds(BasicBlock* basic_block) {
   // Assign a new id to the label.
   state_.new_inst[basic_block->GetLabelInst()->result_id()] = new_label_id;
   basic_block->GetLabelInst()->SetResultId(new_label_id);
-  def_use_mgr->AnalyzeInstDef(basic_block->GetLabelInst());
+  def_use_mgr->AnalyzeInstDefUse(basic_block->GetLabelInst());
 
   for (Instruction& inst : *basic_block) {
     uint32_t old_id = inst.result_id();

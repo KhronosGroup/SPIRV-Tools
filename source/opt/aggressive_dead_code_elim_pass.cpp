@@ -638,6 +638,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
         // Go through the targets of this group decorate. Remove each dead
         // target. If all targets are dead, remove this decoration.
         bool dead = true;
+        bool removed_operand = false;
         for (uint32_t i = 1; i < annotation->NumOperands();) {
           Instruction* opInst =
               get_def_use_mgr()->GetDef(annotation->GetSingleWordOperand(i));
@@ -645,6 +646,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
             // Don't increment |i|.
             annotation->RemoveOperand(i);
             modified = true;
+            removed_operand = true;
           } else {
             i++;
             dead = false;
@@ -653,6 +655,8 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
         if (dead) {
           context()->KillInst(annotation);
           modified = true;
+        } else if (removed_operand) {
+          context()->UpdateDefUse(annotation);
         }
         break;
       }
@@ -661,6 +665,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
         // dead target (and member index). If all targets are dead, remove this
         // decoration.
         bool dead = true;
+        bool removed_operand = false;
         for (uint32_t i = 1; i < annotation->NumOperands();) {
           Instruction* opInst =
               get_def_use_mgr()->GetDef(annotation->GetSingleWordOperand(i));
@@ -669,6 +674,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
             annotation->RemoveOperand(i + 1);
             annotation->RemoveOperand(i);
             modified = true;
+            removed_operand = true;
           } else {
             i += 2;
             dead = false;
@@ -677,6 +683,8 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
         if (dead) {
           context()->KillInst(annotation);
           modified = true;
+        } else if (removed_operand) {
+          context()->UpdateDefUse(annotation);
         }
         break;
       }

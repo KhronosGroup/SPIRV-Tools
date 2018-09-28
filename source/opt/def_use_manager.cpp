@@ -278,7 +278,7 @@ bool operator==(const DefUseManager& lhs, const DefUseManager& rhs) {
     return false;
   }
 
-  if (lhs.inst_to_used_ids_ != lhs.inst_to_used_ids_) {
+  if (lhs.inst_to_used_ids_ != rhs.inst_to_used_ids_) {
     return false;
   }
   return true;
