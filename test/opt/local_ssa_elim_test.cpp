@@ -1664,6 +1664,7 @@ TEST_F(LocalSSAElimTest, CompositeExtractProblem) {
 %_ptr_Function__struct_11 = OpTypePointer Function %_struct_11
           %2 = OpFunction %void None %4
          %33 = OpLabel
+         %66 = OpVariable %_ptr_Function__arr__struct_11_uint_3 Function
          %34 = OpLoad %_arr_v4float_uint_3 %16
          %35 = OpLoad %_arr_v4float_uint_3 %17
          %36 = OpLoad %_arr_v4float_uint_3 %18
@@ -1696,7 +1697,6 @@ TEST_F(LocalSSAElimTest, CompositeExtractProblem) {
          %63 = OpCompositeExtract %v2float %40 2
          %64 = OpCompositeConstruct %_struct_11 %57 %58 %59 %60 %61 %62 %63
          %65 = OpCompositeConstruct %_arr__struct_11_uint_3 %48 %56 %64
-         %66 = OpVariable %_ptr_Function__arr__struct_11_uint_3 Function
          %67 = OpLoad %uint %20
 
 ; CHECK OpStore {{%\d+}} [[store_source:%\d+]]
