@@ -1084,7 +1084,7 @@ TEST_F(VectorDCETest, VectorIntoCompositeConstruct) {
   const std::string text = R"(OpCapability Linkage
 OpCapability Shader
 OpMemoryModel Logical GLSL450
-OpEntryPoint Vertex %1 "EntryPoint_Main" %2 %3
+OpEntryPoint Fragment %1 "EntryPoint_Main" %2 %3
 OpExecutionMode %1 OriginUpperLeft
 OpDecorate %2 Location 0
 OpDecorate %_struct_4 Block

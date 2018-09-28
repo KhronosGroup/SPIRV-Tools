@@ -34,6 +34,7 @@ TEST_F(ValidateAdjacency, OpPhiBeginsModuleFail) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
@@ -60,6 +61,7 @@ TEST_F(ValidateAdjacency, OpLoopMergeEndsModuleFail) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %main = OpFunction %void None %func
@@ -80,6 +82,7 @@ TEST_F(ValidateAdjacency, OpSelectionMergeEndsModuleFail) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %main = OpFunction %void None %func
@@ -103,6 +106,9 @@ std::string GenerateShaderCode(
   ss << capabilities_and_extensions << "\n";
   ss << "OpMemoryModel Logical GLSL450\n";
   ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+  if (execution_model == "Fragment") {
+    ss << "OpExecutionMode %main OriginUpperLeft\n";
+  }
 
   ss << R"(
 %string = OpString ""

@@ -1206,6 +1206,7 @@ TEST_F(ValidateCFG, LoopWithZeroBackEdgesBad) {
            OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpEntryPoint Fragment %main "main"
+           OpExecutionMode %main OriginUpperLeft
            OpName %loop "loop"
 %voidt   = OpTypeVoid
 %funct   = OpTypeFunction %voidt
@@ -1231,6 +1232,7 @@ TEST_F(ValidateCFG, LoopWithBackEdgeFromUnreachableContinueConstructGood) {
            OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpEntryPoint Fragment %main "main"
+           OpExecutionMode %main OriginUpperLeft
            OpName %loop "loop"
 %voidt   = OpTypeVoid
 %funct   = OpTypeFunction %voidt
@@ -1465,6 +1467,7 @@ TEST_F(ValidateCFG, StructuredCFGBranchIntoSelectionBody) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
@@ -1779,6 +1782,7 @@ TEST_F(ValidateCFG, InvalidCaseExit) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %1 "func"
+OpExecutionMode %1 OriginUpperLeft
 %2 = OpTypeVoid
 %3 = OpTypeInt 32 0
 %4 = OpTypeFunction %2
@@ -1811,6 +1815,7 @@ TEST_F(ValidateCFG, GoodCaseExitsToOuterConstructs) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
