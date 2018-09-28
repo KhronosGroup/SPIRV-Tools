@@ -194,7 +194,8 @@ OpNop
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpPhi must appear before all non-OpPhi instructions"));
+              HasSubstr("OpPhi must appear within a non-entry block before all "
+                        "non-OpPhi instructions"));
 }
 
 TEST_F(ValidateAdjacency, OpPhiPreceededByOpLineAndBadOpFail) {
@@ -214,7 +215,8 @@ OpLine %string 1 1
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpPhi must appear before all non-OpPhi instructions"));
+              HasSubstr("OpPhi must appear within a non-entry block before all "
+                        "non-OpPhi instructions"));
 }
 
 TEST_F(ValidateAdjacency, OpPhiFollowedByOpLineGood) {
@@ -260,7 +262,8 @@ OpLine %string 3 1
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpPhi must appear before all non-OpPhi instructions"));
+              HasSubstr("OpPhi must appear within a non-entry block before all "
+                        "non-OpPhi instructions"));
 }
 
 TEST_F(ValidateAdjacency, OpPhiMultipleOpLineAndOpPhiGood) {
@@ -285,6 +288,23 @@ OpNop
 
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAdjacency, OpPhiInEntryBlockBad) {
+  const std::string body = R"(
+OpLine %string 1 1
+%value = OpPhi %int
+OpLine %string 2 1
+OpNop
+OpLine %string 3 1
+OpNop
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpPhi must appear within a non-entry block before all "
+                        "non-OpPhi instructions"));
 }
 
 TEST_F(ValidateAdjacency, OpLoopMergePreceedsOpBranchSuccess) {

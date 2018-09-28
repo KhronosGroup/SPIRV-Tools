@@ -69,20 +69,13 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
 /// instructions.
 ///
 /// This function will iterate over all instructions and check for any required
-/// predecessor and/or successor instructions.
+/// predecessor and/or successor instructions. e.g. SpvOpPhi must only be
+/// preceeded by SpvOpLabel, SpvOpPhi, or SpvOpLine.
 ///
 /// @param[in] _ the validation state of the module
 ///
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_DATA otherwise
-spv_result_t ValidateAdjacency(ValidationState_t& _, size_t idx);
-
-/// @brief This function checks SpvOpPhi is only preceeded by SpvOpLabel,
-/// SpvOpPhi, or SpvOpLine.
-///
-/// @param[in] _ the validation state of the module
-///
-/// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_DATA otherwise
-spv_result_t ValidateAdjacencyForOpPhi(ValidationState_t& _);
+spv_result_t ValidateAdjacency(ValidationState_t& _);
 
 /// @brief Validates static uses of input and output variables
 ///
