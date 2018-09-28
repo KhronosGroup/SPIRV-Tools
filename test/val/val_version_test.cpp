@@ -31,6 +31,7 @@ const std::string vulkan_spirv = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %functy = OpTypeFunction %void
 %func = OpFunction %void None %functy

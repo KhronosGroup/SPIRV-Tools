@@ -589,6 +589,7 @@ TEST_F(CCPTest, UpdateSubsequentPhisToVarying) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func" %in
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %int = OpTypeInt 32 1
@@ -743,6 +744,7 @@ TEST_F(CCPTest, NullBranchCondition) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %int = OpTypeInt 32 1
@@ -774,6 +776,7 @@ TEST_F(CCPTest, UndefBranchCondition) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %int = OpTypeInt 32 1
@@ -805,6 +808,7 @@ TEST_F(CCPTest, NullSwitchCondition) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %int = OpTypeInt 32 1
 %null = OpConstantNull %int
@@ -835,6 +839,7 @@ TEST_F(CCPTest, UndefSwitchCondition) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %int = OpTypeInt 32 1
 %undef = OpUndef %int
@@ -865,6 +870,7 @@ TEST_F(CCPTest, CompositeConstructOfGlobalValue) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func" %in
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %int = OpTypeInt 32 1
 %bool = OpTypeBool

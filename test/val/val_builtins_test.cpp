@@ -243,10 +243,20 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InMain) {
   if (0 == std::strcmp(execution_model, "Fragment")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " OriginUpperLeft\n";
+    if (0 == std::strcmp(built_in, "FragDepth")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " DepthReplacing\n";
+    }
   }
-  if (0 == std::strcmp(built_in, "FragDepth")) {
+  if (0 == std::strcmp(execution_model, "Geometry")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
-                    << " DepthReplacing\n";
+                    << " InputPoints\n";
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " OutputPoints\n";
+  }
+  if (0 == std::strcmp(execution_model, "GLCompute")) {
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " LocalSize 1 1 1\n";
   }
   entry_point.execution_modes = execution_modes.str();
 
@@ -300,10 +310,20 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InFunction) {
   if (0 == std::strcmp(execution_model, "Fragment")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " OriginUpperLeft\n";
+    if (0 == std::strcmp(built_in, "FragDepth")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " DepthReplacing\n";
+    }
   }
-  if (0 == std::strcmp(built_in, "FragDepth")) {
+  if (0 == std::strcmp(execution_model, "Geometry")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
-                    << " DepthReplacing\n";
+                    << " InputPoints\n";
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " OutputPoints\n";
+  }
+  if (0 == std::strcmp(execution_model, "GLCompute")) {
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " LocalSize 1 1 1\n";
   }
   entry_point.execution_modes = execution_modes.str();
 
@@ -366,10 +386,20 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, Variable) {
   if (0 == std::strcmp(execution_model, "Fragment")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " OriginUpperLeft\n";
+    if (0 == std::strcmp(built_in, "FragDepth")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " DepthReplacing\n";
+    }
   }
-  if (0 == std::strcmp(built_in, "FragDepth")) {
+  if (0 == std::strcmp(execution_model, "Geometry")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
-                    << " DepthReplacing\n";
+                    << " InputPoints\n";
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " OutputPoints\n";
+  }
+  if (0 == std::strcmp(execution_model, "GLCompute")) {
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " LocalSize 1 1 1\n";
   }
   entry_point.execution_modes = execution_modes.str();
 
@@ -1542,10 +1572,20 @@ TEST_P(ValidateVulkanCombineBuiltInArrayedVariable, Variable) {
   if (0 == std::strcmp(execution_model, "Fragment")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " OriginUpperLeft\n";
+    if (0 == std::strcmp(built_in, "FragDepth")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " DepthReplacing\n";
+    }
   }
-  if (0 == std::strcmp(built_in, "FragDepth")) {
+  if (0 == std::strcmp(execution_model, "Geometry")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
-                    << " DepthReplacing\n";
+                    << " InputPoints\n";
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " OutputPoints\n";
+  }
+  if (0 == std::strcmp(execution_model, "GLCompute")) {
+    execution_modes << "OpExecutionMode %" << entry_point.name
+                    << " LocalSize 1 1 1\n";
   }
   entry_point.execution_modes = execution_modes.str();
 
@@ -1869,6 +1909,8 @@ OpMemberDecorate %output_type 0 BuiltIn Position
 OpStore %output_pos %pos
 )";
   generator.entry_points_.push_back(std::move(entry_point));
+  generator.entry_points_[0].execution_modes =
+      "OpExecutionMode %main InputPoints\nOpExecutionMode %main OutputPoints\n";
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
@@ -1904,6 +1946,8 @@ OpMemberDecorate %output_type 0 BuiltIn Position
 OpStore %output_pos %pos
 )";
   generator.entry_points_.push_back(std::move(entry_point));
+  generator.entry_points_[0].execution_modes =
+      "OpExecutionMode %main InputPoints\nOpExecutionMode %main OutputPoints\n";
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
@@ -1942,6 +1986,8 @@ OpMemberDecorate %output_type 0 BuiltIn FragCoord
 OpStore %output_pos %pos
 )";
   generator.entry_points_.push_back(std::move(entry_point));
+  generator.entry_points_[0].execution_modes =
+      "OpExecutionMode %main InputPoints\nOpExecutionMode %main OutputPoints\n";
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));

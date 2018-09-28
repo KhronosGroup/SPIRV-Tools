@@ -44,6 +44,9 @@ OpCapability DerivativeControl
      << " %f32_var_input"
      << " %f32vec4_var_input"
      << "\n";
+  if (execution_model == "Fragment") {
+    ss << "OpExecutionMode %main OriginUpperLeft\n";
+  }
 
   ss << R"(
 %void = OpTypeVoid

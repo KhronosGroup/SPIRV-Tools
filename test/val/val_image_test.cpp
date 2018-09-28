@@ -56,6 +56,9 @@ OpCapability ImageBuffer
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical GLSL450\n";
   ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+  if (execution_model == "Fragment") {
+    ss << "OpExecutionMode %main OriginUpperLeft\n";
+  }
 
   ss << R"(
 %void = OpTypeVoid
@@ -374,7 +377,8 @@ OpMemoryModel Logical GLSL450
 )";
 
   if (include_entry_point) {
-    ss << "OpEntryPoint Fragment %main \"main\"";
+    ss << "OpEntryPoint Fragment %main \"main\"\n";
+    ss << "OpExecutionMode %main OriginUpperLeft";
   }
   ss << R"(
 %void = OpTypeVoid

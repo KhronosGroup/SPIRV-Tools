@@ -49,6 +49,9 @@ OpCapability GroupNonUniformQuad
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical GLSL450\n";
   ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+  if (execution_model == "GLCompute") {
+    ss << "OpExecutionMode %main LocalSize 1 1 1\n";
+  }
 
   ss << R"(
 %void = OpTypeVoid
