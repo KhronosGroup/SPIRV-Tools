@@ -331,7 +331,8 @@ bool DeadBranchElimPass::EraseDeadBlocks(
         ebi->AddInstruction(
             MakeUnique<Instruction>(context(), SpvOpUnreachable, 0, 0,
                                     std::initializer_list<Operand>{}));
-        context()->set_instr_block(&*ebi->tail(), &*ebi);
+        context()->AnalyzeUses(ebi->terminator());
+        context()->set_instr_block(ebi->terminator(), &*ebi);
         modified = true;
       }
       ++ebi;
