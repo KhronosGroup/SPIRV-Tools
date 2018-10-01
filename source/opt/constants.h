@@ -18,11 +18,10 @@
 #include <cinttypes>
 #include <map>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/module.h"
 #include "source/opt/type_manager.h"
 #include "source/opt/types.h"
@@ -673,16 +672,16 @@ class ConstantManager {
   // Constant instances. All Normal Constants in the module, either
   // existing ones before optimization or the newly generated ones, should have
   // their Constant instance stored and their result id registered in this map.
-  std::unordered_map<uint32_t, const Constant*> id_to_const_val_;
+  CAUnorderedMap<uint32_t, const Constant*> id_to_const_val_;
 
   // A mapping from the Constant instance of Normal Constants to their
   // result id in the module. This is a mirror map of |id_to_const_val_|. All
   // Normal Constants that defining instructions in the module should have
   // their Constant and their result id registered here.
-  std::multimap<const Constant*, uint32_t> const_val_to_id_;
+  CAMultiMap<const Constant*, uint32_t> const_val_to_id_;
 
   // The constant pool.  All created constants are registered here.
-  std::unordered_set<const Constant*, ConstantHash, ConstantEqual> const_pool_;
+  CAUnorderedSet<const Constant*, ConstantHash, ConstantEqual> const_pool_;
 
   // The constant that are owned by the constant manager.  Every constant in
   // |const_pool_| should be in |owned_constants_| as well.

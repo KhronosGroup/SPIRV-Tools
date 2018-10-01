@@ -28,7 +28,7 @@ Pass::Status LocalRedundancyEliminationPass::Process() {
       // Keeps track of all ids that contain a given value number. We keep
       // track of multiple values because they could have the same value, but
       // different decorations.
-      std::map<uint32_t, uint32_t> value_to_ids;
+      CAMap<uint32_t, uint32_t> value_to_ids;
       if (EliminateRedundanciesInBB(&bb, vnTable, &value_to_ids))
         modified = true;
     }
@@ -38,7 +38,7 @@ Pass::Status LocalRedundancyEliminationPass::Process() {
 
 bool LocalRedundancyEliminationPass::EliminateRedundanciesInBB(
     BasicBlock* block, const ValueNumberTable& vnTable,
-    std::map<uint32_t, uint32_t>* value_to_ids) {
+    CAMap<uint32_t, uint32_t>* value_to_ids) {
   bool modified = false;
 
   auto func = [this, &vnTable, &modified, value_to_ids](Instruction* inst) {

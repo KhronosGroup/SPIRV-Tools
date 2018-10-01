@@ -16,8 +16,8 @@
 #define SOURCE_OPT_VALUE_NUMBER_TABLE_H_
 
 #include <cstdint>
-#include <unordered_map>
 
+#include "source/opt/allocator.h"
 #include "source/opt/instruction.h"
 
 namespace spvtools {
@@ -78,9 +78,9 @@ class ValueNumberTable {
   // id.
   uint32_t AssignValueNumber(Instruction* inst);
 
-  std::unordered_map<Instruction, uint32_t, ValueTableHash, ComputeSameValue>
+  CAUnorderedMap<Instruction, uint32_t, ValueTableHash, ComputeSameValue>
       instruction_to_value_;
-  std::unordered_map<uint32_t, uint32_t> id_to_value_;
+  CAUnorderedMap<uint32_t, uint32_t> id_to_value_;
   IRContext* context_;
   uint32_t next_value_number_;
 };

@@ -21,8 +21,6 @@
 #include <map>
 #include <queue>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -61,7 +59,7 @@ class LocalMultiStoreElimPass : public MemPass {
   Pass::Status ProcessImpl();
 
   // Extensions supported by this pass.
-  std::unordered_set<std::string> extensions_whitelist_;
+  CAUnorderedSet<std::string> extensions_whitelist_;
 };
 
 }  // namespace opt

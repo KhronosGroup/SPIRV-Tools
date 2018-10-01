@@ -81,23 +81,23 @@ class LoopFissionImpl {
  private:
   // Traverse the def use chain of |inst| and add the users and uses of |inst|
   // which are in the same loop to the |returned_set|.
-  void TraverseUseDef(Instruction* inst, std::set<Instruction*>* returned_set,
+  void TraverseUseDef(Instruction* inst, CASet<Instruction*>* returned_set,
                       bool ignore_phi_users = false, bool report_loads = false);
 
   // We group the instructions in the block into two different groups, the
   // instructions to be kept in the original loop and the ones to be cloned into
   // the new loop. As the cloned loop is attached to the preheader it will be
   // the first loop and the second loop will be the original.
-  std::set<Instruction*> cloned_loop_instructions_;
-  std::set<Instruction*> original_loop_instructions_;
+  CASet<Instruction*> cloned_loop_instructions_;
+  CASet<Instruction*> original_loop_instructions_;
 
   // We need a set of all the instructions to be seen so we can break any
   // recursion and also so we can ignore certain instructions by preemptively
   // adding them to this set.
-  std::set<Instruction*> seen_instructions_;
+  CASet<Instruction*> seen_instructions_;
 
   // A map of instructions to their relative position in the function.
-  std::map<Instruction*, size_t> instruction_order_;
+  CAMap<Instruction*, size_t> instruction_order_;
 
   IRContext* context_;
 
@@ -117,12 +117,12 @@ bool LoopFissionImpl::MovableInstruction(const Instruction& inst) const {
 }
 
 void LoopFissionImpl::TraverseUseDef(Instruction* inst,
-                                     std::set<Instruction*>* returned_set,
+                                     CASet<Instruction*>* returned_set,
                                      bool ignore_phi_users, bool report_loads) {
   assert(returned_set && "Set to be returned cannot be null.");
 
   analysis::DefUseManager* def_use = context_->get_def_use_mgr();
-  std::set<Instruction*>& inst_set = *returned_set;
+  CASet<Instruction*>& inst_set = *returned_set;
 
   // We create this functor to traverse the use def chain to build the
   // grouping of related instructions. The lambda captures the std::function
@@ -177,7 +177,6 @@ void LoopFissionImpl::TraverseUseDef(Instruction* inst,
       traverser_functor(use);
     };
     def_use->ForEachUse(user, traverse_use);
-
   };
 
   // We start the traversal of the use def graph by invoking the above
@@ -186,7 +185,7 @@ void LoopFissionImpl::TraverseUseDef(Instruction* inst,
 }
 
 bool LoopFissionImpl::GroupInstructionsByUseDef() {
-  std::vector<std::set<Instruction*>> sets{};
+  std::vector<CASet<Instruction*>> sets{};
 
   // We want to ignore all the instructions stemming from the loop condition
   // instruction.
@@ -203,7 +202,7 @@ bool LoopFissionImpl::GroupInstructionsByUseDef() {
   // Create a temporary set to ignore certain groups of instructions within the
   // loop. We don't want any instructions related to control flow to be removed
   // from either loop only instructions within the control flow bodies.
-  std::set<Instruction*> instructions_to_ignore{};
+  CASet<Instruction*> instructions_to_ignore{};
   TraverseUseDef(condition, &instructions_to_ignore, true, true);
 
   // Traverse control flow instructions to ensure they are added to the
@@ -240,7 +239,7 @@ bool LoopFissionImpl::GroupInstructionsByUseDef() {
       }
 
       // Build the set.
-      std::set<Instruction*> inst_set{};
+      CASet<Instruction*> inst_set{};
       TraverseUseDef(&inst, &inst_set);
       if (!inst_set.empty()) sets.push_back(std::move(inst_set));
     }

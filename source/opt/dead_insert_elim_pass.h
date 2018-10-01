@@ -19,11 +19,10 @@
 
 #include <algorithm>
 #include <map>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/ir_context.h"
@@ -60,7 +59,7 @@ class DeadInsertElimPass : public MemPass {
   // Mark all inserts in chain if |extIndices| is nullptr.
   void MarkInsertChain(Instruction* insertChain,
                        std::vector<uint32_t>* extIndices, uint32_t extOffset,
-                       std::unordered_set<uint32_t>* visited_phis);
+                       CAUnorderedSet<uint32_t>* visited_phis);
 
   // Perform EliminateDeadInsertsOnePass(|func|) until no modification is
   // made. Return true if modified.
@@ -77,10 +76,10 @@ class DeadInsertElimPass : public MemPass {
   bool AllExtensionsSupported() const;
 
   // Live inserts
-  std::unordered_set<uint32_t> liveInserts_;
+  CAUnorderedSet<uint32_t> liveInserts_;
 
   // Visited phis as insert chain is traversed; used to avoid infinite loop
-  std::unordered_map<uint32_t, bool> visitedPhis_;
+  CAUnorderedMap<uint32_t, bool> visitedPhis_;
 };
 
 }  // namespace opt

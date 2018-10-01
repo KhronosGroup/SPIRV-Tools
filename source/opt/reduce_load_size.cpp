@@ -135,7 +135,7 @@ bool ReduceLoadSize::ShouldReplaceExtract(Instruction* inst) {
   }
 
   bool all_elements_used = false;
-  std::set<uint32_t> elements_used;
+  CASet<uint32_t> elements_used;
 
   all_elements_used =
       !def_use_mgr->WhileEachUser(op_inst, [&elements_used](Instruction* use) {

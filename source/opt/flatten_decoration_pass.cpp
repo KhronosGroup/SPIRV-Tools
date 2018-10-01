@@ -16,8 +16,6 @@
 
 #include <cassert>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -27,7 +25,7 @@ namespace spvtools {
 namespace opt {
 
 using Words = std::vector<uint32_t>;
-using OrderedUsesMap = std::unordered_map<uint32_t, Words>;
+using OrderedUsesMap = CAUnorderedMap<uint32_t, Words>;
 
 Pass::Status FlattenDecorationPass::Process() {
   bool modified = false;
@@ -35,7 +33,7 @@ Pass::Status FlattenDecorationPass::Process() {
   // The target Id of OpDecorationGroup instructions.
   // We have to track this separately from its uses, in case it
   // has no uses.
-  std::unordered_set<uint32_t> group_ids;
+  CAUnorderedSet<uint32_t> group_ids;
   // Maps a decoration group Id to its GroupDecorate targets, in order
   // of appearance.
   OrderedUsesMap normal_uses;

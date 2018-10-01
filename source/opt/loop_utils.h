@@ -17,7 +17,6 @@
 
 #include <list>
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 #include "source/opt/ir_context.h"
@@ -34,7 +33,7 @@ struct CodeMetrics {
   void Analyze(const Loop& loop);
 
   // The number of instructions per basic block in the ROI.
-  std::unordered_map<uint32_t, size_t> block_sizes_;
+  CAUnorderedMap<uint32_t, size_t> block_sizes_;
 
   // Number of instruction in the ROI.
   size_t roi_size_;
@@ -47,9 +46,9 @@ class LoopUtils {
  public:
   // Holds a auxiliary results of the loop cloning procedure.
   struct LoopCloningResult {
-    using ValueMapTy = std::unordered_map<uint32_t, uint32_t>;
-    using BlockMapTy = std::unordered_map<uint32_t, BasicBlock*>;
-    using PtrMap = std::unordered_map<Instruction*, Instruction*>;
+    using ValueMapTy = CAUnorderedMap<uint32_t, uint32_t>;
+    using BlockMapTy = CAUnorderedMap<uint32_t, BasicBlock*>;
+    using PtrMap = CAUnorderedMap<Instruction*, Instruction*>;
 
     PtrMap ptr_map_;
 

@@ -91,7 +91,7 @@ class LoopFusion {
 
   // Given a vector of memory operations (OpLoad/OpStore), constructs a map from
   // variables to the loads/stores that those variables.
-  std::map<Instruction*, std::vector<Instruction*>> LocationToMemOps(
+  CAMap<Instruction*, std::vector<Instruction*>> LocationToMemOps(
       const std::vector<Instruction*>& mem_ops);
 
   IRContext* context_;

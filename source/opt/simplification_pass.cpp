@@ -15,9 +15,9 @@
 #include "source/opt/simplification_pass.h"
 
 #include <set>
-#include <unordered_set>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/fold.h"
 
 namespace spvtools {
@@ -41,9 +41,9 @@ bool SimplificationPass::SimplifyFunction(Function* function) {
   // track of the OpPhi instructions already seen, and add them to the work list
   // for phase 2 when needed.
   std::vector<Instruction*> work_list;
-  std::unordered_set<Instruction*> process_phis;
-  std::unordered_set<Instruction*> inst_to_kill;
-  std::unordered_set<Instruction*> in_work_list;
+  CAUnorderedSet<Instruction*> process_phis;
+  CAUnorderedSet<Instruction*> inst_to_kill;
+  CAUnorderedSet<Instruction*> in_work_list;
   const InstructionFolder& folder = context()->get_instruction_folder();
 
   cfg()->ForEachBlockInReversePostOrder(

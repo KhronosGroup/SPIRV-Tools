@@ -39,7 +39,7 @@ void Pass::AddCalls(Function* func, std::queue<uint32_t>* todo) {
 
 bool Pass::ProcessEntryPointCallTree(ProcessFunction& pfn, Module* module) {
   // Map from function's result id to function
-  std::unordered_map<uint32_t, Function*> id2function;
+  CAUnorderedMap<uint32_t, Function*> id2function;
   for (auto& fn : *module) id2function[fn.result_id()] = &fn;
 
   // Collect all of the entry points as the roots.
@@ -52,7 +52,7 @@ bool Pass::ProcessEntryPointCallTree(ProcessFunction& pfn, Module* module) {
 bool Pass::ProcessReachableCallTree(ProcessFunction& pfn,
                                     IRContext* irContext) {
   // Map from function's result id to function
-  std::unordered_map<uint32_t, Function*> id2function;
+  CAUnorderedMap<uint32_t, Function*> id2function;
   for (auto& fn : *irContext->module()) id2function[fn.result_id()] = &fn;
 
   std::queue<uint32_t> roots;
@@ -84,11 +84,11 @@ bool Pass::ProcessReachableCallTree(ProcessFunction& pfn,
 
 bool Pass::ProcessCallTreeFromRoots(
     ProcessFunction& pfn,
-    const std::unordered_map<uint32_t, Function*>& id2function,
+    const CAUnorderedMap<uint32_t, Function*>& id2function,
     std::queue<uint32_t>* roots) {
   // Process call tree
   bool modified = false;
-  std::unordered_set<uint32_t> done;
+  CAUnorderedSet<uint32_t> done;
 
   while (!roots->empty()) {
     const uint32_t fi = roots->front();

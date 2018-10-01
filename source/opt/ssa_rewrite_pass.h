@@ -17,11 +17,10 @@
 
 #include <queue>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/mem_pass.h"
@@ -122,9 +121,8 @@ class SSARewriter {
   };
 
   // Type used to keep track of store operations in each basic block.
-  typedef std::unordered_map<BasicBlock*,
-                             std::unordered_map<uint32_t, uint32_t>>
-      BlockDefsMap;
+  using BlockDefsMap =
+      CAUnorderedMap<BasicBlock*, CAUnorderedMap<uint32_t, uint32_t>>;
 
   // Generates all the SSA rewriting decisions for basic block |bb|.  This
   // populates the Phi candidate table (|phi_candidate_|) and the load
@@ -262,7 +260,7 @@ class SSARewriter {
   // Map, indexed by Phi ID, holding all the Phi candidates created during SSA
   // rewriting.  |phi_candidates_[id]| returns the Phi candidate whose result
   // is |id|.
-  std::unordered_map<uint32_t, PhiCandidate> phi_candidates_;
+  CAUnorderedMap<uint32_t, PhiCandidate> phi_candidates_;
 
   // Queue of incomplete Phi candidates. These are Phi candidates created at
   // unsealed blocks. They need to be completed before they are instantiated
@@ -277,10 +275,10 @@ class SSARewriter {
   // operation, to the value IDs that will replace them after SSA rewriting.
   // After all the rewriting decisions are made, a final scan through the IR
   // is done to replace all uses of the original load ID with the value ID.
-  std::unordered_map<uint32_t, uint32_t> load_replacement_;
+  CAUnorderedMap<uint32_t, uint32_t> load_replacement_;
 
   // Set of blocks that have been sealed already.
-  std::unordered_set<BasicBlock*> sealed_blocks_;
+  CAUnorderedSet<BasicBlock*> sealed_blocks_;
 
   // Memory pass requesting the SSA rewriter.
   MemPass* pass_;

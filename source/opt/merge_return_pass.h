@@ -15,8 +15,6 @@
 #ifndef SOURCE_OPT_MERGE_RETURN_PASS_H_
 #define SOURCE_OPT_MERGE_RETURN_PASS_H_
 
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "source/opt/basic_block.h"
@@ -213,7 +211,7 @@ class MergeReturnPass : public MemPass {
   // If new blocks that are created will be added to |order|.  This way a call
   // can traverse these new block in structured order.
   void PredicateBlocks(BasicBlock* return_block,
-                       std::unordered_set<BasicBlock*>* pSet,
+                       CAUnorderedSet<BasicBlock*>* pSet,
                        std::list<BasicBlock*>* order);
 
   // Add a conditional branch at the start of |block| that either jumps to
@@ -223,7 +221,7 @@ class MergeReturnPass : public MemPass {
   // If new blocks that are created will be added to |order|.  This way a call
   // can traverse these new block in structured order.
   void BreakFromConstruct(BasicBlock* block, BasicBlock* merge_block,
-                          std::unordered_set<BasicBlock*>* predicated,
+                          CAUnorderedSet<BasicBlock*>* predicated,
                           std::list<BasicBlock*>* order);
 
   // Add an |OpReturn| or |OpReturnValue| to the end of |block|.  If an
@@ -321,7 +319,7 @@ class MergeReturnPass : public MemPass {
   // but now have more.  They will need new OpPhi nodes.  For each of the nodes,
   // it is mapped to it original single predcessor.  It is assumed there are no
   // values that will need a phi on the new edges.
-  std::unordered_map<BasicBlock*, BasicBlock*> new_merge_nodes_;
+  CAUnorderedMap<BasicBlock*, BasicBlock*> new_merge_nodes_;
 };
 
 }  // namespace opt

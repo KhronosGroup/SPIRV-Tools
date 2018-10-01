@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "gmock/gmock.h"
+#include "source/opt/allocator.h"
 #include "source/opt/iterator.h"
 #include "source/opt/loop_dependence.h"
 #include "source/opt/loop_descriptor.h"
@@ -2840,12 +2841,11 @@ void PartitionSubscripts(const Instruction* instruction_0,
   auto subscripts_0 = analysis->GetSubscripts(instruction_0);
   auto subscripts_1 = analysis->GetSubscripts(instruction_1);
 
-  std::vector<std::set<std::pair<Instruction*, Instruction*>>>
+  std::vector<CASet<std::pair<Instruction*, Instruction*>>>
       expected_partition{};
 
   for (const auto& partition : expected_ids) {
-    expected_partition.push_back(
-        std::set<std::pair<Instruction*, Instruction*>>{});
+    expected_partition.emplace_back();
     for (auto id : partition) {
       expected_partition.back().insert({subscripts_0[id], subscripts_1[id]});
     }

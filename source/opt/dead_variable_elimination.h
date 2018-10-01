@@ -16,8 +16,8 @@
 #define SOURCE_OPT_DEAD_VARIABLE_ELIMINATION_H_
 
 #include <climits>
-#include <unordered_map>
 
+#include "source/opt/allocator.h"
 #include "source/opt/decoration_manager.h"
 #include "source/opt/mem_pass.h"
 
@@ -43,7 +43,7 @@ class DeadVariableElimination : public MemPass {
   // Note that the special value kMustKeep is used to indicate that the
   // instruction cannot be deleted for reasons other that is being explicitly
   // referenced.
-  std::unordered_map<uint32_t, size_t> reference_count_;
+  CAUnorderedMap<uint32_t, size_t> reference_count_;
 
   // Special value used to indicate that an id cannot be safely deleted.
   enum { kMustKeep = INT_MAX };

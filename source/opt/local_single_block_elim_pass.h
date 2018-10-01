@@ -21,8 +21,6 @@
 #include <map>
 #include <queue>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 #include "source/opt/basic_block.h"
@@ -75,28 +73,28 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // at the start of each block and incrementally updated as the block
   // is scanned. The stores are candidates for elimination. The map is
   // conservatively cleared when a function call is encountered.
-  std::unordered_map<uint32_t, Instruction*> var2store_;
+  CAUnorderedMap<uint32_t, Instruction*> var2store_;
 
   // Map from function scope variable to a load of that variable in the
   // current block whose value is currently valid. This map is cleared
   // at the start of each block and incrementally updated as the block
   // is scanned. The stores are candidates for elimination. The map is
   // conservatively cleared when a function call is encountered.
-  std::unordered_map<uint32_t, Instruction*> var2load_;
+  CAUnorderedMap<uint32_t, Instruction*> var2load_;
 
   // Set of variables whose most recent store in the current block cannot be
   // deleted, for example, if there is a load of the variable which is
   // dependent on the store and is not replaced and deleted by this pass,
   // for example, a load through an access chain. A variable is removed
   // from this set each time a new store of that variable is encountered.
-  std::unordered_set<uint32_t> pinned_vars_;
+  CAUnorderedSet<uint32_t> pinned_vars_;
 
   // Extensions supported by this pass.
-  std::unordered_set<std::string> extensions_whitelist_;
+  CAUnorderedSet<std::string> extensions_whitelist_;
 
   // Variables that are only referenced by supported operations for this
   // pass ie. loads and stores.
-  std::unordered_set<uint32_t> supported_ref_ptrs_;
+  CAUnorderedSet<uint32_t> supported_ref_ptrs_;
 };
 
 }  // namespace opt

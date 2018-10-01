@@ -18,8 +18,6 @@
 #include <list>
 #include <memory>
 #include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -292,7 +290,7 @@ class LoopUnswitch {
     }
 
     // Get the loop landing pads.
-    std::unordered_set<uint32_t> if_merging_blocks;
+    CAUnorderedSet<uint32_t> if_merging_blocks;
     std::function<bool(uint32_t)> is_from_original_loop;
     if (loop_->GetHeaderBlock()->GetLoopMergeInst()) {
       if_merging_blocks.insert(if_merge_block->id());
@@ -322,8 +320,8 @@ class LoopUnswitch {
       ////////////////////////////////////
 
       {
-        std::unordered_set<uint32_t> dead_blocks;
-        std::unordered_set<uint32_t> unreachable_merges;
+        CAUnorderedSet<uint32_t> dead_blocks;
+        CAUnorderedSet<uint32_t> unreachable_merges;
         SimplifyLoop(
             make_range(
                 UptrVectorIterator<BasicBlock>(&clone_result.cloned_bb_,
@@ -378,8 +376,8 @@ class LoopUnswitch {
 
     // Same as above but specialize the existing loop
     {
-      std::unordered_set<uint32_t> dead_blocks;
-      std::unordered_set<uint32_t> unreachable_merges;
+      CAUnorderedSet<uint32_t> dead_blocks;
+      CAUnorderedSet<uint32_t> unreachable_merges;
       SimplifyLoop(make_range(function_->begin(), function_->end()), loop_,
                    condition, original_loop_constant_value, &dead_blocks);
 
@@ -444,8 +442,8 @@ class LoopUnswitch {
   bool WasLoopKilled() const { return loop_ == nullptr; }
 
  private:
-  using ValueMapTy = std::unordered_map<uint32_t, uint32_t>;
-  using BlockMapTy = std::unordered_map<uint32_t, BasicBlock*>;
+  using ValueMapTy = CAUnorderedMap<uint32_t, uint32_t>;
+  using BlockMapTy = CAUnorderedMap<uint32_t, BasicBlock*>;
 
   Function* function_;
   Loop* loop_;
@@ -454,7 +452,7 @@ class LoopUnswitch {
 
   BasicBlock* switch_block_;
   // Map between instructions and if they are dynamically uniform.
-  std::unordered_map<uint32_t, bool> dynamically_uniform_;
+  CAUnorderedMap<uint32_t, bool> dynamically_uniform_;
   // The loop basic blocks in structured order.
   std::vector<BasicBlock*> ordered_loop_blocks_;
 
@@ -463,8 +461,7 @@ class LoopUnswitch {
 
   // Patches |bb|'s phi instruction by removing incoming value from unexisting
   // or tagged as dead branches.
-  void PatchPhis(BasicBlock* bb,
-                 const std::unordered_set<uint32_t>& dead_blocks,
+  void PatchPhis(BasicBlock* bb, const CAUnorderedSet<uint32_t>& dead_blocks,
                  bool preserve_phi) {
     CFG& cfg = *context_->cfg();
 
@@ -474,28 +471,28 @@ class LoopUnswitch {
       return dead_blocks.count(id) ||
              std::find(bb_preds.begin(), bb_preds.end(), id) == bb_preds.end();
     };
-    bb->ForEachPhiInst([&phi_to_kill, &is_branch_dead, preserve_phi,
-                        this](Instruction* insn) {
-      uint32_t i = 0;
-      while (i < insn->NumInOperands()) {
-        uint32_t incoming_id = insn->GetSingleWordInOperand(i + 1);
-        if (is_branch_dead(incoming_id)) {
-          // Remove the incoming block id operand.
-          insn->RemoveInOperand(i + 1);
-          // Remove the definition id operand.
-          insn->RemoveInOperand(i);
-          continue;
-        }
-        i += 2;
-      }
-      // If there is only 1 remaining edge, propagate the value and
-      // kill the instruction.
-      if (insn->NumInOperands() == 2 && !preserve_phi) {
-        phi_to_kill.push_back(insn);
-        context_->ReplaceAllUsesWith(insn->result_id(),
-                                     insn->GetSingleWordInOperand(0));
-      }
-    });
+    bb->ForEachPhiInst(
+        [&phi_to_kill, &is_branch_dead, preserve_phi, this](Instruction* insn) {
+          uint32_t i = 0;
+          while (i < insn->NumInOperands()) {
+            uint32_t incoming_id = insn->GetSingleWordInOperand(i + 1);
+            if (is_branch_dead(incoming_id)) {
+              // Remove the incoming block id operand.
+              insn->RemoveInOperand(i + 1);
+              // Remove the definition id operand.
+              insn->RemoveInOperand(i);
+              continue;
+            }
+            i += 2;
+          }
+          // If there is only 1 remaining edge, propagate the value and
+          // kill the instruction.
+          if (insn->NumInOperands() == 2 && !preserve_phi) {
+            phi_to_kill.push_back(insn);
+            context_->ReplaceAllUsesWith(insn->result_id(),
+                                         insn->GetSingleWordInOperand(0));
+          }
+        });
     for (Instruction* insn : phi_to_kill) {
       context_->KillInst(insn);
     }
@@ -505,8 +502,8 @@ class LoopUnswitch {
   // |unreachable_merges| then all block's instructions are replaced by a
   // OpUnreachable.
   void CleanUpCFG(UptrVectorIterator<BasicBlock> bb_it,
-                  const std::unordered_set<uint32_t>& dead_blocks,
-                  const std::unordered_set<uint32_t>& unreachable_merges) {
+                  const CAUnorderedSet<uint32_t>& dead_blocks,
+                  const CAUnorderedSet<uint32_t>& unreachable_merges) {
     CFG& cfg = *context_->cfg();
 
     while (bb_it != bb_it.End()) {
@@ -546,7 +543,9 @@ class LoopUnswitch {
         *cond_val = true;
         cond_is_const = true;
       } break;
-      default: { cond_is_const = false; } break;
+      default: {
+        cond_is_const = false;
+      } break;
     }
     return cond_is_const;
   }
@@ -565,7 +564,7 @@ class LoopUnswitch {
   void SimplifyLoop(IteratorRange<UptrVectorIterator<BasicBlock>> block_range,
                     Loop* loop, Instruction* to_version_insn,
                     Instruction* cst_value,
-                    std::unordered_set<uint32_t>* dead_blocks) {
+                    CAUnorderedSet<uint32_t>* dead_blocks) {
     CFG& cfg = *context_->cfg();
     analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
@@ -607,7 +606,7 @@ class LoopUnswitch {
 
       // The user is a branch, kill dead branches.
       uint32_t live_target = 0;
-      std::unordered_set<uint32_t> dead_branches;
+      CAUnorderedSet<uint32_t> dead_branches;
       switch (inst->opcode()) {
         case SpvOpBranchConditional: {
           assert(cst_value && "No constant value to specialize !");
@@ -659,7 +658,7 @@ class LoopUnswitch {
 
     // Go through the loop basic block and tag all blocks that are obviously
     // dead.
-    std::unordered_set<uint32_t> visited;
+    CAUnorderedSet<uint32_t> visited;
     for (BasicBlock& bb : block_range) {
       if (ignore_node(bb.id())) continue;
       visited.insert(bb.id());
@@ -693,7 +692,7 @@ class LoopUnswitch {
   // Returns true if the header is not reachable or tagged as dead or if we
   // never loop back.
   bool IsLoopDead(BasicBlock* header, BasicBlock* latch,
-                  const std::unordered_set<uint32_t>& dead_blocks) {
+                  const CAUnorderedSet<uint32_t>& dead_blocks) {
     if (!header || dead_blocks.count(header->id())) return true;
     if (!latch || dead_blocks.count(latch->id())) return true;
     for (uint32_t pid : context_->cfg()->preds(header->id())) {
@@ -712,14 +711,13 @@ class LoopUnswitch {
   // |unreachable_merges|.
   // The function returns the pointer to |loop| or nullptr if the loop was
   // killed.
-  Loop* CleanLoopNest(Loop* loop,
-                      const std::unordered_set<uint32_t>& dead_blocks,
-                      std::unordered_set<uint32_t>* unreachable_merges) {
+  Loop* CleanLoopNest(Loop* loop, const CAUnorderedSet<uint32_t>& dead_blocks,
+                      CAUnorderedSet<uint32_t>* unreachable_merges) {
     // This represent the pair of dead loop and nearest alive parent (nullptr if
     // no parent).
-    std::unordered_map<Loop*, Loop*> dead_loops;
+    CAUnorderedMap<Loop*, Loop*> dead_loops;
     auto get_parent = [&dead_loops](Loop* l) -> Loop* {
-      std::unordered_map<Loop*, Loop*>::iterator it = dead_loops.find(l);
+      CAUnorderedMap<Loop*, Loop*>::iterator it = dead_loops.find(l);
       if (it != dead_loops.end()) return it->second;
       return nullptr;
     };
@@ -770,8 +768,7 @@ class LoopUnswitch {
 
     std::for_each(
         dead_loops.begin(), dead_loops.end(),
-        [&loop,
-         this](std::unordered_map<Loop*, Loop*>::iterator::reference it) {
+        [&loop, this](CAUnorderedMap<Loop*, Loop*>::iterator::reference it) {
           if (it.first == loop) loop = nullptr;
           loop_desc_.RemoveLoop(it.first);
         });
@@ -865,7 +862,7 @@ Pass::Status LoopUnswitchPass::Process() {
 
 bool LoopUnswitchPass::ProcessFunction(Function* f) {
   bool modified = false;
-  std::unordered_set<Loop*> processed_loop;
+  CAUnorderedSet<Loop*> processed_loop;
 
   LoopDescriptor& loop_descriptor = *context()->GetLoopDescriptor(f);
 

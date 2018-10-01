@@ -16,7 +16,6 @@
 
 #include "source/opt/inline_pass.h"
 
-#include <unordered_set>
 #include <utility>
 
 #include "source/cfa.h"
@@ -117,22 +116,22 @@ uint32_t InlinePass::GetFalseId() {
   return false_id_;
 }
 
-void InlinePass::MapParams(
-    Function* calleeFn, BasicBlock::iterator call_inst_itr,
-    std::unordered_map<uint32_t, uint32_t>* callee2caller) {
+void InlinePass::MapParams(Function* calleeFn,
+                           BasicBlock::iterator call_inst_itr,
+                           CAUnorderedMap<uint32_t, uint32_t>* callee2caller) {
   int param_idx = 0;
-  calleeFn->ForEachParam([&call_inst_itr, &param_idx,
-                          &callee2caller](const Instruction* cpi) {
-    const uint32_t pid = cpi->result_id();
-    (*callee2caller)[pid] = call_inst_itr->GetSingleWordOperand(
-        kSpvFunctionCallArgumentId + param_idx);
-    ++param_idx;
-  });
+  calleeFn->ForEachParam(
+      [&call_inst_itr, &param_idx, &callee2caller](const Instruction* cpi) {
+        const uint32_t pid = cpi->result_id();
+        (*callee2caller)[pid] = call_inst_itr->GetSingleWordOperand(
+            kSpvFunctionCallArgumentId + param_idx);
+        ++param_idx;
+      });
 }
 
 void InlinePass::CloneAndMapLocals(
     Function* calleeFn, std::vector<std::unique_ptr<Instruction>>* new_vars,
-    std::unordered_map<uint32_t, uint32_t>* callee2caller) {
+    CAUnorderedMap<uint32_t, uint32_t>* callee2caller) {
   auto callee_block_itr = calleeFn->begin();
   auto callee_var_itr = callee_block_itr->begin();
   while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
@@ -175,8 +174,8 @@ bool InlinePass::IsSameBlockOp(const Instruction* inst) const {
 
 void InlinePass::CloneSameBlockOps(
     std::unique_ptr<Instruction>* inst,
-    std::unordered_map<uint32_t, uint32_t>* postCallSB,
-    std::unordered_map<uint32_t, Instruction*>* preCallSB,
+    CAUnorderedMap<uint32_t, uint32_t>* postCallSB,
+    CAUnorderedMap<uint32_t, Instruction*>* preCallSB,
     std::unique_ptr<BasicBlock>* block_ptr) {
   (*inst)->ForEachInId(
       [&postCallSB, &preCallSB, &block_ptr, this](uint32_t* iid) {
@@ -210,11 +209,11 @@ void InlinePass::GenInlineCode(
     UptrVectorIterator<BasicBlock> call_block_itr) {
   // Map from all ids in the callee to their equivalent id in the caller
   // as callee instructions are copied into caller.
-  std::unordered_map<uint32_t, uint32_t> callee2caller;
+  CAUnorderedMap<uint32_t, uint32_t> callee2caller;
   // Pre-call same-block insts
-  std::unordered_map<uint32_t, Instruction*> preCallSB;
+  CAUnorderedMap<uint32_t, Instruction*> preCallSB;
   // Post-call same-block op ids
-  std::unordered_map<uint32_t, uint32_t> postCallSB;
+  CAUnorderedMap<uint32_t, uint32_t> postCallSB;
 
   // Invalidate the def-use chains.  They are not kept up to date while
   // inlining.  However, certain calls try to keep them up-to-date if they are
@@ -239,7 +238,7 @@ void InlinePass::GenInlineCode(
   uint32_t returnVarId = CreateReturnVar(calleeFn, new_vars);
 
   // Create set of callee result ids. Used to detect forward references
-  std::unordered_set<uint32_t> callee_result_ids;
+  CAUnorderedSet<uint32_t> callee_result_ids;
   calleeFn->ForEachInst([&callee_result_ids](const Instruction* cpi) {
     const uint32_t rid = cpi->result_id();
     if (rid != 0) callee_result_ids.insert(rid);

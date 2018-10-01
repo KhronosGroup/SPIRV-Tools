@@ -21,9 +21,9 @@
 #include <list>
 #include <memory>
 #include <set>
-#include <unordered_map>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/decoration_manager.h"
 #include "source/opt/module.h"
 #include "source/opt/pass.h"
@@ -75,12 +75,12 @@ class InlinePass : public Pass {
 
   // Map callee params to caller args
   void MapParams(Function* calleeFn, BasicBlock::iterator call_inst_itr,
-                 std::unordered_map<uint32_t, uint32_t>* callee2caller);
+                 CAUnorderedMap<uint32_t, uint32_t>* callee2caller);
 
   // Clone and map callee locals
   void CloneAndMapLocals(Function* calleeFn,
                          std::vector<std::unique_ptr<Instruction>>* new_vars,
-                         std::unordered_map<uint32_t, uint32_t>* callee2caller);
+                         CAUnorderedMap<uint32_t, uint32_t>* callee2caller);
 
   // Create return variable for callee clone code if needed. Return id
   // if created, otherwise 0.
@@ -96,8 +96,8 @@ class InlinePass : public Pass {
   // postCallSB for instructions already cloned. Add cloned instruction
   // to postCallSB.
   void CloneSameBlockOps(std::unique_ptr<Instruction>* inst,
-                         std::unordered_map<uint32_t, uint32_t>* postCallSB,
-                         std::unordered_map<uint32_t, Instruction*>* preCallSB,
+                         CAUnorderedMap<uint32_t, uint32_t>* postCallSB,
+                         CAUnorderedMap<uint32_t, Instruction*>* preCallSB,
                          std::unique_ptr<BasicBlock>* block_ptr);
 
   // Return in new_blocks the result of inlining the call at call_inst_itr
@@ -157,20 +157,20 @@ class InlinePass : public Pass {
   void InitializeInline();
 
   // Map from function's result id to function.
-  std::unordered_map<uint32_t, Function*> id2function_;
+  CAUnorderedMap<uint32_t, Function*> id2function_;
 
   // Map from block's label id to block. TODO(dnovillo): This is superfluous wrt
   // CFG. It has functionality not present in CFG. Consolidate.
-  std::unordered_map<uint32_t, BasicBlock*> id2block_;
+  CAUnorderedMap<uint32_t, BasicBlock*> id2block_;
 
   // Set of ids of functions with multiple returns.
-  std::set<uint32_t> multi_return_funcs_;
+  CASet<uint32_t> multi_return_funcs_;
 
   // Set of ids of functions with no returns in loop
-  std::set<uint32_t> no_return_in_loop_;
+  CASet<uint32_t> no_return_in_loop_;
 
   // Set of ids of inlinable functions
-  std::set<uint32_t> inlinable_;
+  CASet<uint32_t> inlinable_;
 
   // result id for OpConstantFalse
   uint32_t false_id_;
@@ -179,7 +179,7 @@ class InlinePass : public Pass {
   // ComputeStructuredSuccessors() for definition. TODO(dnovillo): This is
   // superfluous wrt CFG, but it seems to be computed in a slightly
   // different way in the inliner. Can these be consolidated?
-  std::unordered_map<const BasicBlock*, std::vector<BasicBlock*>>
+  CAUnorderedMap<const BasicBlock*, std::vector<BasicBlock*>>
       block2structured_succs_;
 };
 

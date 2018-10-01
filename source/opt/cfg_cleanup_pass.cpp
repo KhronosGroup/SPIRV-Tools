@@ -17,7 +17,6 @@
 // etc)
 
 #include <queue>
-#include <unordered_set>
 
 #include "source/opt/cfg_cleanup_pass.h"
 

@@ -261,7 +261,7 @@ bool LoopDependenceAnalysis::GetDependence(const Instruction* source,
 
   auto first_coupled = std::partition(
       std::begin(sets_of_subscripts), std::end(sets_of_subscripts),
-      [](const std::set<std::pair<Instruction*, Instruction*>>& set) {
+      [](const CASet<std::pair<Instruction*, Instruction*>>& set) {
         return set.size() == 1;
       });
 
@@ -1113,7 +1113,7 @@ bool LoopDependenceAnalysis::GCDMIVTest(
 }
 
 using PartitionedSubscripts =
-    std::vector<std::set<std::pair<Instruction*, Instruction*>>>;
+    std::vector<CASet<std::pair<Instruction*, Instruction*>>>;
 PartitionedSubscripts LoopDependenceAnalysis::PartitionSubscripts(
     const std::vector<Instruction*>& source_subscripts,
     const std::vector<Instruction*>& destination_subscripts) {
@@ -1174,7 +1174,7 @@ PartitionedSubscripts LoopDependenceAnalysis::PartitionSubscripts(
   partitions.erase(
       std::remove_if(
           partitions.begin(), partitions.end(),
-          [](const std::set<std::pair<Instruction*, Instruction*>>& partition) {
+          [](const CASet<std::pair<Instruction*, Instruction*>>& partition) {
             return partition.empty();
           }),
       partitions.end());

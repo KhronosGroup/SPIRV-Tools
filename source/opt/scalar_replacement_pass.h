@@ -18,8 +18,6 @@
 #include <cstdio>
 #include <memory>
 #include <queue>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "source/opt/function.h"
@@ -206,7 +204,7 @@ class ScalarReplacementPass : public Pass {
   // Returns a set containing the which components of the result of |inst| are
   // potentially used.  If the return value is |nullptr|, then every components
   // is possibly used.
-  std::unique_ptr<std::unordered_set<uint64_t>> GetUsedComponents(
+  std::unique_ptr<CAUnorderedSet<uint64_t>> GetUsedComponents(
       Instruction* inst);
 
   // Returns an instruction defining a null constant with type |type_id|.  If
@@ -214,10 +212,10 @@ class ScalarReplacementPass : public Pass {
   Instruction* CreateNullConstant(uint32_t type_id);
 
   // Maps storage type to a pointer type enclosing that type.
-  std::unordered_map<uint32_t, uint32_t> pointee_to_pointer_;
+  CAUnorderedMap<uint32_t, uint32_t> pointee_to_pointer_;
 
   // Maps type id to OpConstantNull for that type.
-  std::unordered_map<uint32_t, uint32_t> type_to_null_;
+  CAUnorderedMap<uint32_t, uint32_t> type_to_null_;
 
   // Limit on the number of members in an object that will be replaced.
   // 0 means there is no limit.

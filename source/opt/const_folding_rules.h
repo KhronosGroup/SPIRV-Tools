@@ -15,9 +15,9 @@
 #ifndef SOURCE_OPT_CONST_FOLDING_RULES_H_
 #define SOURCE_OPT_CONST_FOLDING_RULES_H_
 
-#include <unordered_map>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/constants.h"
 
 namespace spvtools {
@@ -70,7 +70,7 @@ class ConstantFoldingRules {
   }
 
  private:
-  std::unordered_map<uint32_t, std::vector<ConstantFoldingRule>> rules_;
+  CAUnorderedMap<uint32_t, std::vector<ConstantFoldingRule>> rules_;
   std::vector<ConstantFoldingRule> empty_vector_;
 };
 

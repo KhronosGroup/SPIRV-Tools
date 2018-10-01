@@ -15,9 +15,9 @@
 #ifndef SOURCE_OPT_STRUCT_CFG_ANALYSIS_H_
 #define SOURCE_OPT_STRUCT_CFG_ANALYSIS_H_
 
-#include <unordered_map>
 
-#include "ir_context.h"
+#include "source/opt/allocator.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -81,7 +81,7 @@ class StructuredCFGAnalysis {
 
   // A map from a basic block to the headers of its inner most containing
   // constructs.
-  std::unordered_map<uint32_t, ConstructInfo> bb_to_construct_;
+  CAUnorderedMap<uint32_t, ConstructInfo> bb_to_construct_;
 };
 
 }  // namespace opt

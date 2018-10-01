@@ -15,10 +15,10 @@
 #include "source/opt/unify_const_pass.h"
 
 #include <memory>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/ir_context.h"
 #include "source/util/make_unique.h"
@@ -57,7 +57,7 @@ class ResultIdTrie {
   // The trie node to store result ids.
   class Node {
    public:
-    using TrieNodeMap = std::unordered_map<uint32_t, std::unique_ptr<Node>>;
+    using TrieNodeMap = CAUnorderedMap<uint32_t, std::unique_ptr<Node>>;
 
     Node() : result_id_(0), next_() {}
     uint32_t result_id() const { return result_id_; }

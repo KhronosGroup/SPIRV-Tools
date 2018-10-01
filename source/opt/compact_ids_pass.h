@@ -15,6 +15,7 @@
 #ifndef SOURCE_OPT_COMPACT_IDS_PASS_H_
 #define SOURCE_OPT_COMPACT_IDS_PASS_H_
 
+#include "source/opt/allocator.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/module.h"
 #include "source/opt/pass.h"

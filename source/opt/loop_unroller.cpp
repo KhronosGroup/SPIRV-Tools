@@ -17,7 +17,6 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -153,13 +152,13 @@ struct LoopUnrollState {
 
   // A mapping of new block ids to the original blocks which they were copied
   // from.
-  std::unordered_map<uint32_t, BasicBlock*> new_blocks;
+  CAUnorderedMap<uint32_t, BasicBlock*> new_blocks;
 
   // A mapping of the original instruction ids to the instruction ids to their
   // copies.
-  std::unordered_map<uint32_t, uint32_t> new_inst;
+  CAUnorderedMap<uint32_t, uint32_t> new_inst;
 
-  std::unordered_map<uint32_t, Instruction*> ids_to_new_inst;
+  CAUnorderedMap<uint32_t, Instruction*> ids_to_new_inst;
 };
 
 // This class implements the actual unrolling. It uses a LoopUnrollState to

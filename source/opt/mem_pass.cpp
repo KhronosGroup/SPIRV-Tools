@@ -193,7 +193,7 @@ void MemPass::DCEInst(Instruction* inst,
       continue;
     }
     // Remember operands
-    std::set<uint32_t> ids;
+    CASet<uint32_t> ids;
     di->ForEachInId([&ids](uint32_t* iid) { ids.insert(*iid); });
     uint32_t varId = 0;
     // Remember variable if dead load
@@ -314,7 +314,7 @@ bool MemPass::IsTargetVar(uint32_t varId) {
 //           [ ... ]
 //           %30 = OpPhi %int %int_42 %13 %50 %14 %50 %15
 void MemPass::RemovePhiOperands(
-    Instruction* phi, const std::unordered_set<BasicBlock*>& reachable_blocks) {
+    Instruction* phi, const CAUnorderedSet<BasicBlock*>& reachable_blocks) {
   std::vector<Operand> keep_operands;
   uint32_t type_id = 0;
   // The id of an undefined value we've generated.
@@ -399,8 +399,8 @@ bool MemPass::RemoveUnreachableBlocks(Function* func) {
   bool modified = false;
 
   // Mark reachable all blocks reachable from the function's entry block.
-  std::unordered_set<BasicBlock*> reachable_blocks;
-  std::unordered_set<BasicBlock*> visited_blocks;
+  CAUnorderedSet<BasicBlock*> reachable_blocks;
+  CAUnorderedSet<BasicBlock*> visited_blocks;
   std::queue<BasicBlock*> worklist;
   reachable_blocks.insert(func->entry().get());
 

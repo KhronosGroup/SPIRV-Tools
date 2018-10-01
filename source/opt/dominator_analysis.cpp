@@ -14,8 +14,8 @@
 
 #include "source/opt/dominator_analysis.h"
 
-#include <unordered_set>
 
+#include "source/opt/allocator.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
@@ -25,7 +25,7 @@ BasicBlock* DominatorAnalysisBase::CommonDominator(BasicBlock* b1,
                                                    BasicBlock* b2) const {
   if (!b1 || !b2) return nullptr;
 
-  std::unordered_set<BasicBlock*> seen;
+  CAUnorderedSet<BasicBlock*> seen;
   BasicBlock* block = b1;
   while (block && seen.insert(block).second) {
     block = ImmediateDominator(block);

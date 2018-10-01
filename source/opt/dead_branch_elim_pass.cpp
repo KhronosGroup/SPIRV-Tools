@@ -55,7 +55,9 @@ bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
           GetConstCondition(cInst->GetSingleWordInOperand(0), &negVal);
       if (condIsConst) *condVal = !negVal;
     } break;
-    default: { condIsConst = false; } break;
+    default: {
+      condIsConst = false;
+    } break;
   }
   return condIsConst;
 }
@@ -92,10 +94,10 @@ BasicBlock* DeadBranchElimPass::GetParentBlock(uint32_t id) {
 }
 
 bool DeadBranchElimPass::MarkLiveBlocks(
-    Function* func, std::unordered_set<BasicBlock*>* live_blocks) {
+    Function* func, CAUnorderedSet<BasicBlock*>* live_blocks) {
   StructuredCFGAnalysis cfgAnalysis(context());
 
-  std::unordered_set<BasicBlock*> continues;
+  CAUnorderedSet<BasicBlock*> continues;
   std::vector<BasicBlock*> stack;
   stack.push_back(&*func->begin());
   bool modified = false;
@@ -188,9 +190,9 @@ bool DeadBranchElimPass::MarkLiveBlocks(
 }
 
 void DeadBranchElimPass::MarkUnreachableStructuredTargets(
-    const std::unordered_set<BasicBlock*>& live_blocks,
-    std::unordered_set<BasicBlock*>* unreachable_merges,
-    std::unordered_map<BasicBlock*, BasicBlock*>* unreachable_continues) {
+    const CAUnorderedSet<BasicBlock*>& live_blocks,
+    CAUnorderedSet<BasicBlock*>* unreachable_merges,
+    CAUnorderedMap<BasicBlock*, BasicBlock*>* unreachable_continues) {
   for (auto block : live_blocks) {
     if (auto merge_id = block->MergeBlockIdIfAny()) {
       BasicBlock* merge_block = GetParentBlock(merge_id);
@@ -208,8 +210,8 @@ void DeadBranchElimPass::MarkUnreachableStructuredTargets(
 }
 
 bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
-    Function* func, const std::unordered_set<BasicBlock*>& live_blocks,
-    const std::unordered_map<BasicBlock*, BasicBlock*>& unreachable_continues) {
+    Function* func, const CAUnorderedSet<BasicBlock*>& live_blocks,
+    const CAUnorderedMap<BasicBlock*, BasicBlock*>& unreachable_continues) {
   bool modified = false;
   for (auto& block : *func) {
     if (live_blocks.count(&block)) {
@@ -317,9 +319,9 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
 }
 
 bool DeadBranchElimPass::EraseDeadBlocks(
-    Function* func, const std::unordered_set<BasicBlock*>& live_blocks,
-    const std::unordered_set<BasicBlock*>& unreachable_merges,
-    const std::unordered_map<BasicBlock*, BasicBlock*>& unreachable_continues) {
+    Function* func, const CAUnorderedSet<BasicBlock*>& live_blocks,
+    const CAUnorderedSet<BasicBlock*>& unreachable_merges,
+    const CAUnorderedMap<BasicBlock*, BasicBlock*>& unreachable_continues) {
   bool modified = false;
   for (auto ebi = func->begin(); ebi != func->end();) {
     if (unreachable_merges.count(&*ebi)) {
@@ -368,11 +370,11 @@ bool DeadBranchElimPass::EraseDeadBlocks(
 
 bool DeadBranchElimPass::EliminateDeadBranches(Function* func) {
   bool modified = false;
-  std::unordered_set<BasicBlock*> live_blocks;
+  CAUnorderedSet<BasicBlock*> live_blocks;
   modified |= MarkLiveBlocks(func, &live_blocks);
 
-  std::unordered_set<BasicBlock*> unreachable_merges;
-  std::unordered_map<BasicBlock*, BasicBlock*> unreachable_continues;
+  CAUnorderedSet<BasicBlock*> unreachable_merges;
+  CAUnorderedMap<BasicBlock*, BasicBlock*> unreachable_continues;
   MarkUnreachableStructuredTargets(live_blocks, &unreachable_merges,
                                    &unreachable_continues);
   modified |= FixPhiNodesInLiveBlocks(func, live_blocks, unreachable_continues);

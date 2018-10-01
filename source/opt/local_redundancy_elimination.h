@@ -58,7 +58,7 @@ class LocalRedundancyEliminationPass : public Pass {
   // Returns true if the module is changed.
   bool EliminateRedundanciesInBB(BasicBlock* block,
                                  const ValueNumberTable& vnTable,
-                                 std::map<uint32_t, uint32_t>* value_to_ids);
+                                 CAMap<uint32_t, uint32_t>* value_to_ids);
 };
 
 }  // namespace opt

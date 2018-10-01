@@ -15,7 +15,6 @@
 #include "source/opt/compact_ids_pass.h"
 
 #include <cassert>
-#include <unordered_map>
 
 #include "source/opt/ir_context.h"
 
@@ -24,7 +23,7 @@ namespace opt {
 
 Pass::Status CompactIdsPass::Process() {
   bool modified = false;
-  std::unordered_map<uint32_t, uint32_t> result_id_mapping;
+  CAUnorderedMap<uint32_t, uint32_t> result_id_mapping;
 
   context()->module()->ForEachInst(
       [&result_id_mapping, &modified](Instruction* inst) {

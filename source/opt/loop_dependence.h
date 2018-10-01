@@ -350,11 +350,11 @@ class LoopDependenceAnalysis {
                                     SENode* induction_coefficient);
 
   // Returns all the distinct loops that appear in |nodes|.
-  std::set<const Loop*> CollectLoops(
+  CASet<const Loop*> CollectLoops(
       const std::vector<SERecurrentNode*>& nodes);
 
   // Returns all the distinct loops that appear in |source| and |destination|.
-  std::set<const Loop*> CollectLoops(SENode* source, SENode* destination);
+  CASet<const Loop*> CollectLoops(SENode* source, SENode* destination);
 
   // Returns true if |distance| is provably outside the loop bounds.
   // |coefficient| must be an SENode representing the coefficient of the
@@ -391,7 +391,7 @@ class LoopDependenceAnalysis {
   // Returns the partitioning of subscript pairs. Sets of size 1 indicates an
   // independent subscript-pair and others indicate coupled sets.
   using PartitionedSubscripts =
-      std::vector<std::set<std::pair<Instruction*, Instruction*>>>;
+      std::vector<CASet<std::pair<Instruction*, Instruction*>>>;
   PartitionedSubscripts PartitionSubscripts(
       const std::vector<Instruction*>& source_subscripts,
       const std::vector<Instruction*>& destination_subscripts);

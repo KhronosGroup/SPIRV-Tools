@@ -17,10 +17,9 @@
 
 #include <algorithm>
 #include <list>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/basic_block.h"
 
 namespace spvtools {
@@ -146,14 +145,14 @@ class CFG {
   // all nodes in the traversal are added to |seen|.
   void ComputePostOrderTraversal(BasicBlock* bb,
                                  std::vector<BasicBlock*>* order,
-                                 std::unordered_set<BasicBlock*>* seen);
+                                 CAUnorderedSet<BasicBlock*>* seen);
 
   // Module for this CFG.
   Module* module_;
 
   // Map from block to its structured successor blocks. See
   // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const BasicBlock*, std::vector<BasicBlock*>>
+  CAUnorderedMap<const BasicBlock*, std::vector<BasicBlock*>>
       block2structured_succs_;
 
   // Extra block whose successors are all blocks with no predecessors
@@ -164,10 +163,10 @@ class CFG {
   BasicBlock pseudo_exit_block_;
 
   // Map from block's label id to its predecessor blocks ids
-  std::unordered_map<uint32_t, std::vector<uint32_t>> label2preds_;
+  CAUnorderedMap<uint32_t, std::vector<uint32_t>> label2preds_;
 
   // Map from block's label id to block.
-  std::unordered_map<uint32_t, BasicBlock*> id2block_;
+  CAUnorderedMap<uint32_t, BasicBlock*> id2block_;
 };
 
 }  // namespace opt

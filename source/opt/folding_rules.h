@@ -16,7 +16,6 @@
 #define SOURCE_OPT_FOLDING_RULES_H_
 
 #include <cstdint>
-#include <unordered_map>
 #include <vector>
 
 #include "source/opt/constants.h"
@@ -69,7 +68,7 @@ class FoldingRules {
   }
 
  private:
-  std::unordered_map<uint32_t, std::vector<FoldingRule>> rules_;
+  CAUnorderedMap<uint32_t, std::vector<FoldingRule>> rules_;
   std::vector<FoldingRule> empty_vector_;
 };
 

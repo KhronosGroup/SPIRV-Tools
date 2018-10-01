@@ -15,7 +15,6 @@
 #ifndef SOURCE_OPT_REDUCE_LOAD_SIZE_H_
 #define SOURCE_OPT_REDUCE_LOAD_SIZE_H_
 
-#include <unordered_map>
 
 #include "source/opt/ir_context.h"
 #include "source/opt/module.h"
@@ -55,7 +54,7 @@ class ReduceLoadSize : public Pass {
 
   // Maps the result id of an OpLoad instruction to the result of whether or
   // not the OpCompositeExtract that use the id should be replaced.
-  std::unordered_map<uint32_t, bool> should_replace_cache_;
+  CAUnorderedMap<uint32_t, bool> should_replace_cache_;
 };
 
 }  // namespace opt

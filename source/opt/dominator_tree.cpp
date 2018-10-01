@@ -103,7 +103,7 @@ class BasicBlockSuccessorHelper {
   using Function = typename GetFunctionClass<BBType>::FunctionType;
 
   using BasicBlockListTy = std::vector<BasicBlock*>;
-  using BasicBlockMapTy = std::map<const BasicBlock*, BasicBlockListTy>;
+  using BasicBlockMapTy = CAMap<const BasicBlock*, BasicBlockListTy>;
 
  public:
   // For compliance with the dominance tree computation, entry nodes are
@@ -156,7 +156,7 @@ BasicBlockSuccessorHelper<BBType>::BasicBlockSuccessorHelper(
 template <typename BBType>
 void BasicBlockSuccessorHelper<BBType>::CreateSuccessorMap(
     Function& f, const BasicBlock* dummy_start_node) {
-  std::map<uint32_t, BasicBlock*> id_to_BB_map;
+  CAMap<uint32_t, BasicBlock*> id_to_BB_map;
   auto GetSuccessorBasicBlock = [&f, &id_to_BB_map](uint32_t successor_id) {
     BasicBlock*& Succ = id_to_BB_map[successor_id];
     if (!Succ) {
@@ -273,7 +273,7 @@ BasicBlock* DominatorTree::ImmediateDominator(uint32_t a) const {
 DominatorTreeNode* DominatorTree::GetOrInsertNode(BasicBlock* bb) {
   DominatorTreeNode* dtn = nullptr;
 
-  std::map<uint32_t, DominatorTreeNode>::iterator node_iter =
+  CAMap<uint32_t, DominatorTreeNode>::iterator node_iter =
       nodes_.find(bb->id());
   if (node_iter == nodes_.end()) {
     dtn = &nodes_.emplace(std::make_pair(bb->id(), DominatorTreeNode{bb}))

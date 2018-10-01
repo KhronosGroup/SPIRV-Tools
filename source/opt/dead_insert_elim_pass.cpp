@@ -59,13 +59,15 @@ uint32_t DeadInsertElimPass::NumComponents(Instruction* typeInst) {
     case SpvOpTypeStruct: {
       return typeInst->NumInOperands();
     } break;
-    default: { return 0; } break;
+    default: {
+      return 0;
+    } break;
   }
 }
 
 void DeadInsertElimPass::MarkInsertChain(
     Instruction* insertChain, std::vector<uint32_t>* pExtIndices,
-    uint32_t extOffset, std::unordered_set<uint32_t>* visited_phis) {
+    uint32_t extOffset, CAUnorderedSet<uint32_t>* visited_phis) {
   // Not currently optimizing array inserts.
   Instruction* typeInst = get_def_use_mgr()->GetDef(insertChain->type_id());
   if (typeInst->opcode() == SpvOpTypeArray) return;
@@ -82,7 +84,7 @@ void DeadInsertElimPass::MarkInsertChain(
       for (uint32_t i = 0; i < cnum; i++) {
         extIndices.clear();
         extIndices.push_back(i);
-        std::unordered_set<uint32_t> sub_visited_phis;
+        CAUnorderedSet<uint32_t> sub_visited_phis;
         MarkInsertChain(insertChain, &extIndices, 0, &sub_visited_phis);
       }
       return;
@@ -100,19 +102,19 @@ void DeadInsertElimPass::MarkInsertChain(
     if (pExtIndices == nullptr) {
       liveInserts_.insert(insInst->result_id());
       uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
-      std::unordered_set<uint32_t> obj_visited_phis;
+      CAUnorderedSet<uint32_t> obj_visited_phis;
       MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0,
                       &obj_visited_phis);
-    // If extract indices match insert, we are done. Mark insert and
-    // inserted object.
+      // If extract indices match insert, we are done. Mark insert and
+      // inserted object.
     } else if (ExtInsMatch(*pExtIndices, insInst, extOffset)) {
       liveInserts_.insert(insInst->result_id());
       uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
-      std::unordered_set<uint32_t> obj_visited_phis;
+      CAUnorderedSet<uint32_t> obj_visited_phis;
       MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0,
                       &obj_visited_phis);
       break;
-    // If non-matching intersection, mark insert
+      // If non-matching intersection, mark insert
     } else if (ExtInsConflict(*pExtIndices, insInst, extOffset)) {
       liveInserts_.insert(insInst->result_id());
       // If more extract indices than insert, we are done. Use remaining
@@ -120,15 +122,15 @@ void DeadInsertElimPass::MarkInsertChain(
       uint32_t numInsertIndices = insInst->NumInOperands() - 2;
       if (pExtIndices->size() - extOffset > numInsertIndices) {
         uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
-        std::unordered_set<uint32_t> obj_visited_phis;
+        CAUnorderedSet<uint32_t> obj_visited_phis;
         MarkInsertChain(get_def_use_mgr()->GetDef(objId), pExtIndices,
                         extOffset + numInsertIndices, &obj_visited_phis);
         break;
-      // If fewer extract indices than insert, also mark inserted object and
-      // continue up chain.
+        // If fewer extract indices than insert, also mark inserted object and
+        // continue up chain.
       } else {
         uint32_t objId = insInst->GetSingleWordInOperand(kInsertObjectIdInIdx);
-        std::unordered_set<uint32_t> obj_visited_phis;
+        CAUnorderedSet<uint32_t> obj_visited_phis;
         MarkInsertChain(get_def_use_mgr()->GetDef(objId), nullptr, 0,
                         &obj_visited_phis);
       }
@@ -210,7 +212,7 @@ bool DeadInsertElimPass::EliminateDeadInsertsOnePass(Function* func) {
               ++icnt;
             });
             // Mark all inserts in chain that intersect with extract
-            std::unordered_set<uint32_t> visited_phis;
+            CAUnorderedSet<uint32_t> visited_phis;
             MarkInsertChain(&*ii, &extIndices, 0, &visited_phis);
           } break;
           default: {

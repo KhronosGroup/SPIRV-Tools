@@ -54,7 +54,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
   // on each block
   bool modified = false;
   std::vector<Instruction*> instructions_to_kill;
-  std::unordered_set<Instruction*> instructions_to_save;
+  CAUnorderedSet<Instruction*> instructions_to_save;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     var2store_.clear();
     var2load_.clear();

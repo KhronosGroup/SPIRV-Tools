@@ -261,7 +261,7 @@ void ScalarReplacementPass::CreateReplacementVariables(
     Instruction* inst, std::vector<Instruction*>* replacements) {
   Instruction* type = GetStorageType(inst);
 
-  std::unique_ptr<std::unordered_set<uint64_t>> components_used =
+  std::unique_ptr<CAUnorderedSet<uint64_t>> components_used =
       GetUsedComponents(inst);
 
   uint32_t elem = 0;
@@ -713,10 +713,10 @@ bool ScalarReplacementPass::IsLargerThanSizeLimit(size_t length) const {
   return length > max_num_elements_;
 }
 
-std::unique_ptr<std::unordered_set<uint64_t>>
+std::unique_ptr<CAUnorderedSet<uint64_t>>
 ScalarReplacementPass::GetUsedComponents(Instruction* inst) {
-  std::unique_ptr<std::unordered_set<uint64_t>> result(
-      new std::unordered_set<uint64_t>());
+  std::unique_ptr<CAUnorderedSet<uint64_t>> result(
+      new CAUnorderedSet<uint64_t>());
 
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 

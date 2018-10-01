@@ -134,7 +134,7 @@ void TypeManager::AnalyzeTypes(const Module& module) {
   // Add the remaining incomplete types to the type pool.
   for (auto& type : incomplete_types_) {
     if (type.type() && !type.type()->AsForwardPointer()) {
-      std::vector<Instruction*> decorations =
+      auto decorations =
           context()->get_decoration_mgr()->GetDecorationsFor(type.id(), true);
       for (auto dec : decorations) {
         AttachDecoration(*dec, type.type());
@@ -749,7 +749,7 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
   SPIRV_ASSERT(consumer_, id != 0, "instruction without result id found");
   SPIRV_ASSERT(consumer_, type != nullptr,
                "type should not be nullptr at this point");
-  std::vector<Instruction*> decorations =
+  auto decorations =
       context()->get_decoration_mgr()->GetDecorationsFor(id, true);
   for (auto dec : decorations) {
     AttachDecoration(*dec, type);

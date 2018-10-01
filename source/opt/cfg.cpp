@@ -98,7 +98,7 @@ void CFG::ComputeStructuredOrder(Function* func, BasicBlock* root,
 void CFG::ForEachBlockInPostOrder(BasicBlock* bb,
                                   const std::function<void(BasicBlock*)>& f) {
   std::vector<BasicBlock*> po;
-  std::unordered_set<BasicBlock*> seen;
+  CAUnorderedSet<BasicBlock*> seen;
   ComputePostOrderTraversal(bb, &po, &seen);
 
   for (BasicBlock* current_bb : po) {
@@ -111,7 +111,7 @@ void CFG::ForEachBlockInPostOrder(BasicBlock* bb,
 void CFG::ForEachBlockInReversePostOrder(
     BasicBlock* bb, const std::function<void(BasicBlock*)>& f) {
   std::vector<BasicBlock*> po;
-  std::unordered_set<BasicBlock*> seen;
+  CAUnorderedSet<BasicBlock*> seen;
   ComputePostOrderTraversal(bb, &po, &seen);
 
   for (auto current_bb = po.rbegin(); current_bb != po.rend(); ++current_bb) {
@@ -149,7 +149,7 @@ void CFG::ComputeStructuredSuccessors(Function* func) {
 
 void CFG::ComputePostOrderTraversal(BasicBlock* bb,
                                     std::vector<BasicBlock*>* order,
-                                    std::unordered_set<BasicBlock*>* seen) {
+                                    CAUnorderedSet<BasicBlock*>* seen) {
   seen->insert(bb);
   static_cast<const BasicBlock*>(bb)->ForEachSuccessorLabel(
       [&order, &seen, this](const uint32_t sbid) {

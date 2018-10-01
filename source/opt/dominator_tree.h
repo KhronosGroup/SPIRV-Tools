@@ -93,7 +93,7 @@ struct DominatorTreeNode {
 class DominatorTree {
  public:
   // Map OpLabel ids to dominator tree nodes
-  using DominatorTreeNodeMap = std::map<uint32_t, DominatorTreeNode>;
+  using DominatorTreeNodeMap = CAMap<uint32_t, DominatorTreeNode>;
   using iterator = TreeDFIterator<DominatorTreeNode>;
   using const_iterator = TreeDFIterator<const DominatorTreeNode>;
   using post_iterator = PostOrderTreeDFIterator<DominatorTreeNode>;

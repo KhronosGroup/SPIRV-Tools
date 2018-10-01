@@ -20,12 +20,11 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "source/assembly_grammar.h"
+#include "source/opt/allocator.h"
 #include "source/opt/cfg.h"
 #include "source/opt/constants.h"
 #include "source/opt/decoration_manager.h"
@@ -305,8 +304,8 @@ class IRContext {
 
   // Returns a range of instrucions that contain all of the OpName and
   // OpMemberNames associated with the given id.
-  inline IteratorRange<std::multimap<uint32_t, Instruction*>::iterator>
-  GetNames(uint32_t id);
+  inline IteratorRange<CAMultiMap<uint32_t, Instruction*>::iterator> GetNames(
+      uint32_t id);
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
@@ -580,25 +579,25 @@ class IRContext {
   //
   // NOTE: Do not traverse this map. Ever. Use the function and basic block
   // iterators to traverse instructions.
-  std::unordered_map<Instruction*, BasicBlock*> instr_to_block_;
+  CAUnorderedMap<Instruction*, BasicBlock*> instr_to_block_;
 
   // A bitset indicating which analyes are currently valid.
   Analysis valid_analyses_;
 
   // Opcodes of shader capability core executable instructions
   // without side-effect.
-  std::unordered_map<uint32_t, std::unordered_set<uint32_t>> combinator_ops_;
+  CAUnorderedMap<uint32_t, CAUnorderedSet<uint32_t>> combinator_ops_;
 
   // The CFG for all the functions in |module_|.
   std::unique_ptr<CFG> cfg_;
 
   // Each function in the module will create its own dominator tree. We cache
   // the result so it doesn't need to be rebuilt each time.
-  std::map<const Function*, DominatorAnalysis> dominator_trees_;
-  std::map<const Function*, PostDominatorAnalysis> post_dominator_trees_;
+  CAMap<const Function*, DominatorAnalysis> dominator_trees_;
+  CAMap<const Function*, PostDominatorAnalysis> post_dominator_trees_;
 
   // Cache of loop descriptors for each function.
-  std::unordered_map<const Function*, LoopDescriptor> loop_descriptors_;
+  CAUnorderedMap<const Function*, LoopDescriptor> loop_descriptors_;
 
   // Constant manager for |module_|.
   std::unique_ptr<analysis::ConstantManager> constant_mgr_;
@@ -607,7 +606,7 @@ class IRContext {
   std::unique_ptr<analysis::TypeManager> type_mgr_;
 
   // A map from an id to its corresponding OpName and OpMemberName instructions.
-  std::unique_ptr<std::multimap<uint32_t, Instruction*>> id_to_name_;
+  std::unique_ptr<CAMultiMap<uint32_t, Instruction*>> id_to_name_;
 
   // The cache scalar evolution analysis node.
   std::unique_ptr<ScalarEvolutionAnalysis> scalar_evolution_analysis_;
@@ -841,7 +840,7 @@ void IRContext::UpdateDefUse(Instruction* inst) {
 }
 
 void IRContext::BuildIdToNameMap() {
-  id_to_name_ = MakeUnique<std::multimap<uint32_t, Instruction*>>();
+  id_to_name_ = MakeUnique<CAMultiMap<uint32_t, Instruction*>>();
   for (Instruction& debug_inst : debugs2()) {
     if (debug_inst.opcode() == SpvOpMemberName ||
         debug_inst.opcode() == SpvOpName) {
@@ -851,8 +850,8 @@ void IRContext::BuildIdToNameMap() {
   valid_analyses_ = valid_analyses_ | kAnalysisNameMap;
 }
 
-IteratorRange<std::multimap<uint32_t, Instruction*>::iterator>
-IRContext::GetNames(uint32_t id) {
+IteratorRange<CAMultiMap<uint32_t, Instruction*>::iterator> IRContext::GetNames(
+    uint32_t id) {
   if (!AreAnalysesValid(kAnalysisNameMap)) {
     BuildIdToNameMap();
   }

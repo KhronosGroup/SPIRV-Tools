@@ -13,6 +13,7 @@
 # limitations under the License.
 add_library(SPIRV-Tools-opt
   aggressive_dead_code_elim_pass.h
+  allocator.h
   basic_block.h
   block_merge_pass.h
   build_module.h
@@ -101,6 +102,7 @@ add_library(SPIRV-Tools-opt
   workaround1209.h
 
   aggressive_dead_code_elim_pass.cpp
+  allocator.cpp
   basic_block.cpp
   block_merge_pass.cpp
   build_module.cpp

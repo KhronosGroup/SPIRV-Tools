@@ -213,7 +213,7 @@ class ComputeRegisterLiveness {
       }
       live_inout->used_registers_ = reg_count;
 
-      std::unordered_set<uint32_t> die_in_block;
+      CAUnorderedSet<uint32_t> die_in_block;
       for (Instruction& insn : make_range(bb.rbegin(), bb.rend())) {
         // If it is a phi instruction, the register pressure will not change
         // anymore.
@@ -285,7 +285,7 @@ void RegisterLiveness::ComputeLoopRegisterPressure(
   const RegionRegisterLiveness* header_live_inout = Get(loop.GetHeaderBlock());
   loop_reg_pressure->live_in_ = header_live_inout->live_in_;
 
-  std::unordered_set<uint32_t> exit_blocks;
+  CAUnorderedSet<uint32_t> exit_blocks;
   loop.GetExitBlocks(&exit_blocks);
 
   for (uint32_t bb_id : exit_blocks) {
@@ -294,7 +294,7 @@ void RegisterLiveness::ComputeLoopRegisterPressure(
                                         live_inout->live_in_.end());
   }
 
-  std::unordered_set<uint32_t> seen_insn;
+  CAUnorderedSet<uint32_t> seen_insn;
   for (Instruction* insn : loop_reg_pressure->live_out_) {
     loop_reg_pressure->AddRegisterClass(insn);
     seen_insn.insert(insn->result_id());
@@ -343,7 +343,7 @@ void RegisterLiveness::SimulateFusion(
                               l2_header_live_inout->live_in_.end());
 
   // The live-out set of the fused loop is the l2 live-out set.
-  std::unordered_set<uint32_t> exit_blocks;
+  CAUnorderedSet<uint32_t> exit_blocks;
   l2.GetExitBlocks(&exit_blocks);
 
   for (uint32_t bb_id : exit_blocks) {
@@ -353,7 +353,7 @@ void RegisterLiveness::SimulateFusion(
   }
 
   // Compute the register usage information.
-  std::unordered_set<uint32_t> seen_insn;
+  CAUnorderedSet<uint32_t> seen_insn;
   for (Instruction* insn : sim_result->live_out_) {
     sim_result->AddRegisterClass(insn);
     seen_insn.insert(insn->result_id());
@@ -437,8 +437,8 @@ void RegisterLiveness::SimulateFusion(
 }
 
 void RegisterLiveness::SimulateFission(
-    const Loop& loop, const std::unordered_set<Instruction*>& moved_inst,
-    const std::unordered_set<Instruction*>& copied_inst,
+    const Loop& loop, const CAUnorderedSet<Instruction*>& moved_inst,
+    const CAUnorderedSet<Instruction*>& copied_inst,
     RegionRegisterLiveness* l1_sim_result,
     RegionRegisterLiveness* l2_sim_result) const {
   l1_sim_result->Clear();
@@ -470,7 +470,7 @@ void RegisterLiveness::SimulateFission(
     l2_sim_result->live_in_.insert(live_loop.begin(), live_loop.end());
   }
 
-  std::unordered_set<uint32_t> exit_blocks;
+  CAUnorderedSet<uint32_t> exit_blocks;
   loop.GetExitBlocks(&exit_blocks);
 
   // l2 live-out.
@@ -523,7 +523,7 @@ void RegisterLiveness::SimulateFission(
     size_t l2_reg_count =
         std::distance(l2_block_live_out.begin(), l2_block_live_out.end());
 
-    std::unordered_set<uint32_t> die_in_block;
+    CAUnorderedSet<uint32_t> die_in_block;
     for (Instruction& insn : make_range(bb->rbegin(), bb->rend())) {
       if (insn.opcode() == SpvOpPhi) {
         break;

@@ -15,7 +15,6 @@
 #ifndef SOURCE_OPT_REMOVE_DUPLICATES_PASS_H_
 #define SOURCE_OPT_REMOVE_DUPLICATES_PASS_H_
 
-#include <unordered_map>
 #include <vector>
 
 #include "source/opt/decoration_manager.h"
@@ -27,8 +26,7 @@
 namespace spvtools {
 namespace opt {
 
-using IdDecorationsList =
-    std::unordered_map<uint32_t, std::vector<Instruction*>>;
+using IdDecorationsList = CAUnorderedMap<uint32_t, std::vector<Instruction*>>;
 
 // See optimizer.hpp for documentation.
 class RemoveDuplicatesPass : public Pass {

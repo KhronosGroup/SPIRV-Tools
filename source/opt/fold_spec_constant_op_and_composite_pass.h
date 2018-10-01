@@ -16,7 +16,6 @@
 #define SOURCE_OPT_FOLD_SPEC_CONSTANT_OP_AND_COMPOSITE_PASS_H_
 
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 #include "source/opt/constants.h"

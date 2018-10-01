@@ -15,11 +15,10 @@
 #ifndef SOURCE_OPT_REGISTER_PRESSURE_H_
 #define SOURCE_OPT_REGISTER_PRESSURE_H_
 
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/function.h"
 #include "source/opt/types.h"
 
@@ -47,7 +46,7 @@ class RegisterLiveness {
   };
 
   struct RegionRegisterLiveness {
-    using LiveSet = std::unordered_set<Instruction*>;
+    using LiveSet = CAUnorderedSet<Instruction*>;
     using RegClassSetTy = std::vector<std::pair<RegisterClass, size_t>>;
 
     // SSA register live when entering the basic block.
@@ -146,16 +145,15 @@ class RegisterLiveness {
   // The set |loop1_sim_result| store the simulation result of the loop with the
   // moved instructions. The set |loop2_sim_result| store the simulation result
   // of the loop with the removed instructions.
-  void SimulateFission(
-      const Loop& loop,
-      const std::unordered_set<Instruction*>& moved_instructions,
-      const std::unordered_set<Instruction*>& copied_instructions,
-      RegionRegisterLiveness* loop1_sim_result,
-      RegionRegisterLiveness* loop2_sim_result) const;
+  void SimulateFission(const Loop& loop,
+                       const CAUnorderedSet<Instruction*>& moved_instructions,
+                       const CAUnorderedSet<Instruction*>& copied_instructions,
+                       RegionRegisterLiveness* loop1_sim_result,
+                       RegionRegisterLiveness* loop2_sim_result) const;
 
  private:
   using RegionRegisterLivenessMap =
-      std::unordered_map<uint32_t, RegionRegisterLiveness>;
+      CAUnorderedMap<uint32_t, RegionRegisterLiveness>;
 
   IRContext* context_;
   RegionRegisterLivenessMap block_pressure_;
@@ -167,8 +165,7 @@ class RegisterLiveness {
 // loop, basic block). It also contains some utilities to foresee the register
 // pressure following code transformations.
 class LivenessAnalysis {
-  using LivenessAnalysisMap =
-      std::unordered_map<const Function*, RegisterLiveness>;
+  using LivenessAnalysisMap = CAUnorderedMap<const Function*, RegisterLiveness>;
 
  public:
   LivenessAnalysis(IRContext* context) : context_(context) {}

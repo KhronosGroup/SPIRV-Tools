@@ -16,10 +16,9 @@
 #define SOURCE_OPT_DECORATION_MANAGER_H_
 
 #include <functional>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/instruction.h"
 #include "source/opt/module.h"
 
@@ -141,7 +140,7 @@ class DecorationManager {
   // referencing that id, be it directly (SpvOpDecorate, SpvOpMemberDecorate
   // and SpvOpDecorateId), or indirectly (SpvOpGroupDecorate,
   // SpvOpMemberGroupDecorate).
-  std::unordered_map<uint32_t, TargetData> id_to_decoration_insts_;
+  CAUnorderedMap<uint32_t, TargetData> id_to_decoration_insts_;
   // The enclosing module.
   Module* module_;
 };

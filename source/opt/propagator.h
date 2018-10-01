@@ -18,8 +18,6 @@
 #include <functional>
 #include <queue>
 #include <set>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -150,7 +148,7 @@ struct Edge {
 // constant value is mapped to the constant value it was assigned.
 //
 //   auto ctx = BuildModule(...);
-//   std::map<uint32_t, uint32_t> values;
+//   CAMap<uint32_t, uint32_t> values;
 //   const auto visit_fn = [&ctx, &values](Instruction* instr,
 //                                         BasicBlock** dest_bb) {
 //     if (instr->opcode() == SpvOpStore) {
@@ -285,27 +283,27 @@ class SSAPropagator {
   std::queue<BasicBlock*> blocks_;
 
   // Blocks simulated during propagation.
-  std::unordered_set<BasicBlock*> simulated_blocks_;
+  CAUnorderedSet<BasicBlock*> simulated_blocks_;
 
   // Set of instructions that should not be simulated again because they have
   // been found to be in the kVarying state.
-  std::unordered_set<Instruction*> do_not_simulate_;
+  CAUnorderedSet<Instruction*> do_not_simulate_;
 
   // Map between a basic block and its predecessor edges.
   // TODO(dnovillo): Move this to CFG and always build them. Alternately,
   // move it to IRContext and build CFG preds/succs on-demand.
-  std::unordered_map<BasicBlock*, std::vector<Edge>> bb_preds_;
+  CAUnorderedMap<BasicBlock*, std::vector<Edge>> bb_preds_;
 
   // Map between a basic block and its successor edges.
   // TODO(dnovillo): Move this to CFG and always build them. Alternately,
   // move it to IRContext and build CFG preds/succs on-demand.
-  std::unordered_map<BasicBlock*, std::vector<Edge>> bb_succs_;
+  CAUnorderedMap<BasicBlock*, std::vector<Edge>> bb_succs_;
 
   // Set of executable CFG edges.
-  std::set<Edge> executable_edges_;
+  CASet<Edge> executable_edges_;
 
   // Tracks instruction propagation status.
-  std::unordered_map<Instruction*, SSAPropagator::PropStatus> statuses_;
+  CAUnorderedMap<Instruction*, SSAPropagator::PropStatus> statuses_;
 };
 
 std::ostream& operator<<(std::ostream& str,

@@ -20,8 +20,6 @@
 #include <algorithm>
 #include <map>
 #include <queue>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 #include "source/opt/basic_block.h"

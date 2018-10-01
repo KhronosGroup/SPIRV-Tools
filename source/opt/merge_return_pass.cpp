@@ -84,7 +84,7 @@ void MergeReturnPass::ProcessStructured(
 
   state_.clear();
   state_.emplace_back(nullptr, nullptr);
-  std::unordered_set<BasicBlock*> predicated;
+  CAUnorderedSet<BasicBlock*> predicated;
   for (auto block : order) {
     if (cfg()->IsPseudoEntryBlock(block) || cfg()->IsPseudoExitBlock(block)) {
       continue;
@@ -265,9 +265,9 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
   }
 }
 
-void MergeReturnPass::PredicateBlocks(
-    BasicBlock* return_block, std::unordered_set<BasicBlock*>* predicated,
-    std::list<BasicBlock*>* order) {
+void MergeReturnPass::PredicateBlocks(BasicBlock* return_block,
+                                      CAUnorderedSet<BasicBlock*>* predicated,
+                                      std::list<BasicBlock*>* order) {
   // The CFG is being modified as the function proceeds so avoid caching
   // successors.
 
@@ -287,7 +287,7 @@ void MergeReturnPass::PredicateBlocks(
          "unconditional branch.");
 
   auto state = state_.rbegin();
-  std::unordered_set<BasicBlock*> seen;
+  CAUnorderedSet<BasicBlock*> seen;
   if (block->id() == state->CurrentMergeId()) {
     state++;
   } else if (block->id() == state->LoopMergeId()) {
@@ -312,8 +312,7 @@ void MergeReturnPass::PredicateBlocks(
 
 void MergeReturnPass::BreakFromConstruct(
     BasicBlock* block, BasicBlock* merge_block,
-    std::unordered_set<BasicBlock*>* predicated,
-    std::list<BasicBlock*>* order) {
+    CAUnorderedSet<BasicBlock*>* predicated, std::list<BasicBlock*>* order) {
   // Make sure the cfg is build here.  If we don't then it becomes very hard
   // to know which new blocks need to be updated.
   context()->BuildInvalidAnalyses(IRContext::kAnalysisCFG);

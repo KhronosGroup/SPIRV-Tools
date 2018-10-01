@@ -15,12 +15,9 @@
 #ifndef SOURCE_OPT_DEF_USE_MANAGER_H_
 #define SOURCE_OPT_DEF_USE_MANAGER_H_
 
-#include <list>
-#include <set>
-#include <unordered_map>
 #include <utility>
-#include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/instruction.h"
 #include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"
@@ -96,8 +93,8 @@ struct UserEntryLess {
 // A class for analyzing and managing defs and uses in an Module.
 class DefUseManager {
  public:
-  using IdToDefMap = std::unordered_map<uint32_t, Instruction*>;
-  using IdToUsersMap = std::set<UserEntry, UserEntryLess>;
+  using IdToDefMap = CAUnorderedMap<uint32_t, Instruction*>;
+  using IdToUsersMap = CASet<UserEntry, UserEntryLess>;
 
   // Constructs a def-use manager from the given |module|. All internal messages
   // will be communicated to the outside via the given message |consumer|. This
@@ -221,7 +218,7 @@ class DefUseManager {
 
  private:
   using InstToUsedIdsMap =
-      std::unordered_map<const Instruction*, std::vector<uint32_t>>;
+      CAUnorderedMap<const Instruction*, std::vector<uint32_t>>;
 
   // Returns the first location that {|def|, nullptr} could be inserted into the
   // users map without violating ordering.

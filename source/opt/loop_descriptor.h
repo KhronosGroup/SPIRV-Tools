@@ -19,8 +19,6 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -44,7 +42,7 @@ class Loop {
  public:
   using iterator = ChildrenList::iterator;
   using const_iterator = ChildrenList::const_iterator;
-  using BasicBlockListTy = std::unordered_set<uint32_t>;
+  using BasicBlockListTy = CAUnorderedSet<uint32_t>;
 
   explicit Loop(IRContext* context)
       : context_(context),
@@ -140,13 +138,13 @@ class Loop {
 
   // Clears and fills |exit_blocks| with all basic blocks that are not in the
   // loop and has at least one predecessor in the loop.
-  void GetExitBlocks(std::unordered_set<uint32_t>* exit_blocks) const;
+  void GetExitBlocks(CAUnorderedSet<uint32_t>* exit_blocks) const;
 
   // Clears and fills |merging_blocks| with all basic blocks that are
   // post-dominated by the merge block. The merge block must exist.
   // The set |merging_blocks| will only contain the merge block if it is
   // unreachable.
-  void GetMergingBlocks(std::unordered_set<uint32_t>* merging_blocks) const;
+  void GetMergingBlocks(CAUnorderedSet<uint32_t>* merging_blocks) const;
 
   // Returns true if the loop is in a Loop Closed SSA form.
   // In LCSSA form, all in-loop definitions are used in the loop or in phi
@@ -544,7 +542,7 @@ class LoopDescriptor {
 
   // Returns the inner most loop that contains the basic block id |block_id|.
   inline Loop* FindLoopForBasicBlock(uint32_t block_id) const {
-    std::unordered_map<uint32_t, Loop*>::const_iterator it =
+    CAUnorderedMap<uint32_t, Loop*>::const_iterator it =
         basic_block_to_loop_.find(block_id);
     return it != basic_block_to_loop_.end() ? it->second : nullptr;
   }
@@ -559,7 +557,7 @@ class LoopDescriptor {
   // Dummy root: this "loop" is only there to help iterators creation.
   Loop dummy_top_loop_;
 
-  std::unordered_map<uint32_t, Loop*> basic_block_to_loop_;
+  CAUnorderedMap<uint32_t, Loop*> basic_block_to_loop_;
 
   // List of the loops marked for addition when PostModificationCleanup is
   // called.

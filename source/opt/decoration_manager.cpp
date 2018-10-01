@@ -16,8 +16,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <set>
-#include <stack>
 #include <utility>
 
 #include "source/opt/ir_context.h"
@@ -46,7 +44,7 @@ void DecorationManager::RemoveDecorationsFrom(
   // For all groups being directly applied to |id|, remove |id| (and the
   // literal if |inst| is an OpGroupMemberDecorate) from the instruction
   // applying the group.
-  std::unordered_set<const Instruction*> indirect_decorations_to_remove;
+  CAUnorderedSet<const Instruction*> indirect_decorations_to_remove;
   for (Instruction* inst : decorations_info.indirect_decorations) {
     assert(inst->opcode() == SpvOpGroupDecorate ||
            inst->opcode() == SpvOpGroupMemberDecorate);
@@ -161,7 +159,7 @@ std::vector<const Instruction*> DecorationManager::GetDecorationsFor(
 bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
                                                uint32_t id2) const {
   using InstructionList = std::vector<const Instruction*>;
-  using DecorationSet = std::set<std::u32string>;
+  using DecorationSet = CASet<std::u32string>;
 
   const InstructionList decorations_for1 = GetDecorationsFor(id1, false);
   const InstructionList decorations_for2 = GetDecorationsFor(id2, false);

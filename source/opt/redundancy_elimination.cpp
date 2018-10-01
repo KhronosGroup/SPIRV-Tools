@@ -32,7 +32,7 @@ Pass::Status RedundancyEliminationPass::Process() {
     // Keeps track of all ids that contain a given value number. We keep
     // track of multiple values because they could have the same value, but
     // different decorations.
-    std::map<uint32_t, uint32_t> value_to_ids;
+    CAMap<uint32_t, uint32_t> value_to_ids;
 
     if (EliminateRedundanciesFrom(dom_tree.GetRoot(), vnTable, value_to_ids)) {
       modified = true;
@@ -43,7 +43,7 @@ Pass::Status RedundancyEliminationPass::Process() {
 
 bool RedundancyEliminationPass::EliminateRedundanciesFrom(
     DominatorTreeNode* bb, const ValueNumberTable& vnTable,
-    std::map<uint32_t, uint32_t> value_to_ids) {
+    CAMap<uint32_t, uint32_t> value_to_ids) {
   bool modified = EliminateRedundanciesInBB(bb->bb_, vnTable, &value_to_ids);
 
   for (auto dominated_bb : bb->children_) {

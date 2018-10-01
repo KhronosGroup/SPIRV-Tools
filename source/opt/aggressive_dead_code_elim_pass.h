@@ -22,11 +22,10 @@
 #include <map>
 #include <queue>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/mem_pass.h"
@@ -161,13 +160,13 @@ class AggressiveDCEPass : public MemPass {
   // immediate controlling structured if or loop.  A loop header block points
   // to its own branch instruction.  An if-selection block points to the branch
   // of an enclosing construct's header, if one exists.
-  std::unordered_map<BasicBlock*, Instruction*> block2headerBranch_;
+  CAUnorderedMap<BasicBlock*, Instruction*> block2headerBranch_;
 
   // Maps basic block to their index in the structured order traversal.
-  std::unordered_map<BasicBlock*, uint32_t> structured_order_index_;
+  CAUnorderedMap<BasicBlock*, uint32_t> structured_order_index_;
 
   // Map from branch to its associated merge instruction, if any
-  std::unordered_map<Instruction*, Instruction*> branch2merge_;
+  CAUnorderedMap<Instruction*, Instruction*> branch2merge_;
 
   // Store instructions to variables of private storage
   std::vector<Instruction*> private_stores_;
@@ -176,14 +175,14 @@ class AggressiveDCEPass : public MemPass {
   utils::BitVector live_insts_;
 
   // Live Local Variables
-  std::unordered_set<uint32_t> live_local_vars_;
+  CAUnorderedSet<uint32_t> live_local_vars_;
 
   // List of instructions to delete. Deletion is delayed until debug and
   // annotation instructions are processed.
   std::vector<Instruction*> to_kill_;
 
   // Extensions supported by this pass.
-  std::unordered_set<std::string> extensions_whitelist_;
+  CAUnorderedSet<std::string> extensions_whitelist_;
 };
 
 }  // namespace opt

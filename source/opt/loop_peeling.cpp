@@ -15,8 +15,6 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "source/opt/ir_builder.h"
@@ -114,20 +112,19 @@ void LoopPeeling::DuplicateAndConnectLoop(
   //   if (cond)
   //     z += cst2;
   // }
-  loop_->GetHeaderBlock()->ForEachPhiInst([cloned_loop_exit, def_use_mgr,
-                                           clone_results,
-                                           this](Instruction* phi) {
-    for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
-      if (!loop_->IsInsideLoop(phi->GetSingleWordInOperand(i + 1))) {
-        phi->SetInOperand(i,
-                          {clone_results->value_map_.at(
-                              exit_value_.at(phi->result_id())->result_id())});
-        phi->SetInOperand(i + 1, {cloned_loop_exit});
-        def_use_mgr->AnalyzeInstUse(phi);
-        return;
-      }
-    }
-  });
+  loop_->GetHeaderBlock()->ForEachPhiInst(
+      [cloned_loop_exit, def_use_mgr, clone_results, this](Instruction* phi) {
+        for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
+          if (!loop_->IsInsideLoop(phi->GetSingleWordInOperand(i + 1))) {
+            phi->SetInOperand(
+                i, {clone_results->value_map_.at(
+                       exit_value_.at(phi->result_id())->result_id())});
+            phi->SetInOperand(i + 1, {cloned_loop_exit});
+            def_use_mgr->AnalyzeInstUse(phi);
+            return;
+          }
+        }
+      });
 
   // Force the creation of a new preheader for the original loop and set it as
   // the merge block for the cloned loop.
@@ -180,7 +177,7 @@ void LoopPeeling::InsertCanonicalInductionVariable(
 
 void LoopPeeling::GetIteratorUpdateOperations(
     const Loop* loop, Instruction* iterator,
-    std::unordered_set<Instruction*>* operations) {
+    CAUnorderedSet<Instruction*>* operations) {
   analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
   operations->insert(iterator);
   iterator->ForEachInId([def_use_mgr, loop, operations, this](uint32_t* id) {
@@ -200,7 +197,7 @@ void LoopPeeling::GetIteratorUpdateOperations(
 
 // Gather the set of blocks for all the path from |entry| to |root|.
 static void GetBlocksInPath(uint32_t block, uint32_t entry,
-                            std::unordered_set<uint32_t>* blocks_in_path,
+                            CAUnorderedSet<uint32_t>* blocks_in_path,
                             const CFG& cfg) {
   for (uint32_t pid : cfg.preds(block)) {
     if (blocks_in_path->insert(pid).second) {
@@ -219,7 +216,7 @@ bool LoopPeeling::IsConditionCheckSideEffectFree() const {
   if (!do_while_form_) {
     uint32_t condition_block_id = cfg.preds(loop_->GetMergeBlock()->id())[0];
 
-    std::unordered_set<uint32_t> blocks_in_path;
+    CAUnorderedSet<uint32_t> blocks_in_path;
 
     blocks_in_path.insert(condition_block_id);
     GetBlocksInPath(condition_block_id, loop_->GetHeaderBlock()->id(),
@@ -269,7 +266,7 @@ void LoopPeeling::GetIteratingExitValues() {
   if (do_while_form_) {
     loop_->GetHeaderBlock()->ForEachPhiInst(
         [condition_block_id, def_use_mgr, this](Instruction* phi) {
-          std::unordered_set<Instruction*> operations;
+          CAUnorderedSet<Instruction*> operations;
 
           for (uint32_t i = 0; i < phi->NumInOperands(); i += 2) {
             if (condition_block_id == phi->GetSingleWordInOperand(i + 1)) {
@@ -286,7 +283,7 @@ void LoopPeeling::GetIteratingExitValues() {
 
     loop_->GetHeaderBlock()->ForEachPhiInst(
         [dom_tree, condition_block, this](Instruction* phi) {
-          std::unordered_set<Instruction*> operations;
+          CAUnorderedSet<Instruction*> operations;
 
           // Not the back-edge value, check if the phi instruction is the only
           // possible candidate.
@@ -526,36 +523,35 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
   // dominate the preheader.
   // We had to the preheader (our if merge block) the required phi instruction
   // and patch the header phi.
-  GetOriginalLoop()->GetHeaderBlock()->ForEachPhiInst(
-      [&clone_results, if_block, this](Instruction* phi) {
-        analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
+  GetOriginalLoop()->GetHeaderBlock()->ForEachPhiInst([&clone_results, if_block,
+                                                       this](Instruction* phi) {
+    analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
-        auto find_value_idx = [](Instruction* phi_inst, Loop* loop) {
-          uint32_t preheader_value_idx =
-              !loop->IsInsideLoop(phi_inst->GetSingleWordInOperand(1)) ? 0 : 2;
-          return preheader_value_idx;
-        };
+    auto find_value_idx = [](Instruction* phi_inst, Loop* loop) {
+      uint32_t preheader_value_idx =
+          !loop->IsInsideLoop(phi_inst->GetSingleWordInOperand(1)) ? 0 : 2;
+      return preheader_value_idx;
+    };
 
-        Instruction* cloned_phi =
-            def_use_mgr->GetDef(clone_results.value_map_.at(phi->result_id()));
-        uint32_t cloned_preheader_value = cloned_phi->GetSingleWordInOperand(
-            find_value_idx(cloned_phi, GetClonedLoop()));
+    Instruction* cloned_phi =
+        def_use_mgr->GetDef(clone_results.value_map_.at(phi->result_id()));
+    uint32_t cloned_preheader_value = cloned_phi->GetSingleWordInOperand(
+        find_value_idx(cloned_phi, GetClonedLoop()));
 
-        Instruction* new_phi =
-            InstructionBuilder(context_,
-                               &*GetOriginalLoop()->GetPreHeaderBlock()->tail(),
-                               IRContext::kAnalysisDefUse |
-                                   IRContext::kAnalysisInstrToBlockMapping)
-                .AddPhi(phi->type_id(),
-                        {phi->GetSingleWordInOperand(
-                             find_value_idx(phi, GetOriginalLoop())),
-                         GetClonedLoop()->GetMergeBlock()->id(),
-                         cloned_preheader_value, if_block->id()});
+    Instruction* new_phi =
+        InstructionBuilder(context_,
+                           &*GetOriginalLoop()->GetPreHeaderBlock()->tail(),
+                           IRContext::kAnalysisDefUse |
+                               IRContext::kAnalysisInstrToBlockMapping)
+            .AddPhi(phi->type_id(), {phi->GetSingleWordInOperand(find_value_idx(
+                                         phi, GetOriginalLoop())),
+                                     GetClonedLoop()->GetMergeBlock()->id(),
+                                     cloned_preheader_value, if_block->id()});
 
-        phi->SetInOperand(find_value_idx(phi, GetOriginalLoop()),
-                          {new_phi->result_id()});
-        def_use_mgr->AnalyzeInstUse(phi);
-      });
+    phi->SetInOperand(find_value_idx(phi, GetOriginalLoop()),
+                      {new_phi->result_id()});
+    def_use_mgr->AnalyzeInstUse(phi);
+  });
 
   context_->InvalidateAnalysesExceptFor(
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping |

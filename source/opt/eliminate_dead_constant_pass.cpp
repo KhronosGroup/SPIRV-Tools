@@ -15,8 +15,6 @@
 #include "source/opt/eliminate_dead_constant_pass.h"
 
 #include <algorithm>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "source/opt/def_use_manager.h"
@@ -28,11 +26,11 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status EliminateDeadConstantPass::Process() {
-  std::unordered_set<Instruction*> working_list;
+  CAUnorderedSet<Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
   // working list and count number of real uses for constants. Uses in
   // annotation instructions do not count.
-  std::unordered_map<Instruction*, size_t> use_counts;
+  CAUnorderedMap<Instruction*, size_t> use_counts;
   std::vector<Instruction*> constants = context()->GetConstants();
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
@@ -54,7 +52,7 @@ Pass::Status EliminateDeadConstantPass::Process() {
 
   // Start from the constants with 0 uses, back trace through the def-use chain
   // to find all dead constants.
-  std::unordered_set<Instruction*> dead_consts;
+  CAUnorderedSet<Instruction*> dead_consts;
   while (!working_list.empty()) {
     Instruction* inst = *working_list.begin();
     // Back propagate if the instruction contains IDs in its operands.

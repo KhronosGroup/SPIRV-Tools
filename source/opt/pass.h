@@ -18,10 +18,9 @@
 #include <algorithm>
 #include <map>
 #include <queue>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
+#include "source/opt/allocator.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/ir_context.h"
@@ -110,7 +109,7 @@ class Pass {
   // |roots| will be empty.
   bool ProcessCallTreeFromRoots(
       ProcessFunction& pfn,
-      const std::unordered_map<uint32_t, Function*>& id2function,
+      const CAUnorderedMap<uint32_t, Function*>& id2function,
       std::queue<uint32_t>* roots);
 
   // Run the pass on the given |module|. Returns Status::Failure if errors occur

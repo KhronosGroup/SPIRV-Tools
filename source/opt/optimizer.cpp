@@ -16,15 +16,15 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include <source/spirv_optimizer_options.h>
+#include "source/opt/allocator.h"
 #include "source/opt/build_module.h"
 #include "source/opt/log.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
+#include "source/spirv_optimizer_options.h"
 #include "source/util/make_unique.h"
 #include "source/util/string_utils.h"
 
@@ -54,10 +54,16 @@ Optimizer::PassToken& Optimizer::PassToken::operator=(PassToken&& that) {
 Optimizer::PassToken::~PassToken() {}
 
 struct Optimizer::Impl {
-  explicit Impl(spv_target_env env) : target_env(env), pass_manager() {}
+  explicit Impl(spv_target_env env)
+      : target_env(env), pass_manager(), allocator() {
+    SetCustomAllocator(&allocator);
+  }
+
+  ~Impl() { SetCustomAllocator(nullptr); }
 
   const spv_target_env target_env;  // Target environment.
   opt::PassManager pass_manager;    // Internal implementation pass manager.
+  Allocator allocator;
 };
 
 Optimizer::Optimizer(spv_target_env env) : impl_(new Impl(env)) {}

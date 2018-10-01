@@ -18,7 +18,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -145,7 +144,7 @@ class SENodeSimplifyImpl {
   int64_t constant_accumulator_;
 
   // An accumulator for each of the non constant terms in the graph.
-  std::map<SENode*, int64_t> accumulators_;
+  CAMap<SENode*, int64_t> accumulators_;
 };
 
 // From a |multiply| build up the accumulator objects.
@@ -375,7 +374,7 @@ SENode* SENodeSimplifyImpl::FoldRecurrentAddExpressions(SENode* root) {
 
   // A mapping of loops to the list of recurrent expressions which are with
   // respect to those loops.
-  std::map<const Loop*, std::vector<std::pair<SERecurrentNode*, bool>>>
+  CAMap<const Loop*, std::vector<std::pair<SERecurrentNode*, bool>>>
       loops_to_recurrent{};
 
   bool has_multiple_same_loop_recurrent_terms = false;

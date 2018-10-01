@@ -17,7 +17,6 @@
 #include <ostream>
 #include <set>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -205,7 +204,7 @@ const Loop* LoopDependenceAnalysis::GetLoopForSubscriptPair(
       std::get<1>(subscript_pair)->CollectRecurrentNodes();
 
   // Collect all the loops stored by the SERecurrentNodes.
-  std::unordered_set<const Loop*> loops{};
+  CAUnorderedSet<const Loop*> loops{};
   for (auto source_nodes_it = source_nodes.begin();
        source_nodes_it != source_nodes.end(); ++source_nodes_it) {
     loops.insert((*source_nodes_it)->GetLoop());
@@ -316,12 +315,12 @@ SENode* LoopDependenceAnalysis::GetFinalTripInductionNode(
       scalar_evolution_.CreateMultiplyNode(trip_count, induction_coefficient)));
 }
 
-std::set<const Loop*> LoopDependenceAnalysis::CollectLoops(
+CASet<const Loop*> LoopDependenceAnalysis::CollectLoops(
     const std::vector<SERecurrentNode*>& recurrent_nodes) {
   // We don't handle loops with more than one induction variable. Therefore we
   // can identify the number of induction variables by collecting all of the
   // loops the collected recurrent nodes belong to.
-  std::set<const Loop*> loops{};
+  CASet<const Loop*> loops{};
   for (auto recurrent_nodes_it = recurrent_nodes.begin();
        recurrent_nodes_it != recurrent_nodes.end(); ++recurrent_nodes_it) {
     loops.insert((*recurrent_nodes_it)->GetLoop());
@@ -340,23 +339,23 @@ int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* node) {
   // We don't handle loops with more than one induction variable. Therefore we
   // can identify the number of induction variables by collecting all of the
   // loops the collected recurrent nodes belong to.
-  std::set<const Loop*> loops = CollectLoops(recurrent_nodes);
+  CASet<const Loop*> loops = CollectLoops(recurrent_nodes);
 
   return static_cast<int64_t>(loops.size());
 }
 
-std::set<const Loop*> LoopDependenceAnalysis::CollectLoops(
+CASet<const Loop*> LoopDependenceAnalysis::CollectLoops(
     SENode* source, SENode* destination) {
   if (!source || !destination) {
-    return std::set<const Loop*>{};
+    return CASet<const Loop*>{};
   }
 
   std::vector<SERecurrentNode*> source_nodes = source->CollectRecurrentNodes();
   std::vector<SERecurrentNode*> destination_nodes =
       destination->CollectRecurrentNodes();
 
-  std::set<const Loop*> loops = CollectLoops(source_nodes);
-  std::set<const Loop*> destination_loops = CollectLoops(destination_nodes);
+  CASet<const Loop*> loops = CollectLoops(source_nodes);
+  CASet<const Loop*> destination_loops = CollectLoops(destination_nodes);
 
   loops.insert(std::begin(destination_loops), std::end(destination_loops));
 
@@ -369,7 +368,7 @@ int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* source,
     return -1;
   }
 
-  std::set<const Loop*> loops = CollectLoops(source, destination);
+  CASet<const Loop*> loops = CollectLoops(source, destination);
 
   return static_cast<int64_t>(loops.size());
 }
@@ -421,7 +420,7 @@ void LoopDependenceAnalysis::MarkUnsusedDistanceEntriesAsIrrelevant(
   std::vector<Instruction*> source_subscripts = GetSubscripts(source);
   std::vector<Instruction*> destination_subscripts = GetSubscripts(destination);
 
-  std::set<const Loop*> used_loops{};
+  CASet<const Loop*> used_loops{};
 
   for (Instruction* source_inst : source_subscripts) {
     SENode* source_node = scalar_evolution_.SimplifyExpression(

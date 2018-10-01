@@ -14,8 +14,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -32,7 +30,7 @@ namespace opt {
 namespace {
 // Return true if |bb| is dominated by at least one block in |exits|
 static inline bool DominatesAnExit(BasicBlock* bb,
-                                   const std::unordered_set<BasicBlock*>& exits,
+                                   const CAUnorderedSet<BasicBlock*>& exits,
                                    const DominatorTree& dom_tree) {
   for (BasicBlock* e_bb : exits)
     if (dom_tree.Dominates(bb, e_bb)) return true;
@@ -49,7 +47,7 @@ static inline bool DominatesAnExit(BasicBlock* bb,
 class LCSSARewriter {
  public:
   LCSSARewriter(IRContext* context, const DominatorTree& dom_tree,
-                const std::unordered_set<BasicBlock*>& exit_bb,
+                const CAUnorderedSet<BasicBlock*>& exit_bb,
                 BasicBlock* merge_block)
       : context_(context),
         cfg_(context_->cfg()),
@@ -206,8 +204,8 @@ class LCSSARewriter {
 
     LCSSARewriter* base_;
     const Instruction& def_insn_;
-    std::unordered_map<uint32_t, Instruction*> bb_to_phi_;
-    std::unordered_set<Instruction*> rewritten_;
+    CAUnorderedMap<uint32_t, Instruction*> bb_to_phi_;
+    CAUnorderedSet<Instruction*> rewritten_;
   };
 
  private:
@@ -255,7 +253,7 @@ class LCSSARewriter {
   IRContext* context_;
   CFG* cfg_;
   const DominatorTree& dom_tree_;
-  const std::unordered_set<BasicBlock*>& exit_bb_;
+  const CAUnorderedSet<BasicBlock*>& exit_bb_;
   uint32_t merge_block_id_;
   // This map represent the set of known paths. For each key, the vector
   // represent the set of blocks holding the definition to be used to build the
@@ -265,15 +263,15 @@ class LCSSARewriter {
   //   should be used.
   // If the vector has more than 1 value, then a phi node must be created, the
   //   basic block ordering is the same as the predecessor ordering.
-  std::unordered_map<uint32_t, std::vector<uint32_t>> bb_to_defining_blocks_;
+  CAUnorderedMap<uint32_t, std::vector<uint32_t>> bb_to_defining_blocks_;
 };
 
 // Make the set |blocks| closed SSA. The set is closed SSA if all the uses
 // outside the set are phi instructions in exiting basic block set (hold by
 // |lcssa_rewriter|).
 inline void MakeSetClosedSSA(IRContext* context, Function* function,
-                             const std::unordered_set<uint32_t>& blocks,
-                             const std::unordered_set<BasicBlock*>& exit_bb,
+                             const CAUnorderedSet<uint32_t>& blocks,
+                             const CAUnorderedSet<BasicBlock*>& exit_bb,
                              LCSSARewriter* lcssa_rewriter) {
   CFG& cfg = *context->cfg();
   DominatorTree& dom_tree =
@@ -327,10 +325,10 @@ void LoopUtils::CreateLoopDedicatedExits() {
 
   // Gathers the set of basic block that are not in this loop and have at least
   // one predecessor in the loop and one not in the loop.
-  std::unordered_set<uint32_t> exit_bb_set;
+  CAUnorderedSet<uint32_t> exit_bb_set;
   loop_->GetExitBlocks(&exit_bb_set);
 
-  std::unordered_set<BasicBlock*> new_loop_exits;
+  CAUnorderedSet<BasicBlock*> new_loop_exits;
   bool made_change = false;
   // For each block, we create a new one that gathers all branches from
   // the loop and fall into the block.
@@ -441,9 +439,9 @@ void LoopUtils::MakeLoopClosedSSA() {
   DominatorTree& dom_tree =
       context_->GetDominatorAnalysis(function)->GetDomTree();
 
-  std::unordered_set<BasicBlock*> exit_bb;
+  CAUnorderedSet<BasicBlock*> exit_bb;
   {
-    std::unordered_set<uint32_t> exit_bb_id;
+    CAUnorderedSet<uint32_t> exit_bb_id;
     loop_->GetExitBlocks(&exit_bb_id);
     for (uint32_t bb_id : exit_bb_id) {
       exit_bb.insert(cfg.block(bb_id));
@@ -458,7 +456,7 @@ void LoopUtils::MakeLoopClosedSSA() {
   // Make sure all defs post-dominated by the merge block have their last use no
   // further than the merge block.
   if (loop_->GetMergeBlock()) {
-    std::unordered_set<uint32_t> merging_bb_id;
+    CAUnorderedSet<uint32_t> merging_bb_id;
     loop_->GetMergingBlocks(&merging_bb_id);
     merging_bb_id.erase(loop_->GetMergeBlock()->id());
     // Reset the exit set, now only the merge block is the exit.
@@ -533,7 +531,6 @@ Loop* LoopUtils::CloneAndAttachLoopToHeader(LoopCloningResult* cloning_result) {
       [new_merge_block, this](Instruction* inst, uint32_t operand) {
         if (this->loop_->IsInsideLoop(inst))
           inst->SetOperand(operand, {new_merge_block});
-
       });
   new_loop->SetMergeBlock(new_exit_bb.get());
 
@@ -613,7 +610,7 @@ Loop* LoopUtils::CloneLoop(
 
 void LoopUtils::PopulateLoopNest(
     Loop* new_loop, const LoopCloningResult& cloning_result) const {
-  std::unordered_map<Loop*, Loop*> loop_mapping;
+  CAUnorderedMap<Loop*, Loop*> loop_mapping;
   loop_mapping[loop_] = new_loop;
 
   if (loop_->HasParent()) loop_->GetParent()->AddNestedLoop(new_loop);

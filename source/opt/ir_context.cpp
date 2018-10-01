@@ -556,8 +556,7 @@ LoopDescriptor* IRContext::GetLoopDescriptor(const Function* f) {
     ResetLoopAnalysis();
   }
 
-  std::unordered_map<const Function*, LoopDescriptor>::iterator it =
-      loop_descriptors_.find(f);
+  auto it = loop_descriptors_.find(f);
   if (it == loop_descriptors_.end()) {
     return &loop_descriptors_
                 .emplace(std::make_pair(f, LoopDescriptor(this, f)))
@@ -594,7 +593,7 @@ PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(const Function* f) {
 }
 
 bool IRContext::CheckCFG() {
-  std::unordered_map<uint32_t, std::vector<uint32_t>> real_preds;
+  CAUnorderedMap<uint32_t, std::vector<uint32_t>> real_preds;
   if (!AreAnalysesValid(kAnalysisCFG)) {
     return true;
   }

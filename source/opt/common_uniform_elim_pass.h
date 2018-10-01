@@ -23,11 +23,10 @@
 #include <memory>
 #include <queue>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/decoration_manager.h"
 #include "source/opt/def_use_manager.h"
@@ -190,20 +189,19 @@ class CommonUniformElimPass : public Pass {
   Pass::Status ProcessImpl();
 
   // Map from uniform variable id to its common load id
-  std::unordered_map<uint32_t, uint32_t> uniform2load_id_;
+  CAUnorderedMap<uint32_t, uint32_t> uniform2load_id_;
 
   // Map of extract composite ids to map of indices to insts
   // TODO(greg-lunarg): Consider std::vector.
-  std::unordered_map<uint32_t,
-                     std::unordered_map<uint32_t, std::list<Instruction*>>>
+  CAUnorderedMap<uint32_t, CAUnorderedMap<uint32_t, std::list<Instruction*>>>
       comp2idx2inst_;
 
   // Extensions supported by this pass.
-  std::unordered_set<std::string> extensions_whitelist_;
+  CAUnorderedSet<std::string> extensions_whitelist_;
 
   // Map from block to its structured successor blocks. See
   // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const BasicBlock*, std::vector<BasicBlock*>>
+  CAUnorderedMap<const BasicBlock*, std::vector<BasicBlock*>>
       block2structured_succs_;
 };
 

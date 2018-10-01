@@ -19,10 +19,10 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/instruction.h"
 #include "source/opt/scalar_analysis_nodes.h"
@@ -145,7 +145,7 @@ class ScalarEvolutionAnalysis {
   // expressions as they are added when analyzing instructions. Recurrent
   // expressions come from phi nodes which by nature can include recursion so we
   // check if nodes have already been built when analyzing instructions.
-  std::map<const Instruction*, SENode*> recurrent_node_map_;
+  CAMap<const Instruction*, SENode*> recurrent_node_map_;
 
   // On creation we create and cache the CantCompute node so we not need to
   // perform a needless create step.
@@ -163,12 +163,12 @@ class ScalarEvolutionAnalysis {
 
   // Cache of nodes. All pointers to the nodes are references to the memory
   // managed by they set.
-  std::unordered_set<std::unique_ptr<SENode>, SENodeHash, NodePointersEquality>
+  CAUnorderedSet<std::unique_ptr<SENode>, SENodeHash, NodePointersEquality>
       node_cache_;
 
   // Loops that should be considered the same for performing analysis for loop
   // fusion.
-  std::map<const Loop*, const Loop*> pretend_equal_;
+  CAMap<const Loop*, const Loop*> pretend_equal_;
 };
 
 // Wrapping class to manipulate SENode pointer using + - * / operators.

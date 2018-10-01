@@ -569,7 +569,7 @@ bool AggressiveDCEPass::EliminateDeadFunctions() {
   // Identify live functions first. Those that are not live
   // are dead. ADCE is disabled for non-shaders so we do not check for exported
   // functions here.
-  std::unordered_set<const Function*> live_function_set;
+  CAUnorderedSet<const Function*> live_function_set;
   ProcessFunction mark_live = [&live_function_set](Function* fp) {
     live_function_set.insert(fp);
     return false;

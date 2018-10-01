@@ -19,8 +19,6 @@
 #include <limits>
 #include <memory>
 #include <tuple>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -179,7 +177,7 @@ class LoopPeeling {
   // is initialized to 0 and incremented by step of 1.
   Instruction* canonical_induction_variable_;
   // Map between loop iterators and exit values. Loop iterators
-  std::unordered_map<uint32_t, Instruction*> exit_value_;
+  CAUnorderedMap<uint32_t, Instruction*> exit_value_;
 
   // Duplicate |loop_| and place the new loop before the cloned loop. Iterating
   // values from the cloned loop are then connected to the original loop as
@@ -201,9 +199,8 @@ class LoopPeeling {
 
   // Gathers all operations involved in the update of |iterator| into
   // |operations|.
-  void GetIteratorUpdateOperations(
-      const Loop* loop, Instruction* iterator,
-      std::unordered_set<Instruction*>* operations);
+  void GetIteratorUpdateOperations(const Loop* loop, Instruction* iterator,
+                                   CAUnorderedSet<Instruction*>* operations);
 
   // Gathers exiting iterator values. The function builds a map between each
   // iterating value in the loop (a phi instruction in the loop header) and its

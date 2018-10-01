@@ -37,10 +37,10 @@ void CollectChildren(Loop* loop, std::vector<const Loop*>* loops) {
 }
 
 // Return the set of locations accessed by |stores| and |loads|.
-std::set<Instruction*> GetLocationsAccessed(
-    const std::map<Instruction*, std::vector<Instruction*>>& stores,
-    const std::map<Instruction*, std::vector<Instruction*>>& loads) {
-  std::set<Instruction*> locations{};
+CASet<Instruction*> GetLocationsAccessed(
+    const CAMap<Instruction*, std::vector<Instruction*>>& stores,
+    const CAMap<Instruction*, std::vector<Instruction*>>& loads) {
+  CASet<Instruction*> locations{};
 
   for (const auto& kv : stores) {
     locations.insert(std::get<0>(kv));
@@ -336,9 +336,9 @@ bool LoopFusion::CheckStep() {
   return true;
 }
 
-std::map<Instruction*, std::vector<Instruction*>> LoopFusion::LocationToMemOps(
+CAMap<Instruction*, std::vector<Instruction*>> LoopFusion::LocationToMemOps(
     const std::vector<Instruction*>& mem_ops) {
-  std::map<Instruction*, std::vector<Instruction*>> location_map{};
+  CAMap<Instruction*, std::vector<Instruction*>> location_map{};
 
   for (auto instruction : mem_ops) {
     auto access_location = context_->get_def_use_mgr()->GetDef(
