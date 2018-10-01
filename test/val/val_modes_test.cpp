@@ -30,7 +30,6 @@ using ::testing::Combine;
 using ::testing::HasSubstr;
 using ::testing::Values;
 using ::testing::ValuesIn;
-using spvtest::ScopedContext;
 
 using ValidateMode = spvtest::ValidateBase<bool>;
 
@@ -706,6 +705,65 @@ INSTANTIATE_TEST_CASE_P(
             Values("Xfb", "Initializer", "Finalizer", "SubgroupSize 1",
                    "SubgroupsPerWorkgroup 1", "SubgroupsPerWorkgroupId %int1"),
             Values(SPV_ENV_UNIVERSAL_1_3)));
+
+TEST_F(ValidateModeExecution, MeshNVLocalSize) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability MeshShadingNV
+OpExtension "SPV_NV_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshNV %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateModeExecution, MeshNVOutputPoints) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability MeshShadingNV
+OpExtension "SPV_NV_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshNV %main "main"
+OpExecutionMode %main OutputPoints
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateModeExecution, MeshNVOutputVertices) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability MeshShadingNV
+OpExtension "SPV_NV_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshNV %main "main"
+OpExecutionMode %main OutputVertices 42
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateModeExecution, MeshNVLocalSizeId) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability MeshShadingNV
+OpExtension "SPV_NV_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshNV %main "main"
+OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
+}
 
 }  // namespace
 }  // namespace val

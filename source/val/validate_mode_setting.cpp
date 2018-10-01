@@ -88,9 +88,8 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
                               })) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Fragment execution model entry points can specify at most "
-                    "one of "
-                    "DepthGreater, DepthLess or DepthUnchanged execution "
-                    "modes.";
+                    "one of DepthGreater, DepthLess or DepthUnchanged "
+                    "execution modes.";
         }
         break;
       case SpvExecutionModelTessellationControl:
@@ -244,7 +243,6 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     case SpvExecutionModeInputLines:
     case SpvExecutionModeInputLinesAdjacency:
     case SpvExecutionModeInputTrianglesAdjacency:
-    case SpvExecutionModeOutputPoints:
     case SpvExecutionModeOutputLineStrip:
     case SpvExecutionModeOutputTriangleStrip:
       if (!std::all_of(models->begin(), models->end(),
@@ -254,6 +252,30 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Execution mode can only be used with the Geometry execution "
                   "model.";
+      }
+      break;
+    case SpvExecutionModeOutputPoints:
+      if (!std::all_of(models->begin(), models->end(),
+                       [&_](const SpvExecutionModel& model) {
+                         switch (model) {
+                           case SpvExecutionModelGeometry:
+                             return true;
+                           case SpvExecutionModelMeshNV:
+                             return _.HasCapability(SpvCapabilityMeshShadingNV);
+                           default:
+                             return false;
+                         }
+                       })) {
+        if (_.HasCapability(SpvCapabilityMeshShadingNV)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Execution mode can only be used with the Geometry or "
+                    "MeshNV execution model.";
+        } else {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Execution mode can only be used with the Geometry "
+                    "execution "
+                    "model.";
+        }
       }
       break;
     case SpvExecutionModeSpacingEqual:
@@ -276,7 +298,6 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
       }
       break;
     case SpvExecutionModeTriangles:
-    case SpvExecutionModeOutputVertices:
       if (!std::all_of(models->begin(), models->end(),
                        [](const SpvExecutionModel& model) {
                          switch (model) {
@@ -291,6 +312,31 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Execution mode can only be used with a Geometry or "
                   "tessellation execution model.";
+      }
+      break;
+    case SpvExecutionModeOutputVertices:
+      if (!std::all_of(models->begin(), models->end(),
+                       [&_](const SpvExecutionModel& model) {
+                         switch (model) {
+                           case SpvExecutionModelGeometry:
+                           case SpvExecutionModelTessellationControl:
+                           case SpvExecutionModelTessellationEvaluation:
+                             return true;
+                           case SpvExecutionModelMeshNV:
+                             return _.HasCapability(SpvCapabilityMeshShadingNV);
+                           default:
+                             return false;
+                         }
+                       })) {
+        if (_.HasCapability(SpvCapabilityMeshShadingNV)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Execution mode can only be used with a Geometry, "
+                    "tessellation or MeshNV execution model.";
+        } else {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Execution mode can only be used with a Geometry or "
+                    "tessellation execution model.";
+        }
       }
       break;
     case SpvExecutionModePixelCenterInteger:
@@ -325,14 +371,27 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     case SpvExecutionModeLocalSize:
     case SpvExecutionModeLocalSizeId:
       if (!std::all_of(models->begin(), models->end(),
-                       [](const SpvExecutionModel& model) {
-                         return (model == SpvExecutionModelKernel) ||
-                                (model == SpvExecutionModelGLCompute);
+                       [&_](const SpvExecutionModel& model) {
+                         switch (model) {
+                           case SpvExecutionModelKernel:
+                           case SpvExecutionModelGLCompute:
+                             return true;
+                           case SpvExecutionModelMeshNV:
+                             return _.HasCapability(SpvCapabilityMeshShadingNV);
+                           default:
+                             return false;
+                         }
                        })) {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Execution mode can only be used with a Kernel or GLCompute "
-                  "execution "
-                  "model.";
+        if (_.HasCapability(SpvCapabilityMeshShadingNV)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Execution mode can only be used with a Kernel, GLCompute "
+                    "or MeshNV execution model.";
+        } else {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Execution mode can only be used with a Kernel or "
+                    "GLCompute "
+                    "execution model.";
+        }
       }
     default:
       break;
