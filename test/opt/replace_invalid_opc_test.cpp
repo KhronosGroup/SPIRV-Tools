@@ -26,7 +26,6 @@ namespace {
 
 using ReplaceInvalidOpcodeTest = PassTest<::testing::Test>;
 
-#ifdef SPIRV_EFFCEE
 TEST_F(ReplaceInvalidOpcodeTest, ReplaceInstruction) {
   const std::string text = R"(
 ; CHECK: [[special_const:%\w+]] = OpConstant %float -6.2598534e+18
@@ -588,8 +587,6 @@ TEST_F(ReplaceInvalidOpcodeTest, MultipleMessageTest) {
       text, /* skip_nop = */ true, /* do_validation = */ false);
   EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
 }
-
-#endif
 
 }  // namespace
 }  // namespace opt

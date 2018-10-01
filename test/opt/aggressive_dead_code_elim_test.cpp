@@ -3873,7 +3873,6 @@ OpFunctionEnd
   SinglePassRunAndCheck<AggressiveDCEPass>(before, after, true, true);
 }
 
-#ifdef SPIRV_EFFCEE
 TEST_F(AggressiveDCETest, DeadNestedSwitch) {
   const std::string text = R"(
 ; CHECK: OpLabel
@@ -3919,7 +3918,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
-#endif  //  SPIRV_EFFCEE
 
 TEST_F(AggressiveDCETest, LiveNestedSwitch) {
   const std::string text = R"(OpCapability Shader
@@ -4095,7 +4093,6 @@ OpFunctionEnd
                                            /* skip_nop = */ true);
 }
 
-#ifdef SPIRV_EFFCEE
 TEST_F(AggressiveDCETest, BasicAllDeadConstants) {
   const std::string text = R"(
   ; CHECK-NOT: OpConstant
@@ -4126,7 +4123,6 @@ TEST_F(AggressiveDCETest, BasicAllDeadConstants) {
 
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
-#endif  // SPIRV_EFFCEE
 
 TEST_F(AggressiveDCETest, BasicNoneDeadConstants) {
   const std::vector<const char*> text = {
@@ -4235,7 +4231,6 @@ const std::vector<std::string> CommonTypes = {
 using EliminateDeadConstantTest =
     PassTest<::testing::TestWithParam<EliminateDeadConstantTestCase>>;
 
-#ifdef SPIRV_EFFCEE
 TEST_P(EliminateDeadConstantTest, Custom) {
   auto& tc = GetParam();
   AssemblyBuilder builder;
@@ -5309,7 +5304,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
-#endif  // SPIRV_EFFCEE
 
 // Test for #1214
 TEST_F(AggressiveDCETest, LoopHeaderIsAlsoAnotherLoopMerge) {

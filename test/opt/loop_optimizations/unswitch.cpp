@@ -17,17 +17,13 @@
 #include "gmock/gmock.h"
 #include "test/opt/pass_fixture.h"
 
-#ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"
-#endif
 
 namespace spvtools {
 namespace opt {
 namespace {
 
 using UnswitchTest = PassTest<::testing::Test>;
-
-#ifdef SPIRV_EFFCEE
 
 /*
 Generated from the following GLSL + --eliminate-local-multi-store
@@ -809,7 +805,6 @@ TEST_F(UnswitchTest, UnSwitchNested) {
 
   SinglePassRunAndMatch<LoopUnswitchPass>(text, true);
 }
-#endif  // SPIRV_EFFCEE
 
 /*
 Generated from the following GLSL + --eliminate-local-multi-store

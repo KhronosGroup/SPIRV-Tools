@@ -2952,7 +2952,6 @@ OpFunctionEnd
   EXPECT_NE(loop_2.GetLatchBlock(), loop_2.GetContinueBlock());
 }
 
-#ifdef SPIRV_EFFCEE
 // Test that a loop with a self-referencing OpPhi instruction is handled
 // correctly.
 TEST_F(PassClassTest, OpPhiSelfReference) {
@@ -2998,7 +2997,6 @@ TEST_F(PassClassTest, OpPhiSelfReference) {
   SinglePassRunAndMatch<opt::LoopUnroller>(text, true, kFullyUnroll,
                                            kUnrollFactor);
 }
-#endif  // SPIRV_EFFCEE
 
 }  // namespace
 }  // namespace opt

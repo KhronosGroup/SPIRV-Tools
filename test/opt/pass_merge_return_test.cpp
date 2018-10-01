@@ -257,7 +257,6 @@ OpFunctionEnd
   SinglePassRunAndCheck<MergeReturnPass>(before, after, false, true);
 }
 
-#ifdef SPIRV_EFFCEE
 TEST_F(MergeReturnPassTest, StructuredControlFlowWithUnreachableMerge) {
   const std::string before =
       R"(
@@ -1019,7 +1018,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<MergeReturnPass>(test, false);
 }
-#endif  // SPIRV_EFFCEE
 
 }  // namespace
 }  // namespace opt

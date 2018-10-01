@@ -25,8 +25,6 @@ namespace {
 
 using ScalarReplacementTest = PassTest<::testing::Test>;
 
-// TODO(dneto): Add Effcee as required dependency, and make this unconditional.
-#ifdef SPIRV_EFFCEE
 TEST_F(ScalarReplacementTest, SimpleStruct) {
   const std::string text = R"(
 ;
@@ -1448,7 +1446,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
 }
-#endif  // SPIRV_EFFCEE
 
 // Test that a struct of size 4 is not replaced when there is a limit of 2.
 TEST_F(ScalarReplacementTest, TestLimit) {

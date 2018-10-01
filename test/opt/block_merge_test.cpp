@@ -273,7 +273,6 @@ OpFunctionEnd
                                         true);
 }
 
-#ifdef SPIRV_EFFCEE
 TEST_F(BlockMergeTest, PhiInSuccessorOfMergedBlock) {
   const std::string text = R"(
 ; CHECK: OpSelectionMerge [[merge:%\w+]] None
@@ -741,7 +740,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<BlockMergePass>(text, true);
 }
-#endif  // SPIRV_EFFCEE
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //

@@ -45,7 +45,6 @@ void main(){
   }
 }
 */
-#ifdef SPIRV_EFFCEE
 TEST_F(PassClassTest, HoistWithoutPreheader) {
   const std::string text = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -117,7 +116,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<LICMPass>(text, false);
 }
-#endif
 
 }  // namespace
 }  // namespace opt

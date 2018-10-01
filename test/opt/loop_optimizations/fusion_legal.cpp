@@ -23,9 +23,7 @@
 #include "source/opt/loop_fusion.h"
 #include "test/opt/pass_fixture.h"
 
-#ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"
-#endif
 
 namespace spvtools {
 namespace opt {
@@ -52,7 +50,6 @@ void Match(const std::string& checks, IRContext* context) {
   std::vector<uint32_t> bin;
   context->module()->ToBinary(&bin, true);
   EXPECT_TRUE(Validate(bin));
-#ifdef SPIRV_EFFCEE
   std::string assembly;
   SpirvTools tools(SPV_ENV_UNIVERSAL_1_2);
   EXPECT_TRUE(
@@ -63,9 +60,6 @@ void Match(const std::string& checks, IRContext* context) {
   EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())
       << match_result.message() << "\nChecking result:\n"
       << assembly;
-#else  // ! SPIRV_EFFCEE
-  (void)checks;
-#endif
 }
 
 /*

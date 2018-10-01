@@ -1219,7 +1219,6 @@ OpFunctionEnd
                                                predefs + after, true, true);
 }
 
-#ifdef SPIRV_EFFCEE
 TEST_F(CommonUniformElimTest, MixedConstantAndNonConstantIndexes) {
   const std::string text = R"(
 ; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Uniform
@@ -1329,7 +1328,7 @@ TEST_F(CommonUniformElimTest, MixedConstantAndNonConstantIndexes) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<CommonUniformElimPass>(text, true);
 }
-#endif  //  SPIRV_EFFCEE
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Disqualifying cases: extensions, decorations, non-logical addressing,
