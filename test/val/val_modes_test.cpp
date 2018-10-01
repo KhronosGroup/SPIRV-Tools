@@ -26,11 +26,11 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using spvtest::ScopedContext;
 using ::testing::Combine;
 using ::testing::HasSubstr;
 using ::testing::Values;
 using ::testing::ValuesIn;
+using spvtest::ScopedContext;
 
 using ValidateMode = spvtest::ValidateBase<bool>;
 
