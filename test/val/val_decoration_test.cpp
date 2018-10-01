@@ -90,6 +90,7 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateOutOfBound) {
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %1 "Main"
+               OpExecutionMode %1 OriginUpperLeft
                OpMemberDecorate %_struct_2 1 RelaxedPrecision
        %void = OpTypeVoid
           %4 = OpTypeFunction %void
@@ -286,6 +287,8 @@ TEST_F(ValidateDecorations, MultipleBuiltInObjectsConsumedByOpEntryPointBad) {
                OpCapability Geometry
                OpMemoryModel Logical GLSL450
                OpEntryPoint Geometry %main "main" %in_1 %in_2
+               OpExecutionMode %main InputPoints
+               OpExecutionMode %main OutputPoints
                OpMemberDecorate %struct_1 0 BuiltIn InvocationId
                OpMemberDecorate %struct_2 0 BuiltIn Position
       %int = OpTypeInt 32 1
@@ -318,6 +321,8 @@ TEST_F(ValidateDecorations,
                OpCapability Geometry
                OpMemoryModel Logical GLSL450
                OpEntryPoint Geometry %main "main" %in_1 %out_1
+               OpExecutionMode %main InputPoints
+               OpExecutionMode %main OutputPoints
                OpMemberDecorate %struct_1 0 BuiltIn InvocationId
                OpMemberDecorate %struct_2 0 BuiltIn Position
       %int = OpTypeInt 32 1
@@ -345,6 +350,8 @@ TEST_F(ValidateDecorations, NoBuiltInObjectsConsumedByOpEntryPointGood) {
                OpCapability Geometry
                OpMemoryModel Logical GLSL450
                OpEntryPoint Geometry %main "main" %in_1 %out_1
+               OpExecutionMode %main InputPoints
+               OpExecutionMode %main OutputPoints
       %int = OpTypeInt 32 1
      %void = OpTypeVoid
      %func = OpTypeFunction %void
@@ -3037,6 +3044,7 @@ TEST_F(ValidateDecorations, EntryPointVariableWrongStorageClass) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %1 "func" %var
+OpExecutionMode %1 OriginUpperLeft
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %ptr_int_Workgroup = OpTypePointer Workgroup %int

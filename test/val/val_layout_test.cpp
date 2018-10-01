@@ -481,6 +481,7 @@ TEST_F(ValidateEntryPoint, FunctionIsTargetOfEntryPointAndFunctionCallBad) {
            OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpEntryPoint Fragment %foo "foo"
+           OpExecutionMode %foo OriginUpperLeft
 %voidt   = OpTypeVoid
 %funct   = OpTypeFunction %voidt
 %foo     = OpFunction %voidt None %funct

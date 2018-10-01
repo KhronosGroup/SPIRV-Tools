@@ -107,6 +107,9 @@ OpCapability Int64
      << " %u32vec2_input"
      << " %u64_input"
      << "\n";
+  if (execution_model == "Fragment") {
+    ss << "OpExecutionMode %main OriginUpperLeft\n";
+  }
 
   ss << R"(
 %void = OpTypeVoid

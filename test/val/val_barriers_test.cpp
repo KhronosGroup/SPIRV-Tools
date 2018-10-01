@@ -41,6 +41,14 @@ OpCapability Int64
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical GLSL450\n";
   ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+  if (execution_model == "Fragment") {
+    ss << "OpExecutionMode %main OriginUpperLeft\n";
+  } else if (execution_model == "Geometry") {
+    ss << "OpExecutionMode %main InputPoints\n";
+    ss << "OpExecutionMode %main OutputPoints\n";
+  } else if (execution_model == "GLCompute") {
+    ss << "OpExecutionMode %main LocalSize 1 1 1\n";
+  }
 
   ss << R"(
 %void = OpTypeVoid

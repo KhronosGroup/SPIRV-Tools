@@ -5523,6 +5523,7 @@ TEST_F(AggressiveDCETest, SafelyRemoveDecorateString) {
 OpExtension "SPV_GOOGLE_hlsl_functionality1"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
 )";
 
   const std::string body_before =

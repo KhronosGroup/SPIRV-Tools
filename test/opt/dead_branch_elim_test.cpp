@@ -2018,6 +2018,7 @@ TEST_F(DeadBranchElimTest, ReorderBlocks) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
@@ -2045,6 +2046,7 @@ TEST_F(DeadBranchElimTest, ReorderBlocksMultiple) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
@@ -2073,6 +2075,7 @@ TEST_F(DeadBranchElimTest, ReorderBlocksMultiple2) {
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
 %void = OpTypeVoid
 %bool = OpTypeBool
 %true = OpConstantTrue %bool

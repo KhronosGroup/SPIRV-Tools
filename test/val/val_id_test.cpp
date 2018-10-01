@@ -424,6 +424,8 @@ TEST_F(ValidateIdWithMessage, OpEntryPointInterfaceIsNotVariableTypeBad) {
                OpCapability Geometry
                OpMemoryModel Logical GLSL450
                OpEntryPoint Geometry %main "main" %ptr_builtin_1
+               OpExecutionMode %main InputPoints
+               OpExecutionMode %main OutputPoints
                OpMemberDecorate %struct_1 0 BuiltIn InvocationId
       %int = OpTypeInt 32 1
      %void = OpTypeVoid
@@ -448,6 +450,8 @@ TEST_F(ValidateIdWithMessage, OpEntryPointInterfaceStorageClassBad) {
                OpCapability Geometry
                OpMemoryModel Logical GLSL450
                OpEntryPoint Geometry %main "main" %in_1
+               OpExecutionMode %main InputPoints
+               OpExecutionMode %main OutputPoints
                OpMemberDecorate %struct_1 0 BuiltIn InvocationId
       %int = OpTypeInt 32 1
      %void = OpTypeVoid
