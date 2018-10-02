@@ -143,17 +143,24 @@ template <typename T>
 struct StlAllocator {
   using value_type = T;
 
+  // Rebind allocator to type U
+  template <typename U>
+  struct rebind {
+    typedef StlAllocator<U> other;
+  };
+
   StlAllocator() noexcept {}
 
   template <class U>
   StlAllocator(const StlAllocator<U>&) noexcept {}
 
-  // allocates but does not initialize num elements of type T
+  // Allocates without initialization |n| elements of type T
   T* allocate(std::size_t n) {
     return static_cast<T*>(CustomAllocate(sizeof(T) * n));
   }
 
-  // deallocates storage p of deleted elements
+  // Deallocates without destruction the storage pointed by |p| of
+  // the given |size|
   void deallocate(T* p, std::size_t size) noexcept {
     CustomDeallocate(p, size);
   }
