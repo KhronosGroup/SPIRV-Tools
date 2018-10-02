@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
@@ -24,13 +25,10 @@
 #include "source/opt/type_manager.h"
 #include "spirv-tools/libspirv.hpp"
 
-#include "effcee/effcee.h"
-
 namespace spvtools {
 namespace opt {
 namespace analysis {
 namespace {
-
 
 bool Validate(const std::vector<uint32_t>& bin) {
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;

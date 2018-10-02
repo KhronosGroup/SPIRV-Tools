@@ -14,10 +14,9 @@
 
 #include <string>
 
+#include "effcee/effcee.h"
 #include "gmock/gmock.h"
 #include "test/opt/pass_fixture.h"
-
-#include "effcee/effcee.h"
 
 namespace spvtools {
 namespace opt {

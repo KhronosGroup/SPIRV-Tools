@@ -22,14 +22,13 @@
 #include <utility>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
 #include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.hpp"
-
-#include "effcee/effcee.h"
 
 namespace spvtools {
 namespace opt {
@@ -228,8 +227,8 @@ class PassTest : public TestT {
   }
 
  private:
-  MessageConsumer consumer_;                // Message consumer.
-  std::unique_ptr<IRContext> context_;      // IR context
+  MessageConsumer consumer_;            // Message consumer.
+  std::unique_ptr<IRContext> context_;  // IR context
   SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
   std::unique_ptr<PassManager> manager_;  // The pass manager.
   uint32_t assemble_options_;

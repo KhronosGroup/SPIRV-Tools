@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gmock/gmock.h"
 #include "source/opt/build_module.h"
 #include "source/opt/loop_descriptor.h"
@@ -23,8 +24,6 @@
 #include "source/opt/pass.h"
 #include "test/opt//assembly_builder.h"
 #include "test/opt/function_utils.h"
-
-#include "effcee/effcee.h"
 
 namespace spvtools {
 namespace opt {

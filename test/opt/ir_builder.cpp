@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "source/opt/basic_block.h"
@@ -25,8 +26,6 @@
 #include "source/opt/ir_builder.h"
 #include "source/opt/type_manager.h"
 #include "spirv-tools/libspirv.hpp"
-
-#include "effcee/effcee.h"
 
 namespace spvtools {
 namespace opt {

@@ -18,12 +18,11 @@
 #include <string>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gmock/gmock.h"
 #include "source/opt/loop_descriptor.h"
 #include "source/opt/loop_fusion.h"
 #include "test/opt/pass_fixture.h"
-
-#include "effcee/effcee.h"
 
 namespace spvtools {
 namespace opt {

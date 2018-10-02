@@ -17,6 +17,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
@@ -26,8 +27,6 @@
 #include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"
 #include "test/opt/pass_utils.h"
-
-#include "effcee/effcee.h"
 
 namespace spvtools {
 namespace opt {
