@@ -14,7 +14,13 @@
 
 #include "source/opt/allocator.h"
 
-static thread_local spvtools::Allocator* tlCustomAllocator = nullptr;
+#if defined(_MSC_VER) && _MSC_VER <= 1800
+#define TLS __declspec(thread)
+#else
+#define TLS thread_local
+#endif
+
+static TLS spvtools::Allocator* tlCustomAllocator = nullptr;
 
 namespace spvtools {
 
@@ -22,7 +28,7 @@ void SetCustomAllocator(Allocator* allocator) { tlCustomAllocator = allocator; }
 
 void* CustomAllocate(std::size_t size) {
   assert(tlCustomAllocator);
-  return ::operator new(size);
+  return tlCustomAllocator->Allocate(size, /*align=*/8);
 }
 
 void CustomDeallocate(void* ptr, std::size_t size) {
