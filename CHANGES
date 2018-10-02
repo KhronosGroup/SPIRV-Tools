@@ -1,9 +1,11 @@
 Revision history for SPIRV-Tools
 
-v2018.6-dev 2018-09-07
+v2018.6-dev 2018-10-02
  - General:
-   - Added support for the Nvidie Turing extensions.
+   - Added support for the Nvidia Turing extensions.
    - Make C++11 the CXX standard in CMakeLists.txt.
+   - Enabled a parallel build for MSVC.
+   - Updated the LICENSE.
  - Optimizer
    - Unrolling loops marked for unrolling in the legalization passes.
    - Improved the compile time of loop unrolling.
@@ -13,18 +15,19 @@ v2018.6-dev 2018-09-07
    Fixes:
    - #1917: Allow 0 (meaning unlimited) as a parameter to --scalar-replacement
    - #1915: Improve handling of group decorations.
+   - #1942: Fix incorrect uses of the constant manager.  Avoids type mismatches in generated code.
  - Validator
    - Added validation for OpGroupNonUniformBallotBitCount.
    - Added validation for the Vulkan memory model.
    - Added support for VK_KHR_shader_atddomic_int64.
+   - Added validation for execution modes.
    Fixes:
    - #1882: Improve the validation of decorations to reduce memory usage.
    - #1891: Fix an potential infinite loop in dead-branch-elimination.
    - #1405: Validate the storage class of boolean objects.
    - #1880: Identify arrays of type void as invalid.
    - #487: Validate OpImageTexelPointer.
-
- - Start v2018.6-dev
+   - #1922: Validate OpPhi instructions are at the start of a block correctly.
 
 v2018.5 2018-09-07
  - General:
