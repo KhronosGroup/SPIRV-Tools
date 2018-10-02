@@ -543,9 +543,7 @@ class LoopUnswitch {
         *cond_val = true;
         cond_is_const = true;
       } break;
-      default: {
-        cond_is_const = false;
-      } break;
+      default: { cond_is_const = false; } break;
     }
     return cond_is_const;
   }

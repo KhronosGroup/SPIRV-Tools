@@ -141,7 +141,14 @@ void CustomDeallocate(void* ptr, std::size_t size);
 // STL containers
 template <typename T>
 struct StlAllocator {
-  using value_type = T;
+  // Type definitions
+  typedef T value_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef size_t size_type;
+  typedef size_t difference_type;
 
   // Rebind allocator to type U
   template <typename U>
@@ -163,6 +170,31 @@ struct StlAllocator {
   // the given |size|
   void deallocate(T* p, std::size_t size) noexcept {
     CustomDeallocate(p, size);
+  }
+
+  // Initializes the object allocated at |p| with the given value |val|
+  void construct(pointer p, const_reference val) { new (p) T(val); }
+
+  // Constructs an object of type |U| a the location given by |p|,
+  // passing through all other arguments to the constructor.
+  template <typename U, typename... Args>
+  void construct(U* p, Args&&... args) {
+    ::new ((void*)p) U(std::forward<Args>(args)...);
+  }
+
+  // Deconstructs the object at |p|. It does not free the memory.
+  void destroy(pointer p) { ((T*)p)->~T(); }
+
+  // Deconstructs the object at |p|. It does not free the memory.
+  template <typename U>
+  void destroy(U* p) {
+    p->~U();
+  }
+
+  // Returns the theoretically maximal possible number of T stored in
+  // this allocator.
+  size_type max_size() const {
+    return std::numeric_limits<size_type>::max() / sizeof(value_type);
   }
 };
 

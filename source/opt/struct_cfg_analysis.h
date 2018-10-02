@@ -15,7 +15,6 @@
 #ifndef SOURCE_OPT_STRUCT_CFG_ANALYSIS_H_
 #define SOURCE_OPT_STRUCT_CFG_ANALYSIS_H_
 
-
 #include "source/opt/allocator.h"
 #include "source/opt/ir_context.h"
 

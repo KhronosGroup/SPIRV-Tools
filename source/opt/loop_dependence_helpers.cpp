@@ -344,8 +344,8 @@ int64_t LoopDependenceAnalysis::CountInductionVariables(SENode* node) {
   return static_cast<int64_t>(loops.size());
 }
 
-CASet<const Loop*> LoopDependenceAnalysis::CollectLoops(
-    SENode* source, SENode* destination) {
+CASet<const Loop*> LoopDependenceAnalysis::CollectLoops(SENode* source,
+                                                        SENode* destination) {
   if (!source || !destination) {
     return CASet<const Loop*>{};
   }

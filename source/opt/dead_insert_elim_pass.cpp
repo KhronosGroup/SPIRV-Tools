@@ -59,9 +59,7 @@ uint32_t DeadInsertElimPass::NumComponents(Instruction* typeInst) {
     case SpvOpTypeStruct: {
       return typeInst->NumInOperands();
     } break;
-    default: {
-      return 0;
-    } break;
+    default: { return 0; } break;
   }
 }
 

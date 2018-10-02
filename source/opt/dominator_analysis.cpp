@@ -14,7 +14,6 @@
 
 #include "source/opt/dominator_analysis.h"
 
-
 #include "source/opt/allocator.h"
 #include "source/opt/ir_context.h"
 

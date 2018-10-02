@@ -350,8 +350,7 @@ class LoopDependenceAnalysis {
                                     SENode* induction_coefficient);
 
   // Returns all the distinct loops that appear in |nodes|.
-  CASet<const Loop*> CollectLoops(
-      const std::vector<SERecurrentNode*>& nodes);
+  CASet<const Loop*> CollectLoops(const std::vector<SERecurrentNode*>& nodes);
 
   // Returns all the distinct loops that appear in |source| and |destination|.
   CASet<const Loop*> CollectLoops(SENode* source, SENode* destination);
