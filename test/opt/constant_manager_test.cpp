@@ -20,13 +20,16 @@
 #include "source/opt/build_module.h"
 #include "source/opt/constants.h"
 #include "source/opt/ir_context.h"
+#include "test/opt/allocator_raii.h"
 
 namespace spvtools {
 namespace opt {
 namespace analysis {
 namespace {
 
-using ConstantManagerTest = ::testing::Test;
+class ConstantManagerTest : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
 
 TEST_F(ConstantManagerTest, GetDefiningInstruction) {
   const std::string text = R"(

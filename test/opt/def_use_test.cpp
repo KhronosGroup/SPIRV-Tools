@@ -189,6 +189,8 @@ struct ParseDefUseCase {
 using ParseDefUseTest = ::testing::TestWithParam<ParseDefUseCase>;
 
 TEST_P(ParseDefUseTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -605,6 +607,8 @@ std::string DisassembleModule(Module* module) {
 }
 
 TEST_P(ReplaceUseTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -960,6 +964,8 @@ struct KillDefCase {
 using KillDefTest = ::testing::TestWithParam<KillDefCase>;
 
 TEST_P(KillDefTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -1204,6 +1210,8 @@ INSTANTIATE_TEST_CASE_P(
 // clang-format on
 
 TEST(DefUseTest, OpSwitch) {
+  AllocatorRAII allocator;
+
   // Because disassembler has basic type check for OpSwitch's selector, we
   // cannot use the DisassembleInst() in the above. Thus, this special spotcheck
   // test case.
@@ -1327,6 +1335,8 @@ using AnalyzeInstDefUseTest =
 
 // Test the analyzing result for individual instructions.
 TEST_P(AnalyzeInstDefUseTest, Case) {
+  AllocatorRAII allocator;
+
   auto tc = GetParam();
 
   // Build module.
@@ -1373,6 +1383,8 @@ INSTANTIATE_TEST_CASE_P(
 using AnalyzeInstDefUse = ::testing::Test;
 
 TEST(AnalyzeInstDefUse, UseWithNoResultId) {
+  AllocatorRAII allocator;
+
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
 
   // Analyze the instructions.
@@ -1399,6 +1411,8 @@ TEST(AnalyzeInstDefUse, UseWithNoResultId) {
 }
 
 TEST(AnalyzeInstDefUse, AddNewInstruction) {
+  AllocatorRAII allocator;
+
   const std::string input = "%1 = OpTypeBool";
 
   // Build module.
@@ -1438,6 +1452,8 @@ struct KillInstTestCase {
 using KillInstTest = ::testing::TestWithParam<KillInstTestCase>;
 
 TEST_P(KillInstTest, Case) {
+  AllocatorRAII allocator;
+
   auto tc = GetParam();
 
   // Build module.
@@ -1565,6 +1581,8 @@ struct GetAnnotationsTestCase {
 using GetAnnotationsTest = ::testing::TestWithParam<GetAnnotationsTestCase>;
 
 TEST_P(GetAnnotationsTest, Case) {
+  AllocatorRAII allocator;
+
   const GetAnnotationsTestCase& tc = GetParam();
 
   // Build module.

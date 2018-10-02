@@ -35,7 +35,9 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using DependencyAnalysis = ::testing::Test;
+class DependencyAnalysis : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
 
 /*
   Generated from the following GLSL fragment shader
@@ -53,7 +55,7 @@ void main(){
   }
 }
 */
-TEST(DependencyAnalysis, ZIV) {
+TEST_F(DependencyAnalysis, ZIV) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -196,7 +198,7 @@ void main(){
   }
 }
 */
-TEST(DependencyAnalysis, SymbolicZIV) {
+TEST_F(DependencyAnalysis, SymbolicZIV) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -371,7 +373,7 @@ void main() {
   b();
 }
 */
-TEST(DependencyAnalysis, SIV) {
+TEST_F(DependencyAnalysis, SIV) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -704,7 +706,7 @@ void main(){
   a();
   b();
 }*/
-TEST(DependencyAnalysis, SymbolicSIV) {
+TEST_F(DependencyAnalysis, SymbolicSIV) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1096,7 +1098,7 @@ void main(){
   h();
 }
 */
-TEST(DependencyAnalysis, Crossing) {
+TEST_F(DependencyAnalysis, Crossing) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1631,7 +1633,7 @@ void main(){
   d();
 }
 */
-TEST(DependencyAnalysis, WeakZeroSIV) {
+TEST_F(DependencyAnalysis, WeakZeroSIV) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2124,7 +2126,7 @@ void main(){
   }
 }
 */
-TEST(DependencyAnalysis, MultipleSubscriptZIVSIV) {
+TEST_F(DependencyAnalysis, MultipleSubscriptZIVSIV) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2304,7 +2306,7 @@ void main() {
   b();
 }
 */
-TEST(DependencyAnalysis, IrrelevantSubscripts) {
+TEST_F(DependencyAnalysis, IrrelevantSubscripts) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2550,7 +2552,7 @@ void main(){
   }
 }
 */
-TEST(DependencyAnalysis, MIV) {
+TEST_F(DependencyAnalysis, MIV) {
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2886,7 +2888,7 @@ void main(){
   }
 }
 */
-TEST(DependencyAnalysis, SubscriptPartitioning) {
+TEST_F(DependencyAnalysis, SubscriptPartitioning) {
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -3170,7 +3172,7 @@ void main(){
   e();
 }
 */
-TEST(DependencyAnalysis, Delta) {
+TEST_F(DependencyAnalysis, Delta) {
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -3634,7 +3636,7 @@ TEST(DependencyAnalysis, Delta) {
   }
 }
 
-TEST(DependencyAnalysis, ConstraintIntersection) {
+TEST_F(DependencyAnalysis, ConstraintIntersection) {
   LoopDependenceAnalysis analysis{nullptr, std::vector<const Loop*>{}};
   auto scalar_evolution = analysis.GetScalarEvolution();
   {

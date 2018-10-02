@@ -156,10 +156,10 @@ struct StlAllocator {
     typedef StlAllocator<U> other;
   };
 
-  StlAllocator() noexcept {}
+  StlAllocator() {}
 
   template <class U>
-  StlAllocator(const StlAllocator<U>&) noexcept {}
+  StlAllocator(const StlAllocator<U>&) {}
 
   // Allocates without initialization |n| elements of type T
   T* allocate(std::size_t n) {
@@ -168,9 +168,7 @@ struct StlAllocator {
 
   // Deallocates without destruction the storage pointed by |p| of
   // the given |size|
-  void deallocate(T* p, std::size_t size) noexcept {
-    CustomDeallocate(p, size);
-  }
+  void deallocate(T* p, std::size_t size) { CustomDeallocate(p, size); }
 
   // Initializes the object allocated at |p| with the given value |val|
   void construct(pointer p, const_reference val) { new (p) T(val); }
@@ -201,12 +199,12 @@ struct StlAllocator {
 // STL uses the equality operator to determine if memory allocated by one
 // allocator can be deallocated with another.
 template <class T, class U>
-bool operator==(const StlAllocator<T>&, const StlAllocator<U>&) noexcept {
+bool operator==(const StlAllocator<T>&, const StlAllocator<U>&) {
   return false;  // For safety
 }
 
 template <class T, class U>
-bool operator!=(const StlAllocator<T>& x, const StlAllocator<U>& y) noexcept {
+bool operator!=(const StlAllocator<T>& x, const StlAllocator<U>& y) {
   return !(x == y);
 }
 

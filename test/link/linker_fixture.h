@@ -21,6 +21,7 @@
 
 #include "source/spirv_constant.h"
 #include "spirv-tools/linker.hpp"
+#include "test/opt/allocator_raii.h"
 #include "test/unit_spirv.h"
 
 namespace spvtest {
@@ -112,6 +113,7 @@ class LinkerTest : public ::testing::Test {
   std::string GetErrorMessage() const { return error_message_; }
 
  private:
+  spvtools::AllocatorRAII allocator_;
   spvtools::Context context_;
   spvtools::SpirvTools
       tools_;  // An instance for calling SPIRV-Tools functionalities.

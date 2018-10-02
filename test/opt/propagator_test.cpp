@@ -24,6 +24,7 @@
 #include "source/opt/ir_context.h"
 #include "source/opt/pass.h"
 #include "source/opt/propagator.h"
+#include "test/opt/allocator_raii.h"
 
 namespace spvtools {
 namespace opt {
@@ -62,6 +63,7 @@ class PropagatorTest : public testing::Test {
     return values_vec_;
   }
 
+  AllocatorRAII allocator_;
   std::unique_ptr<IRContext> ctx_;
   std::map<uint32_t, uint32_t> values_;
   std::vector<uint32_t> values_vec_;

@@ -19,12 +19,15 @@
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
+#include "test/opt/allocator_raii.h"
 
 namespace spvtools {
 namespace opt {
 namespace {
 
-using CommonDominatorsTest = ::testing::Test;
+class CommonDominatorsTest : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
 
 const std::string text = R"(
 OpCapability Shader
@@ -66,7 +69,7 @@ BasicBlock* GetBlock(uint32_t id, std::unique_ptr<IRContext>& context) {
   return context->get_instr_block(context->get_def_use_mgr()->GetDef(id));
 }
 
-TEST(CommonDominatorsTest, SameBlock) {
+TEST_F(CommonDominatorsTest, SameBlock) {
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -80,7 +83,7 @@ TEST(CommonDominatorsTest, SameBlock) {
   }
 }
 
-TEST(CommonDominatorsTest, ParentAndChild) {
+TEST_F(CommonDominatorsTest, ParentAndChild) {
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -100,7 +103,7 @@ TEST(CommonDominatorsTest, ParentAndChild) {
       analysis->CommonDominator(GetBlock(1u, context), GetBlock(5u, context)));
 }
 
-TEST(CommonDominatorsTest, BranchSplit) {
+TEST_F(CommonDominatorsTest, BranchSplit) {
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -117,7 +120,7 @@ TEST(CommonDominatorsTest, BranchSplit) {
       analysis->CommonDominator(GetBlock(7u, context), GetBlock(9u, context)));
 }
 
-TEST(CommonDominatorsTest, LoopContinueAndMerge) {
+TEST_F(CommonDominatorsTest, LoopContinueAndMerge) {
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -131,7 +134,7 @@ TEST(CommonDominatorsTest, LoopContinueAndMerge) {
       analysis->CommonDominator(GetBlock(3u, context), GetBlock(4u, context)));
 }
 
-TEST(CommonDominatorsTest, NoCommonDominator) {
+TEST_F(CommonDominatorsTest, NoCommonDominator) {
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);

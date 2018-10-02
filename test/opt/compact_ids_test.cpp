@@ -225,6 +225,8 @@ OpReturn
 OpFunctionEnd
 )");
 
+  AllocatorRAII allocator;
+
   spvtools::SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, input,

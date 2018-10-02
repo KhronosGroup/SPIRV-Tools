@@ -33,7 +33,9 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using DependencyAnalysisHelpers = ::testing::Test;
+class DependencyAnalysisHelpers : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
 
 /*
   Generated from the following GLSL fragment shader
@@ -58,7 +60,7 @@ void main(){
   b();
 }
 */
-TEST(DependencyAnalysisHelpers, UnsupportedLoops) {
+TEST_F(DependencyAnalysisHelpers, UnsupportedLoops) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -319,7 +321,7 @@ void main(){
   p();
 }
 */
-TEST(DependencyAnalysisHelpers, loop_information) {
+TEST_F(DependencyAnalysisHelpers, loop_information) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1162,7 +1164,7 @@ void main(){
   }
 }
 */
-TEST(DependencyAnalysisHelpers, bounds_checks) {
+TEST_F(DependencyAnalysisHelpers, bounds_checks) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1276,7 +1278,7 @@ void main(){
   d();
 }
 */
-TEST(DependencyAnalysisHelpers, const_to_symbolic) {
+TEST_F(DependencyAnalysisHelpers, const_to_symbolic) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -1849,7 +1851,7 @@ void main(){
   d();
 }
 */
-TEST(DependencyAnalysisHelpers, symbolic_to_const) {
+TEST_F(DependencyAnalysisHelpers, symbolic_to_const) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -2431,7 +2433,7 @@ void main(){
   d();
 }
 */
-TEST(DependencyAnalysisHelpers, symbolic_to_symbolic) {
+TEST_F(DependencyAnalysisHelpers, symbolic_to_symbolic) {
   const std::string text = R"(               OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450

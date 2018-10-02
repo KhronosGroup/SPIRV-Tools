@@ -19,6 +19,7 @@
 #include "gtest/gtest.h"
 #include "source/opt/types.h"
 #include "source/util/make_unique.h"
+#include "test/opt/allocator_raii.h"
 
 namespace spvtools {
 namespace opt {
@@ -44,6 +45,9 @@ class SameTypeTest : public ::testing::Test {
   std::unique_ptr<Type> f64_t_;
   std::unique_ptr<Type> v3u32_t_;
   std::unique_ptr<Type> image_t_;
+
+ private:
+  AllocatorRAII allocator;
 };
 
 #define TestMultipleInstancesOfTheSameType(ty, ...)                       \
@@ -203,6 +207,8 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
 }
 
 TEST(Types, AllTypes) {
+  AllocatorRAII allocator;
+
   // Types in this test case are only equal to themselves, nothing else.
   std::vector<std::unique_ptr<Type>> types = GenerateAllTypes();
 
@@ -222,6 +228,8 @@ TEST(Types, AllTypes) {
 }
 
 TEST(Types, IntSignedness) {
+  AllocatorRAII allocator;
+
   std::vector<bool> signednesses = {true, false, false, true};
   std::vector<std::unique_ptr<Integer>> types;
   for (bool s : signednesses) {
@@ -233,6 +241,8 @@ TEST(Types, IntSignedness) {
 }
 
 TEST(Types, IntWidth) {
+  AllocatorRAII allocator;
+
   std::vector<uint32_t> widths = {1, 2, 4, 8, 16, 32, 48, 64, 128};
   std::vector<std::unique_ptr<Integer>> types;
   for (uint32_t w : widths) {
@@ -244,6 +254,8 @@ TEST(Types, IntWidth) {
 }
 
 TEST(Types, FloatWidth) {
+  AllocatorRAII allocator;
+
   std::vector<uint32_t> widths = {1, 2, 4, 8, 16, 32, 48, 64, 128};
   std::vector<std::unique_ptr<Float>> types;
   for (uint32_t w : widths) {
@@ -255,6 +267,8 @@ TEST(Types, FloatWidth) {
 }
 
 TEST(Types, VectorElementCount) {
+  AllocatorRAII allocator;
+
   auto s32 = MakeUnique<Integer>(32, true);
   for (uint32_t c : {2, 3, 4}) {
     auto s32v = MakeUnique<Vector>(s32.get(), c);
@@ -263,6 +277,8 @@ TEST(Types, VectorElementCount) {
 }
 
 TEST(Types, MatrixElementCount) {
+  AllocatorRAII allocator;
+
   auto s32 = MakeUnique<Integer>(32, true);
   auto s32v4 = MakeUnique<Vector>(s32.get(), 4);
   for (uint32_t c : {1, 2, 3, 4, 10, 100}) {
@@ -272,6 +288,8 @@ TEST(Types, MatrixElementCount) {
 }
 
 TEST(Types, IsUniqueType) {
+  AllocatorRAII allocator;
+
   std::vector<std::unique_ptr<Type>> types = GenerateAllTypes();
 
   for (auto& t : types) {
@@ -318,6 +336,8 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypesWithDecorations() {
 }
 
 TEST(Types, Clone) {
+  AllocatorRAII allocator;
+
   std::vector<std::unique_ptr<Type>> types = GenerateAllTypesWithDecorations();
   for (auto& t : types) {
     auto clone = t->Clone();
@@ -328,6 +348,8 @@ TEST(Types, Clone) {
 }
 
 TEST(Types, RemoveDecorations) {
+  AllocatorRAII allocator;
+
   std::vector<std::unique_ptr<Type>> types = GenerateAllTypesWithDecorations();
   for (auto& t : types) {
     auto decorationless = t->RemoveDecorations();

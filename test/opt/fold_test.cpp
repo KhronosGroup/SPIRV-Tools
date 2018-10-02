@@ -25,6 +25,7 @@
 #include "source/opt/ir_context.h"
 #include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"
+#include "test/opt/allocator_raii.h"
 #include "test/opt/pass_utils.h"
 
 #ifdef SPIRV_EFFCEE
@@ -76,6 +77,8 @@ using IntegerInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<uint32_t>>;
 
 TEST_P(IntegerInstructionFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -447,6 +450,8 @@ using IntVectorInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<std::vector<uint32_t>>>;
 
 TEST_P(IntVectorInstructionFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -529,6 +534,8 @@ using BooleanInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<bool>>;
 
 TEST_P(BooleanInstructionFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -1140,6 +1147,8 @@ using FloatInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<float>>;
 
 TEST_P(FloatInstructionFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -1287,6 +1296,8 @@ using DoubleInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<double>>;
 
 TEST_P(DoubleInstructionFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -2045,6 +2056,8 @@ using IntegerInstructionFoldingTestWithMap =
     ::testing::TestWithParam<InstructionFoldingCaseWithMap<uint32_t>>;
 
 TEST_P(IntegerInstructionFoldingTestWithMap, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -2093,6 +2106,8 @@ using BooleanInstructionFoldingTestWithMap =
     ::testing::TestWithParam<InstructionFoldingCaseWithMap<bool>>;
 
 TEST_P(BooleanInstructionFoldingTestWithMap, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -2143,6 +2158,8 @@ using GeneralInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<uint32_t>>;
 
 TEST_P(GeneralInstructionFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -3733,6 +3750,8 @@ using ToNegateFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<uint32_t>>;
 
 TEST_P(ToNegateFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -3856,6 +3875,8 @@ using MatchingInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<bool>>;
 
 TEST_P(MatchingInstructionFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.
@@ -5758,6 +5779,8 @@ using MatchingInstructionWithNoResultFoldingTest =
 // that will be folded is the last instruction before the return.  If there
 // are multiple returns, there is not guarentee which one is used.
 TEST_P(MatchingInstructionWithNoResultFoldingTest, Case) {
+  AllocatorRAII allocator;
+
   const auto& tc = GetParam();
 
   // Build module.

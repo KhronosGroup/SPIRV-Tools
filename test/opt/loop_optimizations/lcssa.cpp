@@ -22,6 +22,7 @@
 #include "source/opt/loop_utils.h"
 #include "source/opt/pass.h"
 #include "test/opt//assembly_builder.h"
+#include "test/opt/allocator_raii.h"
 #include "test/opt/function_utils.h"
 
 #ifdef SPIRV_EFFCEE
@@ -65,7 +66,9 @@ void Match(const std::string& original, IRContext* context,
       << assembly;
 }
 
-using LCSSATest = ::testing::Test;
+class LCSSATest : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
 
 /*
 Generated from the following GLSL + --eliminate-local-multi-store

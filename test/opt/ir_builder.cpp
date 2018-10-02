@@ -25,6 +25,7 @@
 #include "source/opt/ir_builder.h"
 #include "source/opt/type_manager.h"
 #include "spirv-tools/libspirv.hpp"
+#include "test/opt/allocator_raii.h"
 
 #ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"
@@ -37,7 +38,10 @@ namespace {
 #ifdef SPIRV_EFFCEE
 
 using Analysis = IRContext::Analysis;
-using IRBuilderTest = ::testing::Test;
+
+class IRBuilderTest : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
 
 bool Validate(const std::vector<uint32_t>& bin) {
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;

@@ -28,6 +28,7 @@
 #include "source/opt/passes.h"
 #include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.hpp"
+#include "test/opt/allocator_raii.h"
 
 #ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"
@@ -47,7 +48,8 @@ template <typename TestT>
 class PassTest : public TestT {
  public:
   PassTest()
-      : consumer_(nullptr),
+      : allocator_(),
+        consumer_(nullptr),
         context_(nullptr),
         tools_(SPV_ENV_UNIVERSAL_1_1),
         manager_(new PassManager()),
@@ -232,8 +234,9 @@ class PassTest : public TestT {
   }
 
  private:
-  MessageConsumer consumer_;                // Message consumer.
-  std::unique_ptr<IRContext> context_;      // IR context
+  AllocatorRAII allocator_;
+  MessageConsumer consumer_;            // Message consumer.
+  std::unique_ptr<IRContext> context_;  // IR context
   SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
   std::unique_ptr<PassManager> manager_;  // The pass manager.
   uint32_t assemble_options_;

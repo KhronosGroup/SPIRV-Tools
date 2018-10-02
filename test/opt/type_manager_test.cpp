@@ -23,6 +23,7 @@
 #include "source/opt/instruction.h"
 #include "source/opt/type_manager.h"
 #include "spirv-tools/libspirv.hpp"
+#include "test/opt/allocator_raii.h"
 
 #ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"
@@ -176,6 +177,8 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
 }
 
 TEST(TypeManager, TypeStrings) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
     OpTypeForwardPointer !20 !2 ; id for %p is 20, Uniform is 2
     %void    = OpTypeVoid
@@ -252,6 +255,8 @@ TEST(TypeManager, TypeStrings) {
 }
 
 TEST(TypeManager, StructWithFwdPtr) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
                OpCapability Addresses
                OpCapability Kernel
@@ -291,6 +296,8 @@ TEST(TypeManager, StructWithFwdPtr) {
 }
 
 TEST(TypeManager, CircularFwdPtr) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
                OpCapability Addresses
                OpCapability Kernel
@@ -343,6 +350,8 @@ TEST(TypeManager, CircularFwdPtr) {
 }
 
 TEST(TypeManager, IsomorphicStructWithFwdPtr) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
                OpCapability Addresses
                OpCapability Kernel
@@ -378,6 +387,8 @@ TEST(TypeManager, IsomorphicStructWithFwdPtr) {
 }
 
 TEST(TypeManager, IsomorphicCircularFwdPtr) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
                OpCapability Addresses
                OpCapability Kernel
@@ -433,6 +444,8 @@ TEST(TypeManager, IsomorphicCircularFwdPtr) {
 }
 
 TEST(TypeManager, PartialIsomorphicFwdPtr) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
                OpCapability Addresses
                OpCapability Kernel
@@ -473,6 +486,8 @@ TEST(TypeManager, PartialIsomorphicFwdPtr) {
 }
 
 TEST(TypeManager, DecorationOnStruct) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
     OpDecorate %struct1 Block
     OpDecorate %struct2 Block
@@ -514,6 +529,8 @@ TEST(TypeManager, DecorationOnStruct) {
 }
 
 TEST(TypeManager, DecorationOnMember) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
     OpMemberDecorate %struct1  0 Offset 0
     OpMemberDecorate %struct2  0 Offset 0
@@ -563,6 +580,8 @@ TEST(TypeManager, DecorationOnMember) {
 }
 
 TEST(TypeManager, DecorationEmpty) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
     OpDecorate %struct1 Block
     OpMemberDecorate %struct2  0 Offset 0
@@ -593,6 +612,8 @@ TEST(TypeManager, DecorationEmpty) {
 }
 
 TEST(TypeManager, BeginEndForEmptyModule) {
+  AllocatorRAII allocator;
+
   const std::string text = "";
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
@@ -603,6 +624,8 @@ TEST(TypeManager, BeginEndForEmptyModule) {
 }
 
 TEST(TypeManager, BeginEnd) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
     %void1   = OpTypeVoid
     %void2   = OpTypeVoid
@@ -639,6 +662,8 @@ TEST(TypeManager, BeginEnd) {
 }
 
 TEST(TypeManager, LookupType) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 %void = OpTypeVoid
 %uint = OpTypeInt 32 0
@@ -666,6 +691,8 @@ TEST(TypeManager, LookupType) {
 }
 
 TEST(TypeManager, RemoveId) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -689,6 +716,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, RemoveIdNonDuplicateAmbiguousType) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -711,6 +740,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, RemoveIdDuplicateAmbiguousType) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -737,6 +768,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, RemoveIdDoesntUnmapOtherTypes) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -764,6 +797,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, GetTypeAndPointerType) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -799,6 +834,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, DuplicateType) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -819,6 +856,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, MultipleStructs) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -841,6 +880,8 @@ OpDecorate %3 Constant
 }
 
 TEST(TypeManager, RemovingIdAvoidsUseAfterFree) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -862,6 +903,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, RegisterAndRemoveId) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -886,6 +929,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, RegisterAndRemoveIdAllTypes) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -911,6 +956,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, RegisterAndRemoveIdWithDecorations) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -941,6 +988,8 @@ OpMemoryModel Logical GLSL450
 
 #ifdef SPIRV_EFFCEE
 TEST(TypeManager, GetTypeInstructionInt) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 ; CHECK: OpTypeInt 32 0
 ; CHECK: OpTypeInt 16 1
@@ -964,6 +1013,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, GetTypeInstructionDuplicateInts) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 ; CHECK: OpTypeInt 32 0
 ; CHECK-NOT: OpType
@@ -986,6 +1037,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, GetTypeInstructionAllTypes) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[input_ptr:%\w+]] = OpTypePointer Input [[uint]]
@@ -1069,6 +1122,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, GetTypeInstructionWithDecorations) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 ; CHECK: OpDecorate [[struct:%\w+]] CPacked
 ; CHECK: OpMemberDecorate [[struct]] 1 Offset 4
@@ -1097,6 +1152,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, GetPointerToAmbiguousType1) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 ; CHECK: [[struct1:%\w+]] = OpTypeStruct
 ; CHECK: [[struct2:%\w+]] = OpTypeStruct
@@ -1122,6 +1179,8 @@ OpMemoryModel Logical GLSL450
 }
 
 TEST(TypeManager, GetPointerToAmbiguousType2) {
+  AllocatorRAII allocator;
+
   const std::string text = R"(
 ; CHECK: [[struct1:%\w+]] = OpTypeStruct
 ; CHECK: [[struct2:%\w+]] = OpTypeStruct
