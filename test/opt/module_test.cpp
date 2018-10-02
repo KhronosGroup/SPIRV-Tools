@@ -28,10 +28,14 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using ::testing::Eq;
 using spvtest::GetIdBound;
+using ::testing::Eq;
 
-TEST(ModuleTest, SetIdBound) {
+class ModuleTest : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
+
+TEST_F(ModuleTest, SetIdBound) {
   Module m;
   // It's initialized to 0.
   EXPECT_EQ(0u, GetIdBound(m));
@@ -50,7 +54,7 @@ inline std::unique_ptr<IRContext> BuildModule(std::string text) {
                                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
 }
 
-TEST(ModuleTest, ComputeIdBound) {
+TEST_F(ModuleTest, ComputeIdBound) {
   // Emtpy module case.
   EXPECT_EQ(1u, BuildModule("")->module()->ComputeIdBound());
   // Sensitive to result id
@@ -75,7 +79,7 @@ TEST(ModuleTest, ComputeIdBound) {
                 ->ComputeIdBound());
 }
 
-TEST(ModuleTest, OstreamOperator) {
+TEST_F(ModuleTest, OstreamOperator) {
   const std::string text = R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
@@ -105,7 +109,7 @@ OpFunctionEnd)";
   EXPECT_EQ(text, str.str());
 }
 
-TEST(ModuleTest, OstreamOperatorInt64) {
+TEST_F(ModuleTest, OstreamOperatorInt64) {
   const std::string text = R"(OpCapability Shader
 OpCapability Linkage
 OpCapability Int64
@@ -139,7 +143,7 @@ OpFunctionEnd)";
   EXPECT_EQ(text, str.str());
 }
 
-TEST(ModuleTest, IdBoundTestAtLimit) {
+TEST_F(ModuleTest, IdBoundTestAtLimit) {
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -161,7 +165,7 @@ OpFunctionEnd)";
   EXPECT_EQ(next_id_bound, 0);
 }
 
-TEST(ModuleTest, IdBoundTestBelowLimit) {
+TEST_F(ModuleTest, IdBoundTestBelowLimit) {
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -183,7 +187,7 @@ OpFunctionEnd)";
   EXPECT_EQ(next_id_bound, current_bound + 1);
 }
 
-TEST(ModuleTest, IdBoundTestNearLimit) {
+TEST_F(ModuleTest, IdBoundTestNearLimit) {
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -205,7 +209,7 @@ OpFunctionEnd)";
   EXPECT_EQ(next_id_bound, 0);
 }
 
-TEST(ModuleTest, IdBoundTestUIntMax) {
+TEST_F(ModuleTest, IdBoundTestUIntMax) {
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage

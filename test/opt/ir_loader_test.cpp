@@ -28,6 +28,10 @@ namespace spvtools {
 namespace opt {
 namespace {
 
+class IrBuilder : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
+
 void DoRoundTripCheck(const std::string& text) {
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<IRContext> context =
@@ -42,7 +46,7 @@ void DoRoundTripCheck(const std::string& text) {
   EXPECT_EQ(text, disassembled_text);
 }
 
-TEST(IrBuilder, RoundTrip) {
+TEST_F(IrBuilder, RoundTrip) {
   // #version 310 es
   // int add(int a, int b) { return a + b; }
   // void main() { add(1, 2); }
@@ -89,18 +93,18 @@ TEST(IrBuilder, RoundTrip) {
   // clang-format on
 }
 
-TEST(IrBuilder, RoundTripIncompleteBasicBlock) {
+TEST_F(IrBuilder, RoundTripIncompleteBasicBlock) {
   DoRoundTripCheck(
       "%2 = OpFunction %1 None %3\n"
       "%4 = OpLabel\n"
       "OpNop\n");
 }
 
-TEST(IrBuilder, RoundTripIncompleteFunction) {
+TEST_F(IrBuilder, RoundTripIncompleteFunction) {
   DoRoundTripCheck("%2 = OpFunction %1 None %3\n");
 }
 
-TEST(IrBuilder, KeepLineDebugInfo) {
+TEST_F(IrBuilder, KeepLineDebugInfo) {
   // #version 310 es
   // void main() {}
   DoRoundTripCheck(
@@ -129,7 +133,7 @@ TEST(IrBuilder, KeepLineDebugInfo) {
   // clang-format on
 }
 
-TEST(IrBuilder, LocalGlobalVariables) {
+TEST_F(IrBuilder, LocalGlobalVariables) {
   // #version 310 es
   //
   // float gv1 = 10.;
@@ -199,7 +203,7 @@ TEST(IrBuilder, LocalGlobalVariables) {
   // clang-format on
 }
 
-TEST(IrBuilder, OpUndefOutsideFunction) {
+TEST_F(IrBuilder, OpUndefOutsideFunction) {
   // #version 310 es
   // void main() {}
   const std::string text =
@@ -235,7 +239,7 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
   EXPECT_EQ(text, disassembled_text);
 }
 
-TEST(IrBuilder, OpUndefInBasicBlock) {
+TEST_F(IrBuilder, OpUndefInBasicBlock) {
   DoRoundTripCheck(
       // clang-format off
                "OpMemoryModel Logical GLSL450\n"
@@ -253,7 +257,7 @@ TEST(IrBuilder, OpUndefInBasicBlock) {
   // clang-format on
 }
 
-TEST(IrBuilder, KeepLineDebugInfoBeforeType) {
+TEST_F(IrBuilder, KeepLineDebugInfoBeforeType) {
   DoRoundTripCheck(
       // clang-format off
                "OpCapability Shader\n"
@@ -267,7 +271,7 @@ TEST(IrBuilder, KeepLineDebugInfoBeforeType) {
   // clang-format on
 }
 
-TEST(IrBuilder, KeepLineDebugInfoBeforeLabel) {
+TEST_F(IrBuilder, KeepLineDebugInfoBeforeLabel) {
   DoRoundTripCheck(
       // clang-format off
                "OpCapability Shader\n"
@@ -289,7 +293,7 @@ TEST(IrBuilder, KeepLineDebugInfoBeforeLabel) {
   // clang-format on
 }
 
-TEST(IrBuilder, KeepLineDebugInfoBeforeFunctionEnd) {
+TEST_F(IrBuilder, KeepLineDebugInfoBeforeFunctionEnd) {
   DoRoundTripCheck(
       // clang-format off
                "OpCapability Shader\n"
@@ -304,7 +308,7 @@ TEST(IrBuilder, KeepLineDebugInfoBeforeFunctionEnd) {
   // clang-format on
 }
 
-TEST(IrBuilder, KeepModuleProcessedInRightPlace) {
+TEST_F(IrBuilder, KeepModuleProcessedInRightPlace) {
   DoRoundTripCheck(
       // clang-format off
                "OpCapability Shader\n"
@@ -334,17 +338,17 @@ void DoErrorMessageCheck(const std::string& assembly,
   EXPECT_EQ(nullptr, context);
 }
 
-TEST(IrBuilder, FunctionInsideFunction) {
+TEST_F(IrBuilder, FunctionInsideFunction) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\n%5 = OpFunction %4 None %6",
                       "function inside function", 2);
 }
 
-TEST(IrBuilder, MismatchOpFunctionEnd) {
+TEST_F(IrBuilder, MismatchOpFunctionEnd) {
   DoErrorMessageCheck("OpFunctionEnd",
                       "OpFunctionEnd without corresponding OpFunction", 1);
 }
 
-TEST(IrBuilder, OpFunctionEndInsideBasicBlock) {
+TEST_F(IrBuilder, OpFunctionEndInsideBasicBlock) {
   DoErrorMessageCheck(
       "%2 = OpFunction %1 None %3\n"
       "%4 = OpLabel\n"
@@ -352,12 +356,12 @@ TEST(IrBuilder, OpFunctionEndInsideBasicBlock) {
       "OpFunctionEnd inside basic block", 3);
 }
 
-TEST(IrBuilder, BasicBlockOutsideFunction) {
+TEST_F(IrBuilder, BasicBlockOutsideFunction) {
   DoErrorMessageCheck("OpCapability Shader\n%1 = OpLabel",
                       "OpLabel outside function", 2);
 }
 
-TEST(IrBuilder, OpLabelInsideBasicBlock) {
+TEST_F(IrBuilder, OpLabelInsideBasicBlock) {
   DoErrorMessageCheck(
       "%2 = OpFunction %1 None %3\n"
       "%4 = OpLabel\n"
@@ -365,23 +369,23 @@ TEST(IrBuilder, OpLabelInsideBasicBlock) {
       "OpLabel inside basic block", 3);
 }
 
-TEST(IrBuilder, TerminatorOutsideFunction) {
+TEST_F(IrBuilder, TerminatorOutsideFunction) {
   DoErrorMessageCheck("OpReturn", "terminator instruction outside function", 1);
 }
 
-TEST(IrBuilder, TerminatorOutsideBasicBlock) {
+TEST_F(IrBuilder, TerminatorOutsideBasicBlock) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\nOpReturn",
                       "terminator instruction outside basic block", 2);
 }
 
-TEST(IrBuilder, NotAllowedInstAppearingInFunction) {
+TEST_F(IrBuilder, NotAllowedInstAppearingInFunction) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\n%5 = OpVariable %4 Function",
                       "Non-OpFunctionParameter (opcode: 59) found inside "
                       "function but outside basic block",
                       2);
 }
 
-TEST(IrBuilder, UniqueIds) {
+TEST_F(IrBuilder, UniqueIds) {
   const std::string text =
       // clang-format off
                "OpCapability Shader\n"

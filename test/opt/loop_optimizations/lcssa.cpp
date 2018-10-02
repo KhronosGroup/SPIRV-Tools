@@ -22,7 +22,6 @@
 #include "source/opt/loop_utils.h"
 #include "source/opt/pass.h"
 #include "test/opt//assembly_builder.h"
-#include "test/opt/allocator_raii.h"
 #include "test/opt/function_utils.h"
 
 #ifdef SPIRV_EFFCEE

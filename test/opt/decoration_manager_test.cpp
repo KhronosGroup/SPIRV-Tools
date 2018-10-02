@@ -22,7 +22,6 @@
 #include "source/opt/decoration_manager.h"
 #include "source/opt/ir_context.h"
 #include "source/spirv_constant.h"
-#include "test/opt/allocator_raii.h"
 #include "test/unit_spirv.h"
 
 namespace spvtools {

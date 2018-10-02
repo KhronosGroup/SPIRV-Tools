@@ -137,6 +137,16 @@ void SetCustomAllocator(Allocator* allocator);
 void* CustomAllocate(std::size_t size);
 void CustomDeallocate(void* ptr, std::size_t size);
 
+// A RAII class for maintaining custom allocator.
+class AllocatorRAII {
+ public:
+  AllocatorRAII() : allocator_() { SetCustomAllocator(&allocator_); }
+  ~AllocatorRAII() { SetCustomAllocator(nullptr); }
+
+ private:
+  Allocator allocator_;
+};
+
 // A custom allocator implementing the allocator interface required by
 // STL containers
 template <typename T>

@@ -25,7 +25,6 @@
 #include "source/opt/ir_context.h"
 #include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"
-#include "test/opt/allocator_raii.h"
 #include "test/opt/pass_utils.h"
 
 #ifdef SPIRV_EFFCEE

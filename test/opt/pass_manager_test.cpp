@@ -156,6 +156,8 @@ class AppendTypeVoidInstPass : public Pass {
 };
 
 TEST(PassManager, RecomputeIdBoundAutomatically) {
+  AllocatorRAII allcator;
+
   PassManager manager;
   std::unique_ptr<Module> module(new Module());
   IRContext context(SPV_ENV_UNIVERSAL_1_2, std::move(module),

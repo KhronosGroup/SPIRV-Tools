@@ -19,7 +19,6 @@
 #include "gtest/gtest.h"
 #include "source/opt/types.h"
 #include "source/util/make_unique.h"
-#include "test/opt/allocator_raii.h"
 
 namespace spvtools {
 namespace opt {

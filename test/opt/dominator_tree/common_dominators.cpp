@@ -19,7 +19,6 @@
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
-#include "test/opt/allocator_raii.h"
 
 namespace spvtools {
 namespace opt {

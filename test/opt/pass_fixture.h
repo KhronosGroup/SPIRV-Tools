@@ -28,7 +28,6 @@
 #include "source/opt/passes.h"
 #include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.hpp"
-#include "test/opt/allocator_raii.h"
 
 #ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"

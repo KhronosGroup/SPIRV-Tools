@@ -25,7 +25,6 @@
 #include "source/opt/ir_builder.h"
 #include "source/opt/type_manager.h"
 #include "spirv-tools/libspirv.hpp"
-#include "test/opt/allocator_raii.h"
 
 #ifdef SPIRV_EFFCEE
 #include "effcee/effcee.h"

@@ -27,6 +27,7 @@
 
 #include "source/assembly_grammar.h"
 #include "source/diagnostic.h"
+#include "source/opt/allocator.h"
 #include "source/opt/build_module.h"
 #include "source/opt/compact_ids_pass.h"
 #include "source/opt/decoration_manager.h"
@@ -40,8 +41,8 @@
 namespace spvtools {
 namespace {
 
-using opt::IRContext;
 using opt::Instruction;
+using opt::IRContext;
 using opt::Module;
 using opt::Operand;
 using opt::PassManager;
@@ -671,6 +672,8 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
                   const size_t* binary_sizes, size_t num_binaries,
                   std::vector<uint32_t>* linked_binary,
                   const LinkerOptions& options) {
+  AllocatorRAII allocator;
+
   spv_position_t position = {};
   const spv_context& c_context = context.CContext();
   const MessageConsumer& consumer = c_context->consumer;

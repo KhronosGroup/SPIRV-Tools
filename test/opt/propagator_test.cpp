@@ -24,7 +24,6 @@
 #include "source/opt/ir_context.h"
 #include "source/opt/pass.h"
 #include "source/opt/propagator.h"
-#include "test/opt/allocator_raii.h"
 
 namespace spvtools {
 namespace opt {

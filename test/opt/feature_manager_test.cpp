@@ -25,7 +25,9 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using FeatureManagerTest = ::testing::Test;
+class FeatureManagerTest : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
 
 TEST_F(FeatureManagerTest, MissingExtension) {
   const std::string text = R"(

@@ -35,7 +35,11 @@ using OpaqueTypeTest = PassTest<::testing::Test>;
 using GetBaseTest = PassTest<::testing::Test>;
 using ValidBasePointerTest = PassTest<::testing::Test>;
 
-TEST(InstructionTest, CreateTrivial) {
+class InstructionTest : public ::testing::Test {
+  AllocatorRAII allocator_;
+};
+
+TEST_F(InstructionTest, CreateTrivial) {
   Instruction empty;
   EXPECT_EQ(SpvOpNop, empty.opcode());
   EXPECT_EQ(0u, empty.type_id());
@@ -47,7 +51,7 @@ TEST(InstructionTest, CreateTrivial) {
   EXPECT_EQ(empty.end(), empty.begin());
 }
 
-TEST(InstructionTest, CreateWithOpcodeAndNoOperands) {
+TEST_F(InstructionTest, CreateWithOpcodeAndNoOperands) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context, SpvOpReturn);
   EXPECT_EQ(SpvOpReturn, inst.opcode());
@@ -128,7 +132,7 @@ spv_parsed_instruction_t kSampleControlBarrierInstruction = {
     kSampleControlBarrierOperands,
     3};
 
-TEST(InstructionTest, CreateWithOpcodeAndOperands) {
+TEST_F(InstructionTest, CreateWithOpcodeAndOperands) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_EQ(SpvOpTypeInt, inst.opcode());
@@ -139,7 +143,7 @@ TEST(InstructionTest, CreateWithOpcodeAndOperands) {
   EXPECT_EQ(2u, inst.NumInOperandWords());
 }
 
-TEST(InstructionTest, GetOperand) {
+TEST_F(InstructionTest, GetOperand) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_THAT(inst.GetOperand(0).words, Eq(std::vector<uint32_t>{44}));
@@ -147,14 +151,14 @@ TEST(InstructionTest, GetOperand) {
   EXPECT_THAT(inst.GetOperand(2).words, Eq(std::vector<uint32_t>{1}));
 }
 
-TEST(InstructionTest, GetInOperand) {
+TEST_F(InstructionTest, GetInOperand) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_THAT(inst.GetInOperand(0).words, Eq(std::vector<uint32_t>{32}));
   EXPECT_THAT(inst.GetInOperand(1).words, Eq(std::vector<uint32_t>{1}));
 }
 
-TEST(InstructionTest, OperandConstIterators) {
+TEST_F(InstructionTest, OperandConstIterators) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   // Spot check iteration across operands.
@@ -181,7 +185,7 @@ TEST(InstructionTest, OperandConstIterators) {
   EXPECT_EQ(SPV_OPERAND_TYPE_LITERAL_INTEGER, operand2.type);
 }
 
-TEST(InstructionTest, OperandIterators) {
+TEST_F(InstructionTest, OperandIterators) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   // Spot check iteration across operands, with mutable iterators.
@@ -212,7 +216,7 @@ TEST(InstructionTest, OperandIterators) {
   EXPECT_EQ(SPV_OPERAND_TYPE_TYPE_ID, (*(inst.cbegin() + 2)).type);
 }
 
-TEST(InstructionTest, ForInIdStandardIdTypes) {
+TEST_F(InstructionTest, ForInIdStandardIdTypes) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context, kSampleAccessChainInstruction);
 
@@ -225,7 +229,7 @@ TEST(InstructionTest, ForInIdStandardIdTypes) {
   EXPECT_THAT(ids, Eq(std::vector<uint32_t>{102, 103, 104, 105}));
 }
 
-TEST(InstructionTest, ForInIdNonstandardIdTypes) {
+TEST_F(InstructionTest, ForInIdNonstandardIdTypes) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context, kSampleControlBarrierInstruction);
 
@@ -238,14 +242,14 @@ TEST(InstructionTest, ForInIdNonstandardIdTypes) {
   EXPECT_THAT(ids, Eq(std::vector<uint32_t>{100, 101, 102}));
 }
 
-TEST(InstructionTest, UniqueIds) {
+TEST_F(InstructionTest, UniqueIds) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst1(&context);
   Instruction inst2(&context);
   EXPECT_NE(inst1.unique_id(), inst2.unique_id());
 }
 
-TEST(InstructionTest, CloneUniqueIdDifferent) {
+TEST_F(InstructionTest, CloneUniqueIdDifferent) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&context);
   std::unique_ptr<Instruction> clone(inst.Clone(&context));
@@ -253,7 +257,7 @@ TEST(InstructionTest, CloneUniqueIdDifferent) {
   EXPECT_NE(inst.unique_id(), clone->unique_id());
 }
 
-TEST(InstructionTest, CloneDifferentContext) {
+TEST_F(InstructionTest, CloneDifferentContext) {
   IRContext c1(SPV_ENV_UNIVERSAL_1_2, nullptr);
   IRContext c2(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&c1);
@@ -263,7 +267,7 @@ TEST(InstructionTest, CloneDifferentContext) {
   EXPECT_NE(&c1, &c2);
 }
 
-TEST(InstructionTest, CloneDifferentContextDifferentUniqueId) {
+TEST_F(InstructionTest, CloneDifferentContextDifferentUniqueId) {
   IRContext c1(SPV_ENV_UNIVERSAL_1_2, nullptr);
   IRContext c2(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction inst(&c1);
@@ -273,7 +277,7 @@ TEST(InstructionTest, CloneDifferentContextDifferentUniqueId) {
   EXPECT_NE(other.unique_id(), clone->unique_id());
 }
 
-TEST(InstructionTest, EqualsEqualsOperator) {
+TEST_F(InstructionTest, EqualsEqualsOperator) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction i1(&context);
   Instruction i2(&context);
@@ -284,7 +288,7 @@ TEST(InstructionTest, EqualsEqualsOperator) {
   EXPECT_FALSE(i2 == *clone);
 }
 
-TEST(InstructionTest, LessThanOperator) {
+TEST_F(InstructionTest, LessThanOperator) {
   IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
   Instruction i1(&context);
   Instruction i2(&context);

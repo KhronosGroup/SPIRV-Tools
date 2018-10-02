@@ -19,9 +19,9 @@
 #include <string>
 #include <vector>
 
+#include "source/opt/allocator.h"
 #include "source/spirv_constant.h"
 #include "spirv-tools/linker.hpp"
-#include "test/opt/allocator_raii.h"
 #include "test/unit_spirv.h"
 
 namespace spvtest {

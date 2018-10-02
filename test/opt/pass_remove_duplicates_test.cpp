@@ -23,7 +23,6 @@
 #include "source/opt/pass_manager.h"
 #include "source/opt/remove_duplicates_pass.h"
 #include "source/spirv_constant.h"
-#include "test/opt/allocator_raii.h"
 #include "test/unit_spirv.h"
 
 namespace spvtools {
