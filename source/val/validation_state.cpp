@@ -151,7 +151,8 @@ spv_result_t CountInstructions(void* user_data,
 ValidationState_t::ValidationState_t(const spv_const_context ctx,
                                      const spv_const_validator_options opt,
                                      const uint32_t* words,
-                                     const size_t num_words)
+                                     const size_t num_words,
+                                     const uint32_t max_warnings)
     : context_(ctx),
       options_(opt),
       words_(words),
@@ -170,7 +171,9 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       grammar_(ctx),
       addressing_model_(SpvAddressingModelMax),
       memory_model_(SpvMemoryModelMax),
-      in_function_(false) {
+      in_function_(false),
+      num_of_warnings_(0),
+      max_num_of_warnings_(max_warnings) {
   assert(opt && "Validator options may not be Null.");
 
   const auto env = context_->target_env;
@@ -291,7 +294,18 @@ bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
 }
 
 DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
-                                         const Instruction* inst) const {
+                                         const Instruction* inst) {
+  if (error_code == SPV_WARNING) {
+    if (num_of_warnings_ == max_num_of_warnings_) {
+      DiagnosticStream({0, 0, 0}, context_->consumer, "", error_code)
+          << "Other warnings have been suppressed.\n";
+    }
+    if (num_of_warnings_ >= max_num_of_warnings_) {
+      return DiagnosticStream({0, 0, 0}, nullptr, "", error_code);
+    }
+    ++num_of_warnings_;
+  }
+
   std::string disassembly;
   if (inst) disassembly = Disassemble(*inst);
 

@@ -89,7 +89,7 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
 // Returns SPV_SUCCESS if the given operand is enabled by capabilities declared
 // in the module.  Otherwise issues an error message and returns
 // SPV_ERROR_INVALID_CAPABILITY.
-spv_result_t CheckRequiredCapabilities(const ValidationState_t& state,
+spv_result_t CheckRequiredCapabilities(ValidationState_t& state,
                                        const Instruction* inst,
                                        size_t which_operand,
                                        spv_operand_type_t type,
@@ -430,14 +430,14 @@ spv_result_t LimitCheckNumVars(ValidationState_t& _, const uint32_t var_id,
 }
 
 // Parses OpExtension instruction and logs warnings if unsuccessful.
-void CheckIfKnownExtension(ValidationState_t& _, const Instruction* inst) {
+spv_result_t CheckIfKnownExtension(ValidationState_t& _, const Instruction* inst) {
   const std::string extension_str = GetExtensionString(&(inst->c_inst()));
   Extension extension;
   if (!GetExtensionFromString(extension_str.c_str(), &extension)) {
-    _.diag(SPV_ERROR_INVALID_BINARY, inst)
+    return _.diag(SPV_WARNING, inst)
         << "Found unrecognized extension " << extension_str;
-    return;
   }
+  return SPV_SUCCESS;
 }
 
 }  // namespace
