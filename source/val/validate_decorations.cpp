@@ -894,39 +894,38 @@ spv_result_t CheckDecorationsOfConversions(ValidationState_t& vstate) {
       }
 
       // Validates Object operand of an OpStore
-      bool exist = false;
-      for (const auto& store : vstate.ordered_instructions()) {
-        if (store.opcode() == SpvOpStore) {
-          const auto object_id = store.GetOperandAs<uint32_t>(1);
-          if (object_id == inst->id()) {
-            const auto ptr_id = store.GetOperandAs<uint32_t>(0);
-            const auto ptr = vstate.FindDef(ptr_id);
-            const auto ptr_type_id = ptr->GetOperandAs<uint32_t>(0);
-            const auto ptr_type = vstate.FindDef(ptr_type_id);
-            const auto storage = ptr_type->GetOperandAs<uint32_t>(1);
-
-            // Validates storage class of the pointer to the OpStore
-            if (storage != SpvStorageClassStorageBuffer &&
-                storage != SpvStorageClassUniform &&
-                storage != SpvStorageClassPushConstant &&
-                storage != SpvStorageClassInput &&
-                storage != SpvStorageClassOutput) {
-              return vstate.diag(SPV_ERROR_INVALID_ID, inst)
-                     << "FPRoundingMode decoration can be applied only to the "
-                        "Object operand of an OpStore in the StorageBuffer, "
-                        "Uniform, PushConstant, Input, or Output Storage "
-                        "Classes.";
-            }
-            exist = true;
-            break;
-          }
+      for (const auto& use : inst->uses()) {
+        const auto store = use.first;
+        if (store->opcode() != SpvOpStore) {
+          return vstate.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "FPRoundingMode decoration can be applied only to the "
+                    "Object operand of an OpStore.";
         }
-      }
 
-      if (!exist) {
-        return vstate.diag(SPV_ERROR_INVALID_ID, inst)
-               << "FPRoundingMode decoration can be applied only to the "
-                  "Object operand of an OpStore.";
+        const auto object_id = store->GetOperandAs<uint32_t>(1);
+        if (object_id != inst->id()) {
+          return vstate.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "FPRoundingMode decoration can be applied only to the "
+                    "Object operand of an OpStore.";
+        }
+
+        const auto ptr_inst = vstate.FindDef(store->GetOperandAs<uint32_t>(0));
+        const auto ptr_type =
+            vstate.FindDef(ptr_inst->GetOperandAs<uint32_t>(0));
+        const auto storage = ptr_type->GetOperandAs<uint32_t>(1);
+
+        // Validates storage class of the pointer to the OpStore
+        if (storage != SpvStorageClassStorageBuffer &&
+            storage != SpvStorageClassUniform &&
+            storage != SpvStorageClassPushConstant &&
+            storage != SpvStorageClassInput &&
+            storage != SpvStorageClassOutput) {
+          return vstate.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "FPRoundingMode decoration can be applied only to the "
+                    "Object operand of an OpStore in the StorageBuffer, "
+                    "Uniform, PushConstant, Input, or Output Storage "
+                    "Classes.";
+        }
       }
     }
   }
