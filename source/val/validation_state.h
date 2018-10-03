@@ -90,7 +90,8 @@ class ValidationState_t {
 
   ValidationState_t(const spv_const_context context,
                     const spv_const_validator_options opt,
-                    const uint32_t* words, const size_t num_words);
+                    const uint32_t* words, const size_t num_words,
+                    const uint32_t max_warnings);
 
   /// Returns the context
   spv_const_context context() const { return context_; }
@@ -169,7 +170,7 @@ class ValidationState_t {
   /// Determines if the op instruction is part of the current section
   bool IsOpcodeInCurrentLayoutSection(SpvOp op);
 
-  DiagnosticStream diag(spv_result_t error_code, const Instruction* inst) const;
+  DiagnosticStream diag(spv_result_t error_code, const Instruction* inst);
 
   /// Returns the function states
   std::vector<Function>& functions();
@@ -640,6 +641,10 @@ class ValidationState_t {
   /// module which can (indirectly) call the function.
   std::unordered_map<uint32_t, std::vector<uint32_t>> function_to_entry_points_;
   const std::vector<uint32_t> empty_ids_;
+
+  /// Variables used to reduce the number of diagnostic messages.
+  uint32_t num_of_warnings_;
+  uint32_t max_num_of_warnings_;
 };
 
 }  // namespace val

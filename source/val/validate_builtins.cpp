@@ -55,7 +55,7 @@ std::string GetIdDesc(const Instruction& inst) {
 // the Vulkan spec.
 // TODO: If non-Vulkan validation rules are added then it might need
 // to be refactored.
-spv_result_t GetUnderlyingType(const ValidationState_t& _,
+spv_result_t GetUnderlyingType(ValidationState_t& _,
                                const Decoration& decoration,
                                const Instruction& inst,
                                uint32_t* underlying_type) {
@@ -106,7 +106,7 @@ SpvStorageClass GetStorageClass(const Instruction& inst) {
 // ValidationState_t to be made available to other users.
 class BuiltInsValidator {
  public:
-  BuiltInsValidator(const ValidationState_t& vstate) : _(vstate) {}
+  BuiltInsValidator(ValidationState_t& vstate) : _(vstate) {}
 
   // Run validation.
   spv_result_t Run();
@@ -375,7 +375,7 @@ class BuiltInsValidator {
   // instruction.
   void Update(const Instruction& inst);
 
-  const ValidationState_t& _;
+  ValidationState_t& _;
 
   // Mapping id -> list of rules which validate instruction referencing the
   // id. Rules can create new rules and add them to this container.
@@ -2592,7 +2592,7 @@ spv_result_t BuiltInsValidator::Run() {
 }  // namespace
 
 // Validates correctness of built-in variables.
-spv_result_t ValidateBuiltIns(const ValidationState_t& _) {
+spv_result_t ValidateBuiltIns(ValidationState_t& _) {
   if (!spvIsVulkanEnv(_.context()->target_env)) {
     // Early return. All currently implemented rules are based on Vulkan spec.
     //
