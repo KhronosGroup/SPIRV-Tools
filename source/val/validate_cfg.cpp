@@ -296,9 +296,9 @@ std::string ConstructErrorString(const Construct& construct,
 // |case_fall_through|. Returns SPV_ERROR_INVALID_CFG if the case construct
 // headed by |target_block| branches to multiple case constructs.
 spv_result_t FindCaseFallThrough(
-    const ValidationState_t& _, BasicBlock* target_block,
-    uint32_t* case_fall_through, const BasicBlock* merge,
-    const std::unordered_set<uint32_t>& case_targets, Function* function) {
+    ValidationState_t& _, BasicBlock* target_block, uint32_t* case_fall_through,
+    const BasicBlock* merge, const std::unordered_set<uint32_t>& case_targets,
+    Function* function) {
   std::vector<BasicBlock*> stack;
   stack.push_back(target_block);
   std::unordered_set<const BasicBlock*> visited;
@@ -352,8 +352,7 @@ spv_result_t FindCaseFallThrough(
   return SPV_SUCCESS;
 }
 
-spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
-                                    Function* function,
+spv_result_t StructuredSwitchChecks(ValidationState_t& _, Function* function,
                                     const Instruction* switch_inst,
                                     const BasicBlock* header,
                                     const BasicBlock* merge) {
@@ -452,7 +451,7 @@ spv_result_t StructuredSwitchChecks(const ValidationState_t& _,
 }
 
 spv_result_t StructuredControlFlowChecks(
-    const ValidationState_t& _, Function* function,
+    ValidationState_t& _, Function* function,
     const std::vector<std::pair<uint32_t, uint32_t>>& back_edges) {
   /// Check all backedges target only loop headers and have exactly one
   /// back-edge branching to it

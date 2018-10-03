@@ -58,7 +58,7 @@ spv_result_t UpdateIdUse(ValidationState_t& _, const Instruction* inst) {
 ///
 /// NOTE: This function does NOT check module scoped functions which are
 /// checked during the initial binary parse in the IdPass below
-spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
+spv_result_t CheckIdDefinitionDominateUse(ValidationState_t& _) {
   std::vector<const Instruction*> phi_instructions;
   std::unordered_set<uint32_t> phi_ids;
   for (const auto& inst : _.ordered_instructions()) {

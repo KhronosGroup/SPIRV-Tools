@@ -63,7 +63,7 @@ spv_result_t UpdateIdUse(ValidationState_t& _, const Instruction* inst);
 /// @param[in] _ the validation state of the module
 ///
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_ID otherwise
-spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
+spv_result_t CheckIdDefinitionDominateUse(ValidationState_t& _);
 
 /// @brief This function checks for preconditions involving the adjacent
 /// instructions.
@@ -135,7 +135,7 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst);
 spv_result_t ValidateDecorations(ValidationState_t& _);
 
 /// Performs validation of built-in variables.
-spv_result_t ValidateBuiltIns(const ValidationState_t& _);
+spv_result_t ValidateBuiltIns(ValidationState_t& _);
 
 /// Validates type instructions.
 spv_result_t TypePass(ValidationState_t& _, const Instruction* inst);
