@@ -89,10 +89,9 @@ class ValidationState_t {
   };
 
   ValidationState_t(const spv_const_context context,
-                      const spv_const_validator_options opt,
-                      const uint32_t* words,
-                      const size_t num_words,
-                      const uint32_t max_warnings);
+                    const spv_const_validator_options opt,
+                    const uint32_t* words, const size_t num_words,
+                    const uint32_t max_warnings);
 
   /// Returns the context
   spv_const_context context() const { return context_; }

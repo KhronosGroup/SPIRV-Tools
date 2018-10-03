@@ -107,7 +107,8 @@ TEST_F(ValidateUnknownExtensions, HitMaxNumOfWarnings) {
       "OpMemoryModel Logical GLSL450";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Other warnings have been suppressed."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Other warnings have been suppressed."));
 }
 
 TEST_F(ValidateExtensionCapabilities, DeclCapabilitySuccess) {
@@ -273,8 +274,7 @@ TEST_P(ValidateExtIntoCore, DoNotAskForExtensionInLaterVersion) {
                            GetParam().cap + R"(
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main" %builtin
-               OpDecorate %builtin BuiltIn )" +
-                           GetParam().builtin + R"(
+               OpDecorate %builtin BuiltIn )" + GetParam().builtin + R"(
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
         %int = OpTypeInt 32 1
