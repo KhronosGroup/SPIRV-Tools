@@ -252,11 +252,21 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
         case SpvStorageClassStorageBuffer:
           break;
         default:
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << spvOpcodeString(opcode)
-                 << ": expected Pointer Storage Class to be Uniform, "
-                    "Workgroup, CrossWorkgroup, Generic, AtomicCounter, Image "
-                    "or StorageBuffer";
+          if (spvIsOpenCLEnv(_.context()->target_env)) {
+            if (storage_class != SpvStorageClassFunction) {
+              return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                     << spvOpcodeString(opcode)
+                     << ": expected Pointer Storage Class to be Uniform, "
+                        "Workgroup, CrossWorkgroup, Generic, AtomicCounter, "
+                        "Image, StorageBuffer or Function";
+            }
+          } else {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << spvOpcodeString(opcode)
+                   << ": expected Pointer Storage Class to be Uniform, "
+                      "Workgroup, CrossWorkgroup, Generic, AtomicCounter, "
+                      "Image or StorageBuffer";
+          }
       }
 
       if (opcode == SpvOpAtomicFlagTestAndSet ||
