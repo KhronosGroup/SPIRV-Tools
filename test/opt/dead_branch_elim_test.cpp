@@ -1348,7 +1348,6 @@ OpFunctionEnd
                                             true, true);
 }
 
-#ifdef SPIRV_EFFCEE
 TEST_F(DeadBranchElimTest, LeaveContinueBackedge) {
   const std::string text = R"(
 ; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] None
@@ -2492,7 +2491,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<DeadBranchElimPass>(predefs + body, true);
 }
-#endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //

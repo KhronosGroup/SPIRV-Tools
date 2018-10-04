@@ -25,7 +25,6 @@ namespace {
 
 using IfConversionTest = PassTest<::testing::Test>;
 
-#ifdef SPIRV_EFFCEE
 TEST_F(IfConversionTest, TestSimpleIfThenElse) {
   const std::string text = R"(
 ; CHECK: OpSelectionMerge [[merge:%\w+]]
@@ -302,7 +301,6 @@ TEST_F(IfConversionTest, CodeMotionMultipleInstructions) {
 
   SinglePassRunAndMatch<IfConversion>(text, true);
 }
-#endif  // SPIRV_EFFCEE
 
 TEST_F(IfConversionTest, NoCommonDominator) {
   const std::string text = R"(OpCapability Shader

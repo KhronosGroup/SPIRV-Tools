@@ -1624,8 +1624,6 @@ OpFunctionEnd
   EXPECT_TRUE(status == Pass::Status::SuccessWithChange);
 }
 
-// TODO(dneto): Add Effcee as required dependency, and make this unconditional.
-#ifdef SPIRV_EFFCEE
 TEST_F(LocalSSAElimTest, CompositeExtractProblem) {
   const std::string spv_asm = R"(
                OpCapability Tessellation
@@ -1758,7 +1756,6 @@ TEST_F(LocalSSAElimTest, DecoratedVariable) {
 
   SinglePassRunAndMatch<SSARewritePass>(spv_asm, true);
 }
-#endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
