@@ -627,11 +627,29 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
     switch (annotation->opcode()) {
       case SpvOpDecorate:
       case SpvOpMemberDecorate:
-      case SpvOpDecorateId:
       case SpvOpDecorateStringGOOGLE:
         if (IsTargetDead(annotation)) {
           context()->KillInst(annotation);
           modified = true;
+        }
+        break;
+      case SpvOpDecorateId:
+        if (IsTargetDead(annotation)) {
+          context()->KillInst(annotation);
+          modified = true;
+        } else {
+          if (annotation->GetSingleWordInOperand(1) ==
+              SpvDecorationHlslCounterBufferGOOGLE) {
+            // HlslCounterBuffer will reference an id other than the target.
+            // If that id is dead, then the decoration can be removed as well.
+            uint32_t counter_buffer_id = annotation->GetSingleWordInOperand(2);
+            Instruction* counter_buffer_inst =
+                get_def_use_mgr()->GetDef(counter_buffer_id);
+            if (IsDead(counter_buffer_inst)) {
+              context()->KillInst(annotation);
+              modified = true;
+            }
+          }
         }
         break;
       case SpvOpGroupDecorate: {
