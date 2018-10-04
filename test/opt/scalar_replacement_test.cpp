@@ -1402,6 +1402,42 @@ OpFunctionEnd
   SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
 }
 
+TEST_F(ScalarReplacementTest, SpecConstantArray) {
+  const std::string text = R"(
+; CHECK: [[int:%\w+]] = OpTypeInt
+; CHECK: [[spec_const:%\w+]] = OpSpecConstant [[int]] 4
+; CHECK: [[spec_op:%\w+]] = OpSpecConstantOp [[int]] IAdd [[spec_const]] [[spec_const]]
+; CHECK: [[array1:%\w+]] = OpTypeArray [[int]] [[spec_const]]
+; CHECK: [[array2:%\w+]] = OpTypeArray [[int]] [[spec_op]]
+; CHECK: [[ptr_array1:%\w+]] = OpTypePointer Function [[array1]]
+; CHECK: [[ptr_array2:%\w+]] = OpTypePointer Function [[array2]]
+; CHECK: OpLabel
+; CHECK-NEXT: OpVariable [[ptr_array1]] Function
+; CHECK-NEXT: OpVariable [[ptr_array2]] Function
+; CHECK-NOT: OpVariable
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 4
+%spec_op = OpSpecConstantOp %int IAdd %spec_const %spec_const
+%array_1 = OpTypeArray %int %spec_const
+%array_2 = OpTypeArray %int %spec_op
+%ptr_array_1_Function = OpTypePointer Function %array_1
+%ptr_array_2_Function = OpTypePointer Function %array_2
+%func = OpFunction %void None %void_fn
+%1 = OpLabel
+%var_1 = OpVariable %ptr_array_1_Function Function
+%var_2 = OpVariable %ptr_array_2_Function Function
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+}
+
 TEST_F(ScalarReplacementTest, CreateAmbiguousNullConstant2) {
   const std::string text = R"(
 ;

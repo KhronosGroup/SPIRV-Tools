@@ -500,6 +500,12 @@ size_t ScalarReplacementPass::GetNumElements(const Instruction* type) const {
   return len;
 }
 
+bool ScalarReplacementPass::IsSpecConstant(uint32_t id) const {
+  const Instruction* inst = get_def_use_mgr()->GetDef(id);
+  assert(inst);
+  return spvOpcodeIsSpecConstant(inst->opcode());
+}
+
 Instruction* ScalarReplacementPass::GetStorageType(
     const Instruction* inst) const {
   assert(inst->opcode() == SpvOpVariable);
@@ -536,7 +542,12 @@ bool ScalarReplacementPass::CheckType(const Instruction* typeInst) const {
         return false;
       return true;
     case SpvOpTypeArray:
-      if (IsLargerThanSizeLimit(GetArrayLength(typeInst))) return false;
+      if (IsSpecConstant(typeInst->GetSingleWordInOperand(1u))) {
+        return false;
+      }
+      if (IsLargerThanSizeLimit(GetArrayLength(typeInst))) {
+        return false;
+      }
       return true;
       // TODO(alanbaker): Develop some heuristics for when this should be
       // re-enabled.
