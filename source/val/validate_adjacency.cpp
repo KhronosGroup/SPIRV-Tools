@@ -28,28 +28,34 @@ namespace spvtools {
 namespace val {
 
 enum {
+  // Status right after meeting OpFunction.
   IN_NEW_FUNCTION,
+  // Status right after meeting the entry block.
   IN_ENTRY_BLOCK,
+  // Status right after meeting non-entry blocks.
   PHI_VALID,
-  PHI_INVALID,
+  // Status right after meeting non-OpVariable instructions in the entry block
+  // or non-OpPhi instructions in non-entry blocks, except OpLine.
+  PHI_AND_VAR_INVALID,
 };
 
 spv_result_t ValidateAdjacency(ValidationState_t& _) {
   const auto& instructions = _.ordered_instructions();
-  int phi_check = PHI_INVALID;
+  int adjacency_status = PHI_AND_VAR_INVALID;
 
   for (size_t i = 0; i < instructions.size(); ++i) {
     const auto& inst = instructions[i];
     switch (inst.opcode()) {
       case SpvOpFunction:
       case SpvOpFunctionParameter:
-        phi_check = IN_NEW_FUNCTION;
+        adjacency_status = IN_NEW_FUNCTION;
         break;
       case SpvOpLabel:
-        phi_check = phi_check == IN_NEW_FUNCTION ? IN_ENTRY_BLOCK : PHI_VALID;
+        adjacency_status =
+            adjacency_status == IN_NEW_FUNCTION ? IN_ENTRY_BLOCK : PHI_VALID;
         break;
       case SpvOpPhi:
-        if (phi_check != PHI_VALID) {
+        if (adjacency_status != PHI_VALID) {
           return _.diag(SPV_ERROR_INVALID_DATA, &inst)
                  << "OpPhi must appear within a non-entry block before all "
                  << "non-OpPhi instructions "
@@ -59,7 +65,7 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
       case SpvOpLine:
         break;
       case SpvOpLoopMerge:
-        phi_check = PHI_INVALID;
+        adjacency_status = PHI_AND_VAR_INVALID;
         if (i != (instructions.size() - 1)) {
           switch (instructions[i + 1].opcode()) {
             case SpvOpBranch:
@@ -75,7 +81,7 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
         }
         break;
       case SpvOpSelectionMerge:
-        phi_check = PHI_INVALID;
+        adjacency_status = PHI_AND_VAR_INVALID;
         if (i != (instructions.size() - 1)) {
           switch (instructions[i + 1].opcode()) {
             case SpvOpBranchConditional:
@@ -90,8 +96,16 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
           }
         }
         break;
+      case SpvOpVariable:
+        if (inst.GetOperandAs<uint32_t>(2) == SpvStorageClassFunction &&
+            adjacency_status != IN_ENTRY_BLOCK) {
+          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                 << "All OpVariable instructions in a function must be the "
+                    "first instructions in the first block.";
+        }
+        break;
       default:
-        phi_check = PHI_INVALID;
+        adjacency_status = PHI_AND_VAR_INVALID;
         break;
     }
   }
