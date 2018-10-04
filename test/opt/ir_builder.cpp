@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "source/opt/basic_block.h"
@@ -26,15 +27,9 @@
 #include "source/opt/type_manager.h"
 #include "spirv-tools/libspirv.hpp"
 
-#ifdef SPIRV_EFFCEE
-#include "effcee/effcee.h"
-#endif
-
 namespace spvtools {
 namespace opt {
 namespace {
-
-#ifdef SPIRV_EFFCEE
 
 using Analysis = IRContext::Analysis;
 using IRBuilderTest = ::testing::Test;
@@ -408,8 +403,6 @@ OpFunctionEnd
 
   Match(text, context.get());
 }
-
-#endif  // SPIRV_EFFCEE
 
 }  // namespace
 }  // namespace opt

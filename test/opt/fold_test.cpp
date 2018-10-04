@@ -17,6 +17,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
@@ -27,17 +28,12 @@
 #include "spirv-tools/libspirv.hpp"
 #include "test/opt/pass_utils.h"
 
-#ifdef SPIRV_EFFCEE
-#include "effcee/effcee.h"
-#endif
-
 namespace spvtools {
 namespace opt {
 namespace {
 
 using ::testing::Contains;
 
-#ifdef SPIRV_EFFCEE
 std::string Disassemble(const std::string& original, IRContext* context,
                         uint32_t disassemble_options = 0) {
   std::vector<uint32_t> optimized_bin;
@@ -60,7 +56,6 @@ void Match(const std::string& original, IRContext* context,
       << match_result.message() << "\nChecking result:\n"
       << disassembly;
 }
-#endif
 
 template <class ResultType>
 struct InstructionFoldingCase {
@@ -3851,7 +3846,6 @@ INSTANTIATE_TEST_CASE_P(DoubleRedundantSubFoldingTest, ToNegateFoldingTest,
         2, 3)
 ));
 
-#ifdef SPIRV_EFFCEE
 using MatchingInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<bool>>;
 
@@ -6075,7 +6069,6 @@ INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResu
             "OpFunctionEnd",
         9, true)
 ));
-#endif
 
 }  // namespace
 }  // namespace opt

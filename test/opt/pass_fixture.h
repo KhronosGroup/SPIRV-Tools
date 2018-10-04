@@ -22,16 +22,13 @@
 #include <utility>
 #include <vector>
 
+#include "effcee/effcee.h"
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
 #include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.hpp"
-
-#ifdef SPIRV_EFFCEE
-#include "effcee/effcee.h"
-#endif
 
 namespace spvtools {
 namespace opt {
@@ -163,7 +160,6 @@ class PassTest : public TestT {
                                  std::forward<Args>(args)...);
   }
 
-#ifdef SPIRV_EFFCEE
   // Runs a single pass of class |PassT| on the binary assembled from the
   // |original| assembly, then runs an Effcee matcher over the disassembled
   // result, using checks parsed from |original|.  Always skips OpNop.
@@ -181,7 +177,6 @@ class PassTest : public TestT {
         << match_result.message() << "\nChecking result:\n"
         << disassembly;
   }
-#endif
 
   // Adds a pass to be run.
   template <typename PassT, typename... Args>
@@ -232,8 +227,8 @@ class PassTest : public TestT {
   }
 
  private:
-  MessageConsumer consumer_;                // Message consumer.
-  std::unique_ptr<IRContext> context_;      // IR context
+  MessageConsumer consumer_;            // Message consumer.
+  std::unique_ptr<IRContext> context_;  // IR context
   SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
   std::unique_ptr<PassManager> manager_;  // The pass manager.
   uint32_t assemble_options_;

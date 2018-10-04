@@ -2589,7 +2589,6 @@ TEST_F(InlineTest, SetParent) {
   }
 }
 
-#ifdef SPIRV_EFFCEE
 TEST_F(InlineTest, OpKill) {
   const std::string text = R"(
 ; CHECK: OpFunction
@@ -2844,7 +2843,6 @@ TEST_F(InlineTest, OpVariableWithInit) {
 
   SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
-#endif
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //

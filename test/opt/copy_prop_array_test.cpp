@@ -25,7 +25,6 @@ namespace {
 
 using CopyPropArrayPassTest = PassTest<::testing::Test>;
 
-#ifdef SPIRV_EFFCEE
 TEST_F(CopyPropArrayPassTest, BasicPropagateArray) {
   const std::string before =
       R"(
@@ -825,7 +824,6 @@ TEST_F(CopyPropArrayPassTest, IsomorphicTypes3) {
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
   SinglePassRunAndMatch<CopyPropagateArrays>(before, false);
 }
-#endif  // SPIRV_EFFCEE
 
 // This test will place a load before the store.  We cannot propagate in this
 // case.

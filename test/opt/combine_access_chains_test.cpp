@@ -25,7 +25,6 @@ namespace {
 
 using CombineAccessChainsTest = PassTest<::testing::Test>;
 
-#ifdef SPIRV_EFFCEE
 TEST_F(CombineAccessChainsTest, PtrAccessChainFromAccessChainConstant) {
   const std::string text = R"(
 ; CHECK: [[int:%\w+]] = OpTypeInt 32 0
@@ -768,7 +767,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<CombineAccessChains>(text, true);
 }
-#endif  // SPIRV_EFFCEE
 
 }  // namespace
 }  // namespace opt

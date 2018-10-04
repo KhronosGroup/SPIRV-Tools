@@ -26,8 +26,6 @@ namespace {
 
 using CCPTest = PassTest<::testing::Test>;
 
-// TODO(dneto): Add Effcee as required dependency, and make this unconditional.
-#ifdef SPIRV_EFFCEE
 TEST_F(CCPTest, PropagateThroughPhis) {
   const std::string spv_asm = R"(
                OpCapability Shader
@@ -897,7 +895,6 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<CCPPass>(text, true);
 }
-#endif
 
 }  // namespace
 }  // namespace opt
