@@ -3239,6 +3239,72 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, FPRoundingModeFConvert64to16Good) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpCapability Float64
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %_ FPRoundingMode RTE
+%half = OpTypeFloat 16
+%double = OpTypeFloat 64
+%double_1_25 = OpConstant %double 1.25
+%half_ptr = OpTypePointer StorageBuffer %half
+%half_ptr_var = OpVariable %half_ptr StorageBuffer
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%_ = OpFConvert %half %double_1_25
+OpStore %half_ptr_var %_
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, FPRoundingModeNotStoreInFloat16) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpCapability Float64
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %_ FPRoundingMode RTE
+%float = OpTypeFloat 32
+%double = OpTypeFloat 64
+%double_1_25 = OpConstant %double 1.25
+%float_ptr = OpTypePointer StorageBuffer %float
+%float_ptr_var = OpVariable %float_ptr StorageBuffer
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%_ = OpFConvert %float %double_1_25
+OpStore %float_ptr_var %_
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPRoundingMode decoration can be applied only to the "
+                        "Object operand of an OpStore storing through a "
+                        "pointer to a 16-bit floating-point object."));
+}
+
 TEST_F(ValidateDecorations, FPRoundingModeBadStorageClass) {
   std::string spirv = R"(
 OpCapability Shader

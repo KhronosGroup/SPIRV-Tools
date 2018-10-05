@@ -868,6 +868,9 @@ spv_result_t CheckVulkanMemoryModelDeprecatedDecorations(
 }
 
 spv_result_t CheckDecorationsOfConversions(ValidationState_t& vstate) {
+  // Validates FPRoundingMode decoration for Shader Capabilities
+  if (!vstate.HasCapability(SpvCapabilityShader)) return SPV_SUCCESS;
+
   for (const auto& kv : vstate.id_decorations()) {
     const uint32_t id = kv.first;
     const auto& decorations = kv.second;
@@ -911,9 +914,18 @@ spv_result_t CheckDecorationsOfConversions(ValidationState_t& vstate) {
         const auto ptr_inst = vstate.FindDef(store->GetOperandAs<uint32_t>(0));
         const auto ptr_type =
             vstate.FindDef(ptr_inst->GetOperandAs<uint32_t>(0));
-        const auto storage = ptr_type->GetOperandAs<uint32_t>(1);
+
+        const auto half_float_id = ptr_type->GetOperandAs<uint32_t>(2);
+        if (!vstate.IsFloatScalarType(half_float_id) ||
+            vstate.GetBitWidth(half_float_id) != 16) {
+          return vstate.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "FPRoundingMode decoration can be applied only to the "
+                    "Object operand of an OpStore storing through a pointer to "
+                    "a 16-bit floating-point object.";
+        }
 
         // Validates storage class of the pointer to the OpStore
+        const auto storage = ptr_type->GetOperandAs<uint32_t>(1);
         if (storage != SpvStorageClassStorageBuffer &&
             storage != SpvStorageClassUniform &&
             storage != SpvStorageClassPushConstant &&
