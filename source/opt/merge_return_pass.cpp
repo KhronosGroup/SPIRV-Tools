@@ -14,6 +14,7 @@
 
 #include "source/opt/merge_return_pass.h"
 
+#include <source/util/bit_vector.h>
 #include <list>
 #include <memory>
 #include <utility>
@@ -42,7 +43,9 @@ Pass::Status MergeReturnPass::Process() {
 
     modified = true;
     if (is_shader) {
-      ProcessStructured(&function, return_blocks);
+      if (!ProcessStructured(&function, return_blocks)) {
+        return Status::Failure;
+      }
     } else {
       MergeReturnBlocks(&function, return_blocks);
     }
@@ -51,8 +54,18 @@ Pass::Status MergeReturnPass::Process() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-void MergeReturnPass::ProcessStructured(
+bool MergeReturnPass::ProcessStructured(
     Function* function, const std::vector<BasicBlock*>& return_blocks) {
+  if (HasNontrivialUnreachableBlocks(function)) {
+    if (consumer()) {
+      std::string message =
+          "Module contains unreachable blocks during merge return.  Run dead "
+          "branch elimination before merge return.";
+      consumer()(SPV_MSG_ERROR, 0, {0, 0, 0}, message.c_str());
+    }
+    return false;
+  }
+
   AddDummyLoopAroundFunction();
 
   std::list<BasicBlock*> order;
@@ -114,6 +127,7 @@ void MergeReturnPass::ProcessStructured(
   // Invalidate it at this point to make sure it will be rebuilt.
   context()->RemoveDominatorAnalysis(function);
   AddNewPhiNodes();
+  return true;
 }
 
 void MergeReturnPass::CreateReturnBlock() {
@@ -706,6 +720,42 @@ void MergeReturnPass::CreateDummyLoop(BasicBlock* merge_target) {
     cfg()->RegisterBlock(header_block);
     cfg()->AddEdges(start_block);
   }
+}
+
+bool MergeReturnPass::HasNontrivialUnreachableBlocks(Function* function) {
+  utils::BitVector reachable_blocks;
+  cfg()->ForEachBlockInPostOrder(
+      function->entry().get(),
+      [&reachable_blocks](BasicBlock* bb) { reachable_blocks.Set(bb->id()); });
+
+  for (auto& bb : *function) {
+    if (reachable_blocks.Get(bb.id())) {
+      continue;
+    }
+
+    StructuredCFGAnalysis* struct_cfg_analysis =
+        context()->GetStructuedCFGAnalaysis();
+    if (struct_cfg_analysis->IsMergeBlock(bb.id())) {
+      // |bb| must be an empty block ending with OpUnreachable.
+      if (bb.begin()->opcode() != SpvOpUnreachable) {
+        return true;
+      }
+    } else if (struct_cfg_analysis->IsContinueBlock(bb.id())) {
+      // |bb| must be an empty block ending with a branch to the header.
+      Instruction* inst = &*bb.begin();
+      if (inst->opcode() != SpvOpBranch) {
+        return true;
+      }
+
+      if (inst->GetSingleWordInOperand(0) !=
+          struct_cfg_analysis->ContainingLoop(bb.id())) {
+        return true;
+      }
+    } else {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace opt

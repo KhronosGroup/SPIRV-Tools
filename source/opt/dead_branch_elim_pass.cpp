@@ -93,7 +93,7 @@ BasicBlock* DeadBranchElimPass::GetParentBlock(uint32_t id) {
 
 bool DeadBranchElimPass::MarkLiveBlocks(
     Function* func, std::unordered_set<BasicBlock*>* live_blocks) {
-  StructuredCFGAnalysis cfgAnalysis(context());
+  StructuredCFGAnalysis* cfgAnalysis = context()->GetStructuedCFGAnalaysis();
 
   std::unordered_set<BasicBlock*> continues;
   std::vector<BasicBlock*> stack;
@@ -164,7 +164,7 @@ bool DeadBranchElimPass::MarkLiveBlocks(
       if (mergeInst && mergeInst->opcode() == SpvOpSelectionMerge) {
         Instruction* first_break = FindFirstExitFromSelectionMerge(
             live_lab_id, mergeInst->GetSingleWordInOperand(0),
-            cfgAnalysis.LoopMergeBlock(live_lab_id));
+            cfgAnalysis->LoopMergeBlock(live_lab_id));
         if (first_break == nullptr) {
           context()->KillInst(mergeInst);
         } else {
