@@ -5807,6 +5807,59 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<AggressiveDCEPass>(test, test, true, true);
 }
+
+TEST_F(AggressiveDCETest, DeadHlslCounterBufferGOOGLE) {
+  // We are able to remove "local2" because it is not loaded, but have to keep
+  // the stores to "local1".
+  const std::string test =
+      R"(
+; CHECK-NOT: OpDecorateId
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK-NOT: OpVariable
+; CHECK: [[ac:%\w+]] = OpAccessChain {{%\w+}} [[var]]
+; CHECK: OpStore [[ac]]
+               OpCapability Shader
+               OpExtension "SPV_GOOGLE_hlsl_functionality1"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 32 1 1
+               OpSource HLSL 600
+               OpDecorate %_runtimearr_v2float ArrayStride 8
+               OpMemberDecorate %_struct_3 0 Offset 0
+               OpDecorate %_struct_3 BufferBlock
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpDecorate %_struct_4 BufferBlock
+               OpDecorateId %5 HlslCounterBufferGOOGLE %6
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 0
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 1
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+%_runtimearr_v2float = OpTypeRuntimeArray %v2float
+  %_struct_3 = OpTypeStruct %_runtimearr_v2float
+%_ptr_Uniform__struct_3 = OpTypePointer Uniform %_struct_3
+        %int = OpTypeInt 32 1
+  %_struct_4 = OpTypeStruct %int
+%_ptr_Uniform__struct_4 = OpTypePointer Uniform %_struct_4
+       %void = OpTypeVoid
+         %13 = OpTypeFunction %void
+         %19 = OpConstantNull %v2float
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform_v2float = OpTypePointer Uniform %v2float
+          %5 = OpVariable %_ptr_Uniform__struct_3 Uniform
+          %6 = OpVariable %_ptr_Uniform__struct_4 Uniform
+          %1 = OpFunction %void None %13
+         %22 = OpLabel
+         %23 = OpAccessChain %_ptr_Uniform_v2float %5 %int_0 %int_0
+               OpStore %23 %19
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<AggressiveDCEPass>(test, true);
+}
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
