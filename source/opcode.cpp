@@ -391,30 +391,34 @@ bool spvOpcodeIsBranch(SpvOp opcode) {
   }
 }
 
-bool spvOpcodeIsAtomicOp(const SpvOp opcode) {
+bool spvOpcodeIsAtomicWithLoad(const SpvOp opcode) {
   switch (opcode) {
-    case SpvOpAtomicLoad:
-    case SpvOpAtomicStore:
-    case SpvOpAtomicExchange:
-    case SpvOpAtomicCompareExchange:
-    case SpvOpAtomicCompareExchangeWeak:
-    case SpvOpAtomicIIncrement:
-    case SpvOpAtomicIDecrement:
-    case SpvOpAtomicIAdd:
-    case SpvOpAtomicISub:
-    case SpvOpAtomicSMin:
-    case SpvOpAtomicUMin:
-    case SpvOpAtomicSMax:
-    case SpvOpAtomicUMax:
-    case SpvOpAtomicAnd:
-    case SpvOpAtomicOr:
-    case SpvOpAtomicXor:
-    case SpvOpAtomicFlagTestAndSet:
-    case SpvOpAtomicFlagClear:
-      return true;
-    default:
-      return false;
+  case SpvOpAtomicLoad:
+  case SpvOpAtomicExchange:
+  case SpvOpAtomicCompareExchange:
+  case SpvOpAtomicCompareExchangeWeak:
+  case SpvOpAtomicIIncrement:
+  case SpvOpAtomicIDecrement:
+  case SpvOpAtomicIAdd:
+  case SpvOpAtomicISub:
+  case SpvOpAtomicSMin:
+  case SpvOpAtomicUMin:
+  case SpvOpAtomicSMax:
+  case SpvOpAtomicUMax:
+  case SpvOpAtomicAnd:
+  case SpvOpAtomicOr:
+  case SpvOpAtomicXor:
+  case SpvOpAtomicFlagTestAndSet:
+    return true;
+  default:
+    return false;
   }
+}
+
+bool spvOpcodeIsAtomicOp(const SpvOp opcode) {
+  return (spvOpcodeIsAtomicWithLoad(opcode) ||
+    opcode == SpvOpAtomicStore ||
+    opcode == SpvOpAtomicFlagClear);
 }
 
 bool spvOpcodeIsReturn(SpvOp opcode) {

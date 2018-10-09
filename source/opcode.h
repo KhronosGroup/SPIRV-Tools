@@ -100,6 +100,10 @@ bool spvOpcodeIsDecoration(const SpvOp opcode);
 // function only considers core instructions.
 bool spvOpcodeIsLoad(const SpvOp opcode);
 
+// Returns true if the opcode is an atomic operation that uses the original
+// value.
+bool spvOpcodeIsAtomicWithLoad(const SpvOp opcode);
+
 // Returns true if the opcode is an atomic operation.
 bool spvOpcodeIsAtomicOp(const SpvOp opcode);
 
