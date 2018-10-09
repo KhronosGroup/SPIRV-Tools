@@ -159,6 +159,8 @@ OpMemoryModel Physical32 OpenCL
 %f32vec4_var = OpVariable %f32vec4_ptr Workgroup
 
 %f32_ptr_function = OpTypePointer Function %f32
+%f32_ptr_uniformconstant = OpTypePointer UniformConstant %f32
+%f32_uc_var = OpVariable %f32_ptr_uniformconstant UniformConstant
 
 %main = OpFunction %void None %func
 %main_entry = OpLabel
@@ -203,6 +205,31 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanSuccess) {
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, AtomicStoreOpenCLFunctionPointerStorageTypeSuccess) {
+  const std::string body = R"(
+%f32_var_function = OpVariable %f32_ptr_function Function
+OpAtomicStore %f32_var_function %device %relaxed %f32_1
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_OPENCL_1_2);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+}
+
+TEST_F(ValidateAtomics, AtomicStoreVulkanFunctionPointerStorageType) {
+  const std::string body = R"(
+%f32_var_function = OpVariable %f32_ptr_function Function
+OpAtomicStore %f32_var_function %device %relaxed %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicStore: expected Pointer Storage Class to be Uniform, "
+                "Workgroup, CrossWorkgroup, Generic, AtomicCounter, Image or "
+                "StorageBuffer"));
 }
 
 // TODO(atgoo@github.com): the corresponding check fails Vulkan CTS,
@@ -488,8 +515,7 @@ OpAtomicStore %f32vec4_var %device %relaxed %f32_1
 
 TEST_F(ValidateAtomics, AtomicStoreWrongPointerStorageType) {
   const std::string body = R"(
-%f32_var_function = OpVariable %f32_ptr_function Function
-OpAtomicStore %f32_var_function %device %relaxed %f32_1
+OpAtomicStore %f32_uc_var %device %relaxed %f32_1
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
