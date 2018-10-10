@@ -217,23 +217,57 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
   return baseAlignment;
 }
 
+// Returns scalar alignment of a type.
+uint32_t getScalarAlignment(uint32_t type_id, ValidationState_t& vstate) {
+  const auto inst = vstate.FindDef(type_id);
+  const auto& words = inst->words();
+  switch (inst->opcode()) {
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+      return words[2] / 8;
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeArray:
+    case SpvOpTypeRuntimeArray: {
+      const auto compositeMemberTypeId = words[2];
+      return getScalarAlignment(compositeMemberTypeId, vstate);
+    }
+    case SpvOpTypeStruct: {
+      const auto members = getStructMembers(type_id, vstate);
+      uint32_t max_member_alignment = 1;
+      for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
+           memberIdx < numMembers; ++memberIdx) {
+        const auto id = members[memberIdx];
+        uint32_t member_alignment = getScalarAlignment(id, vstate);
+        if (member_alignment > max_member_alignment) {
+          max_member_alignment = member_alignment;
+        }
+      }
+      return max_member_alignment;
+    } break;
+    default:
+      assert(0);
+      break;
+  }
+
+  return 1;
+}
+
 // Returns size of a struct member. Doesn't include padding at the end of struct
 // or array.  Assumes that in the struct case, all members have offsets.
-uint32_t getSize(uint32_t member_id, bool roundUp,
-                 const LayoutConstraints& inherited,
+uint32_t getSize(uint32_t member_id, const LayoutConstraints& inherited,
                  MemberConstraints& constraints, ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(member_id);
   const auto& words = inst->words();
   switch (inst->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
-      return getBaseAlignment(member_id, roundUp, inherited, constraints,
-                              vstate);
+      return words[2] / 8;
     case SpvOpTypeVector: {
       const auto componentId = words[2];
       const auto numComponents = words[3];
       const auto componentSize =
-          getSize(componentId, roundUp, inherited, constraints, vstate);
+          getSize(componentId, inherited, constraints, vstate);
       const auto size = componentSize * numComponents;
       return size;
     }
@@ -244,7 +278,7 @@ uint32_t getSize(uint32_t member_id, bool roundUp,
       const uint32_t num_elem = sizeInst->words()[3];
       const uint32_t elem_type = words[2];
       const uint32_t elem_size =
-          getSize(elem_type, roundUp, inherited, constraints, vstate);
+          getSize(elem_type, inherited, constraints, vstate);
       // Account for gaps due to alignments in the first N-1 elements,
       // then add the size of the last element.
       const auto size =
@@ -264,7 +298,7 @@ uint32_t getSize(uint32_t member_id, bool roundUp,
         const auto num_rows = component_inst->words()[3];
         const auto scalar_elem_type = component_inst->words()[2];
         const uint32_t scalar_elem_size =
-            getSize(scalar_elem_type, roundUp, inherited, constraints, vstate);
+            getSize(scalar_elem_type, inherited, constraints, vstate);
         return (num_rows - 1) * inherited.matrix_stride +
                num_columns * scalar_elem_size;
       }
@@ -286,8 +320,7 @@ uint32_t getSize(uint32_t member_id, bool roundUp,
       // has been checked earlier in the flow.
       assert(offset != 0xffffffff);
       const auto& constraint = constraints[std::make_pair(lastMember, lastIdx)];
-      return offset +
-             getSize(lastMember, roundUp, constraint, constraints, vstate);
+      return offset + getSize(lastMember, constraint, constraints, vstate);
     }
     default:
       assert(0);
@@ -306,7 +339,7 @@ bool hasImproperStraddle(uint32_t id, uint32_t offset,
                          const LayoutConstraints& inherited,
                          MemberConstraints& constraints,
                          ValidationState_t& vstate) {
-  const auto size = getSize(id, false, inherited, constraints, vstate);
+  const auto size = getSize(id, inherited, constraints, vstate);
   const auto F = offset;
   const auto L = offset + size - 1;
   if (size <= 16) {
@@ -334,19 +367,28 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                          ValidationState_t& vstate) {
   if (vstate.options()->skip_block_layout) return SPV_SUCCESS;
 
+  // Relaxed layout and scalar layout can both be in effect at the same time.
+  // For example, relaxed layout is implied by Vulkan 1.1.  But scalar layout
+  // is more permissive than relaxed layout.
+  const bool relaxed_block_layout = vstate.IsRelaxedBlockLayout();
+  const bool scalar_block_layout = vstate.options()->scalar_block_layout;
+
   auto fail = [&vstate, struct_id, storage_class_str, decoration_str,
-               blockRules](uint32_t member_idx) -> DiagnosticStream {
+               blockRules, relaxed_block_layout,
+               scalar_block_layout](uint32_t member_idx) -> DiagnosticStream {
     DiagnosticStream ds =
         std::move(vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(struct_id))
                   << "Structure id " << struct_id << " decorated as "
                   << decoration_str << " for variable in " << storage_class_str
-                  << " storage class must follow standard "
+                  << " storage class must follow "
+                  << (scalar_block_layout
+                          ? "scalar "
+                          : (relaxed_block_layout ? "relaxed " : "standard "))
                   << (blockRules ? "uniform buffer" : "storage buffer")
                   << " layout rules: member " << member_idx << " ");
     return ds;
   };
 
-  const bool relaxed_block_layout = vstate.IsRelaxedBlockLayout();
   const auto& members = getStructMembers(struct_id, vstate);
 
   // To check for member overlaps, we want to traverse the members in
@@ -389,20 +431,25 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
     auto id = members[member_offset.member];
     const LayoutConstraints& constraint =
         constraints[std::make_pair(struct_id, uint32_t(memberIdx))];
+    // Scalar layout takes precedence because it's more permissive, and implying
+    // an alignment that divides evenly into the alignment that would otherwise
+    // be used.
     const auto alignment =
-        getBaseAlignment(id, blockRules, constraint, constraints, vstate);
+        scalar_block_layout
+            ? getScalarAlignment(id, vstate)
+            : getBaseAlignment(id, blockRules, constraint, constraints, vstate);
     const auto inst = vstate.FindDef(id);
     const auto opcode = inst->opcode();
-    const auto size = getSize(id, blockRules, constraint, constraints, vstate);
+    const auto size = getSize(id, constraint, constraints, vstate);
     // Check offset.
     if (offset == 0xffffffff)
       return fail(memberIdx) << "is missing an Offset decoration";
-    if (relaxed_block_layout && opcode == SpvOpTypeVector) {
+    if (!scalar_block_layout && relaxed_block_layout &&
+        opcode == SpvOpTypeVector) {
       // In relaxed block layout, the vector offset must be aligned to the
       // vector's scalar element type.
       const auto componentId = inst->words()[2];
-      const auto scalar_alignment = getBaseAlignment(
-          componentId, blockRules, constraint, constraints, vstate);
+      const auto scalar_alignment = getScalarAlignment(componentId, vstate);
       if (!IsAlignedTo(offset, scalar_alignment)) {
         return fail(memberIdx)
                << "at offset " << offset
@@ -410,7 +457,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       }
     } else {
       // Without relaxed block layout, the offset must be divisible by the
-      // base alignment.
+      // alignment requirement.
       if (!IsAlignedTo(offset, alignment)) {
         return fail(memberIdx)
                << "at offset " << offset << " is not aligned to " << alignment;
@@ -420,7 +467,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       return fail(memberIdx) << "at offset " << offset
                              << " overlaps previous member ending at offset "
                              << nextValidOffset - 1;
-    if (relaxed_block_layout) {
+    if (!scalar_block_layout && relaxed_block_layout) {
       // Check improper straddle of vectors.
       if (SpvOpTypeVector == opcode &&
           hasImproperStraddle(id, offset, constraint, constraints, vstate))
@@ -463,7 +510,8 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       }
     }
     nextValidOffset = offset + size;
-    if (blockRules && (SpvOpTypeArray == opcode || SpvOpTypeStruct == opcode)) {
+    if (!scalar_block_layout && blockRules &&
+        (SpvOpTypeArray == opcode || SpvOpTypeStruct == opcode)) {
       // Uniform block rules don't permit anything in the padding of a struct
       // or array.
       nextValidOffset = align(nextValidOffset, alignment);

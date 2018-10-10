@@ -43,12 +43,14 @@ struct spv_validator_options_t {
         relax_struct_store(false),
         relax_logical_pointer(false),
         relax_block_layout(false),
+        scalar_block_layout(false),
         skip_block_layout(false) {}
 
   validator_universal_limits_t universal_limits_;
   bool relax_struct_store;
   bool relax_logical_pointer;
   bool relax_block_layout;
+  bool scalar_block_layout;
   bool skip_block_layout;
 };
 
