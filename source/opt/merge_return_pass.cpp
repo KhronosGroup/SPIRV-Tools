@@ -14,7 +14,6 @@
 
 #include "source/opt/merge_return_pass.h"
 
-#include <source/util/bit_vector.h>
 #include <list>
 #include <memory>
 #include <utility>
@@ -23,6 +22,7 @@
 #include "source/opt/ir_builder.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/reflect.h"
+#include "source/util/bit_vector.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {

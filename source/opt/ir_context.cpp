@@ -55,6 +55,9 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisValueNumberTable) {
     BuildValueNumberTable();
   }
+  if (set & kAnalysisStructuredCFG) {
+    BuildStructuredCFGAnalysis();
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
@@ -88,6 +91,9 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   }
   if (analyses_to_invalidate & kAnalysisValueNumberTable) {
     vn_table_.reset(nullptr);
+  }
+  if (analyses_to_invalidate & kAnalysisStructuredCFG) {
+    struct_cfg_analysis_.reset(nullptr);
   }
 
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
