@@ -135,6 +135,7 @@ class TestPerformanceOptimizationPasses(expect.ValidObjectFile1_3,
 
   flags = ['-O']
   expected_passes = [
+      'eliminate-dead-branches',
       'merge-return',
       'inline-entry-points-exhaustive',
       'eliminate-dead-code-aggressive',
@@ -181,6 +182,7 @@ class TestSizeOptimizationPasses(expect.ValidObjectFile1_3,
 
   flags = ['-Os']
   expected_passes = [
+      'eliminate-dead-branches',
       'merge-return',
       'inline-entry-points-exhaustive',
       'eliminate-dead-code-aggressive',
