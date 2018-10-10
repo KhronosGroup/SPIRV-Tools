@@ -484,11 +484,33 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxStoreStruct(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxLogicalPointer(
     spv_validator_options options, bool val);
 
-// Records whether or not the validator should relax the rules on block layout.
+// Records whether the validator should use "relaxed" block layout rules.
+// Relaxed layout rules are described by Vulkan extension
+// VK_KHR_relaxed_block_layout, and they affect uniform blocks, storage blocks,
+// and push constants.
 //
-// When relaxed, it will enable VK_KHR_relaxed_block_layout when validating
-// standard uniform/storage block layout.
+// This is enabled by default when targeting Vulkan 1.1 or later.
+// Relaxed layout is more permissive than the default rules in Vulkan 1.0.
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxBlockLayout(
+    spv_validator_options options, bool val);
+
+// Records whether the validator should use "scalar" block layout rules.
+// Scalar layout rules are more permissive than relaxed block layout.
+//
+// See Vulkan extnesion VK_EXT_scalar_block_layout.  The scalar alignment is
+// defined as follows:
+// - scalar alignment of a scalar is the scalar size
+// - scalar alignment of a vector is the scalar alignment of its component
+// - scalar alignment of a matrix is the scalar alignment of its component
+// - scalar alignment of an array is the scalar alignment of its element
+// - scalar alignment of a struct is the max scalar alignment among its
+//   members
+//
+// For a struct in Uniform, StorageClass, or PushConstant:
+// - a member Offset must be a multiple of the member's scalar alignment
+// - ArrayStride or MatrixStride must be a multiple of the array or matrix
+//   scalar alignment
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetScalarBlockLayout(
     spv_validator_options options, bool val);
 
 // Records whether or not the validator should skip validating standard
