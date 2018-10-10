@@ -1019,6 +1019,127 @@ OpFunctionEnd
   SinglePassRunAndMatch<MergeReturnPass>(test, false);
 }
 
+TEST_F(MergeReturnPassTest,
+       StructuredControlFlowWithNonTrivialUnreachableMerge) {
+  const std::string before =
+      R"(
+OpCapability Addresses
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %6 "simple_shader"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%6 = OpFunction %2 None %1
+%7 = OpLabel
+OpSelectionMerge %10 None
+OpBranchConditional %4 %8 %9
+%8 = OpLabel
+OpReturn
+%9 = OpLabel
+OpReturn
+%10 = OpLabel
+%11 = OpUndef %3
+OpUnreachable
+OpFunctionEnd
+)";
+
+  std::vector<Message> messages = {
+      {SPV_MSG_ERROR, nullptr, 0, 0,
+       "Module contains unreachable blocks during merge return.  Run dead "
+       "branch elimination before merge return."}};
+  SetMessageConsumer(GetTestMessageConsumer(messages));
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  auto result = SinglePassRunToBinary<MergeReturnPass>(before, false);
+  EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
+  EXPECT_TRUE(messages.empty());
+}
+
+TEST_F(MergeReturnPassTest,
+       StructuredControlFlowWithNonTrivialUnreachableContinue) {
+  const std::string before =
+      R"(
+OpCapability Addresses
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %6 "simple_shader"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%6 = OpFunction %2 None %1
+%7 = OpLabel
+OpBranch %header
+%header = OpLabel
+OpLoopMerge %merge %continue None
+OpBranchConditional %4 %8 %merge
+%8 = OpLabel
+OpReturn
+%continue = OpLabel
+%11 = OpUndef %3
+OpBranch %header
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::vector<Message> messages = {
+      {SPV_MSG_ERROR, nullptr, 0, 0,
+       "Module contains unreachable blocks during merge return.  Run dead "
+       "branch elimination before merge return."}};
+  SetMessageConsumer(GetTestMessageConsumer(messages));
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  auto result = SinglePassRunToBinary<MergeReturnPass>(before, false);
+  EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
+  EXPECT_TRUE(messages.empty());
+}
+
+TEST_F(MergeReturnPassTest, StructuredControlFlowWithUnreachableBlock) {
+  const std::string before =
+      R"(
+OpCapability Addresses
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %6 "simple_shader"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%6 = OpFunction %2 None %1
+%7 = OpLabel
+OpBranch %header
+%header = OpLabel
+OpLoopMerge %merge %continue None
+OpBranchConditional %4 %8 %merge
+%8 = OpLabel
+OpReturn
+%continue = OpLabel
+OpBranch %header
+%merge = OpLabel
+OpReturn
+%unreachable = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  std::vector<Message> messages = {
+      {SPV_MSG_ERROR, nullptr, 0, 0,
+       "Module contains unreachable blocks during merge return.  Run dead "
+       "branch elimination before merge return."}};
+  SetMessageConsumer(GetTestMessageConsumer(messages));
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  auto result = SinglePassRunToBinary<MergeReturnPass>(before, false);
+  EXPECT_EQ(Pass::Status::Failure, std::get<1>(result));
+  EXPECT_TRUE(messages.empty());
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

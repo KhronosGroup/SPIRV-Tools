@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "gmock/gmock.h"
+#include "pass_utils.h"
 #include "test/opt/assembly_builder.h"
 #include "test/opt/pass_fixture.h"
 
@@ -432,34 +433,6 @@ TEST_F(ReplaceInvalidOpcodeTest, BarrierReplace) {
             OpFunctionEnd)";
 
   SinglePassRunAndMatch<ReplaceInvalidOpcodePass>(text, false);
-}
-
-struct Message {
-  spv_message_level_t level;
-  const char* source_file;
-  uint32_t line_number;
-  uint32_t column_number;
-  const char* message;
-};
-
-MessageConsumer GetTestMessageConsumer(
-    std::vector<Message>& expected_messages) {
-  return [&expected_messages](spv_message_level_t level, const char* source,
-                              const spv_position_t& position,
-                              const char* message) {
-    EXPECT_TRUE(!expected_messages.empty());
-    if (expected_messages.empty()) {
-      return;
-    }
-
-    EXPECT_EQ(expected_messages[0].level, level);
-    EXPECT_EQ(expected_messages[0].line_number, position.line);
-    EXPECT_EQ(expected_messages[0].column_number, position.column);
-    EXPECT_STREQ(expected_messages[0].source_file, source);
-    EXPECT_STREQ(expected_messages[0].message, message);
-
-    expected_messages.erase(expected_messages.begin());
-  };
 }
 
 TEST_F(ReplaceInvalidOpcodeTest, MessageTest) {
