@@ -1777,6 +1777,40 @@ OpFunctionEnd
                 "  OpSwitch %uint_0 %10 0 %11 1 %12 2 %13"));
 }
 
+TEST_F(ValidateCFG, GoodUnreachableSwitch) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main"
+OpExecutionMode %2 OriginUpperLeft
+%3 = OpTypeVoid
+%4 = OpTypeFunction %3
+%5 = OpTypeBool
+%6 = OpConstantTrue %5
+%7 = OpTypeInt 32 1
+%9 = OpConstant %7 0
+%2 = OpFunction %3 None %4
+%10 = OpLabel
+OpSelectionMerge %11 None
+OpBranchConditional %6 %12 %13
+%12 = OpLabel
+OpReturn
+%13 = OpLabel
+OpReturn
+%11 = OpLabel
+OpSelectionMerge %14 None
+OpSwitch %9 %14 0 %15
+%15 = OpLabel
+OpBranch %14
+%14 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateCFG, InvalidCaseExit) {
   const std::string text = R"(
 OpCapability Shader

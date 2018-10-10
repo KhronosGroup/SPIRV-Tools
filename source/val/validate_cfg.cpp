@@ -336,7 +336,9 @@ spv_result_t FindCaseFallThrough(
       }
 
       if (*case_fall_through == 0u) {
-        *case_fall_through = block->id();
+        if (target_block != block) {
+          *case_fall_through = block->id();
+        }
       } else if (*case_fall_through != block->id()) {
         // Case construct has at most one branch to another case construct.
         return _.diag(SPV_ERROR_INVALID_CFG, target_block->label())
