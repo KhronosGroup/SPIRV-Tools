@@ -90,6 +90,19 @@ class ValidationState_t {
     // Allow an OpTypeInt with 8 bit width to be used in more than just int
     // conversion opcodes
     bool use_int8_type = false;
+
+    // Use scalar block layout. See VK_EXT_scalar_block_layout:
+    // Defines scalar alignment:
+    // - scalar alignment equals the scalar size in bytes
+    // - array alignment is same as its element alignment
+    // - array alignment is max alignment of any of its members
+    // - vector alignment is same as component alignment
+    // - matrix alignment is same as component alignment
+    // For struct in Uniform, StorageBuffer, PushConstant:
+    // - Offset of a member is multiple of scalar alignment of that member
+    // - ArrayStride and MatrixStride are multiples of scalar alignment
+    // Members need not be listed in offset order
+    bool scalar_block_layout = false;
   };
 
   ValidationState_t(const spv_const_context context,
