@@ -163,7 +163,7 @@ class MergeReturnPass : public MemPass {
   // statement.  It is assumed that |function| has structured control flow, and
   // that |return_blocks| is a list of all of the basic blocks in |function|
   // that have a return.
-  void ProcessStructured(Function* function,
+  bool ProcessStructured(Function* function,
                          const std::vector<BasicBlock*>& return_blocks);
 
   // Changes an OpReturn* or OpUnreachable instruction at the end of |block|
@@ -322,6 +322,7 @@ class MergeReturnPass : public MemPass {
   // it is mapped to it original single predcessor.  It is assumed there are no
   // values that will need a phi on the new edges.
   std::unordered_map<BasicBlock*, BasicBlock*> new_merge_nodes_;
+  bool HasNontrivialUnreachableBlocks(Function* function);
 };
 
 }  // namespace opt

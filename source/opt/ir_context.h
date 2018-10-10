@@ -37,6 +37,7 @@
 #include "source/opt/module.h"
 #include "source/opt/register_pressure.h"
 #include "source/opt/scalar_analysis.h"
+#include "source/opt/struct_cfg_analysis.h"
 #include "source/opt/type_manager.h"
 #include "source/opt/value_number_table.h"
 #include "source/util/make_unique.h"
@@ -71,7 +72,8 @@ class IRContext {
     kAnalysisScalarEvolution = 1 << 8,
     kAnalysisRegisterPressure = 1 << 9,
     kAnalysisValueNumberTable = 1 << 10,
-    kAnalysisEnd = 1 << 11
+    kAnalysisStructuredCFG = 1 << 11,
+    kAnalysisEnd = 1 << 12
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
@@ -225,6 +227,15 @@ class IRContext {
       BuildValueNumberTable();
     }
     return vn_table_.get();
+  }
+
+  // Returns a pointer to a StructuredCFGAnalysis.  If the analysis is invalid,
+  // it is rebuilt first.
+  StructuredCFGAnalysis* GetStructuedCFGAnalaysis() {
+    if (!AreAnalysesValid(kAnalysisStructuredCFG)) {
+      BuildStructuredCFGAnalysis();
+    }
+    return struct_cfg_analysis_.get();
   }
 
   // Returns a pointer to a liveness analysis.  If the liveness analysis is
@@ -509,6 +520,13 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisValueNumberTable;
   }
 
+  // Builds the structured CFG analysis from scratch, even if it was already
+  // valid.
+  void BuildStructuredCFGAnalysis() {
+    struct_cfg_analysis_ = MakeUnique<StructuredCFGAnalysis>(this);
+    valid_analyses_ = valid_analyses_ | kAnalysisStructuredCFG;
+  }
+
   // Removes all computed dominator and post-dominator trees. This will force
   // the context to rebuild the trees on demand.
   void ResetDominatorAnalysis() {
@@ -618,6 +636,8 @@ class IRContext {
   std::unique_ptr<ValueNumberTable> vn_table_;
 
   std::unique_ptr<InstructionFolder> inst_folder_;
+
+  std::unique_ptr<StructuredCFGAnalysis> struct_cfg_analysis_;
 
   // The maximum legal value for the id bound.
   uint32_t max_id_bound_;

@@ -149,7 +149,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses() {
-  return RegisterPass(CreateMergeReturnPass())
+  return RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreatePrivateToLocalPass())
@@ -186,7 +187,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
-  return RegisterPass(CreateMergeReturnPass())
+  return RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreatePrivateToLocalPass())
