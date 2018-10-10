@@ -3177,7 +3177,7 @@ TEST_F(FusionLegalTest, OuterloopWithBreakContinueInInner) {
          %21 = OpLabel
          %29 = OpSMod %6 %96 %28
          %30 = OpIEqual %17 %29 %9
-               OpSelectionMerge %32 None
+               OpSelectionMerge %23 None
                OpBranchConditional %30 %31 %48
          %31 = OpLabel
          %44 = OpAccessChain %7 %41 %91 %96
@@ -3224,7 +3224,7 @@ TEST_F(FusionLegalTest, OuterloopWithBreakContinueInInner) {
          %72 = OpSMod %6 %93 %28
          %73 = OpIEqual %17 %72 %9
                OpSelectionMerge %75 None
-               OpBranchConditional %73 %74 %85
+               OpBranchConditional %73 %74 %66
          %74 = OpLabel
          %81 = OpAccessChain %7 %38 %92 %93
          %82 = OpLoad %6 %81
@@ -3232,8 +3232,6 @@ TEST_F(FusionLegalTest, OuterloopWithBreakContinueInInner) {
          %84 = OpAccessChain %7 %76 %92 %93
                OpStore %84 %83
                OpBranch %75
-         %85 = OpLabel
-               OpBranch %66
          %75 = OpLabel
                OpBranch %67
          %67 = OpLabel
