@@ -434,6 +434,46 @@ INSTANTIATE_TEST_CASE_P(TestCase, IntegerInstructionFoldingTest,
           "%2 = OpBitwiseAnd %uint %load %uint_0\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
+      2, 0),
+  // Test case 17: fold 1/0 (signed)
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpSDiv %int %int_1 %int_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 0),
+  // Test case 18: fold 1/0 (unsigned)
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpUDiv %uint %uint_1 %uint_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 0),
+  // Test case 19: fold OpSRem 1 0 (signed)
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpSRem %int %int_1 %int_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 0),
+  // Test case 20: fold 1%0 (signed)
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpSMod %int %int_1 %int_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 0),
+  // Test case 21: fold 1%0 (unsigned)
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpUMod %uint %uint_1 %uint_0\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
       2, 0)
 ));
 // clang-format on
