@@ -449,10 +449,6 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   bool IsReadOnlyVariableShaders() const;
   bool IsReadOnlyVariableKernel() const;
 
-  // Returns true if the result of |inst| can be used as the base image for an
-  // instruction that samples a image, reads an image, or writes to an image.
-  bool IsValidBaseImage() const;
-
   IRContext* context_;  // IR Context
   SpvOp opcode_;        // Opcode
   bool has_type_id_;    // True if the instruction has a type id
