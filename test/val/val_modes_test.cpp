@@ -720,6 +720,20 @@ OpExecutionMode %main LocalSize 1 1 1
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateModeExecution, TaskNVLocalSize) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability MeshShadingNV
+OpExtension "SPV_NV_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint TaskNV %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateModeExecution, MeshNVOutputPoints) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -755,6 +769,23 @@ OpCapability MeshShadingNV
 OpExtension "SPV_NV_mesh_shader"
 OpMemoryModel Logical GLSL450
 OpEntryPoint MeshNV %main "main"
+OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateModeExecution, TaskNVLocalSizeId) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability MeshShadingNV
+OpExtension "SPV_NV_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint TaskNV %main "main"
 OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
 %int = OpTypeInt 32 0
 %int_1 = OpConstant %int 1
