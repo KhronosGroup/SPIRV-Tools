@@ -187,6 +187,7 @@ Instruction* Instruction::GetBaseAddress() const {
     case SpvOpStore:
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:
+    case SpvOpImageTexelPointer:
     case SpvOpCopyObject:
       // A load or store through a pointer.
       assert(base_inst->IsValidBasePointer() &&
