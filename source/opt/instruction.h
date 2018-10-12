@@ -349,6 +349,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // uniform buffer.
   bool IsVulkanUniformBuffer() const;
 
+  // Returns true if the instruction is an atom operation that uses original
+  // value.
+  inline bool IsAtomicWithLoad() const;
+
   // Returns true if the instruction is an atom operation.
   inline bool IsAtomicOp() const;
 
@@ -727,6 +731,10 @@ bool Instruction::IsDecoration() const {
 }
 
 bool Instruction::IsLoad() const { return spvOpcodeIsLoad(opcode()); }
+
+bool Instruction::IsAtomicWithLoad() const {
+  return spvOpcodeIsAtomicWithLoad(opcode());
+}
 
 bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode()); }
 

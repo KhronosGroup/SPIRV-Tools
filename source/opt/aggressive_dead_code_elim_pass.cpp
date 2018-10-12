@@ -439,7 +439,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       AddBreaksAndContinuesToWorklist(mergeInst);
     }
     // If local load, add all variable's stores if variable not already live
-    if (liveInst->opcode() == SpvOpLoad) {
+    if (liveInst->opcode() == SpvOpLoad || liveInst->IsAtomicWithLoad()) {
       uint32_t varId;
       (void)GetPtr(liveInst, &varId);
       if (varId != 0) {
