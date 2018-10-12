@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "external/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "include/spirv-tools/libspirv.h"
 #include "include/spirv-tools/libspirv.hpp"
 
