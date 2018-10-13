@@ -916,12 +916,12 @@ spv_result_t CheckDecorationsOfConversions(ValidationState_t& vstate) {
             vstate.FindDef(ptr_inst->GetOperandAs<uint32_t>(0));
 
         const auto half_float_id = ptr_type->GetOperandAs<uint32_t>(2);
-        if (!vstate.IsFloatScalarType(half_float_id) ||
+        if (!vstate.IsFloatScalarOrVectorType(half_float_id) ||
             vstate.GetBitWidth(half_float_id) != 16) {
           return vstate.diag(SPV_ERROR_INVALID_ID, inst)
                  << "FPRoundingMode decoration can be applied only to the "
                     "Object operand of an OpStore storing through a pointer to "
-                    "a 16-bit floating-point object.";
+                    "a 16-bit floating-point scalar or vector object.";
         }
 
         // Validates storage class of the pointer to the OpStore
