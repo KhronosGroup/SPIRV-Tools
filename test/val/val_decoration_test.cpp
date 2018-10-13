@@ -3176,6 +3176,39 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, FPRoundingModeVectorGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability StorageBuffer16BitAccess
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %_ FPRoundingMode RTE
+%half = OpTypeFloat 16
+%float = OpTypeFloat 32
+%v2half = OpTypeVector %half 2
+%v2float = OpTypeVector %float 2
+%float_1_25 = OpConstant %float 1.25
+%floats = OpConstantComposite %v2float %float_1_25 %float_1_25
+%halfs_ptr = OpTypePointer StorageBuffer %v2half
+%halfs_ptr_var = OpVariable %halfs_ptr StorageBuffer
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%_ = OpFConvert %v2half %floats
+OpStore %halfs_ptr_var %_
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
 TEST_F(ValidateDecorations, FPRoundingModeNotOpFConvert) {
   std::string spirv = R"(
 OpCapability Shader
@@ -3299,10 +3332,11 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("FPRoundingMode decoration can be applied only to the "
-                        "Object operand of an OpStore storing through a "
-                        "pointer to a 16-bit floating-point object."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("FPRoundingMode decoration can be applied only to the "
+                "Object operand of an OpStore storing through a "
+                "pointer to a 16-bit floating-point scalar or vector object."));
 }
 
 TEST_F(ValidateDecorations, FPRoundingModeBadStorageClass) {
