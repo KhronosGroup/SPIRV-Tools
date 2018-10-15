@@ -219,8 +219,7 @@ void AggressiveDCEPass::ComputeBlock2HeaderMaps(
     bool is_header =
         IsStructuredHeader(*bi, &mergeInst, &branchInst, &mergeBlockId);
     // Map header block to next enclosing header.
-    if (is_header)
-      header2nextHeaderBranch_[*bi] = currentHeaderBranch.top();
+    if (is_header) header2nextHeaderBranch_[*bi] = currentHeaderBranch.top();
     // If this is a loop header, update state first so the block will map to
     // itself.
     if (is_header && mergeInst->opcode() == SpvOpLoopMerge) {
@@ -456,7 +455,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       }
       // Process memory copies like loads
     } else if (liveInst->opcode() == SpvOpCopyMemory ||
-      liveInst->opcode() == SpvOpCopyMemorySized) {
+               liveInst->opcode() == SpvOpCopyMemorySized) {
       uint32_t varId;
       (void)GetPtr(liveInst->GetSingleWordInOperand(kCopyMemorySourceAddrInIdx),
         &varId);
@@ -465,7 +464,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       }
       // If merge, add all other branches part of that control structure
     } else if (liveInst->opcode() == SpvOpLoopMerge ||
-        liveInst->opcode() == SpvOpSelectionMerge) {
+               liveInst->opcode() == SpvOpSelectionMerge) {
       AddBreaksAndContinuesToWorklist(liveInst);
       // If function call, treat as if it loads from all pointer arguments
     } else if (liveInst->opcode() == SpvOpFunctionCall) {
