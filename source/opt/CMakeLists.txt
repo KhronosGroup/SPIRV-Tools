@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-add_library(SPIRV-Tools-opt
+set(SPIRV_TOOLS_OPT_SOURCES
   aggressive_dead_code_elim_pass.h
   basic_block.h
   block_merge_pass.h
@@ -185,6 +185,18 @@ add_library(SPIRV-Tools-opt
   workaround1209.cpp
 )
 
+if(MSVC)
+  # Enable parallel builds across four cores for this lib
+  add_definitions(/MP4)
+
+  # Enable precompiled header
+  set_source_files_properties(${SPIRV_TOOLS_OPT_SOURCES} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fppch.pch" OBJECT_DEPENDS "pch.pch")
+  set_source_files_properties(pch.cpp PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fppch.pch" OBJECT_OUTPUTS "pch.pch")
+  list(APPEND SPIRV_TOOLS_OPT_SOURCES "pch.cpp")
+endif()
+
+add_library(SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SOURCES})
+
 spvtools_default_compile_options(SPIRV-Tools-opt)
 target_include_directories(SPIRV-Tools-opt
   PUBLIC ${spirv-tools_SOURCE_DIR}/include
@@ -204,8 +216,3 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
-    
-if(MSVC)
-  # Enable parallel builds across four cores for this lib
-  add_definitions(/MP4)
-endif()
