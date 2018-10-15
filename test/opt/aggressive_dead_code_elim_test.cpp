@@ -5809,27 +5809,27 @@ OpFunctionEnd
 }
 
 TEST_F(AggressiveDCETest, CountingLoopNotEliminated) {
-  //#version 310 es
+  // #version 310 es
   //
-  //precision highp float;
-  //precision highp int;
+  // precision highp float;
+  // precision highp int;
   //
-  //layout(location = 0) out vec4 _GLF_color;
+  // layout(location = 0) out vec4 _GLF_color;
   //
-  //void main()
-  //{
-  //  float data[1];
-  //  for (int c = 0; c < 1; c++) {
-  //    if (true) {
-  //      do {
-  //        for (int i = 0; i < 1; i++) {
-  //          data[i] = 1.0;
-  //        }
-  //      } while (false);
-  //    }
-  //  }
-  //  _GLF_color = vec4(data[0], 0.0, 0.0, 1.0);
-  //}
+  // void main()
+  // {
+  //   float data[1];
+  //   for (int c = 0; c < 1; c++) {
+  //     if (true) {
+  //       do {
+  //         for (int i = 0; i < 1; i++) {
+  //           data[i] = 1.0;
+  //         }
+  //       } while (false);
+  //     }
+  //   }
+  //   _GLF_color = vec4(data[0], 0.0, 0.0, 1.0);
+  // }
   const std::string test =
     R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
