@@ -376,6 +376,27 @@ spv_result_t ValidateCopyObject(ValidationState_t& _, const Instruction* inst) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type and Operand type to be the same";
   }
+
+  const Instruction* type_inst = _.FindDef(result_type);
+  assert(type_inst);
+
+  const SpvOp type_opcode = type_inst->opcode();
+  if (type_opcode == SpvOpTypePointer &&
+      _.addressing_model() == SpvAddressingModelLogical) {
+    if (!_.features().variable_pointers &&
+        !_.features().variable_pointers_storage_buffer) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Using pointers with OpCopyObject requires capability "
+             << "VariablePointers or VariablePointersStorageBuffer";
+    } else if (!_.features().variable_pointers) {
+      if (type_inst->GetOperandAs<uint32_t>(1) !=
+          SpvStorageClassStorageBuffer) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Storage class of variable pointers must be StorageBuffer "
+                  "when using VariablePointersStorageBuffer";
+      }
+    }
+  }
   return SPV_SUCCESS;
 }
 

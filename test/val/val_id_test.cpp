@@ -51,7 +51,13 @@ std::string kOpCapabilitySetup = R"(
      OpCapability Vector16
 )";
 
-std::string kGLSL450MemoryModel = kOpCapabilitySetup + R"(
+std::string kOpVariablePtrSetUp = R"(
+     OpCapability VariablePointers
+     OpExtension "SPV_KHR_variable_pointers"
+)";
+
+std::string kGLSL450MemoryModel =
+    kOpCapabilitySetup + kOpVariablePtrSetUp + R"(
      OpMemoryModel Logical GLSL450
 )";
 
@@ -2067,8 +2073,10 @@ TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpPhiBad) {
                                     false /* Add VariablePointers Capability?*/,
                                     false /* Use Helper Function? */);
   CompileSuccessfully(spirv.str());
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a logical pointer"));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Using pointers with OpPhi requires capability "
+                        "VariablePointers or VariablePointersStorageBuffer"));
 }
 
 // With the VariablePointer Capability, OpLoad should allow loading through a
@@ -5039,7 +5047,7 @@ TEST_F(ValidateIdWithMessage, CorrectErrorForShuffle) {
       HasSubstr(
           "Component index 4 is out of bounds for combined (Vector1 + Vector2) "
           "size of 4."));
-  EXPECT_EQ(23, getErrorPosition().index);
+  EXPECT_EQ(25, getErrorPosition().index);
 }
 
 TEST_F(ValidateIdWithMessage, VoidStructMember) {

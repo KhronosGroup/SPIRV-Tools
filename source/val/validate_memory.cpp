@@ -334,18 +334,10 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
            << "' is not defined.";
   }
 
-  const bool uses_variable_pointers =
-      _.features().variable_pointers ||
-      _.features().variable_pointers_storage_buffer;
   const auto pointer_index = 2;
   const auto pointer_id = inst->GetOperandAs<uint32_t>(pointer_index);
   const auto pointer = _.FindDef(pointer_id);
-  if (!pointer ||
-      ((_.addressing_model() == SpvAddressingModelLogical) &&
-       ((!uses_variable_pointers &&
-         !spvOpcodeReturnsLogicalPointer(pointer->opcode())) ||
-        (uses_variable_pointers &&
-         !spvOpcodeReturnsLogicalVariablePointer(pointer->opcode()))))) {
+  if (!pointer) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpLoad Pointer <id> '" << _.getIdName(pointer_id)
            << "' is not a logical pointer.";
@@ -735,6 +727,28 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
+                                    const Instruction* inst) {
+  if (_.addressing_model() == SpvAddressingModelLogical) {
+    const uint32_t result_type = inst->type_id();
+    const Instruction* type_inst = _.FindDef(result_type);
+    if (!_.features().variable_pointers &&
+        !_.features().variable_pointers_storage_buffer) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Generating variable pointers requires capability "
+             << "VariablePointers or VariablePointersStorageBuffer";
+    } else if (!_.features().variable_pointers) {
+      if (type_inst->GetOperandAs<uint32_t>(1) !=
+          SpvStorageClassStorageBuffer) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Storage class of variable pointers must be StorageBuffer "
+                  "when using VariablePointersStorageBuffer";
+      }
+    }
+  }
+  return ValidateAccessChain(_, inst);
+}
+
 }  // namespace
 
 spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
@@ -752,9 +766,11 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpCopyMemorySized:
       if (auto error = ValidateCopyMemory(_, inst)) return error;
       break;
+    case SpvOpPtrAccessChain:
+      if (auto error = ValidatePtrAccessChain(_, inst)) return error;
+      break;
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:
-    case SpvOpPtrAccessChain:
     case SpvOpInBoundsPtrAccessChain:
       if (auto error = ValidateAccessChain(_, inst)) return error;
       break;
