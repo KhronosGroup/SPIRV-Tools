@@ -180,6 +180,96 @@ bool ContainsInvalidBool(ValidationState_t& _, const Instruction* storage,
   return false;
 }
 
+std::pair<SpvStorageClass, SpvStorageClass> GetStorageClass(
+    ValidationState_t& _, const Instruction* inst) {
+  SpvStorageClass dst_sc = SpvStorageClassMax;
+  SpvStorageClass src_sc = SpvStorageClassMax;
+  switch (inst->opcode()) {
+    case SpvOpLoad: {
+      auto load_pointer = _.FindDef(inst->GetOperandAs<uint32_t>(2));
+      auto load_pointer_type = _.FindDef(load_pointer->type_id());
+      dst_sc = load_pointer_type->GetOperandAs<SpvStorageClass>(1);
+      break;
+    }
+    case SpvOpStore: {
+      auto store_pointer = _.FindDef(inst->GetOperandAs<uint32_t>(0));
+      auto store_pointer_type = _.FindDef(store_pointer->type_id());
+      dst_sc = store_pointer_type->GetOperandAs<SpvStorageClass>(1);
+      break;
+    }
+    case SpvOpCopyMemory:
+    case SpvOpCopyMemorySized: {
+      auto dst = _.FindDef(inst->GetOperandAs<uint32_t>(0));
+      auto dst_type = _.FindDef(dst->type_id());
+      dst_sc = dst_type->GetOperandAs<SpvStorageClass>(1);
+      auto src = _.FindDef(inst->GetOperandAs<uint32_t>(1));
+      auto src_type = _.FindDef(src->type_id());
+      src_sc = src_type->GetOperandAs<SpvStorageClass>(1);
+      break;
+    }
+    default:
+      break;
+  }
+
+  return std::make_pair(dst_sc, src_sc);
+}
+
+spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
+                               uint32_t mask) {
+  if (mask & SpvMemoryAccessMakePointerAvailableKHRMask) {
+    if (inst->opcode() == SpvOpLoad) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "MakePointerAvailableKHR cannot be used with OpLoad.";
+    }
+
+    if (!(mask & SpvMemoryAccessNonPrivatePointerKHRMask)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "NonPrivatePointerKHR must be specified if "
+                "MakePointerAvailableKHR is specified.";
+    }
+  }
+
+  if (mask & SpvMemoryAccessMakePointerVisibleKHRMask) {
+    if (inst->opcode() == SpvOpStore) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "MakePointerVisibleKHR cannot be used with OpStore.";
+    }
+
+    if (!(mask & SpvMemoryAccessNonPrivatePointerKHRMask)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "NonPrivatePointerKHR must be specified if "
+                "MakePointerVisibleKHR is specified.";
+    }
+  }
+
+  if (mask & SpvMemoryAccessNonPrivatePointerKHRMask) {
+    SpvStorageClass dst_sc, src_sc;
+    std::tie(dst_sc, src_sc) = GetStorageClass(_, inst);
+    if (dst_sc != SpvStorageClassUniform &&
+        dst_sc != SpvStorageClassWorkgroup &&
+        dst_sc != SpvStorageClassCrossWorkgroup &&
+        dst_sc != SpvStorageClassGeneric && dst_sc != SpvStorageClassImage &&
+        dst_sc != SpvStorageClassStorageBuffer) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "NonPrivatePointerKHR requires a pointer in Uniform, "
+                "Workgroup, CrossWorkgroup, Generic, Image or StorageBuffer "
+                "storage classes.";
+    }
+    if (src_sc != SpvStorageClassMax && src_sc != SpvStorageClassUniform &&
+        src_sc != SpvStorageClassWorkgroup &&
+        src_sc != SpvStorageClassCrossWorkgroup &&
+        src_sc != SpvStorageClassGeneric && src_sc != SpvStorageClassImage &&
+        src_sc != SpvStorageClassStorageBuffer) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "NonPrivatePointerKHR requires a pointer in Uniform, "
+                "Workgroup, CrossWorkgroup, Generic, Image or StorageBuffer "
+                "storage classes.";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   auto result_type = _.FindDef(inst->type_id());
   if (!result_type || result_type->opcode() != SpvOpTypePointer) {
@@ -276,6 +366,12 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
            << "'s type.";
   }
 
+  if (inst->operands().size() > 3) {
+    if (auto error =
+            CheckMemoryAccess(_, inst, inst->GetOperandAs<uint32_t>(3)))
+      return error;
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -361,6 +457,13 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
              << _.getIdName(object->id()) << "'s layout.";
     }
   }
+
+  if (inst->operands().size() > 2) {
+    if (auto error =
+            CheckMemoryAccess(_, inst, inst->GetOperandAs<uint32_t>(2)))
+      return error;
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -422,6 +525,12 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
              << "'s type does not match Source <id> '"
              << _.getIdName(source_type->id()) << "'s type.";
     }
+
+    if (inst->operands().size() > 2) {
+      if (auto error =
+              CheckMemoryAccess(_, inst, inst->GetOperandAs<uint32_t>(2)))
+        return error;
+    }
   } else {
     const auto size_id = inst->GetOperandAs<uint32_t>(2);
     const auto size = _.FindDef(size_id);
@@ -463,6 +572,12 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
       default:
         // Cannot infer any other opcodes.
         break;
+    }
+
+    if (inst->operands().size() > 3) {
+      if (auto error =
+              CheckMemoryAccess(_, inst, inst->GetOperandAs<uint32_t>(3)))
+        return error;
     }
   }
   return SPV_SUCCESS;
