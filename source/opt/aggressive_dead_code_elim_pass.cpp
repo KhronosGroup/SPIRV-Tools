@@ -458,7 +458,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
                liveInst->opcode() == SpvOpCopyMemorySized) {
       uint32_t varId;
       (void)GetPtr(liveInst->GetSingleWordInOperand(kCopyMemorySourceAddrInIdx),
-        &varId);
+                   &varId);
       if (varId != 0) {
         ProcessLoad(varId);
       }
