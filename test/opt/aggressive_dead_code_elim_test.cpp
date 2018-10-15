@@ -5831,7 +5831,7 @@ TEST_F(AggressiveDCETest, CountingLoopNotEliminated) {
   //   _GLF_color = vec4(data[0], 0.0, 0.0, 1.0);
   // }
   const std::string test =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %_GLF_color
