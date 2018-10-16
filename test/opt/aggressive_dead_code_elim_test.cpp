@@ -5808,6 +5808,128 @@ OpFunctionEnd
   SinglePassRunAndCheck<AggressiveDCEPass>(test, test, true, true);
 }
 
+TEST_F(AggressiveDCETest, CountingLoopNotEliminated) {
+  // #version 310 es
+  //
+  // precision highp float;
+  // precision highp int;
+  //
+  // layout(location = 0) out vec4 _GLF_color;
+  //
+  // void main()
+  // {
+  //   float data[1];
+  //   for (int c = 0; c < 1; c++) {
+  //     if (true) {
+  //       do {
+  //         for (int i = 0; i < 1; i++) {
+  //           data[i] = 1.0;
+  //         }
+  //       } while (false);
+  //     }
+  //   }
+  //   _GLF_color = vec4(data[0], 0.0, 0.0, 1.0);
+  // }
+  const std::string test =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %_GLF_color
+OpExecutionMode %main OriginUpperLeft
+OpSource ESSL 310
+OpName %main "main"
+OpName %c "c"
+OpName %i "i"
+OpName %data "data"
+OpName %_GLF_color "_GLF_color"
+OpDecorate %_GLF_color Location 0
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%bool = OpTypeBool
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%_ptr_Function__arr_float_uint_1 = OpTypePointer Function %_arr_float_uint_1
+%float_1 = OpConstant %float 1
+%_ptr_Function_float = OpTypePointer Function %float
+%false = OpConstantFalse %bool
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_GLF_color = OpVariable %_ptr_Output_v4float Output
+%float_0 = OpConstant %float 0
+%main = OpFunction %void None %8
+%26 = OpLabel
+%c = OpVariable %_ptr_Function_int Function
+%i = OpVariable %_ptr_Function_int Function
+%data = OpVariable %_ptr_Function__arr_float_uint_1 Function
+OpStore %c %int_0
+OpBranch %27
+%27 = OpLabel
+OpLoopMerge %28 %29 None
+OpBranch %30
+%30 = OpLabel
+%31 = OpLoad %int %c
+%32 = OpSLessThan %bool %31 %int_1
+OpBranchConditional %32 %33 %28
+%33 = OpLabel
+OpBranch %34
+%34 = OpLabel
+OpBranch %35
+%35 = OpLabel
+OpLoopMerge %36 %37 None
+OpBranch %38
+%38 = OpLabel
+OpStore %i %int_0
+OpBranch %39
+%39 = OpLabel
+OpLoopMerge %40 %41 None
+OpBranch %42
+%42 = OpLabel
+%43 = OpLoad %int %i
+%44 = OpSLessThan %bool %43 %int_1
+OpSelectionMerge %45 None
+OpBranchConditional %44 %46 %40
+%46 = OpLabel
+%47 = OpLoad %int %i
+%48 = OpAccessChain %_ptr_Function_float %data %47
+OpStore %48 %float_1
+OpBranch %41
+%41 = OpLabel
+%49 = OpLoad %int %i
+%50 = OpIAdd %int %49 %int_1
+OpStore %i %50
+OpBranch %39
+%40 = OpLabel
+OpBranch %37
+%37 = OpLabel
+OpBranchConditional %false %35 %36
+%36 = OpLabel
+OpBranch %45
+%45 = OpLabel
+OpBranch %29
+%29 = OpLabel
+%51 = OpLoad %int %c
+%52 = OpIAdd %int %51 %int_1
+OpStore %c %52
+OpBranch %27
+%28 = OpLabel
+%53 = OpAccessChain %_ptr_Function_float %data %int_0
+%54 = OpLoad %float %53
+%55 = OpCompositeConstruct %v4float %54 %float_0 %float_0 %float_1
+OpStore %_GLF_color %55
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<AggressiveDCEPass>(test, test, true, true);
+}
+
 TEST_F(AggressiveDCETest, DeadHlslCounterBufferGOOGLE) {
   // We are able to remove "local2" because it is not loaded, but have to keep
   // the stores to "local1".
