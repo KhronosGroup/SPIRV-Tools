@@ -735,6 +735,19 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
+                                    const Instruction* inst) {
+  if (_.addressing_model() == SpvAddressingModelLogical) {
+    if (!_.features().variable_pointers &&
+        !_.features().variable_pointers_storage_buffer) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Generating variable pointers requires capability "
+             << "VariablePointers or VariablePointersStorageBuffer";
+    }
+  }
+  return ValidateAccessChain(_, inst);
+}
+
 }  // namespace
 
 spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
@@ -752,9 +765,11 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpCopyMemorySized:
       if (auto error = ValidateCopyMemory(_, inst)) return error;
       break;
+    case SpvOpPtrAccessChain:
+      if (auto error = ValidatePtrAccessChain(_, inst)) return error;
+      break;
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:
-    case SpvOpPtrAccessChain:
     case SpvOpInBoundsPtrAccessChain:
       if (auto error = ValidateAccessChain(_, inst)) return error;
       break;
