@@ -4835,6 +4835,64 @@ TEST_F(ValidateIdWithMessage, OpPtrAccessChainGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateIdWithMessage, StgBufOpPtrAccessChainGood) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability VariablePointersStorageBuffer
+     OpExtension "SPV_KHR_variable_pointers"
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%int_4 = OpConstant %int 4
+%struct = OpTypeStruct %int
+%array = OpTypeArray %struct %int_4
+%ptr = OpTypePointer StorageBuffer %array
+%var = OpVariable %ptr StorageBuffer
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+%5 = OpPtrAccessChain %ptr %var %int_2
+     OpReturn
+     OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, StgBufOpPtrAccessChainBad) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability VariablePointersStorageBuffer
+     OpExtension "SPV_KHR_variable_pointers"
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%int_4 = OpConstant %int 4
+%struct = OpTypeStruct %int
+%array = OpTypeArray %struct %int_4
+%ptr = OpTypePointer Uniform %array
+%var = OpVariable %ptr Uniform
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+%5 = OpPtrAccessChain %ptr %var %int_2
+     OpReturn
+     OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Storage class of variable pointers must be StorageBuffer when "
+                "using VariablePointersStorageBuffer"));
+}
+
 TEST_F(ValidateIdWithMessage, OpLoadBitcastPointerGood) {
   std::string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
