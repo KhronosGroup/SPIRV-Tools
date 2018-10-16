@@ -31,7 +31,8 @@ using ValidateComposites = spvtest::ValidateBase<bool>;
 std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
-    const std::string& execution_model = "Fragment") {
+    const std::string& execution_model = "Fragment",
+    const std::string& types_and_vars = "") {
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
@@ -90,8 +91,11 @@ OpCapability Float64
 %big_struct = OpTypeStruct %f32 %f32vec4 %f32mat23 %f32vec2arr3 %f32vec2rarr %f32u32struct
 
 %ptr_big_struct = OpTypePointer Uniform %big_struct
-%var_big_struct = OpVariable %ptr_big_struct Uniform
+%var_big_struct = OpVariable %ptr_big_struct Uniform)";
 
+  ss << types_and_vars;
+
+  ss << R"(
 %main = OpFunction %void None %func
 %main_entry = OpLabel
 )";
@@ -553,6 +557,71 @@ TEST_F(ValidateComposites, CopyObjectWrongOperandType) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Expected Result Type and Operand type to be the same"));
+}
+
+TEST_F(ValidateComposites, CopyObjectWithPtrBad1) {
+  const std::string body = R"(
+%val1 = OpCopyObject %ptr_big_struct %var_big_struct
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Using pointers with OpCopyObject requires capability "
+                        "VariablePointers or VariablePointersStorageBuffer"));
+}
+
+TEST_F(ValidateComposites, CopyObjectWithPtrBad2) {
+  const std::string body = R"(
+%val1 = OpCopyObject %ptr_big_struct %var_big_struct
+)";
+
+  const std::string capabilities = R"(
+OpCapability VariablePointersStorageBuffer
+OpExtension "SPV_KHR_variable_pointers"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, capabilities).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Storage class of variable pointers must be StorageBuffer when "
+                "using VariablePointersStorageBuffer"));
+}
+
+TEST_F(ValidateComposites, CopyObjectWithPtrGood) {
+  const std::string body = R"(
+%val1 = OpCopyObject %ptr_big_struct %var_big_struct
+)";
+
+  const std::string capabilities = R"(
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, capabilities).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateComposites, CopyObjectWithStgBufPtrGood) {
+  const std::string body = R"(
+%val1 = OpCopyObject %ptr_stgbuf_big_struct %var_stgbuf_big_struct
+)";
+
+  const std::string types_and_vars = R"(
+%ptr_stgbuf_big_struct = OpTypePointer StorageBuffer %big_struct
+%var_stgbuf_big_struct = OpVariable %ptr_stgbuf_big_struct StorageBuffer
+)";
+
+  const std::string capabilities = R"(
+OpCapability VariablePointersStorageBuffer
+OpExtension "SPV_KHR_variable_pointers"
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, "Fragment", types_and_vars)
+          .c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateComposites, TransposeSuccess) {
