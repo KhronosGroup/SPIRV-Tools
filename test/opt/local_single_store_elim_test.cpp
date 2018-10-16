@@ -529,7 +529,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<LocalSingleStoreElimPass>(predefs + before,
-                                                  predefs + after, true, false);
+                                                  predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoOptIfStoreNotDominating) {

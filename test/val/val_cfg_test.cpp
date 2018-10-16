@@ -1994,42 +1994,6 @@ TEST_F(ValidateCFG, VarPtrShaderWithPhiPtr) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateCFG, VarPtrStgBufShaderWithPhiFunPtr) {
-  const std::string text = R"(
-               OpCapability Shader
-               OpCapability VariablePointersStorageBuffer
-               OpExtension "SPV_KHR_variable_pointers"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %1 "main"
-               OpExecutionMode %1 LocalSize 1 1 1
-               OpSource HLSL 600
-       %bool = OpTypeBool
-%_ptr_Function_bool = OpTypePointer Function %bool
-       %void = OpTypeVoid
-          %5 = OpTypeFunction %void
-          %1 = OpFunction %void None %5
-          %6 = OpLabel
-          %7 = OpVariable %_ptr_Function_bool Function
-          %8 = OpVariable %_ptr_Function_bool Function
-          %9 = OpUndef %bool
-               OpSelectionMerge %10 None
-               OpBranchConditional %9 %11 %10
-         %11 = OpLabel
-               OpBranch %10
-         %10 = OpLabel
-         %12 = OpPhi %_ptr_Function_bool %7 %6 %8 %11
-               OpReturn
-               OpFunctionEnd
-)";
-
-  CompileSuccessfully(text);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Storage class of variable pointers must be StorageBuffer when "
-                "using VariablePointersStorageBuffer"));
-}
-
 TEST_F(ValidateCFG, VarPtrStgBufShaderWithPhiStgBufPtr) {
   const std::string text = R"(
                OpCapability Shader

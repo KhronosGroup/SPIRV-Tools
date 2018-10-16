@@ -564,7 +564,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<LocalSingleBlockLoadStoreElimPass>(
-      predefs + before, predefs + after, true, false);
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, ElimOpaque) {

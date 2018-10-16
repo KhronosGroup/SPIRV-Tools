@@ -59,13 +59,6 @@ spv_result_t ValidatePhi(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Using pointers with OpPhi requires capability "
              << "VariablePointers or VariablePointersStorageBuffer";
-    } else if (!_.features().variable_pointers) {
-      if (type_inst->GetOperandAs<uint32_t>(1) !=
-          SpvStorageClassStorageBuffer) {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Storage class of variable pointers must be StorageBuffer "
-                  "when using VariablePointersStorageBuffer";
-      }
     }
   }
 
