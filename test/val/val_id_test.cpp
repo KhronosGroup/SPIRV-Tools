@@ -51,7 +51,13 @@ std::string kOpCapabilitySetup = R"(
      OpCapability Vector16
 )";
 
-std::string kGLSL450MemoryModel = kOpCapabilitySetup + R"(
+std::string kOpVariablePtrSetUp = R"(
+     OpCapability VariablePointers
+     OpExtension "SPV_KHR_variable_pointers"
+)";
+
+std::string kGLSL450MemoryModel =
+    kOpCapabilitySetup + kOpVariablePtrSetUp + R"(
      OpMemoryModel Logical GLSL450
 )";
 
@@ -2046,9 +2052,9 @@ TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpPhiGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-// Without the VariablePointers Capability, OpLoad will not allow loading
-// through a variable pointer.
-TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpPhiBad) {
+// Without the VariablePointers Capability, OpPhi can have a pointer result
+// type.
+TEST_F(ValidateIdWithMessage, OpPhiBad) {
   std::string result_strategy = R"(
     %is_neg      = OpSLessThan %bool %i %zero
     OpSelectionMerge %end_label None
@@ -2067,8 +2073,10 @@ TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpPhiBad) {
                                     false /* Add VariablePointers Capability?*/,
                                     false /* Use Helper Function? */);
   CompileSuccessfully(spirv.str());
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a logical pointer"));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Using pointers with OpPhi requires capability "
+                        "VariablePointers or VariablePointersStorageBuffer"));
 }
 
 // With the VariablePointer Capability, OpLoad should allow loading through a
@@ -4827,6 +4835,33 @@ TEST_F(ValidateIdWithMessage, OpPtrAccessChainGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateIdWithMessage, StgBufOpPtrAccessChainGood) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability VariablePointersStorageBuffer
+     OpExtension "SPV_KHR_variable_pointers"
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%int_4 = OpConstant %int 4
+%struct = OpTypeStruct %int
+%array = OpTypeArray %struct %int_4
+%ptr = OpTypePointer StorageBuffer %array
+%var = OpVariable %ptr StorageBuffer
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+%5 = OpPtrAccessChain %ptr %var %int_2
+     OpReturn
+     OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateIdWithMessage, OpLoadBitcastPointerGood) {
   std::string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
@@ -5039,7 +5074,7 @@ TEST_F(ValidateIdWithMessage, CorrectErrorForShuffle) {
       HasSubstr(
           "Component index 4 is out of bounds for combined (Vector1 + Vector2) "
           "size of 4."));
-  EXPECT_EQ(23, getErrorPosition().index);
+  EXPECT_EQ(25, getErrorPosition().index);
 }
 
 TEST_F(ValidateIdWithMessage, VoidStructMember) {
