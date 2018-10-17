@@ -89,6 +89,15 @@ spv_result_t ValidateGroupDecorate(ValidationState_t& _,
            << _.getIdName(decoration_group_id)
            << "' is not a decoration group.";
   }
+  for (unsigned i = 1; i < inst->operands().size(); ++i) {
+    auto target_id = inst->GetOperandAs<uint32_t>(i);
+    auto target = _.FindDef(target_id);
+    if (!target || target->opcode() == SpvOpDecorationGroup) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpGroupDecorate may not target OpDecorationGroup <id> '"
+             << _.getIdName(target_id) << "'";
+    }
+  }
   return SPV_SUCCESS;
 }
 

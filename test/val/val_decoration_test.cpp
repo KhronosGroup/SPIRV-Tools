@@ -3444,6 +3444,39 @@ OpFunctionEnd
                         "Object operand of an OpStore."));
 }
 
+TEST_F(ValidateDecorations, GroupDecorateTargetsDecorationGroup) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %1
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> '1'"));
+}
+
+TEST_F(ValidateDecorations, GroupDecorateTargetsDecorationGroup2) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %2 %1
+%2 = OpTypeVoid
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> '1'"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
