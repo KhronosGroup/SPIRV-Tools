@@ -5951,7 +5951,7 @@ TEST_F(AggressiveDCETest, EliminateLoopWithUnreachable) {
   //     else
   //       break;
   //     // Unreachable merge block created here.
-         // Need to edit SPIR-V to change to OpUnreachable
+  //     // Need to edit SPIR-V to change to OpUnreachable
   //   }
   //   o = g_S;
   // }
