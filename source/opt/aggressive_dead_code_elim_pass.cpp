@@ -383,7 +383,8 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
         } break;
         case SpvOpSwitch:
         case SpvOpBranch:
-        case SpvOpBranchConditional: {
+        case SpvOpBranchConditional:
+        case SpvOpUnreachable: {
           if (assume_branches_live.top()) {
             AddToWorklist(&*ii);
           }
