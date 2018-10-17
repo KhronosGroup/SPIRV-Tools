@@ -5930,7 +5930,6 @@ OpFunctionEnd
   SinglePassRunAndCheck<AggressiveDCEPass>(test, test, true, true);
 }
 
-
 TEST_F(AggressiveDCETest, EliminateLoopWithUnreachable) {
   // #version 430
   //
