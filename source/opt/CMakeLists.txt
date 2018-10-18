@@ -190,8 +190,13 @@ if(MSVC)
   add_definitions(/MP4)
 
   # Enable precompiled header
-  set_source_files_properties(${SPIRV_TOOLS_OPT_SOURCES} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fppch.pch" OBJECT_DEPENDS "pch.pch")
-  set_source_files_properties(pch.cpp PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fppch.pch" OBJECT_OUTPUTS "pch.pch")
+  if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+    set(PCH_NAME "$(IntDir)\\pch.pch")
+  else()
+    set(PCH_NAME "pch.pch")
+  endif()
+  set_source_files_properties(${SPIRV_TOOLS_OPT_SOURCES} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fp${PCH_NAME}" OBJECT_DEPENDS "${PCH_NAME}")
+  set_source_files_properties(pch.cpp PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fp${PCH_NAME}" OBJECT_OUTPUTS "${PCH_NAME}")
   list(APPEND SPIRV_TOOLS_OPT_SOURCES "pch.cpp")
 endif()
 
