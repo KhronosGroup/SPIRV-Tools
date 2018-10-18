@@ -29,26 +29,35 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status MergeReturnPass::Process() {
-  bool modified = false;
   bool is_shader =
       context()->get_feature_mgr()->HasCapability(SpvCapabilityShader);
-  for (auto& function : *get_module()) {
-    std::vector<BasicBlock*> return_blocks = CollectReturnBlocks(&function);
-    if (return_blocks.size() <= 1) continue;
 
-    function_ = &function;
+  bool failed = false;
+  ProcessFunction pfn = [&failed, is_shader, this](Function* function) {
+    std::vector<BasicBlock*> return_blocks = CollectReturnBlocks(function);
+    if (return_blocks.size() <= 1) {
+      return false;
+    }
+
+    function_ = function;
     return_flag_ = nullptr;
     return_value_ = nullptr;
     final_return_block_ = nullptr;
 
-    modified = true;
     if (is_shader) {
-      if (!ProcessStructured(&function, return_blocks)) {
-        return Status::Failure;
+      if (!ProcessStructured(function, return_blocks)) {
+        failed = true;
       }
     } else {
-      MergeReturnBlocks(&function, return_blocks);
+      MergeReturnBlocks(function, return_blocks);
     }
+    return true;
+  };
+
+  bool modified = ProcessReachableCallTree(pfn, context());
+
+  if (failed) {
+    return Status::Failure;
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
