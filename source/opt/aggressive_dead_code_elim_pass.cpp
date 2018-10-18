@@ -464,7 +464,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       if (varId != 0) {
         ProcessLoad(varId);
       }
-      // If merge, add all other branches part of that control structure
+      // If merge, add other branches that are part of its control structure
     } else if (liveInst->opcode() == SpvOpLoopMerge ||
                liveInst->opcode() == SpvOpSelectionMerge) {
       AddBreaksAndContinuesToWorklist(liveInst);
