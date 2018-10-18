@@ -826,7 +826,8 @@ TEST_F(CopyPropArrayPassTest, IsomorphicTypes3) {
 }
 
 TEST_F(CopyPropArrayPassTest, BadMergingTwoObjects) {
-  // The second element in the |OpCompositeConstruct| is from a different object.
+  // The second element in the |OpCompositeConstruct| is from a different
+  // object.
   const std::string text =
       R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
