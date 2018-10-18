@@ -142,8 +142,9 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
 
 bool AggressiveDCEPass::IsDead(Instruction* inst) {
   if (IsLive(inst)) return false;
-  if (inst->IsBranch() && !IsStructuredHeader(context()->get_instr_block(inst),
-                                              nullptr, nullptr, nullptr))
+  if ((inst->IsBranch() || inst->opcode() == SpvOpUnreachable) &&
+      !IsStructuredHeader(context()->get_instr_block(inst), nullptr, nullptr,
+                          nullptr))
     return false;
   return true;
 }
