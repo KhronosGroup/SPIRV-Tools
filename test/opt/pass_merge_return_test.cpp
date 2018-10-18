@@ -104,6 +104,7 @@ TEST_F(MergeReturnPassTest, TwoReturnsWithValues) {
       R"(OpCapability Linkage
 OpCapability Kernel
 OpMemoryModel Logical OpenCL
+OpDecorate %7 LinkageAttributes "simple_kernel" Export
 %1 = OpTypeInt 32 0
 %2 = OpTypeBool
 %3 = OpConstantFalse %2
@@ -124,6 +125,7 @@ OpFunctionEnd
       R"(OpCapability Linkage
 OpCapability Kernel
 OpMemoryModel Logical OpenCL
+OpDecorate %7 LinkageAttributes "simple_kernel" Export
 %1 = OpTypeInt 32 0
 %2 = OpTypeBool
 %3 = OpConstantFalse %2
@@ -207,6 +209,7 @@ TEST_F(MergeReturnPassTest, UnreachableReturnsWithValues) {
       R"(OpCapability Linkage
 OpCapability Kernel
 OpMemoryModel Logical OpenCL
+OpDecorate %7 LinkageAttributes "simple_kernel" Export
 %1 = OpTypeInt 32 0
 %2 = OpTypeBool
 %3 = OpConstantFalse %2
@@ -230,6 +233,7 @@ OpFunctionEnd
       R"(OpCapability Linkage
 OpCapability Kernel
 OpMemoryModel Logical OpenCL
+OpDecorate %7 LinkageAttributes "simple_kernel" Export
 %1 = OpTypeInt 32 0
 %2 = OpTypeBool
 %3 = OpConstantFalse %2
@@ -1004,6 +1008,7 @@ OpDecorate %7 RelaxedPrecision
 %13 = OpTypeFunction %12
 %11 = OpFunction %12 None %13
 %l1 = OpLabel
+%fc = OpFunctionCall %1 %7
 OpReturn
 OpFunctionEnd
 %7 = OpFunction %1 None %6
