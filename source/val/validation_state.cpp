@@ -365,6 +365,9 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
       features_.group_ops_reduce_and_scans = true;
       break;
     case SpvCapabilityInt8:
+      features_.use_int8_type = true;
+      features_.declare_int8_type = true;
+      break;
     case SpvCapabilityStorageBuffer8BitAccess:
     case SpvCapabilityUniformAndStorageBuffer8BitAccess:
     case SpvCapabilityStoragePushConstant8:
