@@ -142,8 +142,9 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
 
 bool AggressiveDCEPass::IsDead(Instruction* inst) {
   if (IsLive(inst)) return false;
-  if (inst->IsBranch() && !IsStructuredHeader(context()->get_instr_block(inst),
-                                              nullptr, nullptr, nullptr))
+  if ((inst->IsBranch() || inst->opcode() == SpvOpUnreachable) &&
+      !IsStructuredHeader(context()->get_instr_block(inst), nullptr, nullptr,
+                          nullptr))
     return false;
   return true;
 }
@@ -383,7 +384,8 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
         } break;
         case SpvOpSwitch:
         case SpvOpBranch:
-        case SpvOpBranchConditional: {
+        case SpvOpBranchConditional:
+        case SpvOpUnreachable: {
           if (assume_branches_live.top()) {
             AddToWorklist(&*ii);
           }
@@ -462,7 +464,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       if (varId != 0) {
         ProcessLoad(varId);
       }
-      // If merge, add all other branches part of that control structure
+      // If merge, add other branches that are part of its control structure
     } else if (liveInst->opcode() == SpvOpLoopMerge ||
                liveInst->opcode() == SpvOpSelectionMerge) {
       AddBreaksAndContinuesToWorklist(liveInst);
