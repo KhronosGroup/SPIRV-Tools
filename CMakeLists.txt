@@ -139,6 +139,8 @@ function(spvtools_default_compile_options TARGET)
         target_compile_options(${TARGET} PRIVATE
           -fsanitize=${SPIRV_USE_SANITIZER})
       endif()
+      target_compile_options(${TARGET} PRIVATE
+         -ftemplate-depth=1024)
     else()
       target_compile_options(${TARGET} PRIVATE
          -Wno-missing-field-initializers)
