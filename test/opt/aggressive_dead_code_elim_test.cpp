@@ -5930,6 +5930,158 @@ OpFunctionEnd
   SinglePassRunAndCheck<AggressiveDCEPass>(test, test, true, true);
 }
 
+TEST_F(AggressiveDCETest, EliminateLoopWithUnreachable) {
+  // #version 430
+  //
+  // layout(std430) buffer U_t
+  // {
+  //   float g_F[10];
+  //   float g_S;
+  // };
+  //
+  // layout(location = 0)out float o;
+  //
+  // void main(void)
+  // {
+  //   // Useless loop
+  //   for (int i = 0; i<10; i++) {
+  //     if (g_F[i] == 0.0)
+  //       break;
+  //     else
+  //       break;
+  //     // Unreachable merge block created here.
+  //     // Need to edit SPIR-V to change to OpUnreachable
+  //   }
+  //   o = g_S;
+  // }
+
+  const std::string before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %o
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpName %main "main"
+OpName %i "i"
+OpName %U_t "U_t"
+OpMemberName %U_t 0 "g_F"
+OpMemberName %U_t 1 "g_S"
+OpName %_ ""
+OpName %o "o"
+OpDecorate %_arr_float_uint_10 ArrayStride 4
+OpMemberDecorate %U_t 0 Offset 0
+OpMemberDecorate %U_t 1 Offset 40
+OpDecorate %U_t BufferBlock
+OpDecorate %_ DescriptorSet 0
+OpDecorate %o Location 0
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%uint_10 = OpConstant %uint 10
+%_arr_float_uint_10 = OpTypeArray %float %uint_10
+%U_t = OpTypeStruct %_arr_float_uint_10 %float
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+%_ = OpVariable %_ptr_Uniform_U_t Uniform
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%float_0 = OpConstant %float 0
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%o = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %9
+%23 = OpLabel
+%i = OpVariable %_ptr_Function_int Function
+OpStore %i %int_0
+OpBranch %24
+%24 = OpLabel
+OpLoopMerge %25 %26 None
+OpBranch %27
+%27 = OpLabel
+%28 = OpLoad %int %i
+%29 = OpSLessThan %bool %28 %int_10
+OpBranchConditional %29 %30 %25
+%30 = OpLabel
+%31 = OpLoad %int %i
+%32 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %31
+%33 = OpLoad %float %32
+%34 = OpFOrdEqual %bool %33 %float_0
+OpSelectionMerge %35 None
+OpBranchConditional %34 %36 %37
+%36 = OpLabel
+OpBranch %25
+%37 = OpLabel
+OpBranch %25
+%35 = OpLabel
+OpUnreachable
+%26 = OpLabel
+%38 = OpLoad %int %i
+%39 = OpIAdd %int %38 %int_1
+OpStore %i %39
+OpBranch %24
+%25 = OpLabel
+%40 = OpAccessChain %_ptr_Uniform_float %_ %int_1
+%41 = OpLoad %float %40
+OpStore %o %41
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %o
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 430
+OpName %main "main"
+OpName %U_t "U_t"
+OpMemberName %U_t 0 "g_F"
+OpMemberName %U_t 1 "g_S"
+OpName %_ ""
+OpName %o "o"
+OpDecorate %_arr_float_uint_10 ArrayStride 4
+OpMemberDecorate %U_t 0 Offset 0
+OpMemberDecorate %U_t 1 Offset 40
+OpDecorate %U_t BufferBlock
+OpDecorate %_ DescriptorSet 0
+OpDecorate %o Location 0
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%uint_10 = OpConstant %uint 10
+%_arr_float_uint_10 = OpTypeArray %float %uint_10
+%U_t = OpTypeStruct %_arr_float_uint_10 %float
+%_ptr_Uniform_U_t = OpTypePointer Uniform %U_t
+%_ = OpVariable %_ptr_Uniform_U_t Uniform
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%int_1 = OpConstant %int 1
+%_ptr_Output_float = OpTypePointer Output %float
+%o = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %9
+%23 = OpLabel
+OpBranch %24
+%24 = OpLabel
+OpBranch %25
+%25 = OpLabel
+%40 = OpAccessChain %_ptr_Uniform_float %_ %int_1
+%41 = OpLoad %float %40
+OpStore %o %41
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<AggressiveDCEPass>(before, after, true, true);
+}
+
 TEST_F(AggressiveDCETest, DeadHlslCounterBufferGOOGLE) {
   // We are able to remove "local2" because it is not loaded, but have to keep
   // the stores to "local1".
