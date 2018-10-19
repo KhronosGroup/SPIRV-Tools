@@ -2492,6 +2492,73 @@ OpFunctionEnd
   SinglePassRunAndMatch<DeadBranchElimPass>(predefs + body, true);
 }
 
+TEST_F(DeadBranchElimTest, SelectionMergeWithNestedLoop) {
+  const std::string body =
+      R"(
+; CHECK: OpSelectionMerge [[merge1:%\w+]]
+; CHECK: [[merge1]] = OpLabel
+; CHECK-NEXT: OpBranch [[preheader:%\w+]]
+; CHECK: [[preheader]] = OpLabel
+; CHECK-NOT: OpLabel
+; CHECK: OpBranch [[header:%\w+]]
+; CHECK: [[header]] = OpLabel
+; CHECK-NOT: OpLabel
+; CHECK: OpLoopMerge [[merge2:%\w+]]
+; CHECK: [[merge2]] = OpLabel
+; CHECK-NEXT: OpUnreachable
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %main "main"
+                 OpExecutionMode %main OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %main "main"
+                 OpName %h "h"
+                 OpName %i "i"
+         %void = OpTypeVoid
+            %3 = OpTypeFunction %void
+         %bool = OpTypeBool
+  %_ptr_Function_bool = OpTypePointer Function %bool
+         %true = OpConstantTrue %bool
+          %int = OpTypeInt 32 1
+  %_ptr_Function_int = OpTypePointer Function %int
+        %int_1 = OpConstant %int 1
+        %int_0 = OpConstant %int 0
+           %27 = OpUndef %bool
+         %main = OpFunction %void None %3
+            %5 = OpLabel
+            %h = OpVariable %_ptr_Function_bool Function
+            %i = OpVariable %_ptr_Function_int Function
+                 OpSelectionMerge %11 None
+                 OpBranchConditional %27 %10 %11
+           %10 = OpLabel
+                 OpBranch %11
+           %11 = OpLabel
+                 OpSelectionMerge %14 None
+                 OpBranchConditional %true %13 %14
+           %13 = OpLabel
+                 OpStore %i %int_1
+                 OpBranch %19
+           %19 = OpLabel
+                 OpLoopMerge %21 %22 None
+                 OpBranch %23
+           %23 = OpLabel
+           %26 = OpSGreaterThan %bool %int_1 %int_0
+                 OpBranchConditional %true %20 %21
+           %20 = OpLabel
+                 OpBranch %22
+           %22 = OpLabel
+                 OpBranch %19
+           %21 = OpLabel
+                 OpBranch %14
+           %14 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<DeadBranchElimPass>(body, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow
