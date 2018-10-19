@@ -3477,6 +3477,33 @@ OpGroupDecorate %1 %2 %1
       HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> '1'"));
 }
 
+TEST_F(ValidateDecorations, RecurseThroughRuntimeArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %outer Block
+OpMemberDecorate %inner 0 Offset 0
+OpMemberDecorate %inner 1 Offset 1
+OpDecorate %runtime ArrayStride 16
+OpMemberDecorate %outer 0 Offset 0
+%int = OpTypeInt 32 0
+%inner = OpTypeStruct %int %int
+%runtime = OpTypeRuntimeArray %inner
+%outer = OpTypeStruct %runtime
+%outer_ptr = OpTypePointer Uniform %outer
+%var = OpVariable %outer_ptr Uniform
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Structure id 2 decorated as Block for variable in Uniform "
+                "storage class must follow standard uniform buffer layout "
+                "rules: member 1 at offset 1 is not aligned to 4"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
