@@ -1469,6 +1469,30 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateComposites, ExtractDynamicLabelIndex) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%void_fn = OpTypeFunction %void
+%float_0 = OpConstant %float 0
+%v4float_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%func = OpFunction %void None %void_fn
+%1 = OpLabel
+%ex = OpVectorExtractDynamic %float %v4float_0 %1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Index to be int scalar"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
