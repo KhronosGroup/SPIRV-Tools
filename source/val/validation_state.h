@@ -86,6 +86,10 @@ class ValidationState_t {
     // Target environment uses relaxed block layout.
     // This is true for Vulkan 1.1 or later.
     bool env_relaxed_block_layout = false;
+
+    // Allow an OpTypeInt with 8 bit width to be used in more than just int
+    // conversion opcodes
+    bool use_int8_type = false;
   };
 
   ValidationState_t(const spv_const_context context,

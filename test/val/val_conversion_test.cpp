@@ -31,18 +31,23 @@ using ValidateConversion = spvtest::ValidateBase<bool>;
 
 std::string GenerateShaderCode(
     const std::string& body,
-    const std::string& capabilities_and_extensions = "") {
+    const std::string& capabilities_and_extensions = "",
+    const std::string& decorations = "", const std::string& types = "",
+    const std::string& variables = "") {
   const std::string capabilities =
       R"(
 OpCapability Shader
 OpCapability Int64
 OpCapability Float64)";
 
-  const std::string after_extension_before_body =
+  const std::string after_extension_before_decorations =
       R"(
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
-OpExecutionMode %main OriginUpperLeft
+OpExecutionMode %main OriginUpperLeft)";
+
+  const std::string after_decorations_before_types =
+      R"(
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
@@ -140,8 +145,10 @@ OpExecutionMode %main OriginUpperLeft
 %true = OpConstantTrue %bool
 %false = OpConstantFalse %bool
 
-%f32ptr_func = OpTypePointer Function %f32
+%f32ptr_func = OpTypePointer Function %f32)";
 
+  const std::string after_variables_before_body =
+      R"(
 %main = OpFunction %void None %func
 %main_entry = OpLabel)";
 
@@ -151,7 +158,9 @@ OpReturn
 OpFunctionEnd)";
 
   return capabilities + capabilities_and_extensions +
-         after_extension_before_body + body + after_body;
+         after_extension_before_decorations + decorations +
+         after_decorations_before_types + types + variables +
+         after_variables_before_body + body + after_body;
 }
 
 std::string GenerateKernelCode(
@@ -628,6 +637,170 @@ TEST_F(ValidateConversion, QuantizeToF16WrongInputType) {
       getDiagnosticString(),
       HasSubstr(
           "Expected input type to be equal to Result Type: QuantizeToF16"));
+}
+
+TEST_F(ValidateConversion, ConvertFToS8BitStorage) {
+  const std::string capabilities_and_extensions = R"(
+OpCapability StorageBuffer8BitAccess
+OpExtension "SPV_KHR_8bit_storage"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+)";
+
+  const std::string decorations = R"(
+OpDecorate %ssbo Block
+OpDecorate %ssbo Binding 0
+OpDecorate %ssbo DescriptorSet 0
+OpMemberDecorate %ssbo 0 Offset 0
+)";
+
+  const std::string types = R"(
+%i8 = OpTypeInt 8 1
+%i8ptr = OpTypePointer StorageBuffer %i8
+%ssbo = OpTypeStruct %i8
+%ssboptr = OpTypePointer StorageBuffer %ssbo
+)";
+
+  const std::string variables = R"(
+%var = OpVariable %ssboptr StorageBuffer
+)";
+
+  const std::string body = R"(
+%val = OpConvertFToS %i8 %f32_2
+%accesschain = OpAccessChain %i8ptr %var %u32_0
+OpStore %accesschain %val
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, capabilities_and_extensions,
+                                         decorations, types, variables)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Invalid cast to 8-bit integer from a floating-point: ConvertFToS"));
+}
+
+TEST_F(ValidateConversion, ConvertFToU8BitStorage) {
+  const std::string capabilities_and_extensions = R"(
+OpCapability StorageBuffer8BitAccess
+OpExtension "SPV_KHR_8bit_storage"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+)";
+
+  const std::string decorations = R"(
+OpDecorate %ssbo Block
+OpDecorate %ssbo Binding 0
+OpDecorate %ssbo DescriptorSet 0
+OpMemberDecorate %ssbo 0 Offset 0
+)";
+
+  const std::string types = R"(
+%u8 = OpTypeInt 8 0
+%u8ptr = OpTypePointer StorageBuffer %u8
+%ssbo = OpTypeStruct %u8
+%ssboptr = OpTypePointer StorageBuffer %ssbo
+)";
+
+  const std::string variables = R"(
+%var = OpVariable %ssboptr StorageBuffer
+)";
+
+  const std::string body = R"(
+%val = OpConvertFToU %u8 %f32_2
+%accesschain = OpAccessChain %u8ptr %var %u32_0
+OpStore %accesschain %val
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, capabilities_and_extensions,
+                                         decorations, types, variables)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Invalid cast to 8-bit integer from a floating-point: ConvertFToU"));
+}
+
+TEST_F(ValidateConversion, ConvertSToF8BitStorage) {
+  const std::string capabilities_and_extensions = R"(
+OpCapability StorageBuffer8BitAccess
+OpExtension "SPV_KHR_8bit_storage"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+)";
+
+  const std::string decorations = R"(
+OpDecorate %ssbo Block
+OpDecorate %ssbo Binding 0
+OpDecorate %ssbo DescriptorSet 0
+OpMemberDecorate %ssbo 0 Offset 0
+)";
+
+  const std::string types = R"(
+%i8 = OpTypeInt 8 1
+%i8ptr = OpTypePointer StorageBuffer %i8
+%ssbo = OpTypeStruct %i8
+%ssboptr = OpTypePointer StorageBuffer %ssbo
+)";
+
+  const std::string variables = R"(
+%var = OpVariable %ssboptr StorageBuffer
+)";
+
+  const std::string body = R"(
+%accesschain = OpAccessChain %i8ptr %var %u32_0
+%load = OpLoad %i8 %accesschain
+%val = OpConvertSToF %f32 %load
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, capabilities_and_extensions,
+                                         decorations, types, variables)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Invalid cast to floating-point from an 8-bit integer: ConvertSToF"));
+}
+
+TEST_F(ValidateConversion, ConvertUToF8BitStorage) {
+  const std::string capabilities_and_extensions = R"(
+OpCapability StorageBuffer8BitAccess
+OpExtension "SPV_KHR_8bit_storage"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+)";
+
+  const std::string decorations = R"(
+OpDecorate %ssbo Block
+OpDecorate %ssbo Binding 0
+OpDecorate %ssbo DescriptorSet 0
+OpMemberDecorate %ssbo 0 Offset 0
+)";
+
+  const std::string types = R"(
+%u8 = OpTypeInt 8 0
+%u8ptr = OpTypePointer StorageBuffer %u8
+%ssbo = OpTypeStruct %u8
+%ssboptr = OpTypePointer StorageBuffer %ssbo
+)";
+
+  const std::string variables = R"(
+%var = OpVariable %ssboptr StorageBuffer
+)";
+
+  const std::string body = R"(
+%accesschain = OpAccessChain %u8ptr %var %u32_0
+%load = OpLoad %u8 %accesschain
+%val = OpConvertUToF %f32 %load
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, capabilities_and_extensions,
+                                         decorations, types, variables)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Invalid cast to floating-point from an 8-bit integer: ConvertUToF"));
 }
 
 TEST_F(ValidateConversion, ConvertPtrToUSuccess) {
