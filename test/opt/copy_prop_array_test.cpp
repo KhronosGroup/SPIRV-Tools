@@ -430,7 +430,7 @@ TEST_F(CopyPropArrayPassTest, DecomposeObjectForArrayStore) {
 ; CHECK: [[extract1:%\w+]] = OpCompositeExtract %v4float [[load]] 0
 ; CHECK: [[extract2:%\w+]] = OpCompositeExtract %v4float [[load]] 1
 ; CHECK: [[construct:%\w+]] = OpCompositeConstruct %_arr_v4float_uint_2_0 [[extract1]] [[extract2]]
-; CHEKC: OpStore %26 [[construct]]
+; CHECK: OpStore %26 [[construct]]
                OpStore %26 %41
          %42 = OpAccessChain %_ptr_Function_v4float %26 %28
          %43 = OpLoad %v4float %42
@@ -518,7 +518,7 @@ TEST_F(CopyPropArrayPassTest, DecomposeObjectForStructStore) {
 ; CHECK: [[extract1:%\w+]] = OpCompositeExtract %float [[load]] 0
 ; CHECK: [[extract2:%\w+]] = OpCompositeExtract %uint [[load]] 1
 ; CHECK: [[construct:%\w+]] = OpCompositeConstruct [[struct]] [[extract1]] [[extract2]]
-; CHEKC: OpStore %26 [[construct]]
+; CHECK: OpStore %26 [[construct]]
                OpStore %26 %41
          %42 = OpAccessChain %_ptr_Function_v4float %26 %28
          %43 = OpLoad %v4float %42
@@ -825,6 +825,108 @@ TEST_F(CopyPropArrayPassTest, IsomorphicTypes3) {
   SinglePassRunAndMatch<CopyPropagateArrays>(before, false);
 }
 
+TEST_F(CopyPropArrayPassTest, BadMergingTwoObjects) {
+  // The second element in the |OpCompositeConstruct| is from a different
+  // object.
+  const std::string text =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpName %type_ConstBuf "type.ConstBuf"
+OpMemberName %type_ConstBuf 0 "TexSizeU"
+OpMemberName %type_ConstBuf 1 "TexSizeV"
+OpName %ConstBuf "ConstBuf"
+OpName %main "main"
+OpMemberDecorate %type_ConstBuf 0 Offset 0
+OpMemberDecorate %type_ConstBuf 1 Offset 8
+OpDecorate %type_ConstBuf Block
+OpDecorate %ConstBuf DescriptorSet 0
+OpDecorate %ConstBuf Binding 2
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%type_ConstBuf = OpTypeStruct %v2float %v2float
+%_ptr_Uniform_type_ConstBuf = OpTypePointer Uniform %type_ConstBuf
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%int_0 = OpConstant %uint 0
+%uint_2 = OpConstant %uint 2
+%_arr_v2float_uint_2 = OpTypeArray %v2float %uint_2
+%_ptr_Function__arr_v2float_uint_2 = OpTypePointer Function %_arr_v2float_uint_2
+%_ptr_Uniform_v2float = OpTypePointer Uniform %v2float
+%ConstBuf = OpVariable %_ptr_Uniform_type_ConstBuf Uniform
+%main = OpFunction %void None %9
+%24 = OpLabel
+%25 = OpVariable %_ptr_Function__arr_v2float_uint_2 Function
+%27 = OpAccessChain %_ptr_Uniform_v2float %ConstBuf %int_0
+%28 = OpLoad %v2float %27
+%29 = OpAccessChain %_ptr_Uniform_v2float %ConstBuf %int_0
+%30 = OpLoad %v2float %29
+%31 = OpFNegate %v2float %30
+%37 = OpCompositeConstruct %_arr_v2float_uint_2 %28 %31
+OpStore %25 %37
+OpReturn
+OpFunctionEnd
+)";
+
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+      text, /* skip_nop = */ true, /* do_validation = */ false);
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
+TEST_F(CopyPropArrayPassTest, SecondElementNotContained) {
+  // The second element in the |OpCompositeConstruct| is not a memory object.
+  // Make sure no change happends.
+  const std::string text =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpName %type_ConstBuf "type.ConstBuf"
+OpMemberName %type_ConstBuf 0 "TexSizeU"
+OpMemberName %type_ConstBuf 1 "TexSizeV"
+OpName %ConstBuf "ConstBuf"
+OpName %main "main"
+OpMemberDecorate %type_ConstBuf 0 Offset 0
+OpMemberDecorate %type_ConstBuf 1 Offset 8
+OpDecorate %type_ConstBuf Block
+OpDecorate %ConstBuf DescriptorSet 0
+OpDecorate %ConstBuf Binding 2
+OpDecorate %ConstBuf2 DescriptorSet 1
+OpDecorate %ConstBuf2 Binding 2
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%type_ConstBuf = OpTypeStruct %v2float %v2float
+%_ptr_Uniform_type_ConstBuf = OpTypePointer Uniform %type_ConstBuf
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%int_0 = OpConstant %uint 0
+%int_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%_arr_v2float_uint_2 = OpTypeArray %v2float %uint_2
+%_ptr_Function__arr_v2float_uint_2 = OpTypePointer Function %_arr_v2float_uint_2
+%_ptr_Uniform_v2float = OpTypePointer Uniform %v2float
+%ConstBuf = OpVariable %_ptr_Uniform_type_ConstBuf Uniform
+%ConstBuf2 = OpVariable %_ptr_Uniform_type_ConstBuf Uniform
+%main = OpFunction %void None %9
+%24 = OpLabel
+%25 = OpVariable %_ptr_Function__arr_v2float_uint_2 Function
+%27 = OpAccessChain %_ptr_Uniform_v2float %ConstBuf %int_0
+%28 = OpLoad %v2float %27
+%29 = OpAccessChain %_ptr_Uniform_v2float %ConstBuf2 %int_1
+%30 = OpLoad %v2float %29
+%37 = OpCompositeConstruct %_arr_v2float_uint_2 %28 %30
+OpStore %25 %37
+OpReturn
+OpFunctionEnd
+)";
+
+  auto result = SinglePassRunAndDisassemble<CopyPropagateArrays>(
+      text, /* skip_nop = */ true, /* do_validation = */ false);
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
 // This test will place a load before the store.  We cannot propagate in this
 // case.
 TEST_F(CopyPropArrayPassTest, LoadBeforeStore) {

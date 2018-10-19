@@ -326,6 +326,10 @@ CopyPropagateArrays::BuildMemoryObjectFromCompositeConstruct(
     std::unique_ptr<MemoryObject> member_object =
         GetSourceObjectIfAny(conststruct_inst->GetSingleWordInOperand(i));
 
+    if (!member_object) {
+      return nullptr;
+    }
+
     if (!member_object->IsMember()) {
       return nullptr;
     }
