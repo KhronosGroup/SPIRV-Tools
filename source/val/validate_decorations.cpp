@@ -443,8 +443,8 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                  << " not satisfying alignment to " << alignment;
       }
     }
-    // Check arrays.
-    if (SpvOpTypeArray == opcode) {
+    // Check arrays and runtime arrays.
+    if (SpvOpTypeArray == opcode || SpvOpTypeRuntimeArray == opcode) {
       const auto typeId = inst->word(2);
       const auto arrayInst = vstate.FindDef(typeId);
       if (SpvOpTypeStruct == arrayInst->opcode() &&
