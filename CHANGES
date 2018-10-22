@@ -1,26 +1,43 @@
 Revision history for SPIRV-Tools
 
-v2018.6-dev 2018-10-02
+v2018.6-dev 2018-10-22
  - General:
    - Added support for the Nvidia Turing extensions.
    - Make C++11 the CXX standard in CMakeLists.txt.
    - Enabled a parallel build for MSVC.
-   - Updated the LICENSE.
+   - Enable pre-compiled headers for MSVC.
+   - Added a code of conduct.
+   - EFFCEE and RE2 are now required when build the tests.
  - Optimizer
    - Unrolling loops marked for unrolling in the legalization passes.
    - Improved the compile time of loop unrolling.
    - Changee merge-return to create a dummy loop around the function.
    - Small improvement to merge-blocks to allow it to merge more often.
    - Enforce an upper bound for the ids, and add option to set it.
+   - #1966: Report error if there are unreachable block before running merge return
    Fixes:
    - #1917: Allow 0 (meaning unlimited) as a parameter to --scalar-replacement
    - #1915: Improve handling of group decorations.
    - #1942: Fix incorrect uses of the constant manager.  Avoids type mismatches in generated code.
+   - #1997: Fix dead branch elimination when there is a loop in folded selection.
+   - #1991: Fixes legality check in if-conversion.
+   - #1987: Add nullptr check to array copy propagation.
+   - #1984: Better handling of OpUnreachable in ADCE.
+   - #1983: Run merge return on reachable functions only.
+   - #1956: Handled atomic operations in ADCE.
+   - #1963: Fold integer divisions by 0 to 0.
  - Validator
    - Added validation for OpGroupNonUniformBallotBitCount.
    - Added validation for the Vulkan memory model.
    - Added support for VK_KHR_shader_atddomic_int64.
    - Added validation for execution modes.
+   - Added validation for runtime array layouts.
+   - Added validation for 8-bit storage.
+   - Added validation of OpPhi instructions with pointer result type.
+   - Added checks for the Vulkan memory model.
+   - Validate MakeTexelAvailableKHR and MakeTexelVisibleKHR
+   - Allow atomic function pointer for OpenCL.
+   - FPRounding mode checks were implemented.
    Fixes:
    - #1882: Improve the validation of decorations to reduce memory usage.
    - #1891: Fix an potential infinite loop in dead-branch-elimination.
@@ -28,6 +45,7 @@ v2018.6-dev 2018-10-02
    - #1880: Identify arrays of type void as invalid.
    - #487: Validate OpImageTexelPointer.
    - #1922: Validate OpPhi instructions are at the start of a block correctly.
+   - #1923: Validate function scope variable are at the start of the entry block.
 
 v2018.5 2018-09-07
  - General:
