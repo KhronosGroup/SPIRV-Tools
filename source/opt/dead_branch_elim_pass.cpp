@@ -514,9 +514,17 @@ Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
         }
         break;
       case SpvOpBranch:
-        next_block_id = branch->GetSingleWordInOperand(0);
-        if (next_block_id == loop_merge_id) {
-          return nullptr;
+        // Need to check if this is the header of a loop nested in the
+        // selection construct.
+        next_block_id = start_block->MergeBlockIdIfAny();
+        if (next_block_id == 0) {
+          next_block_id = branch->GetSingleWordInOperand(0);
+          if (next_block_id == loop_merge_id) {
+            // We break out of the selection, but to the merge of a loop
+            // containing the selection.  There is no break to the merge of the
+            // selection construct.
+            return nullptr;
+          }
         }
         break;
       default:
