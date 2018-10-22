@@ -148,8 +148,8 @@ spv_result_t ValidateVectorExtractDynamic(ValidationState_t& _,
            << "Expected Vector component type to be equal to Result Type";
   }
 
-  const uint32_t index_type = _.GetOperandTypeId(inst, 3);
-  if (!_.IsIntScalarType(index_type)) {
+  const auto index = _.FindDef(inst->GetOperandAs<uint32_t>(3));
+  if (!index || index->type_id() == 0 || !_.IsIntScalarType(index->type_id())) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Index to be int scalar";
   }
