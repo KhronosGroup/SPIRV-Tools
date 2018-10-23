@@ -140,11 +140,12 @@ class DeadBranchElimPass : public MemPass {
   // |start_block_id| must be a block whose innermost containing merge construct
   // has |merge_block_id| as the merge block.
   //
-  // |loop_merge_id| is the merge block id of the innermost loop containing
-  // |start_block_id|.
+  // |loop_merge_id| and |loop_continue_id| are the merge and continue block ids
+  // of the innermost loop containing |start_block_id|.
   Instruction* FindFirstExitFromSelectionMerge(uint32_t start_block_id,
                                                uint32_t merge_block_id,
-                                               uint32_t loop_merge_id);
+                                               uint32_t loop_merge_id,
+                                               uint32_t loop_continue_id);
 };
 
 }  // namespace opt
