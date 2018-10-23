@@ -2740,6 +2740,67 @@ OpFunctionEnd
   SinglePassRunAndMatch<DeadBranchElimPass>(predefs + body, true);
 }
 
+TEST_F(DeadBranchElimTest, SelectionMergeSameAsLoopContinue) {
+  // Same as |SelectionMergeWithExitToLoopContinue|, except the branch in the
+  // selection construct is an |OpSwitch| instead of an |OpConditionalBranch|.
+  // The OpSelectionMerge instruction is not needed in this case either.
+  const std::string predefs = R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%uint = OpTypeInt 32 0
+%undef_bool = OpUndef %bool
+)";
+
+  const std::string body =
+      R"(
+; CHECK: OpLabel
+; CHECK: [[loop_header:%\w+]] = OpLabel
+; CHECK: OpLoopMerge [[loop_merge:%\w+]] [[loop_cont:%\w+]]
+; CHECK-NEXT: OpBranch [[bb1:%\w+]]
+; CHECK: [[bb1]] = OpLabel
+; CHECK-NEXT: OpBranch [[bb2:%\w+]]
+; CHECK: [[bb2]] = OpLabel
+; CHECK-NEXT: OpSelectionMerge [[loop_cont]]
+; CHECK-NEXT: OpBranchConditional {{%\w+}} [[bb3:%\w+]] [[loop_cont]]
+; CHECK: [[bb3]] = OpLabel
+; CHECK-NEXT: OpBranch [[loop_cont]]
+; CHECK: [[loop_cont]] = OpLabel
+; CHECK-NEXT: OpBranchConditional {{%\w+}} [[loop_header]] [[loop_merge]]
+; CHECK: [[loop_merge]] = OpLabel
+; CHECK-NEXT: OpReturn
+%main = OpFunction %void None %func_type
+%entry_bb = OpLabel
+OpBranch %loop_header
+%loop_header = OpLabel
+OpLoopMerge %loop_merge %cont None
+OpBranch %bb1
+%bb1 = OpLabel
+OpSelectionMerge %cont None
+OpBranchConditional %true %bb2 %bb4
+%bb2 = OpLabel
+OpBranchConditional %undef_bool %bb3 %cont
+%bb3 = OpLabel
+OpBranch %cont
+%bb4 = OpLabel
+OpBranch %cont
+%cont = OpLabel
+OpBranchConditional %undef_bool %loop_header %loop_merge
+%loop_merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<DeadBranchElimPass>(predefs + body, true);
+}
+
 TEST_F(DeadBranchElimTest, SelectionMergeWithNestedLoop) {
   const std::string body =
       R"(

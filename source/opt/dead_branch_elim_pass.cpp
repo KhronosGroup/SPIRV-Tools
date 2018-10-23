@@ -466,7 +466,7 @@ Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
               break;
             }
             if (branch->GetSingleWordInOperand(i) == loop_continue_id &&
-                loop_merge_id != merge_block_id) {
+                loop_continue_id != merge_block_id) {
               next_block_id = branch->GetSingleWordInOperand(3 - i);
               break;
             }
