@@ -164,7 +164,8 @@ bool DeadBranchElimPass::MarkLiveBlocks(
       if (mergeInst && mergeInst->opcode() == SpvOpSelectionMerge) {
         Instruction* first_break = FindFirstExitFromSelectionMerge(
             live_lab_id, mergeInst->GetSingleWordInOperand(0),
-            cfgAnalysis->LoopMergeBlock(live_lab_id));
+            cfgAnalysis->LoopMergeBlock(live_lab_id),
+            cfgAnalysis->LoopContinueBlock(live_lab_id));
         if (first_break == nullptr) {
           context()->KillInst(mergeInst);
         } else {
@@ -440,12 +441,14 @@ Pass::Status DeadBranchElimPass::Process() {
 }
 
 Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
-    uint32_t start_block_id, uint32_t merge_block_id, uint32_t loop_merge_id) {
+    uint32_t start_block_id, uint32_t merge_block_id, uint32_t loop_merge_id,
+    uint32_t loop_continue_id) {
   // To find the "first" exit, we follow branches looking for a conditional
   // branch that is not in a nested construct and is not the header of a new
   // construct.  We follow the control flow from |start_block_id| to find the
   // first one.
-  while (start_block_id != merge_block_id) {
+  while (start_block_id != merge_block_id && start_block_id != loop_merge_id &&
+         start_block_id != loop_continue_id) {
     BasicBlock* start_block = context()->get_instr_block(start_block_id);
     Instruction* branch = start_block->terminator();
     uint32_t next_block_id = 0;
@@ -453,12 +456,17 @@ Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
       case SpvOpBranchConditional:
         next_block_id = start_block->MergeBlockIdIfAny();
         if (next_block_id == 0) {
-          // If a possible target is the |loop_merge_id|, which is not the
-          // current merge node, then we have to continue the search with the
-          // other target.
+          // If a possible target is the |loop_merge_id| or |loop_continue_id|,
+          // which are not the current merge node, then we continue the search
+          // with the other target.
           for (uint32_t i = 1; i < 3; i++) {
             if (branch->GetSingleWordInOperand(i) == loop_merge_id &&
                 loop_merge_id != merge_block_id) {
+              next_block_id = branch->GetSingleWordInOperand(3 - i);
+              break;
+            }
+            if (branch->GetSingleWordInOperand(i) == loop_continue_id &&
+                loop_continue_id != merge_block_id) {
               next_block_id = branch->GetSingleWordInOperand(3 - i);
               break;
             }
@@ -472,10 +480,11 @@ Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
       case SpvOpSwitch:
         next_block_id = start_block->MergeBlockIdIfAny();
         if (next_block_id == 0) {
-          // A switch with no merge instructions can have at most 3 targets:
-          //   a. merge_block_id
-          //   b. loop_merge_id
-          //   c. 1 block inside the current region.
+          // A switch with no merge instructions can have at most 4 targets:
+          //   a. |merge_block_id|
+          //   b. |loop_merge_id|
+          //   c. |loop_continue_id|
+          //   d. 1 block inside the current region.
           //
           // This leads to a number of cases of what to do.
           //
@@ -495,7 +504,7 @@ Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
             uint32_t target = branch->GetSingleWordInOperand(i);
             if (target == merge_block_id) {
               found_break = true;
-            } else if (target != loop_merge_id) {
+            } else if (target != loop_merge_id && target != loop_continue_id) {
               next_block_id = branch->GetSingleWordInOperand(i);
             }
           }
@@ -519,12 +528,6 @@ Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
         next_block_id = start_block->MergeBlockIdIfAny();
         if (next_block_id == 0) {
           next_block_id = branch->GetSingleWordInOperand(0);
-          if (next_block_id == loop_merge_id) {
-            // We break out of the selection, but to the merge of a loop
-            // containing the selection.  There is no break to the merge of the
-            // selection construct.
-            return nullptr;
-          }
         }
         break;
       default:
