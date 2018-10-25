@@ -1688,11 +1688,12 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
         case SpvExecutionModelTessellationEvaluation:
         case SpvExecutionModelGeometry:
         case SpvExecutionModelMeshNV:
-        case SpvExecutionModelRayGenerationNVX:
-        case SpvExecutionModelIntersectionNVX:
-        case SpvExecutionModelAnyHitNVX:
-        case SpvExecutionModelClosestHitNVX:
-        case SpvExecutionModelMissNVX: {
+        case SpvExecutionModelRayGenerationNV:
+        case SpvExecutionModelIntersectionNV:
+        case SpvExecutionModelAnyHitNV:
+        case SpvExecutionModelClosestHitNV:
+        case SpvExecutionModelMissNV:
+        case SpvExecutionModelCallableNV: {
           // Ok.
           break;
         }
@@ -2490,19 +2491,20 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInBaryCoordNoPerspNV:
     case SpvBuiltInFragmentSizeNV:
     case SpvBuiltInInvocationsPerPixelNV:
-    case SpvBuiltInLaunchIdNVX:
-    case SpvBuiltInLaunchSizeNVX:
-    case SpvBuiltInWorldRayOriginNVX:
-    case SpvBuiltInWorldRayDirectionNVX:
-    case SpvBuiltInObjectRayOriginNVX:
-    case SpvBuiltInObjectRayDirectionNVX:
-    case SpvBuiltInRayTminNVX:
-    case SpvBuiltInRayTmaxNVX:
-    case SpvBuiltInInstanceCustomIndexNVX:
-    case SpvBuiltInObjectToWorldNVX:
-    case SpvBuiltInWorldToObjectNVX:
-    case SpvBuiltInHitTNVX:
-    case SpvBuiltInHitKindNVX: {
+    case SpvBuiltInLaunchIdNV:
+    case SpvBuiltInLaunchSizeNV:
+    case SpvBuiltInWorldRayOriginNV:
+    case SpvBuiltInWorldRayDirectionNV:
+    case SpvBuiltInObjectRayOriginNV:
+    case SpvBuiltInObjectRayDirectionNV:
+    case SpvBuiltInRayTminNV:
+    case SpvBuiltInRayTmaxNV:
+    case SpvBuiltInInstanceCustomIndexNV:
+    case SpvBuiltInObjectToWorldNV:
+    case SpvBuiltInWorldToObjectNV:
+    case SpvBuiltInHitTNV:
+    case SpvBuiltInHitKindNV:
+    case SpvBuiltInIncomingRayFlagsNV: {
       // No validation rules (for the moment).
       break;
     }
