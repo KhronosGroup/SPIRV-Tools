@@ -1693,7 +1693,7 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
         case SpvExecutionModelAnyHitNV:
         case SpvExecutionModelClosestHitNV:
         case SpvExecutionModelMissNV:
-        case SpvExecutionModeCallableNV: {
+        case SpvExecutionModelCallableNV: {
           // Ok.
           break;
         }
