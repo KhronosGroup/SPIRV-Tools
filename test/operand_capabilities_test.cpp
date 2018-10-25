@@ -492,7 +492,7 @@ INSTANTIATE_TEST_CASE_P(
             CASE1(BUILT_IN, BuiltInVertexId, Shader),
             CASE1(BUILT_IN, BuiltInInstanceId, Shader),
             CASE3(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation,
-                  RaytracingNVX),
+                  RayTracingNV),
             CASE2(BUILT_IN, BuiltInInvocationId, Geometry, Tessellation),
             CASE1(BUILT_IN, BuiltInLayer, Geometry),
             CASE1(BUILT_IN, BuiltInViewportIndex, MultiViewport),  // Bug 15234
