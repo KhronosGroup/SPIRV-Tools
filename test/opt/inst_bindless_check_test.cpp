@@ -49,8 +49,8 @@ TEST_F(InstBindlessTest, Simple) {
   // PS_OUTPUT MainPs(PS_INPUT i)
   // {
   //   PS_OUTPUT ps_output;
-  //
-  //   ps_output.vColor = g_tColor[ g_nDataIdx ].Sample(g_sAniso, i.vTextureCoords.xy);
+  //   ps_output.vColor =
+  //       g_tColor[ g_nDataIdx ].Sample(g_sAniso, i.vTextureCoords.xy);
   //   return ps_output;
   // }
 
@@ -247,11 +247,11 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndCheck<InstBindlessCheckPass>(
-    entry_before + names_annots + consts_types_vars + func_pt1 +
-    func_pt2_before,
-    entry_after + names_annots + new_annots + consts_types_vars +
-    new_consts_types_vars + func_pt1 + func_pt2_after + output_func,
-    true, true);
+      entry_before + names_annots + consts_types_vars + func_pt1 +
+          func_pt2_before,
+      entry_after + names_annots + new_annots + consts_types_vars +
+          new_consts_types_vars + func_pt1 + func_pt2_after + output_func,
+      true, true);
 }
 
 TEST_F(InstBindlessTest, NoInstrumentConstIndexInbounds) {
@@ -623,8 +623,9 @@ OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(defs_before + func_before,
-    defs_after + func_after + output_func, true, true);
+  SinglePassRunAndCheck<InstBindlessCheckPass>(
+      defs_before + func_before, defs_after + func_after + output_func, true,
+      true);
 }
 
 TEST_F(InstBindlessTest, ReuseConstsTypesBuiltins) {
@@ -709,7 +710,7 @@ OpDecorate %gl_FragCoord BuiltIn FragCoord
 )";
 
   const std::string defs_after =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 OpExtension "SPV_KHR_storage_buffer_storage_class"
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -793,7 +794,7 @@ OpDecorate %74 Binding 0
 )";
 
   const std::string func_before =
-    R"(%MainPs = OpFunction %void None %3
+      R"(%MainPs = OpFunction %void None %3
 %5 = OpLabel
 %53 = OpLoad %v2float %i_vTextureCoords
 %63 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
@@ -809,7 +810,7 @@ OpFunctionEnd
 )";
 
   const std::string func_after =
-    R"(%MainPs = OpFunction %void None %12
+      R"(%MainPs = OpFunction %void None %12
 %51 = OpLabel
 %52 = OpLoad %v2float %i_vTextureCoords
 %53 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
@@ -837,7 +838,7 @@ OpFunctionEnd
 )";
 
   const std::string output_func =
-    R"(%67 = OpFunction %void None %68
+      R"(%67 = OpFunction %void None %68
 %69 = OpFunctionParameter %uint
 %70 = OpFunctionParameter %uint
 %71 = OpFunctionParameter %uint
@@ -889,8 +890,9 @@ OpFunctionEnd
 )";
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(defs_before + func_before,
-    defs_after + func_after + output_func, true, true);
+  SinglePassRunAndCheck<InstBindlessCheckPass>(
+      defs_before + func_before, defs_after + func_after + output_func, true,
+      true);
 }
 
 TEST_F(InstBindlessTest, InstrumentOpImage) {
@@ -1115,8 +1117,9 @@ OpFunctionEnd
 )";
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(defs_before + func_before,
-      defs_after + func_after + output_func, true, true);
+  SinglePassRunAndCheck<InstBindlessCheckPass>(
+      defs_before + func_before, defs_after + func_after + output_func, true,
+      true);
 }
 
 TEST_F(InstBindlessTest, InstrumentSampledImage) {
@@ -1125,7 +1128,7 @@ TEST_F(InstBindlessTest, InstrumentSampledImage) {
   // from the Simple test.
 
   const std::string defs_before =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %MainPs "MainPs" %i_vTextureCoords %_entryPointOutput_vColor
@@ -1170,7 +1173,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 )";
 
   const std::string defs_after =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 OpExtension "SPV_KHR_storage_buffer_storage_class"
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -1245,7 +1248,7 @@ OpDecorate %gl_FragCoord BuiltIn FragCoord
 )";
 
   const std::string func_before =
-    R"(%MainPs = OpFunction %void None %3
+      R"(%MainPs = OpFunction %void None %3
 %5 = OpLabel
 %53 = OpLoad %v2float %i_vTextureCoords
 %63 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
@@ -1259,7 +1262,7 @@ OpFunctionEnd
 )";
 
   const std::string func_after =
-    R"(%MainPs = OpFunction %void None %9
+      R"(%MainPs = OpFunction %void None %9
 %26 = OpLabel
 %27 = OpLoad %v2float %i_vTextureCoords
 %28 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
@@ -1284,7 +1287,7 @@ OpFunctionEnd
 )";
 
   const std::string output_func =
-    R"(%41 = OpFunction %void None %42
+      R"(%41 = OpFunction %void None %42
 %43 = OpFunctionParameter %uint
 %44 = OpFunctionParameter %uint
 %45 = OpFunctionParameter %uint
@@ -1336,8 +1339,9 @@ OpFunctionEnd
 )";
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(defs_before + func_before,
-    defs_after + func_after + output_func, true, true);
+  SinglePassRunAndCheck<InstBindlessCheckPass>(
+      defs_before + func_before, defs_after + func_after + output_func, true,
+      true);
 }
 
 TEST_F(InstBindlessTest, InstrumentImageWrite) {
@@ -1346,7 +1350,7 @@ TEST_F(InstBindlessTest, InstrumentImageWrite) {
   // from the Simple test.
 
   const std::string defs_before =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 OpCapability StorageImageWriteWithoutFormat
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -1393,7 +1397,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 )";
 
   const std::string defs_after =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 OpCapability StorageImageWriteWithoutFormat
 OpExtension "SPV_KHR_storage_buffer_storage_class"
 %1 = OpExtInstImport "GLSL.std.450"
@@ -1469,7 +1473,7 @@ OpDecorate %gl_FragCoord BuiltIn FragCoord
 )";
 
   const std::string func_before =
-    R"(%MainPs = OpFunction %void None %3
+      R"(%MainPs = OpFunction %void None %3
 %5 = OpLabel
 %53 = OpLoad %v2int %i_vTextureCoords
 %63 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
@@ -1483,7 +1487,7 @@ OpFunctionEnd
 )";
 
   const std::string func_after =
-    R"(%MainPs = OpFunction %void None %9
+      R"(%MainPs = OpFunction %void None %9
 %27 = OpLabel
 %28 = OpLoad %v2int %i_vTextureCoords
 %29 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
@@ -1507,7 +1511,7 @@ OpFunctionEnd
 )";
 
   const std::string output_func =
-    R"(%40 = OpFunction %void None %41
+      R"(%40 = OpFunction %void None %41
 %42 = OpFunctionParameter %uint
 %43 = OpFunctionParameter %uint
 %44 = OpFunctionParameter %uint
@@ -1559,8 +1563,9 @@ OpFunctionEnd
 )";
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(defs_before + func_before,
-    defs_after + func_after + output_func, true, true);
+  SinglePassRunAndCheck<InstBindlessCheckPass>(
+      defs_before + func_before, defs_after + func_after + output_func, true,
+      true);
 }
 
 TEST_F(InstBindlessTest, InstrumentVertexSimple) {
@@ -1831,8 +1836,9 @@ OpFunctionEnd
 )";
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(defs_before + func_before,
-    defs_after + func_after + output_func, true, true);
+  SinglePassRunAndCheck<InstBindlessCheckPass>(
+      defs_before + func_before, defs_after + func_after + output_func, true,
+      true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

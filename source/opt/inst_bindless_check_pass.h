@@ -29,52 +29,51 @@ namespace opt {
 // See optimizer.hpp for pass user documentation.
 class InstBindlessCheckPass : public InstrumentPass {
  public:
-   // For test harness only
-   InstBindlessCheckPass()
-     : InstrumentPass(7, 23, kInstValidationIdBindless) {}
-   // For all other interfaces
-   InstBindlessCheckPass(uint32_t desc_set, uint32_t shader_id)
-     : InstrumentPass(desc_set, shader_id, kInstValidationIdBindless) {}
+  // For test harness only
+  InstBindlessCheckPass() : InstrumentPass(7, 23, kInstValidationIdBindless) {}
+  // For all other interfaces
+  InstBindlessCheckPass(uint32_t desc_set, uint32_t shader_id)
+      : InstrumentPass(desc_set, shader_id, kInstValidationIdBindless) {}
 
   Status Process() override;
 
   const char* name() const override { return "inline-entry-points-exhaustive"; }
 
  private:
-   // Initialize state for instrumenting bindless checking
-   void InitializeInstBindlessCheck();
+  // Initialize state for instrumenting bindless checking
+  void InitializeInstBindlessCheck();
 
-   // If |ref_inst_itr| is a bindless reference, return in |new_blocks| the
-   // result of instrumenting it with validation code within its block at
-   // |ref_block_itr|. Specifically, generate code to check that the index
-   // into the descriptor array is in-bounds. If the check passes, execute
-   // the remainder of the reference, otherwise write a record to the debug
-   // output buffer stream including |function_idx, instruction_idx, stage_idx|
-   // and replace the reference with the null value of the original type. The
-   // block at |ref_block_itr| can just be replaced with the blocks in
-   // |new_blocks|, which will contain at least two blocks. The last block will
-   // comprise all instructions following |ref_inst_itr|,
-   // preceded by a phi instruction.
-   //
-   // This instrumentation pass utilizes GenDebugStreamWrite() to write its
-   // error records. The validation-specific part of the error record will
-   // have the format:
-   //
-   //    Validation Error Code (=kInstErrorBindlessBounds)
-   //    Descriptor Index
-   //    Descriptor Array Size
-   //
-   // The Descriptor Index is the index which has been determined to be
-   // out-of-bounds.
-   //
-   // The Descriptor Array Size is the size of the descriptor array which was
-   // indexed.
-   void GenBindlessCheckCode(
-     BasicBlock::iterator ref_inst_itr,
-     UptrVectorIterator<BasicBlock> ref_block_itr,
-     uint32_t instruction_idx,
-     uint32_t stage_idx,
-     std::vector<std::unique_ptr<BasicBlock>>* new_blocks);
+  // If |ref_inst_itr| is a bindless reference, return in |new_blocks| the
+  // result of instrumenting it with validation code within its block at
+  // |ref_block_itr|. Specifically, generate code to check that the index
+  // into the descriptor array is in-bounds. If the check passes, execute
+  // the remainder of the reference, otherwise write a record to the debug
+  // output buffer stream including |function_idx, instruction_idx, stage_idx|
+  // and replace the reference with the null value of the original type. The
+  // block at |ref_block_itr| can just be replaced with the blocks in
+  // |new_blocks|, which will contain at least two blocks. The last block will
+  // comprise all instructions following |ref_inst_itr|,
+  // preceded by a phi instruction.
+  //
+  // This instrumentation pass utilizes GenDebugStreamWrite() to write its
+  // error records. The validation-specific part of the error record will
+  // have the format:
+  //
+  //    Validation Error Code (=kInstErrorBindlessBounds)
+  //    Descriptor Index
+  //    Descriptor Array Size
+  //
+  // The Descriptor Index is the index which has been determined to be
+  // out-of-bounds.
+  //
+  // The Descriptor Array Size is the size of the descriptor array which was
+  // indexed.
+  void GenBindlessCheckCode(
+    BasicBlock::iterator ref_inst_itr,
+    UptrVectorIterator<BasicBlock> ref_block_itr,
+    uint32_t instruction_idx,
+    uint32_t stage_idx,
+    std::vector<std::unique_ptr<BasicBlock>>* new_blocks);
 
   Pass::Status ProcessImpl();
 

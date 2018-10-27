@@ -162,8 +162,7 @@ void LoopPeeling::InsertCanonicalInductionVariable(
 
   canonical_induction_variable_ = builder.AddPhi(
       uint_1_cst->type_id(),
-      {builder.GetIntConstant<uint32_t>(0, int_type_->IsSigned())
-           ->result_id(),
+      {builder.GetIntConstant<uint32_t>(0, int_type_->IsSigned())->result_id(),
        GetClonedLoop()->GetPreHeaderBlock()->id(), iv_inc->result_id(),
        GetClonedLoop()->GetLatchBlock()->id()});
   // Connect everything.
@@ -678,7 +677,7 @@ std::pair<bool, Loop*> LoopPeelingPass::ProcessLoop(Loop* loop,
           context(), loop->GetHeaderBlock(),
           IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping)
           .GetIntConstant<uint32_t>(static_cast<uint32_t>(iterations),
-                                             is_signed),
+                                    is_signed),
       canonical_induction_variable);
 
   if (!peeler.CanPeelLoop()) {

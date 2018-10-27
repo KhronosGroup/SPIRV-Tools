@@ -30,17 +30,15 @@ static const int kSpvTypePointerTypeIdInIdx = 1;
 static const int kSpvTypeArrayLengthIdInIdx = 1;
 static const int kSpvConstantValueInIdx = 0;
 
-} // anonymous namespace
+}  // anonymous namespace
 
 namespace spvtools {
 namespace opt {
 
 void InstBindlessCheckPass::GenBindlessCheckCode(
     BasicBlock::iterator ref_inst_itr,
-    UptrVectorIterator<BasicBlock> ref_block_itr,
-    uint32_t instruction_idx,
-    uint32_t stage_idx,
-  std::vector<std::unique_ptr<BasicBlock>>* new_blocks) {
+    UptrVectorIterator<BasicBlock> ref_block_itr, uint32_t instruction_idx,
+    uint32_t stage_idx, std::vector<std::unique_ptr<BasicBlock>>* new_blocks) {
   // Look for reference through bindless descriptor. If not, return.
   std::unique_ptr<BasicBlock> new_blk_ptr;
   uint32_t image_id;
@@ -89,12 +87,10 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   if (imageInst->opcode() == SpvOp::SpvOpSampledImage) {
     load_id = imageInst->GetSingleWordInOperand(kSpvSampledImageImageIdInIdx);
     load_inst = get_def_use_mgr()->GetDef(load_id);
-  }
-  else if (imageInst->opcode() == SpvOp::SpvOpImage) {
+  } else if (imageInst->opcode() == SpvOp::SpvOpImage) {
     load_id = imageInst->GetSingleWordInOperand(kSpvImageSampledImageIdInIdx);
     load_inst = get_def_use_mgr()->GetDef(load_id);
-  }
-  else {
+  } else {
     load_id = image_id;
     load_inst = imageInst;
     image_id = 0;
@@ -105,8 +101,7 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   }
   uint32_t ptr_id = load_inst->GetSingleWordInOperand(kSpvLoadPtrIdInIdx);
   Instruction* ptr_inst = get_def_use_mgr()->GetDef(ptr_id);
-  if (ptr_inst->opcode() != SpvOp::SpvOpAccessChain)
-    return;
+  if (ptr_inst->opcode() != SpvOp::SpvOpAccessChain) return;
   if (ptr_inst->NumInOperands() != 2) {
     assert(false && "unexpected bindless index number");
     return;
@@ -126,8 +121,7 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   Instruction* ptr_type_inst = get_def_use_mgr()->GetDef(ptr_type_id);
   // TODO(greg-lunarg): Handle RuntimeArray. Will need to pull length
   // out of debug input buffer.
-  if (ptr_type_inst->opcode() != SpvOpTypeArray)
-    return;
+  if (ptr_type_inst->opcode() != SpvOpTypeArray) return;
   // If index and bound both compile-time constants and index < bound,
   // return without changing
   uint32_t length_id =
@@ -137,17 +131,18 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   if (index_inst->opcode() == SpvOpConstant &&
       length_inst->opcode() == SpvOpConstant &&
       index_inst->GetSingleWordInOperand(kSpvConstantValueInIdx) <
-      length_inst->GetSingleWordInOperand(kSpvConstantValueInIdx))
+          length_inst->GetSingleWordInOperand(kSpvConstantValueInIdx))
     return;
   // Generate full runtime bounds test code with true branch
   // being full reference and false branch being debug output and zero
   // for the referenced value.
   MovePreludeCode(ref_inst_itr, ref_block_itr, &new_blk_ptr);
-  InstructionBuilder builder(context(), &*new_blk_ptr,
-    IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+  InstructionBuilder builder(
+      context(), &*new_blk_ptr,
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
   uint32_t error_id = builder.GetUintConstantId(kInstErrorBindlessBounds);
-  Instruction* ult_inst = builder.AddBinaryOp(GetBoolId(), SpvOpULessThan,
-      index_id, length_id);
+  Instruction* ult_inst =
+      builder.AddBinaryOp(GetBoolId(), SpvOpULessThan, index_id, length_id);
   uint32_t merge_blk_id = TakeNextId();
   uint32_t valid_blk_id = TakeNextId();
   uint32_t invalid_blk_id = TakeNextId();
@@ -155,29 +150,30 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   std::unique_ptr<Instruction> valid_label(NewLabel(valid_blk_id));
   std::unique_ptr<Instruction> invalid_label(NewLabel(invalid_blk_id));
   (void) builder.AddConditionalBranch(ult_inst->result_id(), valid_blk_id,
-      invalid_blk_id, merge_blk_id, SpvSelectionControlMaskNone);
+                                      invalid_blk_id, merge_blk_id, 
+                                      SpvSelectionControlMaskNone);
   // Close selection block and gen valid reference block
   new_blocks->push_back(std::move(new_blk_ptr));
   new_blk_ptr.reset(new BasicBlock(std::move(valid_label)));
   builder.SetInsertPoint(&*new_blk_ptr);
   // Clone descriptor load
-  Instruction* new_load_inst = builder.AddLoad(load_inst->type_id(),
-      load_inst->GetSingleWordInOperand(kSpvLoadPtrIdInIdx));
+  Instruction* new_load_inst =
+      builder.AddLoad(load_inst->type_id(),
+                      load_inst->GetSingleWordInOperand(kSpvLoadPtrIdInIdx));
   uint32_t new_load_id = new_load_inst->result_id();
   get_decoration_mgr()->CloneDecorations(load_inst->result_id(), new_load_id);
   uint32_t new_image_id = new_load_id;
   // Clone Image/SampledImage with new load, if needed
   if (image_id != 0) {
     if (imageInst->opcode() == SpvOp::SpvOpSampledImage) {
-      Instruction* new_image_inst = builder.AddBinaryOp(imageInst->type_id(),
-          SpvOpSampledImage, new_load_id, imageInst->GetSingleWordInOperand(
-              kSpvSampledImageSamplerIdInIdx));
+      Instruction* new_image_inst = builder.AddBinaryOp(
+          imageInst->type_id(), SpvOpSampledImage, new_load_id,
+          imageInst->GetSingleWordInOperand(kSpvSampledImageSamplerIdInIdx));
       new_image_id = new_image_inst->result_id();
-    }
-    else {
+    } else {
       assert(imageInst->opcode() == SpvOp::SpvOpImage && "expecting OpImage");
-      Instruction* new_image_inst = builder.AddUnaryOp(imageInst->type_id(),
-          SpvOpImage, new_load_id);
+      Instruction* new_image_inst =
+          builder.AddUnaryOp(imageInst->type_id(), SpvOpImage, new_load_id);
       new_image_id = new_image_inst->result_id();
     }
     get_decoration_mgr()->CloneDecorations(image_id, new_image_id);
@@ -190,19 +186,19 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
     new_ref_id = TakeNextId();
     new_ref_inst->SetResultId(new_ref_id);
   }
-  new_ref_inst->SetInOperand(kSpvImageSampleImageIdInIdx, { new_image_id });
+  new_ref_inst->SetInOperand(kSpvImageSampleImageIdInIdx, {new_image_id});
   // Register new reference and add to new block
   builder.AddInstruction(std::move(new_ref_inst));
   if (new_ref_id != 0)
     get_decoration_mgr()->CloneDecorations(ref_result_id, new_ref_id);
   // Close valid block and gen invalid block
-  (void) builder.AddBranch(merge_blk_id);
+  (void)builder.AddBranch(merge_blk_id);
   new_blocks->push_back(std::move(new_blk_ptr));
   new_blk_ptr.reset(new BasicBlock(std::move(invalid_label)));
   builder.SetInsertPoint(&*new_blk_ptr);
   uint32_t u_index_id = GenUintCastCode(index_id, &builder);
-  GenDebugStreamWrite(instruction_idx,
-      stage_idx, { error_id, u_index_id, length_id }, &builder);
+  GenDebugStreamWrite(instruction_idx, stage_idx,
+                      {error_id, u_index_id, length_id}, &builder);
   // Remember last invalid block id
   uint32_t last_invalid_blk_id = new_blk_ptr->GetLabelInst()->result_id();
   // Gen zero for invalid  reference
@@ -216,8 +212,9 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   // result id of the original reference with that of the Phi. Kill original
   // reference and move in remainder of original block.
   if (new_ref_id != 0) {
-    Instruction* phi_inst = builder.AddPhi(ref_type_id, { new_ref_id,
-        valid_blk_id, builder.GetNullId(ref_type_id), last_invalid_blk_id });
+    Instruction* phi_inst = builder.AddPhi(
+        ref_type_id, {new_ref_id, valid_blk_id, builder.GetNullId(ref_type_id),
+                      last_invalid_blk_id });
     context()->ReplaceAllUsesWith(ref_result_id, phi_inst->result_id());
   }
   context()->KillInst(&*ref_inst_itr);
@@ -233,7 +230,7 @@ void InstBindlessCheckPass::InitializeInstBindlessCheck() {
   ext_descriptor_indexing_defined_ = false;
   for (auto& ei : get_module()->extensions()) {
     const char* ext_name =
-      reinterpret_cast<const char*>(&ei.GetInOperand(0).words[0]);
+        reinterpret_cast<const char*>(&ei.GetInOperand(0).words[0]);
     if (strcmp(ext_name, "SPV_EXT_descriptor_indexing") == 0) {
       ext_descriptor_indexing_defined_ = true;
       break;
@@ -243,14 +240,14 @@ void InstBindlessCheckPass::InitializeInstBindlessCheck() {
 
 Pass::Status InstBindlessCheckPass::ProcessImpl() {
   // Perform instrumentation on each entry point function in module
-  InstProcessFunction pfn = [this](
-      BasicBlock::iterator ref_inst_itr,
-      UptrVectorIterator<BasicBlock> ref_block_itr,
-      uint32_t instruction_idx,
-      uint32_t stage_idx,
-    std::vector<std::unique_ptr<BasicBlock>>* new_blocks) {
-    return GenBindlessCheckCode(ref_inst_itr, ref_block_itr,
-        instruction_idx, stage_idx, new_blocks); };
+  InstProcessFunction pfn =
+      [this](BasicBlock::iterator ref_inst_itr,
+             UptrVectorIterator<BasicBlock> ref_block_itr,
+             uint32_t instruction_idx, uint32_t stage_idx,
+             std::vector<std::unique_ptr<BasicBlock>>* new_blocks) {
+        return GenBindlessCheckCode(ref_inst_itr, ref_block_itr,
+                                    instruction_idx, stage_idx, new_blocks);
+      };
   bool modified = InstProcessEntryPointCallTree(pfn);
   // This pass does not update inst->blk info
   context()->InvalidateAnalyses(IRContext::kAnalysisInstrToBlockMapping);

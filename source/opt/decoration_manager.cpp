@@ -291,43 +291,40 @@ void DecorationManager::AddDecoration(Instruction* inst) {
 }
 
 void DecorationManager::AddDecoration(SpvOp opcode,
-    std::vector<Operand> opnds) {
+                                      std::vector<Operand> opnds) {
   IRContext* ctx = module_->context();
   std::unique_ptr<Instruction> newDecoOp(
-    new Instruction(ctx, opcode, 0, 0, opnds));
+      new Instruction(ctx, opcode, 0, 0, opnds));
   ctx->AddAnnotationInst(std::move(newDecoOp));
 }
 
 void DecorationManager::AddDecoration(uint32_t inst_id, uint32_t decoration) {
-  AddDecoration(SpvOpDecorate,
-      { { spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-        { inst_id } },
-        { spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-        { decoration } } });
+  AddDecoration(
+      SpvOpDecorate,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {inst_id}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {decoration}}});
 }
 
 void DecorationManager::AddDecorationVal(uint32_t inst_id, uint32_t decoration,
-    uint32_t decoration_value) {
-  AddDecoration(SpvOpDecorate,
-      { { spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-        { inst_id } },
-        { spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-        { decoration } },
-        { spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-        { decoration_value } } });
+                                         uint32_t decoration_value) {
+  AddDecoration(
+      SpvOpDecorate,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {inst_id}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {decoration}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
+        {decoration_value}}});
 }
 
 void DecorationManager::AddMemberDecoration(uint32_t inst_id, uint32_t member,
-  uint32_t decoration, uint32_t decoration_value) {
-  AddDecoration(SpvOpMemberDecorate,
-      { { spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-        { inst_id } },
-        { spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-        { member } },
-        { spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-        { decoration } },
-        { spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-        { decoration_value } } });
+                                            uint32_t decoration,
+                                            uint32_t decoration_value) {
+  AddDecoration(
+      SpvOpMemberDecorate,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {inst_id}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {member}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {decoration}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
+        {decoration_value}}});
 }
 
 template <typename T>

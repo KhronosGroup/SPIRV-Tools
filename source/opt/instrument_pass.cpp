@@ -39,7 +39,7 @@ static const int kSpvDecorateBuiltinInIdx = 2;
 static const int kSpvMemberDecorateDecorationInIdx = 2;
 static const int kSpvMemberDecorateBuiltinInIdx = 3;
 
-} // anonymous namespace
+}  // anonymous namespace
 
 namespace spvtools {
 namespace opt {
@@ -54,7 +54,7 @@ void InstrumentPass::MovePreludeCode(
   new_blk_ptr->reset(new BasicBlock(ref_block_itr->GetLabel()));
   // Move contents of original ref block up to ref instruction.
   for (auto cii = ref_block_itr->begin(); cii != ref_inst_itr;
-      cii = ref_block_itr->begin()) {
+       cii = ref_block_itr->begin()) {
     Instruction* inst = &*cii;
     inst->RemoveFromList();
     std::unique_ptr<Instruction> mv_ptr(inst);
@@ -68,19 +68,20 @@ void InstrumentPass::MovePreludeCode(
 }
 
 void InstrumentPass::MovePostludeCode(
-  UptrVectorIterator<BasicBlock> ref_block_itr,
-  std::unique_ptr<BasicBlock>* new_blk_ptr) {
+    UptrVectorIterator<BasicBlock> ref_block_itr,
+    std::unique_ptr<BasicBlock>* new_blk_ptr) {
   // new_blk_ptr->reset(new BasicBlock(NewLabel(ref_block_itr->id())));
   // Move contents of original ref block.
   for (auto cii = ref_block_itr->begin(); cii != ref_block_itr->end();
-      cii = ref_block_itr->begin()) {
+       cii = ref_block_itr->begin()) {
     Instruction* inst = &*cii;
     inst->RemoveFromList();
     std::unique_ptr<Instruction> mv_inst(inst);
     // Regenerate any same-block instruction that has not been seen in the
     // current block.
     if (same_block_pre_.size() > 0) {
-      CloneSameBlockOps(&mv_inst, &same_block_post_, &same_block_pre_, new_blk_ptr);
+      CloneSameBlockOps(&mv_inst, &same_block_post_, &same_block_pre_,
+                        new_blk_ptr);
       // Remember same-block ops in this block.
       if (IsSameBlockOp(&*mv_inst)) {
         const uint32_t rid = mv_inst->result_id();
@@ -98,148 +99,136 @@ std::unique_ptr<Instruction> InstrumentPass::NewLabel(uint32_t label_id) {
   return newLabel;
 }
 
-uint32_t InstrumentPass::GenUintCastCode(
-    uint32_t val_id,
-    InstructionBuilder* builder) {
+uint32_t InstrumentPass::GenUintCastCode(uint32_t val_id,
+                                         InstructionBuilder* builder) {
   // Cast value to 32-bit unsigned if necessary
   if (get_def_use_mgr()->GetDef(val_id)->type_id() == GetUintId())
     return val_id;
   return builder->AddUnaryOp(GetUintId(), SpvOpBitcast, val_id)->result_id();
 }
 
-void InstrumentPass::GenDebugOutputFieldCode(
-    uint32_t base_offset_id,
-    uint32_t field_offset,
-    uint32_t field_value_id,
-    InstructionBuilder* builder) {
+void InstrumentPass::GenDebugOutputFieldCode(uint32_t base_offset_id,
+                                             uint32_t field_offset,
+                                             uint32_t field_value_id,
+                                             InstructionBuilder* builder) {
   // Cast value to 32-bit unsigned if necessary
   uint32_t val_id = GenUintCastCode(field_value_id, builder);
   // Store value
-  Instruction* data_idx_inst = builder->AddBinaryOp(GetUintId(), SpvOpIAdd,
-      base_offset_id, builder->GetUintConstantId(field_offset));
-  Instruction* achain_inst = builder->AddTernaryOp(GetOutputBufferUintPtrId(),
-      SpvOpAccessChain, GetOutputBufferId(),
+  Instruction* data_idx_inst =
+      builder->AddBinaryOp(GetUintId(), SpvOpIAdd, base_offset_id,
+                           builder->GetUintConstantId(field_offset));
+  Instruction* achain_inst = builder->AddTernaryOp(
+      GetOutputBufferUintPtrId(), SpvOpAccessChain, GetOutputBufferId(),
       builder->GetUintConstantId(kDebugOutputDataOffset),
       data_idx_inst->result_id());
-  (void) builder->AddBinaryOp(0, SpvOpStore, achain_inst->result_id(), val_id);
+  (void)builder->AddBinaryOp(0, SpvOpStore, achain_inst->result_id(), val_id);
 }
 
-void InstrumentPass::GenCommonStreamWriteCode(
-    uint32_t record_sz,
-    uint32_t inst_id,
-    uint32_t stage_idx,
-    uint32_t base_offset_id,
-    InstructionBuilder* builder) {
+void InstrumentPass::GenCommonStreamWriteCode(uint32_t record_sz,
+                                              uint32_t inst_id,
+                                              uint32_t stage_idx,
+                                              uint32_t base_offset_id,
+                                              InstructionBuilder* builder) {
   // Store record size
   GenDebugOutputFieldCode(base_offset_id, kInstCommonOutSize,
-      builder->GetUintConstantId(record_sz), builder);
+                          builder->GetUintConstantId(record_sz), builder);
   // Store Shader Id
   GenDebugOutputFieldCode(base_offset_id, kInstCommonOutShaderId,
-      builder->GetUintConstantId(shader_id_), builder);
+                          builder->GetUintConstantId(shader_id_), builder);
   // Store Instruction Idx
-  GenDebugOutputFieldCode(base_offset_id, kInstCommonOutInstructionIdx,
-      inst_id, builder);
+  GenDebugOutputFieldCode(base_offset_id, kInstCommonOutInstructionIdx, inst_id,
+                          builder);
   // Store Stage Idx
   GenDebugOutputFieldCode(base_offset_id, kInstCommonOutStageIdx,
-      builder->GetUintConstantId(stage_idx), builder);
+                          builder->GetUintConstantId(stage_idx), builder);
 }
 
 void InstrumentPass::GenFragCoordEltDebugOutputCode(
-    uint32_t base_offset_id,
-    uint32_t uint_frag_coord_id,
-    uint32_t element,
-  InstructionBuilder* builder) {
-  Instruction* element_val_inst = builder->AddIdLiteralOp(GetUintId(),
-      SpvOpCompositeExtract, uint_frag_coord_id, element);
+    uint32_t base_offset_id, uint32_t uint_frag_coord_id, uint32_t element,
+    InstructionBuilder* builder) {
+  Instruction* element_val_inst = builder->AddIdLiteralOp(
+      GetUintId(), SpvOpCompositeExtract, uint_frag_coord_id, element);
   GenDebugOutputFieldCode(base_offset_id, kInstFragOutFragCoordX + element,
-      element_val_inst->result_id(), builder);
+                          element_val_inst->result_id(), builder);
 }
 
-void InstrumentPass::GenBuiltinOutputCode(
-    uint32_t builtin_id,
-    uint32_t builtin_off,
-    uint32_t base_offset_id,
-    InstructionBuilder* builder) {
+void InstrumentPass::GenBuiltinOutputCode(uint32_t builtin_id,
+                                          uint32_t builtin_off,
+                                          uint32_t base_offset_id,
+                                          InstructionBuilder* builder) {
   // Load and store builtin
-  Instruction* load_inst = builder->AddUnaryOp(GetUintId(), SpvOpLoad, builtin_id);
+  Instruction* load_inst =
+      builder->AddUnaryOp(GetUintId(), SpvOpLoad, builtin_id);
   GenDebugOutputFieldCode(base_offset_id, builtin_off, load_inst->result_id(),
-      builder);
+                          builder);
 }
 
-void InstrumentPass::GenUintNullOutputCode(
-    uint32_t field_off,
-    uint32_t base_offset_id,
-    InstructionBuilder* builder) {
+void InstrumentPass::GenUintNullOutputCode(uint32_t field_off,
+                                           uint32_t base_offset_id,
+                                           InstructionBuilder* builder) {
   GenDebugOutputFieldCode(base_offset_id, field_off,
-      builder->GetNullId(GetUintId()), builder);
+                          builder->GetNullId(GetUintId()), builder);
 }
 
-void InstrumentPass::GenStageStreamWriteCode(
-  uint32_t stage_idx,
-  uint32_t base_offset_id,
-  InstructionBuilder* builder) {
+void InstrumentPass::GenStageStreamWriteCode(uint32_t stage_idx,
+                                             uint32_t base_offset_id,
+                                             InstructionBuilder* builder) {
   // TODO(greg-lunarg): Add support for all stages
   switch (stage_idx) {
     case SpvExecutionModelVertex: {
       // Load and store VertexId and InstanceId
       GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInVertexId),
-        kInstVertOutVertexId, base_offset_id, builder);
+                           kInstVertOutVertexId, base_offset_id, builder);
       GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInInstanceId),
-        kInstVertOutInstanceId, base_offset_id, builder);
+                           kInstVertOutInstanceId, base_offset_id, builder);
     } break;
     case SpvExecutionModelGLCompute: {
       // Load and store GlobalInvocationId. Second word is unused; store zero.
       GenBuiltinOutputCode(
-        context()->GetBuiltinVarId(SpvBuiltInGlobalInvocationId),
-        kInstCompOutGlobalInvocationId, base_offset_id, builder);
+          context()->GetBuiltinVarId(SpvBuiltInGlobalInvocationId),
+          kInstCompOutGlobalInvocationId, base_offset_id, builder);
       GenUintNullOutputCode(kInstCompOutUnused, base_offset_id, builder);
     } break;
     case SpvExecutionModelGeometry: {
       // Load and store PrimitiveId and InvocationId.
-      GenBuiltinOutputCode(
-        context()->GetBuiltinVarId(SpvBuiltInPrimitiveId),
-        kInstGeomOutPrimitiveId, base_offset_id, builder);
-      GenBuiltinOutputCode(
-        context()->GetBuiltinVarId(SpvBuiltInInvocationId),
-        kInstGeomOutInvocationId, base_offset_id, builder);
+      GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInPrimitiveId),
+                           kInstGeomOutPrimitiveId, base_offset_id, builder);
+      GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInInvocationId),
+                           kInstGeomOutInvocationId, base_offset_id, builder);
     } break;
     case SpvExecutionModelTessellationControl:
     case SpvExecutionModelTessellationEvaluation: {
       // Load and store InvocationId. Second word is unused; store zero.
-      GenBuiltinOutputCode(
-        context()->GetBuiltinVarId(SpvBuiltInInvocationId),
-        kInstTessOutInvocationId, base_offset_id, builder);
+      GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInInvocationId),
+                           kInstTessOutInvocationId, base_offset_id, builder);
       GenUintNullOutputCode(kInstTessOutUnused, base_offset_id, builder);
     }  break;
     case SpvExecutionModelFragment: {
       // Load FragCoord and convert to Uint
-      Instruction* frag_coord_inst = builder->AddUnaryOp(GetVec4FloatId(),
-        SpvOpLoad, context()->GetBuiltinVarId(SpvBuiltInFragCoord));
-      Instruction* uint_frag_coord_inst = builder->AddUnaryOp(GetVec4UintId(),
-        SpvOpBitcast, frag_coord_inst->result_id());
+      Instruction* frag_coord_inst =
+          builder->AddUnaryOp(GetVec4FloatId(), SpvOpLoad,
+                              context()->GetBuiltinVarId(SpvBuiltInFragCoord));
+      Instruction* uint_frag_coord_inst = builder->AddUnaryOp(
+          GetVec4UintId(), SpvOpBitcast, frag_coord_inst->result_id());
       for (uint32_t u = 0; u < 2u; ++u)
-        GenFragCoordEltDebugOutputCode(base_offset_id,
-          uint_frag_coord_inst->result_id(), u, builder);
+        GenFragCoordEltDebugOutputCode(
+            base_offset_id, uint_frag_coord_inst->result_id(), u, builder);
     } break;
-    default: {
-      assert(false && "unsupported stage");
-    } break;
+    default: { assert(false && "unsupported stage"); } break;
   }
 }
 
 void InstrumentPass::GenDebugStreamWrite(
-    uint32_t instruction_idx,
-    uint32_t stage_idx,
-    const std::vector<uint32_t> &validation_ids,
-    InstructionBuilder* builder) {
+    uint32_t instruction_idx, uint32_t stage_idx,
+    const std::vector<uint32_t> &validation_ids, InstructionBuilder* builder) {
   // Call debug output function. Pass func_idx, instruction_idx and
   // validation ids as args.
   uint32_t val_id_cnt = static_cast<uint32_t>(validation_ids.size());
   uint32_t output_func_id = GetStreamWriteFunctionId(stage_idx, val_id_cnt);
-  std::vector<uint32_t> args = { output_func_id,
-      builder->GetUintConstantId(instruction_idx) };
-  (void) args.insert(args.end(), validation_ids.begin(), validation_ids.end());
-  (void) builder->AddNaryOp(GetVoidId(), SpvOpFunctionCall, args);
+  std::vector<uint32_t> args = {output_func_id,
+                                builder->GetUintConstantId(instruction_idx) };
+  (void)args.insert(args.end(), validation_ids.begin(), validation_ids.end());
+  (void)builder->AddNaryOp(GetVoidId(), SpvOpFunctionCall, args);
 }
 
 bool InstrumentPass::IsSameBlockOp(const Instruction* inst) const {
@@ -294,8 +283,7 @@ void InstrumentPass::UpdateSucceedingPhis(
               changed = true;
             }
           });
-          if (changed)
-            get_def_use_mgr()->AnalyzeInstUse(phi);
+          if (changed) get_def_use_mgr()->AnalyzeInstUse(phi);
         });
       });
 }
@@ -311,8 +299,10 @@ uint32_t InstrumentPass::GetOutputBufferUintPtrId() {
 
 uint32_t InstrumentPass::GetOutputBufferBinding() {
   switch (validation_id_) {
-    case kInstValidationIdBindless: return kDebugOutputBindingStream;
-    default: assert(false && "unexpected validation id");
+    case kInstValidationIdBindless:
+      return kDebugOutputBindingStream;
+    default:
+      assert(false && "unexpected validation id");
   }
   return 0;
 }
@@ -326,31 +316,31 @@ uint32_t InstrumentPass::GetOutputBufferId() {
     analysis::Integer uint_ty(32, false);
     analysis::Type* reg_uint_ty = type_mgr->GetRegisteredType(&uint_ty);
     analysis::RuntimeArray uint_rarr_ty(reg_uint_ty);
-    analysis::Type* reg_uint_rarr_ty = type_mgr->GetRegisteredType(
-        &uint_rarr_ty);
-    analysis::Struct obuf_ty({ reg_uint_ty, reg_uint_rarr_ty });
+    analysis::Type* reg_uint_rarr_ty =
+        type_mgr->GetRegisteredType(&uint_rarr_ty);
+    analysis::Struct obuf_ty({reg_uint_ty, reg_uint_rarr_ty});
     analysis::Type* reg_obuf_ty = type_mgr->GetRegisteredType(&obuf_ty);
     uint32_t obufTyId = type_mgr->GetTypeInstruction(reg_obuf_ty);
     deco_mgr->AddDecoration(obufTyId, SpvDecorationBlock);
     deco_mgr->AddMemberDecoration(obufTyId, kDebugOutputSizeOffset,
-        SpvDecorationOffset, 0);
+                                  SpvDecorationOffset, 0);
     deco_mgr->AddMemberDecoration(obufTyId, kDebugOutputDataOffset,
-        SpvDecorationOffset, 4);
-    uint32_t obufTyPtrId_ = type_mgr->FindPointerToType(obufTyId,
-        SpvStorageClassStorageBuffer);
+                                  SpvDecorationOffset, 4);
+    uint32_t obufTyPtrId_ =
+        type_mgr->FindPointerToType(obufTyId, SpvStorageClassStorageBuffer);
     output_buffer_id_ = TakeNextId();
-    std::unique_ptr<Instruction> newVarOp(
-        new Instruction(context(), SpvOpVariable, obufTyPtrId_,
-            output_buffer_id_,
-            { { spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                { SpvStorageClassStorageBuffer } } }));
+    std::unique_ptr<Instruction> newVarOp(new Instruction(
+        context(), SpvOpVariable, obufTyPtrId_, output_buffer_id_,
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
+          {SpvStorageClassStorageBuffer}}}));
     context()->AddGlobalValue(std::move(newVarOp));
     deco_mgr->AddDecorationVal(output_buffer_id_, SpvDecorationDescriptorSet,
-        desc_set_);
+                               desc_set_);
     deco_mgr->AddDecorationVal(output_buffer_id_, SpvDecorationBinding,
-        GetOutputBufferBinding());
+                               GetOutputBufferBinding());
     // Look for storage buffer extension. If none, create one.
-    if (!get_feature_mgr()->HasExtension(kSPV_KHR_storage_buffer_storage_class)) {
+    if (!get_feature_mgr()->HasExtension(
+            kSPV_KHR_storage_buffer_storage_class)) {
       const std::string ext_name("SPV_KHR_storage_buffer_storage_class");
       const auto num_chars = ext_name.size();
       // Compute num words, accommodate the terminating null character.
@@ -359,7 +349,7 @@ uint32_t InstrumentPass::GetOutputBufferId() {
       std::memcpy(ext_words.data(), ext_name.data(), num_chars);
       context()->AddExtension(std::unique_ptr<Instruction>(
           new Instruction(context(), SpvOpExtension, 0u, 0u,
-          { { SPV_OPERAND_TYPE_LITERAL_STRING, ext_words } })));
+                          {{SPV_OPERAND_TYPE_LITERAL_STRING, ext_words}})));
     }
   }
   return output_buffer_id_;
@@ -420,7 +410,7 @@ uint32_t InstrumentPass::GetVoidId() {
 }
 
 uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
-    uint32_t val_spec_param_cnt) {
+                                                  uint32_t val_spec_param_cnt) {
   // Total param count is common params plus validation-specific
   // params
   uint32_t param_cnt = kInstCommonParamCnt + val_spec_param_cnt;
@@ -433,16 +423,15 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
       param_types.push_back(type_mgr->GetType(GetUintId()));
     analysis::Function func_ty(type_mgr->GetType(GetVoidId()), param_types);
     analysis::Type* reg_func_ty = type_mgr->GetRegisteredType(&func_ty);
-    std::unique_ptr<Instruction> func_inst(
-        new Instruction(get_module()->context(), SpvOpFunction, GetVoidId(),
-            output_func_id_, 
-            { { spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-            { SpvFunctionControlMaskNone } },
-            { spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-            { type_mgr->GetTypeInstruction(reg_func_ty) } } }));
+    std::unique_ptr<Instruction> func_inst(new Instruction(
+        get_module()->context(), SpvOpFunction, GetVoidId(), output_func_id_, 
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
+          {SpvFunctionControlMaskNone}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
+          {type_mgr->GetTypeInstruction(reg_func_ty)}}}));
     get_def_use_mgr()->AnalyzeInstDefUse(&*func_inst);
-    std::unique_ptr<Function> output_func = MakeUnique<Function>(
-        std::move(func_inst));
+    std::unique_ptr<Function> output_func =
+        MakeUnique<Function>(std::move(func_inst));
     // Add parameters
     std::vector<uint32_t> param_vec;
     for (uint32_t c = 0; c < param_cnt; ++c) {
@@ -450,77 +439,77 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
       param_vec.push_back(pid);
       std::unique_ptr<Instruction> param_inst(
           new Instruction(get_module()->context(), SpvOpFunctionParameter,
-              GetUintId(), pid, {}));
+                          GetUintId(), pid, {}));
       get_def_use_mgr()->AnalyzeInstDefUse(&*param_inst);
       output_func->AddParameter(std::move(param_inst));
     }
     // Create first block
     uint32_t test_blk_id = TakeNextId();
     std::unique_ptr<Instruction> test_label(NewLabel(test_blk_id));
-    std::unique_ptr<BasicBlock> new_blk_ptr = MakeUnique<BasicBlock>(
-        std::move(test_label));
-    InstructionBuilder builder(context(), &*new_blk_ptr,
+    std::unique_ptr<BasicBlock> new_blk_ptr =
+        MakeUnique<BasicBlock>(std::move(test_label));
+    InstructionBuilder builder(
+        context(), &*new_blk_ptr,
         IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
     // Gen test if debug output buffer size will not be exceeded.
     uint32_t obuf_record_sz = kInstStageOutRecordSize + val_spec_param_cnt;
     Instruction* obuf_curr_sz_ac_inst = builder.AddBinaryOp(
-        GetOutputBufferUintPtrId(),
-        SpvOpAccessChain, GetOutputBufferId(),
+        GetOutputBufferUintPtrId(), SpvOpAccessChain, GetOutputBufferId(),
         builder.GetUintConstantId(kDebugOutputSizeOffset));
     // Fetch the current debug buffer written size atomically, adding the
     // size of the record to be written.
-    Instruction* obuf_curr_sz_inst = builder.AddQuadOp(GetUintId(),
-        SpvOpAtomicIAdd,
-        obuf_curr_sz_ac_inst->result_id(),
+    Instruction* obuf_curr_sz_inst = builder.AddQuadOp(
+        GetUintId(), SpvOpAtomicIAdd, obuf_curr_sz_ac_inst->result_id(),
         builder.GetUintConstantId(SpvScopeInvocation),
         builder.GetUintConstantId(SpvMemoryAccessMaskNone),
         builder.GetUintConstantId(obuf_record_sz));
     uint32_t obuf_curr_sz_id = obuf_curr_sz_inst->result_id();
     // Compute new written size
-    Instruction* obuf_new_sz_inst = builder.AddBinaryOp(GetUintId(), SpvOpIAdd,
-        obuf_curr_sz_id, builder.GetUintConstantId(obuf_record_sz));
+    Instruction* obuf_new_sz_inst = 
+        builder.AddBinaryOp(GetUintId(), SpvOpIAdd, obuf_curr_sz_id,
+                            builder.GetUintConstantId(obuf_record_sz));
     // Fetch the data bound
-    Instruction* obuf_bnd_inst = builder.AddIdLiteralOp(GetUintId(),
-        SpvOpArrayLength, GetOutputBufferId(), kDebugOutputDataOffset);
+    Instruction* obuf_bnd_inst =
+        builder.AddIdLiteralOp(GetUintId(), SpvOpArrayLength,
+                               GetOutputBufferId(), kDebugOutputDataOffset);
     // Test that new written size is less than or equal to debug output
     // data bound
-    Instruction* obuf_safe_inst = builder.AddBinaryOp(GetBoolId(),
-        SpvOpULessThanEqual, obuf_new_sz_inst->result_id(),
+    Instruction* obuf_safe_inst = builder.AddBinaryOp(
+        GetBoolId(), SpvOpULessThanEqual, obuf_new_sz_inst->result_id(),
         obuf_bnd_inst->result_id());
     uint32_t merge_blk_id = TakeNextId();
     uint32_t write_blk_id = TakeNextId();
     std::unique_ptr<Instruction> merge_label(NewLabel(merge_blk_id));
     std::unique_ptr<Instruction> write_label(NewLabel(write_blk_id));
-    (void) builder.AddConditionalBranch(obuf_safe_inst->result_id(),
-        write_blk_id, merge_blk_id, merge_blk_id, SpvSelectionControlMaskNone);
+    (void)builder.AddConditionalBranch(obuf_safe_inst->result_id(),
+                                       write_blk_id, merge_blk_id, merge_blk_id,
+                                       SpvSelectionControlMaskNone);
     // Close safety test block and gen write block
     new_blk_ptr->SetParent(&*output_func);
     output_func->AddBasicBlock(std::move(new_blk_ptr));
     new_blk_ptr = MakeUnique<BasicBlock>(std::move(write_label));
     builder.SetInsertPoint(&*new_blk_ptr);
     // Generate common and stage-specific debug record members
-    GenCommonStreamWriteCode(obuf_record_sz,
-        param_vec[kInstCommonParamInstIdx],
-        stage_idx, obuf_curr_sz_id, &builder);
+    GenCommonStreamWriteCode(obuf_record_sz, param_vec[kInstCommonParamInstIdx],
+                             stage_idx, obuf_curr_sz_id, &builder);
     GenStageStreamWriteCode(stage_idx, obuf_curr_sz_id, &builder);
     // Gen writes of validation specific data
     for (uint32_t i = 0; i < val_spec_param_cnt; ++i) {
       GenDebugOutputFieldCode(obuf_curr_sz_id, kInstStageOutRecordSize + i,
-          param_vec[kInstCommonParamCnt + i], &builder);
+                              param_vec[kInstCommonParamCnt + i], &builder);
     }
     // Close write block and gen merge block
-    (void) builder.AddBranch(merge_blk_id);
+    (void)builder.AddBranch(merge_blk_id);
     new_blk_ptr->SetParent(&*output_func);
     output_func->AddBasicBlock(std::move(new_blk_ptr));
     new_blk_ptr = MakeUnique<BasicBlock>(std::move(merge_label));
     builder.SetInsertPoint(&*new_blk_ptr);
     // Close merge block and function and add function to module
-    (void) builder.AddNullaryOp(0, SpvOpReturn);
+    (void)builder.AddNullaryOp(0, SpvOpReturn);
     new_blk_ptr->SetParent(&*output_func);
     output_func->AddBasicBlock(std::move(new_blk_ptr));
     std::unique_ptr<Instruction> func_end_inst(
-        new Instruction(get_module()->context(), SpvOpFunctionEnd,
-            0, 0, {}));
+        new Instruction(get_module()->context(), SpvOpFunctionEnd, 0, 0, {}));
     get_def_use_mgr()->AnalyzeInstDefUse(&*func_end_inst);
     output_func->SetFunctionEnd(std::move(func_end_inst));
     context()->AddFunction(std::move(output_func));
@@ -531,13 +520,12 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
 }
 
 bool InstrumentPass::InstrumentFunction(Function* func, uint32_t stage_idx,
-    InstProcessFunction& pfn) {
+                                        InstProcessFunction& pfn) {
   bool modified = false;
   // Compute function index
   uint32_t function_idx = 0;
   for (auto fii = get_module()->begin(); fii != get_module()->end(); ++fii) {
-    if (&*fii == func)
-      break;
+    if (&*fii == func) break;
     ++function_idx;
   }
   std::vector<std::unique_ptr<BasicBlock>> new_blks;
@@ -580,14 +568,11 @@ bool InstrumentPass::InstrumentFunction(Function* func, uint32_t stage_idx,
   return modified;
 }
 
-bool InstrumentPass::InstProcessCallTreeFromRoots(
-    InstProcessFunction& pfn,
-    std::queue<uint32_t>* roots,
-    uint32_t stage_idx) {
-  // Process call tree
+bool InstrumentPass::InstProcessCallTreeFromRoots(InstProcessFunction& pfn,
+                                                  std::queue<uint32_t>* roots,
+                                                  uint32_t stage_idx) {
   bool modified = false;
   std::unordered_set<uint32_t> done;
-
   // Process all functions from roots
   while (!roots->empty()) {
     const uint32_t fi = roots->front();
@@ -622,8 +607,7 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
   }
   // Only supporting vertex, fragment and compute shaders at the moment.
   // TODO(greg-lunarg): Handle all stages.
-  if (stage != SpvExecutionModelVertex &&
-      stage != SpvExecutionModelFragment &&
+  if (stage != SpvExecutionModelVertex && stage != SpvExecutionModelFragment &&
       stage != SpvExecutionModelGeometry &&
       stage != SpvExecutionModelGLCompute &&
       stage != SpvExecutionModelTessellationControl &&
@@ -667,7 +651,7 @@ void InstrumentPass::InitializeInstrument() {
   for (auto& i : context()->capabilities()) ++pre_func_size;
   for (auto& i : module->extensions()) ++pre_func_size;
   for (auto& i : module->ext_inst_imports()) ++pre_func_size;
-  ++pre_func_size; // memory_model
+  ++pre_func_size;  // memory_model
   for (auto& i : module->entry_points()) ++pre_func_size;
   for (auto& i : module->execution_modes()) ++pre_func_size;
   for (auto& i : module->debugs1()) ++pre_func_size;
@@ -680,7 +664,7 @@ void InstrumentPass::InitializeInstrument() {
   }
   funcIdx2offset_[0] = pre_func_size;
 
-  // Set instruction offsets for all other functions. 
+  // Set instruction offsets for all other functions.
   uint32_t func_idx = 1;
   auto prev_fn = get_module()->begin();
   auto curr_fn = prev_fn;

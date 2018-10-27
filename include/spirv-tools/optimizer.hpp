@@ -678,7 +678,7 @@ Optimizer::PassToken CreateCombineAccessChainsPass();
 // descriptor set |desc_set|. It will write |shader_id| in each output record
 // to identify the shader module which generated the record.
 Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
-  uint32_t shader_id);
+                                                 uint32_t shader_id);
 
 }  // namespace spvtools
 

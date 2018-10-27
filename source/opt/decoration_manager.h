@@ -119,11 +119,11 @@ class DecorationManager {
 
   // Add |decoration, decoration_value| of |inst_id| to module.
   void AddDecorationVal(uint32_t inst_id, uint32_t decoration,
-    uint32_t decoration_value);
+                        uint32_t decoration_value);
 
   // Add |decoration, decoration_value| of |inst_id, member| to module.
   void AddMemberDecoration(uint32_t member, uint32_t inst_id,
-    uint32_t decoration, uint32_t decoration_value);
+                           uint32_t decoration, uint32_t decoration_value);
 
  private:
   // Analyzes the defs and uses in the given |module| and populates data
