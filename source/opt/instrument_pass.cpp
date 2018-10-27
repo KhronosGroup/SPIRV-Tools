@@ -202,7 +202,7 @@ void InstrumentPass::GenStageStreamWriteCode(uint32_t stage_idx,
       GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInInvocationId),
                            kInstTessOutInvocationId, base_offset_id, builder);
       GenUintNullOutputCode(kInstTessOutUnused, base_offset_id, builder);
-    }  break;
+    } break;
     case SpvExecutionModelFragment: {
       // Load FragCoord and convert to Uint
       Instruction* frag_coord_inst =
@@ -220,13 +220,13 @@ void InstrumentPass::GenStageStreamWriteCode(uint32_t stage_idx,
 
 void InstrumentPass::GenDebugStreamWrite(
     uint32_t instruction_idx, uint32_t stage_idx,
-    const std::vector<uint32_t> &validation_ids, InstructionBuilder* builder) {
+    const std::vector<uint32_t>& validation_ids, InstructionBuilder* builder) {
   // Call debug output function. Pass func_idx, instruction_idx and
   // validation ids as args.
   uint32_t val_id_cnt = static_cast<uint32_t>(validation_ids.size());
   uint32_t output_func_id = GetStreamWriteFunctionId(stage_idx, val_id_cnt);
   std::vector<uint32_t> args = {output_func_id,
-                                builder->GetUintConstantId(instruction_idx) };
+                                builder->GetUintConstantId(instruction_idx)};
   (void)args.insert(args.end(), validation_ids.begin(), validation_ids.end());
   (void)builder->AddNaryOp(GetVoidId(), SpvOpFunctionCall, args);
 }
@@ -424,7 +424,7 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
     analysis::Function func_ty(type_mgr->GetType(GetVoidId()), param_types);
     analysis::Type* reg_func_ty = type_mgr->GetRegisteredType(&func_ty);
     std::unique_ptr<Instruction> func_inst(new Instruction(
-        get_module()->context(), SpvOpFunction, GetVoidId(), output_func_id_, 
+        get_module()->context(), SpvOpFunction, GetVoidId(), output_func_id_,
         {{spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
           {SpvFunctionControlMaskNone}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
@@ -465,7 +465,7 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
         builder.GetUintConstantId(obuf_record_sz));
     uint32_t obuf_curr_sz_id = obuf_curr_sz_inst->result_id();
     // Compute new written size
-    Instruction* obuf_new_sz_inst = 
+    Instruction* obuf_new_sz_inst =
         builder.AddBinaryOp(GetUintId(), SpvOpIAdd, obuf_curr_sz_id,
                             builder.GetUintConstantId(obuf_record_sz));
     // Fetch the data bound

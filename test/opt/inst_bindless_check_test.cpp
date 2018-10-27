@@ -634,7 +634,7 @@ TEST_F(InstBindlessTest, ReuseConstsTypesBuiltins) {
   // from the Simple test.
 
   const std::string defs_before =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 OpExtension "SPV_KHR_storage_buffer_storage_class"
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450

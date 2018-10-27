@@ -149,9 +149,9 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   std::unique_ptr<Instruction> merge_label(NewLabel(merge_blk_id));
   std::unique_ptr<Instruction> valid_label(NewLabel(valid_blk_id));
   std::unique_ptr<Instruction> invalid_label(NewLabel(invalid_blk_id));
-  (void) builder.AddConditionalBranch(ult_inst->result_id(), valid_blk_id,
-                                      invalid_blk_id, merge_blk_id, 
-                                      SpvSelectionControlMaskNone);
+  (void)builder.AddConditionalBranch(ult_inst->result_id(), valid_blk_id,
+                                     invalid_blk_id, merge_blk_id, 
+                                     SpvSelectionControlMaskNone);
   // Close selection block and gen valid reference block
   new_blocks->push_back(std::move(new_blk_ptr));
   new_blk_ptr.reset(new BasicBlock(std::move(valid_label)));
@@ -204,7 +204,7 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   // Gen zero for invalid  reference
   uint32_t ref_type_id = ref_inst_itr->type_id();
   // Close invalid block and gen merge block
-  (void) builder.AddBranch(merge_blk_id);
+  (void)builder.AddBranch(merge_blk_id);
   new_blocks->push_back(std::move(new_blk_ptr));
   new_blk_ptr.reset(new BasicBlock(std::move(merge_label)));
   builder.SetInsertPoint(&*new_blk_ptr);
@@ -214,7 +214,7 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   if (new_ref_id != 0) {
     Instruction* phi_inst = builder.AddPhi(
         ref_type_id, {new_ref_id, valid_blk_id, builder.GetNullId(ref_type_id),
-                      last_invalid_blk_id });
+                      last_invalid_blk_id});
     context()->ReplaceAllUsesWith(ref_result_id, phi_inst->result_id());
   }
   context()->KillInst(&*ref_inst_itr);

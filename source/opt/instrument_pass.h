@@ -73,9 +73,9 @@ class InstrumentPass : public Pass {
 
   IRContext::Analysis GetPreservedAnalyses() override {
     return IRContext::kAnalysisDefUse |
-        IRContext::kAnalysisInstrToBlockMapping |
-        IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
-        IRContext::kAnalysisNameMap | IRContext::kAnalysisBuiltinVarId;
+           IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
+           IRContext::kAnalysisNameMap | IRContext::kAnalysisBuiltinVarId;
   }
 
  protected:
@@ -190,7 +190,7 @@ class InstrumentPass : public Pass {
   // before writing, the size of the debug out buffer can be used by the
   // validation layer to control the number of error records that are written.
   void GenDebugStreamWrite(uint32_t instruction_idx, uint32_t stage_idx,
-                           const std::vector<uint32_t> &validation_ids,
+                           const std::vector<uint32_t>& validation_ids,
                            InstructionBuilder* builder);
 
   // Generate code to cast |value_id| to unsigned, if needed. Return
@@ -211,7 +211,7 @@ class InstrumentPass : public Pass {
 
   // Return id for output buffer uint type
   uint32_t GetOutputBufferUintPtrId();
-  
+
   // Return binding for output buffer for current validation.
   uint32_t GetOutputBufferBinding();
 
@@ -235,9 +235,9 @@ class InstrumentPass : public Pass {
   // top of the last new block.
   bool InstrumentFunction(Function* func, uint32_t stage_idx,
                           InstProcessFunction& pfn);
-  
+ 
   // Call |pfn| on all functions in the call tree of the function
-  // ids in |roots|. 
+  // ids in |roots|.
   bool InstProcessCallTreeFromRoots(InstProcessFunction& pfn,
                                     std::queue<uint32_t>* roots,
                                     uint32_t stage_idx);
