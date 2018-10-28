@@ -150,7 +150,7 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   std::unique_ptr<Instruction> valid_label(NewLabel(valid_blk_id));
   std::unique_ptr<Instruction> invalid_label(NewLabel(invalid_blk_id));
   (void)builder.AddConditionalBranch(ult_inst->result_id(), valid_blk_id,
-                                     invalid_blk_id, merge_blk_id, 
+                                     invalid_blk_id, merge_blk_id,
                                      SpvSelectionControlMaskNone);
   // Close selection block and gen valid reference block
   new_blocks->push_back(std::move(new_blk_ptr));

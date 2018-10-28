@@ -235,7 +235,7 @@ class InstrumentPass : public Pass {
   // top of the last new block.
   bool InstrumentFunction(Function* func, uint32_t stage_idx,
                           InstProcessFunction& pfn);
- 
+
   // Call |pfn| on all functions in the call tree of the function
   // ids in |roots|.
   bool InstProcessCallTreeFromRoots(InstProcessFunction& pfn,

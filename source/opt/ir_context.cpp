@@ -21,12 +21,14 @@
 #include "source/opt/mem_pass.h"
 #include "source/opt/reflect.h"
 
+namespace {
+
 static const int kSpvDecorateTargetIdInIdx = 0;
 static const int kSpvDecorateDecorationInIdx = 1;
 static const int kSpvDecorateBuiltinInIdx = 2;
-static const int kSpvMemberDecorateDecorationInIdx = 2;
-static const int kSpvMemberDecorateBuiltinInIdx = 3;
 static const int kEntryPointInterfaceInIdx = 3;
+
+}  // anonymous namespace
 
 namespace spvtools {
 namespace opt {

@@ -36,8 +36,6 @@ static const int kEntryPointInterfaceInIdx = 3;
 static const int kSpvDecorateTargetIdInIdx = 0;
 static const int kSpvDecorateDecorationInIdx = 1;
 static const int kSpvDecorateBuiltinInIdx = 2;
-static const int kSpvMemberDecorateDecorationInIdx = 2;
-static const int kSpvMemberDecorateBuiltinInIdx = 3;
 
 }  // anonymous namespace
 
@@ -648,16 +646,16 @@ void InstrumentPass::InitializeInstrument() {
   // Calculate instruction offset of first function
   uint32_t pre_func_size = 0;
   Module* module = get_module();
-  for (auto& i : context()->capabilities()) ++pre_func_size;
-  for (auto& i : module->extensions()) ++pre_func_size;
-  for (auto& i : module->ext_inst_imports()) ++pre_func_size;
+  for (auto& i : context()->capabilities()) { (void)i; ++pre_func_size; }
+  for (auto& i : module->extensions()) { (void)i; ++pre_func_size; }
+  for (auto& i : module->ext_inst_imports()) { (void)i; ++pre_func_size; }
   ++pre_func_size;  // memory_model
-  for (auto& i : module->entry_points()) ++pre_func_size;
-  for (auto& i : module->execution_modes()) ++pre_func_size;
-  for (auto& i : module->debugs1()) ++pre_func_size;
-  for (auto& i : module->debugs2()) ++pre_func_size;
-  for (auto& i : module->debugs3()) ++pre_func_size;
-  for (auto& i : module->annotations()) ++pre_func_size;
+  for (auto& i : module->entry_points()) { (void)i; ++pre_func_size; }
+  for (auto& i : module->execution_modes()) { (void)i; ++pre_func_size; }
+  for (auto& i : module->debugs1()) { (void)i; ++pre_func_size; }
+  for (auto& i : module->debugs2()) { (void)i; ++pre_func_size; }
+  for (auto& i : module->debugs3()) { (void)i; ++pre_func_size; }
+  for (auto& i : module->annotations()) { (void)i; ++pre_func_size; }
   for (auto& i : module->types_values()) {
     pre_func_size += 1;
     pre_func_size += static_cast<uint32_t>(i.dbg_line_insts().size());
