@@ -25,17 +25,8 @@ static const int kInstCommonParamInstIdx = 0;
 static const int kInstCommonParamCnt = 1;
 
 // Indices of operands in SPIR-V instructions
-static const int kSpvFunctionCallFunctionId = 2;
-static const int kSpvFunctionCallArgumentId = 3;
-static const int kSpvReturnValueId = 0;
-static const int kSpvLoopMergeMergeBlockId = 0;
-static const int kSpvLoopMergeContinueTargetIdInIdx = 1;
 static const int kEntryPointExecutionModelInIdx = 0;
 static const int kEntryPointFunctionIdInIdx = 1;
-static const int kEntryPointInterfaceInIdx = 3;
-static const int kSpvDecorateTargetIdInIdx = 0;
-static const int kSpvDecorateDecorationInIdx = 1;
-static const int kSpvDecorateBuiltinInIdx = 2;
 
 }  // anonymous namespace
 
@@ -646,16 +637,43 @@ void InstrumentPass::InitializeInstrument() {
   // Calculate instruction offset of first function
   uint32_t pre_func_size = 0;
   Module* module = get_module();
-  for (auto& i : context()->capabilities()) { (void)i; ++pre_func_size; }
-  for (auto& i : module->extensions()) { (void)i; ++pre_func_size; }
-  for (auto& i : module->ext_inst_imports()) { (void)i; ++pre_func_size; }
+  for (auto& i : context()->capabilities()) {
+    (void)i;
+    ++pre_func_size;
+  }
+  for (auto& i : module->extensions()) {
+    (void)i;
+    ++pre_func_size;
+  }
+  for (auto& i : module->ext_inst_imports()) {
+    (void)i;
+    ++pre_func_size;
+  }
   ++pre_func_size;  // memory_model
-  for (auto& i : module->entry_points()) { (void)i; ++pre_func_size; }
-  for (auto& i : module->execution_modes()) { (void)i; ++pre_func_size; }
-  for (auto& i : module->debugs1()) { (void)i; ++pre_func_size; }
-  for (auto& i : module->debugs2()) { (void)i; ++pre_func_size; }
-  for (auto& i : module->debugs3()) { (void)i; ++pre_func_size; }
-  for (auto& i : module->annotations()) { (void)i; ++pre_func_size; }
+  for (auto& i : module->entry_points()) {
+    (void)i;
+    ++pre_func_size;
+  }
+  for (auto& i : module->execution_modes()) {
+    (void)i;
+    ++pre_func_size;
+  }
+  for (auto& i : module->debugs1()) {
+    (void)i;
+    ++pre_func_size;
+  }
+  for (auto& i : module->debugs2()) {
+    (void)i;
+    ++pre_func_size;
+  }
+  for (auto& i : module->debugs3()) {
+    (void)i;
+    ++pre_func_size;
+  }
+  for (auto& i : module->annotations()) {
+    (void)i;
+    ++pre_func_size;
+  }
   for (auto& i : module->types_values()) {
     pre_func_size += 1;
     pre_func_size += static_cast<uint32_t>(i.dbg_line_insts().size());
