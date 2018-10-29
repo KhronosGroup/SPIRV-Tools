@@ -83,7 +83,8 @@ class InstrumentPass : public Pass {
   // for debug input and output buffers and writes |shader_id| into debug
   // output records.
   InstrumentPass(uint32_t desc_set, uint32_t shader_id, uint32_t validation_id)
-      : desc_set_(desc_set),
+      : Pass(),
+        desc_set_(desc_set),
         shader_id_(shader_id),
         validation_id_(validation_id) {}
 

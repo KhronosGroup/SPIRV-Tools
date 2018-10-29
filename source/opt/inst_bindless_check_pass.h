@@ -35,9 +35,11 @@ class InstBindlessCheckPass : public InstrumentPass {
   InstBindlessCheckPass(uint32_t desc_set, uint32_t shader_id)
       : InstrumentPass(desc_set, shader_id, kInstValidationIdBindless) {}
 
+  ~InstBindlessCheckPass() = default;
+
   Status Process() override;
 
-  const char* name() const override { return "inline-entry-points-exhaustive"; }
+  const char* name() const override { return "inst-bindless-check-pass"; }
 
  private:
   // Initialize state for instrumenting bindless checking
