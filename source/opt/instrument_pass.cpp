@@ -106,8 +106,10 @@ void InstrumentPass::GenDebugOutputFieldCode(uint32_t base_offset_id,
   Instruction* data_idx_inst =
       builder->AddBinaryOp(GetUintId(), SpvOpIAdd, base_offset_id,
                            builder->GetUintConstantId(field_offset));
+  uint32_t buf_id = GetOutputBufferId();
+  uint32_t buf_uint_ptr_id = GetOutputBufferUintPtrId();
   Instruction* achain_inst = builder->AddTernaryOp(
-      GetOutputBufferUintPtrId(), SpvOpAccessChain, GetOutputBufferId(),
+      buf_uint_ptr_id, SpvOpAccessChain, buf_id,
       builder->GetUintConstantId(kDebugOutputDataOffset),
       data_idx_inst->result_id());
   (void)builder->AddBinaryOp(0, SpvOpStore, achain_inst->result_id(), val_id);
