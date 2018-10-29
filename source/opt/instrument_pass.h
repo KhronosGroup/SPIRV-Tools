@@ -59,7 +59,7 @@ namespace opt {
 // Validation Ids
 // These are used to identify the general validation being done and map to
 // its output buffers.
-static const int kInstValidationIdBindless = 0;
+static const uint32_t kInstValidationIdBindless = 0;
 
 class InstrumentPass : public Pass {
   using cbb_ptr = const BasicBlock*;
