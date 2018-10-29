@@ -108,10 +108,10 @@ void InstrumentPass::GenDebugOutputFieldCode(uint32_t base_offset_id,
                            builder->GetUintConstantId(field_offset));
   uint32_t buf_id = GetOutputBufferId();
   uint32_t buf_uint_ptr_id = GetOutputBufferUintPtrId();
-  Instruction* achain_inst = builder->AddTernaryOp(
-      buf_uint_ptr_id, SpvOpAccessChain, buf_id,
-      builder->GetUintConstantId(kDebugOutputDataOffset),
-      data_idx_inst->result_id());
+  Instruction* achain_inst =
+      builder->AddTernaryOp(buf_uint_ptr_id, SpvOpAccessChain, buf_id,
+                            builder->GetUintConstantId(kDebugOutputDataOffset),
+                            data_idx_inst->result_id());
   (void)builder->AddBinaryOp(0, SpvOpStore, achain_inst->result_id(), val_id);
 }
 
@@ -444,9 +444,11 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
         IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
     // Gen test if debug output buffer size will not be exceeded.
     uint32_t obuf_record_sz = kInstStageOutRecordSize + val_spec_param_cnt;
-    Instruction* obuf_curr_sz_ac_inst = builder.AddBinaryOp(
-        GetOutputBufferUintPtrId(), SpvOpAccessChain, GetOutputBufferId(),
-        builder.GetUintConstantId(kDebugOutputSizeOffset));
+    uint32_t buf_id = GetOutputBufferId();
+    uint32_t buf_uint_ptr_id = GetOutputBufferUintPtrId();
+    Instruction* obuf_curr_sz_ac_inst =
+        builder.AddBinaryOp(buf_uint_ptr_id, SpvOpAccessChain, buf_id,
+                            builder.GetUintConstantId(kDebugOutputSizeOffset));
     // Fetch the current debug buffer written size atomically, adding the
     // size of the record to be written.
     Instruction* obuf_curr_sz_inst = builder.AddQuadOp(
