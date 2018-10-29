@@ -451,11 +451,13 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
                             builder.GetUintConstantId(kDebugOutputSizeOffset));
     // Fetch the current debug buffer written size atomically, adding the
     // size of the record to be written.
-    Instruction* obuf_curr_sz_inst = builder.AddQuadOp(
-        GetUintId(), SpvOpAtomicIAdd, obuf_curr_sz_ac_inst->result_id(),
-        builder.GetUintConstantId(SpvScopeInvocation),
-        builder.GetUintConstantId(SpvMemoryAccessMaskNone),
-        builder.GetUintConstantId(obuf_record_sz));
+    uint32_t obuf_record_sz_id = builder.GetUintConstantId(obuf_record_sz);
+    uint32_t mask_none_id = builder.GetUintConstantId(SpvMemoryAccessMaskNone);
+    uint32_t scope_invok_id = builder.GetUintConstantId(SpvScopeInvocation);
+    Instruction* obuf_curr_sz_inst =
+        builder.AddQuadOp(GetUintId(), SpvOpAtomicIAdd,
+                          obuf_curr_sz_ac_inst->result_id(), scope_invok_id,
+                          mask_none_id, obuf_record_sz_id);
     uint32_t obuf_curr_sz_id = obuf_curr_sz_inst->result_id();
     // Compute new written size
     Instruction* obuf_new_sz_inst =
