@@ -661,7 +661,8 @@ Optimizer::PassToken CreateCombineAccessChainsPass();
 // This pass instruments all bindless references to check that descriptor
 // array indices are inbounds. If the reference is invalid, a record is
 // written to the debug output buffer (if space allows) and a null value is
-// returned. TODO(greg-lunarg): Add support for vk_ext_descriptor_indexing.
+// returned. This pass is designed to support bindless validation in the Vulkan
+// validation layers.
 //
 // Dead code elimination should be run after this pass as the original,
 // potentially invalid code is not removed and could cause undefined behavior,
@@ -677,6 +678,8 @@ Optimizer::PassToken CreateCombineAccessChainsPass();
 // The instrumentation will read and write buffers in debug
 // descriptor set |desc_set|. It will write |shader_id| in each output record
 // to identify the shader module which generated the record.
+//
+// TODO(greg-lunarg): Add support for vk_ext_descriptor_indexing.
 Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
                                                  uint32_t shader_id);
 

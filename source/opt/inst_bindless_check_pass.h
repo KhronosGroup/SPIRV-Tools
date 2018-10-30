@@ -26,7 +26,6 @@ namespace opt {
 // GPU-assisted validation layer of
 // https://github.com/KhronosGroup/Vulkan-ValidationLayers. Its internal and
 // external design may change as the layer evolves.
-// See optimizer.hpp for pass user documentation.
 class InstBindlessCheckPass : public InstrumentPass {
  public:
   // For test harness only
@@ -37,6 +36,7 @@ class InstBindlessCheckPass : public InstrumentPass {
 
   ~InstBindlessCheckPass() = default;
 
+  // See optimizer.hpp for pass user documentation.
   Status Process() override;
 
   const char* name() const override { return "inst-bindless-check-pass"; }
@@ -45,6 +45,12 @@ class InstBindlessCheckPass : public InstrumentPass {
   // Initialize state for instrumenting bindless checking
   void InitializeInstBindlessCheck();
 
+  // This function does bindless checking instrumentation on a single
+  // instruction. It is designed to be passed to
+  // InstrumentPass::InstProcessEntryPointCallTree(), which applies the
+  // function to each instruction in a module and replaces the instruction
+  // if warranted.
+  //
   // If |ref_inst_itr| is a bindless reference, return in |new_blocks| the
   // result of instrumenting it with validation code within its block at
   // |ref_block_itr|. Specifically, generate code to check that the index
