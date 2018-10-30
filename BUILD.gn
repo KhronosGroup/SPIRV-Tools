@@ -297,6 +297,7 @@ source_set("spvtools_headers") {
     "include/spirv-tools/libspirv.hpp",
     "include/spirv-tools/linker.hpp",
     "include/spirv-tools/optimizer.hpp",
+    "include/spirv-tools/instrument.hpp",
   ]
 
   public_configs = [ ":spvtools_public_config" ]
