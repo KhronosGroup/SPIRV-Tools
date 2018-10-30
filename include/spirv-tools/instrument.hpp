@@ -22,11 +22,11 @@ namespace spvtools {
 // Error Codes
 // These are utilized in debug output record streams and identify which
 // validation error has occurred and written a specific record.
-static const uint32_t kInstErrorBindlessBounds = 0;
-static const uint32_t kInstErrorBindlessUninitialized = 1;
+static const int kInstErrorBindlessBounds = 0;
+static const int kInstErrorBindlessUninitialized = 1;
 
 // Debug Buffer Bindings
-static const uint32_t kDebugOutputBindingStream = 0;
+static const int kDebugOutputBindingStream = 0;
 
 // Debug Buffer Offsets
 static const int kDebugOutputSizeOffset = 0;
@@ -66,7 +66,7 @@ static const int kInstStageOutCnt = kInstCommonOutCnt + 2;
 static const int kInstBindlessOutError = kInstStageOutCnt;
 static const int kInstBindlessOutDescIndex = kInstStageOutCnt + 1;
 static const int kInstBindlessOutDescBound = kInstStageOutCnt + 2;
-static const int kInstBindlessOutRecordSize = kInstStageOutCnt + 3;
+static const int kInstBindlessOutCnt = kInstStageOutCnt + 3;
 
 // Maximum Output Record Member Count
 static const int kInstMaxOutCnt = kInstStageOutCnt + 3;
