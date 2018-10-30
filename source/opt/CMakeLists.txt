@@ -196,7 +196,7 @@ if(MSVC)
     set(PCH_NAME "pch.pch")
   endif()
   set_source_files_properties(${SPIRV_TOOLS_OPT_SOURCES} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fp${PCH_NAME}" OBJECT_DEPENDS "${PCH_NAME}")
-  set_source_files_properties(pch.cpp PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fp${PCH_NAME}" OBJECT_OUTPUTS "${PCH_NAME}")
+  set_source_files_properties(pch.cpp PROPERTIES COMPILE_FLAGS "/Ycpch.h /Zm200 /Fp${PCH_NAME}" OBJECT_OUTPUTS "${PCH_NAME}")
   list(APPEND SPIRV_TOOLS_OPT_SOURCES "pch.cpp")
 endif()
 
