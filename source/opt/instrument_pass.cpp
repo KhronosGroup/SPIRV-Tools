@@ -443,7 +443,7 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
         context(), &*new_blk_ptr,
         IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
     // Gen test if debug output buffer size will not be exceeded.
-    uint32_t obuf_record_sz = kInstStageOutRecordSize + val_spec_param_cnt;
+    uint32_t obuf_record_sz = kInstStageOutCnt + val_spec_param_cnt;
     uint32_t buf_id = GetOutputBufferId();
     uint32_t buf_uint_ptr_id = GetOutputBufferUintPtrId();
     Instruction* obuf_curr_sz_ac_inst =
@@ -489,7 +489,7 @@ uint32_t InstrumentPass::GetStreamWriteFunctionId(uint32_t stage_idx,
     GenStageStreamWriteCode(stage_idx, obuf_curr_sz_id, &builder);
     // Gen writes of validation specific data
     for (uint32_t i = 0; i < val_spec_param_cnt; ++i) {
-      GenDebugOutputFieldCode(obuf_curr_sz_id, kInstStageOutRecordSize + i,
+      GenDebugOutputFieldCode(obuf_curr_sz_id, kInstStageOutCnt + i,
                               param_vec[kInstCommonParamCnt + i], &builder);
     }
     // Close write block and gen merge block

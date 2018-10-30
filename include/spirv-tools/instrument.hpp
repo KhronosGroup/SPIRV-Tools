@@ -60,13 +60,16 @@ static const int kInstGeomOutPrimitiveId = kInstCommonOutCnt;
 static const int kInstGeomOutInvocationId = kInstCommonOutCnt + 1;
 
 // Size of Common and Stage-specific Members
-static const int kInstStageOutRecordSize = kInstCommonOutCnt + 2;
+static const int kInstStageOutCnt = kInstCommonOutCnt + 2;
 
 // Bindless-specific Output Record Offsets
-static const int kInstBindlessOutError = kInstStageOutRecordSize;
-static const int kInstBindlessOutDescIndex = kInstStageOutRecordSize + 1;
-static const int kInstBindlessOutDescBound = kInstStageOutRecordSize + 2;
-static const int kInstBindlessOutRecordSize = kInstStageOutRecordSize + 3;
+static const int kInstBindlessOutError = kInstStageOutCnt;
+static const int kInstBindlessOutDescIndex = kInstStageOutCnt + 1;
+static const int kInstBindlessOutDescBound = kInstStageOutCnt + 2;
+static const int kInstBindlessOutRecordSize = kInstStageOutCnt + 3;
+
+// Maximum Output Record Member Count
+static const int kInstMaxOutCnt = kInstStageOutCnt + 3;
 
 }  // namespace spvtools
 
