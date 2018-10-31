@@ -644,13 +644,7 @@ bool InlinePass::HasNoReturnInLoop(Function* func) {
 }
 
 void InlinePass::AnalyzeReturns(Function* func) {
-  // Look for multiple returns
-  if (!HasMultipleReturns(func)) {
-    no_return_in_loop_.insert(func->result_id());
-    return;
-  }
-  multi_return_funcs_.insert(func->result_id());
-  // If multiple returns, see if any are in a loop
+  if (HasMultipleReturns(func)) multi_return_funcs_.insert(func->result_id());
   if (HasNoReturnInLoop(func)) no_return_in_loop_.insert(func->result_id());
 }
 
