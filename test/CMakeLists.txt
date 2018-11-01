@@ -93,6 +93,7 @@ set(TEST_SOURCES
   binary_to_text_test.cpp
   binary_to_text.literal_test.cpp
   comment_test.cpp
+  diagnostic_test.cpp
   enum_string_mapping_test.cpp
   enum_set_test.cpp
   ext_inst.debuginfo_test.cpp
@@ -103,6 +104,7 @@ set(TEST_SOURCES
   hex_float_test.cpp
   immediate_int_test.cpp
   libspirv_macros_test.cpp
+  log_test.cpp
   named_id_test.cpp
   name_mapper_test.cpp
   opcode_make_test.cpp
@@ -112,7 +114,10 @@ set(TEST_SOURCES
   operand_capabilities_test.cpp
   operand_test.cpp
   operand_pattern_test.cpp
+  parse_number_test.cpp
+  preserve_numeric_ids_test.cpp
   software_version_test.cpp
+  string_utils_test.cpp
   target_env_test.cpp
   text_advance_test.cpp
   text_destroy_test.cpp
@@ -148,11 +153,6 @@ add_spvtools_unittest(
   LIBS ${SPIRV_TOOLS})
 
 add_spvtools_unittest(
-  TARGET diagnostic
-  SRCS diagnostic_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
   TARGET c_interface
   SRCS c_interface_test.cpp
   LIBS ${SPIRV_TOOLS})
@@ -168,16 +168,6 @@ add_spvtools_unittest(
   SRCS cpp_interface_test.cpp
   LIBS SPIRV-Tools-opt)
 
-add_spvtools_unittest(
-  TARGET parse_number
-  SRCS parse_number_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET string_utils
-  SRCS string_utils_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
 if (${SPIRV_TIMER_ENABLED})
 add_spvtools_unittest(
   TARGET timer
@@ -185,15 +175,6 @@ add_spvtools_unittest(
   LIBS ${SPIRV_TOOLS})
 endif()
 
-add_spvtools_unittest(
-  TARGET log
-  SRCS log_test.cpp
-  LIBS ${SPIRV_TOOLS})
-
-add_spvtools_unittest(
-  TARGET preserve_numeric_ids
-  SRCS preserve_numeric_ids_test.cpp
-  LIBS ${SPIRV_TOOLS})
 
 add_spvtools_unittest(
   TARGET bit_stream
