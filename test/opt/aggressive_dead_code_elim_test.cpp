@@ -4180,7 +4180,7 @@ TEST_F(AggressiveDCETest, BasicNoneDeadConstants) {
       JoinAllInsts(text), JoinAllInsts(text), /* skip_nop = */ true);
 }
 
-struct EliminateDeadConstantTestCase {
+struct AggressiveEliminateDeadConstantTestCase {
   // Type declarations and constants that should be kept.
   std::vector<std::string> used_consts;
   // Instructions that refer to constants, this is added to create uses for
@@ -4192,7 +4192,8 @@ struct EliminateDeadConstantTestCase {
   std::vector<std::string> checks;
 };
 
-// All types that are potentially required in EliminateDeadConstantTest.
+// All types that are potentially required in
+// AggressiveEliminateDeadConstantTest.
 const std::vector<std::string> CommonTypes = {
     // clang-format off
     // scalar types
@@ -4228,10 +4229,10 @@ const std::vector<std::string> CommonTypes = {
     // clang-format on
 };
 
-using EliminateDeadConstantTest =
-    PassTest<::testing::TestWithParam<EliminateDeadConstantTestCase>>;
+using AggressiveEliminateDeadConstantTest =
+    PassTest<::testing::TestWithParam<AggressiveEliminateDeadConstantTestCase>>;
 
-TEST_P(EliminateDeadConstantTest, Custom) {
+TEST_P(AggressiveEliminateDeadConstantTest, Custom) {
   auto& tc = GetParam();
   AssemblyBuilder builder;
   builder.AppendTypesConstantsGlobals(CommonTypes)
@@ -4248,8 +4249,8 @@ TEST_P(EliminateDeadConstantTest, Custom) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    ScalarTypeConstants, EliminateDeadConstantTest,
-    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+    ScalarTypeConstants, AggressiveEliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<AggressiveEliminateDeadConstantTestCase>({
         // clang-format off
         // Scalar type constants, one dead constant and one used constant.
         {
@@ -4340,8 +4341,8 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 INSTANTIATE_TEST_CASE_P(
-    VectorTypeConstants, EliminateDeadConstantTest,
-    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+    VectorTypeConstants, AggressiveEliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<AggressiveEliminateDeadConstantTestCase>({
         // clang-format off
         // Tests eliminating dead constant type ivec2. One dead constant vector
         // and one used constant vector, each built from its own group of
@@ -4467,8 +4468,8 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 INSTANTIATE_TEST_CASE_P(
-    StructTypeConstants, EliminateDeadConstantTest,
-    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+    StructTypeConstants, AggressiveEliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<AggressiveEliminateDeadConstantTestCase>({
         // clang-format off
         // A plain struct type dead constants. All of its components are dead
         // constants too.
@@ -4638,8 +4639,8 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 INSTANTIATE_TEST_CASE_P(
-    ScalarTypeSpecConstants, EliminateDeadConstantTest,
-    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+    ScalarTypeSpecConstants, AggressiveEliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<AggressiveEliminateDeadConstantTestCase>({
         // clang-format off
         // All scalar type spec constants.
         {
@@ -4691,8 +4692,8 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 INSTANTIATE_TEST_CASE_P(
-    VectorTypeSpecConstants, EliminateDeadConstantTest,
-    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+    VectorTypeSpecConstants, AggressiveEliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<AggressiveEliminateDeadConstantTestCase>({
         // clang-format off
         // Bool vector type spec constants. One vector has all component dead,
         // another vector has one dead boolean and one used boolean.
@@ -4813,8 +4814,8 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 INSTANTIATE_TEST_CASE_P(
-    SpecConstantOp, EliminateDeadConstantTest,
-    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+    SpecConstantOp, AggressiveEliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<AggressiveEliminateDeadConstantTestCase>({
         // clang-format off
         // Cast operations: uint <-> int <-> bool
         {
@@ -4995,8 +4996,8 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 INSTANTIATE_TEST_CASE_P(
-    LongDefUseChain, EliminateDeadConstantTest,
-    ::testing::ValuesIn(std::vector<EliminateDeadConstantTestCase>({
+    LongDefUseChain, AggressiveEliminateDeadConstantTest,
+    ::testing::ValuesIn(std::vector<AggressiveEliminateDeadConstantTestCase>({
         // clang-format off
         // Long Def-Use chain with binary operations.
         {
