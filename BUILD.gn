@@ -573,6 +573,8 @@ static_library("spvtools_opt") {
     "source/opt/passes.h",
     "source/opt/private_to_local_pass.cpp",
     "source/opt/private_to_local_pass.h",
+    "source/opt/process_lines_pass.cpp",
+    "source/opt/process_lines_pass.h",
     "source/opt/propagator.cpp",
     "source/opt/propagator.h",
     "source/opt/reduce_load_size.cpp",
