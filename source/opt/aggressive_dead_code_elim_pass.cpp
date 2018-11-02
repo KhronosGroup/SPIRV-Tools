@@ -643,6 +643,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
       case SpvOpDecorate:
       case SpvOpMemberDecorate:
       case SpvOpDecorateStringGOOGLE:
+      case SpvOpMemberDecorateStringGOOGLE:
         if (IsTargetDead(annotation)) {
           context()->KillInst(annotation);
           modified = true;
