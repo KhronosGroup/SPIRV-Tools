@@ -498,7 +498,7 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSkipBlockLayout(
 // Creates an optimizer options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // |spvOptimizerOptionsDestroy|.
-SPIRV_TOOLS_EXPORT spv_optimizer_options spvOptimizerOptionsCreate();
+SPIRV_TOOLS_EXPORT spv_optimizer_options spvOptimizerOptionsCreate(void);
 
 // Destroys the given optimizer options object.
 SPIRV_TOOLS_EXPORT void spvOptimizerOptionsDestroy(
