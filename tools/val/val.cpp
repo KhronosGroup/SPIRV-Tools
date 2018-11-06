@@ -45,6 +45,7 @@ Options:
   --max-function-args              <maximum number arguments allowed per function>
   --max-control-flow-nesting-depth <maximum Control Flow nesting depth allowed>
   --max-access-chain-indexes       <maximum number of indexes allowed to use for Access Chain instructions>
+  --max-id-bound                   <maximum value for the id bound>
   --relax-logical-pointer          Allow allocating an object of a pointer type and returning
                                    a pointer value from a function in logical addressing mode
   --relax-block-layout             Enable VK_HR_relaxed_block_layout when checking standard
