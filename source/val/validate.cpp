@@ -226,6 +226,12 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
            << spvTargetEnvDescription(context.target_env) << ".";
   }
 
+  if (header.bound > vstate->options()->universal_limits_.max_id_bound) {
+    return DiagnosticStream(position, context.consumer, "",
+                            SPV_ERROR_INVALID_BINARY)
+           << "Invalid SPIR-V.  The id bound is larger than the max id bound "
+           << vstate->options()->universal_limits_.max_id_bound << ".";
+  }
   // Look for OpExtension instructions and register extensions.
   spvBinaryParse(&context, vstate, words, num_words,
                  /* parsed_header = */ nullptr, ProcessExtensions,
