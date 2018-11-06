@@ -84,5 +84,6 @@ add_spvtools_unittest(TARGET opt
        vector_dce_test.cpp
        workaround1209_test.cpp
   LIBS SPIRV-Tools-opt
+  PCH_FILE pch_test_opt
 )
 

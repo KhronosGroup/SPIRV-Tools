@@ -37,7 +37,7 @@ function(add_spvtools_unittest)
     set(target test_${ARG_TARGET})
     set(SRC_COPY ${ARG_SRCS})
     if (DEFINED ARG_PCH_FILE)
-      PCH(SRC_COPY ${ARG_PCH_FILE})
+      spvtools_pch(SRC_COPY ${ARG_PCH_FILE})
     endif()
     add_executable(${target} ${SRC_COPY})
     spvtools_default_compile_options(${target})
@@ -151,7 +151,7 @@ set(TEST_SOURCES
   unit_spirv.cpp
 )
 
-PCH(TEST_SOURCES pch_test)
+spvtools_pch(TEST_SOURCES pch_test)
 
 add_spvtools_unittest(
   TARGET spirv_unit_tests
