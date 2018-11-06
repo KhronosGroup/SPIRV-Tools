@@ -127,7 +127,7 @@ TEST_F(ValidateLimits, IdBoundJustAboveSetLimit) {
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Invalid SPIR-V.  The id bound is larger than the max "
-                        "id bound 5242878."));
+                        "id bound 5242877."));
 }
 
 TEST_F(ValidateLimits, IdBoundAtInMaxLimit) {
