@@ -212,6 +212,18 @@ if (${SPIRV_CHECK_CONTEXT})
   add_definitions(-DSPIRV_CHECK_CONTEXT)
 endif()
 
+# Precompiled header macro. Parameters are source file list and filename for pch cpp file.
+macro(PCH SRCS PCHPREFIX)
+  if(MSVC AND CMAKE_GENERATOR MATCHES "^Visual Studio")
+    set(PCH_NAME "$(IntDir)\\${PCHPREFIX}.pch")
+    # make source files use/depend on PCH_NAME
+    set_source_files_properties(${${SRCS}} PROPERTIES COMPILE_FLAGS "/Yu${PCHPREFIX}.h /FI${PCHPREFIX}.h /Fp${PCH_NAME} /Zm300" OBJECT_DEPENDS "${PCH_NAME}")
+    # make PCHPREFIX.cpp file compile and generate PCH_NAME
+    set_source_files_properties("${PCHPREFIX}.cpp" PROPERTIES COMPILE_FLAGS "/Yc${PCHPREFIX}.h /Fp${PCH_NAME} /Zm300" OBJECT_OUTPUTS "${PCH_NAME}")
+    list(APPEND ${SRCS} "${PCHPREFIX}.cpp")
+  endif()
+endmacro(PCH)
+
 add_subdirectory(external)
 
 add_subdirectory(source)
