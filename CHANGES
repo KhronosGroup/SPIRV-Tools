@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2018.6-dev 2018-11-07
+v2018.6 2018-11-07
  - General:
    - Added support for the Nvidia Turing and ray tracing extensions.
    - Make C++11 the CXX standard in CMakeLists.txt.
