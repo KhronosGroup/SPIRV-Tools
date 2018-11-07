@@ -597,8 +597,8 @@ bool InlinePass::HasNoReturnInSelection(Function* func) {
   auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
   std::list<const BasicBlock*> structuredOrder;
   CFA<BasicBlock>::DepthFirstTraversal(
-    &*func->begin(), StructuredSuccessorsFunction(), ignore_block,
-    [&](cbb_ptr b) { structuredOrder.push_front(b); }, ignore_edge);
+      &*func->begin(), StructuredSuccessorsFunction(), ignore_block,
+      [&](cbb_ptr b) { structuredOrder.push_front(b); }, ignore_edge);
   // Search for returns in selections. Only need to track outermost selection
   bool return_in_select = false;
   uint32_t outerSelectMergeId = 0;
@@ -609,13 +609,12 @@ bool InlinePass::HasNoReturnInSelection(Function* func) {
     auto terminal_ii = blk->cend();
     --terminal_ii;
     if (terminal_ii->opcode() == SpvOpReturn ||
-      terminal_ii->opcode() == SpvOpReturnValue) {
+        terminal_ii->opcode() == SpvOpReturnValue) {
       if (outerSelectMergeId != 0) {
         return_in_select = true;
         break;
       }
-    }
-    else if (terminal_ii != blk->cbegin()) {
+    } else if (terminal_ii != blk->cbegin()) {
       auto merge_ii = terminal_ii;
       --merge_ii;
       // Entering outermost select

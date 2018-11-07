@@ -2139,7 +2139,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-    R"(%1 = OpFunction %void None %12
+      R"(%1 = OpFunction %void None %12
 %18 = OpLabel
 OpBranch %19
 %19 = OpLabel
@@ -2216,7 +2216,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-    R"(%1 = OpFunction %void None %9
+      R"(%1 = OpFunction %void None %9
 %20 = OpLabel
 %21 = OpCopyObject %int %int_3
 %24 = OpCopyObject %int %int_0
