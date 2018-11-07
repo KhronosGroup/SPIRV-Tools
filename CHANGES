@@ -1,8 +1,8 @@
 Revision history for SPIRV-Tools
 
-v2018.6-dev 2018-10-22
+v2018.6-dev 2018-11-07
  - General:
-   - Added support for the Nvidia Turing extensions.
+   - Added support for the Nvidia Turing and ray tracing extensions.
    - Make C++11 the CXX standard in CMakeLists.txt.
    - Enabled a parallel build for MSVC.
    - Enable pre-compiled headers for MSVC.
@@ -26,6 +26,7 @@ v2018.6-dev 2018-10-22
    - #1983: Run merge return on reachable functions only.
    - #1956: Handled atomic operations in ADCE.
    - #1963: Fold integer divisions by 0 to 0.
+   - #2019: Handle MemberDecorateStringGOOGLE in ADCE and strip reflect.
  - Validator
    - Added validation for OpGroupNonUniformBallotBitCount.
    - Added validation for the Vulkan memory model.
@@ -38,6 +39,7 @@ v2018.6-dev 2018-10-22
    - Validate MakeTexelAvailableKHR and MakeTexelVisibleKHR
    - Allow atomic function pointer for OpenCL.
    - FPRounding mode checks were implemented.
+   - Added validation for the id bound with an option to set the max id bound.
    Fixes:
    - #1882: Improve the validation of decorations to reduce memory usage.
    - #1891: Fix an potential infinite loop in dead-branch-elimination.
