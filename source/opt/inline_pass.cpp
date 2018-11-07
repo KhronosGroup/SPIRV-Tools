@@ -27,9 +27,7 @@
 static const int kSpvFunctionCallFunctionId = 2;
 static const int kSpvFunctionCallArgumentId = 3;
 static const int kSpvReturnValueId = 0;
-static const int kSpvLoopMergeMergeBlockId = 0;
 static const int kSpvLoopMergeContinueTargetIdInIdx = 1;
-static const int kSpvSelectMergeMergeBlockId = 0;
 
 namespace spvtools {
 namespace opt {
@@ -562,28 +560,6 @@ void InlinePass::UpdateSucceedingPhis(
       });
 }
 
-void InlinePass::ComputeStructuredSuccessors(Function* func) {
-  // If header, make merge block first successor.
-  for (auto& blk : *func) {
-    uint32_t mbid = blk.MergeBlockIdIfAny();
-    if (mbid != 0) {
-      block2structured_succs_[&blk].push_back(id2block_[mbid]);
-    }
-
-    // Add true successors.
-    const auto& const_blk = blk;
-    const_blk.ForEachSuccessorLabel([&blk, this](const uint32_t sbid) {
-      block2structured_succs_[&blk].push_back(id2block_[sbid]);
-    });
-  }
-}
-
-InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
-  return [this](const BasicBlock* block) {
-    return &(block2structured_succs_[block]);
-  };
-}
-
 bool InlinePass::HasNoReturnInStructuredConstruct(Function* func) {
   // If control not structured, do not do loop/return analysis
   // TODO: Analyze returns in non-structured control flow
@@ -651,7 +627,6 @@ void InlinePass::InitializeInline() {
   // clear collections
   id2function_.clear();
   id2block_.clear();
-  block2structured_succs_.clear();
   inlinable_.clear();
   no_return_in_loop_.clear();
   early_return_funcs_.clear();

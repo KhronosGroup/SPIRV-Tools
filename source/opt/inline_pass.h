@@ -36,9 +36,6 @@ class InlinePass : public Pass {
   using cbb_ptr = const BasicBlock*;
 
  public:
-  using GetBlocksFunction =
-      std::function<std::vector<BasicBlock*>*(const BasicBlock*)>;
-
   virtual ~InlinePass() = default;
 
  protected:
@@ -122,19 +119,6 @@ class InlinePass : public Pass {
   // Return true if |inst| is a function call that can be inlined.
   bool IsInlinableFunctionCall(const Instruction* inst);
 
-  // Compute structured successors for function |func|.
-  // A block's structured successors are the blocks it branches to
-  // together with its declared merge block if it has one.
-  // When order matters, the merge block always appears first.
-  // This assures correct depth first search in the presence of early
-  // returns and kills. If the successor vector contain duplicates
-  // if the merge block, they are safely ignored by DFS.
-  void ComputeStructuredSuccessors(Function* func);
-
-  // Return function to return ordered structure successors for a given block
-  // Assumes ComputeStructuredSuccessors() has been called.
-  GetBlocksFunction StructuredSuccessorsFunction();
-
   // Return true if |func| does not have a return that is
   // nested in a structured if, switch or loop.
   bool HasNoReturnInStructuredConstruct(Function* func);
@@ -175,13 +159,6 @@ class InlinePass : public Pass {
 
   // result id for OpConstantFalse
   uint32_t false_id_;
-
-  // Map from block to its structured successor blocks. See
-  // ComputeStructuredSuccessors() for definition. TODO(dnovillo): This is
-  // superfluous wrt CFG, but it seems to be computed in a slightly
-  // different way in the inliner. Can these be consolidated?
-  std::unordered_map<const BasicBlock*, std::vector<BasicBlock*>>
-      block2structured_succs_;
 };
 
 }  // namespace opt
