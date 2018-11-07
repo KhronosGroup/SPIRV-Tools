@@ -2320,9 +2320,8 @@ OpUnreachable
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<InlineExhaustivePass>(predefs + caller + callee,
-                                              predefs + caller + callee,
-                                              false, true);
+  SinglePassRunAndCheck<InlineExhaustivePass>(
+      predefs + caller + callee, predefs + caller + callee, false, true);
 }
 
 TEST_F(InlineTest, CalleeWithSingleReturnNeedsSingleTripLoopWrapper) {
@@ -2396,7 +2395,7 @@ OpFunctionEnd
 )";
 
   const std::string main_after =
-    R"(%main = OpFunction %void None %7
+      R"(%main = OpFunction %void None %7
 %23 = OpLabel
 %38 = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
@@ -2440,7 +2439,7 @@ OpFunctionEnd
 )";
 
   const std::string callee =
-    R"(%f_ = OpFunction %float None %9
+      R"(%f_ = OpFunction %float None %9
 %34 = OpLabel
 OpSelectionMerge %35 None
 OpBranchConditional %true %36 %35
