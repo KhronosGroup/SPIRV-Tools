@@ -345,7 +345,7 @@ set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   PROPERTIES OBJECT_DEPENDS "${SPIRV_TOOLS_BUILD_VERSION_INC}")
 
-PCH(SPIRV_SOURCES pch_source)
+spvtools_pch(SPIRV_SOURCES pch_source)
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})

@@ -190,7 +190,7 @@ if(MSVC)
   add_definitions(/MP4)
 endif()
 
-PCH(SPIRV_TOOLS_OPT_SOURCES pch_source_opt)
+spvtools_pch(SPIRV_TOOLS_OPT_SOURCES pch_source_opt)
 
 add_library(SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SOURCES})
 
