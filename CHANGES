@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2018.7-dev 2018-11-07
+ - Start v2018.7-dev
+
 v2018.6 2018-11-07
  - General:
    - Added support for the Nvidia Turing and ray tracing extensions.
