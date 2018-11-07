@@ -135,13 +135,14 @@ class InlinePass : public Pass {
   // Assumes ComputeStructuredSuccessors() has been called.
   GetBlocksFunction StructuredSuccessorsFunction();
 
-  // Return true if |func| has multiple returns
-  bool HasMultipleReturns(Function* func);
-
   // Return true if |func| has no return in a loop. The current analysis
   // requires structured control flow, so return false if control flow not
   // structured ie. module is not a shader.
   bool HasNoReturnInLoop(Function* func);
+
+  // Return true if |func| does not have a return that is
+  // nested in a structured if or switch.
+  bool HasNoReturnInSelection(Function* func);
 
   // Find all functions with multiple returns and no returns in loops
   void AnalyzeReturns(Function* func);
@@ -163,8 +164,8 @@ class InlinePass : public Pass {
   // CFG. It has functionality not present in CFG. Consolidate.
   std::unordered_map<uint32_t, BasicBlock*> id2block_;
 
-  // Set of ids of functions with multiple returns.
-  std::set<uint32_t> multi_return_funcs_;
+  // Set of ids of functions with early return.
+  std::set<uint32_t> early_return_funcs_;
 
   // Set of ids of functions with no returns in loop
   std::set<uint32_t> no_return_in_loop_;

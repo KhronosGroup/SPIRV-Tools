@@ -2139,24 +2139,17 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%1 = OpFunction %void None %12
+    R"(%1 = OpFunction %void None %12
 %18 = OpLabel
 OpBranch %19
 %19 = OpLabel
 %20 = OpCopyObject %int %int_2
+%25 = OpCopyObject %int %int_0
 OpLoopMerge %23 %26 None
-OpBranch %25
-%25 = OpLabel
-OpLoopMerge %26 %27 None
-OpBranch %28
-%28 = OpLabel
-%29 = OpCopyObject %int %int_0
-OpBranch %26
-%30 = OpLabel
-%31 = OpCopyObject %int %int_1
 OpBranch %26
 %27 = OpLabel
-OpBranchConditional %false %25 %26
+%28 = OpCopyObject %int %int_1
+OpBranch %26
 %26 = OpLabel
 %22 = OpCopyObject %int %int_3
 OpBranchConditional %true %19 %23
@@ -2223,26 +2216,19 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%1 = OpFunction %void None %9
+    R"(%1 = OpFunction %void None %9
 %20 = OpLabel
 %21 = OpCopyObject %int %int_3
-OpBranch %24
-%24 = OpLabel
-OpLoopMerge %25 %26 None
-OpBranch %27
-%27 = OpLabel
-%28 = OpCopyObject %int %int_0
-OpBranch %29
-%29 = OpLabel
-%30 = OpPhi %int %28 %27
-%31 = OpCopyObject %int %int_1
+%24 = OpCopyObject %int %int_0
 OpBranch %25
-%32 = OpLabel
-%33 = OpCopyObject %int %int_2
-OpBranch %25
-%26 = OpLabel
-OpBranchConditional %false %24 %25
 %25 = OpLabel
+%26 = OpPhi %int %24 %20
+%27 = OpCopyObject %int %int_1
+OpBranch %28
+%29 = OpLabel
+%30 = OpCopyObject %int %int_2
+OpBranch %28
+%28 = OpLabel
 %23 = OpCopyObject %int %int_4
 OpReturn
 OpFunctionEnd
