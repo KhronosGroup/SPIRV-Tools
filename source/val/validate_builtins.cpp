@@ -167,6 +167,8 @@ class BuiltInsValidator {
                                                   const Instruction& inst);
   spv_result_t ValidateVertexIndexAtDefinition(const Decoration& decoration,
                                                const Instruction& inst);
+  spv_result_t ValidateVertexIdOrInstanceIdAtDefinition(
+      const Instruction& inst);
   spv_result_t ValidateWorkgroupSizeAtDefinition(const Decoration& decoration,
                                                  const Instruction& inst);
   // Used for GlobalInvocationId, LocalInvocationId, NumWorkgroups, WorkgroupId.
@@ -2085,6 +2087,17 @@ spv_result_t BuiltInsValidator::ValidateVertexIndexAtDefinition(
   return ValidateVertexIndexAtReference(decoration, inst, inst, inst);
 }
 
+spv_result_t BuiltInsValidator::ValidateVertexIdOrInstanceIdAtDefinition(
+    const Instruction& inst) {
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+           << "Vulkan spec doesn't allow BuiltIn VertexId/InstanceId "
+              "to be used.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t BuiltInsValidator::ValidateVertexIndexAtReference(
     const Decoration& decoration, const Instruction& built_in_inst,
     const Instruction& referenced_inst,
@@ -2441,7 +2454,9 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
       return ValidateWorkgroupSizeAtDefinition(decoration, inst);
     }
     case SpvBuiltInVertexId:
-    case SpvBuiltInInstanceId:
+    case SpvBuiltInInstanceId: {
+      return ValidateVertexIdOrInstanceIdAtDefinition(inst);
+    }
     case SpvBuiltInLocalInvocationIndex:
     case SpvBuiltInWorkDim:
     case SpvBuiltInGlobalSize:

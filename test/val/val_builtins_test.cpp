@@ -447,6 +447,16 @@ INSTANTIATE_TEST_CASE_P(
                 "which is called with execution model Fragment."))), );
 
 INSTANTIATE_TEST_CASE_P(
+    VertexIdAndInstanceIdVertexInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("VertexId", "InstanceId"), Values("Vertex"), Values("Input"),
+            Values("%u32"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "Vulkan spec doesn't allow BuiltIn VertexId/InstanceId to be "
+                "used."))), );
+
+INSTANTIATE_TEST_CASE_P(
     ClipAndCullDistanceVertexInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("Vertex"),
