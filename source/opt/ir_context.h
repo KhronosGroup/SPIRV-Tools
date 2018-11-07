@@ -231,7 +231,7 @@ class IRContext {
 
   // Returns a pointer to a StructuredCFGAnalysis.  If the analysis is invalid,
   // it is rebuilt first.
-  StructuredCFGAnalysis* GetStructuedCFGAnalaysis() {
+  StructuredCFGAnalysis* GetStructuredCFGAnalysis() {
     if (!AreAnalysesValid(kAnalysisStructuredCFG)) {
       BuildStructuredCFGAnalysis();
     }

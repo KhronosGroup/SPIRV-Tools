@@ -135,14 +135,14 @@ class InlinePass : public Pass {
   // Assumes ComputeStructuredSuccessors() has been called.
   GetBlocksFunction StructuredSuccessorsFunction();
 
+  // Return true if |func| does not have a return that is
+  // nested in a structured if, switch or loop.
+  bool HasNoReturnInStructuredConstruct(Function* func);
+
   // Return true if |func| has no return in a loop. The current analysis
   // requires structured control flow, so return false if control flow not
   // structured ie. module is not a shader.
   bool HasNoReturnInLoop(Function* func);
-
-  // Return true if |func| does not have a return that is
-  // nested in a structured if or switch.
-  bool HasNoReturnInSelection(Function* func);
 
   // Find all functions with multiple returns and no returns in loops
   void AnalyzeReturns(Function* func);

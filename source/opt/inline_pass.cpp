@@ -584,46 +584,24 @@ InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
   };
 }
 
-bool InlinePass::HasNoReturnInSelection(Function* func) {
+bool InlinePass::HasNoReturnInStructuredConstruct(Function* func) {
   // If control not structured, do not do loop/return analysis
   // TODO: Analyze returns in non-structured control flow
   if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
     return false;
-  // Compute structured block order. This order has the property
-  // that dominators are before all blocks they dominate and merge blocks
-  // are after all blocks that are in the control constructs of their header.
-  ComputeStructuredSuccessors(func);
-  auto ignore_block = [](cbb_ptr) {};
-  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  std::list<const BasicBlock*> structuredOrder;
-  CFA<BasicBlock>::DepthFirstTraversal(
-      &*func->begin(), StructuredSuccessorsFunction(), ignore_block,
-      [&](cbb_ptr b) { structuredOrder.push_front(b); }, ignore_edge);
-  // Search for returns in selections. Only need to track outermost selection
-  bool return_in_select = false;
-  uint32_t outerSelectMergeId = 0;
-  for (auto& blk : structuredOrder) {
-    // Exiting current outer loop
-    if (blk->id() == outerSelectMergeId) outerSelectMergeId = 0;
-    // Return block
-    auto terminal_ii = blk->cend();
+  const auto structured_analysis = context()->GetStructuredCFGAnalysis();
+  // Search for returns in structured construct.
+  bool return_in_construct = false;
+  for (auto& blk : *func) {
+    auto terminal_ii = blk.cend();
     --terminal_ii;
-    if (terminal_ii->opcode() == SpvOpReturn ||
-        terminal_ii->opcode() == SpvOpReturnValue) {
-      if (outerSelectMergeId != 0) {
-        return_in_select = true;
-        break;
-      }
-    } else if (terminal_ii != blk->cbegin()) {
-      auto merge_ii = terminal_ii;
-      --merge_ii;
-      // Entering outermost select
-      if (merge_ii->opcode() == SpvOpSelectionMerge && outerSelectMergeId == 0)
-        outerSelectMergeId =
-            merge_ii->GetSingleWordOperand(kSpvSelectMergeMergeBlockId);
+    if (spvOpcodeIsReturn(terminal_ii->opcode()) &&
+        structured_analysis->ContainingConstruct(blk.id()) != 0) {
+      return_in_construct = true;
+      break;
     }
   }
-  return !return_in_select;
+  return !return_in_construct;
 }
 
 bool InlinePass::HasNoReturnInLoop(Function* func) {
@@ -631,47 +609,27 @@ bool InlinePass::HasNoReturnInLoop(Function* func) {
   // TODO: Analyze returns in non-structured control flow
   if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
     return false;
-  // Compute structured block order. This order has the property
-  // that dominators are before all blocks they dominate and merge blocks
-  // are after all blocks that are in the control constructs of their header.
-  ComputeStructuredSuccessors(func);
-  auto ignore_block = [](cbb_ptr) {};
-  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  std::list<const BasicBlock*> structuredOrder;
-  CFA<BasicBlock>::DepthFirstTraversal(
-      &*func->begin(), StructuredSuccessorsFunction(), ignore_block,
-      [&](cbb_ptr b) { structuredOrder.push_front(b); }, ignore_edge);
-  // Search for returns in loops. Only need to track outermost loop
+  const auto structured_analysis = context()->GetStructuredCFGAnalysis();
+  // Search for returns in structured construct.
   bool return_in_loop = false;
-  uint32_t outerLoopMergeId = 0;
-  for (auto& blk : structuredOrder) {
-    // Exiting current outer loop
-    if (blk->id() == outerLoopMergeId) outerLoopMergeId = 0;
-    // Return block
-    auto terminal_ii = blk->cend();
+  for (auto& blk : *func) {
+    auto terminal_ii = blk.cend();
     --terminal_ii;
-    if (terminal_ii->opcode() == SpvOpReturn ||
-        terminal_ii->opcode() == SpvOpReturnValue) {
-      if (outerLoopMergeId != 0) {
-        return_in_loop = true;
-        break;
-      }
-    } else if (terminal_ii != blk->cbegin()) {
-      auto merge_ii = terminal_ii;
-      --merge_ii;
-      // Entering outermost loop
-      if (merge_ii->opcode() == SpvOpLoopMerge && outerLoopMergeId == 0)
-        outerLoopMergeId =
-            merge_ii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
+    if (spvOpcodeIsReturn(terminal_ii->opcode()) &&
+        structured_analysis->ContainingLoop(blk.id()) != 0) {
+      return_in_loop = true;
+      break;
     }
   }
   return !return_in_loop;
 }
 
 void InlinePass::AnalyzeReturns(Function* func) {
-  if (!HasNoReturnInSelection(func))
-    early_return_funcs_.insert(func->result_id());
-  if (HasNoReturnInLoop(func)) no_return_in_loop_.insert(func->result_id());
+  if (HasNoReturnInLoop(func)) {
+    no_return_in_loop_.insert(func->result_id());
+    if (!HasNoReturnInStructuredConstruct(func))
+      early_return_funcs_.insert(func->result_id());
+  }
 }
 
 bool InlinePass::IsInlinableFunction(Function* func) {
