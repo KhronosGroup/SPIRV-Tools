@@ -488,9 +488,9 @@ std::string CanonicalizeFlag(const char** argv, int argc, int* argi) {
   return canonical_arg.str();
 }
 
-// the number of command-line flags. |argv| points to an array of strings
-// holding the flags. |optimizer| is the Optimizer instance used to optimize the
-// program.
+// Parses command-line flags. |argc| contains the number of command-line flags.
+// |argv| points to an array of strings holding the flags. |optimizer| is the
+// Optimizer instance used to optimize the program.
 //
 // On return, this function stores the name of the input program in |in_file|.
 // The name of the output file in |out_file|. The return value indicates whether
