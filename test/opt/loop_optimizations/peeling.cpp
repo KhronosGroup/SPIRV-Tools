@@ -132,7 +132,7 @@ TEST_F(PeelingTest, CannotPeel) {
     } else {
       InstructionBuilder builder(context.get(), &*f.begin());
       // Exit condition.
-      loop_count = builder.Add32BitSignedIntegerConstant(10);
+      loop_count = builder.GetSintConstant(10);
     }
 
     LoopPeeling peel(&*ld.begin(), loop_count);
@@ -494,7 +494,7 @@ TEST_F(PeelingTest, SimplePeeling) {
 
     InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+    Instruction* ten_cst = builder.GetSintConstant(10);
 
     LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
@@ -548,7 +548,7 @@ CHECK-NEXT: OpLoopMerge
 
     InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+    Instruction* ten_cst = builder.GetSintConstant(10);
 
     LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
@@ -604,7 +604,7 @@ CHECK-NEXT: OpLoopMerge
 
     InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+    Instruction* ten_cst = builder.GetSintConstant(10);
 
     LoopPeeling peel(&*ld.begin(), ten_cst,
                      context->get_def_use_mgr()->GetDef(22));
@@ -657,7 +657,7 @@ CHECK-NEXT: OpLoopMerge
 
     InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    Instruction* ten_cst = builder.Add32BitSignedIntegerConstant(10);
+    Instruction* ten_cst = builder.GetSintConstant(10);
 
     LoopPeeling peel(&*ld.begin(), ten_cst,
                      context->get_def_use_mgr()->GetDef(22));
@@ -918,7 +918,7 @@ TEST_F(PeelingTest, DoWhilePeeling) {
     EXPECT_EQ(ld.NumLoops(), 1u);
     InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    Instruction* ten_cst = builder.Add32BitUnsignedIntegerConstant(10);
+    Instruction* ten_cst = builder.GetUintConstant(10);
 
     LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());
@@ -968,7 +968,7 @@ CHECK-NEXT: OpLoopMerge
 
     InstructionBuilder builder(context.get(), &*f.begin());
     // Exit condition.
-    Instruction* ten_cst = builder.Add32BitUnsignedIntegerConstant(10);
+    Instruction* ten_cst = builder.GetUintConstant(10);
 
     LoopPeeling peel(&*ld.begin(), ten_cst);
     EXPECT_TRUE(peel.CanPeelLoop());

@@ -42,6 +42,7 @@ add_spvtools_unittest(TARGET opt
        inline_opaque_test.cpp
        inline_test.cpp
        insert_extract_elim_test.cpp
+       inst_bindless_check_test.cpp
        instruction_list_test.cpp
        instruction_test.cpp
        ir_builder.cpp
@@ -86,4 +87,3 @@ add_spvtools_unittest(TARGET opt
   LIBS SPIRV-Tools-opt
   PCH_FILE pch_test_opt
 )
-

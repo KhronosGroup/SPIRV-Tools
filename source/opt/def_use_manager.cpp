@@ -279,6 +279,16 @@ bool operator==(const DefUseManager& lhs, const DefUseManager& rhs) {
   }
 
   if (lhs.inst_to_used_ids_ != rhs.inst_to_used_ids_) {
+    for (auto p : lhs.inst_to_used_ids_) {
+      if (rhs.inst_to_used_ids_.count(p.first) == 0) {
+        return false;
+      }
+    }
+    for (auto p : rhs.inst_to_used_ids_) {
+      if (lhs.inst_to_used_ids_.count(p.first) == 0) {
+        return false;
+      }
+    }
     return false;
   }
   return true;

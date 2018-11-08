@@ -58,6 +58,78 @@ class InstructionBuilder {
       : InstructionBuilder(context, parent_block, parent_block->end(),
                            preserved_analyses) {}
 
+  Instruction* AddNullaryOp(uint32_t type_id, SpvOp opcode) {
+    std::unique_ptr<Instruction> newUnOp(new Instruction(
+        GetContext(), opcode, type_id,
+        opcode == SpvOpReturn ? 0 : GetContext()->TakeNextId(), {}));
+    return AddInstruction(std::move(newUnOp));
+  }
+
+  Instruction* AddUnaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1) {
+    std::unique_ptr<Instruction> newUnOp(new Instruction(
+        GetContext(), opcode, type_id, GetContext()->TakeNextId(),
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}}}));
+    return AddInstruction(std::move(newUnOp));
+  }
+
+  Instruction* AddBinaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
+                           uint32_t operand2) {
+    std::unique_ptr<Instruction> newBinOp(new Instruction(
+        GetContext(), opcode, type_id,
+        opcode == SpvOpStore ? 0 : GetContext()->TakeNextId(),
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand2}}}));
+    return AddInstruction(std::move(newBinOp));
+  }
+
+  Instruction* AddTernaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
+                            uint32_t operand2, uint32_t operand3) {
+    std::unique_ptr<Instruction> newTernOp(new Instruction(
+        GetContext(), opcode, type_id, GetContext()->TakeNextId(),
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand2}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand3}}}));
+    return AddInstruction(std::move(newTernOp));
+  }
+
+  Instruction* AddQuadOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
+                         uint32_t operand2, uint32_t operand3,
+                         uint32_t operand4) {
+    std::unique_ptr<Instruction> newQuadOp(new Instruction(
+        GetContext(), opcode, type_id, GetContext()->TakeNextId(),
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand2}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand3}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand4}}}));
+    return AddInstruction(std::move(newQuadOp));
+  }
+
+  Instruction* AddIdLiteralOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
+                              uint32_t operand2) {
+    std::unique_ptr<Instruction> newBinOp(new Instruction(
+        GetContext(), opcode, type_id, GetContext()->TakeNextId(),
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {operand2}}}));
+    return AddInstruction(std::move(newBinOp));
+  }
+
+  // Creates an N-ary instruction of |opcode|.
+  // |typid| must be the id of the instruction's type.
+  // |operands| must be a sequence of operand ids.
+  // Use |result| for the result id if non-zero.
+  Instruction* AddNaryOp(uint32_t type_id, SpvOp opcode,
+                         const std::vector<uint32_t>& operands,
+                         uint32_t result = 0) {
+    std::vector<Operand> ops;
+    for (size_t i = 0; i < operands.size(); i++) {
+      ops.push_back({SPV_OPERAND_TYPE_ID, {operands[i]}});
+    }
+    std::unique_ptr<Instruction> new_inst(new Instruction(
+        GetContext(), opcode, type_id,
+        result != 0 ? result : GetContext()->TakeNextId(), ops));
+    return AddInstruction(std::move(new_inst));
+  }
+
   // Creates a new selection merge instruction.
   // The id |merge_id| is the merge basic block id.
   Instruction* AddSelectionMerge(
@@ -167,15 +239,10 @@ class InstructionBuilder {
   // The id |type| must be the id of the phi instruction's type.
   // The vector |incomings| must be a sequence of pairs of <definition id,
   // parent id>.
-  Instruction* AddPhi(uint32_t type, const std::vector<uint32_t>& incomings) {
+  Instruction* AddPhi(uint32_t type, const std::vector<uint32_t>& incomings,
+                      uint32_t result = 0) {
     assert(incomings.size() % 2 == 0 && "A sequence of pairs is expected");
-    std::vector<Operand> phi_ops;
-    for (size_t i = 0; i < incomings.size(); i++) {
-      phi_ops.push_back({SPV_OPERAND_TYPE_ID, {incomings[i]}});
-    }
-    std::unique_ptr<Instruction> phi_inst(new Instruction(
-        GetContext(), SpvOpPhi, type, GetContext()->TakeNextId(), phi_ops));
-    return AddInstruction(std::move(phi_inst));
+    return AddNaryOp(type, SpvOpPhi, incomings, result);
   }
 
   // Creates an addition instruction.
@@ -249,8 +316,8 @@ class InstructionBuilder {
 
   // Adds a signed int32 constant to the binary.
   // The |value| parameter is the constant value to be added.
-  Instruction* Add32BitSignedIntegerConstant(int32_t value) {
-    return Add32BitConstantInteger<int32_t>(value, true);
+  Instruction* GetSintConstant(int32_t value) {
+    return GetIntConstant<int32_t>(value, true);
   }
 
   // Create a composite construct.
@@ -270,8 +337,23 @@ class InstructionBuilder {
   }
   // Adds an unsigned int32 constant to the binary.
   // The |value| parameter is the constant value to be added.
-  Instruction* Add32BitUnsignedIntegerConstant(uint32_t value) {
-    return Add32BitConstantInteger<uint32_t>(value, false);
+  Instruction* GetUintConstant(uint32_t value) {
+    return GetIntConstant<uint32_t>(value, false);
+  }
+
+  uint32_t GetUintConstantId(uint32_t value) {
+    Instruction* uint_inst = GetUintConstant(value);
+    return uint_inst->result_id();
+  }
+
+  uint32_t GetNullId(uint32_t type_id) {
+    analysis::TypeManager* type_mgr = GetContext()->get_type_mgr();
+    analysis::ConstantManager* const_mgr = GetContext()->get_constant_mgr();
+    const analysis::Type* type = type_mgr->GetType(type_id);
+    const analysis::Constant* null_const = const_mgr->GetConstant(type, {});
+    Instruction* null_inst =
+        const_mgr->GetDefiningInstruction(null_const, type_id);
+    return null_inst->result_id();
   }
 
   // Adds either a signed or unsigned 32 bit integer constant to the binary
@@ -279,7 +361,7 @@ class InstructionBuilder {
   // signed constant otherwise as an unsigned constant. If |sign| is false the
   // value must not be a negative number.
   template <typename T>
-  Instruction* Add32BitConstantInteger(T value, bool sign) {
+  Instruction* GetIntConstant(T value, bool sign) {
     // Assert that we are not trying to store a negative number in an unsigned
     // type.
     if (!sign)

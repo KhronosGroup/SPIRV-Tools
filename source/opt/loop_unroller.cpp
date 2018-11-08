@@ -452,11 +452,9 @@ void LoopUnrollerUtilsImpl::PartiallyUnrollResidualFactor(Loop* loop,
   // If the remainder is negative then we add a signed constant, otherwise just
   // add an unsigned constant.
   if (remainder < 0) {
-    new_constant =
-        builder.Add32BitSignedIntegerConstant(static_cast<int32_t>(remainder));
+    new_constant = builder.GetSintConstant(static_cast<int32_t>(remainder));
   } else {
-    new_constant = builder.Add32BitUnsignedIntegerConstant(
-        static_cast<int32_t>(remainder));
+    new_constant = builder.GetUintConstant(static_cast<int32_t>(remainder));
   }
 
   uint32_t constant_id = new_constant->result_id();

@@ -111,6 +111,20 @@ class DecorationManager {
   // Informs the decoration manager of a new decoration that it needs to track.
   void AddDecoration(Instruction* inst);
 
+  // Add decoration with |opcode| and operands |opnds|.
+  void AddDecoration(SpvOp opcode, const std::vector<Operand> opnds);
+
+  // Add |decoration| of |inst_id| to module.
+  void AddDecoration(uint32_t inst_id, uint32_t decoration);
+
+  // Add |decoration, decoration_value| of |inst_id| to module.
+  void AddDecorationVal(uint32_t inst_id, uint32_t decoration,
+                        uint32_t decoration_value);
+
+  // Add |decoration, decoration_value| of |inst_id, member| to module.
+  void AddMemberDecoration(uint32_t member, uint32_t inst_id,
+                           uint32_t decoration, uint32_t decoration_value);
+
  private:
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.
