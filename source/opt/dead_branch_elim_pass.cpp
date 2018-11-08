@@ -93,7 +93,7 @@ BasicBlock* DeadBranchElimPass::GetParentBlock(uint32_t id) {
 
 bool DeadBranchElimPass::MarkLiveBlocks(
     Function* func, std::unordered_set<BasicBlock*>* live_blocks) {
-  StructuredCFGAnalysis* cfgAnalysis = context()->GetStructuedCFGAnalaysis();
+  StructuredCFGAnalysis* cfgAnalysis = context()->GetStructuredCFGAnalysis();
 
   std::unordered_set<BasicBlock*> continues;
   std::vector<BasicBlock*> stack;
