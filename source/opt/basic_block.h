@@ -72,7 +72,7 @@ class BasicBlock {
   inline void AddInstructions(BasicBlock* bp);
 
   // The pointer to the label starting this basic block.
-  std::unique_ptr<Instruction> GetLabel() { return std::move(label_); }
+  std::unique_ptr<Instruction>& GetLabel() { return label_; }
 
   // The label starting this basic block.
   Instruction* GetLabelInst() { return label_.get(); }

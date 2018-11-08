@@ -40,7 +40,7 @@ void InstrumentPass::MovePreludeCode(
   same_block_pre_.clear();
   same_block_post_.clear();
   // Initialize new block. Reuse label from original block.
-  new_blk_ptr->reset(new BasicBlock(ref_block_itr->GetLabel()));
+  new_blk_ptr->reset(new BasicBlock(std::move(ref_block_itr->GetLabel())));
   // Move contents of original ref block up to ref instruction.
   for (auto cii = ref_block_itr->begin(); cii != ref_inst_itr;
        cii = ref_block_itr->begin()) {
