@@ -743,7 +743,7 @@ bool MergeReturnPass::HasNontrivialUnreachableBlocks(Function* function) {
     }
 
     StructuredCFGAnalysis* struct_cfg_analysis =
-        context()->GetStructuedCFGAnalaysis();
+        context()->GetStructuredCFGAnalysis();
     if (struct_cfg_analysis->IsMergeBlock(bb.id())) {
       // |bb| must be an empty block ending with OpUnreachable.
       if (bb.begin()->opcode() != SpvOpUnreachable) {

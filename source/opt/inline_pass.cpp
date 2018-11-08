@@ -27,7 +27,6 @@
 static const int kSpvFunctionCallFunctionId = 2;
 static const int kSpvFunctionCallArgumentId = 3;
 static const int kSpvReturnValueId = 0;
-static const int kSpvLoopMergeMergeBlockId = 0;
 static const int kSpvLoopMergeContinueTargetIdInIdx = 1;
 
 namespace spvtools {
@@ -225,8 +224,8 @@ void InlinePass::GenInlineCode(
       kSpvFunctionCallFunctionId)];
 
   // Check for multiple returns in the callee.
-  auto fi = multi_return_funcs_.find(calleeFn->result_id());
-  const bool multiReturn = fi != multi_return_funcs_.end();
+  auto fi = early_return_funcs_.find(calleeFn->result_id());
+  const bool earlyReturn = fi != early_return_funcs_.end();
 
   // Map parameters to actual arguments.
   MapParams(calleeFn, call_inst_itr, &callee2caller);
@@ -280,7 +279,7 @@ void InlinePass::GenInlineCode(
                          &call_inst_itr, &new_blk_ptr, &prevInstWasReturn,
                          &returnLabelId, &returnVarId, caller_is_loop_header,
                          callee_begins_with_structured_header, &calleeTypeId,
-                         &multiBlocks, &postCallSB, &preCallSB, multiReturn,
+                         &multiBlocks, &postCallSB, &preCallSB, earlyReturn,
                          &singleTripLoopHeaderId, &singleTripLoopContinueId,
                          &callee_result_ids, this](const Instruction* cpi) {
     switch (cpi->opcode()) {
@@ -369,7 +368,7 @@ void InlinePass::GenInlineCode(
             // satisfy dominance.
             callee2caller[cpi->result_id()] = guard_block_id;
           }
-          // If callee has multiple returns, insert a header block for
+          // If callee has early return, insert a header block for
           // single-trip loop that will encompass callee code.  Start postheader
           // block.
           //
@@ -380,7 +379,7 @@ void InlinePass::GenInlineCode(
           // We still need to split the caller block and insert a guard block.
           // But we only need to do it once. We haven't done it yet, but the
           // single-trip loop header will serve the same purpose.
-          if (multiReturn) {
+          if (earlyReturn) {
             singleTripLoopHeaderId = this->TakeNextId();
             AddBranch(singleTripLoopHeaderId, &new_blk_ptr);
             new_blocks->push_back(std::move(new_blk_ptr));
@@ -429,9 +428,9 @@ void InlinePass::GenInlineCode(
           // If previous instruction was return, insert branch instruction
           // to return block.
           if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
-          if (multiReturn) {
-            // If we generated a loop header to for the single-trip loop
-            // to accommodate multiple returns, insert the continue
+          if (earlyReturn) {
+            // If we generated a loop header for the single-trip loop
+            // to accommodate early returns, insert the continue
             // target block now, with a false branch back to the loop header.
             new_blocks->push_back(std::move(new_blk_ptr));
             new_blk_ptr =
@@ -561,44 +560,24 @@ void InlinePass::UpdateSucceedingPhis(
       });
 }
 
-bool InlinePass::HasMultipleReturns(Function* func) {
-  bool seenReturn = false;
-  bool multipleReturns = false;
+bool InlinePass::HasNoReturnInStructuredConstruct(Function* func) {
+  // If control not structured, do not do loop/return analysis
+  // TODO: Analyze returns in non-structured control flow
+  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
+    return false;
+  const auto structured_analysis = context()->GetStructuredCFGAnalysis();
+  // Search for returns in structured construct.
+  bool return_in_construct = false;
   for (auto& blk : *func) {
     auto terminal_ii = blk.cend();
     --terminal_ii;
-    if (terminal_ii->opcode() == SpvOpReturn ||
-        terminal_ii->opcode() == SpvOpReturnValue) {
-      if (seenReturn) {
-        multipleReturns = true;
-        break;
-      }
-      seenReturn = true;
+    if (spvOpcodeIsReturn(terminal_ii->opcode()) &&
+        structured_analysis->ContainingConstruct(blk.id()) != 0) {
+      return_in_construct = true;
+      break;
     }
   }
-  return multipleReturns;
-}
-
-void InlinePass::ComputeStructuredSuccessors(Function* func) {
-  // If header, make merge block first successor.
-  for (auto& blk : *func) {
-    uint32_t mbid = blk.MergeBlockIdIfAny();
-    if (mbid != 0) {
-      block2structured_succs_[&blk].push_back(id2block_[mbid]);
-    }
-
-    // Add true successors.
-    const auto& const_blk = blk;
-    const_blk.ForEachSuccessorLabel([&blk, this](const uint32_t sbid) {
-      block2structured_succs_[&blk].push_back(id2block_[sbid]);
-    });
-  }
-}
-
-InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
-  return [this](const BasicBlock* block) {
-    return &(block2structured_succs_[block]);
-  };
+  return !return_in_construct;
 }
 
 bool InlinePass::HasNoReturnInLoop(Function* func) {
@@ -606,52 +585,27 @@ bool InlinePass::HasNoReturnInLoop(Function* func) {
   // TODO: Analyze returns in non-structured control flow
   if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
     return false;
-  // Compute structured block order. This order has the property
-  // that dominators are before all blocks they dominate and merge blocks
-  // are after all blocks that are in the control constructs of their header.
-  ComputeStructuredSuccessors(func);
-  auto ignore_block = [](cbb_ptr) {};
-  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  std::list<const BasicBlock*> structuredOrder;
-  CFA<BasicBlock>::DepthFirstTraversal(
-      &*func->begin(), StructuredSuccessorsFunction(), ignore_block,
-      [&](cbb_ptr b) { structuredOrder.push_front(b); }, ignore_edge);
-  // Search for returns in loops. Only need to track outermost loop
+  const auto structured_analysis = context()->GetStructuredCFGAnalysis();
+  // Search for returns in structured construct.
   bool return_in_loop = false;
-  uint32_t outerLoopMergeId = 0;
-  for (auto& blk : structuredOrder) {
-    // Exiting current outer loop
-    if (blk->id() == outerLoopMergeId) outerLoopMergeId = 0;
-    // Return block
-    auto terminal_ii = blk->cend();
+  for (auto& blk : *func) {
+    auto terminal_ii = blk.cend();
     --terminal_ii;
-    if (terminal_ii->opcode() == SpvOpReturn ||
-        terminal_ii->opcode() == SpvOpReturnValue) {
-      if (outerLoopMergeId != 0) {
-        return_in_loop = true;
-        break;
-      }
-    } else if (terminal_ii != blk->cbegin()) {
-      auto merge_ii = terminal_ii;
-      --merge_ii;
-      // Entering outermost loop
-      if (merge_ii->opcode() == SpvOpLoopMerge && outerLoopMergeId == 0)
-        outerLoopMergeId =
-            merge_ii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
+    if (spvOpcodeIsReturn(terminal_ii->opcode()) &&
+        structured_analysis->ContainingLoop(blk.id()) != 0) {
+      return_in_loop = true;
+      break;
     }
   }
   return !return_in_loop;
 }
 
 void InlinePass::AnalyzeReturns(Function* func) {
-  // Look for multiple returns
-  if (!HasMultipleReturns(func)) {
+  if (HasNoReturnInLoop(func)) {
     no_return_in_loop_.insert(func->result_id());
-    return;
+    if (!HasNoReturnInStructuredConstruct(func))
+      early_return_funcs_.insert(func->result_id());
   }
-  multi_return_funcs_.insert(func->result_id());
-  // If multiple returns, see if any are in a loop
-  if (HasNoReturnInLoop(func)) no_return_in_loop_.insert(func->result_id());
 }
 
 bool InlinePass::IsInlinableFunction(Function* func) {
@@ -673,10 +627,9 @@ void InlinePass::InitializeInline() {
   // clear collections
   id2function_.clear();
   id2block_.clear();
-  block2structured_succs_.clear();
   inlinable_.clear();
   no_return_in_loop_.clear();
-  multi_return_funcs_.clear();
+  early_return_funcs_.clear();
 
   for (auto& fn : *get_module()) {
     // Initialize function and block maps.
