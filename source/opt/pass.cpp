@@ -44,8 +44,9 @@ bool Pass::ProcessEntryPointCallTree(ProcessFunction& pfn, Module* module) {
 
   // Collect all of the entry points as the roots.
   std::queue<uint32_t> roots;
-  for (auto& e : module->entry_points())
+  for (auto& e : module->entry_points()) {
     roots.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
+  }
   return ProcessCallTreeFromRoots(pfn, id2function, &roots);
 }
 

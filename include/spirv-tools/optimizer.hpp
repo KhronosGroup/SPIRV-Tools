@@ -657,6 +657,32 @@ Optimizer::PassToken CreateReduceLoadSizePass();
 // them into a single instruction where possible.
 Optimizer::PassToken CreateCombineAccessChainsPass();
 
+// Create a pass to instrument bindless descriptor checking
+// This pass instruments all bindless references to check that descriptor
+// array indices are inbounds. If the reference is invalid, a record is
+// written to the debug output buffer (if space allows) and a null value is
+// returned. This pass is designed to support bindless validation in the Vulkan
+// validation layers.
+//
+// Dead code elimination should be run after this pass as the original,
+// potentially invalid code is not removed and could cause undefined behavior,
+// including crashes. It may also be beneficial to run Simplification
+// (ie Constant Propagation), DeadBranchElim and BlockMerge after this pass to
+// optimize instrument code involving the testing of compile-time constants.
+// It is also generally recommended that this pass (and all
+// instrumentation passes) be run after any legalization and optimization
+// passes. This will give better analysis for the instrumentation and avoid
+// potentially de-optimizing the instrument code, for example, inlining
+// the debug record output function throughout the module.
+//
+// The instrumentation will read and write buffers in debug
+// descriptor set |desc_set|. It will write |shader_id| in each output record
+// to identify the shader module which generated the record.
+//
+// TODO(greg-lunarg): Add support for vk_ext_descriptor_indexing.
+Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
+                                                 uint32_t shader_id);
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

@@ -71,6 +71,9 @@ class BasicBlock {
   // Appends all of block's instructions (except label) to this block
   inline void AddInstructions(BasicBlock* bp);
 
+  // The pointer to the label starting this basic block.
+  std::unique_ptr<Instruction>& GetLabel() { return label_; }
+
   // The label starting this basic block.
   Instruction* GetLabelInst() { return label_.get(); }
   const Instruction* GetLabelInst() const { return label_.get(); }
