@@ -81,18 +81,18 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
     default:
       return;
   }
-  Instruction* imageInst = get_def_use_mgr()->GetDef(image_id);
+  Instruction* image_inst = get_def_use_mgr()->GetDef(image_id);
   uint32_t load_id;
   Instruction* load_inst;
-  if (imageInst->opcode() == SpvOp::SpvOpSampledImage) {
-    load_id = imageInst->GetSingleWordInOperand(kSpvSampledImageImageIdInIdx);
+  if (image_inst->opcode() == SpvOp::SpvOpSampledImage) {
+    load_id = image_inst->GetSingleWordInOperand(kSpvSampledImageImageIdInIdx);
     load_inst = get_def_use_mgr()->GetDef(load_id);
-  } else if (imageInst->opcode() == SpvOp::SpvOpImage) {
-    load_id = imageInst->GetSingleWordInOperand(kSpvImageSampledImageIdInIdx);
+  } else if (image_inst->opcode() == SpvOp::SpvOpImage) {
+    load_id = image_inst->GetSingleWordInOperand(kSpvImageSampledImageIdInIdx);
     load_inst = get_def_use_mgr()->GetDef(load_id);
   } else {
     load_id = image_id;
-    load_inst = imageInst;
+    load_inst = image_inst;
     image_id = 0;
   }
   if (load_inst->opcode() != SpvOp::SpvOpLoad) {
@@ -165,15 +165,15 @@ void InstBindlessCheckPass::GenBindlessCheckCode(
   uint32_t new_image_id = new_load_id;
   // Clone Image/SampledImage with new load, if needed
   if (image_id != 0) {
-    if (imageInst->opcode() == SpvOp::SpvOpSampledImage) {
+    if (image_inst->opcode() == SpvOp::SpvOpSampledImage) {
       Instruction* new_image_inst = builder.AddBinaryOp(
-          imageInst->type_id(), SpvOpSampledImage, new_load_id,
-          imageInst->GetSingleWordInOperand(kSpvSampledImageSamplerIdInIdx));
+          image_inst->type_id(), SpvOpSampledImage, new_load_id,
+          image_inst->GetSingleWordInOperand(kSpvSampledImageSamplerIdInIdx));
       new_image_id = new_image_inst->result_id();
     } else {
-      assert(imageInst->opcode() == SpvOp::SpvOpImage && "expecting OpImage");
+      assert(image_inst->opcode() == SpvOp::SpvOpImage && "expecting OpImage");
       Instruction* new_image_inst =
-          builder.AddUnaryOp(imageInst->type_id(), SpvOpImage, new_load_id);
+          builder.AddUnaryOp(image_inst->type_id(), SpvOpImage, new_load_id);
       new_image_id = new_image_inst->result_id();
     }
     get_decoration_mgr()->CloneDecorations(image_id, new_image_id);
