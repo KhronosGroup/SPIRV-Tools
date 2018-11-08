@@ -184,10 +184,10 @@ set_source_files_properties(
   PROPERTIES OBJECT_DEPENDS "${ENUM_STRING_MAPPING_CPP_DEPENDS}")
 
 set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/extension.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
   PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/extension.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
   PROPERTIES OBJECT_DEPENDS "${EXTENSION_H_DEPENDS}")
 
 set(SPIRV_TOOLS_BUILD_VERSION_INC
@@ -208,6 +208,11 @@ add_custom_command(OUTPUT ${SPIRV_TOOLS_BUILD_VERSION_INC}
 add_custom_target(spirv-tools-build-version
    DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC})
 set_property(TARGET spirv-tools-build-version PROPERTY FOLDER "SPIRV-Tools build")
+
+list(APPEND PCH_DEPENDS ${ENUM_STRING_MAPPING_CPP_DEPENDS} ${OPCODE_CPP_DEPENDS} ${OPERAND_CPP_DEPENDS} ${EXTENSION_H_DEPENDS} ${EXTINST_CPP_DEPENDS} ${SPIRV_TOOLS_BUILD_VERSION_INC})
+set_source_files_properties(
+  ${CMAKE_CURRENT_SOURCE_DIR}/pch_source.cpp
+  PROPERTIES OBJECT_DEPENDS "${PCH_DEPENDS}")
 
 add_subdirectory(comp)
 add_subdirectory(opt)
@@ -339,6 +344,8 @@ endif()
 set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   PROPERTIES OBJECT_DEPENDS "${SPIRV_TOOLS_BUILD_VERSION_INC}")
+
+spvtools_pch(SPIRV_SOURCES pch_source)
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})

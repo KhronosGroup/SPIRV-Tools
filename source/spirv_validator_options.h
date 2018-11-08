@@ -32,6 +32,7 @@ struct validator_universal_limits_t {
   uint32_t max_function_args{255};
   uint32_t max_control_flow_nesting_depth{1023};
   uint32_t max_access_chain_indexes{255};
+  uint32_t max_id_bound{0x3FFFFF};
 };
 
 // Manages command line options passed to the SPIR-V Validator. New struct

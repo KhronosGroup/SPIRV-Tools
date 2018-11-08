@@ -30,12 +30,16 @@ endif()
 
 function(add_spvtools_unittest)
   if (NOT "${SPIRV_SKIP_TESTS}" AND TARGET gmock_main)
-    set(one_value_args TARGET)
+    set(one_value_args TARGET PCH_FILE)
     set(multi_value_args SRCS LIBS ENVIRONMENT)
     cmake_parse_arguments(
       ARG "" "${one_value_args}" "${multi_value_args}" ${ARGN})
     set(target test_${ARG_TARGET})
-    add_executable(${target} ${ARG_SRCS})
+    set(SRC_COPY ${ARG_SRCS})
+    if (DEFINED ARG_PCH_FILE)
+      spvtools_pch(SRC_COPY ${ARG_PCH_FILE})
+    endif()
+    add_executable(${target} ${SRC_COPY})
     spvtools_default_compile_options(${target})
     if(${COMPILER_IS_LIKE_GNU})
       target_compile_options(${target} PRIVATE -Wno-undef)
@@ -146,6 +150,8 @@ set(TEST_SOURCES
 
   unit_spirv.cpp
 )
+
+spvtools_pch(TEST_SOURCES pch_test)
 
 add_spvtools_unittest(
   TARGET spirv_unit_tests

@@ -557,6 +557,8 @@ OptStatus ParseFlags(int argc, const char** argv,
           return {OPT_STOP, 1};
         }
         optimizer_options->set_max_id_bound(max_id_bound);
+        validator_options->SetUniversalLimit(spv_validator_limit_max_id_bound,
+                                             max_id_bound);
       } else {
         // Some passes used to accept the form '--pass arg', canonicalize them
         // to '--pass=arg'.
@@ -593,16 +595,16 @@ int main(int argc, const char** argv) {
   const char* out_file = nullptr;
 
   spv_target_env target_env = kDefaultEnvironment;
-  spvtools::ValidatorOptions validator_options;
-  spvtools::OptimizerOptions optimizer_options;
 
-  optimizer_options.set_validator_options(validator_options);
 
   spvtools::Optimizer optimizer(target_env);
   optimizer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
+  spvtools::ValidatorOptions validator_options;
+  spvtools::OptimizerOptions optimizer_options;
   OptStatus status = ParseFlags(argc, argv, &optimizer, &in_file, &out_file,
                                 &validator_options, &optimizer_options);
+  optimizer_options.set_validator_options(validator_options);
 
   if (status.action == OPT_STOP) {
     return status.code;

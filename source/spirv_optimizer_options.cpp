@@ -17,7 +17,7 @@
 
 #include "source/spirv_optimizer_options.h"
 
-SPIRV_TOOLS_EXPORT spv_optimizer_options spvOptimizerOptionsCreate() {
+SPIRV_TOOLS_EXPORT spv_optimizer_options spvOptimizerOptionsCreate(void) {
   return new spv_optimizer_options_t();
 }
 

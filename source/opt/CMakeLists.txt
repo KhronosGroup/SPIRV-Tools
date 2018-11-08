@@ -192,17 +192,9 @@ set(SPIRV_TOOLS_OPT_SOURCES
 if(MSVC)
   # Enable parallel builds across four cores for this lib
   add_definitions(/MP4)
-
-  # Enable precompiled header
-  if (CMAKE_GENERATOR MATCHES "^Visual Studio")
-    set(PCH_NAME "$(IntDir)\\pch.pch")
-  else()
-    set(PCH_NAME "pch.pch")
-  endif()
-  set_source_files_properties(${SPIRV_TOOLS_OPT_SOURCES} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fp${PCH_NAME} /Zm300" OBJECT_DEPENDS "${PCH_NAME}")
-  set_source_files_properties(pch.cpp PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fp${PCH_NAME} /Zm300" OBJECT_OUTPUTS "${PCH_NAME}")
-  list(APPEND SPIRV_TOOLS_OPT_SOURCES "pch.cpp")
 endif()
+
+spvtools_pch(SPIRV_TOOLS_OPT_SOURCES pch_source_opt)
 
 add_library(SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SOURCES})
 

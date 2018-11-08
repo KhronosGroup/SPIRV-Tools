@@ -6135,6 +6135,42 @@ TEST_F(AggressiveDCETest, DeadHlslCounterBufferGOOGLE) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<AggressiveDCEPass>(test, true);
 }
+
+TEST_F(AggressiveDCETest, Dead) {
+  // We are able to remove "local2" because it is not loaded, but have to keep
+  // the stores to "local1".
+  const std::string test =
+      R"(
+; CHECK: OpCapability
+; CHECK-NOT: OpMemberDecorateStringGOOGLE
+; CHECK: OpFunctionEnd
+           OpCapability Shader
+           OpExtension "SPV_GOOGLE_hlsl_functionality1"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Vertex %VSMain "VSMain"
+           OpSource HLSL 500
+           OpName %VSMain "VSMain"
+           OpName %PSInput "PSInput"
+           OpMemberName %PSInput 0 "Pos"
+           OpMemberName %PSInput 1 "uv"
+           OpMemberDecorateStringGOOGLE %PSInput 0 HlslSemanticGOOGLE "SV_POSITION"
+           OpMemberDecorateStringGOOGLE %PSInput 1 HlslSemanticGOOGLE "TEX_COORD"
+   %void = OpTypeVoid
+      %5 = OpTypeFunction %void
+  %float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v4float = OpTypeVector %float 4
+%PSInput = OpTypeStruct %v4float %v2float
+ %VSMain = OpFunction %void None %5
+      %9 = OpLabel
+           OpReturn
+           OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<AggressiveDCEPass>(test, true);
+}
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required

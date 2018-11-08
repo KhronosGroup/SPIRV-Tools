@@ -435,6 +435,7 @@ typedef enum {
   spv_validator_limit_max_function_args,
   spv_validator_limit_max_control_flow_nesting_depth,
   spv_validator_limit_max_access_chain_indexes,
+  spv_validator_limit_max_id_bound,
 } spv_validator_limit;
 
 // Returns a string describing the given SPIR-V target environment.
@@ -498,7 +499,7 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSkipBlockLayout(
 // Creates an optimizer options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // |spvOptimizerOptionsDestroy|.
-SPIRV_TOOLS_EXPORT spv_optimizer_options spvOptimizerOptionsCreate();
+SPIRV_TOOLS_EXPORT spv_optimizer_options spvOptimizerOptionsCreate(void);
 
 // Destroys the given optimizer options object.
 SPIRV_TOOLS_EXPORT void spvOptimizerOptionsDestroy(
