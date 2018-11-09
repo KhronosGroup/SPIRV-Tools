@@ -506,6 +506,24 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
                   "outside of a function";
       }
     }
+    if (_.IncludesIntOrFloatOfWidth(inst->type_id(), SpvOpTypeInt, 8) &&
+        !_.HasCapability(SpvCapabilityStorageBuffer8BitAccess) &&
+        (storage_class == SpvStorageClassUniform ||
+         storage_class == SpvStorageClassPushConstant ||
+         storage_class == SpvStorageClassStorageBuffer)) {
+      return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+             << "Variables can not point to an 8-bit integer "
+                "without 8-bit storage capabilities";
+    }
+    if (_.IncludesIntOrFloatOfWidth(inst->type_id(), SpvOpTypeFloat, 16) &&
+        !_.HasCapability(SpvCapabilityStorageBuffer16BitAccess) &&
+        (storage_class == SpvStorageClassUniform ||
+         storage_class == SpvStorageClassPushConstant ||
+         storage_class == SpvStorageClassStorageBuffer)) {
+      return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+             << "Variables can not point to a 16-bit float "
+                "without 16-bit storage capabilities";
+    }
   }
 
   // SPIR-V Spec 2.16.3: Validation Rules for Kernel Capabilities: The

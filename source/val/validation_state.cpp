@@ -831,6 +831,35 @@ bool ValidationState_t::IsPointerType(uint32_t id) const {
   return inst->opcode() == SpvOpTypePointer;
 }
 
+bool ValidationState_t::IncludesIntOrFloatOfWidth(uint32_t id, SpvOp check_type,
+                                                  uint32_t check_width) const {
+  if (!id) return false;
+  const Instruction* inst = FindDef(id);
+  assert(inst);
+  switch (inst->opcode()) {
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypeBool:
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeArray:
+      return GetComponentType(inst->id()) == check_type &&
+             GetBitWidth(inst->id()) == check_width;
+    case SpvOpTypeStruct: {
+      std::vector<uint32_t> member_types;
+      GetStructMemberTypes(inst->id(), &member_types);
+      for (const auto& member : member_types) {
+        if (IncludesIntOrFloatOfWidth(member, check_type, check_width)) {
+          return true;
+        }
+      }
+    }
+    default:
+      break;
+  }
+  return false;
+}
+
 bool ValidationState_t::GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
                                            uint32_t* storage_class) const {
   if (!id) return false;

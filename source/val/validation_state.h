@@ -525,6 +525,13 @@ class ValidationState_t {
   bool IsBoolScalarOrVectorType(uint32_t id) const;
   bool IsPointerType(uint32_t id) const;
 
+  // Returns true iff |id| is a type corresponding to the given type and width,
+  // or includes such type in case of vectors, matrices, arrays and structs.
+  // |id| can be
+  // - scalar, vector or matrix type
+  // - object of either scalar, vector or matrix type
+  bool IncludesIntOrFloatOfWidth(uint32_t id, SpvOp type, uint32_t width) const;
+
   // Gets value from OpConstant and OpSpecConstant as uint64.
   // Returns false on failure (no instruction, wrong instruction, not int).
   bool GetConstantValUint64(uint32_t id, uint64_t* val) const;
