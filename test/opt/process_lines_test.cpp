@@ -27,43 +27,42 @@ namespace {
 using ProcessLinesTest = PassTest<::testing::Test>;
 
 TEST_F(ProcessLinesTest, SimplePropagation) {
-
-// Texture2D g_tColor[128];
-//
-// layout(push_constant) cbuffer PerViewConstantBuffer_t
-// {
-//   uint g_nDataIdx;
-//   uint g_nDataIdx2;
-//   bool g_B;
-// };
-//
-// SamplerState g_sAniso;
-//
-// struct PS_INPUT
-// {
-//   float2 vTextureCoords : TEXCOORD2;
-// };
-//
-// struct PS_OUTPUT
-// {
-//   float4 vColor : SV_Target0;
-// };
-//
-// PS_OUTPUT MainPs(PS_INPUT i)
-// {
-//   PS_OUTPUT ps_output;
-//
-//   uint u;
-//   if (g_B)
-//     u = g_nDataIdx;
-//   else
-//     u = g_nDataIdx2;
-//   ps_output.vColor = g_tColor[u].Sample(g_sAniso, i.vTextureCoords.xy);
-//   return ps_output;
-// }
+  // Texture2D g_tColor[128];
+  //
+  // layout(push_constant) cbuffer PerViewConstantBuffer_t
+  // {
+  //   uint g_nDataIdx;
+  //   uint g_nDataIdx2;
+  //   bool g_B;
+  // };
+  //
+  // SamplerState g_sAniso;
+  //
+  // struct PS_INPUT
+  // {
+  //   float2 vTextureCoords : TEXCOORD2;
+  // };
+  //
+  // struct PS_OUTPUT
+  // {
+  //   float4 vColor : SV_Target0;
+  // };
+  //
+  // PS_OUTPUT MainPs(PS_INPUT i)
+  // {
+  //   PS_OUTPUT ps_output;
+  //
+  //   uint u;
+  //   if (g_B)
+  //     u = g_nDataIdx;
+  //   else
+  //     u = g_nDataIdx2;
+  //   ps_output.vColor = g_tColor[u].Sample(g_sAniso, i.vTextureCoords.xy);
+  //   return ps_output;
+  // }
 
   const std::string predefs =
-    R"(OpCapability Shader
+      R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %MainPs "MainPs" %i_vTextureCoords %_entryPointOutput_vColor
@@ -101,7 +100,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 )";
 
   const std::string before =
-    R"(%void = OpTypeVoid
+      R"(%void = OpTypeVoid
 %19 = OpTypeFunction %void
 %float = OpTypeFloat 32
 %v2float = OpTypeVector %float 2
@@ -196,7 +195,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-    R"(OpNoLine
+      R"(OpNoLine
 %void = OpTypeVoid
 OpNoLine
 %19 = OpTypeFunction %void
@@ -369,12 +368,11 @@ OpNoLine
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<ProcessLinesPass>(
-    predefs + before, predefs + after, false, true, kLinesPropagateLines);
+  SinglePassRunAndCheck<ProcessLinesPass>(predefs + before, predefs + after,
+                                          false, true, kLinesPropagateLines);
 }
 
 TEST_F(ProcessLinesTest, SimpleElimination) {
-
   // Previous test with before and after reversed
 
   const std::string predefs =
@@ -416,7 +414,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 )";
 
   const std::string before =
-    R"(OpNoLine
+      R"(OpNoLine
 %void = OpTypeVoid
 OpNoLine
 %19 = OpTypeFunction %void

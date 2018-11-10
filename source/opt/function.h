@@ -116,7 +116,7 @@ class Function {
   void ForEachParam(const std::function<void(const Instruction*)>& f,
                     bool run_on_debug_line_insts = false) const;
   void ForEachParam(const std::function<void(Instruction*)>& f,
-    bool run_on_debug_line_insts = false);
+                    bool run_on_debug_line_insts = false);
 
   BasicBlock* InsertBasicBlockAfter(std::unique_ptr<BasicBlock>&& new_block,
                                     BasicBlock* position);

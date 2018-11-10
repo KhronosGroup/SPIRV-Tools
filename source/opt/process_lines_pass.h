@@ -30,16 +30,15 @@ namespace {
 static const int kLinesPropagateLines = 0;
 static const int kLinesEliminateDeadLines = 1;
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // See optimizer.hpp for documentation.
 class ProcessLinesPass : public Pass {
-
- using LineProcessFunction = std::function<bool(
-     Instruction*, uint32_t*, uint32_t*, uint32_t*)>;
+  using LineProcessFunction =
+      std::function<bool(Instruction*, uint32_t*, uint32_t*, uint32_t*)>;
 
  public:
-   ProcessLinesPass(uint32_t func_id);
+  ProcessLinesPass(uint32_t func_id);
   ~ProcessLinesPass() = default;
 
   const char* name() const override { return "propagate-lines"; }
@@ -59,16 +58,16 @@ class ProcessLinesPass : public Pass {
   // If |inst| has no debug line instruction, create one with
   // |file_id, line, col|. If |inst| has debug line instructions, set
   // |file_id, line, col| from the last. Return true if |inst| modified.
-  bool PropagateLine(Instruction* inst, uint32_t *file_id, uint32_t *line, 
-                     uint32_t *col);
+  bool PropagateLine(Instruction* inst, uint32_t* file_id, uint32_t* line,
+                     uint32_t* col);
 
   // If last debug line instruction of |inst| matches |file_id, line, col|,
   // delete all debug line instructions of |inst|. If they do not match,
   // replace all debug line instructions of |inst| with new line instruction
   // set from |file_id, line, col|. If |inst| has no debug line instructions,
   // do not modify |inst|. Return true if |inst| modified.
-  bool EliminateDeadLines(Instruction* inst, uint32_t *file_id, uint32_t *line,
-                          uint32_t *col);
+  bool EliminateDeadLines(Instruction* inst, uint32_t* file_id, uint32_t* line,
+                          uint32_t* col);
 
   // Apply lpfn() to all type, constant, global variable and function
   // instructions in their physical order.

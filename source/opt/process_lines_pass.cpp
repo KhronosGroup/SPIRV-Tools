@@ -49,16 +49,16 @@ bool ProcessLinesPass::ProcessLines() {
   for (Function& function : *get_module()) {
     modified |= lpfn_(&function.DefInst(), &file_id, &line, &col);
     function.ForEachParam(
-      [this, &modified, &file_id, &line, &col](Instruction* param) {
-      modified |= lpfn_(param, &file_id, &line, &col);
-    });
+        [this, &modified, &file_id, &line, &col](Instruction* param) {
+          modified |= lpfn_(param, &file_id, &line, &col);
+        });
     for (BasicBlock& block : function) {
       modified |= lpfn_(block.GetLabelInst(), &file_id, &line, &col);
       for (Instruction& inst : block) {
         modified |= lpfn_(&inst, &file_id, &line, &col);
         // Don't process terminal instruction if preceeded by merge
         if (inst.opcode() == SpvOpSelectionMerge ||
-          inst.opcode() == SpvOpLoopMerge)
+            inst.opcode() == SpvOpLoopMerge)
           break;
       }
       // Nullify line info after each block.
@@ -70,7 +70,7 @@ bool ProcessLinesPass::ProcessLines() {
 }
 
 bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t *file_id,
-                                       uint32_t *line, uint32_t *col) {
+                                     uint32_t *line, uint32_t *col) {
   bool modified = false;
   // only the last debug instruction needs to be considered
   auto line_itr = inst->dbg_line_insts().rbegin();
@@ -81,13 +81,13 @@ bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t *file_id,
       inst->dbg_line_insts().push_back(Instruction(context(), SpvOpNoLine));
     else
       inst->dbg_line_insts().push_back(Instruction(
-        context(), SpvOpLine, 0, 0,
-        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*file_id} },
-         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*line} },
-         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*col}}}));
+          context(), SpvOpLine, 0, 0,
+          {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*file_id} },
+           {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*line} },
+           {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*col}}}));
     modified = true;
-  // else pre-existing line instruction, so update source line info
   } else {
+    // else pre-existing line instruction, so update source line info
     if (line_itr->opcode() == SpvOpNoLine) {
       *file_id = 0;
     } else {
@@ -101,7 +101,7 @@ bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t *file_id,
 }
 
 bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t *file_id,
-  uint32_t *line, uint32_t *col) {
+                                          uint32_t *line, uint32_t *col) {
   // If no debug line instructions, return without modifying lines
   if (inst->dbg_line_insts().empty()) return false;
   // Only the last debug instruction needs to be considered; delete all others
@@ -114,23 +114,20 @@ bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t *file_id,
     if (*file_id == 0) {
       modified = true;
       // Else replace OpNoLine and propagate no line info
-    }
-    else {
+    } else {
       inst->dbg_line_insts().push_back(last_inst);
       *file_id = 0;
     }
+  } else {
     // Else last line is OpLine
-  }
-  else {
     assert(last_inst.opcode() == SpvOpLine && "unexpected debug inst");
     // If propagated info matches last line, throw away last line
     if (*file_id == last_inst.GetSingleWordInOperand(kSpvLineFileInIdx) &&
-      *line == last_inst.GetSingleWordInOperand(kSpvLineLineInIdx) &&
-      *col == last_inst.GetSingleWordInOperand(kSpvLineColInIdx)) {
+        *line == last_inst.GetSingleWordInOperand(kSpvLineLineInIdx) &&
+        *col == last_inst.GetSingleWordInOperand(kSpvLineColInIdx)) {
       modified = true;
+    } else {
       // Else replace last line and propagate line info
-    }
-    else {
       *file_id = last_inst.GetSingleWordInOperand(kSpvLineFileInIdx);
       *line = last_inst.GetSingleWordInOperand(kSpvLineLineInIdx);
       *col = last_inst.GetSingleWordInOperand(kSpvLineColInIdx);
@@ -142,14 +139,16 @@ bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t *file_id,
 
 ProcessLinesPass::ProcessLinesPass(uint32_t func_id) {
   if (func_id == kLinesPropagateLines) {
-    lpfn_ = [this](
-        Instruction* inst, uint32_t *file_id, uint32_t *line, uint32_t *col) {
-      return PropagateLine(inst, file_id, line, col); };
+    lpfn_ = [this](Instruction* inst, uint32_t *file_id, uint32_t *line,
+                   uint32_t *col) {
+      return PropagateLine(inst, file_id, line, col);
+    };
   } else {
     assert(func_id == kLinesEliminateDeadLines && "unknown Lines param");
-    lpfn_ = [this](
-        Instruction* inst, uint32_t *file_id, uint32_t *line, uint32_t *col) {
-      return EliminateDeadLines(inst, file_id, line, col); };
+    lpfn_ = [this](Instruction* inst, uint32_t *file_id, uint32_t *line,
+                   uint32_t *col) {
+      return EliminateDeadLines(inst, file_id, line, col);
+    };
   }
 }
 

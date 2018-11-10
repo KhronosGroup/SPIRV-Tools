@@ -69,7 +69,7 @@ void Function::ForEachInst(const std::function<void(const Instruction*)>& f,
 }
 
 void Function::ForEachParam(const std::function<void(Instruction*)>& f,
-  bool run_on_debug_line_insts) {
+                            bool run_on_debug_line_insts) {
   for (auto& param : params_)
     static_cast<Instruction*>(param.get())
         ->ForEachInst(f, run_on_debug_line_insts);

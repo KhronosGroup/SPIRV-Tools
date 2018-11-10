@@ -630,12 +630,12 @@ Optimizer::PassToken CreateAggressiveDCEPass() {
 
 Optimizer::PassToken CreatePropagateLinesPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-    MakeUnique<opt::ProcessLinesPass>(opt::kLinesPropagateLines));
+      MakeUnique<opt::ProcessLinesPass>(opt::kLinesPropagateLines));
 }
 
 Optimizer::PassToken CreateDeadLineElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-    MakeUnique<opt::ProcessLinesPass>(opt::kLinesEliminateDeadLines));
+      MakeUnique<opt::ProcessLinesPass>(opt::kLinesEliminateDeadLines));
 }
 
 Optimizer::PassToken CreateCommonUniformElimPass() {
