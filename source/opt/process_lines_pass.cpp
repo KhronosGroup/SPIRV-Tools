@@ -69,8 +69,8 @@ bool ProcessLinesPass::ProcessLines() {
   return modified;
 }
 
-bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t *file_id,
-                                     uint32_t *line, uint32_t *col) {
+bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t* file_id,
+                                     uint32_t* line, uint32_t* col) {
   bool modified = false;
   // only the last debug instruction needs to be considered
   auto line_itr = inst->dbg_line_insts().rbegin();
@@ -82,8 +82,8 @@ bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t *file_id,
     else
       inst->dbg_line_insts().push_back(Instruction(
           context(), SpvOpLine, 0, 0,
-          {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*file_id} },
-           {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*line} },
+          {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*file_id}},
+           {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*line}},
            {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*col}}}));
     modified = true;
   } else {
@@ -100,8 +100,8 @@ bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t *file_id,
   return modified;
 }
 
-bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t *file_id,
-                                          uint32_t *line, uint32_t *col) {
+bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t* file_id,
+                                          uint32_t* line, uint32_t* col) {
   // If no debug line instructions, return without modifying lines
   if (inst->dbg_line_insts().empty()) return false;
   // Only the last debug instruction needs to be considered; delete all others
@@ -139,14 +139,14 @@ bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t *file_id,
 
 ProcessLinesPass::ProcessLinesPass(uint32_t func_id) {
   if (func_id == kLinesPropagateLines) {
-    lpfn_ = [this](Instruction* inst, uint32_t *file_id, uint32_t *line,
-                   uint32_t *col) {
+    lpfn_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
+                   uint32_t* col) {
       return PropagateLine(inst, file_id, line, col);
     };
   } else {
     assert(func_id == kLinesEliminateDeadLines && "unknown Lines param");
-    lpfn_ = [this](Instruction* inst, uint32_t *file_id, uint32_t *line,
-                   uint32_t *col) {
+    lpfn_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
+                   uint32_t* col) {
       return EliminateDeadLines(inst, file_id, line, col);
     };
   }
