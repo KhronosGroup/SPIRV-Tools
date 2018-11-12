@@ -69,7 +69,7 @@ class InstrumentPass : public Pass {
       BasicBlock::iterator, UptrVectorIterator<BasicBlock>, uint32_t, uint32_t,
       std::vector<std::unique_ptr<BasicBlock>>*)>;
 
-  virtual ~InstrumentPass() = default;
+  ~InstrumentPass() override = default;
 
   IRContext::Analysis GetPreservedAnalyses() override {
     return IRContext::kAnalysisDefUse |

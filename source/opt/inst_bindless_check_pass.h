@@ -34,7 +34,7 @@ class InstBindlessCheckPass : public InstrumentPass {
   InstBindlessCheckPass(uint32_t desc_set, uint32_t shader_id)
       : InstrumentPass(desc_set, shader_id, kInstValidationIdBindless) {}
 
-  ~InstBindlessCheckPass() = default;
+  ~InstBindlessCheckPass() override = default;
 
   // See optimizer.hpp for pass user documentation.
   Status Process() override;
