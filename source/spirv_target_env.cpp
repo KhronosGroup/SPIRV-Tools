@@ -14,7 +14,6 @@
 
 #include "source/spirv_target_env.h"
 
-#include <cassert>
 #include <cstring>
 
 #include "source/spirv_constant.h"
@@ -63,7 +62,6 @@ const char* spvTargetEnvDescription(spv_target_env env) {
     case SPV_ENV_WEBGPU_0:
       return "SPIR-V 1.3 (under WIP WebGPU semantics)";
   }
-  assert(0 && "Unhandled SPIR-V target environment");
   return "";
 }
 
@@ -94,7 +92,6 @@ uint32_t spvVersionForTargetEnv(spv_target_env env) {
     case SPV_ENV_WEBGPU_0:
       return SPV_SPIRV_VERSION_WORD(1, 3);
   }
-  assert(0 && "Unhandled SPIR-V target environment");
   return SPV_SPIRV_VERSION_WORD(0, 0);
 }
 
