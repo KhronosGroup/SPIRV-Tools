@@ -345,6 +345,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         break;
       default:
         return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "From Vulkan spec, section 14.5.2:\n"
                << "Variables identified with the UniformConstant storage class "
                << "are used only as handles to refer to opaque resources. Such "
                << "variables must be typed as OpTypeImage, OpTypeSampler, "
