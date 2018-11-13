@@ -325,15 +325,15 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  // Vulkan spec 14.5.2
+  // Check that UniformConstant variables are the correct type, see Vulkan spec
+  // section 14.5.2 for details.
   if (spvIsVulkanEnv(_.context()->target_env) &&
       storage_class == SpvStorageClassUniformConstant) {
     auto variable_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
     auto variable_type_opcode = variable_type->opcode();
 
     // If the variable is actually an array extract the element type.
-    if (variable_type_opcode == SpvOpTypeArray ||
-        variable_type_opcode == SpvOpTypeRuntimeArray) {
+    if (variable_type_opcode == SpvOpTypeArray) {
       variable_type = _.FindDef(variable_type->GetOperandAs<uint32_t>(1));
       variable_type_opcode = variable_type->opcode();
     }
