@@ -328,19 +328,13 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   // Vulkan spec 14.5.2
   if (spvIsVulkanEnv(_.context()->target_env) &&
       storage_class == SpvStorageClassUniformConstant) {
-    const auto pointer_type_index = 2;
-    const auto pointer_type_id =
-        result_type->GetOperandAs<uint32_t>(pointer_type_index);
-    auto variable_type = _.FindDef(pointer_type_id);
+    auto variable_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
     auto variable_type_opcode = variable_type->opcode();
 
     // If the variable is actually an array extract the element type.
     if (variable_type_opcode == SpvOpTypeArray ||
         variable_type_opcode == SpvOpTypeRuntimeArray) {
-      const auto element_index = 1;
-      const auto element_id =
-          variable_type->GetOperandAs<uint32_t>(element_index);
-      variable_type = _.FindDef(element_id);
+      variable_type = _.FindDef(variable_type->GetOperandAs<uint32_t>(1));
       variable_type_opcode = variable_type->opcode();
     }
 
