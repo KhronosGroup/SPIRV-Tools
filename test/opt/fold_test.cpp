@@ -5821,7 +5821,7 @@ TEST_P(MatchingInstructionWithNoResultFoldingTest, Case) {
 
 INSTANTIATE_TEST_CASE_P(StoreMatchingTest, MatchingInstructionWithNoResultFoldingTest,
 ::testing::Values(
-    // Test case 0: Using OpDot to extract last element.
+    // Test case 0: Remove store of undef.
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: OpLabel\n" +
@@ -5834,7 +5834,18 @@ INSTANTIATE_TEST_CASE_P(StoreMatchingTest, MatchingInstructionWithNoResultFoldin
             "OpStore %n %undef\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        0 /* OpStore */, true)
+        0 /* OpStore */, true),
+    // Test case 1: Keep volatile store.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v4double Function\n" +
+            "%undef = OpUndef %v4double\n" +
+            "OpStore %n %undef Volatile\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        0 /* OpStore */, false)
 ));
 
 INSTANTIATE_TEST_CASE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoResultFoldingTest,
