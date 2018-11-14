@@ -156,6 +156,7 @@ bool Instruction::IsReadOnlyLoad() const {
 
 Instruction* Instruction::GetBaseAddress() const {
   assert((IsLoad() || opcode() == SpvOpStore || opcode() == SpvOpAccessChain ||
+          opcode() == SpvOpPtrAccessChain ||
           opcode() == SpvOpInBoundsAccessChain || opcode() == SpvOpCopyObject ||
           opcode() == SpvOpImageTexelPointer) &&
          "GetBaseAddress should only be called on instructions that take a "
@@ -187,6 +188,7 @@ Instruction* Instruction::GetBaseAddress() const {
     case SpvOpStore:
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:
+    case SpvOpPtrAccessChain:
     case SpvOpImageTexelPointer:
     case SpvOpCopyObject:
       // A load or store through a pointer.
