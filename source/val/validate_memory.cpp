@@ -340,6 +340,18 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  // SPIR-V 3.32.8: Check that pointer type and variable type have the same
+  // storage class.
+  const auto result_storage_class_index = 1;
+  const auto result_storage_class =
+      result_type->GetOperandAs<uint32_t>(result_storage_class_index);
+  if (storage_class != result_storage_class) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "From SPIR-V spec, section 3.32.8 on OpVariable:\n"
+           << "Its Storage Class operand must be the same as the Storage Class "
+           << "operand of the result type.";
+  }
+
   // Vulkan 14.5.2: Check type of UniformConstant and Uniform variables.
   if (spvIsVulkanEnv(_.context()->target_env)) {
     auto pointee = _.FindDef(result_type->word(3));
