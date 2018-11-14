@@ -2169,7 +2169,7 @@ OpFunctionEnd
                         "be declared when using BuiltIn FragDepth"));
 }
 
-TEST_F(ValidateBuiltIns, AllowInstanceIdWithMeshShader) {
+TEST_F(ValidateBuiltIns, AllowInstanceIdWithIntersectionShader) {
   CodeGenerator generator = GetDefaultShaderCodeGenerator();
   generator.capabilities_ += R"(
 OpCapability RayTracingNV
