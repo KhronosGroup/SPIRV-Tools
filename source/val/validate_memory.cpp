@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "source/opcode.h"
+#include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
 #include "source/val/validation_state.h"
 
@@ -323,6 +324,35 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
              << "Classes: Workgroup, CrossWorkgroup, Private, and Function";
     }
   }
+
+  // Check that UniformConstant variables are the correct type, see Vulkan spec
+  // section 14.5.2 for details.
+  if (spvIsVulkanEnv(_.context()->target_env) &&
+      storage_class == SpvStorageClassUniformConstant) {
+    auto variable_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+    auto variable_type_opcode = variable_type->opcode();
+
+    // If the variable is actually an array extract the element type.
+    if (variable_type_opcode == SpvOpTypeArray) {
+      variable_type = _.FindDef(variable_type->GetOperandAs<uint32_t>(1));
+      variable_type_opcode = variable_type->opcode();
+    }
+
+    switch (variable_type_opcode) {
+      case SpvOpTypeImage:
+      case SpvOpTypeSampler:
+      case SpvOpTypeSampledImage:
+        break;
+      default:
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "From Vulkan spec, section 14.5.2:\n"
+               << "Variables identified with the UniformConstant storage class "
+               << "are used only as handles to refer to opaque resources. Such "
+               << "variables must be typed as OpTypeImage, OpTypeSampler, "
+               << "OpTypeSampledImage, or an array of one of these types.";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 

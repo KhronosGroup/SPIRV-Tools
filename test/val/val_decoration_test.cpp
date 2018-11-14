@@ -621,12 +621,12 @@ TEST_F(ValidateDecorations, RuntimeArrayOfDescriptorSetsIsAllowed) {
          %10 = OpTypeImage %float 2D 0 0 0 1 Unknown
          %11 = OpTypeSampledImage %10
 %_runtimearr_11 = OpTypeRuntimeArray %11
-%_ptr_UniformConstant__runtimearr_11 = OpTypePointer UniformConstant %_runtimearr_11
-        %s2d = OpVariable %_ptr_UniformConstant__runtimearr_11 UniformConstant
+%_ptr_Uniform__runtimearr_11 = OpTypePointer Uniform %_runtimearr_11
+        %s2d = OpVariable %_ptr_Uniform__runtimearr_11 Uniform
         %int = OpTypeInt 32 1
 %_ptr_Input_int = OpTypePointer Input %int
           %i = OpVariable %_ptr_Input_int Input
-%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
+%_ptr_Uniform_11 = OpTypePointer Uniform %11
     %v2float = OpTypeVector %float 2
 %float_0_300000012 = OpConstant %float 0.300000012
          %24 = OpConstantComposite %v2float %float_0_300000012 %float_0_300000012
@@ -635,7 +635,7 @@ TEST_F(ValidateDecorations, RuntimeArrayOfDescriptorSetsIsAllowed) {
           %5 = OpLabel
           %v = OpVariable %_ptr_Function_v4float Function
          %18 = OpLoad %int %i
-         %20 = OpAccessChain %_ptr_UniformConstant_11 %s2d %18
+         %20 = OpAccessChain %_ptr_Uniform_11 %s2d %18
          %21 = OpLoad %11 %20
          %26 = OpImageSampleExplicitLod %v4float %21 %24 Lod %float_0
                OpStore %v %26
@@ -689,12 +689,12 @@ TEST_F(ValidateDecorations, RuntimeArrayOfArraysOfDescriptorSetsIsDisallowed) {
      %uint_2 = OpConstant %uint 2
 %_arr_11_uint_2 = OpTypeArray %11 %uint_2
 %_runtimearr__arr_11_uint_2 = OpTypeRuntimeArray %_arr_11_uint_2
-%_ptr_UniformConstant__runtimearr__arr_11_uint_2 = OpTypePointer UniformConstant %_runtimearr__arr_11_uint_2
-        %s2d = OpVariable %_ptr_UniformConstant__runtimearr__arr_11_uint_2 UniformConstant
+%_ptr_Uniform__runtimearr__arr_11_uint_2 = OpTypePointer Uniform %_runtimearr__arr_11_uint_2
+        %s2d = OpVariable %_ptr_Uniform__runtimearr__arr_11_uint_2 Uniform
         %int = OpTypeInt 32 1
 %_ptr_Input_int = OpTypePointer Input %int
           %i = OpVariable %_ptr_Input_int Input
-%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
+%_ptr_Uniform_11 = OpTypePointer Uniform %11
     %v2float = OpTypeVector %float 2
 %float_0_300000012 = OpConstant %float 0.300000012
          %28 = OpConstantComposite %v2float %float_0_300000012 %float_0_300000012
@@ -704,7 +704,7 @@ TEST_F(ValidateDecorations, RuntimeArrayOfArraysOfDescriptorSetsIsDisallowed) {
           %v = OpVariable %_ptr_Function_v4float Function
          %21 = OpLoad %int %i
          %22 = OpLoad %int %i
-         %24 = OpAccessChain %_ptr_UniformConstant_11 %s2d %21 %22
+         %24 = OpAccessChain %_ptr_Uniform_11 %s2d %21 %22
          %25 = OpLoad %11 %24
          %30 = OpImageSampleExplicitLod %v4float %25 %28 Lod %float_0
                OpStore %v %30
@@ -744,8 +744,8 @@ TEST_F(ValidateDecorations, ArrayOfArraysOfDescriptorSetsIsDisallowed) {
      %uint_2 = OpConstant %uint 2
 %_arr_8_uint_2 = OpTypeArray %8 %uint_2
 %_arr__arr_8_uint_2_uint_2 = OpTypeArray %_arr_8_uint_2 %uint_2
-%_ptr_UniformConstant__arr__arr_8_uint_2_uint_2 = OpTypePointer UniformConstant %_arr__arr_8_uint_2_uint_2
-%variableName = OpVariable %_ptr_UniformConstant__arr__arr_8_uint_2_uint_2 UniformConstant
+%_ptr_Uniform__arr__arr_8_uint_2_uint_2 = OpTypePointer Uniform %_arr__arr_8_uint_2_uint_2
+%variableName = OpVariable %_ptr_Uniform__arr__arr_8_uint_2_uint_2 Uniform
        %main = OpFunction %void None %3
           %5 = OpLabel
                OpReturn
