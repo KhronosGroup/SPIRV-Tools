@@ -2169,6 +2169,46 @@ OpFunctionEnd
                         "be declared when using BuiltIn FragDepth"));
 }
 
+TEST_F(ValidateBuiltIns, AllowInstanceIdWithIntersectionShader) {
+  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  generator.capabilities_ += R"(
+OpCapability RayTracingNV
+)";
+
+  generator.extensions_ = R"(
+OpExtension "SPV_NV_ray_tracing"
+)";
+
+  generator.before_types_ = R"(
+OpMemberDecorate %input_type 0 BuiltIn InstanceId
+)";
+
+  generator.after_types_ = R"(
+%input_type = OpTypeStruct %u32
+%input_ptr = OpTypePointer Input %input_type
+%input = OpVariable %input_ptr Input
+)";
+
+  EntryPoint entry_point;
+  entry_point.name = "main_d_r";
+  entry_point.execution_model = "IntersectionNV";
+  entry_point.interfaces = "%input";
+  entry_point.body = R"(
+%val2 = OpFunctionCall %void %foo
+)";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  generator.add_at_the_end_ = R"(
+%foo = OpFunction %void None %func
+%foo_entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
