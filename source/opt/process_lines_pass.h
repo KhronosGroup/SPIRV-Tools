@@ -57,7 +57,8 @@ class ProcessLinesPass : public Pass {
  private:
   // If |inst| has no debug line instruction, create one with
   // |file_id, line, col|. If |inst| has debug line instructions, set
-  // |file_id, line, col| from the last. Return true if |inst| modified.
+  // |file_id, line, col| from the last. |file_id| equals 0 indicates no line
+  // info is available. Return true if |inst| modified.
   bool PropagateLine(Instruction* inst, uint32_t* file_id, uint32_t* line,
                      uint32_t* col);
 
@@ -65,9 +66,10 @@ class ProcessLinesPass : public Pass {
   // delete all debug line instructions of |inst|. If they do not match,
   // replace all debug line instructions of |inst| with new line instruction
   // set from |file_id, line, col|. If |inst| has no debug line instructions,
-  // do not modify |inst|. Return true if |inst| modified.
-  bool EliminateDeadLines(Instruction* inst, uint32_t* file_id, uint32_t* line,
-                          uint32_t* col);
+  // do not modify |inst|. |file_id| equals 0 indicates no line info is
+  // available. Return true if |inst| modified.
+  bool EliminateRedundantLines(Instruction* inst, uint32_t* file_id,
+                               uint32_t* line, uint32_t* col);
 
   // Apply lpfn() to all type, constant, global variable and function
   // instructions in their physical order.
@@ -75,7 +77,7 @@ class ProcessLinesPass : public Pass {
 
   // A function that calls either PropagateLine or EliminateDeadLines.
   // Initialized by the class constructor.
-  LineProcessFunction lpfn_;
+  LineProcessFunction line_process_func_;
 };
 
 }  // namespace opt

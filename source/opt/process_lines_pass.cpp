@@ -44,18 +44,19 @@ bool ProcessLinesPass::ProcessLines() {
   uint32_t col = 0;
   // Process types, globals, constants
   for (Instruction& inst : get_module()->types_values())
-    modified |= lpfn_(&inst, &file_id, &line, &col);
+    modified |= line_process_func_(&inst, &file_id, &line, &col);
   // Process functions
   for (Function& function : *get_module()) {
-    modified |= lpfn_(&function.DefInst(), &file_id, &line, &col);
+    modified |= line_process_func_(&function.DefInst(), &file_id, &line, &col);
     function.ForEachParam(
         [this, &modified, &file_id, &line, &col](Instruction* param) {
-          modified |= lpfn_(param, &file_id, &line, &col);
+          modified |= line_process_func_(param, &file_id, &line, &col);
         });
     for (BasicBlock& block : function) {
-      modified |= lpfn_(block.GetLabelInst(), &file_id, &line, &col);
+      modified |= line_process_func_(
+          block.GetLabelInst(), &file_id, &line, &col);
       for (Instruction& inst : block) {
-        modified |= lpfn_(&inst, &file_id, &line, &col);
+        modified |= line_process_func_(&inst, &file_id, &line, &col);
         // Don't process terminal instruction if preceeded by merge
         if (inst.opcode() == SpvOpSelectionMerge ||
             inst.opcode() == SpvOpLoopMerge)
@@ -64,7 +65,7 @@ bool ProcessLinesPass::ProcessLines() {
       // Nullify line info after each block.
       file_id = 0;
     }
-    modified |= lpfn_(function.EndInst(), &file_id, &line, &col);
+    modified |= line_process_func_(function.EndInst(), &file_id, &line, &col);
   }
   return modified;
 }
@@ -100,8 +101,8 @@ bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t* file_id,
   return modified;
 }
 
-bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t* file_id,
-                                          uint32_t* line, uint32_t* col) {
+bool ProcessLinesPass::EliminateRedundantLines(
+    Instruction* inst, uint32_t* file_id, uint32_t* line, uint32_t* col) {
   // If no debug line instructions, return without modifying lines
   if (inst->dbg_line_insts().empty()) return false;
   // Only the last debug instruction needs to be considered; delete all others
@@ -139,15 +140,15 @@ bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t* file_id,
 
 ProcessLinesPass::ProcessLinesPass(uint32_t func_id) {
   if (func_id == kLinesPropagateLines) {
-    lpfn_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
+    line_process_func_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
                    uint32_t* col) {
       return PropagateLine(inst, file_id, line, col);
     };
   } else {
     assert(func_id == kLinesEliminateDeadLines && "unknown Lines param");
-    lpfn_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
+    line_process_func_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
                    uint32_t* col) {
-      return EliminateDeadLines(inst, file_id, line, col);
+      return EliminateRedundantLines(inst, file_id, line, col);
     };
   }
 }

@@ -509,7 +509,7 @@ Optimizer::PassToken CreateAggressiveDCEPass();
 // be run before any such pass. It is a bookend pass with EliminateDeadLines
 // which can be used to remove redundant line instructions at the end of a
 // run of such passes and reduce final output file size.
-Optimizer::PassToken CreatePropagateLinesPass();
+Optimizer::PassToken CreatePropagateLineInfoPass();
 
 // Create dead line elimination pass
 // This pass eliminates redundant line instructions based on the rules for
@@ -521,7 +521,7 @@ Optimizer::PassToken CreatePropagateLinesPass();
 // delete, move and clone instructions. DeadLineElim should be run after
 // PropagateLines and all such subsequent passes. Normally it would be one
 // of the last passes to be run.
-Optimizer::PassToken CreateDeadLineElimPass();
+Optimizer::PassToken CreateRedundantLineInfoElimPass();
 
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
