@@ -2172,11 +2172,11 @@ OpFunctionEnd
 TEST_F(ValidateBuiltIns, AllowInstanceIdWithMeshShader) {
   CodeGenerator generator = GetDefaultShaderCodeGenerator();
   generator.capabilities_ += R"(
-OpCapability MeshShadingNV
+OpCapability RayTracingNV
 )";
 
   generator.extensions_ = R"(
-OpExtension "SPV_NV_mesh_shader"
+OpExtension "SPV_NV_ray_tracing"
 )";
 
   generator.before_types_ = R"(
@@ -2191,7 +2191,7 @@ OpMemberDecorate %input_type 0 BuiltIn InstanceId
 
   EntryPoint entry_point;
   entry_point.name = "main_d_r";
-  entry_point.execution_model = "MeshNV";
+  entry_point.execution_model = "IntersectionNV";
   entry_point.interfaces = "%input";
   entry_point.body = R"(
 %val2 = OpFunctionCall %void %foo
