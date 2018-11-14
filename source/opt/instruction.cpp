@@ -513,7 +513,7 @@ bool Instruction::IsFloatingPointFoldingAllowed() const {
 
   bool is_nocontract = false;
   context_->get_decoration_mgr()->WhileEachDecoration(
-      opcode_, SpvDecorationNoContraction,
+      result_id(), SpvDecorationNoContraction,
       [&is_nocontract](const Instruction&) {
         is_nocontract = true;
         return false;
