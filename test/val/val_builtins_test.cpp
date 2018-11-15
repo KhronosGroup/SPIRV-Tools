@@ -1203,7 +1203,7 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     SampleMaskWrongStorageClass,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("SampleMask"), Values("Fragment"), Values("Uniform"),
+    Combine(Values("SampleMask"), Values("Fragment"), Values("Workgroup"),
             Values("%u32arr2"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
