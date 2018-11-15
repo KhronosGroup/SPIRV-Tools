@@ -140,14 +140,14 @@ bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t* file_id,
 
 ProcessLinesPass::ProcessLinesPass(uint32_t func_id) {
   if (func_id == kLinesPropagateLines) {
-    line_process_func_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
-                   uint32_t* col) {
+    line_process_func_ = [this](Instruction* inst, uint32_t* file_id,
+                                uint32_t* line, uint32_t* col) {
       return PropagateLine(inst, file_id, line, col);
     };
   } else {
     assert(func_id == kLinesEliminateDeadLines && "unknown Lines param");
-    line_process_func_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
-                   uint32_t* col) {
+    line_process_func_ = [this](Instruction* inst, uint32_t* file_id,
+                                uint32_t* line, uint32_t* col) {
       return EliminateDeadLines(inst, file_id, line, col);
     };
   }
