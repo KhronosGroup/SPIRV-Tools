@@ -647,42 +647,6 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
   return SPV_SUCCESS;
 }
 
-spv_result_t CheckDescriptorSetArrayOfArrays(ValidationState_t& vstate) {
-  for (const auto& inst : vstate.ordered_instructions()) {
-    if (SpvOpVariable != inst.opcode()) continue;
-
-    // Verify this variable is a DescriptorSet
-    bool has_descriptor_set = false;
-    for (const auto& decoration : vstate.id_decorations(inst.id())) {
-      if (SpvDecorationDescriptorSet == decoration.dec_type()) {
-        has_descriptor_set = true;
-        break;
-      }
-    }
-    if (!has_descriptor_set) continue;
-
-    const auto* ptrInst = vstate.FindDef(inst.word(1));
-    assert(SpvOpTypePointer == ptrInst->opcode());
-
-    // Check for a first level array
-    const auto typePtr = vstate.FindDef(ptrInst->word(3));
-    if (SpvOpTypeRuntimeArray != typePtr->opcode() &&
-        SpvOpTypeArray != typePtr->opcode()) {
-      continue;
-    }
-
-    // Check for a second level array
-    const auto secondaryTypePtr = vstate.FindDef(typePtr->word(2));
-    if (SpvOpTypeRuntimeArray == secondaryTypePtr->opcode() ||
-        SpvOpTypeArray == secondaryTypePtr->opcode()) {
-      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << "Only a single level of array is allowed for descriptor "
-                "set variables";
-    }
-  }
-  return SPV_SUCCESS;
-}
-
 // Load |constraints| with all the member constraints for structs contained
 // within the given array type.
 void ComputeMemberConstraintsForArray(MemberConstraints* constraints,
@@ -951,7 +915,6 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
   if (auto error = CheckDecorationsOfEntryPoints(vstate)) return error;
   if (auto error = CheckDecorationsOfBuffers(vstate)) return error;
   if (auto error = CheckLinkageAttrOfFunctions(vstate)) return error;
-  if (auto error = CheckDescriptorSetArrayOfArrays(vstate)) return error;
   if (auto error = CheckVulkanMemoryModelDeprecatedDecorations(vstate))
     return error;
   if (auto error = CheckDecorationsOfConversions(vstate)) return error;
