@@ -296,6 +296,10 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateLocalAccessChainConvertPass());
   } else if (pass_name == "eliminate-dead-code-aggressive") {
     RegisterPass(CreateAggressiveDCEPass());
+  } else if (pass_name == "propagate-line-info") {
+    RegisterPass(CreatePropagateLineInfoPass());
+  } else if (pass_name == "eliminate-redundant-line-info") {
+    RegisterPass(CreateRedundantLineInfoElimPass());
   } else if (pass_name == "eliminate-insert-extract") {
     RegisterPass(CreateInsertExtractElimPass());
   } else if (pass_name == "eliminate-local-single-block") {
@@ -622,6 +626,16 @@ Optimizer::PassToken CreateLocalMultiStoreElimPass() {
 Optimizer::PassToken CreateAggressiveDCEPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::AggressiveDCEPass>());
+}
+
+Optimizer::PassToken CreatePropagateLineInfoPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ProcessLinesPass>(opt::kLinesPropagateLines));
+}
+
+Optimizer::PassToken CreateRedundantLineInfoElimPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ProcessLinesPass>(opt::kLinesEliminateDeadLines));
 }
 
 Optimizer::PassToken CreateCommonUniformElimPass() {
