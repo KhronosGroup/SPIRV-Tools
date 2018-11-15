@@ -30,39 +30,31 @@ set(SPIRV_TOOLS_REDUCE_SOURCES
         )
 
 if(MSVC)
-    # Enable parallel builds across four cores for this lib
-    add_definitions(/MP4)
-
-    # Enable precompiled header
-    if (CMAKE_GENERATOR MATCHES "^Visual Studio")
-        set(PCH_NAME "$(IntDir)\\pch.pch")
-    else()
-        set(PCH_NAME "pch.pch")
-    endif()
-    set_source_files_properties(${SPIRV_TOOLS_REDUCE_SOURCES} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fp${PCH_NAME} /Zm300" OBJECT_DEPENDS "${PCH_NAME}")
-    set_source_files_properties(pch.cpp PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fp${PCH_NAME} /Zm300" OBJECT_OUTPUTS "${PCH_NAME}")
-    list(APPEND SPIRV_TOOLS_REDUCE_SOURCES "pch.cpp")
+  # Enable parallel builds across four cores for this lib
+  add_definitions(/MP4)
 endif()
+
+spvtools_pch(SPIRV_TOOLS_REDUCE_SOURCES pch_source_reduce)
 
 add_library(SPIRV-Tools-reduce ${SPIRV_TOOLS_REDUCE_SOURCES})
 
 spvtools_default_compile_options(SPIRV-Tools-reduce)
 target_include_directories(SPIRV-Tools-reduce
-        PUBLIC ${spirv-tools_SOURCE_DIR}/include
-        PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
-        PRIVATE ${spirv-tools_BINARY_DIR}
-        )
+  PUBLIC ${spirv-tools_SOURCE_DIR}/include
+  PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
+  PRIVATE ${spirv-tools_BINARY_DIR}
+)
 # The reducer reuses a lot of functionality from the SPIRV-Tools library.
 target_link_libraries(SPIRV-Tools-reduce
-        PUBLIC ${SPIRV_TOOLS}
-        PUBLIC SPIRV-Tools-opt)
+  PUBLIC ${SPIRV_TOOLS}
+  PUBLIC SPIRV-Tools-opt)
 
 set_property(TARGET SPIRV-Tools-reduce PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(SPIRV-Tools-reduce)
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-    install(TARGETS SPIRV-Tools-reduce
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(TARGETS SPIRV-Tools-reduce
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
