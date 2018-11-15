@@ -332,8 +332,10 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     auto variable_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
     auto variable_type_opcode = variable_type->opcode();
 
-    // If the variable is actually an array extract the element type.
-    if (variable_type_opcode == SpvOpTypeArray) {
+    // If the variable is actually an array or runtime-array, extract the
+    // element type.
+    if (variable_type_opcode == SpvOpTypeArray ||
+        variable_type_opcode == SpvOpTypeRuntimeArray) {
       variable_type = _.FindDef(variable_type->GetOperandAs<uint32_t>(1));
       variable_type_opcode = variable_type->opcode();
     }
@@ -342,6 +344,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       case SpvOpTypeImage:
       case SpvOpTypeSampler:
       case SpvOpTypeSampledImage:
+      case SpvOpTypeAccelerationStructureNV:
         break;
       default:
         return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -349,7 +352,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                << "Variables identified with the UniformConstant storage class "
                << "are used only as handles to refer to opaque resources. Such "
                << "variables must be typed as OpTypeImage, OpTypeSampler, "
-               << "OpTypeSampledImage, or an array of one of these types.";
+               << "OpTypeSampledImage, OpTypeAccelerationStructureNV, "
+               << "or an array of one of these types.";
     }
   }
 

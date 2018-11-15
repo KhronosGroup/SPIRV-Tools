@@ -54,7 +54,8 @@ OpFunctionEnd
                 "Variables identified with the UniformConstant storage class "
                 "are used only as handles to refer to opaque resources. Such "
                 "variables must be typed as OpTypeImage, OpTypeSampler, "
-                "OpTypeSampledImage, or an array of one of these types."));
+                "OpTypeSampledImage, OpTypeAccelerationStructureNV, or an "
+                "array of one of these types."));
 }
 
 TEST_F(ValidateMemory, VulkanUniformConstantOnOpaqueResourceGood) {
@@ -104,7 +105,8 @@ OpFunctionEnd
                 "Variables identified with the UniformConstant storage class "
                 "are used only as handles to refer to opaque resources. Such "
                 "variables must be typed as OpTypeImage, OpTypeSampler, "
-                "OpTypeSampledImage, or an array of one of these types."));
+                "OpTypeSampledImage, OpTypeAccelerationStructureNV, or an "
+                "array of one of these types."));
 }
 
 TEST_F(ValidateMemory, VulkanUniformConstantOnOpaqueResourceArrayGood) {
@@ -117,6 +119,28 @@ OpExecutionMode %func OriginUpperLeft
 %uint = OpTypeInt 32 0
 %array_size = OpConstant %uint 5
 %array = OpTypeArray %sampler %array_size
+%array_ptr = OpTypePointer UniformConstant %array
+%2 = OpVariable %array_ptr UniformConstant
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanUniformConstantOnOpaqueResourceRuntimeArrayGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%sampler = OpTypeSampler
+%uint = OpTypeInt 32 0
+%array = OpTypeRuntimeArray %sampler
 %array_ptr = OpTypePointer UniformConstant %array
 %2 = OpVariable %array_ptr UniformConstant
 %void = OpTypeVoid
