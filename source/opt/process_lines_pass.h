@@ -68,8 +68,8 @@ class ProcessLinesPass : public Pass {
   // set from |file_id, line, col|. If |inst| has no debug line instructions,
   // do not modify |inst|. |file_id| equals 0 indicates no line info is
   // available. Return true if |inst| modified.
-  bool EliminateRedundantLines(Instruction* inst, uint32_t* file_id,
-                               uint32_t* line, uint32_t* col);
+  bool EliminateDeadLines(Instruction* inst, uint32_t* file_id, uint32_t* line,
+                          uint32_t* col);
 
   // Apply lpfn() to all type, constant, global variable and function
   // instructions in their physical order.

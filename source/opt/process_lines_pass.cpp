@@ -101,8 +101,8 @@ bool ProcessLinesPass::PropagateLine(Instruction* inst, uint32_t* file_id,
   return modified;
 }
 
-bool ProcessLinesPass::EliminateRedundantLines(
-    Instruction* inst, uint32_t* file_id, uint32_t* line, uint32_t* col) {
+bool ProcessLinesPass::EliminateDeadLines(Instruction* inst, uint32_t* file_id,
+                                          uint32_t* line, uint32_t* col) {
   // If no debug line instructions, return without modifying lines
   if (inst->dbg_line_insts().empty()) return false;
   // Only the last debug instruction needs to be considered; delete all others
@@ -148,7 +148,7 @@ ProcessLinesPass::ProcessLinesPass(uint32_t func_id) {
     assert(func_id == kLinesEliminateDeadLines && "unknown Lines param");
     line_process_func_ = [this](Instruction* inst, uint32_t* file_id, uint32_t* line,
                    uint32_t* col) {
-      return EliminateRedundantLines(inst, file_id, line, col);
+      return EliminateDeadLines(inst, file_id, line, col);
     };
   }
 }
