@@ -19,3 +19,7 @@ compile_commands.json
 # Vim
 [._]*.s[a-w][a-z]
 *~
+
+# C-Lion
+.idea
+cmake-build-debug

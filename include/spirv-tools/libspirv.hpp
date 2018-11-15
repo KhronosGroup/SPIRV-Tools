@@ -136,6 +136,30 @@ class OptimizerOptions {
   spv_optimizer_options options_;
 };
 
+// A C++ wrapper around a reducer options object.
+class ReducerOptions {
+public:
+  ReducerOptions() : options_(spvReducerOptionsCreate()) {}
+  ~ReducerOptions() { spvReducerOptionsDestroy(options_); }
+
+  // Allow implicit conversion to the underlying object.
+  operator spv_reducer_options() const { return options_; }
+
+  // Records the maximum number of reduction steps that should
+  // run before the reducer gives up.
+  void set_step_limit(uint32_t step_limit) {
+    spvReducerOptionsSetStepLimit(options_, step_limit);
+  }
+
+  // Sets a seed to be used for random number generation.
+  void set_seed(uint32_t seed) {
+    spvReducerOptionsSetSeed(options_, seed);
+  }
+
+private:
+  spv_reducer_options options_;
+};
+
 // C++ interface for SPIRV-Tools functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and
 // provides methods for assembling, disassembling, and validating.
