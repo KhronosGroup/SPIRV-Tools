@@ -53,8 +53,8 @@ bool ProcessLinesPass::ProcessLines() {
           modified |= line_process_func_(param, &file_id, &line, &col);
         });
     for (BasicBlock& block : function) {
-      modified |= line_process_func_(block.GetLabelInst(), &file_id, &line,
-                                     &col);
+      modified |=
+          line_process_func_(block.GetLabelInst(), &file_id, &line, &col);
       for (Instruction& inst : block) {
         modified |= line_process_func_(&inst, &file_id, &line, &col);
         // Don't process terminal instruction if preceeded by merge
