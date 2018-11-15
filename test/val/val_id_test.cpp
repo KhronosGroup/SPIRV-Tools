@@ -2169,7 +2169,7 @@ TEST_F(ValidateIdWithMessage, OpStoreGood) {
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
      OpStore %6 %5
@@ -2264,7 +2264,7 @@ TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
 %9 = OpUndef %1
@@ -2284,7 +2284,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %9 3.14
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
      OpStore %6 %5
@@ -2549,7 +2549,7 @@ TEST_F(ValidateIdWithMessage, OpStoreVoid) {
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
 %9 = OpFunctionCall %1 %7
@@ -2568,7 +2568,7 @@ TEST_F(ValidateIdWithMessage, OpStoreLabel) {
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
      OpStore %6 %8
@@ -4647,7 +4647,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInPhysical) {
      OpMemoryModel Physical32 OpenCL
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer Private %2
+%3 = OpTypePointer Function %2
 %4 = OpTypeFunction %3
 %5 = OpFunction %3 None %4
 %6 = OpLabel
@@ -4664,7 +4664,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInLogical) {
      OpMemoryModel Logical GLSL450
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer Private %2
+%3 = OpTypePointer Function %2
 %4 = OpTypeFunction %3
 %5 = OpFunction %3 None %4
 %6 = OpLabel

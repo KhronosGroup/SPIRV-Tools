@@ -329,7 +329,7 @@ OpFunctionEnd
           "operand of the result type."));
 }
 
-TEST_F(ValidateMemory, MatchingStorageClassesBad) {
+TEST_F(ValidateMemory, MatchingStorageClassesGood) {
   std::string spirv = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450

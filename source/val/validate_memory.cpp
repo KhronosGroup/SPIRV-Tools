@@ -301,7 +301,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     const auto initializer = _.FindDef(initializer_id);
     const auto is_module_scope_var =
         initializer && (initializer->opcode() == SpvOpVariable) &&
-        (initializer->GetOperandAs<uint32_t>(storage_class_index) !=
+        (initializer->GetOperandAs<SpvStorageClass>(storage_class_index) !=
          SpvStorageClassFunction);
     const auto is_constant =
         initializer && spvOpcodeIsConstant(initializer->opcode());
@@ -312,7 +312,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  const auto storage_class = inst->GetOperandAs<uint32_t>(storage_class_index);
+  const auto storage_class = inst->GetOperandAs<SpvStorageClass>(storage_class_index);
   if (storage_class != SpvStorageClassWorkgroup &&
       storage_class != SpvStorageClassCrossWorkgroup &&
       storage_class != SpvStorageClassPrivate &&
