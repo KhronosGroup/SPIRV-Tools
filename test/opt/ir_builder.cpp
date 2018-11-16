@@ -177,7 +177,7 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
           %5 = OpTypeVoid
           %6 = OpTypeFunction %5
           %7 = OpTypeBool
-          %8 = OpTypePointer Function %7
+          %8 = OpTypePointer Private %7
           %9 = OpConstantTrue %7
          %10 = OpTypeFloat 32
          %11 = OpTypeVector %10 4
