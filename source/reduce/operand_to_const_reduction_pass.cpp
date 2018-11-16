@@ -36,7 +36,7 @@ OperandToConstReductionPass::GetAvailableOpportunities(
             if (operand.type == SPV_OPERAND_TYPE_ID) {
               const auto id = operand.words[0];
               auto def = context->get_def_use_mgr()->GetDef(id);
-              if (context->get_constant_mgr()->GetConstantFromInst(def)) {
+              if (spvOpcodeIsConstant(def->opcode())) {
                 // The argument is already a constant.
                 continue;
               }
