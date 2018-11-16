@@ -186,7 +186,7 @@ int main(int argc, const char** argv) {
   reducer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   const std::string command = std::string(interestingness_test) + " temp.spv";
-  reducer.SetInterestingFunction([&](std::vector<uint32_t> binary) -> bool {
+  reducer.SetInterestingnessFunction([&](std::vector<uint32_t> binary) -> bool {
     assert(WriteFile("temp.spv", "wb", &binary[0], binary.size()));
     return ExecuteCommand(command) == 0;
   });

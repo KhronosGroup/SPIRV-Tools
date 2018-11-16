@@ -17,10 +17,6 @@
 namespace spvtools {
 namespace reduce {
 
-ReductionOpportunity::ReductionOpportunity() = default;
-
-ReductionOpportunity::~ReductionOpportunity() = default;
-
 void ReductionOpportunity::TryToApply() {
   if (PreconditionHolds()) {
     Apply();

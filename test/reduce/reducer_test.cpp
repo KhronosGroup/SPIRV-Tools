@@ -217,10 +217,10 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
   Reducer reducer(env);
   PingPongInteresting ping_pong_interesting(10);
   reducer.SetMessageConsumer(NopDiagnostic);
-  reducer.SetInterestingFunction(
-      [&](const std::vector<uint32_t>& binary) -> bool {
-        return ping_pong_interesting.IsInteresting(binary);
-      });
+  reducer.SetInterestingnessFunction(
+          [&](const std::vector<uint32_t> &binary) -> bool {
+            return ping_pong_interesting.IsInteresting(binary);
+          });
   reducer.AddReductionPass(MakeUnique<OperandToConstReductionPass>(env));
   reducer.AddReductionPass(
       MakeUnique<RemoveUnreferencedInstructionReductionPass>(env));

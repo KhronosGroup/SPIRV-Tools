@@ -23,8 +23,12 @@ namespace reduce {
 
 using namespace opt;
 
+// Captures the opportunity to change an id operand of an instruction to some other id.
 class ChangeOperandReductionOpportunity : public ReductionOpportunity {
  public:
+
+  // Constructs the opportunity to replace operand |operand_index| of |inst| with |new_id|, given that it was
+  // previously set to |original_id|.
   ChangeOperandReductionOpportunity(Instruction* inst, uint32_t operand_index,
                                     uint32_t original_id, uint32_t new_id)
       : inst_(inst),
@@ -32,9 +36,12 @@ class ChangeOperandReductionOpportunity : public ReductionOpportunity {
         original_id_(original_id),
         new_id_(new_id) {}
 
+  // Determines whether the opportunity can be applied; it may have been viable when discovered but later disabled
+  // by the application of some other reduction opportunity.
   bool PreconditionHolds() override;
 
  protected:
+  // Apply the change of operand.
   void Apply() override;
 
  private:

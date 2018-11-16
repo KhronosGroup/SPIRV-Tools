@@ -20,16 +20,22 @@
 namespace spvtools {
 namespace reduce {
 
+// A reduction pass for turning id operands of instructions into ids of constants.  This reduces the extent to which
+// ids of non-constants are used, paving the way for instructions that generate them to be eliminated by other passes.
 class OperandToConstReductionPass : public ReductionPass {
  public:
+
+  // Creates the reduction pass in the context of the given target environment |target_env|
   explicit OperandToConstReductionPass(const spv_target_env target_env)
       : ReductionPass(target_env) {}
 
   ~OperandToConstReductionPass() override = default;
 
+  // The name of this pass.
   std::string GetName() const final;
 
  protected:
+  // Finds all opportunities for replacing an operand with a constant in the given module.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 

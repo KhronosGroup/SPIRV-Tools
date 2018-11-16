@@ -29,7 +29,7 @@ struct Reducer::Impl {
 
   const spv_target_env target_env;  // Target environment.
   MessageConsumer consumer;         // Message consumer.
-  InterestingFunction is_interesting;
+  InterestingnessFunction interestingness_function;
   std::vector<std::unique_ptr<ReductionPass>> passes;
   std::vector<std::unique_ptr<ReductionPass>>::iterator current_pass;
   bool made_progress_this_round;
@@ -49,9 +49,9 @@ void Reducer::SetMessageConsumer(MessageConsumer c) {
   impl_->consumer = std::move(c);
 }
 
-void Reducer::SetInterestingFunction(
-    Reducer::InterestingFunction interestingFunction) {
-  impl_->is_interesting = std::move(interestingFunction);
+void Reducer::SetInterestingnessFunction(
+        Reducer::InterestingnessFunction interestingness_function) {
+  impl_->interestingness_function = std::move(interestingness_function);
 }
 
 bool Reducer::Run(std::vector<uint32_t>&& binary_in,
@@ -62,7 +62,7 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
   std::vector<uint32_t> current = std::move(binary_in);
 
   // Initial state should be interesting.
-  assert(impl_->is_interesting(current));
+  assert(impl_->interestingness_function(current));
 
   for (uint32_t current_step = 0; current_step < options->step_limit; ++current_step) {
 
@@ -78,7 +78,7 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
       break;
     }
 
-    if (impl_->is_interesting(reduction_step_result)) {
+    if (impl_->interestingness_function(reduction_step_result)) {
       // Interesting:
       impl_->made_progress_this_round = true;
       impl_->consumer(SPV_MSG_INFO, nullptr, {}, "Reduction step succeeded.");

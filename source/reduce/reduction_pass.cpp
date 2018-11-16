@@ -31,8 +31,6 @@ std::vector<uint32_t> ReductionPass::ApplyReduction(
       GetAvailableOpportunities(context.get());
 
   if (!is_initialized_) {
-    assert(granularity_ == 0);
-    assert(index_ == 0);
     is_initialized_ = true;
     index_ = 0;
     granularity_ = (uint32_t) opportunities.size();
@@ -65,10 +63,12 @@ std::vector<uint32_t> ReductionPass::ApplyReduction(
 }
 
 void ReductionPass::SetMessageConsumer(MessageConsumer consumer) {
+  assert (is_initialized_);
   consumer_ = std::move(consumer);
 }
 
 bool ReductionPass::ReachedMinimumGranularity() const {
+  assert (is_initialized_);
   assert(granularity_ != 0);
   return granularity_ == 1;
 }

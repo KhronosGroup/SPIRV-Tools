@@ -25,10 +25,16 @@
 namespace spvtools {
 namespace reduce {
 
+// This class manages the process of applying a reduction -- parameterized by a number of reduction passes and an
+// interestingness test, to a SPIR-V binary.
 class Reducer {
+
  public:
-  using ErrorOrBool = std::pair<std::string, bool>;
-  using InterestingFunction = std::function<bool(const std::vector<uint32_t>&)>;
+
+  // The type for a function that will take a binary and return true if and only if the binary is deemed interesting.
+  // The notion of "interesting" depends on what properties of the binary or tools that process the binary we are
+  // trying to maintain during reduction.
+  using InterestingnessFunction = std::function<bool(const std::vector<uint32_t>&)>;
 
   // Constructs an instance with the given target |env|, which is used to decode
   // the binary to be reduced later.
@@ -36,6 +42,9 @@ class Reducer {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
+  //
+  // The constructed instance also needs to have an interestingness function set
+  // and some reduction passes added to it in order to be useful.
   explicit Reducer(spv_target_env env);
 
   // Disables copy/move constructor/assignment operations.
@@ -53,7 +62,7 @@ class Reducer {
 
   // Sets the function that will be used to decide whether a reduced binary
   // turned out to be interesting.
-  void SetInterestingFunction(InterestingFunction interesting_function);
+  void SetInterestingnessFunction(InterestingnessFunction interestingness_function);
 
   // Adds a reduction pass to the sequence of passes that will be iterated
   // over.
