@@ -4544,6 +4544,19 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_TooManyWeights) {
       HasSubstr("OpBranchConditional requires either 3 or 5 parameters"));
 }
 
+TEST_F(ValidateIdWithMessage, OpBranchConditional_ConditionIsAType) {
+  std::string spirv = BranchConditionalSetup + R"(
+OpBranchConditional %bool %target_t %target_f
+)" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Condition operand for OpBranchConditional must be of boolean type"));
+}
+
 // TODO: OpSwitch
 
 TEST_F(ValidateIdWithMessage, OpReturnValueConstantGood) {

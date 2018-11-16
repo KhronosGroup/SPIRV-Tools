@@ -125,7 +125,8 @@ spv_result_t ValidateBranchConditional(ValidationState_t& _,
   // grab the condition operand and check that it is a bool
   const auto cond_id = inst->GetOperandAs<uint32_t>(0);
   const auto cond_op = _.FindDef(cond_id);
-  if (!cond_op || !_.IsBoolScalarType(cond_op->type_id())) {
+  if (!cond_op || !cond_op->type_id() ||
+      !_.IsBoolScalarType(cond_op->type_id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst) << "Condition operand for "
                                                  "OpBranchConditional must be "
                                                  "of boolean type";
