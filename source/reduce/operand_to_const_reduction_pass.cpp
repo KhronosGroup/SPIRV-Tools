@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Google Inc.
+// Copyright (c) 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ OperandToConstReductionPass::GetAvailableOpportunities(
     opt::IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
   assert(result.empty());
+
   for (const auto& constant : context->GetConstants()) {
     for (auto& function : *context->module()) {
       for (auto& block : function) {
