@@ -156,7 +156,8 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
                           ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(member_id);
   const auto& words = inst->words();
-  uint32_t baseAlignment = 0;
+  // Minimal alignment is byte-aligned.
+  uint32_t baseAlignment = 1;
   switch (inst->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:

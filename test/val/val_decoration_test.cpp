@@ -3391,6 +3391,34 @@ OpMemberDecorate %outer 0 Offset 0
                 "rules: member 1 at offset 1 is not aligned to 4"));
 }
 
+TEST_F(ValidateDecorations, EmptyStructAtNonZeroOffsetGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpMemberDecorate %struct 1 Offset 16
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%empty = OpTypeStruct
+%struct = OpTypeStruct %float %empty
+%ptr_struct_ubo = OpTypePointer Uniform %struct
+%var = OpVariable %ptr_struct_ubo Uniform
+%voidfn = OpTypeFunction %void
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
