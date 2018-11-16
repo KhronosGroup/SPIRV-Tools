@@ -59,15 +59,12 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
                   spv_const_reducer_options options) const {
   impl_->current_pass = impl_->passes.begin();
 
-  uint32_t current_step = 0;
-
   std::vector<uint32_t> current = std::move(binary_in);
 
   // Initial state should be interesting.
   assert(impl_->is_interesting(current));
 
-  for (;;) {
-    assert(current_step < options->step_limit);
+  for (uint32_t current_step = 0; current_step < options->step_limit; ++current_step) {
 
     {
       std::string msg = "Reduction step ";
@@ -91,11 +88,6 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
       current = std::move(reduction_step_result);
     } else {
       impl_->consumer(SPV_MSG_INFO, nullptr, {}, "Reduction step failed.");
-    }
-
-    ++current_step;
-    if (current_step == options->step_limit) {
-      break;
     }
   }
 
