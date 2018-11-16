@@ -38,8 +38,11 @@ OperandToConstReductionPass::GetAvailableOpportunities(
     for (auto& function : *context->module()) {
       for (auto& block : function) {
         for (auto& inst : block) {
-          for (uint32_t i = 0; i < inst.NumOperands(); i++) {
-            const auto& operand = inst.GetOperand(i);
+          // We iterate through the operands using an explicit index (rather than using a
+          // lambda) so that we use said index in the construction of a
+          // ChangeOperandReductionOpportunity
+          for (uint32_t index = 0; index < inst.NumOperands(); index++) {
+            const auto& operand = inst.GetOperand(index);
             if (operand.type == SPV_OPERAND_TYPE_ID) {
               const auto id = operand.words[0];
               auto def = context->get_def_use_mgr()->GetDef(id);
@@ -52,7 +55,7 @@ OperandToConstReductionPass::GetAvailableOpportunities(
                 if (constant->type_id() == type_id) {
                   result.push_back(
                       MakeUnique<ChangeOperandReductionOpportunity>(
-                          &inst, i, id, constant->result_id()));
+                          &inst, index, id, constant->result_id()));
                 }
               }
             }
