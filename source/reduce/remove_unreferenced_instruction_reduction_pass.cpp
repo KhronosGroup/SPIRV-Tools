@@ -14,6 +14,7 @@
 
 #include "remove_unreferenced_instruction_reduction_pass.h"
 #include "remove_instruction_reduction_opportunity.h"
+#include "source/opcode.h"
 #include "source/opt/instruction.h"
 
 namespace spvtools {
@@ -29,26 +30,21 @@ RemoveUnreferencedInstructionReductionPass::GetAvailableOpportunities(
   for (auto& function : *context->module()) {
     for (auto& block : function) {
       for (auto& inst : block) {
-        if (context->get_def_use_mgr()->NumUses(&inst) == 0) {
-          switch (inst.opcode()) {
-            case SpvOpBranch:
-            case SpvOpBranchConditional:
-            case SpvOpLoopMerge:
-            case SpvOpSelectionMerge:
-            case SpvOpReturn:
-            case SpvOpSwitch:
-              // TODO: this should ultimately capture all opcodes that relate to
-              // control flow; we don't want to mess with these here.
-              break;
-            default:
-              // Given that we're in a block, we should only get here if the
-              // instruction is not directly related to control flow; i.e., it's
-              // some straightforward instruction with an unused result, like an
-              // arithmetic operation or function call.
-              result.push_back(
-                  MakeUnique<RemoveInstructionReductionOpportunity>(&inst));
-          }
+        if (context->get_def_use_mgr()->NumUses(&inst) > 0) {
+          continue;
         }
+        if (spvOpcodeIsBlockTerminator(inst.opcode())
+            || inst.opcode() == SpvOpSelectionMerge
+            || inst.opcode() == SpvOpLoopMerge) {
+          // In this reduction pass we do not want to affect static control flow.
+            continue;
+        }
+        // Given that we're in a block, we should only get here if the
+        // instruction is not directly related to control flow; i.e., it's
+        // some straightforward instruction with an unused result, like an
+        // arithmetic operation or function call.
+        result.push_back(
+                MakeUnique<RemoveInstructionReductionOpportunity>(&inst));
       }
     }
   }
