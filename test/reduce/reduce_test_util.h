@@ -24,12 +24,15 @@
 namespace spvtools {
 namespace reduce {
 
+// A helper class that subclasses a given reduction pass class in order to provide a wrapper for its protected methods.
 template <class ReductionPassT>
 class TestSubclass : public ReductionPassT {
  public:
+  // Creates an instance of the reduction pass subclass with respect to target environment |env|.
   explicit TestSubclass(const spv_target_env env) : ReductionPassT(env) {}
   ~TestSubclass() = default;
 
+  // A wrapper for GetAvailableOpportunities(...)
   std::vector<std::unique_ptr<ReductionOpportunity>>
   WrapGetAvailableOpportunities(opt::IRContext* context) const {
     return ReductionPassT::GetAvailableOpportunities(context);
@@ -51,8 +54,10 @@ void CheckEqual(spv_target_env env, const std::string& expected_text,
 void CheckEqual(spv_target_env env, const std::string& expected_text,
                 const opt::IRContext* actual_ir);
 
+// Assembly options for writing reduction tests.  It simplifies matters if numeric ids do not change.
 const uint32_t kReduceAssembleOption =
     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
+// Disassembly options for writing reduction tests.
 const uint32_t kReduceDisassembleOption =
     SPV_BINARY_TO_TEXT_OPTION_NO_HEADER | SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
