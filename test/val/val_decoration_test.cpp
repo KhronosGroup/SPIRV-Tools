@@ -1702,8 +1702,9 @@ TEST_F(ValidateDecorations,
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
-TEST_F(ValidateDecorations,
-       BlockLayoutPermitsFieldsInBaseAlignmentPaddingAtEndOfStructWithScalarLayoutGood) {
+TEST_F(
+    ValidateDecorations,
+    BlockLayoutPermitsFieldsInBaseAlignmentPaddingAtEndOfStructWithScalarLayoutGood) {
   // Scalar block layout permits fields in what would normally be the padding at
   // the end of a struct.
   std::string spirv = R"(
