@@ -27,6 +27,13 @@ OperandToConstReductionPass::GetAvailableOpportunities(
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
   assert(result.empty());
 
+  // We first loop over all constants.  This means that all the reduction opportunities
+  // to replace an operand with a particular constant will be contiguous, and in particular
+  // it means that multiple, incompatible reduction opportunities that try to replace the
+  // same operand with distinct constants are likely to be discontiguous.  This is good
+  // because the reducer works in the spirit of delta debugging and tries applying large
+  // contiguous blocks of opportunities early on, and we want to avoid having a large block
+  // of incompatible opportunities if possible.
   for (const auto& constant : context->GetConstants()) {
     for (auto& function : *context->module()) {
       for (auto& block : function) {
