@@ -226,14 +226,11 @@ uint32_t getScalarAlignment(uint32_t type_id, ValidationState_t& vstate) {
     case SpvOpTypeFloat:
       return words[2] / 8;
     case SpvOpTypeVector:
-    case SpvOpTypeMatrix: {
-      const auto componentId = words[2];
-      return getScalarAlignment(componentId, vstate);
-    }
+    case SpvOpTypeMatrix:
     case SpvOpTypeArray:
     case SpvOpTypeRuntimeArray: {
-      const auto elementTypeId = words[2];
-      return getScalarAlignment(elementTypeId, vstate);
+      const auto compositeMemberTypeId = words[2];
+      return getScalarAlignment(compositeMemberTypeId, vstate);
     }
     case SpvOpTypeStruct: {
       const auto members = getStructMembers(type_id, vstate);
