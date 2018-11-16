@@ -1666,6 +1666,46 @@ TEST_F(ValidateDecorations,
 }
 
 TEST_F(ValidateDecorations,
+       BlockLayoutPermitsScalarAlignedArrayOfVec3WithScalarLayoutGood) {
+  // The array at offset 4 is ok with scalar block layout, even though
+  // its elements are vec3.
+  // This is the same as the previous case, but the array elements are vec3
+  // instead of float.
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 4
+               OpDecorate %S Block
+               OpDecorate %B DescriptorSet 0
+               OpDecorate %B Binding 0
+               OpDecorate %arr_vec3 ArrayStride 12
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_3 = OpConstant %uint 3
+      %float = OpTypeFloat 32
+       %vec3 = OpTypeVector %float 3
+   %arr_vec3 = OpTypeArray %vec3 %uint_3
+          %S = OpTypeStruct %float %arr_vec3
+%_ptr_Uniform_S = OpTypePointer Uniform %S
+          %B = OpVariable %_ptr_Uniform_S Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  spvValidatorOptionsSetScalarBlockLayout(getValidatorOptions(), true);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations,
        BlockLayoutPermitsScalarAlignedStructWithScalarLayoutGood) {
   // Scalar block layout permits the struct at offset 4, even though
   // it contains a vector with base alignment 8 and scalar alignment 4.
