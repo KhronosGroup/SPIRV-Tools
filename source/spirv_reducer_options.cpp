@@ -14,7 +14,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <optional>
 
 #include "source/spirv_reducer_options.h"
 
