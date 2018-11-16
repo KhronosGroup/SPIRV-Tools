@@ -66,13 +66,10 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
 
   for (uint32_t current_step = 0; current_step < options->step_limit; ++current_step) {
 
-    {
-      std::string msg = "Reduction step ";
-      msg += std::to_string(current_step);
-      impl_->consumer(SPV_MSG_INFO, nullptr, {}, msg.c_str());
-    }
+    impl_->consumer(SPV_MSG_INFO, nullptr, {},
+       ("Reduction step " + std::to_string(current_step)).c_str());
 
-    std::vector<uint32_t> reduction_step_result =
+    auto reduction_step_result =
         impl_->ApplyReduction(current);
 
     if (reduction_step_result.empty()) {
@@ -89,6 +86,7 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
     } else {
       impl_->consumer(SPV_MSG_INFO, nullptr, {}, "Reduction step failed.");
     }
+
   }
 
   binary_out = std::move(current);
