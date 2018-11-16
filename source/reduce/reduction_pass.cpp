@@ -35,15 +35,15 @@ std::vector<uint32_t> ReductionPass::ApplyReduction(
     assert(index_ == 0);
     is_initialized_ = true;
     index_ = 0;
-    granularity_ = std::max((uint32_t)1, (uint32_t)opportunities.size());
+    granularity_ = (uint32_t) opportunities.size();
   }
-
-  assert(granularity_ > 0);
 
   if (opportunities.empty()) {
     granularity_ = 1;
     return std::vector<uint32_t>();
   }
+
+  assert(granularity_ > 0);
 
   if (index_ >= opportunities.size()) {
     index_ = 0;
