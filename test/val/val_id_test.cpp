@@ -4212,8 +4212,8 @@ TEST_F(ValidateIdWithMessage, WebGPUOpVectorShuffle0xFFFFFFFFLiteralBad) {
   CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component literal @ operand 3 cannot be 0xFFFFFFFF in "
-                        "WebGPU execution environment."));
+              HasSubstr("Component literal at operand 3 cannot be 0xFFFFFFFF in"
+                        " WebGPU execution environment."));
 }
 
 // TODO: OpCompositeConstruct

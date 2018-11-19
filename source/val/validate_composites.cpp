@@ -481,7 +481,7 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
 
     if (is_webgpu_env && literal == 0xFFFFFFFF) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "Component literal @ operand " << i - firstLiteralIndex
+             << "Component literal at operand " << i - firstLiteralIndex
              << " cannot be 0xFFFFFFFF in WebGPU execution environment.";
     }
   }
