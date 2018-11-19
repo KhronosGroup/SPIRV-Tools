@@ -248,7 +248,7 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
-      if (!_.IsIntScalarType(input_type))
+      if (!input_type || !_.IsIntScalarType(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected int scalar as input: " << spvOpcodeString(opcode);
       break;
