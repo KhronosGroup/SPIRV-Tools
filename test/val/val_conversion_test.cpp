@@ -1279,6 +1279,29 @@ TEST_F(ValidateConversion, BitcastDifferentTotalBitWidth) {
           "Bitcast"));
 }
 
+TEST_F(ValidateConversion, ConvertUToPtrInputIsAType) {
+  const std::string spirv = R"(
+OpCapability Addresses
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%int = OpTypeInt 32 0
+%ptr_int = OpTypePointer Function %int
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%1 = OpConvertUToPtr %ptr_int %int
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected int scalar as input: ConvertUToPtr"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
