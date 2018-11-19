@@ -580,7 +580,19 @@ TEST_F(ValidateIdWithMessage, OpTypeMatrixGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnTypeNonFloatBad) {
+TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnTypeNonVectorBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeMatrix %1 3)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("olumns in a matrix must be of type vector.\n  %mat3float = "
+                "OpTypeMatrix %float 3\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeMatrixVectorTypeNonFloatBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 16 0
 %2 = OpTypeVector %1 2
