@@ -579,14 +579,44 @@ TEST_F(ValidateIdWithMessage, OpTypeMatrixGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnTypeBad) {
+
+TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnTypeNonFloatBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 0
-%2 = OpTypeMatrix %1 3)";
+%1 = OpTypeInt 16 0
+%2 = OpTypeVector %1 2
+%3 = OpTypeMatrix %2 2)";
   CompileSuccessfully(spirv.c_str());
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Columns in a matrix must be of type vector."));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Matrix types can only be parameterized with floating-point "
+                "types.\n  %mat2v2ushort = OpTypeMatrix %v2ushort 2\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnCountLessThanTwoBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 2
+%3 = OpTypeMatrix %2 1)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Matrix types can only be parameterized as having only 2, 3, "
+                "or 4 columns.\n  %mat1v2float = OpTypeMatrix %v2float 1\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnCountGreaterThanFourBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 2
+%3 = OpTypeMatrix %2 8)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Matrix types can only be parameterized as having only 2, 3, "
+                "or 4 columns.\n  %mat8v2float = OpTypeMatrix %v2float 8\n"));
 }
 
 TEST_F(ValidateIdWithMessage, OpTypeSamplerGood) {
