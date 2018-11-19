@@ -713,14 +713,6 @@ void GenerateSpirvProgramWithCfgNestingDepth(std::string& str, int depth) {
 }
 // clang-format on
 
-// Valid: Control Flow Nesting depth is 1023.
-TEST_F(ValidateLimits, ControlFlowDepthGood) {
-  std::string spirv;
-  GenerateSpirvProgramWithCfgNestingDepth(spirv, 1023);
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
-}
-
 // Invalid: Control Flow Nesting depth is 1024. (limit is 1023).
 TEST_F(ValidateLimits, ControlFlowDepthBad) {
   std::string spirv;
