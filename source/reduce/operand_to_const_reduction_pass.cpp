@@ -58,7 +58,7 @@ OperandToConstReductionPass::GetAvailableOpportunities(
                 if (constant->type_id() == type_id) {
                   result.push_back(
                           MakeUnique<ChangeOperandReductionOpportunity>(
-                                  &inst, index, id, constant->result_id()));
+                                  &inst, index, constant->result_id()));
                 }
               }
             }

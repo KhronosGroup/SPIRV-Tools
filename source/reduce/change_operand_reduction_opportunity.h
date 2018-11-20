@@ -28,13 +28,12 @@ using namespace opt;
 class ChangeOperandReductionOpportunity : public ReductionOpportunity {
  public:
 
-  // Constructs the opportunity to replace operand |operand_index| of |inst| with |new_id|, given that it was
-  // previously set to |original_id|.
+  // Constructs the opportunity to replace operand |operand_index| of |inst| with |new_id|.
   ChangeOperandReductionOpportunity(Instruction* inst, uint32_t operand_index,
-                                    uint32_t original_id, uint32_t new_id)
+                                    uint32_t new_id)
       : inst_(inst),
         operand_index_(operand_index),
-        original_id_(original_id),
+        original_id_(inst_->GetOperand(operand_index_).words[0]),
         original_type_(inst->GetOperand(operand_index).type),
         new_id_(new_id) {}
 
@@ -47,11 +46,11 @@ class ChangeOperandReductionOpportunity : public ReductionOpportunity {
   void Apply() override;
 
  private:
-  Instruction* inst_;
-  uint32_t operand_index_;
-  uint32_t original_id_;
-  spv_operand_type_t original_type_;
-  uint32_t new_id_;
+  Instruction* const inst_;
+  const uint32_t operand_index_;
+  const uint32_t original_id_;
+  const spv_operand_type_t original_type_;
+  const uint32_t new_id_;
 };
 
 }  // namespace reduce
