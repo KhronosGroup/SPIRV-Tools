@@ -25,17 +25,14 @@ namespace reduce {
 
 struct Reducer::Impl {
   explicit Impl(spv_target_env env)
-      : target_env(env), made_progress_this_round(false) {}
+      : target_env(env) {}
+
+  bool ReachedStepLimit(uint32_t current_step, spv_const_reducer_options options);
 
   const spv_target_env target_env;  // Target environment.
   MessageConsumer consumer;         // Message consumer.
   InterestingnessFunction interestingness_function;
   std::vector<std::unique_ptr<ReductionPass>> passes;
-  std::vector<std::unique_ptr<ReductionPass>>::iterator current_pass;
-  bool made_progress_this_round;
-
-  std::vector<uint32_t> ApplyReduction(const std::vector<uint32_t>& binary);
-  bool Finished();
 };
 
 Reducer::Reducer(spv_target_env env) : impl_(MakeUnique<Impl>(env)) {}
@@ -54,44 +51,78 @@ void Reducer::SetInterestingnessFunction(
   impl_->interestingness_function = std::move(interestingness_function);
 }
 
-bool Reducer::Run(std::vector<uint32_t>&& binary_in,
+void Reducer::Run(std::vector<uint32_t>&& binary_in,
                   std::vector<uint32_t>* binary_out,
                   spv_const_reducer_options options) const {
-  impl_->current_pass = impl_->passes.begin();
-
   std::vector<uint32_t> current_binary = binary_in;
 
   // Initial state should be interesting.
   assert(impl_->interestingness_function(current_binary));
 
-  for (uint32_t current_step = 0; current_step < options->step_limit; ++current_step) {
+  // Keeps track of how many reduction attempts have been tried.  Reduction bails out
+  // if this reaches a given limit.
+  uint32_t reductions_applied = 0;
 
-    impl_->consumer(SPV_MSG_INFO, nullptr, {},
-       ("Reduction step " + std::to_string(current_step)).c_str());
+  // Determines whether, on completing one round of reduction passes, it is worthwhile
+  // trying a further round.
+  bool another_round_worthwhile = true;
 
-    auto reduction_step_result =
-        impl_->ApplyReduction(current_binary);
+  // Apply round after round of reduction passes until we hit the reduction step limit,
+  // or deem that another round is not going to be worthwhile.
+  while(!impl_->ReachedStepLimit(reductions_applied, options) && another_round_worthwhile) {
 
-    if (reduction_step_result.empty()) {
+    // At the start of a round of reduction passes, assume another round will not be
+    // worthwhile unless we find evidence to the contrary.
+    another_round_worthwhile = false;
+
+    // Iterate through the available passes
+    for (auto &pass : impl_->passes) {
+      // Keep applying this pass at its current granularity until it stops working or
+      // we hit the reduction step limit.
       impl_->consumer(SPV_MSG_INFO, nullptr, {},
-                      "No more to reduce; stopping.");
-      break;
+              ("Trying pass " + pass->GetName() + ".").c_str());
+      do {
+        std::stringstream stringstream;
+        stringstream << "Reduction step " << reductions_applied;
+        impl_->consumer(SPV_MSG_INFO, nullptr, {},
+                (stringstream.str().c_str()));
+        auto maybe_result = pass->ApplyReduction(current_binary);
+        reductions_applied++;
+        if (maybe_result.empty()) {
+          // This pass did not have any impact, so move on to the next pass.  If this pass
+          // hasn't reached its minimum granularity then it's worth eventually doing
+          // another round of reductions, in order to try this pass at a finer granularity.
+          impl_->consumer(SPV_MSG_INFO, nullptr, {},
+                  ("Pass " + pass->GetName() + " did not make a reduction step.").c_str());
+          another_round_worthwhile |= !pass->ReachedMinimumGranularity();
+          break;
+        }
+        impl_->consumer(SPV_MSG_INFO, nullptr, {},
+                ("Pass " + pass->GetName() + " made a reduction step.").c_str());
+        if (impl_->interestingness_function(maybe_result)) {
+          // Success!  The binary produced by this reduction step is interesting, so make
+          // it the binary of interest henceforth, and note that it's worth doing another
+          // round of reduction passes.
+          impl_->consumer(SPV_MSG_INFO, nullptr, {}, "Reduction step succeeded.");
+          current_binary = std::move(maybe_result);
+          another_round_worthwhile = true;
+        }
+        // Bail out if the reduction step limit has been reached.
+      } while (!impl_->ReachedStepLimit(reductions_applied, options));
     }
+  }
 
-    if (impl_->interestingness_function(reduction_step_result)) {
-      // Interesting:
-      impl_->made_progress_this_round = true;
-      impl_->consumer(SPV_MSG_INFO, nullptr, {}, "Reduction step succeeded.");
-      current_binary = std::move(reduction_step_result);
-    } else {
-      impl_->consumer(SPV_MSG_INFO, nullptr, {}, "Reduction step failed.");
-    }
-
+  // Report whether reduction completed, or bailed out early due to reaching the step
+  // limit.
+  if (impl_->ReachedStepLimit(reductions_applied, options)) {
+    impl_->consumer(SPV_MSG_INFO, nullptr, {},
+                    "Reached reduction step limit; stopping.");
+  } else {
+    impl_->consumer(SPV_MSG_INFO, nullptr, {},
+                    "No more to reduce; stopping.");
   }
 
   *binary_out = std::move(current_binary);
-
-  return true;
 }
 
 void Reducer::AddReductionPass(
@@ -99,55 +130,8 @@ void Reducer::AddReductionPass(
   impl_->passes.push_back(std::move(reduction_pass));
 }
 
-std::vector<uint32_t> Reducer::Impl::ApplyReduction(
-    const std::vector<uint32_t>& binary) {
-  consumer(SPV_MSG_INFO, nullptr, {}, "Applying a reduction step.");
-  for (;;) {
-    assert(current_pass != passes.end());
-    while (current_pass != passes.end()) {
-      consumer(SPV_MSG_INFO, nullptr, {},
-               ("Trying pass " + (*current_pass)->GetName() + ".").c_str());
-      auto maybe_result = (*current_pass)->ApplyReduction(binary);
-      if (!maybe_result.empty()) {
-        consumer(
-            SPV_MSG_INFO, nullptr, {},
-            ("Pass " + (*current_pass)->GetName() + " made a reduction step.")
-                .c_str());
-        return maybe_result;
-      }
-      consumer(
-          SPV_MSG_INFO, nullptr, {},
-          ("Pass " + (*current_pass)->GetName() + " made no reduction step.")
-              .c_str());
-      ++current_pass;
-    }
-    consumer(SPV_MSG_INFO, nullptr, {}, "Completed a round of passes.");
-    if (Finished()) {
-      consumer(SPV_MSG_INFO, nullptr, {},
-               "No reduction step could be applied.");
-      return std::vector<uint32_t>();
-    }
-    made_progress_this_round = false;
-    current_pass = passes.begin();
-  }
-}
-
-bool Reducer::Impl::Finished() {
-  if (made_progress_this_round) {
-    consumer(SPV_MSG_INFO, nullptr, {},
-             "Not finished because some pass made progress last round.");
-    return false;
-  }
-  for (auto& pass : passes) {
-    if (!pass->ReachedMinimumGranularity()) {
-      consumer(SPV_MSG_INFO, nullptr, {},
-               ("Not finished because pass " + pass->GetName() +
-                " can be applied with finer granularity.")
-                   .c_str());
-      return false;
-    }
-  }
-  return true;
+bool Reducer::Impl::ReachedStepLimit(uint32_t current_step, spv_const_reducer_options options) {
+  return current_step >= options->step_limit;
 }
 
 }  // namespace reduce

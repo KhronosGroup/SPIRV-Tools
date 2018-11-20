@@ -69,10 +69,8 @@ class Reducer {
   void AddReductionPass(std::unique_ptr<ReductionPass>&& reduction_pass);
 
   // Reduces the given SPIR-V module |binary_out|.
-  // Returns true on successful reduction.  Returns false if errors
-  // occur when processing |binary_in|.
   // The reduced binary ends up in |binary_out|.
-  bool Run(std::vector<uint32_t>&& binary_in, std::vector<uint32_t>* binary_out,
+  void Run(std::vector<uint32_t>&& binary_in, std::vector<uint32_t>* binary_out,
            spv_const_reducer_options options) const;
 
  private:
