@@ -148,6 +148,42 @@ TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
   EXPECT_THAT(vstate_->id_decorations(4), Eq(expected_decorations));
 }
 
+TEST_F(ValidateDecorations, WebGPUOpDecorationGroupBad) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpDecorate %1 DescriptorSet 0
+               OpDecorate %1 NonWritable
+               OpDecorate %1 Restrict
+          %1 = OpDecorationGroup
+               OpGroupDecorate %1 %2 %3
+               OpGroupDecorate %1 %4
+  %float = OpTypeFloat 32
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_9 = OpTypeStruct %_runtimearr_float
+%_ptr_Uniform__struct_9 = OpTypePointer Uniform %_struct_9
+         %2 = OpVariable %_ptr_Uniform__struct_9 Uniform
+ %_struct_10 = OpTypeStruct %_runtimearr_float
+%_ptr_Uniform__struct_10 = OpTypePointer Uniform %_struct_10
+         %3 = OpVariable %_ptr_Uniform__struct_10 Uniform
+ %_struct_11 = OpTypeStruct %_runtimearr_float
+%_ptr_Uniform__struct_11 = OpTypePointer Uniform %_struct_11
+         %4 = OpVariable %_ptr_Uniform__struct_11 Uniform
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpDecorationGroup is not allowed in the WebGPU "
+                        "execution environment.\n  %1 = OpDecorationGroup\n"));
+}
+
+// For WebGPU, OpGroupDecorate does not have a test case, because it requires
+// being preceded by OpDecorationGroup, which will cause a validation error.
+
+// For WebGPU, OpGroupMemberDecorate does not have a test case, because it
+// requires being preceded by OpDecorationGroup, which will cause a validation error.
+
 TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
   std::string spirv = R"(
                OpCapability Shader
