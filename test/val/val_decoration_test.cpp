@@ -182,7 +182,8 @@ TEST_F(ValidateDecorations, WebGPUOpDecorationGroupBad) {
 // being preceded by OpDecorationGroup, which will cause a validation error.
 
 // For WebGPU, OpGroupMemberDecorate does not have a test case, because it
-// requires being preceded by OpDecorationGroup, which will cause a validation error.
+// requires being preceded by OpDecorationGroup, which will cause a validation
+// error.
 
 TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
   std::string spirv = R"(
