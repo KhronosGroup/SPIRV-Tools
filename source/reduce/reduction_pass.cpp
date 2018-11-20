@@ -24,13 +24,10 @@ namespace reduce {
 std::vector<uint32_t> ReductionPass::ApplyReduction(
     const std::vector<uint32_t>& binary) {
 
-  // At present we prefer to build the module each time we apply a pass to ensure that the module is in a totally
-  // clean state before a pass is applied, to avoid any issues that might arise if a pass inadvertently leaves
-  // the module in an inconsistent state.
-  //
-  // This is for sanity purposes only; passes should be designed so that they do not leave the module in an
-  // inconsistent state.  If we find that module building ends up being a bottleneck we can consider keeping the module
-  // in memory as it is reduced.
+  // We represent modules as binaries because (a) attempts at reduction need to end up in binary form to be passed on
+  // to SPIR-V-consuming tools, and (b) when we apply a reduction step we need to do it on a fresh version of the
+  // module as if the reduction step proves to be uninteresting we need to backtrack; re-parsing from binary provides
+  // a very clean way of cloning the module.
   std::unique_ptr<opt::IRContext> context =
       BuildModule(target_env_, consumer_, binary.data(), binary.size());
   assert(context);
