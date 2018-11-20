@@ -14,6 +14,8 @@
 
 #include "source/val/validate.h"
 
+#include "source/opcode.h"
+#include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
 #include "source/val/validation_state.h"
 
@@ -51,9 +53,33 @@ spv_result_t ValidateLine(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+bool IsDebugInstruction(const Instruction* inst) {
+  switch (inst->opcode()) {
+    case SpvOpName:
+    case SpvOpMemberName:
+    case SpvOpSource:
+    case SpvOpSourceContinued:
+    case SpvOpSourceExtension:
+    case SpvOpString:
+    case SpvOpLine:
+    case SpvOpNoLine:
+      return true;
+    default:
+      break;
+  }
+
+  return false;
+}
+
 }  // namespace
 
 spv_result_t DebugPass(ValidationState_t& _, const Instruction* inst) {
+  if (spvIsWebGPUEnv(_.context()->target_env) && IsDebugInstruction(inst)) {
+    return _.diag(SPV_ERROR_INVALID_BINARY, inst)
+           << "Debugging instructions are not allowed in the WebGPU execution "
+           << "environment.";
+  }
+
   switch (inst->opcode()) {
     case SpvOpMemberName:
       if (auto error = ValidateMemberName(_, inst)) return error;
