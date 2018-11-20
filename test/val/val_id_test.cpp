@@ -37,6 +37,19 @@ using ::testing::ValuesIn;
 
 using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
 
+std::string kOpCapabilitySetupWithoutVector16 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Addresses
+     OpCapability Int8
+     OpCapability Int16
+     OpCapability Int64
+     OpCapability Float64
+     OpCapability LiteralSampler
+     OpCapability Pipes
+     OpCapability DeviceEnqueue
+)";
+
 std::string kOpCapabilitySetup = R"(
      OpCapability Shader
      OpCapability Linkage
@@ -58,6 +71,11 @@ std::string kOpVariablePtrSetUp = R"(
 
 std::string kGLSL450MemoryModel =
     kOpCapabilitySetup + kOpVariablePtrSetUp + R"(
+     OpMemoryModel Logical GLSL450
+)";
+
+std::string kGLSL450MemoryModelWithoutVector16 =
+    kOpCapabilitySetupWithoutVector16 + kOpVariablePtrSetUp + R"(
      OpMemoryModel Logical GLSL450
 )";
 
@@ -596,16 +614,9 @@ TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountGreaterThanFourBad) {
 }
 
 TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountEightWithoutVector16Bad) {
-  std::string spirv = kGLSL450MemoryModel + R"(
+  std::string spirv = kGLSL450MemoryModelWithoutVector16 + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 8)";
-
-  // Removing capability that adds length 8 and 16 vectors.
-  const std::string vector16_capability = "OpCapability Vector16\n";
-  size_t pos = spirv.find(vector16_capability);
-  if (pos != std::string::npos) {
-    spirv.erase(pos, vector16_capability.length());
-  }
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
@@ -617,16 +628,9 @@ TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountEightWithoutVector16Bad) {
 
 TEST_F(ValidateIdWithMessage,
        OpTypeVectorColumnCountSixteenWithoutVector16Bad) {
-  std::string spirv = kGLSL450MemoryModel + R"(
+  std::string spirv = kGLSL450MemoryModelWithoutVector16 + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 16)";
-
-  // Removing capability that adds length 8 and 16 vectors.
-  const std::string vector16_capability = "OpCapability Vector16\n";
-  size_t pos = spirv.find(vector16_capability);
-  if (pos != std::string::npos) {
-    spirv.erase(pos, vector16_capability.length());
-  }
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
