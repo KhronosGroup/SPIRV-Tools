@@ -313,7 +313,9 @@ const std::vector<std::string>& AllVulkan10Capabilities() {
     "InterpolationFunction",
     "StorageImageReadWithoutFormat",
     "StorageImageWriteWithoutFormat",
-    "MultiViewport"};
+    "MultiViewport",
+    "TransformFeedback",
+    "GeometryStreams"};
   return *r;
 }
 
@@ -374,7 +376,9 @@ const std::vector<std::string>& AllVulkan11Capabilities() {
     "DeviceGroup",
     "MultiView",
     "VariablePointersStorageBuffer",
-    "VariablePointers"};
+    "VariablePointers",
+    "TransformFeedback",
+    "GeometryStreams"};
   return *r;
 }
 
