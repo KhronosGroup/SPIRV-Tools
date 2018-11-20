@@ -571,6 +571,88 @@ TEST_F(ValidateIdWithMessage, OpTypeVectorComponentTypeBad) {
       HasSubstr("OpTypeVector Component Type <id> '2' is not a scalar type."));
 }
 
+TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountLessThanTwoBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 1)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal number of components (1) for TypeVector\n  %v1float = "
+                "OpTypeVector %float 1\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountGreaterThanFourBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal number of components (5) for TypeVector\n  %v5float = "
+                "OpTypeVector %float 5\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountEightWithoutVector16Bad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 8)";
+
+  // Removing capability that adds length 8 and 16 vectors.
+  const std::string vector16_capability = "OpCapability Vector16\n";
+  size_t pos = spirv.find(vector16_capability);
+  if (pos != std::string::npos) {
+    spirv.erase(pos, vector16_capability.length());
+  }
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Having 8 components for TypeVector requires the Vector16 "
+                "capability\n  %v8float = OpTypeVector %float 8\n"));
+}
+
+TEST_F(ValidateIdWithMessage,
+       OpTypeVectorColumnCountSixteenWithoutVector16Bad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 16)";
+
+  // Removing capability that adds length 8 and 16 vectors.
+  const std::string vector16_capability = "OpCapability Vector16\n";
+  size_t pos = spirv.find(vector16_capability);
+  if (pos != std::string::npos) {
+    spirv.erase(pos, vector16_capability.length());
+  }
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Having 16 components for TypeVector requires the Vector16 "
+                "capability\n  %v16float = OpTypeVector %float 16\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountOfEightWithVector16Good) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 8)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage,
+       OpTypeVectorColumnCountOfSixteenWithVector16Good) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 16)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateIdWithMessage, OpTypeMatrixGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
