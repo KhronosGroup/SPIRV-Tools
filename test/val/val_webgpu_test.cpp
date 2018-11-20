@@ -46,6 +46,113 @@ TEST_F(ValidateWebGPU, OpUndefIsDisallowed) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("OpUndef is disallowed"));
 }
 
+TEST_F(ValidateWebGPU, OpNameIsDisallowed) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpMemoryModel Logical GLSL450
+     OpName %1 "foo"
+%1 = OpTypeFloat 32
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Debugging instructions are not allowed in the WebGPU "
+                        "execution environment.\n  OpName %foo \"foo\"\n"));
+}
+
+TEST_F(ValidateWebGPU, OpMemberNameIsDisallowed) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpMemoryModel Logical GLSL450
+     OpMemberName %2 0 "foo"
+%1 = OpTypeFloat 32
+%2 = OpTypeStruct %1
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Debugging instructions are not allowed in the WebGPU "
+                        "execution environment.\n  OpMemberName %_struct_1 0 "
+                        "\"foo\"\n"));
+}
+
+TEST_F(ValidateWebGPU, OpSourceIsDisallowed) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpMemoryModel Logical GLSL450
+     OpSource GLSL 450
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Debugging instructions are not allowed in the WebGPU "
+                        "execution environment.\n  OpSource GLSL 450\n"));
+}
+
+// OpSourceContinued does not have a test case, because it requires being
+// preceded by OpSource, which will cause a validation error.
+
+TEST_F(ValidateWebGPU, OpSourceExtensionIsDisallowed) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpMemoryModel Logical GLSL450
+     OpSourceExtension "bar"
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Debugging instructions are not allowed in the WebGPU "
+                        "execution environment.\n  OpSourceExtension "
+                        "\"bar\"\n"));
+}
+
+TEST_F(ValidateWebGPU, OpStringIsDisallowed) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpMemoryModel Logical GLSL450
+%1 = OpString "foo"
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Debugging instructions are not allowed in the WebGPU "
+                        "execution environment.\n  %1 = OpString \"foo\"\n"));
+}
+
+// OpLine does not have a test case, because it requires being preceded by
+// OpString, which will cause a validation error.
+
+TEST_F(ValidateWebGPU, OpNoLineDisallowed) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpMemoryModel Logical GLSL450
+     OpNoLine
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Debugging instructions are not allowed in the WebGPU "
+                        "execution environment.\n  OpNoLine\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
