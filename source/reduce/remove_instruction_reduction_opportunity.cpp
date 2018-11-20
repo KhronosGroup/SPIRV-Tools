@@ -19,7 +19,9 @@
 namespace spvtools {
 namespace reduce {
 
-bool RemoveInstructionReductionOpportunity::PreconditionHolds() { return true; }
+bool RemoveInstructionReductionOpportunity::PreconditionHolds() {
+  return true;
+}
 
 void RemoveInstructionReductionOpportunity::Apply() {
   inst_->context()->KillInst(inst_);

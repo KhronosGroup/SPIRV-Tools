@@ -26,11 +26,13 @@ class ReductionOpportunity {
   ReductionOpportunity() = default;
   virtual ~ReductionOpportunity() = default;
 
-  // Determines whether the opportunity can be applied; it may have been viable when discovered but later disabled
-  // by the application of some other reduction opportunity.
+  // Determines whether the opportunity can be applied; it may have been viable
+  // when discovered but later disabled by the application of some other
+  // reduction opportunity.
   virtual bool PreconditionHolds() = 0;
 
-  // A no-op if PreconditoinHolds() returns false; otherwise applies the opportunity.
+  // A no-op if PreconditoinHolds() returns false; otherwise applies the
+  // opportunity.
   void TryToApply();
 
  protected:

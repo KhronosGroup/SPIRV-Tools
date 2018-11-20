@@ -23,15 +23,18 @@
 namespace spvtools {
 namespace reduce {
 
-// Abstract class representing a reduction pass, which can be repeatedly invoked to find and apply particular reduction
-// opportunities to a SPIR-V binary.  In the spirit of delta debugging, a pass initially tries to apply large chunks
-// of reduction opportunities, iterating through available opportunities at a given granularity.  When an iteration
-// over available opportunities completes, the granularity is reduced and iteration starts again, until the minimum
-// granularity is reached.
+// Abstract class representing a reduction pass, which can be repeatedly
+// invoked to find and apply particular reduction opportunities to a SPIR-V
+// binary.  In the spirit of delta debugging, a pass initially tries to apply
+// large chunks of reduction opportunities, iterating through available
+// opportunities at a given granularity.  When an iteration over available
+// opportunities completes, the granularity is reduced and iteration starts
+// again, until the minimum granularity is reached.
 class ReductionPass {
  public:
 
-  // Constructs a reduction pass with a given target environment, |target_env|.  Initially the pass is uninitialized.
+  // Constructs a reduction pass with a given target environment, |target_env|.
+  // Initially the pass is uninitialized.
   explicit ReductionPass(const spv_target_env target_env)
       : target_env_(target_env),
         is_initialized_(false) {}
@@ -44,15 +47,18 @@ class ReductionPass {
   // Set a consumer to which relevant messages will be directed.
   void SetMessageConsumer(MessageConsumer consumer);
 
-  // Determines whether the granularity with which reduction opportunities are applied has reached a minimum.
+  // Determines whether the granularity with which reduction opportunities are
+  // applied has reached a minimum.
   bool ReachedMinimumGranularity() const;
 
-  // Returns the name of the reduction pass (useful for monitoring reduction progress).
+  // Returns the name of the reduction pass (useful for monitoring reduction
+  // progress).
   virtual std::string GetName() const = 0;
 
  protected:
 
-  // Finds the reduction opportunities relevant to this pass that could be applied to a given SPIR-V module.
+  // Finds the reduction opportunities relevant to this pass that could be
+  // applied to a given SPIR-V module.
   virtual std::vector<std::unique_ptr<ReductionOpportunity>>
   GetAvailableOpportunities(opt::IRContext* context) const = 0;
 

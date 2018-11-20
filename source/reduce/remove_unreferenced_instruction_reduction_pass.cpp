@@ -36,8 +36,9 @@ RemoveUnreferencedInstructionReductionPass::GetAvailableOpportunities(
         if (spvOpcodeIsBlockTerminator(inst.opcode())
             || inst.opcode() == SpvOpSelectionMerge
             || inst.opcode() == SpvOpLoopMerge) {
-          // In this reduction pass we do not want to affect static control flow.
-            continue;
+          // In this reduction pass we do not want to affect static control
+          // flow.
+          continue;
         }
         // Given that we're in a block, we should only get here if the
         // instruction is not directly related to control flow; i.e., it's

@@ -27,24 +27,26 @@ OperandToConstReductionPass::GetAvailableOpportunities(
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
   assert(result.empty());
 
-  // We first loop over all constants.  This means that all the reduction opportunities
-  // to replace an operand with a particular constant will be contiguous, and in particular
-  // it means that multiple, incompatible reduction opportunities that try to replace the
-  // same operand with distinct constants are likely to be discontiguous.  This is good
-  // because the reducer works in the spirit of delta debugging and tries applying large
-  // contiguous blocks of opportunities early on, and we want to avoid having a large block
-  // of incompatible opportunities if possible.
+  // We first loop over all constants.  This means that all the reduction
+  // opportunities to replace an operand with a particular constant will be
+  // contiguous, and in particular it means that multiple, incompatible
+  // reduction opportunities that try to replace the same operand with distinct
+  // constants are likely to be discontiguous.  This is good because the
+  // reducer works in the spirit of delta debugging and tries applying large
+  // contiguous blocks of opportunities early on, and we want to avoid having a
+  // large block of incompatible opportunities if possible.
   for (const auto& constant : context->GetConstants()) {
     for (auto& function : *context->module()) {
       for (auto& block : function) {
         for (auto& inst : block) {
-          // We iterate through the operands using an explicit index (rather than using a
-          // lambda) so that we use said index in the construction of a
-          // ChangeOperandReductionOpportunity
+          // We iterate through the operands using an explicit index (rather
+          // than using a lambda) so that we use said index in the construction
+          // of a ChangeOperandReductionOpportunity
           for (uint32_t index = 0; index < inst.NumOperands(); index++) {
             const auto &operand = inst.GetOperand(index);
             if (spvIsIdType(operand.type)) {
-              if (operand.type == SPV_OPERAND_TYPE_RESULT_ID || operand.type == SPV_OPERAND_TYPE_TYPE_ID) {
+              if (operand.type == SPV_OPERAND_TYPE_RESULT_ID
+                  || operand.type == SPV_OPERAND_TYPE_TYPE_ID) {
                 continue;
               }
               const auto id = operand.words[0];

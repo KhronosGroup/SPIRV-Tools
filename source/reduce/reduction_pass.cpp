@@ -24,10 +24,12 @@ namespace reduce {
 std::vector<uint32_t> ReductionPass::ApplyReduction(
     const std::vector<uint32_t>& binary) {
 
-  // We represent modules as binaries because (a) attempts at reduction need to end up in binary form to be passed on
-  // to SPIR-V-consuming tools, and (b) when we apply a reduction step we need to do it on a fresh version of the
-  // module as if the reduction step proves to be uninteresting we need to backtrack; re-parsing from binary provides
-  // a very clean way of cloning the module.
+  // We represent modules as binaries because (a) attempts at reduction need to
+  // end up in binary form to be passed on to SPIR-V-consuming tools, and (b)
+  // when we apply a reduction step we need to do it on a fresh version of the
+  // module as if the reduction step proves to be uninteresting we need to
+  // backtrack; re-parsing from binary provides a very clean way of cloning the
+  // module.
   std::unique_ptr<opt::IRContext> context =
       BuildModule(target_env_, consumer_, binary.data(), binary.size());
   assert(context);
@@ -73,8 +75,8 @@ void ReductionPass::SetMessageConsumer(MessageConsumer consumer) {
 
 bool ReductionPass::ReachedMinimumGranularity() const {
   if (!is_initialized_) {
-    // Conceptually we can think that if the pass has not yet been initialized, it is operating at unbounded
-    // granularity.
+    // Conceptually we can think that if the pass has not yet been initialized,
+    // it is operating at unbounded granularity.
     return false;
   }
   assert(granularity_ != 0);

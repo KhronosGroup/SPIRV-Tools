@@ -62,7 +62,8 @@ class Reducer {
 
   // Sets the function that will be used to decide whether a reduced binary
   // turned out to be interesting.
-  void SetInterestingnessFunction(InterestingnessFunction interestingness_function);
+  void SetInterestingnessFunction(
+          InterestingnessFunction interestingness_function);
 
   // Adds a reduction pass to the sequence of passes that will be iterated
   // over.
@@ -70,7 +71,8 @@ class Reducer {
 
   // Reduces the given SPIR-V module |binary_out|.
   // The reduced binary ends up in |binary_out|.
-  void Run(std::vector<uint32_t>&& binary_in, std::vector<uint32_t>* binary_out,
+  void Run(std::vector<uint32_t>&& binary_in,
+           std::vector<uint32_t>* binary_out,
            spv_const_reducer_options options) const;
 
  private:

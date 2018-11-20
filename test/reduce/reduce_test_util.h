@@ -54,7 +54,8 @@ void CheckEqual(spv_target_env env, const std::string& expected_text,
 void CheckEqual(spv_target_env env, const std::string& expected_text,
                 const opt::IRContext* actual_ir);
 
-// Assembly options for writing reduction tests.  It simplifies matters if numeric ids do not change.
+// Assembly options for writing reduction tests.  It simplifies matters if
+// numeric ids do not change.
 const uint32_t kReduceAssembleOption =
     SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
 // Disassembly options for writing reduction tests.
