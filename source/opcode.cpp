@@ -587,3 +587,19 @@ bool spvOpcodeIsScalarizable(SpvOp opcode) {
       return false;
   }
 }
+
+bool spvOpcodeIsDebug(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpName:
+    case SpvOpMemberName:
+    case SpvOpSource:
+    case SpvOpSourceContinued:
+    case SpvOpSourceExtension:
+    case SpvOpString:
+    case SpvOpLine:
+    case SpvOpNoLine:
+      return true;
+    default:
+      return false;
+  }
+}
