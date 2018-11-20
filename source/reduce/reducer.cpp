@@ -55,11 +55,11 @@ void Reducer::SetInterestingnessFunction(
 }
 
 bool Reducer::Run(std::vector<uint32_t>&& binary_in,
-                  std::vector<uint32_t>& binary_out,
+                  std::vector<uint32_t>* binary_out,
                   spv_const_reducer_options options) const {
   impl_->current_pass = impl_->passes.begin();
 
-  std::vector<uint32_t> current = std::move(binary_in);
+  std::vector<uint32_t> current = binary_in;
 
   // Initial state should be interesting.
   assert(impl_->interestingness_function(current));
@@ -89,7 +89,7 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
 
   }
 
-  binary_out = std::move(current);
+  *binary_out = std::move(current);
 
   return true;
 }

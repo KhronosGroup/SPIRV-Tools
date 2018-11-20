@@ -233,7 +233,7 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
   spvtools::ReducerOptions reducer_options;
   reducer_options.set_step_limit(500);
 
-  reducer.Run(std::move(binary_in), binary_out, reducer_options);
+  reducer.Run(std::move(binary_in), &binary_out, reducer_options);
 
   CheckEqual(env, expected, binary_out);
 }
