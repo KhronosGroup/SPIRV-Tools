@@ -15,6 +15,7 @@
 #include "source/val/validate.h"
 
 #include "source/opcode.h"
+#include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
 #include "source/val/validation_state.h"
 
@@ -63,6 +64,12 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
 
 spv_result_t ValidateDecorationGroup(ValidationState_t& _,
                                      const Instruction* inst) {
+  if (spvIsWebGPUEnv(_.context()->target_env)) {
+    return _.diag(SPV_ERROR_INVALID_BINARY, inst)
+           << "OpDecorationGroup is not allowed in the WebGPU execution "
+           << "environment.";
+  }
+
   const auto decoration_group_id = inst->GetOperandAs<uint32_t>(0);
   const auto decoration_group = _.FindDef(decoration_group_id);
   for (auto pair : decoration_group->uses()) {
@@ -81,6 +88,12 @@ spv_result_t ValidateDecorationGroup(ValidationState_t& _,
 
 spv_result_t ValidateGroupDecorate(ValidationState_t& _,
                                    const Instruction* inst) {
+  if (spvIsWebGPUEnv(_.context()->target_env)) {
+    return _.diag(SPV_ERROR_INVALID_BINARY, inst)
+           << "OpGroupDecorate is not allowed in the WebGPU execution "
+           << "environment.";
+  }
+
   const auto decoration_group_id = inst->GetOperandAs<uint32_t>(0);
   auto decoration_group = _.FindDef(decoration_group_id);
   if (!decoration_group || SpvOpDecorationGroup != decoration_group->opcode()) {
@@ -103,6 +116,12 @@ spv_result_t ValidateGroupDecorate(ValidationState_t& _,
 
 spv_result_t ValidateGroupMemberDecorate(ValidationState_t& _,
                                          const Instruction* inst) {
+  if (spvIsWebGPUEnv(_.context()->target_env)) {
+    return _.diag(SPV_ERROR_INVALID_BINARY, inst)
+           << "OpGroupMemberDecorate is not allowed in the WebGPU execution "
+           << "environment.";
+  }
+
   const auto decoration_group_id = inst->GetOperandAs<uint32_t>(0);
   const auto decoration_group = _.FindDef(decoration_group_id);
   if (!decoration_group || SpvOpDecorationGroup != decoration_group->opcode()) {
