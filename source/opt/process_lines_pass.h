@@ -39,7 +39,7 @@ class ProcessLinesPass : public Pass {
 
  public:
   ProcessLinesPass(uint32_t func_id);
-  ~ProcessLinesPass() = default;
+  ~ProcessLinesPass() override = default;
 
   const char* name() const override { return "propagate-lines"; }
 
