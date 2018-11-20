@@ -20,7 +20,8 @@ namespace reduce {
 bool ChangeOperandReductionOpportunity::PreconditionHolds() {
   // Check that the instruction still has the original operand.
   return inst_->NumOperands() > operand_index_ &&
-         inst_->GetOperand(operand_index_).words[0] == original_id_;
+         inst_->GetOperand(operand_index_).words[0] == original_id_ &&
+         inst_->GetOperand(operand_index_).type == original_type_;
 }
 
 void ChangeOperandReductionOpportunity::Apply() {

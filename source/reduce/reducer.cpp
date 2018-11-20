@@ -59,10 +59,10 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
                   spv_const_reducer_options options) const {
   impl_->current_pass = impl_->passes.begin();
 
-  std::vector<uint32_t> current = binary_in;
+  std::vector<uint32_t> current_binary = binary_in;
 
   // Initial state should be interesting.
-  assert(impl_->interestingness_function(current));
+  assert(impl_->interestingness_function(current_binary));
 
   for (uint32_t current_step = 0; current_step < options->step_limit; ++current_step) {
 
@@ -70,7 +70,7 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
        ("Reduction step " + std::to_string(current_step)).c_str());
 
     auto reduction_step_result =
-        impl_->ApplyReduction(current);
+        impl_->ApplyReduction(current_binary);
 
     if (reduction_step_result.empty()) {
       impl_->consumer(SPV_MSG_INFO, nullptr, {},
@@ -82,14 +82,14 @@ bool Reducer::Run(std::vector<uint32_t>&& binary_in,
       // Interesting:
       impl_->made_progress_this_round = true;
       impl_->consumer(SPV_MSG_INFO, nullptr, {}, "Reduction step succeeded.");
-      current = std::move(reduction_step_result);
+      current_binary = std::move(reduction_step_result);
     } else {
       impl_->consumer(SPV_MSG_INFO, nullptr, {}, "Reduction step failed.");
     }
 
   }
 
-  *binary_out = std::move(current);
+  *binary_out = std::move(current_binary);
 
   return true;
 }

@@ -23,6 +23,14 @@ namespace reduce {
 
 std::vector<uint32_t> ReductionPass::ApplyReduction(
     const std::vector<uint32_t>& binary) {
+
+  // At present we prefer to build the module each time we apply a pass to ensure that the module is in a totally
+  // clean state before a pass is applied, to avoid any issues that might arise if a pass inadvertently leaves
+  // the module in an inconsistent state.
+  //
+  // This is for sanity purposes only; passes should be designed so that they do not leave the module in an
+  // inconsistent state.  If we find that module building ends up being a bottleneck we can consider keeping the module
+  // in memory as it is reduced.
   std::unique_ptr<opt::IRContext> context =
       BuildModule(target_env_, consumer_, binary.data(), binary.size());
   assert(context);

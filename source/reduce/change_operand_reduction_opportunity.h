@@ -17,6 +17,7 @@
 
 #include "reduction_opportunity.h"
 #include "source/opt/instruction.h"
+#include "spirv-tools/libspirv.h"
 
 namespace spvtools {
 namespace reduce {
@@ -34,6 +35,7 @@ class ChangeOperandReductionOpportunity : public ReductionOpportunity {
       : inst_(inst),
         operand_index_(operand_index),
         original_id_(original_id),
+        original_type_(inst->GetOperand(operand_index).type),
         new_id_(new_id) {}
 
   // Determines whether the opportunity can be applied; it may have been viable when discovered but later disabled
@@ -48,6 +50,7 @@ class ChangeOperandReductionOpportunity : public ReductionOpportunity {
   Instruction* inst_;
   uint32_t operand_index_;
   uint32_t original_id_;
+  spv_operand_type_t original_type_;
   uint32_t new_id_;
 };
 
