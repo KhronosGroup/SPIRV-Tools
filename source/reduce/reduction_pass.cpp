@@ -73,7 +73,11 @@ void ReductionPass::SetMessageConsumer(MessageConsumer consumer) {
 }
 
 bool ReductionPass::ReachedMinimumGranularity() const {
-  assert (is_initialized_);
+  if (!is_initialized_) {
+    // Conceptually we can think that if the pass has not yet been initialized, it is operating at unbounded
+    // granularity.
+    return false;
+  }
   assert(granularity_ != 0);
   return granularity_ == 1;
 }
