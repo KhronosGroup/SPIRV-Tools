@@ -68,7 +68,6 @@ std::vector<uint32_t> ReductionPass::ApplyReduction(
 }
 
 void ReductionPass::SetMessageConsumer(MessageConsumer consumer) {
-  assert (is_initialized_);
   consumer_ = std::move(consumer);
 }
 

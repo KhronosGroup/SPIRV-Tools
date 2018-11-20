@@ -183,7 +183,6 @@ int main(int argc, const char** argv) {
   }
 
   Reducer reducer(target_env);
-  reducer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   const std::string command = std::string(interestingness_test) + " temp.spv";
   reducer.SetInterestingnessFunction([&](std::vector<uint32_t> binary) -> bool {
@@ -196,6 +195,8 @@ int main(int argc, const char** argv) {
   reducer.AddReductionPass(
       spvtools::MakeUnique<RemoveUnreferencedInstructionReductionPass>(
           target_env));
+
+  reducer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   std::vector<uint32_t> binary_in;
   if (!ReadFile<uint32_t>(in_file, "rb", &binary_in)) {
