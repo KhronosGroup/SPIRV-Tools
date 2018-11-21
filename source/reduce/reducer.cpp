@@ -57,16 +57,16 @@ Reducer::ReductionResultStatus Reducer::Run(std::vector<uint32_t>&& binary_in,
                   spv_const_reducer_options options) const {
   std::vector<uint32_t> current_binary = binary_in;
 
+  // Keeps track of how many reduction attempts have been tried.  Reduction
+  // bails out if this reaches a given limit.
+  uint32_t reductions_applied = 0;
+
   // Initial state should be interesting.
-  if (!impl_->interestingness_function(current_binary)) {
+  if (!impl_->interestingness_function(current_binary, reductions_applied)) {
     impl_->consumer(SPV_MSG_INFO, nullptr, {},
                     "Initial state was not interesting; stopping.");
     return Reducer::ReductionResultStatus::kInitialStateNotInteresting;
   }
-
-  // Keeps track of how many reduction attempts have been tried.  Reduction
-  // bails out if this reaches a given limit.
-  uint32_t reductions_applied = 0;
 
   // Determines whether, on completing one round of reduction passes, it is
   // worthwhile trying a further round.
@@ -88,12 +88,7 @@ Reducer::ReductionResultStatus Reducer::Run(std::vector<uint32_t>&& binary_in,
       impl_->consumer(SPV_MSG_INFO, nullptr, {},
               ("Trying pass " + pass->GetName() + ".").c_str());
       do {
-        std::stringstream stringstream;
-        stringstream << "Reduction step " << reductions_applied;
-        impl_->consumer(SPV_MSG_INFO, nullptr, {},
-                (stringstream.str().c_str()));
-        auto maybe_result = pass->ApplyReduction(current_binary);
-        reductions_applied++;
+        auto maybe_result = pass->TryApplyReduction(current_binary);
         if (maybe_result.empty()) {
           // This pass did not have any impact, so move on to the next pass.
           // If this pass hasn't reached its minimum granularity then it's
@@ -105,10 +100,14 @@ Reducer::ReductionResultStatus Reducer::Run(std::vector<uint32_t>&& binary_in,
           another_round_worthwhile |= !pass->ReachedMinimumGranularity();
           break;
         }
+        std::stringstream stringstream;
+        reductions_applied++;
+        stringstream << "Pass " << pass->GetName() << " made reduction step "
+                     << reductions_applied << ".";
         impl_->consumer(SPV_MSG_INFO, nullptr, {},
-                ("Pass " + pass->GetName()
-                + " made a reduction step.").c_str());
-        if (impl_->interestingness_function(maybe_result)) {
+                        (stringstream.str().c_str()));
+        if (impl_->interestingness_function(maybe_result,
+                reductions_applied)) {
           // Success!  The binary produced by this reduction step is
           // interesting, so make it the binary of interest henceforth, and
           // note that it's worth doing another round of reduction passes.

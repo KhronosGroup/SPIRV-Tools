@@ -42,7 +42,7 @@ class ReductionPass {
   virtual ~ReductionPass() = default;
 
   // Apply the reduction pass to the given binary.
-  std::vector<uint32_t> ApplyReduction(const std::vector<uint32_t>& binary);
+  std::vector<uint32_t> TryApplyReduction(const std::vector<uint32_t> &binary);
 
   // Set a consumer to which relevant messages will be directed.
   void SetMessageConsumer(MessageConsumer consumer);

@@ -21,8 +21,8 @@
 namespace spvtools {
 namespace reduce {
 
-std::vector<uint32_t> ReductionPass::ApplyReduction(
-    const std::vector<uint32_t>& binary) {
+std::vector<uint32_t> ReductionPass::TryApplyReduction(
+        const std::vector<uint32_t> &binary) {
 
   // We represent modules as binaries because (a) attempts at reduction need to
   // end up in binary form to be passed on to SPIR-V-consuming tools, and (b)

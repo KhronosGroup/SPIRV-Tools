@@ -139,12 +139,12 @@ TEST(RemoveUnreferencedInstructionReductionPassTest, ApplyReduction) {
     const std::string expected_reduced = prologue + R"(
          %15 = OpLoad %6 %8
     )" + epilogue;
-    auto reduced_binary = pass.ApplyReduction(binary);
+    auto reduced_binary = pass.TryApplyReduction(binary);
     CheckEqual(env, expected_reduced, reduced_binary);
   }
 
   // Attempt 2 should fail as pass with granularity 4 got to end.
-  ASSERT_EQ(0, pass.ApplyReduction(binary).size());
+  ASSERT_EQ(0, pass.TryApplyReduction(binary).size());
 
   {
     // Attempt 3 should remove first two removable statements.
@@ -153,7 +153,7 @@ TEST(RemoveUnreferencedInstructionReductionPassTest, ApplyReduction) {
          %15 = OpLoad %6 %8
                OpStore %14 %15
     )" + epilogue;
-    auto reduced_binary = pass.ApplyReduction(binary);
+    auto reduced_binary = pass.TryApplyReduction(binary);
     CheckEqual(env, expected_reduced, reduced_binary);
   }
 
@@ -164,12 +164,12 @@ TEST(RemoveUnreferencedInstructionReductionPassTest, ApplyReduction) {
                OpStore %10 %11
          %15 = OpLoad %6 %8
     )" + epilogue;
-    auto reduced_binary = pass.ApplyReduction(binary);
+    auto reduced_binary = pass.TryApplyReduction(binary);
     CheckEqual(env, expected_reduced, reduced_binary);
   }
 
   // Attempt 5 should fail as pass with granularity 2 got to end.
-  ASSERT_EQ(0, pass.ApplyReduction(binary).size());
+  ASSERT_EQ(0, pass.TryApplyReduction(binary).size());
 
   {
     // Attempt 6 should remove first removable statement.
@@ -179,7 +179,7 @@ TEST(RemoveUnreferencedInstructionReductionPassTest, ApplyReduction) {
          %15 = OpLoad %6 %8
                OpStore %14 %15
     )" + epilogue;
-    auto reduced_binary = pass.ApplyReduction(binary);
+    auto reduced_binary = pass.TryApplyReduction(binary);
     CheckEqual(env, expected_reduced, reduced_binary);
   }
 
@@ -191,7 +191,7 @@ TEST(RemoveUnreferencedInstructionReductionPassTest, ApplyReduction) {
          %15 = OpLoad %6 %8
                OpStore %14 %15
     )" + epilogue;
-    auto reduced_binary = pass.ApplyReduction(binary);
+    auto reduced_binary = pass.TryApplyReduction(binary);
     CheckEqual(env, expected_reduced, reduced_binary);
   }
 
@@ -203,7 +203,7 @@ TEST(RemoveUnreferencedInstructionReductionPassTest, ApplyReduction) {
          %15 = OpLoad %6 %8
                OpStore %14 %15
     )" + epilogue;
-    auto reduced_binary = pass.ApplyReduction(binary);
+    auto reduced_binary = pass.TryApplyReduction(binary);
     CheckEqual(env, expected_reduced, reduced_binary);
   }
 
@@ -215,12 +215,12 @@ TEST(RemoveUnreferencedInstructionReductionPassTest, ApplyReduction) {
                OpStore %12 %13
          %15 = OpLoad %6 %8
     )" + epilogue;
-    auto reduced_binary = pass.ApplyReduction(binary);
+    auto reduced_binary = pass.TryApplyReduction(binary);
     CheckEqual(env, expected_reduced, reduced_binary);
   }
 
   // Attempt 10 should fail as pass with granularity 1 got to end.
-  ASSERT_EQ(0, pass.ApplyReduction(binary).size());
+  ASSERT_EQ(0, pass.TryApplyReduction(binary).size());
 
   ASSERT_TRUE(pass.ReachedMinimumGranularity());
 }

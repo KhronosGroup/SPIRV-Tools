@@ -38,20 +38,25 @@ class Reducer {
     kComplete
   };
 
-  // The type for a function that will take a binary and return true if and only if the binary is deemed interesting.
-  // The notion of "interesting" depends on what properties of the binary or tools that process the binary we are
-  // trying to maintain during reduction.
-  using InterestingnessFunction = std::function<bool(const std::vector<uint32_t>&)>;
+  // The type for a function that will take a binary and return true if and
+  // only if the binary is deemed interesting. (The function also takes an
+  // integer argument that will be incremented each time the function is
+  // called; this is for debugging purposes).
+  //
+  // The notion of "interesting" depends on what properties of the binary or
+  // tools that process the binary we are trying to maintain during reduction.
+  using InterestingnessFunction =
+          std::function<bool(const std::vector<uint32_t>&, uint32_t)>;
 
-  // Constructs an instance with the given target |env|, which is used to decode
-  // the binary to be reduced later.
+  // Constructs an instance with the given target |env|, which is used to
+  // decode the binary to be reduced later.
   //
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
   //
-  // The constructed instance also needs to have an interestingness function set
-  // and some reduction passes added to it in order to be useful.
+  // The constructed instance also needs to have an interestingness function
+  // set and some reduction passes added to it in order to be useful.
   explicit Reducer(spv_target_env env);
 
   // Disables copy/move constructor/assignment operations.
