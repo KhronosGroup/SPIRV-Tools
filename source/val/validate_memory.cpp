@@ -36,6 +36,21 @@ bool HaveSameLayoutDecorations(ValidationState_t&, const Instruction*,
 bool HasConflictingMemberOffsets(const std::vector<Decoration>&,
                                  const std::vector<Decoration>&);
 
+bool IsAllowedTypeOrArrayOfSame(ValidationState_t& _, const Instruction* type,
+                                std::initializer_list<uint32_t> allowed) {
+  if (std::find(allowed.begin(), allowed.end(), type->opcode()) !=
+      allowed.end()) {
+    return true;
+  }
+  if (type->opcode() == SpvOpTypeArray ||
+      type->opcode() == SpvOpTypeRuntimeArray) {
+    auto elem_type = _.FindDef(type->word(2));
+    return std::find(allowed.begin(), allowed.end(), elem_type->opcode()) !=
+           allowed.end();
+  }
+  return false;
+}
+
 // Returns true if the two instructions represent structs that, as far as the
 // validator can tell, have the exact same data layout.
 bool AreLayoutCompatibleStructs(ValidationState_t& _, const Instruction* type1,
@@ -286,7 +301,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     const auto initializer = _.FindDef(initializer_id);
     const auto is_module_scope_var =
         initializer && (initializer->opcode() == SpvOpVariable) &&
-        (initializer->GetOperandAs<uint32_t>(storage_class_index) !=
+        (initializer->GetOperandAs<SpvStorageClass>(storage_class_index) !=
          SpvStorageClassFunction);
     const auto is_constant =
         initializer && spvOpcodeIsConstant(initializer->opcode());
@@ -297,7 +312,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  const auto storage_class = inst->GetOperandAs<uint32_t>(storage_class_index);
+  const auto storage_class =
+      inst->GetOperandAs<SpvStorageClass>(storage_class_index);
   if (storage_class != SpvStorageClassWorkgroup &&
       storage_class != SpvStorageClassCrossWorkgroup &&
       storage_class != SpvStorageClassPrivate &&
@@ -325,35 +341,51 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  // Check that UniformConstant variables are the correct type, see Vulkan spec
-  // section 14.5.2 for details.
-  if (spvIsVulkanEnv(_.context()->target_env) &&
-      storage_class == SpvStorageClassUniformConstant) {
-    auto variable_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
-    auto variable_type_opcode = variable_type->opcode();
+  // SPIR-V 3.32.8: Check that pointer type and variable type have the same
+  // storage class.
+  const auto result_storage_class_index = 1;
+  const auto result_storage_class =
+      result_type->GetOperandAs<uint32_t>(result_storage_class_index);
+  if (storage_class != result_storage_class) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "From SPIR-V spec, section 3.32.8 on OpVariable:\n"
+           << "Its Storage Class operand must be the same as the Storage Class "
+           << "operand of the result type.";
+  }
 
-    // If the variable is actually an array or runtime-array, extract the
-    // element type.
-    if (variable_type_opcode == SpvOpTypeArray ||
-        variable_type_opcode == SpvOpTypeRuntimeArray) {
-      variable_type = _.FindDef(variable_type->GetOperandAs<uint32_t>(1));
-      variable_type_opcode = variable_type->opcode();
-    }
+  // Vulkan 14.5.2: Check type of UniformConstant and Uniform variables.
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    auto pointee = _.FindDef(result_type->word(3));
 
-    switch (variable_type_opcode) {
-      case SpvOpTypeImage:
-      case SpvOpTypeSampler:
-      case SpvOpTypeSampledImage:
-      case SpvOpTypeAccelerationStructureNV:
-        break;
-      default:
+    if (storage_class == SpvStorageClassUniformConstant) {
+      if (!IsAllowedTypeOrArrayOfSame(
+              _, pointee,
+              {SpvOpTypeImage, SpvOpTypeSampler, SpvOpTypeSampledImage,
+               SpvOpTypeAccelerationStructureNV})) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "UniformConstant OpVariable <id> '" << _.getIdName(inst->id())
+               << " 'has illegal type.\n"
                << "From Vulkan spec, section 14.5.2:\n"
                << "Variables identified with the UniformConstant storage class "
                << "are used only as handles to refer to opaque resources. Such "
                << "variables must be typed as OpTypeImage, OpTypeSampler, "
                << "OpTypeSampledImage, OpTypeAccelerationStructureNV, "
                << "or an array of one of these types.";
+      }
+    }
+
+    if (storage_class == SpvStorageClassUniform) {
+      if (!IsAllowedTypeOrArrayOfSame(_, pointee, {SpvOpTypeStruct})) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Uniform OpVariable <id> '" << _.getIdName(inst->id())
+               << " 'has illegal type.\n"
+               << "From Vulkan spec, section 14.5.2:\n"
+               << "Variables identified with the Uniform storage class are "
+                  "used "
+               << "to access transparent buffer backed resources. Such "
+                  "variables "
+               << "must be typed as OpTypeStruct, or an array of this type";
+      }
     }
   }
 

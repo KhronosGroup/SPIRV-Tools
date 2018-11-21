@@ -1132,9 +1132,10 @@ TEST_F(ValidateSSA, IdDoesNotDominateItsUseBad) {
 TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
   std::string str = kHeader + kBasicTypes +
                     R"(
+%funcintptrt = OpTypePointer Function %uintt
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
-%var_one     = OpVariable %intptrt Function %one
+%var_one     = OpVariable %funcintptrt Function %one
 %one_val     = OpLoad %uintt %var_one
                OpBranch %loop
 %loop        = OpLabel

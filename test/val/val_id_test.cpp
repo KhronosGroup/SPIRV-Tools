@@ -579,14 +579,56 @@ TEST_F(ValidateIdWithMessage, OpTypeMatrixGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnTypeBad) {
+
+TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnTypeNonVectorBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 0
+%1 = OpTypeFloat 32
 %2 = OpTypeMatrix %1 3)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Columns in a matrix must be of type vector."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("olumns in a matrix must be of type vector.\n  %mat3float = "
+                "OpTypeMatrix %float 3\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeMatrixVectorTypeNonFloatBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 16 0
+%2 = OpTypeVector %1 2
+%3 = OpTypeMatrix %2 2)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Matrix types can only be parameterized with floating-point "
+                "types.\n  %mat2v2ushort = OpTypeMatrix %v2ushort 2\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnCountLessThanTwoBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 2
+%3 = OpTypeMatrix %2 1)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Matrix types can only be parameterized as having only 2, 3, "
+                "or 4 columns.\n  %mat1v2float = OpTypeMatrix %v2float 1\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnCountGreaterThanFourBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 2
+%3 = OpTypeMatrix %2 8)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Matrix types can only be parameterized as having only 2, 3, "
+                "or 4 columns.\n  %mat8v2float = OpTypeMatrix %v2float 8\n"));
 }
 
 TEST_F(ValidateIdWithMessage, OpTypeSamplerGood) {
@@ -2169,7 +2211,7 @@ TEST_F(ValidateIdWithMessage, OpStoreGood) {
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
      OpStore %6 %5
@@ -2264,7 +2306,7 @@ TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
 %9 = OpUndef %1
@@ -2284,7 +2326,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %9 3.14
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
      OpStore %6 %5
@@ -2549,7 +2591,7 @@ TEST_F(ValidateIdWithMessage, OpStoreVoid) {
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
 %9 = OpFunctionCall %1 %7
@@ -2568,7 +2610,7 @@ TEST_F(ValidateIdWithMessage, OpStoreLabel) {
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
-%6 = OpVariable %3 UniformConstant
+%6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
      OpStore %6 %8
@@ -4185,6 +4227,37 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
           "size of 5."));
 }
 
+TEST_F(ValidateIdWithMessage, WebGPUOpVectorShuffle0xFFFFFFFFLiteralBad) {
+  std::string spirv = R"(
+    OpCapability Shader
+    OpMemoryModel Logical GLSL450
+%float = OpTypeFloat 32
+%vec2 = OpTypeVector %float 2
+%vec3 = OpTypeVector %float 3
+%vec4 = OpTypeVector %float 4
+%ptr_vec2 = OpTypePointer Function %vec2
+%ptr_vec3 = OpTypePointer Function %vec3
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%1 = OpConstantComposite %vec2 %float_2 %float_1
+%2 = OpConstantComposite %vec3 %float_1 %float_2 %float_2
+%3 = OpTypeFunction %vec4
+%4 = OpFunction %vec4 None %3
+%5 = OpLabel
+%var = OpVariable %ptr_vec2 Function %1
+%var2 = OpVariable %ptr_vec3 Function %2
+%6 = OpLoad %vec2 %var
+%7 = OpLoad %vec3 %var2
+%8 = OpVectorShuffle %vec4 %6 %7 4 3 1 0xffffffff
+     OpReturnValue %8
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component literal at operand 3 cannot be 0xFFFFFFFF in"
+                        " WebGPU execution environment."));
+}
+
 // TODO: OpCompositeConstruct
 // TODO: OpCompositeExtract
 // TODO: OpCompositeInsert
@@ -4544,6 +4617,19 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_TooManyWeights) {
       HasSubstr("OpBranchConditional requires either 3 or 5 parameters"));
 }
 
+TEST_F(ValidateIdWithMessage, OpBranchConditional_ConditionIsAType) {
+  std::string spirv = BranchConditionalSetup + R"(
+OpBranchConditional %bool %target_t %target_f
+)" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Condition operand for OpBranchConditional must be of boolean type"));
+}
+
 // TODO: OpSwitch
 
 TEST_F(ValidateIdWithMessage, OpReturnValueConstantGood) {
@@ -4647,7 +4733,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInPhysical) {
      OpMemoryModel Physical32 OpenCL
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer Private %2
+%3 = OpTypePointer Function %2
 %4 = OpTypeFunction %3
 %5 = OpFunction %3 None %4
 %6 = OpLabel
@@ -4664,7 +4750,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInLogical) {
      OpMemoryModel Logical GLSL450
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer Private %2
+%3 = OpTypePointer Function %2
 %4 = OpTypeFunction %3
 %5 = OpFunction %3 None %4
 %6 = OpLabel
