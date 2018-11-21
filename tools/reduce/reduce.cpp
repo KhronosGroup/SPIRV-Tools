@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <cassert>
+#include <cerrno>
 #include <cstring>
 #include <functional>
 
@@ -44,14 +45,9 @@ bool CheckExecuteCommand() {
 // Execute a command using the shell. Redirects to stdout.txt and stderr.txt in
 // |temp_dir|. |temp_dir| should end with a slash.
 int ExecuteCommand(const std::string& command) {
-#ifndef SPIRV_ANDROID
   errno = 0;
-#endif
   int status = std::system(command.c_str());
-
-#ifndef SPIRV_ANDROID
   assert(errno == 0 && "failed to execute command");
-#endif
 
 #ifdef SPIRV_WINDOWS
   return status;
