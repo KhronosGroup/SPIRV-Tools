@@ -37,6 +37,19 @@ using ::testing::ValuesIn;
 
 using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
 
+std::string kOpCapabilitySetupWithoutVector16 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Addresses
+     OpCapability Int8
+     OpCapability Int16
+     OpCapability Int64
+     OpCapability Float64
+     OpCapability LiteralSampler
+     OpCapability Pipes
+     OpCapability DeviceEnqueue
+)";
+
 std::string kOpCapabilitySetup = R"(
      OpCapability Shader
      OpCapability Linkage
@@ -58,6 +71,11 @@ std::string kOpVariablePtrSetUp = R"(
 
 std::string kGLSL450MemoryModel =
     kOpCapabilitySetup + kOpVariablePtrSetUp + R"(
+     OpMemoryModel Logical GLSL450
+)";
+
+std::string kGLSL450MemoryModelWithoutVector16 =
+    kOpCapabilitySetupWithoutVector16 + kOpVariablePtrSetUp + R"(
      OpMemoryModel Logical GLSL450
 )";
 
@@ -569,6 +587,74 @@ TEST_F(ValidateIdWithMessage, OpTypeVectorComponentTypeBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpTypeVector Component Type <id> '2' is not a scalar type."));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountLessThanTwoBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 1)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal number of components (1) for TypeVector\n  %v1float = "
+                "OpTypeVector %float 1\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountGreaterThanFourBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal number of components (5) for TypeVector\n  %v5float = "
+                "OpTypeVector %float 5\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountEightWithoutVector16Bad) {
+  std::string spirv = kGLSL450MemoryModelWithoutVector16 + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 8)";
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Having 8 components for TypeVector requires the Vector16 "
+                "capability\n  %v8float = OpTypeVector %float 8\n"));
+}
+
+TEST_F(ValidateIdWithMessage,
+       OpTypeVectorColumnCountSixteenWithoutVector16Bad) {
+  std::string spirv = kGLSL450MemoryModelWithoutVector16 + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 16)";
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Having 16 components for TypeVector requires the Vector16 "
+                "capability\n  %v16float = OpTypeVector %float 16\n"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountOfEightWithVector16Good) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 8)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage,
+       OpTypeVectorColumnCountOfSixteenWithVector16Good) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 16)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateIdWithMessage, OpTypeMatrixGood) {
