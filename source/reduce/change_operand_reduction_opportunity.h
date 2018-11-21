@@ -28,7 +28,6 @@ using namespace opt;
 // other id.
 class ChangeOperandReductionOpportunity : public ReductionOpportunity {
  public:
-
   // Constructs the opportunity to replace operand |operand_index| of |inst|
   // with |new_id|.
   ChangeOperandReductionOpportunity(Instruction* inst, uint32_t operand_index,

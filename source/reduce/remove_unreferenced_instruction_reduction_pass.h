@@ -27,7 +27,6 @@ namespace reduce {
 // generated those ids.
 class RemoveUnreferencedInstructionReductionPass : public ReductionPass {
  public:
-
   // Creates the reduction pass in the context of the given target environment
   // |target_env|
   explicit RemoveUnreferencedInstructionReductionPass(

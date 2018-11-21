@@ -33,9 +33,9 @@ RemoveUnreferencedInstructionReductionPass::GetAvailableOpportunities(
         if (context->get_def_use_mgr()->NumUses(&inst) > 0) {
           continue;
         }
-        if (spvOpcodeIsBlockTerminator(inst.opcode())
-            || inst.opcode() == SpvOpSelectionMerge
-            || inst.opcode() == SpvOpLoopMerge) {
+        if (spvOpcodeIsBlockTerminator(inst.opcode()) ||
+            inst.opcode() == SpvOpSelectionMerge ||
+            inst.opcode() == SpvOpLoopMerge) {
           // In this reduction pass we do not want to affect static control
           // flow.
           continue;
@@ -45,7 +45,7 @@ RemoveUnreferencedInstructionReductionPass::GetAvailableOpportunities(
         // some straightforward instruction with an unused result, like an
         // arithmetic operation or function call.
         result.push_back(
-                MakeUnique<RemoveInstructionReductionOpportunity>(&inst));
+            MakeUnique<RemoveInstructionReductionOpportunity>(&inst));
       }
     }
   }

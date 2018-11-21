@@ -26,7 +26,6 @@ namespace reduce {
 // passes.
 class OperandToConstReductionPass : public ReductionPass {
  public:
-
   // Creates the reduction pass in the context of the given target environment
   // |target_env|
   explicit OperandToConstReductionPass(const spv_target_env target_env)

@@ -188,19 +188,20 @@ int main(int argc, const char** argv) {
 
   Reducer reducer(target_env);
 
-  reducer.SetInterestingnessFunction([interestingness_test]
-  (std::vector<uint32_t> binary, uint32_t reductions_applied) -> bool {
-    std::stringstream ss;
-    ss << "temp_" << std::setw(4) << std::setfill('0') << reductions_applied
-        << ".spv";
-    const auto spv_file = ss.str();
-    const std::string command = std::string(interestingness_test) + " "
-            + spv_file;
-    auto write_file_succeeded =
+  reducer.SetInterestingnessFunction(
+      [interestingness_test](std::vector<uint32_t> binary,
+                             uint32_t reductions_applied) -> bool {
+        std::stringstream ss;
+        ss << "temp_" << std::setw(4) << std::setfill('0') << reductions_applied
+           << ".spv";
+        const auto spv_file = ss.str();
+        const std::string command =
+            std::string(interestingness_test) + " " + spv_file;
+        auto write_file_succeeded =
             WriteFile(spv_file.c_str(), "wb", &binary[0], binary.size());
-    assert(write_file_succeeded);
-    return ExecuteCommand(command) == 0;
-  });
+        assert(write_file_succeeded);
+        return ExecuteCommand(command) == 0;
+      });
 
   reducer.AddReductionPass(
       spvtools::MakeUnique<OperandToConstReductionPass>(target_env));
@@ -217,13 +218,12 @@ int main(int argc, const char** argv) {
 
   std::vector<uint32_t> binary_out;
   const auto reduction_status =
-          reducer.Run(std::move(binary_in), &binary_out, reducer_options);
+      reducer.Run(std::move(binary_in), &binary_out, reducer_options);
 
   if (reduction_status ==
-      Reducer::ReductionResultStatus::kInitialStateNotInteresting
-      ||
+          Reducer::ReductionResultStatus::kInitialStateNotInteresting ||
       !WriteFile<uint32_t>("_reduced_final.spv", "wb", binary_out.data(),
-                                  binary_out.size())) {
+                           binary_out.size())) {
     return 1;
   }
 

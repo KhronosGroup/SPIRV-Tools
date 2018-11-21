@@ -551,17 +551,16 @@ SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetMaxIdBound(
 SPIRV_TOOLS_EXPORT spv_reducer_options spvReducerOptionsCreate();
 
 // Destroys the given reducer options object.
-SPIRV_TOOLS_EXPORT void spvReducerOptionsDestroy(
-        spv_reducer_options options);
+SPIRV_TOOLS_EXPORT void spvReducerOptionsDestroy(spv_reducer_options options);
 
 // Records the maximum number of reduction steps that should run before the
 // reducer gives up.
 SPIRV_TOOLS_EXPORT void spvReducerOptionsSetStepLimit(
-        spv_reducer_options options, uint32_t step_limit);
+    spv_reducer_options options, uint32_t step_limit);
 
 // Sets seed for random number generation.
-SPIRV_TOOLS_EXPORT void spvReducerOptionsSetSeed(
-        spv_reducer_options options, uint32_t seed);
+SPIRV_TOOLS_EXPORT void spvReducerOptionsSetSeed(spv_reducer_options options,
+                                                 uint32_t seed);
 
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will

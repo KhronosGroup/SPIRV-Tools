@@ -43,10 +43,10 @@ OperandToConstReductionPass::GetAvailableOpportunities(
           // than using a lambda) so that we use said index in the construction
           // of a ChangeOperandReductionOpportunity
           for (uint32_t index = 0; index < inst.NumOperands(); index++) {
-            const auto &operand = inst.GetOperand(index);
+            const auto& operand = inst.GetOperand(index);
             if (spvIsIdType(operand.type)) {
-              if (operand.type == SPV_OPERAND_TYPE_RESULT_ID
-                  || operand.type == SPV_OPERAND_TYPE_TYPE_ID) {
+              if (operand.type == SPV_OPERAND_TYPE_RESULT_ID ||
+                  operand.type == SPV_OPERAND_TYPE_TYPE_ID) {
                 continue;
               }
               const auto id = operand.words[0];
@@ -65,8 +65,8 @@ OperandToConstReductionPass::GetAvailableOpportunities(
               if (type_id) {
                 if (constant->type_id() == type_id) {
                   result.push_back(
-                          MakeUnique<ChangeOperandReductionOpportunity>(
-                                  &inst, index, constant->result_id()));
+                      MakeUnique<ChangeOperandReductionOpportunity>(
+                          &inst, index, constant->result_id()));
                 }
               }
             }

@@ -146,7 +146,7 @@ class OptimizerOptions {
 
 // A C++ wrapper around a reducer options object.
 class ReducerOptions {
-public:
+ public:
   ReducerOptions() : options_(spvReducerOptionsCreate()) {}
   ~ReducerOptions() { spvReducerOptionsDestroy(options_); }
 
@@ -160,11 +160,9 @@ public:
   }
 
   // Sets a seed to be used for random number generation.
-  void set_seed(uint32_t seed) {
-    spvReducerOptionsSetSeed(options_, seed);
-  }
+  void set_seed(uint32_t seed) { spvReducerOptionsSetSeed(options_, seed); }
 
-private:
+ private:
   spv_reducer_options options_;
 };
 

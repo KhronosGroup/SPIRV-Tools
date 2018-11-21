@@ -24,11 +24,13 @@
 namespace spvtools {
 namespace reduce {
 
-// A helper class that subclasses a given reduction pass class in order to provide a wrapper for its protected methods.
+// A helper class that subclasses a given reduction pass class in order to
+// provide a wrapper for its protected methods.
 template <class ReductionPassT>
 class TestSubclass : public ReductionPassT {
  public:
-  // Creates an instance of the reduction pass subclass with respect to target environment |env|.
+  // Creates an instance of the reduction pass subclass with respect to target
+  // environment |env|.
   explicit TestSubclass(const spv_target_env env) : ReductionPassT(env) {}
   ~TestSubclass() = default;
 

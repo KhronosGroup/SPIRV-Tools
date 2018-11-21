@@ -112,7 +112,6 @@ TEST(OperandToConstantReductionPassTest, BasicCheck) {
   CheckEqual(env, expected, context.get());
 }
 
-
 TEST(OperandToConstantReductionPassTest, WithCalledFunction) {
   std::string shader = R"(
                OpCapability Shader
@@ -146,7 +145,7 @@ TEST(OperandToConstantReductionPassTest, WithCalledFunction) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context =
-          BuildModule(env, consumer, shader, kReduceAssembleOption);
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
   const auto pass = TestSubclass<OperandToConstReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(0, ops.size());

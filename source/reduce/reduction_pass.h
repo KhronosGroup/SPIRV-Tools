@@ -32,17 +32,15 @@ namespace reduce {
 // again, until the minimum granularity is reached.
 class ReductionPass {
  public:
-
   // Constructs a reduction pass with a given target environment, |target_env|.
   // Initially the pass is uninitialized.
   explicit ReductionPass(const spv_target_env target_env)
-      : target_env_(target_env),
-        is_initialized_(false) {}
+      : target_env_(target_env), is_initialized_(false) {}
 
   virtual ~ReductionPass() = default;
 
   // Apply the reduction pass to the given binary.
-  std::vector<uint32_t> TryApplyReduction(const std::vector<uint32_t> &binary);
+  std::vector<uint32_t> TryApplyReduction(const std::vector<uint32_t>& binary);
 
   // Set a consumer to which relevant messages will be directed.
   void SetMessageConsumer(MessageConsumer consumer);
@@ -56,7 +54,6 @@ class ReductionPass {
   virtual std::string GetName() const = 0;
 
  protected:
-
   // Finds the reduction opportunities relevant to this pass that could be
   // applied to a given SPIR-V module.
   virtual std::vector<std::unique_ptr<ReductionOpportunity>>

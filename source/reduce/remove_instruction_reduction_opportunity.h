@@ -26,7 +26,6 @@ using namespace opt;
 // Captures the opportunity to remove an instruction from the SPIR-V module.
 class RemoveInstructionReductionOpportunity : public ReductionOpportunity {
  public:
-
   // Constructs the opportunity to remove |inst|.
   explicit RemoveInstructionReductionOpportunity(Instruction* inst)
       : inst_(inst) {}

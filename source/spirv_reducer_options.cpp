@@ -18,15 +18,14 @@
 #include "source/spirv_reducer_options.h"
 
 SPIRV_TOOLS_EXPORT spv_reducer_options spvReducerOptionsCreate() {
-    return new spv_reducer_options_t();
+  return new spv_reducer_options_t();
 }
 
-SPIRV_TOOLS_EXPORT void spvReducerOptionsDestroy(
-        spv_reducer_options options) {
-    delete options;
+SPIRV_TOOLS_EXPORT void spvReducerOptionsDestroy(spv_reducer_options options) {
+  delete options;
 }
 
 SPIRV_TOOLS_EXPORT void spvReducerOptionsSetStepLimit(
-        spv_reducer_options options, uint32_t step_limit) {
-    options->step_limit = step_limit;
+    spv_reducer_options options, uint32_t step_limit) {
+  options->step_limit = step_limit;
 }

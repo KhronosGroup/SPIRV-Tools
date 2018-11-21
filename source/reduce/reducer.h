@@ -25,12 +25,10 @@
 namespace spvtools {
 namespace reduce {
 
-// This class manages the process of applying a reduction -- parameterized by a number of reduction passes and an
-// interestingness test, to a SPIR-V binary.
+// This class manages the process of applying a reduction -- parameterized by a
+// number of reduction passes and an interestingness test, to a SPIR-V binary.
 class Reducer {
-
  public:
-
   // Possible statuses that can result from running a reduction.
   enum ReductionResultStatus {
     kInitialStateNotInteresting,
@@ -46,7 +44,7 @@ class Reducer {
   // The notion of "interesting" depends on what properties of the binary or
   // tools that process the binary we are trying to maintain during reduction.
   using InterestingnessFunction =
-          std::function<bool(const std::vector<uint32_t>&, uint32_t)>;
+      std::function<bool(const std::vector<uint32_t>&, uint32_t)>;
 
   // Constructs an instance with the given target |env|, which is used to
   // decode the binary to be reduced later.
@@ -75,7 +73,7 @@ class Reducer {
   // Sets the function that will be used to decide whether a reduced binary
   // turned out to be interesting.
   void SetInterestingnessFunction(
-          InterestingnessFunction interestingness_function);
+      InterestingnessFunction interestingness_function);
 
   // Adds a reduction pass to the sequence of passes that will be iterated
   // over.
@@ -85,8 +83,8 @@ class Reducer {
   // The reduced binary ends up in |binary_out|.
   // A status is returned.
   ReductionResultStatus Run(std::vector<uint32_t>&& binary_in,
-           std::vector<uint32_t>* binary_out,
-           spv_const_reducer_options options) const;
+                            std::vector<uint32_t>* binary_out,
+                            spv_const_reducer_options options) const;
 
  private:
   struct Impl;                  // Opaque struct for holding internal data.
