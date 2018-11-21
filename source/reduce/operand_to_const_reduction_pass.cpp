@@ -55,6 +55,12 @@ OperandToConstReductionPass::GetAvailableOpportunities(
                 // The argument is already a constant.
                 continue;
               }
+              if (def->opcode() == SpvOpFunction) {
+                // The argument refers to a function, e.g. the function called
+                // by OpFunctionCall; avoid replacing this with a constant of
+                // the function's return type.
+                continue;
+              }
               auto type_id = def->type_id();
               if (type_id) {
                 if (constant->type_id() == type_id) {

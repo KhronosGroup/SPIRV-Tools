@@ -112,6 +112,46 @@ TEST(OperandToConstantReductionPassTest, BasicCheck) {
   CheckEqual(env, expected, context.get());
 }
 
+
+TEST(OperandToConstantReductionPassTest, WithCalledFunction) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %10 %12
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeFunction %7
+          %9 = OpTypePointer Output %7
+         %10 = OpVariable %9 Output
+         %11 = OpTypePointer Input %7
+         %12 = OpVariable %11 Input
+         %13 = OpConstant %6 0
+         %14 = OpConstantComposite %7 %13 %13 %13 %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpFunctionCall %7 %16
+               OpReturn
+               OpFunctionEnd
+         %16 = OpFunction %7 None %8
+         %17 = OpLabel
+               OpReturnValue %14
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+          BuildModule(env, consumer, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<OperandToConstReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+  ASSERT_EQ(0, ops.size());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools
