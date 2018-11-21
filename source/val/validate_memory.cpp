@@ -389,6 +389,23 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  // WebGPU: Check that if contains initializer, then storage class is Output,
+  // Private, or Function.
+  if (spvIsWebGPUEnv(_.context()->target_env) && inst->operands().size() > 3) {
+    if (storage_class != SpvStorageClassOutput &&
+        storage_class != SpvStorageClassPrivate &&
+        storage_class != SpvStorageClassFunction) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpVariable, <id> '" << _.getIdName(inst->id())
+             << "', has a disallowed initializer & storage class "
+             << "combination.\n"
+             << "From WebGPU execution environment spec:\n"
+             << "Variable declarations that include initializers must have "
+             << "one of the following storage classes: Output, Private, or "
+             << "Function";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 

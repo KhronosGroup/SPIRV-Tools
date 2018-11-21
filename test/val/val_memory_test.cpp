@@ -349,6 +349,99 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateMemory, WebGPUInitializerWithOutputStorageClassesGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Output %float
+%init_val = OpConstant %float 1.0
+%1 = OpVariable %float_ptr Output %init_val
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateMemory, WebGPUInitializerWithFunctionStorageClassesGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Function %float
+%init_val = OpConstant %float 1.0
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+%2 = OpVariable %float_ptr Function %init_val
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateMemory, WebGPUInitializerWithPrivateStorageClassesGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Private %float
+%init_val = OpConstant %float 1.0
+%1 = OpVariable %float_ptr Private %init_val
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateMemory, WebGPUInitializerWithDisallowedStorageClassesBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Uniform %float
+%init_val = OpConstant %float 1.0
+%1 = OpVariable %float_ptr Uniform %init_val
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpVariable, <id> '5', has a disallowed initializer & storage class "
+          "combination.\n"
+          "From WebGPU execution environment spec:\n"
+          "Variable declarations that include initializers must have one of "
+          "the following storage classes: Output, Private, or Function\n"
+          "  %5 = OpVariable %_ptr_Uniform_float Uniform %float_1\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
