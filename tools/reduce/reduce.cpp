@@ -67,11 +67,15 @@ struct ReduceStatus {
 void PrintUsage(const char* program) {
   // NOTE: Please maintain flags in lexicographical order.
   printf(
-      R"(%s - Reduce a SPIR-V binary file with respect to a user-provided interestingness test.
+      R"(%s - Reduce a SPIR-V binary file with respect to a user-provided
+              interestingness test.
 
-USAGE: %s [options] <input>
+USAGE: %s [options] <input> <interestingness-test>
 
 The SPIR-V binary is read from <input>.
+
+Whether a binary is interesting is determined by <interestingness-test>, which
+is typically a script.
 
 NOTE: The reducer is a work in progress.
 
@@ -204,10 +208,13 @@ int main(int argc, const char** argv) {
   }
 
   std::vector<uint32_t> binary_out;
-  const bool ok =
-      reducer.Run(std::move(binary_in), binary_out, reducer_options);
+  const auto reduction_status =
+          reducer.Run(std::move(binary_in), &binary_out, reducer_options);
 
-  if (!ok || !WriteFile<uint32_t>("_reduced_final.spv", "wb", binary_out.data(),
+  if (reduction_status ==
+      Reducer::ReductionResultStatus::kInitialStateNotInteresting
+      ||
+      !WriteFile<uint32_t>("_reduced_final.spv", "wb", binary_out.data(),
                                   binary_out.size())) {
     return 1;
   }

@@ -31,6 +31,13 @@ class Reducer {
 
  public:
 
+  // Possible statuses that can result from running a reduction.
+  enum ReductionResultStatus {
+    kInitialStateNotInteresting,
+    kReachedStepLimit,
+    kComplete
+  };
+
   // The type for a function that will take a binary and return true if and only if the binary is deemed interesting.
   // The notion of "interesting" depends on what properties of the binary or tools that process the binary we are
   // trying to maintain during reduction.
@@ -71,7 +78,8 @@ class Reducer {
 
   // Reduces the given SPIR-V module |binary_out|.
   // The reduced binary ends up in |binary_out|.
-  void Run(std::vector<uint32_t>&& binary_in,
+  // A status is returned.
+  ReductionResultStatus Run(std::vector<uint32_t>&& binary_in,
            std::vector<uint32_t>* binary_out,
            spv_const_reducer_options options) const;
 

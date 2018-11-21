@@ -52,13 +52,17 @@ void Reducer::SetInterestingnessFunction(
   impl_->interestingness_function = std::move(interestingness_function);
 }
 
-void Reducer::Run(std::vector<uint32_t>&& binary_in,
+Reducer::ReductionResultStatus Reducer::Run(std::vector<uint32_t>&& binary_in,
                   std::vector<uint32_t>* binary_out,
                   spv_const_reducer_options options) const {
   std::vector<uint32_t> current_binary = binary_in;
 
   // Initial state should be interesting.
-  assert(impl_->interestingness_function(current_binary));
+  if (!impl_->interestingness_function(current_binary)) {
+    impl_->consumer(SPV_MSG_INFO, nullptr, {},
+                    "Initial state was not interesting; stopping.");
+    return Reducer::ReductionResultStatus::kInitialStateNotInteresting;
+  }
 
   // Keeps track of how many reduction attempts have been tried.  Reduction
   // bails out if this reaches a given limit.
@@ -118,17 +122,19 @@ void Reducer::Run(std::vector<uint32_t>&& binary_in,
     }
   }
 
+  *binary_out = std::move(current_binary);
+
   // Report whether reduction completed, or bailed out early due to reaching
   // the step limit.
   if (impl_->ReachedStepLimit(reductions_applied, options)) {
     impl_->consumer(SPV_MSG_INFO, nullptr, {},
                     "Reached reduction step limit; stopping.");
-  } else {
-    impl_->consumer(SPV_MSG_INFO, nullptr, {},
-                    "No more to reduce; stopping.");
+    return Reducer::ReductionResultStatus::kReachedStepLimit;
   }
+  impl_->consumer(SPV_MSG_INFO, nullptr, {},
+                  "No more to reduce; stopping.");
+  return Reducer::ReductionResultStatus::kComplete;
 
-  *binary_out = std::move(current_binary);
 }
 
 void Reducer::AddReductionPass(
