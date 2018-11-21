@@ -42,18 +42,16 @@ bool CheckExecuteCommand() {
   return res != 0;
 }
 
-// Execute a command using the shell. Redirects to stdout.txt and stderr.txt in
-// |temp_dir|. |temp_dir| should end with a slash.
-int ExecuteCommand(const std::string& command) {
+// Execute a command using the shell.
+// Returns true if and only if the command's exit status was 0.
+bool ExecuteCommand(const std::string& command) {
   errno = 0;
   int status = std::system(command.c_str());
   assert(errno == 0 && "failed to execute command");
-
-#ifdef SPIRV_WINDOWS
-  return status;
-#else
-  return WEXITSTATUS(status);  // NOLINT
-#endif
+  // The result returned by 'system' is implementation-defined, but is
+  // usually the case that the returned value is 0 when the command's exit
+  // code was 0.  We are assuming that here, and that's all we depend on.
+  return status == 0;
 }
 
 // Status and actions to perform after parsing command-line arguments.
@@ -201,7 +199,7 @@ int main(int argc, const char** argv) {
             WriteFile(spv_file.c_str(), "wb", &binary[0], binary.size());
         (void)(write_file_succeeded);
         assert(write_file_succeeded);
-        return ExecuteCommand(command) == 0;
+        return ExecuteCommand(command);
       });
 
   reducer.AddReductionPass(
