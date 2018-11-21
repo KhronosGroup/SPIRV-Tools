@@ -216,6 +216,7 @@ set_source_files_properties(
 
 add_subdirectory(comp)
 add_subdirectory(opt)
+add_subdirectory(reduce)
 add_subdirectory(link)
 
 set(SPIRV_SOURCES
@@ -253,6 +254,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_definition.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_optimizer_options.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_reducer_options.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_validator_options.h
   ${CMAKE_CURRENT_SOURCE_DIR}/table.h
@@ -280,6 +282,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_optimizer_options.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_reducer_options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_validator_options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/table.cpp

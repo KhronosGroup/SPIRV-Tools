@@ -368,6 +368,8 @@ typedef struct spv_validator_options_t spv_validator_options_t;
 
 typedef struct spv_optimizer_options_t spv_optimizer_options_t;
 
+typedef struct spv_reducer_options_t spv_reducer_options_t;
+
 // Type Definitions
 
 typedef spv_const_binary_t* spv_const_binary;
@@ -381,6 +383,8 @@ typedef spv_validator_options_t* spv_validator_options;
 typedef const spv_validator_options_t* spv_const_validator_options;
 typedef spv_optimizer_options_t* spv_optimizer_options;
 typedef const spv_optimizer_options_t* spv_const_optimizer_options;
+typedef spv_reducer_options_t* spv_reducer_options;
+typedef const spv_reducer_options_t* spv_const_reducer_options;
 
 // Platform API
 
@@ -540,6 +544,23 @@ SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetValidatorOptions(
 // Records the maximum possible value for the id bound.
 SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetMaxIdBound(
     spv_optimizer_options options, uint32_t val);
+
+// Creates a reducer options object with default options. Returns a valid
+// options object. The object remains valid until it is passed into
+// |spvReducerOptionsDestroy|.
+SPIRV_TOOLS_EXPORT spv_reducer_options spvReducerOptionsCreate();
+
+// Destroys the given reducer options object.
+SPIRV_TOOLS_EXPORT void spvReducerOptionsDestroy(spv_reducer_options options);
+
+// Records the maximum number of reduction steps that should run before the
+// reducer gives up.
+SPIRV_TOOLS_EXPORT void spvReducerOptionsSetStepLimit(
+    spv_reducer_options options, uint32_t step_limit);
+
+// Sets seed for random number generation.
+SPIRV_TOOLS_EXPORT void spvReducerOptionsSetSeed(spv_reducer_options options,
+                                                 uint32_t seed);
 
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
