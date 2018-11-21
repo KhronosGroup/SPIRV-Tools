@@ -152,7 +152,9 @@ TEST_F(ValidateDecorations, WebGPUOpDecorationGroupBad) {
   std::string spirv = R"(
                OpCapability Shader
                OpCapability Linkage
-               OpMemoryModel Logical GLSL450
+               OpCapability VulkanMemoryModelKHR
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpMemoryModel Logical VulkanKHR
                OpDecorate %1 DescriptorSet 0
                OpDecorate %1 NonWritable
                OpDecorate %1 Restrict

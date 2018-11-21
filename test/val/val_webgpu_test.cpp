@@ -31,7 +31,9 @@ TEST_F(ValidateWebGPU, OpUndefIsDisallowed) {
   std::string spirv = R"(
     OpCapability Shader
     OpCapability Linkage
-    OpMemoryModel Logical GLSL450
+    OpCapability VulkanMemoryModelKHR
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical VulkanKHR
     %float = OpTypeFloat 32
     %1 = OpUndef %float
 )";
@@ -50,7 +52,9 @@ TEST_F(ValidateWebGPU, OpNameIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
      OpCapability Linkage
-     OpMemoryModel Logical GLSL450
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
      OpName %1 "foo"
 %1 = OpTypeFloat 32
 )";
@@ -67,7 +71,9 @@ TEST_F(ValidateWebGPU, OpMemberNameIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
      OpCapability Linkage
-     OpMemoryModel Logical GLSL450
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
      OpMemberName %2 0 "foo"
 %1 = OpTypeFloat 32
 %2 = OpTypeStruct %1
@@ -86,7 +92,9 @@ TEST_F(ValidateWebGPU, OpSourceIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
      OpCapability Linkage
-     OpMemoryModel Logical GLSL450
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
      OpSource GLSL 450
 )";
 
@@ -105,7 +113,9 @@ TEST_F(ValidateWebGPU, OpSourceExtensionIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
      OpCapability Linkage
-     OpMemoryModel Logical GLSL450
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
      OpSourceExtension "bar"
 )";
 
@@ -122,7 +132,9 @@ TEST_F(ValidateWebGPU, OpStringIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
      OpCapability Linkage
-     OpMemoryModel Logical GLSL450
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
 %1 = OpString "foo"
 )";
 
@@ -141,7 +153,9 @@ TEST_F(ValidateWebGPU, OpNoLineDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
      OpCapability Linkage
-     OpMemoryModel Logical GLSL450
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
      OpNoLine
 )";
 
@@ -151,6 +165,54 @@ TEST_F(ValidateWebGPU, OpNoLineDisallowed) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Debugging instructions are not allowed in the WebGPU "
                         "execution environment.\n  OpNoLine\n"));
+}
+
+TEST_F(ValidateWebGPU, LogicalAddressingVulkanKHRMemoryGood) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, NonLogicalAddressingModelBad) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Physical32 VulkanKHR
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Addressing model must be Logical for WebGPU "
+                        "environment.\n  OpMemoryModel Physical32 "
+                        "VulkanKHR\n"));
+}
+
+TEST_F(ValidateWebGPU, NonVulkanKHRMemoryModelBad) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpMemoryModel Logical GLSL450
+     OpNoLine
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory model must be VulkanKHR for WebGPU "
+                        "environment.\n  OpMemoryModel Logical GLSL450\n"));
 }
 
 }  // namespace

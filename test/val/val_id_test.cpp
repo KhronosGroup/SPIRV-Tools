@@ -4316,7 +4316,9 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
 TEST_F(ValidateIdWithMessage, WebGPUOpVectorShuffle0xFFFFFFFFLiteralBad) {
   std::string spirv = R"(
     OpCapability Shader
-    OpMemoryModel Logical GLSL450
+    OpCapability VulkanMemoryModelKHR
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical VulkanKHR
 %float = OpTypeFloat 32
 %vec2 = OpTypeVector %float 2
 %vec3 = OpTypeVector %float 3
