@@ -199,6 +199,7 @@ int main(int argc, const char** argv) {
             std::string(interestingness_test) + " " + spv_file;
         auto write_file_succeeded =
             WriteFile(spv_file.c_str(), "wb", &binary[0], binary.size());
+        (void)(write_file_succeeded);
         assert(write_file_succeeded);
         return ExecuteCommand(command) == 0;
       });
