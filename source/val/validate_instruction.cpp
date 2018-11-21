@@ -463,6 +463,17 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
              << "VulkanMemoryModelKHR capability must only be specified if the "
                 "VulkanKHR memory model is used.";
     }
+
+    if (spvIsWebGPUEnv(_.context()->target_env)) {
+      if (_.addressing_model() != SpvAddressingModelLogical) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Addressing model must be Logical for WebGPU environment.";
+      }
+      if (_.memory_model() != SpvMemoryModelVulkanKHR) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Memory model must be VulkanKHR for WebGPU environment.";
+      }
+    }
   } else if (opcode == SpvOpExecutionMode) {
     const uint32_t entry_point = inst->word(1);
     _.RegisterExecutionModeForEntryPoint(entry_point,
