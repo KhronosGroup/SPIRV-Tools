@@ -188,15 +188,17 @@ int main(int argc, const char** argv) {
 
   Reducer reducer(target_env);
 
-  reducer.SetInterestingnessFunction([&](std::vector<uint32_t> binary,
-          uint32_t reductions_applied) -> bool {
+  reducer.SetInterestingnessFunction([interestingness_test]
+  (std::vector<uint32_t> binary, uint32_t reductions_applied) -> bool {
     std::stringstream ss;
     ss << "temp_" << std::setw(4) << std::setfill('0') << reductions_applied
         << ".spv";
     const auto spv_file = ss.str();
     const std::string command = std::string(interestingness_test) + " "
             + spv_file;
-    assert(WriteFile(spv_file.c_str(), "wb", &binary[0], binary.size()));
+    auto write_file_succeeded =
+            WriteFile(spv_file.c_str(), "wb", &binary[0], binary.size());
+    assert(write_file_succeeded);
     return ExecuteCommand(command) == 0;
   });
 
