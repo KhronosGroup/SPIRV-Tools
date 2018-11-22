@@ -20,6 +20,7 @@
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/log.h"
+#include "source/reduce/cut_loop_reduction_pass.h"
 #include "source/reduce/operand_to_const_reduction_pass.h"
 #include "source/reduce/reducer.h"
 #include "source/reduce/remove_unreferenced_instruction_reduction_pass.h"
@@ -202,6 +203,8 @@ int main(int argc, const char** argv) {
         return ExecuteCommand(command);
       });
 
+  reducer.AddReductionPass(
+      spvtools::MakeUnique<CutLoopReductionPass>(target_env));
   reducer.AddReductionPass(
       spvtools::MakeUnique<OperandToConstReductionPass>(target_env));
   reducer.AddReductionPass(

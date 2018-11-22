@@ -13,6 +13,7 @@
 # limitations under the License.
 set(SPIRV_TOOLS_REDUCE_SOURCES
         change_operand_reduction_opportunity.h
+        cut_loop_reduction_pass.h
         operand_to_const_reduction_pass.h
         reducer.h
         reduction_opportunity.h
@@ -21,6 +22,7 @@ set(SPIRV_TOOLS_REDUCE_SOURCES
         remove_unreferenced_instruction_reduction_pass.h
 
         change_operand_reduction_opportunity.cpp
+        cut_loop_reduction_pass.cpp
         operand_to_const_reduction_pass.cpp
         reducer.cpp
         reduction_opportunity.cpp
