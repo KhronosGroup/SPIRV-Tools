@@ -391,30 +391,29 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
 
   // WebGPU & Vulkan Appendix A: Check that if contains initializer, then
   // storage class is Output, Private, or Function.
-  if (inst->operands().size() > 3 &&
-      storage_class != SpvStorageClassOutput &&
+  if (inst->operands().size() > 3 && storage_class != SpvStorageClassOutput &&
       storage_class != SpvStorageClassPrivate &&
       storage_class != SpvStorageClassFunction) {
     if (spvIsVulkanEnv(_.context()->target_env)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-          << "OpVariable, <id> '" << _.getIdName(inst->id())
-          << "', has a disallowed initializer & storage class "
-          << "combination.\n"
-          << "From Vulkan spec, Appendix A:\n"
-          << "Variable declarations that include initializers must have "
-          << "one of the following storage classes: Output, Private, or "
-          << "Function";
+             << "OpVariable, <id> '" << _.getIdName(inst->id())
+             << "', has a disallowed initializer & storage class "
+             << "combination.\n"
+             << "From Vulkan spec, Appendix A:\n"
+             << "Variable declarations that include initializers must have "
+             << "one of the following storage classes: Output, Private, or "
+             << "Function";
     }
 
     if (spvIsWebGPUEnv(_.context()->target_env)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-          << "OpVariable, <id> '" << _.getIdName(inst->id())
-          << "', has a disallowed initializer & storage class "
-          << "combination.\n"
-          << "From WebGPU execution environment spec:\n"
-          << "Variable declarations that include initializers must have "
-          << "one of the following storage classes: Output, Private, or "
-          << "Function";
+             << "OpVariable, <id> '" << _.getIdName(inst->id())
+             << "', has a disallowed initializer & storage class "
+             << "combination.\n"
+             << "From WebGPU execution environment spec:\n"
+             << "Variable declarations that include initializers must have "
+             << "one of the following storage classes: Output, Private, or "
+             << "Function";
     }
   }
 
