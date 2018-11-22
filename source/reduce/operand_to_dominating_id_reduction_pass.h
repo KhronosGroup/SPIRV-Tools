@@ -32,14 +32,19 @@ namespace reduce {
 // to be eliminated by another pass.
 class OperandToDominatingIdReductionPass : public ReductionPass {
  public:
+  // Creates the reduction pass in the context of the given target environment
+  // |target_env|
   explicit OperandToDominatingIdReductionPass(const spv_target_env target_env)
       : ReductionPass(target_env) {}
 
   ~OperandToDominatingIdReductionPass() override = default;
 
+  // The name of this pass.
   std::string GetName() const final;
 
  protected:
+  // Finds all opportunities for replacing an operand with a dominating
+  // instruction in a given module.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 

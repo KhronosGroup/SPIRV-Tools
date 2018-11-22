@@ -56,39 +56,45 @@ OperandToDominatingIdReductionPass::GetAvailableOpportunities(
 
 void OperandToDominatingIdReductionPass::GetOpportunitiesForDominatingInst(
     std::vector<std::unique_ptr<ReductionOpportunity>>* opportunities,
-    opt::Instruction* dominating_instruction, opt::Function* function,
+    opt::Instruction* candidate_dominator, opt::Function* function,
     opt::IRContext* context) const {
-  assert(dominating_instruction->HasResultId());
-  assert(dominating_instruction->type_id());
+  assert(candidate_dominator->HasResultId());
+  assert(candidate_dominator->type_id());
   auto dominator_analysis = context->GetDominatorAnalysis(function);
   for (auto& block : *function) {
     for (auto& inst : block) {
-      for (uint32_t i = 0; i < inst.NumOperands(); i++) {
-        const auto& operand = inst.GetOperand(i);
-        if (operand.type != SPV_OPERAND_TYPE_ID) {
-          continue;
+      // We iterate through the operands using an explicit index (rather
+      // than using a lambda) so that we use said index in the construction
+      // of a ChangeOperandReductionOpportunity
+      for (uint32_t index = 0; index < inst.NumOperands(); index++) {
+        const auto& operand = inst.GetOperand(index);
+        if (spvIsIdType(operand.type)) {
+          if (operand.type == SPV_OPERAND_TYPE_RESULT_ID ||
+              operand.type == SPV_OPERAND_TYPE_TYPE_ID) {
+            continue;
+          }
+          const auto id = operand.words[0];
+          auto def = context->get_def_use_mgr()->GetDef(id);
+          assert(def);
+          if (!context->get_instr_block(def)) {
+            // The definition does not come from a block; e.g. it might be a
+            // constant.  It is thus not relevant to this pass.
+            continue;
+          }
+          // Sanity check that we don't get here if the argument is a constant.
+          assert(!context->get_constant_mgr()->GetConstantFromInst(def));
+          if (def->type_id() != candidate_dominator->type_id()) {
+            // The types need to match.
+            continue;
+          }
+          if (candidate_dominator != def &&
+              dominator_analysis->Dominates(candidate_dominator, def)) {
+            // A hit: the candidate dominator strictly dominates the definition.
+            opportunities->push_back(
+                MakeUnique<ChangeOperandReductionOpportunity>(
+                    &inst, index, candidate_dominator->result_id()));
+          }
         }
-        const auto id = operand.words[0];
-        auto def = context->get_def_use_mgr()->GetDef(id);
-        assert(def);
-        if (!context->get_instr_block(def)) {
-          // The definition does not come from a block; e.g. it might be a
-          // constant.  It is thus not relevant to this pass.
-          continue;
-        }
-        // Sanity check that we don't get here if the argument is a constant.
-        assert(!context->get_constant_mgr()->GetConstantFromInst(def));
-        if (dominating_instruction == def ||
-            !dominator_analysis->Dominates(dominating_instruction, def)) {
-          continue;
-        }
-        auto type_id = def->type_id();
-        if (type_id != dominating_instruction->type_id()) {
-          // The types need to match.
-          continue;
-        }
-        opportunities->push_back(MakeUnique<ChangeOperandReductionOpportunity>(
-            &inst, i, dominating_instruction->result_id()));
       }
     }
   }
