@@ -144,4 +144,3 @@ bool Reducer::Impl::ReachedStepLimit(uint32_t current_step,
 
 }  // namespace reduce
 }  // namespace spvtools
-
