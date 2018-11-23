@@ -2507,8 +2507,9 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInMeshViewIndicesNV:
     case SpvBuiltInBaryCoordNV:
     case SpvBuiltInBaryCoordNoPerspNV:
-    case SpvBuiltInFragmentSizeNV:
-    case SpvBuiltInInvocationsPerPixelNV:
+    case SpvBuiltInFragmentSizeNV:         // alias SpvBuiltInFragSizeEXT
+    case SpvBuiltInInvocationsPerPixelNV:  // alias
+                                           // SpvBuiltInFragInvocationCountEXT
     case SpvBuiltInLaunchIdNV:
     case SpvBuiltInLaunchSizeNV:
     case SpvBuiltInWorldRayOriginNV:
