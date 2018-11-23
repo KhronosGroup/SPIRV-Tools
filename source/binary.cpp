@@ -767,6 +767,13 @@ spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
                             spv_diagnostic* diagnostic) {
   spv_context_t hijack_context = *context;
   if (diagnostic) {
+    // Don't leak memory.
+    if (*diagnostic) {
+      if ((*diagnostic)->error) {
+        delete (*diagnostic)->error;
+      }
+      delete *diagnostic;
+    }
     *diagnostic = nullptr;
     spvtools::UseDiagnosticAsMessageConsumer(&hijack_context, diagnostic);
   }
