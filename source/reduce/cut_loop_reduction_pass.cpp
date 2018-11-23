@@ -21,8 +21,15 @@ using namespace opt;
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 CutLoopReductionPass::GetAvailableOpportunities(
-    opt::IRContext* /*context*/) const {
+    opt::IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
+
+  for (auto& function : *context->module()) {
+    auto loop_descriptor = context->GetLoopDescriptor(&function);
+    for (auto loop : loop_descriptor->GetLoopsInBinaryLayoutOrder()) {
+      (void)(loop);
+    }
+  }
   return result;
 }
 
