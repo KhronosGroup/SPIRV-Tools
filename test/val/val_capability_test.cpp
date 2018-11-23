@@ -2354,6 +2354,92 @@ OpMemoryModel Logical GLSL450
                         "specified if the VulkanKHR memory model is used"));
 }
 
+TEST_F(ValidateCapability, WebGPUWhitelistCapabilitiesAllowed) {
+  const std::string spirv = R"(
+          OpCapability Matrix
+          OpCapability Shader
+          OpCapability Sampled1D
+          OpCapability Image1D
+          OpCapability DerivativeControl
+          OpCapability ImageQuery
+          OpCapability VulkanMemoryModelKHR
+          OpExtension "SPV_KHR_vulkan_memory_model"
+          OpMemoryModel Logical VulkanKHR
+          OpEntryPoint Vertex %func "shader"
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateCapability, WebGPULinkageDisallowed) {
+  const std::string spirv = R"(
+          OpCapability Matrix
+          OpCapability Shader
+          OpCapability Sampled1D
+          OpCapability Image1D
+          OpCapability DerivativeControl
+          OpCapability ImageQuery
+          OpCapability VulkanMemoryModelKHR
+          OpCapability Linkage
+          OpExtension "SPV_KHR_vulkan_memory_model"
+          OpMemoryModel Logical VulkanKHR
+          OpEntryPoint Vertex %func "shader"
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability Linkage is not allowed by WebGPU "
+                        "specification (or requires extension)\n"
+                        "  OpCapability Linkage\n"));
+}
+
+TEST_F(ValidateCapability, WebGPULinkageKernelDisallowed) {
+  const std::string spirv = R"(
+          OpCapability Matrix
+          OpCapability Shader
+          OpCapability Sampled1D
+          OpCapability Image1D
+          OpCapability DerivativeControl
+          OpCapability ImageQuery
+          OpCapability VulkanMemoryModelKHR
+          OpCapability Kernel
+          OpExtension "SPV_KHR_vulkan_memory_model"
+          OpMemoryModel Logical VulkanKHR
+          OpEntryPoint Vertex %func "shader"
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Capability Kernel is not allowed by WebGPU specification (or "
+                "requires extension)\n"
+                "  OpCapability Kernel\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
