@@ -51,8 +51,9 @@ class OperandToDominatingIdReductionPass : public ReductionPass {
  private:
   void GetOpportunitiesForDominatingInst(
       std::vector<std::unique_ptr<ReductionOpportunity>>* opportunities,
-      opt::Instruction* dominating_instruction, opt::Function* function,
-      opt::IRContext* context) const;
+      opt::Instruction* dominating_instruction,
+      opt::Function::iterator candidate_dominator_block,
+      opt::Function* function, opt::IRContext* context) const;
 };
 
 }  // namespace reduce
