@@ -3597,6 +3597,8 @@ OpFunctionEnd
   SinglePassRunAndCheck<AggressiveDCEPass>(assembly, assembly, true, true);
 }
 
+// This is not valid input and ADCE does not support variable pointers and only
+// supports shaders.
 TEST_F(AggressiveDCETest, PointerVariable) {
   // ADCE is able to handle code that contains a load whose base address
   // comes from a load and not an OpVariable.  I want to see an instruction
@@ -3693,6 +3695,10 @@ OpReturn
 OpFunctionEnd
 )";
 
+  // The input is not valid and ADCE only supports shaders, but not variable
+  // pointers. Workaround this by enabling relaxed logical pointers in the
+  // validator.
+  ValidatorOptions()->relax_logical_pointer = true;
   SinglePassRunAndCheck<AggressiveDCEPass>(before, after, true, true);
 }
 

@@ -353,10 +353,28 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
            << "operand of the result type.";
   }
 
+  // Variable pointer related restrictions.
+  auto pointee = _.FindDef(result_type->word(3));
+  if (_.addressing_model() == SpvAddressingModelLogical &&
+      !_.options()->relax_logical_pointer) {
+    // VariablePointersStorageBuffer is implied by VariablePointers.
+    if (pointee->opcode() == SpvOpTypePointer) {
+      if (!_.HasCapability(SpvCapabilityVariablePointersStorageBuffer)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst) << "In Logical addressing, "
+                                                     "variables may not "
+                                                     "allocate a pointer type";
+      } else if (storage_class != SpvStorageClassFunction &&
+                 storage_class != SpvStorageClassPrivate) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "In Logical addressing with variable pointers, variables "
+                  "that allocate pointers must be in Function or Private "
+                  "storage classes";
+      }
+    }
+  }
+
   // Vulkan 14.5.2: Check type of UniformConstant and Uniform variables.
   if (spvIsVulkanEnv(_.context()->target_env)) {
-    auto pointee = _.FindDef(result_type->word(3));
-
     if (storage_class == SpvStorageClassUniformConstant) {
       if (!IsAllowedTypeOrArrayOfSame(
               _, pointee,
