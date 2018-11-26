@@ -204,12 +204,12 @@ int main(int argc, const char** argv) {
       });
 
   reducer.AddReductionPass(
-      spvtools::MakeUnique<CutLoopReductionPass>(target_env));
-  reducer.AddReductionPass(
       spvtools::MakeUnique<OperandToConstReductionPass>(target_env));
   reducer.AddReductionPass(
       spvtools::MakeUnique<RemoveUnreferencedInstructionReductionPass>(
           target_env));
+  reducer.AddReductionPass(
+      spvtools::MakeUnique<CutLoopReductionPass>(target_env));
 
   reducer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 

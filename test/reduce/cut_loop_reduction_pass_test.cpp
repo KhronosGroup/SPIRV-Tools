@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/reduce/cut_loop_reduction_pass.h"
 #include "reduce_test_util.h"
 #include "source/opt/build_module.h"
-#include "source/reduce/cut_loop_reduction_pass.h"
 
 namespace spvtools {
 namespace reduce {
 namespace {
 
 TEST(CutLoopReductionPassTest, LoopyShader1) {
-
   std::string prologue = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -65,9 +64,7 @@ TEST(CutLoopReductionPassTest, LoopyShader1) {
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context =
-      BuildModule(env, consumer, shader, kReduceAssembleOption);
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
   const auto pass = TestSubclass<CutLoopReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(1, ops.size());
@@ -83,6 +80,7 @@ TEST(CutLoopReductionPassTest, LoopyShader1) {
                OpBranchConditional %18 %11 %12
          %11 = OpLabel
                OpBranch %12
+         %13 = OpLabel
          %19 = OpLoad %6 %8
          %21 = OpIAdd %6 %19 %20
                OpStore %8 %21
@@ -92,11 +90,9 @@ TEST(CutLoopReductionPassTest, LoopyShader1) {
                OpFunctionEnd
   )";
   CheckEqual(env, after_op_0, context.get());
-
 }
 
 TEST(CutLoopReductionPassTest, LoopyShader2) {
-
   std::string prologue = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -194,9 +190,7 @@ TEST(CutLoopReductionPassTest, LoopyShader2) {
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context =
-        BuildModule(env, consumer, shader, kReduceAssembleOption);
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
   const auto pass = TestSubclass<CutLoopReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(4, ops.size());
@@ -294,6 +288,7 @@ TEST(CutLoopReductionPassTest, LoopyShader2) {
                OpBranchConditional %26 %21 %22
          %21 = OpLabel
                OpBranch %22
+         %23 = OpLabel
          %27 = OpLoad %6 %19
          %29 = OpIAdd %6 %27 %28
                OpStore %19 %29
@@ -365,6 +360,7 @@ TEST(CutLoopReductionPassTest, LoopyShader2) {
                OpBranchConditional %26 %21 %22
          %21 = OpLabel
                OpBranch %22
+         %23 = OpLabel
          %27 = OpLoad %6 %19
          %29 = OpIAdd %6 %27 %28
                OpStore %19 %29
@@ -435,6 +431,7 @@ TEST(CutLoopReductionPassTest, LoopyShader2) {
                OpBranchConditional %26 %21 %22
          %21 = OpLabel
                OpBranch %22
+         %23 = OpLabel
          %27 = OpLoad %6 %19
          %29 = OpIAdd %6 %27 %28
                OpStore %19 %29
@@ -483,7 +480,6 @@ TEST(CutLoopReductionPassTest, LoopyShader2) {
                OpFunctionEnd
   )";
   CheckEqual(env, after_op_3, context.get());
-
 }
 
 TEST(CutLoopReductionPassTest, LoopyShader3) {
@@ -528,7 +524,9 @@ TEST(CutLoopReductionPassTest, LoopyShader3) {
                OpSelectionMerge %26 None
                OpBranchConditional %24 %25 %26
          %25 = OpLabel
-               OpBranch %13
+               OpBranch %13 ; This break, from inside a conditional whose merge
+                            ; block differs from the loop merge block, means
+                            ; that we cannot cut the loop.
          %26 = OpLabel
                OpBranch %28
          %28 = OpLabel
@@ -560,12 +558,10 @@ TEST(CutLoopReductionPassTest, LoopyShader3) {
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context =
-        BuildModule(env, consumer, shader, kReduceAssembleOption);
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
   const auto pass = TestSubclass<CutLoopReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
-  ASSERT_EQ(2, ops.size());
+  ASSERT_EQ(1, ops.size());
 
   ASSERT_TRUE(ops[0]->PreconditionHolds());
   ops[0]->TryToApply();
@@ -585,7 +581,7 @@ TEST(CutLoopReductionPassTest, LoopyShader3) {
                OpSelectionMerge %26 None
                OpBranchConditional %24 %25 %26
          %25 = OpLabel
-               OpBranch %13
+               OpBranch %12
          %26 = OpLabel
                OpBranch %28
          %28 = OpLabel
@@ -609,6 +605,8 @@ TEST(CutLoopReductionPassTest, LoopyShader3) {
                OpBranchConditional %41 %28 %30
          %30 = OpLabel
                OpBranch %12
+         %13 = OpLabel
+               OpBranch %10
          %12 = OpLabel
                OpReturn
                OpFunctionEnd
@@ -633,7 +631,7 @@ TEST(CutLoopReductionPassTest, LoopyShader3) {
                OpSelectionMerge %26 None
                OpBranchConditional %24 %25 %26
          %25 = OpLabel
-               OpBranch %13
+               OpBranch %12
          %26 = OpLabel
                OpBranch %28
          %28 = OpLabel
@@ -650,17 +648,19 @@ TEST(CutLoopReductionPassTest, LoopyShader3) {
                OpReturn
          %37 = OpLabel
                OpBranch %30
+         %31 = OpLabel
          %39 = OpLoad %6 %8
          %41 = OpSGreaterThan %17 %39 %40
                OpBranchConditional %41 %28 %30
          %30 = OpLabel
                OpBranch %12
+         %13 = OpLabel
+               OpBranch %10
          %12 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
   CheckEqual(env, after_op_1, context.get());
-
 }
 
 TEST(CutLoopReductionPassTest, LoopyShader4) {
@@ -690,10 +690,10 @@ TEST(CutLoopReductionPassTest, LoopyShader4) {
                OpStore %32 %13
                OpBranch %33
          %33 = OpLabel
-               OpLoopMerge %35 %36 None
   )";
 
   std::string shader = prologue + R"(
+               OpLoopMerge %35 %36 None
                OpBranch %37
          %37 = OpLabel
          %38 = OpLoad %6 %32
@@ -738,9 +738,7 @@ TEST(CutLoopReductionPassTest, LoopyShader4) {
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = nullptr;
-  const auto context =
-        BuildModule(env, consumer, shader, kReduceAssembleOption);
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
   const auto pass = TestSubclass<CutLoopReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(2, ops.size());
@@ -839,9 +837,90 @@ TEST(CutLoopReductionPassTest, LoopyShader4) {
                OpFunctionEnd
   )";
   CheckEqual(env, after_op_1, context.get());
-
 }
 
+TEST(CutLoopReductionPassTest, ConditionalBreak1) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeBool
+         %11 = OpConstantFalse %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %6
+          %6 = OpLabel
+               OpLoopMerge %8 %9 None
+               OpBranch %7
+          %7 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %11 %12 %13
+         %12 = OpLabel
+               OpBranch %8 ; This loop break is nested inside a conditional
+                           ; whose merge block is different from that of the
+                           ; loop.  Cutting the loop would turn this into an
+                           ; illegal jump, as it would target a non-merge
+                           ; block.
+         %13 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpBranchConditional %11 %6 %8
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+  ASSERT_EQ(0, ops.size());
+}
+
+TEST(CutLoopReductionPassTest, ConditionalBreak2) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeBool
+         %11 = OpConstantFalse %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %6
+          %6 = OpLabel
+               OpLoopMerge %8 %9 None
+               OpBranch %7
+          %7 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %11 %8 %13 ; This break-in-conditional means
+                                              ; the loop cannot be cut.
+         %13 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpBranchConditional %11 %6 %8
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+  ASSERT_EQ(0, ops.size());
+}
 
 }  // namespace
 }  // namespace reduce

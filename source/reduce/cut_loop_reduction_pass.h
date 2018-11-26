@@ -40,6 +40,7 @@ class CutLoopReductionPass : public ReductionPass {
       opt::IRContext* context) const final;
 
  private:
+  bool CanBeCut(const opt::Loop& loop, const opt::Function& function) const;
 };
 
 }  // namespace reduce
