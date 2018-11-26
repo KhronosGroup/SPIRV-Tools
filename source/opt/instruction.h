@@ -618,15 +618,8 @@ inline void Instruction::ForEachId(
 inline bool Instruction::WhileEachInId(
     const std::function<bool(uint32_t*)>& f) {
   for (auto& opnd : operands_) {
-    switch (opnd.type) {
-      case SPV_OPERAND_TYPE_RESULT_ID:
-      case SPV_OPERAND_TYPE_TYPE_ID:
-        break;
-      default:
-        if (spvIsIdType(opnd.type)) {
-          if (!f(&opnd.words[0])) return false;
-        }
-        break;
+    if (spvIsInIdType(opnd.type)) {
+      if (!f(&opnd.words[0])) return false;
     }
   }
   return true;
@@ -635,15 +628,8 @@ inline bool Instruction::WhileEachInId(
 inline bool Instruction::WhileEachInId(
     const std::function<bool(const uint32_t*)>& f) const {
   for (const auto& opnd : operands_) {
-    switch (opnd.type) {
-      case SPV_OPERAND_TYPE_RESULT_ID:
-      case SPV_OPERAND_TYPE_TYPE_ID:
-        break;
-      default:
-        if (spvIsIdType(opnd.type)) {
-          if (!f(&opnd.words[0])) return false;
-        }
-        break;
+    if (spvIsInIdType(opnd.type)) {
+      if (!f(&opnd.words[0])) return false;
     }
   }
   return true;

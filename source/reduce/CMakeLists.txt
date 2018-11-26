@@ -14,6 +14,7 @@
 set(SPIRV_TOOLS_REDUCE_SOURCES
         change_operand_reduction_opportunity.h
         operand_to_const_reduction_pass.h
+        operand_to_dominating_id_reduction_pass.h
         reducer.h
         reduction_opportunity.h
         reduction_pass.h
@@ -22,6 +23,7 @@ set(SPIRV_TOOLS_REDUCE_SOURCES
 
         change_operand_reduction_opportunity.cpp
         operand_to_const_reduction_pass.cpp
+        operand_to_dominating_id_reduction_pass.cpp
         reducer.cpp
         reduction_opportunity.cpp
         reduction_pass.cpp
