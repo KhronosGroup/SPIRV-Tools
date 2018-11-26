@@ -112,6 +112,8 @@ using ValidateCapabilityVulkan10 = spvtest::ValidateBase<CapTestParameter>;
 using ValidateCapabilityOpenGL40 = spvtest::ValidateBase<CapTestParameter>;
 // Always assembles using Vulkan 1.1.
 using ValidateCapabilityVulkan11 = spvtest::ValidateBase<CapTestParameter>;
+// Always assembles using WebGPU.
+using ValidateCapabilityWebGPU = spvtest::ValidateBase<CapTestParameter>;
 
 TEST_F(ValidateCapability, Default) {
   const char str[] = R"(
@@ -382,6 +384,18 @@ const std::vector<std::string>& AllVulkan11Capabilities() {
   return *r;
 }
 
+const std::vector<std::string>& AllWebGPUCapabilities() {
+  static const auto r = new std::vector<std::string>{
+    "",
+    "Shader",
+    "Matrix",
+    "Sampled1D",
+    "Image1D",
+    "ImageQuery",
+    "DerivativeControl"};
+    return *r;
+}
+
 const std::vector<std::string>& MatrixDependencies() {
   static const auto r = new std::vector<std::string>{
   "Matrix",
@@ -571,6 +585,12 @@ const char kOpenCLMemoryModel[] = \
 const char kGLSL450MemoryModel[] = \
   " OpCapability Shader"
   " OpMemoryModel Logical GLSL450 ";
+
+const char kVulkanMemoryModel[] = \
+  " OpCapability Shader"
+  " OpCapability VulkanMemoryModelKHR"
+  " OpExtension \"SPV_KHR_vulkan_memory_model\""
+  " OpMemoryModel Logical VulkanKHR ";
 
 const char kVoidFVoid[] = \
   " %void   = OpTypeVoid"
@@ -1529,6 +1549,16 @@ std::make_pair(std::string(kGLSL450MemoryModel) +
           AllSpirV10Capabilities())
 )),);
 
+INSTANTIATE_TEST_CASE_P(Capabilities, ValidateCapabilityWebGPU,
+                        Combine(
+                            // All capabilities to try.
+                            ValuesIn(AllCapabilities()),
+                            Values(
+std::make_pair(std::string(kVulkanMemoryModel) +
+          "OpEntryPoint Vertex %func \"shader\" \n" + std::string(kVoidFVoid),
+          AllWebGPUCapabilities())
+)),);
+
 INSTANTIATE_TEST_CASE_P(Capabilities, ValidateCapabilityVulkan11,
                         Combine(
                             // All capabilities to try.
@@ -1716,6 +1746,17 @@ TEST_P(ValidateCapabilityOpenGL40, Capability) {
     CompileSuccessfully(test_code, SPV_ENV_OPENGL_4_0);
     ASSERT_EQ(ExpectedResult(GetParam()),
               ValidateInstructions(SPV_ENV_OPENGL_4_0))
+        << test_code;
+  }
+}
+
+TEST_P(ValidateCapabilityWebGPU, Capability) {
+  const std::string capability = Capability(GetParam());
+  if (Exists(capability, SPV_ENV_WEBGPU_0)) {
+    const std::string test_code = MakeAssembly(GetParam());
+    CompileSuccessfully(test_code, SPV_ENV_WEBGPU_0);
+    ASSERT_EQ(ExpectedResult(GetParam()),
+              ValidateInstructions(SPV_ENV_WEBGPU_0))
         << test_code;
   }
 }
@@ -2352,92 +2393,6 @@ OpMemoryModel Logical GLSL450
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("VulkanMemoryModelKHR capability must only be "
                         "specified if the VulkanKHR memory model is used"));
-}
-
-TEST_F(ValidateCapability, WebGPUWhitelistCapabilitiesAllowed) {
-  const std::string spirv = R"(
-          OpCapability Matrix
-          OpCapability Shader
-          OpCapability Sampled1D
-          OpCapability Image1D
-          OpCapability DerivativeControl
-          OpCapability ImageQuery
-          OpCapability VulkanMemoryModelKHR
-          OpExtension "SPV_KHR_vulkan_memory_model"
-          OpMemoryModel Logical VulkanKHR
-          OpEntryPoint Vertex %func "shader"
-%void   = OpTypeVoid
-%void_f = OpTypeFunction %void
-%func   = OpFunction %void None %void_f
-%label  = OpLabel
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(spirv, SPV_ENV_WEBGPU_0);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0))
-      << getDiagnosticString();
-}
-
-TEST_F(ValidateCapability, WebGPULinkageDisallowed) {
-  const std::string spirv = R"(
-          OpCapability Matrix
-          OpCapability Shader
-          OpCapability Sampled1D
-          OpCapability Image1D
-          OpCapability DerivativeControl
-          OpCapability ImageQuery
-          OpCapability VulkanMemoryModelKHR
-          OpCapability Linkage
-          OpExtension "SPV_KHR_vulkan_memory_model"
-          OpMemoryModel Logical VulkanKHR
-          OpEntryPoint Vertex %func "shader"
-%void   = OpTypeVoid
-%void_f = OpTypeFunction %void
-%func   = OpFunction %void None %void_f
-%label  = OpLabel
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(spirv, SPV_ENV_WEBGPU_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
-            ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability Linkage is not allowed by WebGPU "
-                        "specification (or requires extension)\n"
-                        "  OpCapability Linkage\n"));
-}
-
-TEST_F(ValidateCapability, WebGPULinkageKernelDisallowed) {
-  const std::string spirv = R"(
-          OpCapability Matrix
-          OpCapability Shader
-          OpCapability Sampled1D
-          OpCapability Image1D
-          OpCapability DerivativeControl
-          OpCapability ImageQuery
-          OpCapability VulkanMemoryModelKHR
-          OpCapability Kernel
-          OpExtension "SPV_KHR_vulkan_memory_model"
-          OpMemoryModel Logical VulkanKHR
-          OpEntryPoint Vertex %func "shader"
-%void   = OpTypeVoid
-%void_f = OpTypeFunction %void
-%func   = OpFunction %void None %void_f
-%label  = OpLabel
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(spirv, SPV_ENV_WEBGPU_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
-            ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Capability Kernel is not allowed by WebGPU specification (or "
-                "requires extension)\n"
-                "  OpCapability Kernel\n"));
 }
 
 }  // namespace
