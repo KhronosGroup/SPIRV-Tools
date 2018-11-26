@@ -266,6 +266,12 @@ spv_result_t ValidateTypeFunction(ValidationState_t& _,
              << "OpTypeFunction Parameter Type <id> '" << _.getIdName(param_id)
              << "' is not a type.";
     }
+
+    if (param_type->opcode() == SpvOpTypeVoid) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpTypeFunction Parameter Type <id> '" << _.getIdName(param_id)
+             << "' cannot be OpTypeVoid.";
+    }
   }
   const uint32_t num_function_args_limit =
       _.options()->universal_limits_.max_function_args;
