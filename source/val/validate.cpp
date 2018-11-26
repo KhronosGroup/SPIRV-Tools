@@ -232,8 +232,15 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
            << "Invalid SPIR-V.  The id bound is larger than the max id bound "
            << vstate->options()->universal_limits_.max_id_bound << ".";
   }
+
   // Look for OpExtension instructions and register extensions.
-  spvBinaryParse(&context, vstate, words, num_words,
+  // This parse should not produce any error messages. Hijack the context and
+  // replace the message consumer so that we do not pollute any state in input
+  // consumer.
+  spv_context_t hijacked_context = context;
+  hijacked_context.consumer = [](spv_message_level_t, const char*,
+                                 const spv_position_t&, const char*) {};
+  spvBinaryParse(&hijacked_context, vstate, words, num_words,
                  /* parsed_header = */ nullptr, ProcessExtensions,
                  /* diagnostic = */ nullptr);
 
