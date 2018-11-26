@@ -25,10 +25,10 @@ set(DEBUGINFO_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/extinst.debuginfo.g
 # file paths into some global lists (*_CPP_DEPENDS). And those global lists are
 # later used by set_source_files_properties() calls.
 # function() definitions are not suitable because they create new scopes.
-macro(spvtools_core_tables VERSION)
-  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
-  set(GRAMMAR_INSTS_INC_FILE "${spirv-tools_BINARY_DIR}/core.insts-${VERSION}.inc")
-  set(GRAMMAR_KINDS_INC_FILE "${spirv-tools_BINARY_DIR}/operand.kinds-${VERSION}.inc")
+macro(spvtools_core_tables CONFIG_VERSION)
+  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
+  set(GRAMMAR_INSTS_INC_FILE "${spirv-tools_BINARY_DIR}/core.insts-${CONFIG_VERSION}.inc")
+  set(GRAMMAR_KINDS_INC_FILE "${spirv-tools_BINARY_DIR}/operand.kinds-${CONFIG_VERSION}.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INSTS_INC_FILE} ${GRAMMAR_KINDS_INC_FILE}
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
       --spirv-core-grammar=${GRAMMAR_JSON_FILE}
@@ -36,13 +36,13 @@ macro(spvtools_core_tables VERSION)
       --core-insts-output=${GRAMMAR_INSTS_INC_FILE}
       --operand-kinds-output=${GRAMMAR_KINDS_INC_FILE}
     DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${GRAMMAR_JSON_FILE} ${DEBUGINFO_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for SPIR-V v${VERSION} core instructions and operands.")
+    COMMENT "Generate info tables for SPIR-V v${CONFIG_VERSION} core instructions and operands.")
   list(APPEND OPCODE_CPP_DEPENDS ${GRAMMAR_INSTS_INC_FILE})
   list(APPEND OPERAND_CPP_DEPENDS ${GRAMMAR_KINDS_INC_FILE})
 endmacro(spvtools_core_tables)
 
-macro(spvtools_enum_string_mapping VERSION)
-  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
+macro(spvtools_enum_string_mapping CONFIG_VERSION)
+  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
   set(GRAMMAR_EXTENSION_ENUM_INC_FILE "${spirv-tools_BINARY_DIR}/extension_enum.inc")
   set(GRAMMAR_ENUM_STRING_MAPPING_INC_FILE "${spirv-tools_BINARY_DIR}/enum_string_mapping.inc")
   add_custom_command(OUTPUT ${GRAMMAR_EXTENSION_ENUM_INC_FILE}
@@ -53,15 +53,15 @@ macro(spvtools_enum_string_mapping VERSION)
       --extension-enum-output=${GRAMMAR_EXTENSION_ENUM_INC_FILE}
       --enum-string-mapping-output=${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
     DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${GRAMMAR_JSON_FILE} ${DEBUGINFO_GRAMMAR_JSON_FILE}
-    COMMENT "Generate enum-string mapping for SPIR-V v${VERSION}.")
+    COMMENT "Generate enum-string mapping for SPIR-V v${CONFIG_VERSION}.")
   list(APPEND EXTENSION_H_DEPENDS ${GRAMMAR_EXTENSION_ENUM_INC_FILE})
   list(APPEND ENUM_STRING_MAPPING_CPP_DEPENDS ${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE})
 endmacro(spvtools_enum_string_mapping)
 
-macro(spvtools_vimsyntax VERSION CLVERSION)
-  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
-  set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.glsl.std.450.grammar.json")
-  set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.opencl.std.100.grammar.json")
+macro(spvtools_vimsyntax CONFIG_VERSION CLVERSION)
+  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
+  set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.glsl.std.450.grammar.json")
+  set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.opencl.std.100.grammar.json")
   set(VIMSYNTAX_FILE "${spirv-tools_BINARY_DIR}/spvasm.vim")
   add_custom_command(OUTPUT ${VIMSYNTAX_FILE}
       COMMAND ${PYTHON_EXECUTABLE} ${VIMSYNTAX_PROCESSING_SCRIPT}
@@ -75,29 +75,29 @@ macro(spvtools_vimsyntax VERSION CLVERSION)
     COMMENT "Generate spvasm.vim: Vim syntax file for SPIR-V assembly.")
 endmacro(spvtools_vimsyntax)
 
-macro(spvtools_glsl_tables VERSION)
-  set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
-  set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.glsl.std.450.grammar.json")
+macro(spvtools_glsl_tables CONFIG_VERSION)
+  set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
+  set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.glsl.std.450.grammar.json")
   set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/glsl.std.450.insts.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
       --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
       --glsl-insts-output=${GRAMMAR_INC_FILE}
     DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${GLSL_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for GLSL extended instructions and operands v${VERSION}.")
+    COMMENT "Generate info tables for GLSL extended instructions and operands v${CONFIG_VERSION}.")
   list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
 endmacro(spvtools_glsl_tables)
 
-macro(spvtools_opencl_tables VERSION)
-  set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
-  set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.opencl.std.100.grammar.json")
+macro(spvtools_opencl_tables CONFIG_VERSION)
+  set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
+  set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.opencl.std.100.grammar.json")
   set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/opencl.std.insts.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
       --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
       --opencl-insts-output=${GRAMMAR_INC_FILE}
     DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for OpenCL extended instructions and operands v${VERSION}.")
+    COMMENT "Generate info tables for OpenCL extended instructions and operands v${CONFIG_VERSION}.")
   list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
 endmacro(spvtools_opencl_tables)
 

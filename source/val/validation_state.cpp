@@ -197,7 +197,13 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
   // fail and generate an error.
   if (num_words > 0) {
     // Count the number of instructions in the binary.
-    spvBinaryParse(ctx, this, words, num_words,
+    // This parse should not produce any error messages. Hijack the context and
+    // replace the message consumer so that we do not pollute any state in input
+    // consumer.
+    spv_context_t hijacked_context = *ctx;
+    hijacked_context.consumer = [](spv_message_level_t, const char*,
+                                   const spv_position_t&, const char*) {};
+    spvBinaryParse(&hijacked_context, this, words, num_words,
                    /* parsed_header = */ nullptr, CountInstructions,
                    /* diagnostic = */ nullptr);
     preallocateStorage();

@@ -119,6 +119,7 @@ void LocalSingleStoreElimPass::InitExtensionWhiteList() {
       "SPV_NV_shading_rate",
       "SPV_NV_mesh_shader",
       "SPV_NV_ray_tracing",
+      "SPV_EXT_fragment_invocation_density",
   });
 }
 bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {

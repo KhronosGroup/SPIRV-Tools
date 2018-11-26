@@ -22,6 +22,7 @@
 #include "source/opt/log.h"
 #include "source/reduce/cut_loop_reduction_pass.h"
 #include "source/reduce/operand_to_const_reduction_pass.h"
+#include "source/reduce/operand_to_dominating_id_reduction_pass.h"
 #include "source/reduce/reducer.h"
 #include "source/reduce/remove_unreferenced_instruction_reduction_pass.h"
 #include "source/spirv_reducer_options.h"
@@ -205,6 +206,8 @@ int main(int argc, const char** argv) {
 
   reducer.AddReductionPass(
       spvtools::MakeUnique<OperandToConstReductionPass>(target_env));
+  reducer.AddReductionPass(
+      spvtools::MakeUnique<OperandToDominatingIdReductionPass>(target_env));
   reducer.AddReductionPass(
       spvtools::MakeUnique<RemoveUnreferencedInstructionReductionPass>(
           target_env));

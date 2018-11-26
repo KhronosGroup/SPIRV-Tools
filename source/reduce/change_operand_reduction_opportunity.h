@@ -34,7 +34,7 @@ class ChangeOperandReductionOpportunity : public ReductionOpportunity {
                                     uint32_t new_id)
       : inst_(inst),
         operand_index_(operand_index),
-        original_id_(inst_->GetOperand(operand_index_).words[0]),
+        original_id_(inst->GetOperand(operand_index).words[0]),
         original_type_(inst->GetOperand(operand_index).type),
         new_id_(new_id) {}
 
