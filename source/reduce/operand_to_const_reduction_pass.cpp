@@ -44,11 +44,7 @@ OperandToConstReductionPass::GetAvailableOpportunities(
           // of a ChangeOperandReductionOpportunity
           for (uint32_t index = 0; index < inst.NumOperands(); index++) {
             const auto& operand = inst.GetOperand(index);
-            if (spvIsIdType(operand.type)) {
-              if (operand.type == SPV_OPERAND_TYPE_RESULT_ID ||
-                  operand.type == SPV_OPERAND_TYPE_TYPE_ID) {
-                continue;
-              }
+            if (spvIsInIdType(operand.type)) {
               const auto id = operand.words[0];
               auto def = context->get_def_use_mgr()->GetDef(id);
               if (spvOpcodeIsConstant(def->opcode())) {
