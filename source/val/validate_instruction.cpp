@@ -449,6 +449,17 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
     CheckIfKnownExtension(_, inst);
   } else if (opcode == SpvOpCapability) {
     _.RegisterCapability(inst->GetOperandAs<SpvCapability>(0));
+  } else if (opcode == SpvOpExtInstImport) {
+    if (spvIsWebGPUEnv(_.context()->target_env)) {
+      const auto name_id = 1;
+      const std::string name(reinterpret_cast<const char*>(
+          inst->words().data() + inst->operands()[name_id].offset));
+      if (name != "GLSL.std.450") {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "For WebGPU, the only valid parameter to OpExtInstImport is "
+                  "\"GLSL.std.450\".";
+      }
+    }
   } else if (opcode == SpvOpMemoryModel) {
     if (_.has_memory_model_specified()) {
       return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
