@@ -565,8 +565,8 @@ TEST_F(ValidateMemory, ArrayLenCorrectResultType) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateMemory, ArrayLenIndexCorrectWith2Members) {
@@ -591,9 +591,10 @@ TEST_F(ValidateMemory, ArrayLenIndexCorrectWith2Members) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
 TEST_F(ValidateMemory, ArrayLenResultNotIntType) {
   std::string spirv = R"(
                OpCapability Shader
@@ -614,8 +615,8 @@ TEST_F(ValidateMemory, ArrayLenResultNotIntType) {
                OpFunctionEnd
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -646,8 +647,8 @@ TEST_F(ValidateMemory, ArrayLenResultNot32bits) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -677,8 +678,8 @@ TEST_F(ValidateMemory, ArrayLenResultSigned) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -708,8 +709,8 @@ TEST_F(ValidateMemory, ArrayLenInputNotStruct) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("The Struture's type in OpArrayLength <id> '11' must "
                         "be a pointer to an OpTypeStruct."));
@@ -737,8 +738,8 @@ TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("The Struture's last member in OpArrayLength <id> '11' must be "
@@ -767,8 +768,8 @@ TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA2) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("The Struture's last member in OpArrayLength <id> '11' must be "
@@ -797,8 +798,8 @@ TEST_F(ValidateMemory, ArrayLenIndexNotLastMember) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -829,8 +830,8 @@ TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
 
 )";
 
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
