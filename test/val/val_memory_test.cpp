@@ -543,6 +543,300 @@ OpFunctionEnd
           "%5 = OpVariable %_ptr_Input_float Input %float_1\n"));
 }
 
+TEST_F(ValidateMemory, ArrayLenCorrectResultType) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %uint = OpTypeInt 32 0
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %_runtimearr_float
+%_ptr_Function__struct_7 = OpTypePointer Function %_struct_7
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function__struct_7 Function
+         %11 = OpArrayLength %uint %10 0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, ArrayLenIndexCorrectWith2Members) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %uint = OpTypeInt 32 0
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %float %_runtimearr_float
+%_ptr_Function__struct_7  = OpTypePointer Function %_struct_7
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function__struct_7  Function
+         %11 = OpArrayLength %uint %10 1
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+TEST_F(ValidateMemory, ArrayLenResultNotIntType) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_6 = OpTypeStruct %_runtimearr_float
+%_ptr_Function__struct_6 = OpTypePointer Function %_struct_6
+          %1 = OpFunction %void None %3
+          %8 = OpLabel
+          %9 = OpVariable %_ptr_Function__struct_6 Function
+         %10 = OpArrayLength %float %9 0
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The Result Type of OpArrayLength <id> '10' must be OpTypeInt with "
+          "width 32 and signedness 0.\n  %10 = OpArrayLength %float %9 0\n"));
+}
+
+TEST_F(ValidateMemory, ArrayLenResultNot32bits) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Int16
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %ushort = OpTypeInt 16 0
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %_runtimearr_float
+%_ptr_Function__struct_7 = OpTypePointer Function %_struct_7
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function__struct_7 Function
+         %11 = OpArrayLength %ushort %10 0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The Result Type of OpArrayLength <id> '11' must be OpTypeInt with "
+          "width 32 and signedness 0.\n  %11 = OpArrayLength %ushort %10 0\n"));
+}
+
+TEST_F(ValidateMemory, ArrayLenResultSigned) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %int = OpTypeInt 32 1
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %_runtimearr_float
+%_ptr_Function__struct_7 = OpTypePointer Function %_struct_7
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function__struct_7 Function
+         %11 = OpArrayLength %int %10 0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The Result Type of OpArrayLength <id> '11' must be OpTypeInt with "
+          "width 32 and signedness 0.\n  %11 = OpArrayLength %int %10 0\n"));
+}
+
+TEST_F(ValidateMemory, ArrayLenInputNotStruct) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %uint = OpTypeInt 32 0
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %_runtimearr_float
+%_ptr_Function_float = OpTypePointer Function %float
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function_float Function
+         %11 = OpArrayLength %uint %10 0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Struture's type in OpArrayLength <id> '11' must "
+                        "be a pointer to an OpTypeStruct."));
+}
+
+TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %uint = OpTypeInt 32 0
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %float
+%_ptr_Function__struct_7  = OpTypePointer Function %_struct_7
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function__struct_7  Function
+         %11 = OpArrayLength %uint %10 0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Struture's last member in OpArrayLength <id> '11' must be "
+                "an OpTypeRuntimeArray.\n  %11 = OpArrayLength %uint %10 0\n"));
+}
+
+TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA2) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %uint = OpTypeInt 32 0
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %_runtimearr_float %float
+%_ptr_Function__struct_7  = OpTypePointer Function %_struct_7
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function__struct_7  Function
+         %11 = OpArrayLength %uint %10 1
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Struture's last member in OpArrayLength <id> '11' must be "
+                "an OpTypeRuntimeArray.\n  %11 = OpArrayLength %uint %10 1\n"));
+}
+
+TEST_F(ValidateMemory, ArrayLenIndexNotLastMember) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %uint = OpTypeInt 32 0
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %float %_runtimearr_float
+%_ptr_Function__struct_7  = OpTypePointer Function %_struct_7
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function__struct_7  Function
+         %11 = OpArrayLength %uint %10 0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The array member in OpArrayLength <id> '11' must be an the last "
+          "member of the struct.\n  %11 = OpArrayLength %uint %10 0\n"));
+}
+
+TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %uint = OpTypeInt 32 0
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %float %_runtimearr_float
+%_ptr_Function__struct_7  = OpTypePointer Function %_struct_7
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpVariable %_ptr_Function__struct_7  Function
+         %11 = OpLoad %_struct_7 %10
+         %12 = OpArrayLength %uint %11 0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The Struture's type in OpArrayLength <id> '12' must be a pointer to "
+          "an OpTypeStruct.\n  %12 = OpArrayLength %uint %11 0\n"));
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
