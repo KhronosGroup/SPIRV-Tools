@@ -2209,6 +2209,44 @@ OpFunctionEnd
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
+TEST_F(ValidateBuiltIns, DisallowInstanceIdWithRayGenShader) {
+  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  generator.capabilities_ += R"(
+OpCapability RayTracingNV
+)";
+
+  generator.extensions_ = R"(
+OpExtension "SPV_NV_ray_tracing"
+)";
+
+  generator.before_types_ = R"(
+OpMemberDecorate %input_type 0 BuiltIn InstanceId
+)";
+
+  generator.after_types_ = R"(
+%input_type = OpTypeStruct %u32
+%input_ptr = OpTypePointer Input %input_type
+%input_ptr_u32 = OpTypePointer Input %u32
+%input = OpVariable %input_ptr Input
+)";
+
+  EntryPoint entry_point;
+  entry_point.name = "main_d_r";
+  entry_point.execution_model = "RayGenerationNV";
+  entry_point.interfaces = "%input";
+  entry_point.body = R"(
+%input_member = OpAccessChain %input_ptr_u32 %input %u32_0
+)";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Vulkan spec allows BuiltIn InstanceId to be used "
+                        "only with IntersectionNV, ClosestHitNV and "
+                        "AnyHitNV execution models"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
