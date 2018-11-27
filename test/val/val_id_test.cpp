@@ -979,6 +979,18 @@ TEST_F(ValidateIdWithMessage, OpTypeFunctionParameterBad) {
       HasSubstr("OpTypeFunction Parameter Type <id> '3' is not a type."));
 }
 
+TEST_F(ValidateIdWithMessage, OpTypeFunctionParameterTypeVoidBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%4 = OpTypeFunction %1 %2 %1)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpTypeFunction Parameter Type <id> '1' cannot be "
+                        "OpTypeVoid."));
+}
+
 TEST_F(ValidateIdWithMessage, OpTypePipeGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
