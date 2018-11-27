@@ -27,6 +27,7 @@
 #include "source/opt/build_module.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
+#include "source/spirv_validator_options.h"
 #include "source/util/make_unique.h"
 #include "spirv-tools/libspirv.hpp"
 
@@ -98,7 +99,8 @@ class PassTest : public TestT {
       spv_context spvContext = spvContextCreate(target_env);
       spv_diagnostic diagnostic = nullptr;
       spv_const_binary_t binary = {optimized_bin.data(), optimized_bin.size()};
-      spv_result_t error = spvValidate(spvContext, &binary, &diagnostic);
+      spv_result_t error = spvValidateWithOptions(
+          spvContext, ValidatorOptions(), &binary, &diagnostic);
       EXPECT_EQ(error, 0);
       if (error != 0) spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -134,7 +136,8 @@ class PassTest : public TestT {
       spv_context spvContext = spvContextCreate(target_env);
       spv_diagnostic diagnostic = nullptr;
       spv_const_binary_t binary = {optimized_bin.data(), optimized_bin.size()};
-      spv_result_t error = spvValidate(spvContext, &binary, &diagnostic);
+      spv_result_t error = spvValidateWithOptions(
+          spvContext, ValidatorOptions(), &binary, &diagnostic);
       EXPECT_EQ(error, 0);
       if (error != 0) spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -226,6 +229,8 @@ class PassTest : public TestT {
     consumer_ = msg_consumer;
   }
 
+  spv_validator_options ValidatorOptions() { return &validator_options_; }
+
  private:
   MessageConsumer consumer_;            // Message consumer.
   std::unique_ptr<IRContext> context_;  // IR context
@@ -233,6 +238,7 @@ class PassTest : public TestT {
   std::unique_ptr<PassManager> manager_;  // The pass manager.
   uint32_t assemble_options_;
   uint32_t disassemble_options_;
+  spv_validator_options_t validator_options_;
 };
 
 }  // namespace opt
