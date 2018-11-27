@@ -1931,8 +1931,9 @@ TEST_F(ValidateIdWithMessage, OpVariableInitializerGlobalVariableGood) {
 %1 = OpTypeInt 32 0
 %2 = OpTypePointer Uniform %1
 %3 = OpVariable %2 Uniform
-%4 = OpTypePointer Uniform %2 ; pointer to pointer
-%5 = OpVariable %4 Uniform %3)";
+%4 = OpTypePointer Private %2 ; pointer to pointer
+%5 = OpVariable %4 Private %3
+)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -2059,6 +2060,123 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpVariablePointerNoVariablePointersBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%_ptr_workgroup_int = OpTypePointer Workgroup %int
+%_ptr_function_ptr = OpTypePointer Function %_ptr_workgroup_int
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%var = OpVariable %_ptr_function_ptr Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In Logical addressing, variables may not allocate a pointer type"));
+}
+
+TEST_F(ValidateIdWithMessage,
+       OpVariablePointerNoVariablePointersRelaxedLogicalGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%_ptr_workgroup_int = OpTypePointer Workgroup %int
+%_ptr_function_ptr = OpTypePointer Function %_ptr_workgroup_int
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%var = OpVariable %_ptr_function_ptr Function
+OpReturn
+OpFunctionEnd
+)";
+
+  auto options = getValidatorOptions();
+  options->relax_logical_pointer = true;
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage,
+       OpVariablePointerVariablePointersStorageBufferGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VariablePointersStorageBuffer
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%_ptr_workgroup_int = OpTypePointer Workgroup %int
+%_ptr_function_ptr = OpTypePointer Function %_ptr_workgroup_int
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%var = OpVariable %_ptr_function_ptr Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpVariablePointerVariablePointersGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%_ptr_workgroup_int = OpTypePointer Workgroup %int
+%_ptr_function_ptr = OpTypePointer Function %_ptr_workgroup_int
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%var = OpVariable %_ptr_function_ptr Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpVariablePointerVariablePointersBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%_ptr_workgroup_int = OpTypePointer Workgroup %int
+%_ptr_uniform_ptr = OpTypePointer Uniform %_ptr_workgroup_int
+%var = OpVariable %_ptr_uniform_ptr Uniform
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In Logical addressing with variable pointers, "
+                        "variables that allocate pointers must be in Function "
+                        "or Private storage classes"));
 }
 
 TEST_F(ValidateIdWithMessage, OpLoadGood) {
