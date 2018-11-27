@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Validates correctness of extension SPIR-V instructions.
+// Validates correctness of ExtInstImport SPIR-V instructions.
 
 #include "source/val/validate.h"
 
@@ -27,7 +27,7 @@
 namespace spvtools {
 namespace val {
 
-spv_result_t ExtensionPass(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ExtInstImportPass(ValidationState_t& _, const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   if (opcode != SpvOpExtInstImport) return SPV_SUCCESS;
 

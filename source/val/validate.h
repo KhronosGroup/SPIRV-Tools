@@ -173,8 +173,8 @@ spv_result_t BarriersPass(ValidationState_t& _, const Instruction* inst);
 /// Validates correctness of literal numbers.
 spv_result_t LiteralsPass(ValidationState_t& _, const Instruction* inst);
 
-/// Validates correctness of extension instructions.
-spv_result_t ExtensionPass(ValidationState_t& _, const Instruction* inst);
+/// Validates correctness of ExtInstImport instructions.
+spv_result_t ExtInstImportPass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates correctness of ExtInst instructions.
 spv_result_t ExtInstPass(ValidationState_t& _, const Instruction* inst);
