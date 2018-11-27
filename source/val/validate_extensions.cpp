@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Validates correctness of ExtInstImport SPIR-V instructions.
+// Validates correctness of extension SPIR-V instructions.
 
 #include "source/val/validate.h"
 
 #include <string>
 #include <vector>
 
+#include "source/diagnostic.h"
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
@@ -27,10 +28,8 @@
 namespace spvtools {
 namespace val {
 
-spv_result_t ExtInstImportPass(ValidationState_t& _, const Instruction* inst) {
-  const SpvOp opcode = inst->opcode();
-  if (opcode != SpvOpExtInstImport) return SPV_SUCCESS;
-
+spv_result_t ValidateExtInstImport(ValidationState_t& _,
+                                   const Instruction* inst) {
   if (spvIsWebGPUEnv(_.context()->target_env)) {
     const auto name_id = 1;
     const std::string name(reinterpret_cast<const char*>(
@@ -41,6 +40,14 @@ spv_result_t ExtInstImportPass(ValidationState_t& _, const Instruction* inst) {
                 "\"GLSL.std.450\".";
     }
   }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ExtensionPass(ValidationState_t& _, const Instruction* inst) {
+  const SpvOp opcode = inst->opcode();
+  if (opcode == SpvOpExtInstImport) return ValidateExtInstImport(_, inst);
+
   return SPV_SUCCESS;
 }
 

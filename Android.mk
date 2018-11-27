@@ -51,6 +51,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_debug.cpp \
 		source/val/validate_decorations.cpp \
 		source/val/validate_derivatives.cpp \
+		source/val/validate_extensions.cpp \
 		source/val/validate_ext_inst.cpp \
 		source/val/validate_execution_limitations.cpp \
 		source/val/validate_function.cpp \
