@@ -1,6 +1,9 @@
 LOCAL_PATH := $(call my-dir)
 SPVTOOLS_OUT_PATH=$(if $(call host-path-is-absolute,$(TARGET_OUT)),$(TARGET_OUT),$(abspath $(TARGET_OUT)))
-SPVHEADERS_LOCAL_PATH := $(LOCAL_PATH)/external/spirv-headers
+
+ifeq ($(SPVHEADERS_LOCAL_PATH),)
+	SPVHEADERS_LOCAL_PATH := $(LOCAL_PATH)/external/spirv-headers
+endif
 
 SPVTOOLS_SRC_FILES := \
 		source/assembly_grammar.cpp \
@@ -315,7 +318,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := SPIRV-Tools
 LOCAL_C_INCLUDES := \
 		$(LOCAL_PATH)/include \
-		$(LOCAL_PATH)/external/spirv-headers/include \
+		$(SPVHEADERS_LOCAL_PATH)/include \
 		$(SPVTOOLS_OUT_PATH)
 LOCAL_EXPORT_C_INCLUDES := \
 		$(LOCAL_PATH)/include
@@ -328,7 +331,7 @@ LOCAL_MODULE := SPIRV-Tools-opt
 LOCAL_C_INCLUDES := \
 		$(LOCAL_PATH)/include \
 		$(LOCAL_PATH)/source \
-		$(LOCAL_PATH)/external/spirv-headers/include \
+		$(SPVHEADERS_LOCAL_PATH)/include \
 		$(SPVTOOLS_OUT_PATH)
 LOCAL_CXXFLAGS:=-std=c++11 -fno-exceptions -fno-rtti -Werror
 LOCAL_STATIC_LIBRARIES:=SPIRV-Tools
