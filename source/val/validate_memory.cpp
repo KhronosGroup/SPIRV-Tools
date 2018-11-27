@@ -842,6 +842,61 @@ spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
   return ValidateAccessChain(_, inst);
 }
 
+spv_result_t ValidateArrayLength(ValidationState_t& state,
+                                 const Instruction* inst) {
+  std::string instr_name =
+      "Op" + std::string(spvOpcodeString(static_cast<SpvOp>(inst->opcode())));
+
+  // Result type must be a 32-bit unsigned int.
+  auto result_type = state.FindDef(inst->type_id());
+  if (result_type->opcode() != SpvOpTypeInt ||
+      result_type->GetOperandAs<uint32_t>(1) != 32 ||
+      result_type->GetOperandAs<uint32_t>(2) != 0) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The Result Type of " << instr_name << " <id> '"
+           << state.getIdName(inst->id())
+           << "' must be OpTypeInt with width 32 and signedness 0.";
+  }
+
+  // The structure that is passed in must be an pointer to a structure, whose
+  // last element is a runtime array.
+  auto pointer = state.FindDef(inst->GetOperandAs<uint32_t>(2));
+  auto pointer_type = state.FindDef(pointer->type_id());
+  if (pointer_type->opcode() != SpvOpTypePointer) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The Struture's type in " << instr_name << " <id> '"
+           << state.getIdName(inst->id())
+           << "' must be a pointer to an OpTypeStruct.";
+  }
+
+  auto structure_type = state.FindDef(pointer_type->GetOperandAs<uint32_t>(2));
+  if (structure_type->opcode() != SpvOpTypeStruct) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The Struture's type in " << instr_name << " <id> '"
+           << state.getIdName(inst->id())
+           << "' must be a pointer to an OpTypeStruct.";
+  }
+
+  auto num_of_members = structure_type->operands().size() - 1;
+  auto last_member =
+      state.FindDef(structure_type->GetOperandAs<uint32_t>(num_of_members));
+  if (last_member->opcode() != SpvOpTypeRuntimeArray) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The Struture's last member in " << instr_name << " <id> '"
+           << state.getIdName(inst->id()) << "' must be an OpTypeRuntimeArray.";
+  }
+
+  // The array member must the the index of the last element (the run time
+  // array).
+  if (inst->GetOperandAs<uint32_t>(3) != num_of_members - 1) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The array member in " << instr_name << " <id> '"
+           << state.getIdName(inst->id())
+           << "' must be an the last member of the struct.";
+  }
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
@@ -867,8 +922,10 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpInBoundsPtrAccessChain:
       if (auto error = ValidateAccessChain(_, inst)) return error;
       break;
-    case SpvOpImageTexelPointer:
     case SpvOpArrayLength:
+      if (auto error = ValidateArrayLength(_, inst)) return error;
+      break;
+    case SpvOpImageTexelPointer:
     case SpvOpGenericPtrMemSemantics:
     default:
       break;
@@ -876,6 +933,5 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
 
   return SPV_SUCCESS;
 }
-
 }  // namespace val
 }  // namespace spvtools
