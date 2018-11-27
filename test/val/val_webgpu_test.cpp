@@ -29,13 +29,19 @@ using ValidateWebGPU = spvtest::ValidateBase<bool>;
 
 TEST_F(ValidateWebGPU, OpUndefIsDisallowed) {
   std::string spirv = R"(
-    OpCapability Shader
-    OpCapability Linkage
-    OpCapability VulkanMemoryModelKHR
-    OpExtension "SPV_KHR_vulkan_memory_model"
-    OpMemoryModel Logical VulkanKHR
-    %float = OpTypeFloat 32
-    %1 = OpUndef %float
+          OpCapability Shader
+          OpCapability VulkanMemoryModelKHR
+          OpExtension "SPV_KHR_vulkan_memory_model"
+          OpMemoryModel Logical VulkanKHR
+          OpEntryPoint Vertex %func "shader"
+%float  = OpTypeFloat 32
+%1      = OpUndef %float
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv);
@@ -51,7 +57,6 @@ TEST_F(ValidateWebGPU, OpUndefIsDisallowed) {
 TEST_F(ValidateWebGPU, OpNameIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
-     OpCapability Linkage
      OpCapability VulkanMemoryModelKHR
      OpExtension "SPV_KHR_vulkan_memory_model"
      OpMemoryModel Logical VulkanKHR
@@ -70,7 +75,6 @@ TEST_F(ValidateWebGPU, OpNameIsDisallowed) {
 TEST_F(ValidateWebGPU, OpMemberNameIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
-     OpCapability Linkage
      OpCapability VulkanMemoryModelKHR
      OpExtension "SPV_KHR_vulkan_memory_model"
      OpMemoryModel Logical VulkanKHR
@@ -91,7 +95,6 @@ TEST_F(ValidateWebGPU, OpMemberNameIsDisallowed) {
 TEST_F(ValidateWebGPU, OpSourceIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
-     OpCapability Linkage
      OpCapability VulkanMemoryModelKHR
      OpExtension "SPV_KHR_vulkan_memory_model"
      OpMemoryModel Logical VulkanKHR
@@ -112,7 +115,6 @@ TEST_F(ValidateWebGPU, OpSourceIsDisallowed) {
 TEST_F(ValidateWebGPU, OpSourceExtensionIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
-     OpCapability Linkage
      OpCapability VulkanMemoryModelKHR
      OpExtension "SPV_KHR_vulkan_memory_model"
      OpMemoryModel Logical VulkanKHR
@@ -131,7 +133,6 @@ TEST_F(ValidateWebGPU, OpSourceExtensionIsDisallowed) {
 TEST_F(ValidateWebGPU, OpStringIsDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
-     OpCapability Linkage
      OpCapability VulkanMemoryModelKHR
      OpExtension "SPV_KHR_vulkan_memory_model"
      OpMemoryModel Logical VulkanKHR
@@ -152,7 +153,6 @@ TEST_F(ValidateWebGPU, OpStringIsDisallowed) {
 TEST_F(ValidateWebGPU, OpNoLineDisallowed) {
   std::string spirv = R"(
      OpCapability Shader
-     OpCapability Linkage
      OpCapability VulkanMemoryModelKHR
      OpExtension "SPV_KHR_vulkan_memory_model"
      OpMemoryModel Logical VulkanKHR
@@ -169,11 +169,17 @@ TEST_F(ValidateWebGPU, OpNoLineDisallowed) {
 
 TEST_F(ValidateWebGPU, LogicalAddressingVulkanKHRMemoryGood) {
   std::string spirv = R"(
-     OpCapability Shader
-     OpCapability Linkage
-     OpCapability VulkanMemoryModelKHR
-     OpExtension "SPV_KHR_vulkan_memory_model"
-     OpMemoryModel Logical VulkanKHR
+          OpCapability Shader
+          OpCapability VulkanMemoryModelKHR
+          OpExtension "SPV_KHR_vulkan_memory_model"
+          OpMemoryModel Logical VulkanKHR
+          OpEntryPoint Vertex %func "shader"
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv);
@@ -184,7 +190,6 @@ TEST_F(ValidateWebGPU, LogicalAddressingVulkanKHRMemoryGood) {
 TEST_F(ValidateWebGPU, NonLogicalAddressingModelBad) {
   std::string spirv = R"(
      OpCapability Shader
-     OpCapability Linkage
      OpCapability VulkanMemoryModelKHR
      OpExtension "SPV_KHR_vulkan_memory_model"
      OpMemoryModel Physical32 VulkanKHR
@@ -202,7 +207,6 @@ TEST_F(ValidateWebGPU, NonLogicalAddressingModelBad) {
 TEST_F(ValidateWebGPU, NonVulkanKHRMemoryModelBad) {
   std::string spirv = R"(
      OpCapability Shader
-     OpCapability Linkage
      OpMemoryModel Logical GLSL450
      OpNoLine
 )";
