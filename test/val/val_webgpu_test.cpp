@@ -219,6 +219,45 @@ TEST_F(ValidateWebGPU, NonVulkanKHRMemoryModelBad) {
                         "environment.\n  OpMemoryModel Logical GLSL450\n"));
 }
 
+TEST_F(ValidateWebGPU, WhitelistedExtendedInstructionsImportGood) {
+  std::string spirv = R"(
+          OpCapability Shader
+          OpCapability VulkanMemoryModelKHR
+          OpExtension "SPV_KHR_vulkan_memory_model"
+%1      = OpExtInstImport "GLSL.std.450"
+          OpMemoryModel Logical VulkanKHR
+          OpEntryPoint Vertex %func "shader"
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateWebGPU, NonWhitelistedExtendedInstructionsImportBad) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_vulkan_memory_model"
+%1 = OpExtInstImport "OpenCL.std"
+     OpMemoryModel Logical VulkanKHR
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("For WebGPU, the only valid parameter to "
+                        "OpExtInstImport is \"GLSL.std.450\".\n  %1 = "
+                        "OpExtInstImport \"OpenCL.std\"\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
