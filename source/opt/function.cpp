@@ -13,7 +13,10 @@
 // limitations under the License.
 
 #include "source/opt/function.h"
+#include "function.h"
+#include "ir_context.h"
 
+#include <source/util/bit_vector.h>
 #include <ostream>
 #include <sstream>
 
@@ -96,6 +99,20 @@ BasicBlock* Function::InsertBasicBlockAfter(
   return nullptr;
 }
 
+bool Function::IsRecursive() const {
+  IRContext* ctx = blocks_.front()->GetLabel()->context();
+  IRContext::ProcessFunction mark_visited = [this](Function* fp) {
+    return fp ==this;
+  };
+
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, Function*> id2function;
+  for (auto& fn : *ctx->module()) id2function[fn.result_id()] = &fn;
+  std::queue<uint32_t> roots;
+  ctx->AddCalls(this, &roots);
+  return ctx->ProcessCallTreeFromRoots(mark_visited, id2function, &roots);
+}
+
 std::ostream& operator<<(std::ostream& str, const Function& func) {
   str << func.PrettyPrint();
   return str;
@@ -115,6 +132,5 @@ std::string Function::PrettyPrint(uint32_t options) const {
   });
   return str.str();
 }
-
 }  // namespace opt
 }  // namespace spvtools

@@ -38,6 +38,7 @@ add_spvtools_unittest(TARGET opt
        fold_spec_const_op_composite_test.cpp
        fold_test.cpp
        freeze_spec_const_test.cpp
+       function_test.cpp
        if_conversion_test.cpp
        inline_opaque_test.cpp
        inline_test.cpp

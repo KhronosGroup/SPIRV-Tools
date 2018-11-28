@@ -674,7 +674,7 @@ uint32_t IRContext::GetBuiltinVarId(uint32_t builtin) {
   return var_id;
 }
 
-void IRContext::AddCalls(Function* func, std::queue<uint32_t>* todo) {
+void IRContext::AddCalls(const Function* func, std::queue<uint32_t>* todo) {
   for (auto bi = func->begin(); bi != func->end(); ++bi)
     for (auto ii = bi->begin(); ii != bi->end(); ++ii)
       if (ii->opcode() == SpvOpFunctionCall)

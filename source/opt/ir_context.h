@@ -482,7 +482,7 @@ class IRContext {
   uint32_t GetBuiltinVarId(uint32_t builtin);
 
   // Add to |todo| all ids of functions called in |func|.
-  void AddCalls(Function* func, std::queue<uint32_t>* todo);
+  void AddCalls(const Function* func, std::queue<uint32_t>* todo);
 
   // Applies |pfn| to every function in the call trees that are rooted at the
   // entry points.  Returns true if any call |pfn| returns true.  By convention

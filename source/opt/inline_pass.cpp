@@ -617,8 +617,16 @@ bool InlinePass::IsInlinableFunction(Function* func) {
   // done validly if the return was not in a loop in the original function.
   // Also remember functions with multiple (early) returns.
   AnalyzeReturns(func);
-  return no_return_in_loop_.find(func->result_id()) !=
-         no_return_in_loop_.cend();
+  if (no_return_in_loop_.find(func->result_id()) ==
+         no_return_in_loop_.cend()) {
+    return false;
+  }
+
+  if (func->IsRecursive()) {
+    return false;
+  }
+
+  return true;
 }
 
 void InlinePass::InitializeInline() {
