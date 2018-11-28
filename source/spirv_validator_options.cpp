@@ -104,3 +104,38 @@ void spvValidatorOptionsSetSkipBlockLayout(spv_validator_options options,
                                            bool val) {
   options->skip_block_layout = val;
 }
+
+void spvValidatorOptionsSetSeparateDenormSettings(spv_validator_options options,
+                                                  bool val) {
+  options->separate_denorm_settings = val;
+}
+
+void spvValidatorOptionsSetSeparateRoundingModeSettings(
+    spv_validator_options options, bool val) {
+  options->separate_rounding_mode_settings = val;
+}
+
+void spvValidatorOptionsSetSignedZeroInfNanPreserve(
+    spv_validator_options options, uint32_t bitmask) {
+  options->signed_zero_inf_nan_preserve = bitmask;
+}
+
+void spvValidatorOptionsSetDenormPreserve(spv_validator_options options,
+                                          uint32_t bitmask) {
+  options->denorm_preserve = bitmask;
+}
+
+void spvValidatorOptionsSetDenormFlushToZero(spv_validator_options options,
+                                             uint32_t bitmask) {
+  options->denorm_flush_to_zero = bitmask;
+}
+
+void spvValidatorOptionsSetRoundingModeRTE(spv_validator_options options,
+                                           uint32_t bitmask) {
+  options->rounding_mode_rte = bitmask;
+}
+
+void spvValidatorOptionsSetRoundingModeRTZ(spv_validator_options options,
+                                           uint32_t bitmask) {
+  options->rounding_mode_rtz = bitmask;
+}

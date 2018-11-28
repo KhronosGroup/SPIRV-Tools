@@ -522,6 +522,41 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetScalarBlockLayout(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSkipBlockLayout(
     spv_validator_options options, bool val);
 
+// Enables the SeparateDenormSettings feature, allowing separate
+// denorm settings for different bit widths.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSeparateDenormSettings(
+    spv_validator_options options, bool val);
+
+// Enables the SeparateRoundingModeSettings feature, allowing separate
+// rounding mode settings for different bit widths.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSeparateRoundingModeSettings(
+    spv_validator_options options, bool val);
+
+// Enables the SignedZeroIfNanPreserve feature for the bit widths
+// specified in the bitmask (combinations of 16, 32 and 64)
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSignedZeroInfNanPreserve(
+    spv_validator_options options, uint32_t bitmask);
+
+// Enables the ShaderDenormPreserve feature for the bit widths
+// specified in the bitmask (combinations of 16, 32 and 64)
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetDenormPreserve(
+    spv_validator_options options, uint32_t bitmask);
+
+// Enables the ShaderDenormFlushToZero feature for the bit widths
+// specified in the bitmask (combinations of 16, 32 and 64)
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetDenormFlushToZero(
+    spv_validator_options options, uint32_t bitmask);
+
+// Enables the ShaderRoundingModeRTE feature for the bit widths
+// specified in the bitmask (combinations of 16, 32 and 64)
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRoundingModeRTE(
+    spv_validator_options options, uint32_t bitmask);
+
+// Enables the ShaderRoundingModeRTZ feature for the bit widths
+// specified in the bitmask (combinations of 16, 32 and 64)
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRoundingModeRTZ(
+    spv_validator_options options, uint32_t bitmask);
+
 // Creates an optimizer options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // |spvOptimizerOptionsDestroy|.

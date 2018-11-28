@@ -44,7 +44,14 @@ struct spv_validator_options_t {
         relax_logical_pointer(false),
         relax_block_layout(false),
         scalar_block_layout(false),
-        skip_block_layout(false) {}
+        skip_block_layout(false),
+        separate_denorm_settings(false),
+        separate_rounding_mode_settings(false),
+        signed_zero_inf_nan_preserve(0),
+        denorm_preserve(0),
+        denorm_flush_to_zero(0),
+        rounding_mode_rte(0),
+        rounding_mode_rtz(0) {}
 
   validator_universal_limits_t universal_limits_;
   bool relax_struct_store;
@@ -52,6 +59,16 @@ struct spv_validator_options_t {
   bool relax_block_layout;
   bool scalar_block_layout;
   bool skip_block_layout;
+
+  bool separate_denorm_settings;
+  bool separate_rounding_mode_settings;
+  // Float controls features, with the corresponding bit widths
+  // expressed as bitmasks (combinations of 16, 32 and 64)
+  uint32_t signed_zero_inf_nan_preserve;
+  uint32_t denorm_preserve;
+  uint32_t denorm_flush_to_zero;
+  uint32_t rounding_mode_rte;
+  uint32_t rounding_mode_rtz;
 };
 
 #endif  // SOURCE_SPIRV_VALIDATOR_OPTIONS_H_

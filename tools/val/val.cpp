@@ -60,6 +60,18 @@ Options:
   --relax-struct-store             Allow store from one struct type to a
                                    different type with compatible layout and
                                    members.
+  --separate-denorm-settings       Allow separate denorm settings for different bit widths.
+  --separate-rounding-settings     Allow separate rounding mode settings for different bit widths.
+  --signed-zero-if-nan-preserve    {16|32|64 and their bitwise combinations}
+                                   Enable the SignedZeroIfNanPreserve feature for the specified bit widths
+  --denorm-preserve                {16|32|64 and their bitwise combinations}
+                                   Enable the ShaderDenormPreserve feature for the specified bit widths
+  --denorm-flush-to-zero           {16|32|64 and their bitwise combinations}
+                                   Enable the ShaderDenormFlushToZero feature for the specified bit widths
+  --rounding-mode-rte              {16|32|64 and their bitwise combinations}
+                                   Enable the ShaderRoundingModeRTE feature for the specified bit widths
+  --rounding-mode-rtz              {16|32|64 and their bitwise combinations}
+                                   Enable the ShaderRoundingModeRTZ feature for the specified bit widths
   --version                        Display validator version information.
   --target-env                     {vulkan1.0|vulkan1.1|opencl2.2|spv1.0|spv1.1|spv1.2|spv1.3|webgpu0}
                                    Use Vulkan 1.0, Vulkan 1.1, OpenCL 2.2, SPIR-V 1.0,
@@ -140,6 +152,55 @@ int main(int argc, char** argv) {
         options.SetSkipBlockLayout(true);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options.SetRelaxStructStore(true);
+      } else if (0 == strcmp(cur_arg, "--separate-denorm-settings")) {
+        options.SetSeparateDenormSettings(true);
+      } else if (0 == strcmp(cur_arg, "--separate-rounding-settings")) {
+        options.SetSeparateRoundingModeSettings(true);
+      } else if (0 == strcmp(cur_arg, "--signed-zero-if-nan-preserve")) {
+        uint32_t bitmask = 0;
+        if (sscanf(argv[++argi], "%u", &bitmask)) {
+          options.SetSignedZeroInfNanPreserve(bitmask);
+        } else {
+          fprintf(stderr, "error: missing argument to %s\n", cur_arg);
+          continue_processing = false;
+          return_code = 1;
+        }
+      } else if (0 == strcmp(cur_arg, "--denorm-preserve")) {
+        uint32_t bitmask = 0;
+        if (sscanf(argv[++argi], "%u", &bitmask)) {
+          options.SetDenormPreserve(bitmask);
+        } else {
+          fprintf(stderr, "error: missing argument to %s\n", cur_arg);
+          continue_processing = false;
+          return_code = 1;
+        }
+      } else if (0 == strcmp(cur_arg, "--denorm-flush-to-zero")) {
+        uint32_t bitmask = 0;
+        if (sscanf(argv[++argi], "%u", &bitmask)) {
+          options.SetDenormFlushToZero(bitmask);
+        } else {
+          fprintf(stderr, "error: missing argument to %s\n", cur_arg);
+          continue_processing = false;
+          return_code = 1;
+        }
+      } else if (0 == strcmp(cur_arg, "--rounding-mode-rte")) {
+        uint32_t bitmask = 0;
+        if (sscanf(argv[++argi], "%u", &bitmask)) {
+          options.SetRoundingModeRTE(bitmask);
+        } else {
+          fprintf(stderr, "error: missing argument to %s\n", cur_arg);
+          continue_processing = false;
+          return_code = 1;
+        }
+      } else if (0 == strcmp(cur_arg, "--rounding-mode-rtz")) {
+        uint32_t bitmask = 0;
+        if (sscanf(argv[++argi], "%u", &bitmask)) {
+          options.SetRoundingModeRTZ(bitmask);
+        } else {
+          fprintf(stderr, "error: missing argument to %s\n", cur_arg);
+          continue_processing = false;
+          return_code = 1;
+        }
       } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!inFile) {

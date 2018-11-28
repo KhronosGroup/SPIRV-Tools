@@ -263,6 +263,22 @@ class ValidationState_t {
     return &it->second;
   }
 
+  /// Mapping between bit widths (16, 32 and 64) and the corresponding denorm
+  /// execution mode which is first encountered. Used to check if
+  /// separateDenormSettings is respected.
+  std::unordered_map<uint32_t, SpvExecutionMode>&
+  first_denorm_execution_mode() {
+    return first_denorm_execution_mode_;
+  }
+
+  /// Mapping between bit widths (16, 32 and 64) and the corresponding rounding
+  /// execution mode which is first encountered. Used to check if
+  /// separateRoundingModeSettings is respected.
+  std::unordered_map<uint32_t, SpvExecutionMode>&
+  first_rounding_execution_mode() {
+    return first_rounding_execution_mode_;
+  }
+
   /// Traverses call tree and computes function_to_entry_points_.
   /// Note: called after fully parsing the binary.
   void ComputeFunctionToEntryPointMapping();
@@ -676,6 +692,16 @@ class ValidationState_t {
   /// Mapping entry point -> execution modes.
   std::unordered_map<uint32_t, std::set<SpvExecutionMode>>
       entry_point_to_execution_modes_;
+
+  /// Mapping between bit widths (16, 32 and 64) and the corresponding denorm
+  /// execution mode which is first encountered. Used to check if
+  /// separateDenormSettings is respected.
+  std::unordered_map<uint32_t, SpvExecutionMode> first_denorm_execution_mode_;
+
+  /// Mapping between bit widths (16, 32 and 64) and the corresponding rounding
+  /// execution mode which is first encountered. Used to check if
+  /// separateRoundingModeSettings is respected.
+  std::unordered_map<uint32_t, SpvExecutionMode> first_rounding_execution_mode_;
 
   /// Mapping function -> array of entry points inside this
   /// module which can (indirectly) call the function.

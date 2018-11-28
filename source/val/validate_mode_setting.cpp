@@ -394,6 +394,101 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                     "execution model.";
         }
       }
+      break;
+    case SpvExecutionModeSignedZeroInfNanPreserve: {
+      const auto bit_width = inst->GetOperandAs<uint32_t>(2);
+      if ((_.options()->signed_zero_inf_nan_preserve & bit_width) == 0) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "The corresponding float controls feature must be enabled "
+                  "for bit width "
+               << bit_width << ".";
+      }
+      break;
+    }
+    case SpvExecutionModeDenormPreserve: {
+      const auto bit_width = inst->GetOperandAs<uint32_t>(2);
+      if ((_.options()->denorm_preserve & bit_width) == 0) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "The corresponding float controls feature must be enabled "
+                  "for bit width "
+               << bit_width << ".";
+      }
+
+      auto found = _.first_denorm_execution_mode().find(bit_width);
+      if (found == _.first_denorm_execution_mode().end()) {
+        _.first_denorm_execution_mode()[bit_width] = mode;
+      } else if (found->second != mode &&
+                 !_.options()->separate_denorm_settings) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Separate denorm execution modes for different bit widths "
+                  "are not allowed unless the corresponding feature is "
+                  "enabled.";
+      }
+      break;
+    }
+    case SpvExecutionModeDenormFlushToZero: {
+      const auto bit_width = inst->GetOperandAs<uint32_t>(2);
+      if ((_.options()->denorm_flush_to_zero & bit_width) == 0) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "The corresponding float controls feature must be enabled "
+                  "for bit width "
+               << bit_width << ".";
+      }
+
+      auto found = _.first_denorm_execution_mode().find(bit_width);
+      if (found == _.first_denorm_execution_mode().end()) {
+        _.first_denorm_execution_mode()[bit_width] = mode;
+      } else if (found->second != mode &&
+                 !_.options()->separate_denorm_settings) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Separate denorm execution modes for different bit widths "
+                  "are not allowed unless the corresponding feature is "
+                  "enabled.";
+      }
+      break;
+    }
+    case SpvExecutionModeRoundingModeRTE: {
+      const auto bit_width = inst->GetOperandAs<uint32_t>(2);
+      if ((_.options()->rounding_mode_rte & bit_width) == 0) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "The corresponding float controls feature must be enabled "
+                  "for bit width "
+               << bit_width << ".";
+      }
+
+      auto found = _.first_rounding_execution_mode().find(bit_width);
+      if (found == _.first_rounding_execution_mode().end()) {
+        _.first_rounding_execution_mode()[bit_width] = mode;
+      } else if (found->second != mode &&
+                 !_.options()->separate_rounding_mode_settings) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Separate rounding execution modes for different bit widths "
+                  "are not allowed unless the corresponding feature is "
+                  "enabled.";
+      }
+      break;
+    }
+    case SpvExecutionModeRoundingModeRTZ: {
+      const auto bit_width = inst->GetOperandAs<uint32_t>(2);
+      if ((_.options()->rounding_mode_rtz & bit_width) == 0) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "The corresponding float controls feature must be enabled "
+                  "for bit width "
+               << bit_width << ".";
+      }
+
+      auto found = _.first_rounding_execution_mode().find(bit_width);
+      if (found == _.first_rounding_execution_mode().end()) {
+        _.first_rounding_execution_mode()[bit_width] = mode;
+      } else if (found->second != mode &&
+                 !_.options()->separate_rounding_mode_settings) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Separate rounding execution modes for different bit widths "
+                  "are not allowed unless the corresponding feature is "
+                  "enabled.";
+      }
+      break;
+    }
     default:
       break;
   }

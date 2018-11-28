@@ -796,6 +796,103 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
 }
 
+TEST_F(ValidateModeExecution, FloatControlsNoSignedZeroInfNanPreserve) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability SignedZeroInfNanPreserve
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpExecutionMode %main SignedZeroInfNanPreserve 16
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The corresponding float controls feature must be enabled "
+                "for bit width 16."));
+}
+
+TEST_F(ValidateModeExecution, FloatControlsSignedZeroInfNanPreserve) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability SignedZeroInfNanPreserve
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpExecutionMode %main SignedZeroInfNanPreserve 16
+)" + kVoidFunction;
+
+  spvValidatorOptionsSetSignedZeroInfNanPreserve(options_, 16 | 32);
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateModeExecution, FloatControlsSeparateDenormSettingsNotNeeded) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DenormPreserve
+OpCapability DenormFlushToZero
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpExecutionMode %main DenormPreserve 16
+OpExecutionMode %main DenormFlushToZero 32
+)" + kVoidFunction;
+
+  spvValidatorOptionsSetDenormPreserve(options_, 16);
+  spvValidatorOptionsSetDenormFlushToZero(options_, 32);
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateModeExecution, FloatControlsSeparateDenormSettingsMissing) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DenormPreserve
+OpCapability DenormFlushToZero
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpExecutionMode %main DenormPreserve 16
+OpExecutionMode %main DenormFlushToZero 16
+)" + kVoidFunction;
+
+  spvValidatorOptionsSetDenormPreserve(options_, 16);
+  spvValidatorOptionsSetDenormFlushToZero(options_, 16);
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Separate denorm execution modes for different bit "
+                        "widths are not allowed "
+                        "unless the corresponding feature is enabled."));
+}
+
+TEST_F(ValidateModeExecution, FloatControlsSeparateDenormSettingsEnabled) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DenormPreserve
+OpCapability DenormFlushToZero
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpExecutionMode %main DenormPreserve 16
+OpExecutionMode %main DenormFlushToZero 16
+)" + kVoidFunction;
+
+  spvValidatorOptionsSetDenormPreserve(options_, 16);
+  spvValidatorOptionsSetDenormFlushToZero(options_, 16);
+  spvValidatorOptionsSetSeparateDenormSettings(options_, true);
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

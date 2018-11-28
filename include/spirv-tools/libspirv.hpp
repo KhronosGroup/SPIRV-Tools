@@ -110,6 +110,48 @@ class ValidatorOptions {
     spvValidatorOptionsSetRelaxLogicalPointer(options_, val);
   }
 
+  // Enables the SeparateDenormSettings feature, allowing separate
+  // denorm settings for different bit widths
+  void SetSeparateDenormSettings(bool val) {
+    spvValidatorOptionsSetSeparateDenormSettings(options_, val);
+  }
+
+  // Enables the SeparateRoundingModeSettings feature, allowing separate
+  // rounding mode settings for different bit widths
+  void SetSeparateRoundingModeSettings(bool val) {
+    spvValidatorOptionsSetSeparateRoundingModeSettings(options_, val);
+  }
+
+  // Enables the SignedZeroIfNanPreserve feature for the bit widths
+  // specified in the bitmask (combinations of 16, 32 and 64)
+  void SetSignedZeroInfNanPreserve(uint32_t bitmask) {
+    spvValidatorOptionsSetSignedZeroInfNanPreserve(options_, bitmask);
+  }
+
+  // Enables the ShaderDenormPreserve feature for the bit widths
+  // specified in the bitmask (combinations of 16, 32 and 64)
+  void SetDenormPreserve(uint32_t bitmask) {
+    spvValidatorOptionsSetDenormPreserve(options_, bitmask);
+  }
+
+  // Enables the ShaderDenormFlushToZero feature for the bit widths
+  // specified in the bitmask (combinations of 16, 32 and 64)
+  void SetDenormFlushToZero(uint32_t bitmask) {
+    spvValidatorOptionsSetDenormFlushToZero(options_, bitmask);
+  }
+
+  // Enables the ShaderRoundingModeRTE feature for the bit widths
+  // specified in the bitmask (combinations of 16, 32 and 64)
+  void SetRoundingModeRTE(uint32_t bitmask) {
+    spvValidatorOptionsSetRoundingModeRTE(options_, bitmask);
+  }
+
+  // Enables the ShaderRoundingModeRTZ feature for the bit widths
+  // specified in the bitmask (combinations of 16, 32 and 64)
+  void SetRoundingModeRTZ(uint32_t bitmask) {
+    spvValidatorOptionsSetRoundingModeRTZ(options_, bitmask);
+  }
+
  private:
   spv_validator_options options_;
 };
