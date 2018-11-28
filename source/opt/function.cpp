@@ -102,15 +102,14 @@ BasicBlock* Function::InsertBasicBlockAfter(
 bool Function::IsRecursive() const {
   IRContext* ctx = blocks_.front()->GetLabel()->context();
   IRContext::ProcessFunction mark_visited = [this](Function* fp) {
-    return fp ==this;
+    return fp == this;
   };
 
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, Function*> id2function;
-  for (auto& fn : *ctx->module()) id2function[fn.result_id()] = &fn;
+  // Process the call tree from all of the function called by |this|.  If it get
+  // back to |this|, then we have a recursive function.
   std::queue<uint32_t> roots;
   ctx->AddCalls(this, &roots);
-  return ctx->ProcessCallTreeFromRoots(mark_visited, id2function, &roots);
+  return ctx->ProcessCallTreeFromRoots(mark_visited, &roots);
 }
 
 std::ostream& operator<<(std::ostream& str, const Function& func) {

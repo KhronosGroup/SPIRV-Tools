@@ -617,8 +617,7 @@ bool InlinePass::IsInlinableFunction(Function* func) {
   // done validly if the return was not in a loop in the original function.
   // Also remember functions with multiple (early) returns.
   AnalyzeReturns(func);
-  if (no_return_in_loop_.find(func->result_id()) ==
-         no_return_in_loop_.cend()) {
+  if (no_return_in_loop_.find(func->result_id()) == no_return_in_loop_.cend()) {
     return false;
   }
 

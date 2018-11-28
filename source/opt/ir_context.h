@@ -75,7 +75,8 @@ class IRContext {
     kAnalysisValueNumberTable = 1 << 10,
     kAnalysisStructuredCFG = 1 << 11,
     kAnalysisBuiltinVarId = 1 << 12,
-    kAnalysisEnd = 1 << 13
+    kAnalysisIdToFuncMapping = 1 << 13,
+    kAnalysisEnd = 1 << 14
   };
 
   using ProcessFunction = std::function<bool(Function*)>;
@@ -481,6 +482,23 @@ class IRContext {
   // supported, return 0.
   uint32_t GetBuiltinVarId(uint32_t builtin);
 
+  // Returns the function whose id is |id|, if one exists.  Returns |nullptr|
+  // otherwise.
+  Function* GetFunction(uint32_t id) {
+    if (!AreAnalysesValid(kAnalysisIdToFuncMapping)) {
+      BuildIdToFuncMapping();
+    }
+    auto entry = id_to_func_.find(id);
+    return (entry != id_to_func_.end()) ? entry->second : nullptr;
+  }
+
+  Function* GetFunction(Instruction* inst) {
+    if (inst->opcode() != SpvOpFunction) {
+      return nullptr;
+    }
+    return GetFunction(inst->result_id());
+  }
+
   // Add to |todo| all ids of functions called in |func|.
   void AddCalls(const Function* func, std::queue<uint32_t>* todo);
 
@@ -498,10 +516,8 @@ class IRContext {
   // |roots|.  Returns true if any call to |pfn| returns true.  By convention
   // |pfn| should return true if it modified the module.  After returning
   // |roots| will be empty.
-  bool ProcessCallTreeFromRoots(
-      ProcessFunction& pfn,
-      const std::unordered_map<uint32_t, Function*>& id2function,
-      std::queue<uint32_t>* roots);
+  bool ProcessCallTreeFromRoots(ProcessFunction& pfn,
+                                std::queue<uint32_t>* roots);
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
@@ -521,6 +537,15 @@ class IRContext {
       }
     }
     valid_analyses_ = valid_analyses_ | kAnalysisInstrToBlockMapping;
+  }
+
+  // Builds the instruction-function map for the whole module.
+  void BuildIdToFuncMapping() {
+    id_to_func_.clear();
+    for (auto& fn : *module_) {
+      id_to_func_[fn.result_id()] = &fn;
+    }
+    valid_analyses_ = valid_analyses_ | kAnalysisIdToFuncMapping;
   }
 
   void BuildDecorationManager() {
@@ -638,12 +663,19 @@ class IRContext {
   std::unique_ptr<analysis::DecorationManager> decoration_mgr_;
   std::unique_ptr<FeatureManager> feature_mgr_;
 
-  // A map from instructions the the basic block they belong to. This mapping is
+  // A map from instructions to the basic block they belong to. This mapping is
   // built on-demand when get_instr_block() is called.
   //
   // NOTE: Do not traverse this map. Ever. Use the function and basic block
   // iterators to traverse instructions.
   std::unordered_map<Instruction*, BasicBlock*> instr_to_block_;
+
+  // A map from ids to the function they define. This mapping is
+  // built on-demand when GetFunction() is called.
+  //
+  // NOTE: Do not traverse this map. Ever. Use the function and basic block
+  // iterators to traverse instructions.
+  std::unordered_map<uint32_t, Function*> id_to_func_;
 
   // A bitset indicating which analyes are currently valid.
   Analysis valid_analyses_;

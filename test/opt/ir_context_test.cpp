@@ -450,7 +450,7 @@ TEST_F(IRContextTest, BasicVisitReachable) {
          %19 = OpLabel
                OpReturn
                OpFunctionEnd
-         %12 = OpFunction %void None %9
+         %12 = OpFunction %void None %6
          %20 = OpLabel
          %21 = OpFunctionCall %void %13
                OpReturn
@@ -478,12 +478,12 @@ TEST_F(IRContextTest, BasicVisitReachable) {
 }
 
 TEST_F(IRContextTest, BasicVisitOnlyOnce) {
-  // Make sure we visit %11 only once, even if it is called from two different
+  // Make sure we visit %12 only once, even if it is called from two different
   // functions.
   const std::string text = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %10 "main" %gl_FragColor
+               OpEntryPoint Fragment %10 "main"
                OpName %10 "main"
                OpName %Dead "Dead"
                OpName %11 "Constant"
@@ -506,7 +506,7 @@ TEST_F(IRContextTest, BasicVisitOnlyOnce) {
          %20 = OpLabel
                OpReturn
                OpFunctionEnd
-         %12 = OpFunction %void None %9
+         %12 = OpFunction %void None %6
          %21 = OpLabel
                OpReturn
                OpFunctionEnd
@@ -533,12 +533,10 @@ TEST_F(IRContextTest, BasicDontVisitExportedVariable) {
   const std::string text = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %10 "main" %gl_FragColor
+               OpEntryPoint Fragment %10 "main"
                OpExecutionMode %10 OriginUpperLeft
                OpSource GLSL 150
                OpName %10 "main"
-               OpName %Dead "Dead"
-               OpName %11 "Constant"
                OpName %12 "export_var"
                OpDecorate %12 LinkageAttributes "export_var" Export
        %void = OpTypeVoid

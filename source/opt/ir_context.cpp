@@ -71,6 +71,9 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisStructuredCFG) {
     BuildStructuredCFGAnalysis();
   }
+  if (set & kAnalysisIdToFuncMapping) {
+    BuildIdToFuncMapping();
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
@@ -110,6 +113,9 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   }
   if (analyses_to_invalidate & kAnalysisStructuredCFG) {
     struct_cfg_analysis_.reset(nullptr);
+  }
+  if (analyses_to_invalidate & kAnalysisIdToFuncMapping) {
+    id_to_func_.clear();
   }
 
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
@@ -682,23 +688,15 @@ void IRContext::AddCalls(const Function* func, std::queue<uint32_t>* todo) {
 }
 
 bool IRContext::ProcessEntryPointCallTree(ProcessFunction& pfn) {
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, Function*> id2function;
-  for (auto& fn : *module()) id2function[fn.result_id()] = &fn;
-
   // Collect all of the entry points as the roots.
   std::queue<uint32_t> roots;
   for (auto& e : module()->entry_points()) {
     roots.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
   }
-  return ProcessCallTreeFromRoots(pfn, id2function, &roots);
+  return ProcessCallTreeFromRoots(pfn, &roots);
 }
 
 bool IRContext::ProcessReachableCallTree(ProcessFunction& pfn) {
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, Function*> id2function;
-  for (auto& fn : *module()) id2function[fn.result_id()] = &fn;
-
   std::queue<uint32_t> roots;
 
   // Add all entry points since they can be reached from outside the module.
@@ -717,19 +715,19 @@ bool IRContext::ProcessReachableCallTree(ProcessFunction& pfn) {
         if (a.GetSingleWordOperand(lastOperand) ==
             SpvLinkageType::SpvLinkageTypeExport) {
           uint32_t id = a.GetSingleWordOperand(0);
-          if (id2function.count(id) != 0) roots.push(id);
+          if (GetFunction(id)) {
+            roots.push(id);
+          }
         }
       }
     }
   }
 
-  return ProcessCallTreeFromRoots(pfn, id2function, &roots);
+  return ProcessCallTreeFromRoots(pfn, &roots);
 }
 
-bool IRContext::ProcessCallTreeFromRoots(
-    ProcessFunction& pfn,
-    const std::unordered_map<uint32_t, Function*>& id2function,
-    std::queue<uint32_t>* roots) {
+bool IRContext::ProcessCallTreeFromRoots(ProcessFunction& pfn,
+                                         std::queue<uint32_t>* roots) {
   // Process call tree
   bool modified = false;
   std::unordered_set<uint32_t> done;
@@ -738,7 +736,7 @@ bool IRContext::ProcessCallTreeFromRoots(
     const uint32_t fi = roots->front();
     roots->pop();
     if (done.insert(fi).second) {
-      Function* fn = id2function.at(fi);
+      Function* fn = GetFunction(fi);
       modified = pfn(fn) || modified;
       AddCalls(fn, roots);
     }
