@@ -136,7 +136,7 @@ bool BlockMergePass::IsMerge(BasicBlock* block) { return IsMerge(block->id()); }
 Pass::Status BlockMergePass::Process() {
   // Process all entry point functions.
   ProcessFunction pfn = [this](Function* fp) { return MergeBlocks(fp); };
-  bool modified = ProcessEntryPointCallTree(pfn, get_module());
+  bool modified = context()->ProcessEntryPointCallTree(pfn);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

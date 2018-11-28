@@ -30,6 +30,7 @@ namespace {
 
 using Analysis = IRContext::Analysis;
 using ::testing::Each;
+using ::testing::UnorderedElementsAre;
 
 class DummyPassPreservesNothing : public Pass {
  public:
@@ -368,6 +369,204 @@ TEST_F(IRContextTest, KillDecorationGroup) {
 
   // Check the OpDecorationGroup Instruction is still there.
   EXPECT_TRUE(context->annotations().empty());
+}
+
+TEST_F(IRContextTest, BasicVisitFromEntryPoint) {
+  // Make sure we visit the entry point, and the function it calls.
+  // Do not visit Dead or Exported.
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %10 "main"
+               OpName %10 "main"
+               OpName %Dead "Dead"
+               OpName %11 "Constant"
+               OpName %ExportedFunc "ExportedFunc"
+               OpDecorate %ExportedFunc LinkageAttributes "ExportedFunc" Export
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+         %10 = OpFunction %void None %6
+         %14 = OpLabel
+         %15 = OpFunctionCall %void %11
+         %16 = OpFunctionCall %void %11
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %void None %6
+         %18 = OpLabel
+               OpReturn
+               OpFunctionEnd
+       %Dead = OpFunction %void None %6
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd
+%ExportedFunc = OpFunction %void None %7
+         %20 = OpLabel
+         %21 = OpFunctionCall %void %11
+               OpReturn
+               OpFunctionEnd
+)";
+  // clang-format on
+
+  std::unique_ptr<IRContext> localContext =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(nullptr, localContext) << "Assembling failed for shader:\n"
+                                   << text << std::endl;
+  std::vector<uint32_t> processed;
+  Pass::ProcessFunction mark_visited = [&processed](Function* fp) {
+    processed.push_back(fp->result_id());
+    return false;
+  };
+  localContext->ProcessEntryPointCallTree(mark_visited);
+  EXPECT_THAT(processed, UnorderedElementsAre(10, 11));
+}
+
+TEST_F(IRContextTest, BasicVisitReachable) {
+  // Make sure we visit the entry point, exported function, and the function
+  // they call. Do not visit Dead.
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %10 "main"
+               OpName %10 "main"
+               OpName %Dead "Dead"
+               OpName %11 "Constant"
+               OpName %12 "ExportedFunc"
+               OpName %13 "Constant2"
+               OpDecorate %12 LinkageAttributes "ExportedFunc" Export
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+         %10 = OpFunction %void None %6
+         %14 = OpLabel
+         %15 = OpFunctionCall %void %11
+         %16 = OpFunctionCall %void %11
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %void None %6
+         %18 = OpLabel
+               OpReturn
+               OpFunctionEnd
+       %Dead = OpFunction %void None %6
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %void None %9
+         %20 = OpLabel
+         %21 = OpFunctionCall %void %13
+               OpReturn
+               OpFunctionEnd
+         %13 = OpFunction %void None %6
+         %22 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  // clang-format on
+
+  std::unique_ptr<IRContext> localContext =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(nullptr, localContext) << "Assembling failed for shader:\n"
+                                   << text << std::endl;
+
+  std::vector<uint32_t> processed;
+  Pass::ProcessFunction mark_visited = [&processed](Function* fp) {
+    processed.push_back(fp->result_id());
+    return false;
+  };
+  localContext->ProcessReachableCallTree(mark_visited);
+  EXPECT_THAT(processed, UnorderedElementsAre(10, 11, 12, 13));
+}
+
+TEST_F(IRContextTest, BasicVisitOnlyOnce) {
+  // Make sure we visit %11 only once, even if it is called from two different
+  // functions.
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %10 "main" %gl_FragColor
+               OpName %10 "main"
+               OpName %Dead "Dead"
+               OpName %11 "Constant"
+               OpName %12 "ExportedFunc"
+               OpDecorate %12 LinkageAttributes "ExportedFunc" Export
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+         %10 = OpFunction %void None %6
+         %14 = OpLabel
+         %15 = OpFunctionCall %void %11
+         %16 = OpFunctionCall %void %12
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %void None %6
+         %18 = OpLabel
+         %19 = OpFunctionCall %void %12
+               OpReturn
+               OpFunctionEnd
+       %Dead = OpFunction %void None %6
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %void None %9
+         %21 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  // clang-format on
+
+  std::unique_ptr<IRContext> localContext =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(nullptr, localContext) << "Assembling failed for shader:\n"
+                                   << text << std::endl;
+
+  std::vector<uint32_t> processed;
+  Pass::ProcessFunction mark_visited = [&processed](Function* fp) {
+    processed.push_back(fp->result_id());
+    return false;
+  };
+  localContext->ProcessReachableCallTree(mark_visited);
+  EXPECT_THAT(processed, UnorderedElementsAre(10, 11, 12));
+}
+
+TEST_F(IRContextTest, BasicDontVisitExportedVariable) {
+  // Make sure we only visit functions and not exported variables.
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %10 "main" %gl_FragColor
+               OpExecutionMode %10 OriginUpperLeft
+               OpSource GLSL 150
+               OpName %10 "main"
+               OpName %Dead "Dead"
+               OpName %11 "Constant"
+               OpName %12 "export_var"
+               OpDecorate %12 LinkageAttributes "export_var" Export
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+  %float_1 = OpConstant %float 1
+         %12 = OpVariable %float Output
+         %10 = OpFunction %void None %6
+         %14 = OpLabel
+               OpStore %12 %float_1
+               OpReturn
+               OpFunctionEnd
+)";
+  // clang-format on
+
+  std::unique_ptr<IRContext> localContext =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(nullptr, localContext) << "Assembling failed for shader:\n"
+                                   << text << std::endl;
+
+  std::vector<uint32_t> processed;
+  Pass::ProcessFunction mark_visited = [&processed](Function* fp) {
+    processed.push_back(fp->result_id());
+    return false;
+  };
+  localContext->ProcessReachableCallTree(mark_visited);
+  EXPECT_THAT(processed, UnorderedElementsAre(10));
 }
 
 }  // namespace

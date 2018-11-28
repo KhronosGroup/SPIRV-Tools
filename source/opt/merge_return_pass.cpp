@@ -54,7 +54,7 @@ Pass::Status MergeReturnPass::Process() {
     return true;
   };
 
-  bool modified = ProcessReachableCallTree(pfn, context());
+  bool modified = context()->ProcessReachableCallTree(pfn);
 
   if (failed) {
     return Status::Failure;

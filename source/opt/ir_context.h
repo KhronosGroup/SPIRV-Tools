@@ -20,6 +20,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -76,6 +77,8 @@ class IRContext {
     kAnalysisBuiltinVarId = 1 << 12,
     kAnalysisEnd = 1 << 13
   };
+
+  using ProcessFunction = std::function<bool(Function*)>;
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
   friend inline Analysis& operator|=(Analysis& lhs, Analysis rhs);
@@ -477,6 +480,28 @@ class IRContext {
   // Create variable and return its id otherwise. If builtin not currently
   // supported, return 0.
   uint32_t GetBuiltinVarId(uint32_t builtin);
+
+  // Add to |todo| all ids of functions called in |func|.
+  void AddCalls(Function* func, std::queue<uint32_t>* todo);
+
+  // Applies |pfn| to every function in the call trees that are rooted at the
+  // entry points.  Returns true if any call |pfn| returns true.  By convention
+  // |pfn| should return true if it modified the module.
+  bool ProcessEntryPointCallTree(ProcessFunction& pfn);
+
+  // Applies |pfn| to every function in the call trees rooted at the entry
+  // points and exported functions.  Returns true if any call |pfn| returns
+  // true.  By convention |pfn| should return true if it modified the module.
+  bool ProcessReachableCallTree(ProcessFunction& pfn);
+
+  // Applies |pfn| to every function in the call trees rooted at the elements of
+  // |roots|.  Returns true if any call to |pfn| returns true.  By convention
+  // |pfn| should return true if it modified the module.  After returning
+  // |roots| will be empty.
+  bool ProcessCallTreeFromRoots(
+      ProcessFunction& pfn,
+      const std::unordered_map<uint32_t, Function*>& id2function,
+      std::queue<uint32_t>* roots);
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.

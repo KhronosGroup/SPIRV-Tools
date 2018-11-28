@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <map>
-#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -90,28 +89,6 @@ class Pass {
 
   // Returns a pointer to the CFG for current module.
   CFG* cfg() const { return context()->cfg(); }
-
-  // Add to |todo| all ids of functions called in |func|.
-  void AddCalls(Function* func, std::queue<uint32_t>* todo);
-
-  // Applies |pfn| to every function in the call trees that are rooted at the
-  // entry points.  Returns true if any call |pfn| returns true.  By convention
-  // |pfn| should return true if it modified the module.
-  bool ProcessEntryPointCallTree(ProcessFunction& pfn, Module* module);
-
-  // Applies |pfn| to every function in the call trees rooted at the entry
-  // points and exported functions.  Returns true if any call |pfn| returns
-  // true.  By convention |pfn| should return true if it modified the module.
-  bool ProcessReachableCallTree(ProcessFunction& pfn, IRContext* irContext);
-
-  // Applies |pfn| to every function in the call trees rooted at the elements of
-  // |roots|.  Returns true if any call to |pfn| returns true.  By convention
-  // |pfn| should return true if it modified the module.  After returning
-  // |roots| will be empty.
-  bool ProcessCallTreeFromRoots(
-      ProcessFunction& pfn,
-      const std::unordered_map<uint32_t, Function*>& id2function,
-      std::queue<uint32_t>* roots);
 
   // Run the pass on the given |module|. Returns Status::Failure if errors occur
   // when processing. Returns the corresponding Status::Success if processing is

@@ -27,6 +27,7 @@ static const int kSpvDecorateTargetIdInIdx = 0;
 static const int kSpvDecorateDecorationInIdx = 1;
 static const int kSpvDecorateBuiltinInIdx = 2;
 static const int kEntryPointInterfaceInIdx = 3;
+static const int kEntryPointFunctionIdInIdx = 1;
 
 }  // anonymous namespace
 
@@ -671,6 +672,78 @@ uint32_t IRContext::GetBuiltinVarId(uint32_t builtin) {
   }
   builtin_var_id_map_[builtin] = var_id;
   return var_id;
+}
+
+void IRContext::AddCalls(Function* func, std::queue<uint32_t>* todo) {
+  for (auto bi = func->begin(); bi != func->end(); ++bi)
+    for (auto ii = bi->begin(); ii != bi->end(); ++ii)
+      if (ii->opcode() == SpvOpFunctionCall)
+        todo->push(ii->GetSingleWordInOperand(0));
+}
+
+bool IRContext::ProcessEntryPointCallTree(ProcessFunction& pfn) {
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, Function*> id2function;
+  for (auto& fn : *module()) id2function[fn.result_id()] = &fn;
+
+  // Collect all of the entry points as the roots.
+  std::queue<uint32_t> roots;
+  for (auto& e : module()->entry_points()) {
+    roots.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
+  }
+  return ProcessCallTreeFromRoots(pfn, id2function, &roots);
+}
+
+bool IRContext::ProcessReachableCallTree(ProcessFunction& pfn) {
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, Function*> id2function;
+  for (auto& fn : *module()) id2function[fn.result_id()] = &fn;
+
+  std::queue<uint32_t> roots;
+
+  // Add all entry points since they can be reached from outside the module.
+  for (auto& e : module()->entry_points())
+    roots.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
+
+  // Add all exported functions since they can be reached from outside the
+  // module.
+  for (auto& a : annotations()) {
+    // TODO: Handle group decorations as well.  Currently not generate by any
+    // front-end, but could be coming.
+    if (a.opcode() == SpvOp::SpvOpDecorate) {
+      if (a.GetSingleWordOperand(1) ==
+          SpvDecoration::SpvDecorationLinkageAttributes) {
+        uint32_t lastOperand = a.NumOperands() - 1;
+        if (a.GetSingleWordOperand(lastOperand) ==
+            SpvLinkageType::SpvLinkageTypeExport) {
+          uint32_t id = a.GetSingleWordOperand(0);
+          if (id2function.count(id) != 0) roots.push(id);
+        }
+      }
+    }
+  }
+
+  return ProcessCallTreeFromRoots(pfn, id2function, &roots);
+}
+
+bool IRContext::ProcessCallTreeFromRoots(
+    ProcessFunction& pfn,
+    const std::unordered_map<uint32_t, Function*>& id2function,
+    std::queue<uint32_t>* roots) {
+  // Process call tree
+  bool modified = false;
+  std::unordered_set<uint32_t> done;
+
+  while (!roots->empty()) {
+    const uint32_t fi = roots->front();
+    roots->pop();
+    if (done.insert(fi).second) {
+      Function* fn = id2function.at(fi);
+      modified = pfn(fn) || modified;
+      AddCalls(fn, roots);
+    }
+  }
+  return modified;
 }
 
 // Gets the dominator analysis for function |f|.
