@@ -258,6 +258,24 @@ TEST_F(ValidateWebGPU, NonWhitelistedExtendedInstructionsImportBad) {
                         "OpExtInstImport \"OpenCL.std\"\n"));
 }
 
+TEST_F(ValidateWebGPU, NonVulkanKHRMemoryModelExtensionBad) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability VulkanMemoryModelKHR
+     OpExtension "SPV_KHR_8bit_storage"
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("For WebGPU, the only valid parameter to OpExtension "
+                        "is \"SPV_KHR_vulkan_memory_model\".\n  OpExtension "
+                        "\"SPV_KHR_8bit_storage\"\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

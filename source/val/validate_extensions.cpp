@@ -21,6 +21,8 @@
 #include <vector>
 
 #include "source/diagnostic.h"
+#include "source/enum_string_mapping.h"
+#include "source/extensions.h"
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_opencl_std_header.h"
 #include "source/opcode.h"
@@ -41,6 +43,21 @@ uint32_t GetSizeTBitWidth(const ValidationState_t& _) {
 }
 
 }  // anonymous namespace
+
+spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
+  if (spvIsWebGPUEnv(_.context()->target_env)) {
+    std::string extension = GetExtensionString(&(inst->c_inst()));
+
+    if (extension != ExtensionToString(kSPV_KHR_vulkan_memory_model)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "For WebGPU, the only valid parameter to OpExtension is "
+             << "\"" << ExtensionToString(kSPV_KHR_vulkan_memory_model)
+             << "\".";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
 
 spv_result_t ValidateExtInstImport(ValidationState_t& _,
                                    const Instruction* inst) {
@@ -2001,6 +2018,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
 spv_result_t ExtensionPass(ValidationState_t& _, const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
+  if (opcode == SpvOpExtension) return ValidateExtension(_, inst);
   if (opcode == SpvOpExtInstImport) return ValidateExtInstImport(_, inst);
   if (opcode == SpvOpExtInst) return ValidateExtInst(_, inst);
 
