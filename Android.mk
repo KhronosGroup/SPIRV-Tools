@@ -338,3 +338,5 @@ LOCAL_CXXFLAGS:=-std=c++11 -fno-exceptions -fno-rtti -Werror
 LOCAL_STATIC_LIBRARIES:=SPIRV-Tools
 LOCAL_SRC_FILES:= $(SPVTOOLS_OPT_SRC_FILES)
 include $(BUILD_STATIC_LIBRARY)
+
+
