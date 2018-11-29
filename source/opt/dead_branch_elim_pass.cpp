@@ -419,9 +419,9 @@ void DeadBranchElimPass::FixBlockOrder() {
 
   // Structured order is more intuitive so use it where possible.
   if (context()->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
-    ProcessReachableCallTree(reorder_structured, context());
+    context()->ProcessReachableCallTree(reorder_structured);
   } else {
-    ProcessReachableCallTree(reorder_dominators, context());
+    context()->ProcessReachableCallTree(reorder_dominators);
   }
 }
 
@@ -435,7 +435,7 @@ Pass::Status DeadBranchElimPass::Process() {
   ProcessFunction pfn = [this](Function* fp) {
     return EliminateDeadBranches(fp);
   };
-  bool modified = ProcessReachableCallTree(pfn, context());
+  bool modified = context()->ProcessReachableCallTree(pfn);
   if (modified) FixBlockOrder();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

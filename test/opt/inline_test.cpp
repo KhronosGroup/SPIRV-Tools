@@ -3046,12 +3046,72 @@ TEST_F(InlineTest, OpVariableWithInit) {
   SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 
+TEST_F(InlineTest, DontInlineDirectlyRecursiveFunc) {
+  // Test that the name of the result id of the call is deleted.
+  const std::string test =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+OpDecorate %2 DescriptorSet 439418829
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_struct_6 = OpTypeStruct %float %float
+%7 = OpTypeFunction %_struct_6
+%1 = OpFunction %void Pure|Const %4
+%8 = OpLabel
+%2 = OpFunctionCall %_struct_6 %9
+OpKill
+OpFunctionEnd
+%9 = OpFunction %_struct_6 None %7
+%10 = OpLabel
+%11 = OpFunctionCall %_struct_6 %9
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<InlineExhaustivePass>(test, test, false, true);
+}
+
+TEST_F(InlineTest, DontInlineInDirectlyRecursiveFunc) {
+  // Test that the name of the result id of the call is deleted.
+  const std::string test =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+OpDecorate %2 DescriptorSet 439418829
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_struct_6 = OpTypeStruct %float %float
+%7 = OpTypeFunction %_struct_6
+%1 = OpFunction %void Pure|Const %4
+%8 = OpLabel
+%2 = OpFunctionCall %_struct_6 %9
+OpKill
+OpFunctionEnd
+%9 = OpFunction %_struct_6 None %7
+%10 = OpLabel
+%11 = OpFunctionCall %_struct_6 %12
+OpUnreachable
+OpFunctionEnd
+%12 = OpFunction %_struct_6 None %7
+%13 = OpLabel
+%14 = OpFunctionCall %_struct_6 %9
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<InlineExhaustivePass>(test, test, false, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules
 //    Modules without function definitions
 //    Modules in which all functions do not call other functions
-//    Recursive functions (calling self & calling each other)
 //    Caller and callee both accessing the same global variable
 //    Functions with OpLine & OpNoLine
 //    Others?

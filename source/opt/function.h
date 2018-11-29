@@ -121,6 +121,9 @@ class Function {
   BasicBlock* InsertBasicBlockAfter(std::unique_ptr<BasicBlock>&& new_block,
                                     BasicBlock* position);
 
+  // Return true if the function calls itself either directly or indirectly.
+  bool IsRecursive() const;
+
   // Pretty-prints all the basic blocks in this function into a std::string.
   //
   // |options| are the disassembly options. SPV_BINARY_TO_TEXT_OPTION_NO_HEADER

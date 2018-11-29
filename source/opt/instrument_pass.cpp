@@ -574,7 +574,7 @@ bool InstrumentPass::InstProcessCallTreeFromRoots(InstProcessFunction& pfn,
     if (done.insert(fi).second) {
       Function* fn = id2function_.at(fi);
       // Add calls first so we don't add new output function
-      AddCalls(fn, roots);
+      context()->AddCalls(fn, roots);
       modified = InstrumentFunction(fn, stage_idx, pfn) || modified;
     }
   }
