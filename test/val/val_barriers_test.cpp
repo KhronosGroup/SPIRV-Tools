@@ -28,18 +28,17 @@ using ::testing::Not;
 
 using ValidateBarriers = spvtest::ValidateBase<bool>;
 
-std::string GenerateShaderCode(
-    const std::string& body,
-    const std::string& capabilities_and_extensions = "",
-    const std::string& execution_model = "GLCompute") {
+std::string GenerateShaderCodeImpl(
+    const std::string& body, const std::string& capabilities_and_extensions,
+    const std::string& definitions, const std::string& execution_model,
+    const std::string& memory_model) {
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
-OpCapability Int64
 )";
 
   ss << capabilities_and_extensions;
-  ss << "OpMemoryModel Logical GLSL450\n";
+  ss << memory_model << std::endl;
   ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
   if (execution_model == "Fragment") {
     ss << "OpExecutionMode %main OriginUpperLeft\n";
@@ -56,16 +55,15 @@ OpCapability Int64
 %bool = OpTypeBool
 %f32 = OpTypeFloat 32
 %u32 = OpTypeInt 32 0
-%u64 = OpTypeInt 64 0
 
 %f32_0 = OpConstant %f32 0
 %f32_1 = OpConstant %f32 1
 %u32_0 = OpConstant %u32 0
 %u32_1 = OpConstant %u32 1
 %u32_4 = OpConstant %u32 4
-%u64_0 = OpConstant %u64 0
-%u64_1 = OpConstant %u64 1
-
+)";
+  ss << definitions;
+  ss << R"(
 %cross_device = OpConstant %u32 0
 %device = OpConstant %u32 1
 %workgroup = OpConstant %u32 2
@@ -94,6 +92,38 @@ OpReturn
 OpFunctionEnd)";
 
   return ss.str();
+}
+
+std::string GenerateShaderCode(
+    const std::string& body,
+    const std::string& capabilities_and_extensions = "",
+    const std::string& execution_model = "GLCompute") {
+  const std::string int64_capability;
+  const std::string int64_declarations = R"(
+%u64 = OpTypeInt 64 0
+%u64_0 = OpConstant %u64 0
+%u64_1 = OpConstant %u64 1
+)";
+  const std::string memory_model = "OpMemoryModel Logical GLSL450\n";
+  return GenerateShaderCodeImpl(
+      body, int64_capability + capabilities_and_extensions, int64_declarations,
+      execution_model, memory_model);
+}
+
+std::string GenerateWebGPUShaderCode(
+    const std::string& body,
+    const std::string& capabilities_and_extensions = "",
+    const std::string& execution_model = "GLCompute") {
+  const std::string vulkan_memory_capability =
+      "OpCapability VulkanMemoryModelKHR\n";
+  const std::string vulkan_memory_extension =
+      "OpExtension \"SPV_KHR_vulkan_memory_model\"\n";
+  const std::string memory_model = "OpMemoryModel Logical VulkanKHR";
+  return GenerateShaderCodeImpl(body,
+                                vulkan_memory_capability +
+                                    capabilities_and_extensions +
+                                    vulkan_memory_extension,
+                                "", execution_model, memory_model);
 }
 
 std::string GenerateKernelCode(
@@ -212,6 +242,16 @@ OpControlBarrier %workgroup %workgroup %acquire_release_uniform_workgroup
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
+TEST_F(ValidateBarriers, OpControlBarrierWebGPUSuccess) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %device %none
+OpControlBarrier %workgroup %workgroup %acquire_release_uniform_workgroup
+)";
+
+  CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
 TEST_F(ValidateBarriers, OpControlBarrierExecutionModelFragmentSpirv12) {
   const std::string body = R"(
 OpControlBarrier %device %device %none
@@ -319,6 +359,18 @@ OpControlBarrier %device %workgroup %none
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("ControlBarrier: in Vulkan environment Execution Scope "
+                        "is limited to Workgroup and Subgroup"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierWebGPUExecutionScopeDevice) {
+  const std::string body = R"(
+OpControlBarrier %device %workgroup %none
+)";
+
+  CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ControlBarrier: in WebGPU environment Execution Scope "
                         "is limited to Workgroup and Subgroup"));
 }
 
