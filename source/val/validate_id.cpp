@@ -164,8 +164,17 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
       case SPV_OPERAND_TYPE_ID:
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID:
-        if (_.IsDefinedId(operand_word)) {
-          ret = SPV_SUCCESS;
+        if (const auto def = _.FindDef(operand_word)) {
+          const auto opcode = inst->opcode();
+          if (spvOpcodeGeneratesType(def->opcode()) &&
+              !spvOpcodeGeneratesType(opcode) && !spvOpcodeIsDebug(opcode) &&
+              !spvOpcodeIsDecoration(opcode) && opcode != SpvOpFunction) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << "Operand " << _.getIdName(operand_word)
+                   << " cannot be a type";
+          } else {
+            ret = SPV_SUCCESS;
+          }
         } else if (can_have_forward_declared_ids(i)) {
           ret = _.ForwardDeclareId(operand_word);
         } else {

@@ -804,8 +804,7 @@ OpMemoryNamedBarrier %barrier %workgroup %acquire_and_release_uniform
 )";
 
   CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("MemoryNamedBarrier: Memory Semantics can have at most "
                         "one of the following bits set: Acquire, Release, "
@@ -819,9 +818,7 @@ OpMemoryBarrier %u32 %u32_0
 
   CompileSuccessfully(GenerateKernelCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("MemoryBarrier: expected Memory Scope to be a 32-bit int"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 5 cannot be a type"));
 }
 
 TEST_F(ValidateBarriers,
