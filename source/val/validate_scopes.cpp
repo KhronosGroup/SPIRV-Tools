@@ -100,5 +100,56 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
+                                 uint32_t scope) {
+  const SpvOp opcode = inst->opcode();
+  bool is_int32 = false, is_const_int32 = false;
+  uint32_t value = 0;
+  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(scope);
+
+  if (!is_int32) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << spvOpcodeString(opcode)
+           << ": expected Memory Scope to be a 32-bit int";
+  }
+
+  if (!is_const_int32) {
+    return SPV_SUCCESS;
+  }
+
+  // Vulkan Specific rules
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (value == SpvScopeCrossDevice) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << spvOpcodeString(opcode)
+             << ": in Vulkan environment, Memory Scope cannot be CrossDevice";
+    }
+    // Vulkan 1.0 specifc rules
+    if (_.context()->target_env == SPV_ENV_VULKAN_1_0 &&
+        value != SpvScopeDevice && value != SpvScopeWorkgroup &&
+        value != SpvScopeInvocation) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << spvOpcodeString(opcode)
+             << ": in Vulkan 1.0 environment Memory Scope is limited to "
+                "Device, "
+                "Workgroup and Invocation";
+    }
+    // Vulkan 1.1 specifc rules
+    if (_.context()->target_env == SPV_ENV_VULKAN_1_0 &&
+        value != SpvScopeDevice && value != SpvScopeWorkgroup &&
+        value != SpvScopeSubgroup && value != SpvScopeInvocation) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << spvOpcodeString(opcode)
+             << ": in Vulkan 1.1 environment Memory Scope is limited to "
+                "Device, "
+                "Workgroup and Invocation";
+    }
+  }
+
+  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace val
 }  // namespace spvtools

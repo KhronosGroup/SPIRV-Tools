@@ -31,46 +31,6 @@ namespace spvtools {
 namespace val {
 namespace {
 
-// Validates Memory Scope operand.
-spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
-                                 uint32_t id) {
-  const SpvOp opcode = inst->opcode();
-  bool is_int32 = false, is_const_int32 = false;
-  uint32_t value = 0;
-  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
-
-  if (!is_int32) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(opcode)
-           << ": expected Memory Scope to be a 32-bit int";
-  }
-
-  if (!is_const_int32) {
-    return SPV_SUCCESS;
-  }
-
-  if (spvIsVulkanEnv(_.context()->target_env)) {
-    if (value == SpvScopeCrossDevice) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << spvOpcodeString(opcode)
-             << ": in Vulkan environment, Memory Scope cannot be CrossDevice";
-    }
-    if (_.context()->target_env == SPV_ENV_VULKAN_1_0 &&
-        value != SpvScopeDevice && value != SpvScopeWorkgroup &&
-        value != SpvScopeInvocation) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << spvOpcodeString(opcode)
-             << ": in Vulkan 1.0 environment Memory Scope is limited to "
-                "Device, "
-                "Workgroup and Invocation";
-    }
-  }
-
-  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
-
-  return SPV_SUCCESS;
-}
-
 // Validates Memory Semantics operand.
 spv_result_t ValidateMemorySemantics(ValidationState_t& _,
                                      const Instruction* inst, uint32_t id) {
