@@ -21,45 +21,11 @@
 #include "source/spirv_target_env.h"
 #include "source/util/bitutils.h"
 #include "source/val/instruction.h"
+#include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
 namespace val {
-
-// Validates Memory Scope operand.
-spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
-                                 uint32_t id) {
-  const SpvOp opcode = inst->opcode();
-  bool is_int32 = false, is_const_int32 = false;
-  uint32_t value = 0;
-  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
-
-  if (!is_int32) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(opcode) << ": expected Scope to be 32-bit int";
-  }
-
-  if (!is_const_int32) {
-    return SPV_SUCCESS;
-  }
-
-#if 0
-  // TODO(atgoo@github.com): this check fails Vulkan CTS, reenable once fixed.
-  if (spvIsVulkanEnv(_.context()->target_env)) {
-    if (value != SpvScopeDevice && value != SpvScopeWorkgroup &&
-        value != SpvScopeInvocation) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << spvOpcodeString(opcode)
-             << ": in Vulkan environment memory scope is limited to Device, "
-                "Workgroup and Invocation";
-    }
-  }
-#endif
-
-  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
-
-  return SPV_SUCCESS;
-}
 
 // Validates a Memory Semantics operand.
 spv_result_t ValidateMemorySemantics(ValidationState_t& _,
