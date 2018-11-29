@@ -14,9 +14,10 @@
 
 #include "upgrade_memory_model.h"
 
-#include "source/util/make_unique.h"
-
 #include <utility>
+
+#include "source/opt/ir_context.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace opt {
@@ -470,10 +471,6 @@ void UpgradeMemoryModel::CleanupDecorations() {
 }
 
 void UpgradeMemoryModel::UpgradeBarriers() {
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, Function*> id2function;
-  for (auto& fn : *get_module()) id2function[fn.result_id()] = &fn;
-
   std::vector<Instruction*> barriers;
   // Collects all the control barriers in |function|. Returns true if the
   // function operates on the Output storage class.
@@ -514,7 +511,7 @@ void UpgradeMemoryModel::UpgradeBarriers() {
   for (auto& e : get_module()->entry_points())
     if (e.GetSingleWordInOperand(0u) == SpvExecutionModelTessellationControl) {
       roots.push(e.GetSingleWordInOperand(1u));
-      if (ProcessCallTreeFromRoots(CollectBarriers, id2function, &roots)) {
+      if (context()->ProcessCallTreeFromRoots(CollectBarriers, &roots)) {
         for (auto barrier : barriers) {
           // Add OutputMemoryKHR to the semantics of the barriers.
           uint32_t semantics_id = barrier->GetSingleWordInOperand(2u);
@@ -539,6 +536,11 @@ void UpgradeMemoryModel::UpgradeBarriers() {
 
 void UpgradeMemoryModel::UpgradeMemoryScope() {
   get_module()->ForEachInst([this](Instruction* inst) {
+    // Don't need to handle all the operations that take a scope.
+    // * Group operations can only be subgroup
+    // * Non-uniform can only be workgroup or subgroup
+    // * Named barriers are not supported by Vulkan
+    // * Workgroup ops (e.g. async_copy) have at most workgroup scope.
     if (spvOpcodeIsAtomicOp(inst->opcode())) {
       if (IsDeviceScope(inst->GetSingleWordInOperand(1))) {
         inst->SetInOperand(1, {GetScopeConstant(SpvScopeQueueFamilyKHR)});
