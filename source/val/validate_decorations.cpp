@@ -795,6 +795,15 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         MemberConstraints constraints;
         ComputeMemberConstraintsForStruct(&constraints, id, LayoutConstraints(),
                                           vstate);
+
+        if (push_constant && !hasDecoration(id, SpvDecorationBlock, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
+                 << "PushConstant id '" << id
+                 << "' is missing Block decoration.\n"
+                 << "From Vulkan spec, section 14.5.1:\n"
+                 << "Such variables must be identified with a Block decoration";
+        }
+
         // Prepare for messages
         const char* sc_str =
             uniform ? "Uniform"

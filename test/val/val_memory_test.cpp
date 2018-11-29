@@ -838,6 +838,34 @@ TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
           "The Struture's type in OpArrayLength <id> '12' must be a pointer to "
           "an OpTypeStruct.\n  %12 = OpArrayLength %uint %11 0\n"));
 }
+
+TEST_F(ValidateMemory, VulkanPushConstantNotStructBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+     %ptr = OpTypePointer PushConstant %float
+      %pc = OpVariable %ptr PushConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("PushConstant OpVariable <id> '6' has illegal type.\n"
+                        "From Vulkan spec, section 14.5.1:\n"
+                        "Such variables must be typed as OpTypeStruct, "
+                        "or an array of this type"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
