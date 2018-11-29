@@ -562,7 +562,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 
   // Process all entry point functions.
   ProcessFunction pfn = [this](Function* fp) { return AggressiveDCE(fp); };
-  modified |= ProcessEntryPointCallTree(pfn, get_module());
+  modified |= context()->ProcessEntryPointCallTree(pfn);
 
   // Process module-level instructions. Now that all live instructions have
   // been marked, it is safe to remove dead global values.
@@ -575,7 +575,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 
   // Cleanup all CFG including all unreachable blocks.
   ProcessFunction cleanup = [this](Function* f) { return CFGCleanup(f); };
-  modified |= ProcessEntryPointCallTree(cleanup, get_module());
+  modified |= context()->ProcessEntryPointCallTree(cleanup);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
@@ -589,7 +589,7 @@ bool AggressiveDCEPass::EliminateDeadFunctions() {
     live_function_set.insert(fp);
     return false;
   };
-  ProcessEntryPointCallTree(mark_live, get_module());
+  context()->ProcessEntryPointCallTree(mark_live);
 
   bool modified = false;
   for (auto funcIter = get_module()->begin();

@@ -98,7 +98,7 @@ void InlineOpaquePass::Initialize() { InitializeInline(); }
 Pass::Status InlineOpaquePass::ProcessImpl() {
   // Do opaque inlining on each function in entry point call tree
   ProcessFunction pfn = [this](Function* fp) { return InlineOpaque(fp); };
-  bool modified = ProcessEntryPointCallTree(pfn, get_module());
+  bool modified = context()->ProcessEntryPointCallTree(pfn);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

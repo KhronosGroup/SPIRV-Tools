@@ -64,7 +64,7 @@ bool InlineExhaustivePass::InlineExhaustive(Function* func) {
 Pass::Status InlineExhaustivePass::ProcessImpl() {
   // Attempt exhaustive inlining on each entry point function in module
   ProcessFunction pfn = [this](Function* fp) { return InlineExhaustive(fp); };
-  bool modified = ProcessEntryPointCallTree(pfn, get_module());
+  bool modified = context()->ProcessEntryPointCallTree(pfn);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
