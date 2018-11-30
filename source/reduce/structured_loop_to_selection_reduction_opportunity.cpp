@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "cut_loop_reduction_opportunity.h"
+#include "structured_loop_to_selection_reduction_opportunity.h"
 #include "source/opt/aggressive_dead_code_elim_pass.h"
 #include "source/opt/ir_context.h"
 
@@ -24,14 +24,14 @@ const uint32_t kMergeNodeIndex = 0;
 const uint32_t kContinueNodeIndex = 1;
 }  // namespace
 
-bool CutLoopReductionOpportunity::PreconditionHolds() {
+bool StructuredLoopToSelectionReductionOpportunity::PreconditionHolds() {
   return loop_construct_header_->GetLabel()
       ->context()
       ->GetDominatorAnalysis(enclosing_function_)
       ->IsReachable(loop_construct_header_->id());
 }
 
-void CutLoopReductionOpportunity::Apply() {
+void StructuredLoopToSelectionReductionOpportunity::Apply() {
   auto loop_merge_inst = loop_construct_header_->GetLoopMergeInst();
 
   // Compute dominator analysis and CFG before we start to mess with edges in
@@ -83,10 +83,11 @@ void CutLoopReductionOpportunity::Apply() {
                               IRContext::Analysis::kAnalysisDominatorAnalysis);
 }
 
-void CutLoopReductionOpportunity::ReplaceSelectionTargetWithClosestMerge(
-    IRContext* context, const CFG& cfg,
-    const DominatorAnalysis& dominator_analysis,
-    uint32_t original_target_block_id, uint32_t predecessor_block_id) {
+void StructuredLoopToSelectionReductionOpportunity::
+    ReplaceSelectionTargetWithClosestMerge(
+        IRContext* context, const CFG& cfg,
+        const DominatorAnalysis& dominator_analysis,
+        uint32_t original_target_block_id, uint32_t predecessor_block_id) {
   auto new_merge_target =
       FindClosestMerge(cfg, dominator_analysis, predecessor_block_id);
   assert(new_merge_target != predecessor_block_id);
@@ -96,9 +97,10 @@ void CutLoopReductionOpportunity::ReplaceSelectionTargetWithClosestMerge(
   }
 }
 
-bool CutLoopReductionOpportunity::ContainedInStructuredControlFlowConstruct(
-    uint32_t block_id, BasicBlock* selection_construct_header,
-    const DominatorAnalysis& dominator_analysis) {
+bool StructuredLoopToSelectionReductionOpportunity::
+    ContainedInStructuredControlFlowConstruct(
+        uint32_t block_id, BasicBlock* selection_construct_header,
+        const DominatorAnalysis& dominator_analysis) {
   assert(
       dominator_analysis.Dominates(selection_construct_header->id(), block_id));
   auto merge_inst = selection_construct_header->GetMergeInst();
@@ -136,7 +138,7 @@ bool CutLoopReductionOpportunity::ContainedInStructuredControlFlowConstruct(
   return true;
 }
 
-uint32_t CutLoopReductionOpportunity::FindClosestMerge(
+uint32_t StructuredLoopToSelectionReductionOpportunity::FindClosestMerge(
     const CFG& cfg, const DominatorAnalysis& dominator_analysis,
     uint32_t block_id) {
   assert(dominator_analysis.IsReachable(block_id));
@@ -157,11 +159,9 @@ uint32_t CutLoopReductionOpportunity::FindClosestMerge(
   return 0;
 }
 
-void CutLoopReductionOpportunity::RedirectEdge(uint32_t source_id,
-                                               uint32_t original_target_id,
-                                               uint32_t new_target_id,
-                                               IRContext* context,
-                                               const CFG& cfg) {
+void StructuredLoopToSelectionReductionOpportunity::RedirectEdge(
+    uint32_t source_id, uint32_t original_target_id, uint32_t new_target_id,
+    IRContext* context, const CFG& cfg) {
   assert(source_id != original_target_id);
   assert(source_id != new_target_id);
   assert(original_target_id != new_target_id);
@@ -188,8 +188,8 @@ void CutLoopReductionOpportunity::RedirectEdge(uint32_t source_id,
   AdaptPhiNodesForAddedEdge(source_id, cfg.block(new_target_id), context);
 }
 
-void CutLoopReductionOpportunity::ChangeLoopToSelection(IRContext* context,
-                                                        const CFG& cfg) {
+void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection(
+    IRContext* context, const CFG& cfg) {
   auto loop_merge_inst = loop_construct_header_->GetLoopMergeInst();
   auto const loop_merge_block_id =
       loop_merge_inst->GetSingleWordOperand(kMergeNodeIndex);
@@ -220,7 +220,7 @@ void CutLoopReductionOpportunity::ChangeLoopToSelection(IRContext* context,
   }
 }
 
-void CutLoopReductionOpportunity::AdaptPhiNodesForRemovedEdge(
+void StructuredLoopToSelectionReductionOpportunity::AdaptPhiNodesForRemovedEdge(
     uint32_t from_id, BasicBlock* to_block) {
   for (auto& inst : *to_block) {
     if (inst.opcode() != SpvOpPhi) {
@@ -237,7 +237,7 @@ void CutLoopReductionOpportunity::AdaptPhiNodesForRemovedEdge(
   }
 }
 
-void CutLoopReductionOpportunity::AdaptPhiNodesForAddedEdge(
+void StructuredLoopToSelectionReductionOpportunity::AdaptPhiNodesForAddedEdge(
     uint32_t from_id, BasicBlock* to_block, IRContext* context) {
   for (auto& inst : *to_block) {
     if (inst.opcode() != SpvOpPhi) {
@@ -249,7 +249,7 @@ void CutLoopReductionOpportunity::AdaptPhiNodesForAddedEdge(
   }
 }
 
-uint32_t CutLoopReductionOpportunity::FindOrCreateGlobalUndef(
+uint32_t StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalUndef(
     IRContext* context, uint32_t type_id) {
   for (auto& inst : context->module()->types_values()) {
     if (inst.opcode() != SpvOpUndef) {

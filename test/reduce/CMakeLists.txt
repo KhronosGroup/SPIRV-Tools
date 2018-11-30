@@ -13,13 +13,13 @@
 # limitations under the License.
 
 add_spvtools_unittest(TARGET reduce
-        SRCS cut_loop_reduction_pass_test.cpp
-        operand_to_constant_reduction_pass_test.cpp
+        SRCS operand_to_constant_reduction_pass_test.cpp
         operand_to_dominating_id_reduction_pass_test.cpp
         reduce_test_util.cpp
         reduce_test_util.h
         reducer_test.cpp
         remove_unreferenced_instruction_reduction_pass_test.cpp
+        structured_loop_to_selection_reduction_pass_test.cpp
         LIBS SPIRV-Tools-reduce
         )
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/reduce/cut_loop_reduction_pass.h"
+#include "source/reduce/structured_loop_to_selection_reduction_pass.h"
 #include "reduce_test_util.h"
 #include "source/opt/build_module.h"
 
@@ -20,7 +20,7 @@ namespace spvtools {
 namespace reduce {
 namespace {
 
-TEST(CutLoopReductionPassTest, LoopyShader1) {
+TEST(StructuredLoopToSelectionReductionPassTest, LoopyShader1) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -62,7 +62,7 @@ TEST(CutLoopReductionPassTest, LoopyShader1) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(1, ops.size());
 
@@ -112,7 +112,7 @@ TEST(CutLoopReductionPassTest, LoopyShader1) {
   CheckEqual(env, after_op_0, context.get());
 }
 
-TEST(CutLoopReductionPassTest, LoopyShader2) {
+TEST(StructuredLoopToSelectionReductionPassTest, LoopyShader2) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -208,7 +208,7 @@ TEST(CutLoopReductionPassTest, LoopyShader2) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(4, ops.size());
 
@@ -605,7 +605,7 @@ TEST(CutLoopReductionPassTest, LoopyShader2) {
   CheckEqual(env, after_op_3, context.get());
 }
 
-TEST(CutLoopReductionPassTest, LoopyShader3) {
+TEST(StructuredLoopToSelectionReductionPassTest, LoopyShader3) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -677,12 +677,12 @@ TEST(CutLoopReductionPassTest, LoopyShader3) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(0, ops.size());
 }
 
-TEST(CutLoopReductionPassTest, LoopyShader4) {
+TEST(StructuredLoopToSelectionReductionPassTest, LoopyShader4) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -755,7 +755,7 @@ TEST(CutLoopReductionPassTest, LoopyShader4) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
 
   // Initially there are two opportunities.
@@ -842,7 +842,7 @@ TEST(CutLoopReductionPassTest, LoopyShader4) {
   ASSERT_FALSE(ops[1]->PreconditionHolds());
 }
 
-TEST(CutLoopReductionPassTest, ConditionalBreak1) {
+TEST(StructuredLoopToSelectionReductionPassTest, ConditionalBreak1) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -877,7 +877,7 @@ TEST(CutLoopReductionPassTest, ConditionalBreak1) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(1, ops.size());
 
@@ -919,7 +919,7 @@ TEST(CutLoopReductionPassTest, ConditionalBreak1) {
   CheckEqual(env, after_op_0, context.get());
 }
 
-TEST(CutLoopReductionPassTest, ConditionalBreak2) {
+TEST(StructuredLoopToSelectionReductionPassTest, ConditionalBreak2) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -952,7 +952,7 @@ TEST(CutLoopReductionPassTest, ConditionalBreak2) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(1, ops.size());
 
@@ -992,7 +992,7 @@ TEST(CutLoopReductionPassTest, ConditionalBreak2) {
   CheckEqual(env, after_op_0, context.get());
 }
 
-TEST(CutLoopReductionPassTest, UnconditionalBreak) {
+TEST(StructuredLoopToSelectionReductionPassTest, UnconditionalBreak) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1020,7 +1020,7 @@ TEST(CutLoopReductionPassTest, UnconditionalBreak) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(1, ops.size());
 
@@ -1056,7 +1056,7 @@ TEST(CutLoopReductionPassTest, UnconditionalBreak) {
   CheckEqual(env, after_op_0, context.get());
 }
 
-TEST(CutLoopReductionPassTest, Complex) {
+TEST(StructuredLoopToSelectionReductionPassTest, Complex) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1220,7 +1220,7 @@ TEST(CutLoopReductionPassTest, Complex) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
 
   ASSERT_EQ(2, ops.size());
@@ -1557,7 +1557,7 @@ TEST(CutLoopReductionPassTest, Complex) {
   CheckEqual(env, after_op_1, context.get());
 }
 
-TEST(CutLoopReductionPassTest, ComplexOptimized) {
+TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -1687,7 +1687,7 @@ TEST(CutLoopReductionPassTest, ComplexOptimized) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
-  const auto pass = TestSubclass<CutLoopReductionPass>(env);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
 
   ASSERT_EQ(2, ops.size());

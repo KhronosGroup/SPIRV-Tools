@@ -25,11 +25,12 @@ namespace reduce {
 using namespace opt;
 
 // TODO: comment.
-class CutLoopReductionOpportunity : public ReductionOpportunity {
+class StructuredLoopToSelectionReductionOpportunity
+    : public ReductionOpportunity {
  public:
   // TODO: comment.
-  explicit CutLoopReductionOpportunity(Function::iterator loop_construct_header,
-                                       Function* enclosing_function)
+  explicit StructuredLoopToSelectionReductionOpportunity(
+      Function::iterator loop_construct_header, Function* enclosing_function)
       : loop_construct_header_(loop_construct_header),
         enclosing_function_(enclosing_function) {}
 

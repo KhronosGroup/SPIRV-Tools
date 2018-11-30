@@ -27,14 +27,15 @@ namespace reduce {
 // by the pass, so the loop's continue target blocks, and what was the loop's
 // back edge, persist; another pass for eliminating blocks may end up being able
 // to remove them.
-class CutLoopReductionPass : public ReductionPass {
+class StructuredLoopToSelectionReductionPass : public ReductionPass {
  public:
   // Creates the reduction pass in the context of the given target environment
   // |target_env|
-  explicit CutLoopReductionPass(const spv_target_env target_env)
+  explicit StructuredLoopToSelectionReductionPass(
+      const spv_target_env target_env)
       : ReductionPass(target_env) {}
 
-  ~CutLoopReductionPass() override = default;
+  ~StructuredLoopToSelectionReductionPass() override = default;
 
   // The name of this pass.
   std::string GetName() const final;

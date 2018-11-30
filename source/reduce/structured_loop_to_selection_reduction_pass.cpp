@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "cut_loop_reduction_pass.h"
-#include "cut_loop_reduction_opportunity.h"
+#include "structured_loop_to_selection_reduction_pass.h"
+#include "structured_loop_to_selection_reduction_opportunity.h"
 
 namespace spvtools {
 namespace reduce {
@@ -25,7 +25,8 @@ const uint32_t kMergeNodeIndex = 0;
 }
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
-CutLoopReductionPass::GetAvailableOpportunities(opt::IRContext* context) const {
+StructuredLoopToSelectionReductionPass::GetAvailableOpportunities(
+    opt::IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
   // Consider each loop construct header in the module.
@@ -52,14 +53,15 @@ CutLoopReductionPass::GetAvailableOpportunities(opt::IRContext* context) const {
       }
 
       result.push_back(
-          MakeUnique<CutLoopReductionOpportunity>(block_iterator, &function));
+          MakeUnique<StructuredLoopToSelectionReductionOpportunity>(
+              block_iterator, &function));
     }
   }
   return result;
 }
 
-std::string CutLoopReductionPass::GetName() const {
-  return "CutLoopReductionPass";
+std::string StructuredLoopToSelectionReductionPass::GetName() const {
+  return "StructuredLoopToSelectionReductionPass";
 }
 
 }  // namespace reduce
