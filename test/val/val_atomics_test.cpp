@@ -65,6 +65,7 @@ OpExecutionMode %main OriginUpperLeft
 %workgroup = OpConstant %u32 2
 %subgroup = OpConstant %u32 3
 %invocation = OpConstant %u32 4
+%queuefamily = OpConstant %u32 5
 
 %relaxed = OpConstant %u32 0
 %acquire = OpConstant %u32 2
@@ -1617,6 +1618,34 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr(
           "AtomicLoad: expected Memory Semantics to include a storage class"));
+}
+
+TEST_F(ValidateAtomics, VulkanMemoryModelAllowsQueueFamilyKHR) {
+  const std::string body = R"(
+%val = OpAtomicAnd %u32 %u32_var %queuefamily %relaxed %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+                      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateAtomics, NonVulkanMemoryModelDisallowsQueueFamilyKHR) {
+  const std::string body = R"(
+%val = OpAtomicAnd %u32 %u32_var %queuefamily %relaxed %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicAnd: Memory Scope QueueFamilyKHR requires "
+                        "capability VulkanMemoryModelKHR\n  %42 = OpAtomicAnd "
+                        "%uint %33 %uint_5 %uint_0_1 %uint_1\n"));
 }
 
 }  // namespace
