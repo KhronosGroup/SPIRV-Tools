@@ -16,28 +16,51 @@
 #define SOURCE_REDUCE_CUT_LOOP_REDUCTION_OPPORTUNITY_H_
 
 #include "reduction_opportunity.h"
-#include "source/opt/loop_descriptor.h"
+#include "source/opt/dominator_analysis.h"
+#include "source/opt/function.h"
 
 namespace spvtools {
 namespace reduce {
 
 using namespace opt;
 
-// Captures the opportunity to remove an instruction from the SPIR-V module.
+// TODO: comment.
 class CutLoopReductionOpportunity : public ReductionOpportunity {
  public:
-  // Constructs the opportunity to cut |loop|.
-  explicit CutLoopReductionOpportunity(Loop* loop) : loop_(loop) {}
+  // TODO: comment.
+  explicit CutLoopReductionOpportunity(Function::iterator loop_construct_header,
+                                       Function* enclosing_function)
+      : loop_construct_header_(loop_construct_header),
+        enclosing_function_(enclosing_function) {}
 
-  // This kind of opportunity can be unconditionally applied.
+  // We require the loop header to be reachable.
   bool PreconditionHolds() override;
 
  protected:
-  // Cut the loop.
+  // TODO: comment.
   void Apply() override;
 
  private:
-  Loop* loop_;
+  Function::iterator loop_construct_header_;
+  Function* enclosing_function_;
+
+  void ReplaceSelectionTargetWithClosestMerge(
+      IRContext* context, const CFG& cfg,
+      const DominatorAnalysis& dominator_analysis,
+      uint32_t original_target_block_id, uint32_t predecessor_block_id);
+  uint32_t FindClosestMerge(const CFG& cfg,
+                            const DominatorAnalysis& dominator_analysis,
+                            uint32_t block_id);
+  void ChangeLoopToSelection(IRContext* context, const CFG& cfg);
+  void RedirectEdge(uint32_t source_id, uint32_t original_target_id,
+                    uint32_t new_target_id, IRContext* context, const CFG& cfg);
+  void AdaptPhiNodesForRemovedEdge(uint32_t from_id, BasicBlock* to_block);
+  void AdaptPhiNodesForAddedEdge(uint32_t from_id, BasicBlock* to_id,
+                                 IRContext* context);
+  uint32_t FindOrCreateGlobalUndef(IRContext* context, uint32_t type_id);
+  bool ContainedInStructuredControlFlowConstruct(
+      uint32_t block_id, BasicBlock* selection_construct_header,
+      const DominatorAnalysis& dominator_analysis);
 };
 
 }  // namespace reduce

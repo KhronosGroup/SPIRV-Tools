@@ -28,12 +28,31 @@ std::vector<std::unique_ptr<ReductionOpportunity>>
 CutLoopReductionPass::GetAvailableOpportunities(opt::IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
+  // Consider each loop construct header in the module.
   for (auto& function : *context->module()) {
-    auto loop_descriptor = context->GetLoopDescriptor(&function);
-    for (auto loop : loop_descriptor->GetLoopsInBinaryLayoutOrder()) {
-      if (CanBeCut(*loop, function)) {
-        result.push_back(MakeUnique<CutLoopReductionOpportunity>(loop));
+    for (auto block_iterator = function.begin();
+         block_iterator != function.end(); ++block_iterator) {
+      auto loop_merge_inst = block_iterator->GetLoopMergeInst();
+      if (!loop_merge_inst) {
+        // This is not a loop construct header.
+        continue;
       }
+      // Check whether the loop construct header dominates its merge block.
+      // If not, the merge block must be unreachable in the control flow graph
+      // so we cautiously do not consider applying a transformation.
+      auto merge_block_id =
+          loop_merge_inst->GetSingleWordInOperand(kMergeNodeIndex);
+      if (!context->GetDominatorAnalysis(&function)->Dominates(
+              block_iterator->id(), merge_block_id)) {
+        continue;
+      }
+      if (!context->GetPostDominatorAnalysis(&function)->Dominates(
+              merge_block_id, block_iterator->id())) {
+        continue;
+      }
+
+      result.push_back(
+          MakeUnique<CutLoopReductionOpportunity>(block_iterator, &function));
     }
   }
   return result;
@@ -41,37 +60,6 @@ CutLoopReductionPass::GetAvailableOpportunities(opt::IRContext* context) const {
 
 std::string CutLoopReductionPass::GetName() const {
   return "CutLoopReductionPass";
-}
-
-bool CutLoopReductionPass::CanBeCut(const opt::Loop& loop,
-                                    const opt::Function& function) const {
-  auto cfg = loop.GetContext()->cfg();
-  auto dom_tree =
-      loop.GetContext()->GetDominatorAnalysis(&function)->GetDomTree();
-  // Consider each block from which the loop's merge block can be immediately
-  // reached.
-  for (auto pred : cfg->preds(loop.GetMergeBlock()->id())) {
-    // Walk the dominator tree backwards from pred, searching for a merge
-    // instruction whose merge block is different to the loop's merge block.
-    for (auto current_dominator = cfg->block(pred);
-         current_dominator != loop.GetHeaderBlock();
-         current_dominator = dom_tree.ImmediateDominator(current_dominator)) {
-      if (!current_dominator->GetMergeInst()) {
-        // This dominator isn't a merge instruction.
-        continue;
-      }
-      auto merge_block_id =
-          current_dominator->GetMergeInst()->GetSingleWordInOperand(
-              kMergeNodeIndex);
-      if (loop.GetMergeBlock()->id() != merge_block_id) {
-        // We have found a merge instruction that dominates our loop break,
-        // such that the associated merge block is different from the loop's
-        // merge block.  Cutting the loop would lead to an invalid module.
-        return false;
-      }
-    }
-  }
-  return true;
 }
 
 }  // namespace reduce

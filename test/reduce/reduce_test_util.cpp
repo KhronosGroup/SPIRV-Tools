@@ -55,5 +55,14 @@ void CheckValid(spv_target_env env, const opt::IRContext* ir) {
   ASSERT_TRUE(t.Validate(binary));
 }
 
+std::string ToString(spv_target_env env, const opt::IRContext* ir) {
+  std::vector<uint32_t> binary;
+  ir->module()->ToBinary(&binary, false);
+  SpirvTools t(env);
+  std::string result;
+  t.Disassemble(binary, &result, kReduceDisassembleOption);
+  return result;
+}
+
 }  // namespace reduce
 }  // namespace spvtools
