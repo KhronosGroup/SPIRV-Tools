@@ -98,13 +98,15 @@ std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
     const std::string& execution_model = "GLCompute") {
-  const std::string int64_capability;
+  const std::string int64_capability = R"(
+OpCapability Int64
+)";
   const std::string int64_declarations = R"(
 %u64 = OpTypeInt 64 0
 %u64_0 = OpConstant %u64 0
 %u64_1 = OpConstant %u64 1
 )";
-  const std::string memory_model = "OpMemoryModel Logical GLSL450\n";
+  const std::string memory_model = "OpMemoryModel Logical GLSL450";
   return GenerateShaderCodeImpl(
       body, int64_capability + capabilities_and_extensions, int64_declarations,
       execution_model, memory_model);
@@ -114,10 +116,12 @@ std::string GenerateWebGPUShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
     const std::string& execution_model = "GLCompute") {
-  const std::string vulkan_memory_capability =
-      "OpCapability VulkanMemoryModelKHR\n";
-  const std::string vulkan_memory_extension =
-      "OpExtension \"SPV_KHR_vulkan_memory_model\"\n";
+  const std::string vulkan_memory_capability = R"(
+OpCapability VulkanMemoryModelKHR
+)";
+  const std::string vulkan_memory_extension = R"(
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
   const std::string memory_model = "OpMemoryModel Logical VulkanKHR";
   return GenerateShaderCodeImpl(body,
                                 vulkan_memory_capability +
