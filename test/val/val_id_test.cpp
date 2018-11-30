@@ -6065,6 +6065,149 @@ OpFunctionEnd
                         "StorageBuffer storage classes."));
 }
 
+TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock1) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeFloat 32
+%4 = OpTypeFunction %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+%7 = OpFunctionCall %3 %8
+OpUnreachable
+OpFunctionEnd
+%8 = OpFunction %3 None %4
+%9 = OpLabel
+OpReturnValue %7
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID 7 defined in block 6 does not dominate its use in "
+                        "block 9\n  %9 = OpLabel"));
+}
+
+TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock2) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeFloat 32
+%4 = OpTypeFunction %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+OpReturn
+%7 = OpLabel
+%8 = OpFunctionCall %3 %9
+OpUnreachable
+OpFunctionEnd
+%9 = OpFunction %3 None %4
+%10 = OpLabel
+OpReturnValue %8
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID 8 defined in block 7 does not dominate its use in "
+                        "block 10\n  %10 = OpLabel"));
+}
+
+TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock3) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeFloat 32
+%4 = OpTypeFunction %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+OpReturn
+%7 = OpLabel
+%8 = OpFunctionCall %3 %9
+OpReturn
+OpFunctionEnd
+%9 = OpFunction %3 None %4
+%10 = OpLabel
+OpReturnValue %8
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID 8 defined in block 7 does not dominate its use in "
+                        "block 10\n  %10 = OpLabel"));
+}
+
+TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock4) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeFloat 32
+%4 = OpTypeFunction %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+OpReturn
+%7 = OpLabel
+%8 = OpUndef %3
+%9 = OpCopyObject %3 %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock5) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeFloat 32
+%4 = OpTypeFunction %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+OpReturn
+%7 = OpLabel
+%8 = OpUndef %3
+OpBranch %9
+%9 = OpLabel
+%10 = OpCopyObject %3 %8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock6) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeFloat 32
+%4 = OpTypeFunction %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+OpBranch %7
+%8 = OpLabel
+%9 = OpUndef %3
+OpBranch %7
+%7 = OpLabel
+%10 = OpCopyObject %3 %9
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID 9 defined in block 8 does not dominate its use in "
+                        "block 7\n  %7 = OpLabel"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

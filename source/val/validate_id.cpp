@@ -65,7 +65,6 @@ spv_result_t CheckIdDefinitionDominateUse(ValidationState_t& _) {
     if (inst.id() == 0) continue;
     if (const Function* func = inst.function()) {
       if (const BasicBlock* block = inst.block()) {
-        if (!block->reachable()) continue;
         // If the Id is defined within a block then make sure all references to
         // that Id appear in a blocks that are dominated by the defining block
         for (auto& use_index_pair : inst.uses()) {
