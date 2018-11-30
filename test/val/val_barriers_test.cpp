@@ -837,7 +837,7 @@ OpExecutionMode %1 OriginUpperLeft
 %3 = OpTypeInt 32 0
 %4 = OpConstant %3 16
 %5 = OpTypeFunction %2
-%6 = OpConstant %3 1
+%6 = OpConstant %3 5
 %1 = OpFunction %2 None %5
 %7 = OpLabel
 OpControlBarrier %6 %6 %4
@@ -866,7 +866,7 @@ OpExecutionMode %1 OriginUpperLeft
 %3 = OpTypeInt 32 0
 %4 = OpConstant %3 16
 %5 = OpTypeFunction %2
-%6 = OpConstant %3 1
+%6 = OpConstant %3 5
 %1 = OpFunction %2 None %5
 %7 = OpLabel
 OpMemoryBarrier %6 %4
@@ -1169,6 +1169,60 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateBarriers, VulkanMemoryModelDeviceScopeBad) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%semantics = OpConstant %int 0
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpMemoryBarrier %device %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateBarriers, VulkanMemoryModelDeviceScopeGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%semantics = OpConstant %int 0
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+OpMemoryBarrier %device %semantics
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 }  // namespace
