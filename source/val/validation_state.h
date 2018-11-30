@@ -531,6 +531,8 @@ class ValidationState_t {
 
   // Tries to evaluate a 32-bit signed or unsigned scalar integer constant.
   // Returns tuple <is_int32, is_const_int32, value>.
+  // OpSpecConstant* return |is_const_int32| as false since their values cannot
+  // be relied upon during validation.
   std::tuple<bool, bool, uint32_t> EvalInt32IfConst(uint32_t id);
 
   // Returns the disassembly string for the given instruction.

@@ -174,8 +174,7 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
       bool is_const;
       uint32_t value;
       std::tie(is_int32, is_const, value) = _.EvalInt32IfConst(length->id());
-      if (is_int32 && is_const && !spvOpcodeIsSpecConstant(length->opcode()) &&
-          value != constituent_count) {
+      if (is_int32 && is_const && value != constituent_count) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << opcode_name
                << " Constituent count does not match "

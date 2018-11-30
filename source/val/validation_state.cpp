@@ -888,7 +888,10 @@ std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
     return std::make_tuple(false, false, 0);
   }
 
-  if (!spvOpcodeIsConstant(inst->opcode())) {
+  // Spec constant values cannot be evaluated so don't consider constant for
+  // the purpose of this method.
+  if (!spvOpcodeIsConstant(inst->opcode()) ||
+      spvOpcodeIsSpecConstant(inst->opcode())) {
     return std::make_tuple(true, false, 0);
   }
 

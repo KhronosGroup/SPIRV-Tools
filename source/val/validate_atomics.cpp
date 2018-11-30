@@ -45,11 +45,11 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   }
 
   if (!is_const_int32) {
-    return SPV_SUCCESS;
-  }
-
-  if (spvOpcodeIsSpecConstant(_.FindDef(memory_semantics_id)->opcode())) {
-    // We cannot assume the value of the spec constant.
+    if (_.HasCapability(SpvCapabilityShader)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Memory Semantics ids must be OpConstant when Shader "
+                "capability is present";
+    }
     return SPV_SUCCESS;
   }
 
