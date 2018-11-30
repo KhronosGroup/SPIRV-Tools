@@ -21,6 +21,7 @@
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
+#include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -230,6 +231,51 @@ std::pair<SpvStorageClass, SpvStorageClass> GetStorageClass(
   return std::make_pair(dst_sc, src_sc);
 }
 
+// This function is only called for OpLoad, OpStore, OpCopyMemory and
+// OpCopyMemorySized.
+uint32_t GetMakeAvailableScope(const Instruction* inst, uint32_t mask) {
+  uint32_t offset = 1;
+  if (mask & SpvMemoryAccessAlignedMask) ++offset;
+
+  uint32_t scope_id = 0;
+  switch (inst->opcode()) {
+    case SpvOpLoad:
+    case SpvOpCopyMemorySized:
+      return inst->GetOperandAs<uint32_t>(3 + offset);
+    case SpvOpStore:
+    case SpvOpCopyMemory:
+      return inst->GetOperandAs<uint32_t>(2 + offset);
+    default:
+      assert(false && "unexpected opcode");
+      break;
+  }
+
+  return scope_id;
+}
+
+// This function is only called for OpLoad, OpStore, OpCopyMemory and
+// OpCopyMemorySized.
+uint32_t GetMakeVisibleScope(const Instruction* inst, uint32_t mask) {
+  uint32_t offset = 1;
+  if (mask & SpvMemoryAccessAlignedMask) ++offset;
+  if (mask & SpvMemoryAccessMakePointerAvailableKHRMask) ++offset;
+
+  uint32_t scope_id = 0;
+  switch (inst->opcode()) {
+    case SpvOpLoad:
+    case SpvOpCopyMemorySized:
+      return inst->GetOperandAs<uint32_t>(3 + offset);
+    case SpvOpStore:
+    case SpvOpCopyMemory:
+      return inst->GetOperandAs<uint32_t>(2 + offset);
+    default:
+      assert(false && "unexpected opcode");
+      break;
+  }
+
+  return scope_id;
+}
+
 spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
                                uint32_t mask) {
   if (mask & SpvMemoryAccessMakePointerAvailableKHRMask) {
@@ -243,6 +289,11 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
              << "NonPrivatePointerKHR must be specified if "
                 "MakePointerAvailableKHR is specified.";
     }
+
+    // Check the associated scope for MakeAvailableKHR.
+    const auto available_scope = GetMakeAvailableScope(inst, mask);
+    if (auto error = ValidateMemoryScope(_, inst, available_scope))
+      return error;
   }
 
   if (mask & SpvMemoryAccessMakePointerVisibleKHRMask) {
@@ -256,6 +307,10 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
              << "NonPrivatePointerKHR must be specified if "
                 "MakePointerVisibleKHR is specified.";
     }
+
+    // Check the associated scope for MakeVisibleKHR.
+    const auto visible_scope = GetMakeVisibleScope(inst, mask);
+    if (auto error = ValidateMemoryScope(_, inst, visible_scope)) return error;
   }
 
   if (mask & SpvMemoryAccessNonPrivatePointerKHRMask) {

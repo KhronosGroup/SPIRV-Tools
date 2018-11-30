@@ -138,6 +138,14 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
     }
   }
 
+  if (value == SpvScopeDevice &&
+      _.HasCapability(SpvCapabilityVulkanMemoryModelKHR) &&
+      !_.HasCapability(SpvCapabilityVulkanMemoryModelDeviceScopeKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Use of device scope with VulkanKHR memory model requires the "
+              "VulkanMemoryModelDeviceScopeKHR capability";
+  }
+
   // Vulkan Specific rules
   if (spvIsVulkanEnv(_.context()->target_env)) {
     if (value == SpvScopeCrossDevice) {
