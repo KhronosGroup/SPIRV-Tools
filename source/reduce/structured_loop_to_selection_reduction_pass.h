@@ -20,13 +20,22 @@
 namespace spvtools {
 namespace reduce {
 
-// A reduction pass for cutting structured loops, paving the way for their
-// constituent blocks to be more aggressively reduced.  A loop is cut by
-// replacing all references to its continue target with references to its merge
-// block, and eliminating the loop's merge instruction.  No blocks are removed
-// by the pass, so the loop's continue target blocks, and what was the loop's
-// back edge, persist; another pass for eliminating blocks may end up being able
-// to remove them.
+// Turns structured loops into selections, generalizing from a human-writable
+// language the idea of turning a loop:
+//
+// while (c) {
+//   body;
+// }
+//
+// into:
+//
+// if (c) {
+//   body;
+// }
+//
+// The pass results in continue constructs of transformed loops becoming
+// unreachable; another pass for eliminating blocks may end up being able to
+// remove them.
 class StructuredLoopToSelectionReductionPass : public ReductionPass {
  public:
   // Creates the reduction pass in the context of the given target environment
@@ -41,13 +50,12 @@ class StructuredLoopToSelectionReductionPass : public ReductionPass {
   std::string GetName() const final;
 
  protected:
-  // Finds all opportunities for cutting a loop in the given module.
+  // Finds all opportunities for transforming a structured loop to a selection
+  // in the given module.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 
  private:
-  // Decides whether the given loop is suitable for cutting.
-  bool CanBeCut(const opt::Loop& loop, const opt::Function& function) const;
 };
 
 }  // namespace reduce

@@ -24,44 +24,61 @@ namespace reduce {
 
 using namespace opt;
 
-// TODO: comment.
+// Captures an opportunity to replace a structured loop with a selection.
 class StructuredLoopToSelectionReductionOpportunity
     : public ReductionOpportunity {
  public:
-  // TODO: comment.
+  // Constructs an opportunity from a loop header block and the function that
+  // encloses it.
   explicit StructuredLoopToSelectionReductionOpportunity(
-      Function::iterator loop_construct_header, Function* enclosing_function)
+      BasicBlock* loop_construct_header, Function* enclosing_function)
       : loop_construct_header_(loop_construct_header),
         enclosing_function_(enclosing_function) {}
 
-  // We require the loop header to be reachable.
+  // We require the loop header to be reachable.  A structured loop might
+  // become unreachable as a result of turning another structured loop into
+  // a selection.
   bool PreconditionHolds() override;
 
  protected:
-  // TODO: comment.
+  // Perform the structured loop to selection transformation.
   void Apply() override;
 
  private:
-  Function::iterator loop_construct_header_;
+  BasicBlock* loop_construct_header_;
   Function* enclosing_function_;
 
-  void ReplaceSelectionTargetWithClosestMerge(
-      IRContext* context, const CFG& cfg,
-      const DominatorAnalysis& dominator_analysis,
-      uint32_t original_target_block_id, uint32_t predecessor_block_id);
+  // In a naive manner (linear time per invocation) checks whether the global
+  // value list has an OpUndef of the given type, adding one if not, and
+  // returns the id of such an OpUndef.
+  //
+  // TODO: This will likely be used by other reduction passes, so should be
+  // factored out in due course.  Parts of the spirv-opt framework provide
+  // similar functionality, so there may be a case for further refactoring.
+  uint32_t FindOrCreateGlobalUndef(IRContext* context, uint32_t type_id);
+
+  void RedirectToClosestMergeBlock(uint32_t original_target_id,
+                                   IRContext* context,
+                                   const DominatorAnalysis& dominator_analysis,
+                                   const CFG& cfg);
+
   uint32_t FindClosestMerge(const CFG& cfg,
                             const DominatorAnalysis& dominator_analysis,
                             uint32_t block_id);
-  void ChangeLoopToSelection(IRContext* context, const CFG& cfg);
+
   void RedirectEdge(uint32_t source_id, uint32_t original_target_id,
                     uint32_t new_target_id, IRContext* context, const CFG& cfg);
+
   void AdaptPhiNodesForRemovedEdge(uint32_t from_id, BasicBlock* to_block);
+
   void AdaptPhiNodesForAddedEdge(uint32_t from_id, BasicBlock* to_id,
                                  IRContext* context);
-  uint32_t FindOrCreateGlobalUndef(IRContext* context, uint32_t type_id);
+
   bool ContainedInStructuredControlFlowConstruct(
       uint32_t block_id, BasicBlock* selection_construct_header,
       const DominatorAnalysis& dominator_analysis);
+
+  void ChangeLoopToSelection(IRContext* context, const CFG& cfg);
 };
 
 }  // namespace reduce

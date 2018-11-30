@@ -1810,8 +1810,8 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
         %108 = OpPhi %10 %99 %80 %109 %75
                OpBranch %45 	; Was OpBranch %46
          %46 = OpLabel
-        %107 = OpUndef %10      ; Was OpPhi %10 %68 %66 %60 %65 %108 %74
-        %105 = OpUndef %8       ; Was OpPhi %8 %70 %66 %72 %65 %113 %74
+        %107 = OpPhi %10      ; Was OpPhi %10 %68 %66 %60 %65 %108 %74
+        %105 = OpPhi %8       ; Was OpPhi %8 %70 %66 %72 %65 %113 %74
                OpBranch %44
          %45 = OpLabel
          %95 = OpConvertSToF %21 %98
@@ -1937,14 +1937,14 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
          %78 = OpLabel
                OpBranch %74     ; Was OpBranch %75
          %75 = OpLabel
-        %109 = OpUndef %10 ; Was OpPhi %10 %99 %85 %110 %92 %110 %78
+        %109 = OpPhi %10 ; Was OpPhi %10 %99 %85 %110 %92 %110 %78
                OpBranchConditional %113 %73 %45 ; Was OpBranchConditional %113 %73 %74
          %74 = OpLabel
         %108 = OpPhi %10 %114 %78 %114 %73 ; Was OpPhi %10 %99 %80 %109 %75
                OpBranch %45 	; Was OpBranch %46
          %46 = OpLabel
-        %107 = OpUndef %10      ; Was OpPhi %10 %68 %66 %60 %65 %108 %74
-        %105 = OpUndef %8       ; Was OpPhi %8 %70 %66 %72 %65 %113 %74
+        %107 = OpPhi %10      ; Was OpPhi %10 %68 %66 %60 %65 %108 %74
+        %105 = OpPhi %8       ; Was OpPhi %8 %70 %66 %72 %65 %113 %74
                OpBranch %44
          %45 = OpLabel
          %95 = OpConvertSToF %21 %98
