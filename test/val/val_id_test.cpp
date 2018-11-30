@@ -6208,6 +6208,26 @@ OpFunctionEnd
                         "block 7\n  %7 = OpLabel"));
 }
 
+TEST_F(ValidateIdWithMessage, ReachableDefUnreachableUse) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeFloat 32
+%4 = OpTypeFunction %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+%7 = OpUndef %3
+OpReturn
+%8 = OpLabel
+%9 = OpCopyObject %3 %7
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
