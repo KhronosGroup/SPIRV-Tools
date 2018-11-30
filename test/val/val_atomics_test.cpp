@@ -1648,6 +1648,107 @@ TEST_F(ValidateAtomics, NonVulkanMemoryModelDisallowsQueueFamilyKHR) {
                         "%uint %33 %uint_5 %uint_0_1 %uint_1\n"));
 }
 
+TEST_F(ValidateAtomics, SemanticsSpecConstantShader) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 0
+%workgroup = OpConstant %int 2
+%ptr_int_workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_workgroup Workgroup
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%ld = OpAtomicLoad %int %var %workgroup %spec_const
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory Semantics ids must be OpConstant when Shader "
+                        "capability is present"));
+}
+
+TEST_F(ValidateAtomics, SemanticsSpecConstantKernel) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 0
+%workgroup = OpConstant %int 2
+%ptr_int_workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_workgroup Workgroup
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%ld = OpAtomicLoad %int %var %workgroup %spec_const
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, ScopeSpecConstantShader) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 0
+%relaxed = OpConstant %int 0
+%ptr_int_workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_workgroup Workgroup
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%ld = OpAtomicLoad %int %var %spec_const %relaxed
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Scope ids must be OpConstant when Shader capability is present"));
+}
+
+TEST_F(ValidateAtomics, ScopeSpecConstantKernel) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 0
+%relaxed = OpConstant %int 0
+%ptr_int_workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_workgroup Workgroup
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%ld = OpAtomicLoad %int %var %spec_const %relaxed
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

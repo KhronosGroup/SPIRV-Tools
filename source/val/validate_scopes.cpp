@@ -36,6 +36,11 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   }
 
   if (!is_const_int32) {
+    if (_.HasCapability(SpvCapabilityShader)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Scope ids must be "
+                                                     "OpConstant when Shader "
+                                                     "capability is present";
+    }
     return SPV_SUCCESS;
   }
 
@@ -114,6 +119,11 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
   }
 
   if (!is_const_int32) {
+    if (_.HasCapability(SpvCapabilityShader)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Scope ids must be "
+                                                     "OpConstant when Shader "
+                                                     "capability is present";
+    }
     return SPV_SUCCESS;
   }
 
