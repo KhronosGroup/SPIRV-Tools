@@ -45,7 +45,9 @@ template <typename TestT>
 class PassTest : public TestT {
  public:
   PassTest()
-      : consumer_(nullptr),
+      : consumer_(
+            [](spv_message_level_t, const char*, const spv_position_t&,
+               const char* message) { std::cerr << message << std::endl; }),
         context_(nullptr),
         tools_(SPV_ENV_UNIVERSAL_1_1),
         manager_(new PassManager()),
