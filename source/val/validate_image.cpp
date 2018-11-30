@@ -23,6 +23,7 @@
 #include "source/spirv_target_env.h"
 #include "source/util/bitutils.h"
 #include "source/val/instruction.h"
+#include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -513,6 +514,10 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "NonPrivateTexelKHR is also specified: Op"
              << spvOpcodeString(opcode);
     }
+
+    const auto available_scope = inst->word(word_index++);
+    if (auto error = ValidateMemoryScope(_, inst, available_scope))
+      return error;
   }
 
   if (mask & SpvImageOperandsMakeTexelVisibleKHRMask) {
@@ -531,6 +536,9 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "is also specified: Op"
              << spvOpcodeString(opcode);
     }
+
+    const auto visible_scope = inst->word(word_index++);
+    if (auto error = ValidateMemoryScope(_, inst, visible_scope)) return error;
   }
 
   return SPV_SUCCESS;
@@ -1512,7 +1520,7 @@ spv_result_t ValidateImageQuerySize(ValidationState_t& _,
   ImageTypeInfo info;
   if (!GetImageTypeInfo(_, image_type, &info)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-        << "Corrupt image type definition";
+           << "Corrupt image type definition";
   }
 
   uint32_t expected_num_components = info.arrayed;
@@ -1545,8 +1553,8 @@ spv_result_t ValidateImageQuerySize(ValidationState_t& _,
   uint32_t result_num_components = _.GetDimension(result_type);
   if (result_num_components != expected_num_components) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-        << "Result Type has " << result_num_components << " components, "
-        << "but " << expected_num_components << " expected";
+           << "Result Type has " << result_num_components << " components, "
+           << "but " << expected_num_components << " expected";
   }
 
   return SPV_SUCCESS;
