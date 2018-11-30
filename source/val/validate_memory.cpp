@@ -373,8 +373,20 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  // Vulkan 14.5.1: Check type of PushConstant variables.
   // Vulkan 14.5.2: Check type of UniformConstant and Uniform variables.
   if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (storage_class == SpvStorageClassPushConstant) {
+      if (!IsAllowedTypeOrArrayOfSame(_, pointee, {SpvOpTypeStruct})) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "PushConstant OpVariable <id> '" << _.getIdName(inst->id())
+               << "' has illegal type.\n"
+               << "From Vulkan spec, section 14.5.1:\n"
+               << "Such variables must be typed as OpTypeStruct, "
+               << "or an array of this type";
+      }
+    }
+
     if (storage_class == SpvStorageClassUniformConstant) {
       if (!IsAllowedTypeOrArrayOfSame(
               _, pointee,
@@ -403,17 +415,6 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                << "to access transparent buffer backed resources. Such "
                   "variables "
                << "must be typed as OpTypeStruct, or an array of this type";
-      }
-    }
-
-    if (storage_class == SpvStorageClassPushConstant) {
-      if (!IsAllowedTypeOrArrayOfSame(_, pointee, {SpvOpTypeStruct})) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "PushConstant OpVariable <id> '" << _.getIdName(inst->id())
-               << "' has illegal type.\n"
-               << "From Vulkan spec, section 14.5.1:\n"
-               << "Such variables must be typed as OpTypeStruct, "
-               << "or an array of this type";
       }
     }
   }

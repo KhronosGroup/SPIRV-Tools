@@ -796,12 +796,15 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         ComputeMemberConstraintsForStruct(&constraints, id, LayoutConstraints(),
                                           vstate);
 
-        if (push_constant && !hasDecoration(id, SpvDecorationBlock, vstate)) {
-          return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
-                 << "PushConstant id '" << id
-                 << "' is missing Block decoration.\n"
-                 << "From Vulkan spec, section 14.5.1:\n"
-                 << "Such variables must be identified with a Block decoration";
+        // Vulkan 14.5.1: Check Block annotation for PushConstant variables.
+        if (spvIsVulkanEnv(vstate.context()->target_env)) {
+          if (push_constant && !hasDecoration(id, SpvDecorationBlock, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
+                << "PushConstant id '" << id
+                << "' is missing Block decoration.\n"
+                << "From Vulkan spec, section 14.5.1:\n"
+                << "Such variables must be identified with a Block decoration";
+          }
         }
 
         // Prepare for messages

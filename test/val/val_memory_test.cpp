@@ -839,6 +839,28 @@ TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
           "an OpTypeStruct.\n  %12 = OpArrayLength %uint %11 0\n"));
 }
 
+TEST_F(ValidateMemory, PushConstantNotStructGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+     %ptr = OpTypePointer PushConstant %float
+      %pc = OpVariable %ptr PushConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateMemory, VulkanPushConstantNotStructBad) {
   std::string spirv = R"(
             OpCapability Shader
@@ -864,6 +886,32 @@ TEST_F(ValidateMemory, VulkanPushConstantNotStructBad) {
                         "From Vulkan spec, section 14.5.1:\n"
                         "Such variables must be typed as OpTypeStruct, "
                         "or an array of this type"));
+}
+
+TEST_F(ValidateMemory, VulkanPushConstant) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer PushConstant %struct
+      %pc = OpVariable %ptr PushConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
 }  // namespace

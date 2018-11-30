@@ -2219,7 +2219,7 @@ TEST_F(ValidateDecorations,
           "rules: member 1 at offset 4 is not aligned to 16"));
 }
 
-TEST_F(ValidateDecorations, PushConstantMissingBlockVulkanBad) {
+TEST_F(ValidateDecorations, PushConstantMissingBlockGood) {
   std::string spirv = R"(
             OpCapability Shader
             OpMemoryModel Logical GLSL450
@@ -2242,6 +2242,33 @@ TEST_F(ValidateDecorations, PushConstantMissingBlockVulkanBad) {
 )";
 
   CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, VulkanPushConstantMissingBlockBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpMemberDecorate %struct 0 Offset 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer PushConstant %struct
+      %pc = OpVariable %ptr PushConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID,
             ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
