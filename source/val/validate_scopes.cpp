@@ -117,6 +117,17 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
     return SPV_SUCCESS;
   }
 
+  if (value == SpvScopeQueueFamilyKHR) {
+    if (_.HasCapability(SpvCapabilityVulkanMemoryModelKHR)) {
+      return SPV_SUCCESS;
+    } else {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << spvOpcodeString(opcode)
+             << ": Memory Scope QueueFamilyKHR requires capability "
+                "VulkanMemoryModelKHR";
+    }
+  }
+
   // Vulkan Specific rules
   if (spvIsVulkanEnv(_.context()->target_env)) {
     if (value == SpvScopeCrossDevice) {
@@ -135,7 +146,7 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
                 "Workgroup and Invocation";
     }
     // Vulkan 1.1 specifc rules
-    if (_.context()->target_env == SPV_ENV_VULKAN_1_0 &&
+    if (_.context()->target_env == SPV_ENV_VULKAN_1_1 &&
         value != SpvScopeDevice && value != SpvScopeWorkgroup &&
         value != SpvScopeSubgroup && value != SpvScopeInvocation) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
