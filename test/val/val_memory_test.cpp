@@ -838,6 +838,29 @@ TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
           "The Struture's type in OpArrayLength <id> '12' must be a pointer to "
           "an OpTypeStruct.\n  %12 = OpArrayLength %uint %11 0\n"));
 }
+
+TEST_F(ValidateMemory, ArrayLenPointerIsAType) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %uint = OpTypeInt 32 0
+          %1 = OpFunction %void None %3
+          %9 = OpLabel
+         %12 = OpArrayLength %uint %float 0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 4 cannot be a type"));
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
