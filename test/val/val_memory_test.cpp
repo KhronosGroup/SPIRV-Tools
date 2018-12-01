@@ -64,6 +64,8 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
 %sampler = OpTypeSampler
 %sampler_ptr = OpTypePointer UniformConstant %sampler
 %2 = OpVariable %sampler_ptr UniformConstant
@@ -115,6 +117,8 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
 %sampler = OpTypeSampler
 %uint = OpTypeInt 32 0
 %array_size = OpConstant %uint 5
@@ -138,6 +142,8 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
 %sampler = OpTypeSampler
 %uint = OpTypeInt 32 0
 %array = OpTypeRuntimeArray %sampler
