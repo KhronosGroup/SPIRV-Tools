@@ -794,7 +794,7 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
       const bool push_constant = storageClass == SpvStorageClassPushConstant;
       const bool storage_buffer = storageClass == SpvStorageClassStorageBuffer;
 
-      // Vulkan 14.5.2: Check DescriptorSet and Binding annotation for
+      // Vulkan 14.5.2: Check DescriptorSet and Binding decoration for
       // UniformConstant which cannot be a struct.
       if (spvIsVulkanEnv(vstate.context()->target_env)) {
         if (uniform_constant) {
@@ -830,11 +830,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
             uniform ? "Uniform"
                     : (push_constant ? "PushConstant" : "StorageBuffer");
 
-        // Vulkan 14.5.1: Check DescriptorSet and Binding annotation for
-        // PushConstant variables.
-        // Vulkan 14.5.2: Check DescriptorSet and Binding annotation for
-        // Uniform and StorageBuffer variables.
         if (spvIsVulkanEnv(vstate.context()->target_env)) {
+          // Vulkan 14.5.1: Check Block decoration for PushConstant variables.
           if (push_constant && !hasDecoration(id, SpvDecorationBlock, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                    << "PushConstant id '" << id
@@ -843,6 +840,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                    << "Such variables must be identified with a Block "
                       "decoration";
           }
+          // Vulkan 14.5.2: Check DescriptorSet and Binding decoration for
+          // Uniform and StorageBuffer variables.
           if (uniform || storage_buffer) {
             if (!hasDecoration(var_id, SpvDecorationDescriptorSet, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
