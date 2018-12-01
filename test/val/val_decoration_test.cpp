@@ -2012,6 +2012,8 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithRelaxedLayoutStillBad) {
                OpEntryPoint Vertex %main "main"
                OpSource GLSL 450
                OpDecorate %_arr_float_uint_2 ArrayStride 16
+               OpDecorate %u DescriptorSet 0
+               OpDecorate %u Binding 0
                OpMemberDecorate %S 0 Offset 0
                OpMemberDecorate %S 1 Offset 8
                OpDecorate %S Block
@@ -2038,7 +2040,7 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithRelaxedLayoutStillBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Structure id 3 decorated as Block for variable in Uniform "
+          "Structure id 4 decorated as Block for variable in Uniform "
           "storage class must follow standard uniform buffer layout rules: "
           "member 1 at offset 8 is not aligned to 16"));
 }
@@ -2052,6 +2054,8 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithVulkan1_1StillBad) {
                OpEntryPoint Vertex %main "main"
                OpSource GLSL 450
                OpDecorate %_arr_float_uint_2 ArrayStride 16
+               OpDecorate %u DescriptorSet 0
+               OpDecorate %u Binding 0
                OpMemberDecorate %S 0 Offset 0
                OpMemberDecorate %S 1 Offset 8
                OpDecorate %S Block
@@ -2077,7 +2081,7 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithVulkan1_1StillBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Structure id 3 decorated as Block for variable in Uniform "
+          "Structure id 4 decorated as Block for variable in Uniform "
           "storage class must follow relaxed uniform buffer layout rules: "
           "member 1 at offset 8 is not aligned to 16"));
 }
@@ -2276,6 +2280,375 @@ TEST_F(ValidateDecorations, VulkanPushConstantMissingBlockBad) {
                         "From Vulkan spec, section 14.5.1:\n"
                         "Such variables must be identified with a Block "
                         "decoration"));
+}
+
+TEST_F(ValidateDecorations, VulkanUniformMissingDescriptorSetBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
+            OpDecorate %var Binding 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer Uniform %struct
+     %var = OpVariable %ptr Uniform
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Uniform id '3' is missing DescriptorSet decoration.\n"
+                        "From Vulkan spec, section 14.5.2:\n"
+                        "These variables must have DescriptorSet and Binding "
+                        "decorations specified"));
+}
+
+TEST_F(ValidateDecorations, VulkanUniformMissingBindingBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
+            OpDecorate %var DescriptorSet 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer Uniform %struct
+     %var = OpVariable %ptr Uniform
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Uniform id '3' is missing Binding decoration.\n"
+                        "From Vulkan spec, section 14.5.2:\n"
+                        "These variables must have DescriptorSet and Binding "
+                        "decorations specified"));
+}
+
+TEST_F(ValidateDecorations, VulkanUniformConstantMissingDescriptorSetBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %var Binding 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+ %sampler = OpTypeSampler
+     %ptr = OpTypePointer UniformConstant %sampler
+     %var = OpVariable %ptr UniformConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("UniformConstant id '2' is missing DescriptorSet decoration.\n"
+                "From Vulkan spec, section 14.5.2:\n"
+                "These variables must have DescriptorSet and Binding "
+                "decorations specified"));
+}
+
+TEST_F(ValidateDecorations, VulkanUniformConstantMissingBindingBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %var DescriptorSet 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+ %sampler = OpTypeSampler
+     %ptr = OpTypePointer UniformConstant %sampler
+     %var = OpVariable %ptr UniformConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("UniformConstant id '2' is missing Binding decoration.\n"
+                "From Vulkan spec, section 14.5.2:\n"
+                "These variables must have DescriptorSet and Binding "
+                "decorations specified"));
+}
+
+TEST_F(ValidateDecorations, VulkanStorageBufferMissingDescriptorSetBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpExtension "SPV_KHR_storage_buffer_storage_class"
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct BufferBlock
+            OpDecorate %var Binding 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer StorageBuffer %struct
+     %var = OpVariable %ptr StorageBuffer
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("StorageBuffer id '3' is missing DescriptorSet decoration.\n"
+                "From Vulkan spec, section 14.5.2:\n"
+                "These variables must have DescriptorSet and Binding "
+                "decorations specified"));
+}
+
+TEST_F(ValidateDecorations, VulkanStorageBufferMissingBindingBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpExtension "SPV_KHR_storage_buffer_storage_class"
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct BufferBlock
+            OpDecorate %var DescriptorSet 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer StorageBuffer %struct
+     %var = OpVariable %ptr StorageBuffer
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("StorageBuffer id '3' is missing Binding decoration.\n"
+                        "From Vulkan spec, section 14.5.2:\n"
+                        "These variables must have DescriptorSet and Binding "
+                        "decorations specified"));
+}
+
+TEST_F(ValidateDecorations, UniformMissingDescriptorSetGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
+            OpDecorate %var Binding 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer Uniform %struct
+     %var = OpVariable %ptr Uniform
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, UniformMissingBindingGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
+            OpDecorate %var DescriptorSet 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer Uniform %struct
+     %var = OpVariable %ptr Uniform
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, UniformConstantMissingDescriptorSetGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %var Binding 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+ %sampler = OpTypeSampler
+     %ptr = OpTypePointer UniformConstant %sampler
+     %var = OpVariable %ptr UniformConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, UniformConstantMissingBindingGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %var DescriptorSet 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+ %sampler = OpTypeSampler
+     %ptr = OpTypePointer UniformConstant %sampler
+     %var = OpVariable %ptr UniformConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, StorageBufferMissingDescriptorSetGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpExtension "SPV_KHR_storage_buffer_storage_class"
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct BufferBlock
+            OpDecorate %var Binding 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer StorageBuffer %struct
+     %var = OpVariable %ptr StorageBuffer
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, StorageBufferMissingBindingGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpExtension "SPV_KHR_storage_buffer_storage_class"
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct BufferBlock
+            OpDecorate %var DescriptorSet 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer StorageBuffer %struct
+     %var = OpVariable %ptr StorageBuffer
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
 }
 
 TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBaseAlignmentGood) {

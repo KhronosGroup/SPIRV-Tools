@@ -61,6 +61,37 @@ OpCapability ImageBuffer
     ss << "OpExecutionMode %main OriginUpperLeft\n";
   }
 
+  if (env == SPV_ENV_VULKAN_1_0) {
+    ss << R"(
+OpDecorate %uniform_image_f32_1d_0001 DescriptorSet 0
+OpDecorate %uniform_image_f32_1d_0001 Binding 0
+OpDecorate %uniform_image_f32_1d_0002_rgba32f DescriptorSet 0
+OpDecorate %uniform_image_f32_1d_0002_rgba32f Binding 1
+OpDecorate %uniform_image_f32_2d_0001 DescriptorSet 0
+OpDecorate %uniform_image_f32_2d_0001 Binding 2
+OpDecorate %uniform_image_f32_2d_0010 DescriptorSet 0
+OpDecorate %uniform_image_f32_2d_0010 Binding 3
+OpDecorate %uniform_image_u32_2d_0001 DescriptorSet 1
+OpDecorate %uniform_image_u32_2d_0001 Binding 0
+OpDecorate %uniform_image_u32_2d_0000 DescriptorSet 1
+OpDecorate %uniform_image_u32_2d_0000 Binding 1
+OpDecorate %uniform_image_s32_3d_0001 DescriptorSet 1
+OpDecorate %uniform_image_s32_3d_0001 Binding 2
+OpDecorate %uniform_image_f32_2d_0002 DescriptorSet 1
+OpDecorate %uniform_image_f32_2d_0002 Binding 3
+OpDecorate %uniform_image_f32_spd_0002 DescriptorSet 2
+OpDecorate %uniform_image_f32_spd_0002 Binding 0
+OpDecorate %uniform_image_f32_3d_0111 DescriptorSet 2
+OpDecorate %uniform_image_f32_3d_0111 Binding 1
+OpDecorate %uniform_image_f32_cube_0101 DescriptorSet 2
+OpDecorate %uniform_image_f32_cube_0101 Binding 2
+OpDecorate %uniform_image_f32_cube_0102_rgba32f DescriptorSet 2
+OpDecorate %uniform_image_f32_cube_0102_rgba32f Binding 3
+OpDecorate %uniform_sampler DescriptorSet 3
+OpDecorate %uniform_sampler Binding 0
+)";
+  }
+
   ss << R"(
 %void = OpTypeVoid
 %func = OpTypeFunction %void
