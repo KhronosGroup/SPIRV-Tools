@@ -210,7 +210,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
   }
 
   friendly_mapper_ = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
-        context_, words_, num_words_);
+      context_, words_, num_words_);
   name_mapper_ = friendly_mapper_->GetNameMapper();
 }
 

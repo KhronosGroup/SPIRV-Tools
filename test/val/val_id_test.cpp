@@ -273,10 +273,9 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateBad) {
 %1 = OpTypeInt 32 0)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "OpMemberDecorate Structure type <id> '1[%uint]' is not a struct type."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpMemberDecorate Structure type <id> '1[%uint]' is "
+                        "not a struct type."));
 }
 TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -406,10 +405,9 @@ TEST_F(ValidateIdWithMessage, OpEntryPointFunctionBad) {
 %1 = OpTypeVoid)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpEntryPoint Entry Point <id> '1[%void]' is not a "
-                "function."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint Entry Point <id> '1[%void]' is not a "
+                        "function."));
 }
 TEST_F(ValidateIdWithMessage, OpEntryPointParameterCountBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -786,7 +784,8 @@ class OpTypeArrayLengthTest
         spvValidate(ScopedContext().context, &cbinary, &diagnostic_);
     if (status != SPV_SUCCESS) {
       spvDiagnosticPrint(diagnostic_);
-      EXPECT_THAT(std::string(diagnostic_->error), testing::ContainsRegex(expected_err));
+      EXPECT_THAT(std::string(diagnostic_->error), 
+                  testing::ContainsRegex(expected_err));
     }
     return status;
   }
@@ -820,41 +819,35 @@ TEST_P(OpTypeArrayLengthTest, LengthPositive) {
 
 TEST_P(OpTypeArrayLengthTest, LengthZero) {
   const int width = GetParam();
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("0", kSigned, width)),
-          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
-          "least 1."));
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, width)),
-          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
-          "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("0", kSigned, width)),
+                "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
+                "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, width)),
+                "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
+                "least 1."));
 }
 
 TEST_P(OpTypeArrayLengthTest, LengthNegative) {
   const int width = GetParam();
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, width)),
-          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
-          "least 1."));
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, width)),
-          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
-          "least 1."));
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, width)),
-          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
-          "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, width)),
+                "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
+                "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, width)),
+                "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
+                "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, width)),
+                "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
+                "least 1."));
   const std::string neg_max = "0x8" + std::string(width / 4 - 1, '0');
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width)),
-          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
-          "least 1."));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width)),
+                "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
+                "least 1."));
 }
 
 // The only valid widths for integers are 8, 16, 32, and 64.
@@ -1099,9 +1092,8 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorResultTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpConstantComposite Result Type <id> '1[%float]' is not a "
-          "composite type."));
+      HasSubstr("OpConstantComposite Result Type <id> '1[%float]' is not a "
+                "composite type."));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorConstituentTypeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -1402,9 +1394,8 @@ TEST_F(ValidateIdWithMessage, OpConstantNullBasicBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpConstantNull Result Type <id> '1[%void]' cannot have a null "
-          "value."));
+      HasSubstr("OpConstantNull Result Type <id> '1[%void]' cannot have a null "
+                "value."));
 }
 
 TEST_F(ValidateIdWithMessage, OpConstantNullArrayBad) {
@@ -1430,10 +1421,9 @@ TEST_F(ValidateIdWithMessage, OpConstantNullStructBad) {
 %4 = OpConstantNull %3)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "OpConstantNull Result Type <id> '2[%_struct_2]' cannot have a null value."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpConstantNull Result Type <id> '2[%_struct_2]' "
+                        "cannot have a null value."));
 }
 
 TEST_F(ValidateIdWithMessage, OpConstantNullRuntimeArrayBad) {
@@ -3486,8 +3476,8 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand "
-    "8[%_ptr_Private_float] cannot be a type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 8[%_ptr_Private_float] cannot be a type"));
 }
 
 // Invalid: The storage class of Base and Result do not match.
@@ -4782,10 +4772,9 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpPhi's incoming basic block <id> 3[%true] is not an "
-                "OpLabel."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpPhi's incoming basic block <id> 3[%true] is not an "
+                        "OpLabel."));
 }
 
 TEST_F(ValidateIdWithMessage, OpPhiNotAPredecessor) {
@@ -4989,10 +4978,9 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsLabel) {
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpReturnValue Value <id> '5[%5]' does not represent a "
-                "value."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpReturnValue Value <id> '5[%5]' does not represent a "
+                        "value."));
 }
 
 TEST_F(ValidateIdWithMessage, OpReturnValueIsVoid) {

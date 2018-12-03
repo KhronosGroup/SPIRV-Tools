@@ -494,10 +494,11 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceValue) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("Block\\(s\\) \\{11\\[%11\\]\\} are referenced but not "
-                           "defined in function .\\[%Main\\]\n"
-                           "  %Main = OpFunction %void None %10\n"))
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("Block\\(s\\) \\{11\\[%11\\]\\} are referenced but not "
+                   "defined in function .\\[%Main\\]\n  %Main = OpFunction "
+                   "%void None %10\n"))
       << str;
 }
 
@@ -1003,11 +1004,11 @@ TEST_P(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
   CompileSuccessfully(str);
   if (is_shader) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-    EXPECT_THAT(getDiagnosticString(),
-                MatchesRegex(
-                    "Back-edges \\(.\\[%split\\] -> .\\[%split\\]\\) can only be "
-                    "formed between a block and a loop header.\n"
-                    "  %split = OpLabel\n"));
+    EXPECT_THAT(
+        getDiagnosticString(),
+        MatchesRegex(
+            "Back-edges \\(.\\[%split\\] -> .\\[%split\\]\\) can only be "
+            "formed between a block and a loop header.\n  %split = OpLabel\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -1038,11 +1039,11 @@ TEST_P(ValidateCFG, MultipleBackEdgeBlocksToLoopHeaderBad) {
   CompileSuccessfully(str);
   if (is_shader) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-    EXPECT_THAT(getDiagnosticString(),
-                MatchesRegex(
-                    "Loop header .\\[%loop\\] is targeted by 2 back-edge blocks "
-                    "but the standard requires exactly one\n"
-                    "  %loop = OpLabel\n"))
+    EXPECT_THAT(
+        getDiagnosticString(),
+        MatchesRegex(
+            "Loop header .\\[%loop\\] is targeted by 2 back-edge blocks but "
+            "the standard requires exactly one\n  %loop = OpLabel\n"))
         << str;
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());

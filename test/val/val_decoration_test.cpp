@@ -3341,9 +3341,10 @@ OpMemberDecorate %1 0 Coherent
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Coherent decoration targeting 1[%_struct_1] (member "
-                        "index 0) is banned when using the Vulkan memory model."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Coherent decoration targeting 1[%_struct_1] (member index 0) "
+                "is banned when using the Vulkan memory model."));
 }
 
 TEST_F(ValidateDecorations, VulkanMemoryModelNoVolatile) {
@@ -3696,9 +3697,8 @@ OpGroupDecorate %1 %1
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> "
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> "
                 "'1[%1]'"));
 }
 
@@ -3714,9 +3714,8 @@ OpGroupDecorate %1 %2 %1
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> "
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> "
                 "'1[%1]'"));
 }
 

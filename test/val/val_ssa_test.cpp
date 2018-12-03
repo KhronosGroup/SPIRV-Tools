@@ -202,8 +202,9 @@ TEST_F(ValidateSSA, ForwardMemberNameMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("The following forward "
-            "referenced IDs have not been defined:\n2[%2]"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The following forward referenced IDs have not been "
+                        "defined:\n2[%2]"));
 }
 
 TEST_F(ValidateSSA, ForwardDecorateGood) {
