@@ -105,8 +105,8 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateOutOfBound) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index 1 provided in OpMemberDecorate for struct <id> "
-                        "2 is out of bounds. The structure has 1 members. "
-                        "Largest valid index is 0."));
+                        "2[\%_struct_2] is out of bounds. The structure has 1 "
+                        "members. Largest valid index is 0."));
 }
 
 TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
@@ -300,10 +300,11 @@ TEST_F(ValidateDecorations, StructContainsBuiltInStructBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Structure <id> 1 contains members with BuiltIn "
-                        "decoration. Therefore this structure may not be "
-                        "contained as a member of another structure type. "
-                        "Structure <id> 4 contains structure <id> 1."));
+              HasSubstr("Structure <id> 1[\%_struct_1] contains members with "
+                        "BuiltIn decoration. Therefore this structure may not "
+                        "be contained as a member of another structure type. "
+                        "Structure <id> 4[\%_struct_4] contains structure <id> "
+                        "1[\%_struct_1]."));
 }
 
 TEST_F(ValidateDecorations, StructContainsNonBuiltInStructGood) {
@@ -3322,8 +3323,8 @@ OpDecorate %1 Coherent
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Coherent decoration targeting 1 is banned when using "
-                        "the Vulkan memory model."));
+              HasSubstr("Coherent decoration targeting 1[%1] is "
+                        "banned when using the Vulkan memory model."));
 }
 
 TEST_F(ValidateDecorations, VulkanMemoryModelNoCoherentMember) {
@@ -3341,9 +3342,8 @@ OpMemberDecorate %1 0 Coherent
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Coherent decoration targeting 1 (member index 0) is "
-                        "banned when using "
-                        "the Vulkan memory model."));
+              HasSubstr("Coherent decoration targeting 1[\%_struct_1] (member "
+                        "index 0) is banned when using the Vulkan memory model."));
 }
 
 TEST_F(ValidateDecorations, VulkanMemoryModelNoVolatile) {
@@ -3363,8 +3363,8 @@ OpDecorate %1 Volatile
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Volatile decoration targeting 1 is banned when using "
-                        "the Vulkan memory model."));
+              HasSubstr("Volatile decoration targeting 1[%1] is banned when "
+                        "using the Vulkan memory model."));
 }
 
 TEST_F(ValidateDecorations, VulkanMemoryModelNoVolatileMember) {
@@ -3382,9 +3382,9 @@ OpMemberDecorate %1 1 Volatile
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Volatile decoration targeting 1 (member index 1) is "
-                        "banned when using "
-                        "the Vulkan memory model."));
+              HasSubstr("Volatile decoration targeting 1[\%_struct_1] (member "
+                        "index 1) is banned when using the Vulkan memory "
+                        "model."));
 }
 
 TEST_F(ValidateDecorations, FPRoundingModeGood) {
@@ -3698,7 +3698,8 @@ OpGroupDecorate %1 %1
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> '1'"));
+      HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> "
+                "'1[%1]'"));
 }
 
 TEST_F(ValidateDecorations, GroupDecorateTargetsDecorationGroup2) {
@@ -3715,7 +3716,8 @@ OpGroupDecorate %1 %2 %1
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> '1'"));
+      HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> "
+                "'1[%1]'"));
 }
 
 TEST_F(ValidateDecorations, RecurseThroughRuntimeArray) {

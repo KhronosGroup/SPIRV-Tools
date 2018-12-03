@@ -442,9 +442,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpVariable, <id> '5', has a disallowed initializer & storage class "
-          "combination.\n"
-          "From WebGPU execution environment spec:\n"
+          "OpVariable, <id> '5[%5]', has a disallowed initializer & storage "
+          "class combination.\nFrom WebGPU execution environment spec:\n"
           "Variable declarations that include initializers must have one of "
           "the following storage classes: Output, Private, or Function\n"
           "  %5 = OpVariable %_ptr_Uniform_float Uniform %float_1\n"));
@@ -535,9 +534,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpVariable, <id> '5', has a disallowed initializer & storage class "
-          "combination.\n"
-          "From Vulkan spec, Appendix A:\n"
+          "OpVariable, <id> '5[%5]', has a disallowed initializer & storage "
+          "class combination.\nFrom Vulkan spec, Appendix A:\n"
           "Variable declarations that include initializers must have one of "
           "the following storage classes: Output, Private, or Function\n  "
           "%5 = OpVariable %_ptr_Input_float Input %float_1\n"));
@@ -620,8 +618,9 @@ TEST_F(ValidateMemory, ArrayLenResultNotIntType) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "The Result Type of OpArrayLength <id> '10' must be OpTypeInt with "
-          "width 32 and signedness 0.\n  %10 = OpArrayLength %float %9 0\n"));
+          "The Result Type of OpArrayLength <id> '10[%10]' must be OpTypeInt "
+          "with width 32 and signedness 0.\n  %10 = OpArrayLength %float %9 "
+          "0\n"));
 }
 
 TEST_F(ValidateMemory, ArrayLenResultNot32bits) {
@@ -652,8 +651,9 @@ TEST_F(ValidateMemory, ArrayLenResultNot32bits) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "The Result Type of OpArrayLength <id> '11' must be OpTypeInt with "
-          "width 32 and signedness 0.\n  %11 = OpArrayLength %ushort %10 0\n"));
+          "The Result Type of OpArrayLength <id> '11[%11]' must be OpTypeInt "
+          "with width 32 and signedness 0.\n  %11 = OpArrayLength %ushort %10 "
+          "0\n"));
 }
 
 TEST_F(ValidateMemory, ArrayLenResultSigned) {
@@ -683,8 +683,9 @@ TEST_F(ValidateMemory, ArrayLenResultSigned) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "The Result Type of OpArrayLength <id> '11' must be OpTypeInt with "
-          "width 32 and signedness 0.\n  %11 = OpArrayLength %int %10 0\n"));
+          "The Result Type of OpArrayLength <id> '11[%11]' must be OpTypeInt "
+          "with width 32 and signedness 0.\n  %11 = OpArrayLength %int %10 "
+          "0\n"));
 }
 
 TEST_F(ValidateMemory, ArrayLenInputNotStruct) {
@@ -712,8 +713,8 @@ TEST_F(ValidateMemory, ArrayLenInputNotStruct) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Struture's type in OpArrayLength <id> '11' must "
-                        "be a pointer to an OpTypeStruct."));
+              HasSubstr("The Struture's type in OpArrayLength <id> '11[%11]' "
+                        "must be a pointer to an OpTypeStruct."));
 }
 
 TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA) {
@@ -742,8 +743,9 @@ TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("The Struture's last member in OpArrayLength <id> '11' must be "
-                "an OpTypeRuntimeArray.\n  %11 = OpArrayLength %uint %10 0\n"));
+      HasSubstr("The Struture's last member in OpArrayLength <id> '11[%11]' "
+                "must be an OpTypeRuntimeArray.\n  %11 = OpArrayLength %uint "
+                "%10 0\n"));
 }
 
 TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA2) {
@@ -772,8 +774,9 @@ TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA2) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("The Struture's last member in OpArrayLength <id> '11' must be "
-                "an OpTypeRuntimeArray.\n  %11 = OpArrayLength %uint %10 1\n"));
+      HasSubstr("The Struture's last member in OpArrayLength <id> '11[%11]' "
+                "must be an OpTypeRuntimeArray.\n  %11 = OpArrayLength %uint "
+                "%10 1\n"));
 }
 
 TEST_F(ValidateMemory, ArrayLenIndexNotLastMember) {
@@ -803,8 +806,8 @@ TEST_F(ValidateMemory, ArrayLenIndexNotLastMember) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "The array member in OpArrayLength <id> '11' must be an the last "
-          "member of the struct.\n  %11 = OpArrayLength %uint %10 0\n"));
+          "The array member in OpArrayLength <id> '11[%11]' must be an the "
+          "last member of the struct.\n  %11 = OpArrayLength %uint %10 0\n"));
 }
 
 TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
@@ -835,8 +838,8 @@ TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "The Struture's type in OpArrayLength <id> '12' must be a pointer to "
-          "an OpTypeStruct.\n  %12 = OpArrayLength %uint %11 0\n"));
+          "The Struture's type in OpArrayLength <id> '12[%12]' must be a "
+          "pointer to an OpTypeStruct.\n  %12 = OpArrayLength %uint %11 0\n"));
 }
 
 TEST_F(ValidateMemory, ArrayLenPointerIsAType) {
@@ -859,7 +862,8 @@ TEST_F(ValidateMemory, ArrayLenPointerIsAType) {
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 4 cannot be a type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 4[\%float] cannot be a "
+                                               "type"));
 }
 
 TEST_F(ValidateMemory, PushConstantNotStructGood) {
@@ -905,8 +909,8 @@ TEST_F(ValidateMemory, VulkanPushConstantNotStructBad) {
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("PushConstant OpVariable <id> '6' has illegal type.\n"
-                        "From Vulkan spec, section 14.5.1:\n"
+              HasSubstr("PushConstant OpVariable <id> '6[%6]' has illegal "
+                        "type.\nFrom Vulkan spec, section 14.5.1:\n"
                         "Such variables must be typed as OpTypeStruct, "
                         "or an array of this type"));
 }

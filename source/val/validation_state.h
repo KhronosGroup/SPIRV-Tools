@@ -28,6 +28,7 @@
 #include "source/disassemble.h"
 #include "source/enum_set.h"
 #include "source/latest_version_spirv_header.h"
+#include "source/name_mapper.h"
 #include "source/spirv_definition.h"
 #include "source/spirv_validator_options.h"
 #include "source/val/decoration.h"
@@ -153,9 +154,6 @@ class ValidationState_t {
 
   /// Mutator function for ID bound.
   void setIdBound(uint32_t bound);
-
-  /// Like getIdName but does not display the id if the \p id has a name
-  std::string getIdOrName(uint32_t id) const;
 
   /// Returns the number of ID which have been forward referenced but not
   /// defined
@@ -660,6 +658,10 @@ class ValidationState_t {
   /// module which can (indirectly) call the function.
   std::unordered_map<uint32_t, std::vector<uint32_t>> function_to_entry_points_;
   const std::vector<uint32_t> empty_ids_;
+
+  /// Maps ids to friendly names.
+  std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper_;
+  spvtools::NameMapper name_mapper_;
 
   /// Variables used to reduce the number of diagnostic messages.
   uint32_t num_of_warnings_;
