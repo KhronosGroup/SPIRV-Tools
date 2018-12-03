@@ -941,6 +941,572 @@ TEST_F(ValidateMemory, VulkanPushConstant) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeLoadBad1) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%load = OpLoad %int %var MakePointerVisibleKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeLoadBad2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%load = OpLoad %int %var Aligned|MakePointerVisibleKHR|NonPrivatePointerKHR 4 %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeLoadGood1) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%load = OpLoad %int %var MakePointerVisibleKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeLoadGood2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%load = OpLoad %int %var Aligned|MakePointerVisibleKHR|NonPrivatePointerKHR 4 %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeStoreBad1) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpStore %var %device MakePointerAvailableKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeStoreBad2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpStore %var %device Aligned|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeStoreGood1) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpStore %var %device MakePointerAvailableKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeStoreGood2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpStore %var %device Aligned|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemoryBad1) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemory %var1 %var2 MakePointerAvailableKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemoryBad2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%workgroup = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemory %var1 %var2 Aligned|MakePointerVisibleKHR|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %device %workgroup
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemoryBad3) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%workgroup = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemory %var1 %var2 Aligned|MakePointerVisibleKHR|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %workgroup %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemoryGood1) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemory %var1 %var2 MakePointerAvailableKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemoryGood2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%workgroup = OpConstant %int 2
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemory %var1 %var2 Aligned|MakePointerVisibleKHR|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %device %workgroup
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemoryGood3) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%workgroup = OpConstant %int 2
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemory %var1 %var2 Aligned|MakePointerVisibleKHR|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %workgroup %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemorySizedBad1) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpCapability Addresses
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemorySized %var1 %var2 %device MakePointerAvailableKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemorySizedBad2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpCapability Addresses
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%workgroup = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemorySized %var1 %var2 %device Aligned|MakePointerVisibleKHR|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %device %workgroup
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemorySizedBad3) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability Linkage
+OpCapability Addresses
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%workgroup = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemorySized %var1 %var2 %device Aligned|MakePointerVisibleKHR|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %workgroup %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemorySizedGood1) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpCapability Addresses
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemorySized %var1 %var2 %device MakePointerAvailableKHR|NonPrivatePointerKHR %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemorySizedGood2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpCapability Addresses
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%workgroup = OpConstant %int 2
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemorySized %var1 %var2 %device Aligned|MakePointerVisibleKHR|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %device %workgroup
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemorySizedGood3) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Linkage
+OpCapability Addresses
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%device = OpConstant %int 1
+%workgroup = OpConstant %int 2
+%int_ptr_ssbo = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %int_ptr_ssbo StorageBuffer
+%var2 = OpVariable %int_ptr_ssbo StorageBuffer
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpCopyMemorySized %var1 %var2 %device Aligned|MakePointerVisibleKHR|MakePointerAvailableKHR|NonPrivatePointerKHR 4 %workgroup %device
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
