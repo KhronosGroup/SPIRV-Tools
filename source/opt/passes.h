@@ -64,6 +64,7 @@
 #include "source/opt/strip_debug_info_pass.h"
 #include "source/opt/strip_reflect_info_pass.h"
 #include "source/opt/unify_const_pass.h"
+#include "source/opt/upgrade_memory_model.h"
 #include "source/opt/vector_dce.h"
 #include "source/opt/workaround1209.h"
 

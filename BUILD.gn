@@ -616,6 +616,8 @@ static_library("spvtools_opt") {
     "source/opt/types.h",
     "source/opt/unify_const_pass.cpp",
     "source/opt/unify_const_pass.h",
+    "source/opt/upgrade_memory_model.cpp",
+    "source/opt/upgrade_memory_model.h",
     "source/opt/value_number_table.cpp",
     "source/opt/value_number_table.h",
     "source/opt/vector_dce.cpp",
