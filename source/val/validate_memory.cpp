@@ -891,6 +891,13 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
   // The structure that is passed in must be an pointer to a structure, whose
   // last element is a runtime array.
   auto pointer = state.FindDef(inst->GetOperandAs<uint32_t>(2));
+  if (pointer->type_id() == 0) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The Struture's type in " << instr_name << " <id> '"
+           << state.getIdName(inst->id())
+           << "' must be a pointer to an OpTypeStruct.";
+  }
+
   auto pointer_type = state.FindDef(pointer->type_id());
   if (pointer_type->opcode() != SpvOpTypePointer) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
