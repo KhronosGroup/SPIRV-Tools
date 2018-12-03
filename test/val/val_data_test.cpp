@@ -573,8 +573,8 @@ OpTypeForwardPointer %_ptr_Generic_struct_A Generic
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Found a forward reference to a non-pointer type in "
-                        "OpTypeStruct instruction."));
+              HasSubstr("Pointer type in OpForwardPointer is not a pointer "
+                        "type.\n  OpTypeForwardPointer %float Generic\n"));
 }
 
 TEST_F(ValidateData, forward_ref_points_to_non_struct) {
@@ -618,7 +618,8 @@ TEST_F(ValidateData, ext_16bit_storage_caps_allow_free_fp_rounding_mode) {
         OpExtension "SPV_KHR_variable_pointers"
         OpExtension "SPV_KHR_16bit_storage"
         OpMemoryModel Logical GLSL450
-        OpDecorate %_ FPRoundingMode )" + mode + R"(
+        OpDecorate %_ FPRoundingMode )" +
+                        mode + R"(
         %half = OpTypeFloat 16
         %float = OpTypeFloat 32
         %float_1_25 = OpConstant %float 1.25

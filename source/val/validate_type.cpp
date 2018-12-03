@@ -191,11 +191,6 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
              << _.getIdName(member_type_id) << ".";
     }
     if (_.IsForwardPointer(member_type_id)) {
-      if (member_type->opcode() != SpvOpTypePointer) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "Found a forward reference to a non-pointer "
-                  "type in OpTypeStruct instruction.";
-      }
       // If we're dealing with a forward pointer:
       // Find out the type that the pointer is pointing to (must be struct)
       // word 3 is the <id> of the type being pointed to.
