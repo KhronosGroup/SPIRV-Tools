@@ -69,6 +69,7 @@ OpCapability Shader
 %workgroup = OpConstant %u32 2
 %subgroup = OpConstant %u32 3
 %invocation = OpConstant %u32 4
+%queuefamily = OpConstant %u32 5
 
 %none = OpConstant %u32 0
 %acquire = OpConstant %u32 2
@@ -248,7 +249,7 @@ OpControlBarrier %workgroup %workgroup %acquire_release_uniform_workgroup
 
 TEST_F(ValidateBarriers, OpControlBarrierWebGPUSuccess) {
   const std::string body = R"(
-OpControlBarrier %workgroup %device %none
+OpControlBarrier %workgroup %queuefamily %none
 OpControlBarrier %workgroup %workgroup %acquire_release_uniform_workgroup
 )";
 
