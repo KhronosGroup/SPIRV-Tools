@@ -296,10 +296,25 @@ spv_result_t ValidateTypeFunction(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateTypeForwardPointer(ValidationState_t& _,
+                                        const Instruction* inst) {
+  const auto pointer_type_id = inst->GetOperandAs<uint32_t>(0);
+  const auto pointer_type_inst = _.FindDef(pointer_type_id);
+  if (pointer_type_inst->opcode() != SpvOpTypePointer) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Pointer type in OpForwardPointer is not a pointer type.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t TypePass(ValidationState_t& _, const Instruction* inst) {
-  if (!spvOpcodeGeneratesType(inst->opcode())) return SPV_SUCCESS;
+  if (!spvOpcodeGeneratesType(inst->opcode()) &&
+      inst->opcode() != SpvOpTypeForwardPointer) {
+    return SPV_SUCCESS;
+  }
 
   if (auto error = ValidateUniqueness(_, inst)) return error;
 
@@ -324,6 +339,9 @@ spv_result_t TypePass(ValidationState_t& _, const Instruction* inst) {
       break;
     case SpvOpTypeFunction:
       if (auto error = ValidateTypeFunction(_, inst)) return error;
+      break;
+    case SpvOpTypeForwardPointer:
+      if (auto error = ValidateTypeForwardPointer(_, inst)) return error;
       break;
     default:
       break;
