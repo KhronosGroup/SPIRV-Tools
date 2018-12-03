@@ -198,6 +198,7 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
 
     BasicBlock& bb_merge = *fn.begin();
 
+    // TODO(1841): Handle id overflow.
     fn.begin().InsertBefore(std::unique_ptr<BasicBlock>(
         new BasicBlock(std::unique_ptr<Instruction>(new Instruction(
             context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));
@@ -207,6 +208,7 @@ TEST_F(IRBuilderTest, TestCondBranchAddition) {
       builder.AddBranch(bb_merge.id());
     }
 
+    // TODO(1841): Handle id overflow.
     fn.begin().InsertBefore(std::unique_ptr<BasicBlock>(
         new BasicBlock(std::unique_ptr<Instruction>(new Instruction(
             context.get(), SpvOpLabel, 0, context->TakeNextId(), {})))));

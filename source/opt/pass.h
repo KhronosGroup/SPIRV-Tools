@@ -122,6 +122,7 @@ class Pass {
   virtual Status Process() = 0;
 
   // Return the next available SSA id and increment it.
+  // TODO(1841): Handle id overflow.
   uint32_t TakeNextId() { return context_->TakeNextId(); }
 
  private:
@@ -135,6 +136,10 @@ class Pass {
   // is used to check that we do not run the same instance twice.
   bool already_run_;
 };
+
+inline Pass::Status CombineStatus(Pass::Status a, Pass::Status b) {
+  return std::min(a, b);
+}
 
 }  // namespace opt
 }  // namespace spvtools

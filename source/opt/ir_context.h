@@ -450,7 +450,8 @@ class IRContext {
     post_dominator_trees_.erase(f);
   }
 
-  // Return the next available SSA id and increment it.
+  // Return the next available SSA id and increment it.  Returns 0 if the
+  // maximum SSA id has been reached.
   inline uint32_t TakeNextId() { return module()->TakeNextIdBound(); }
 
   FeatureManager* get_feature_mgr() {

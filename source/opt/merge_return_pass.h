@@ -212,7 +212,9 @@ class MergeReturnPass : public MemPass {
   //
   // If new blocks that are created will be added to |order|.  This way a call
   // can traverse these new block in structured order.
-  void PredicateBlocks(BasicBlock* return_block,
+  //
+  // Returns true if successful.
+  bool PredicateBlocks(BasicBlock* return_block,
                        std::unordered_set<BasicBlock*>* pSet,
                        std::list<BasicBlock*>* order);
 
@@ -222,7 +224,9 @@ class MergeReturnPass : public MemPass {
   //
   // If new blocks that are created will be added to |order|.  This way a call
   // can traverse these new block in structured order.
-  void BreakFromConstruct(BasicBlock* block, BasicBlock* merge_block,
+  //
+  // Returns true if successful.
+  bool BreakFromConstruct(BasicBlock* block, BasicBlock* merge_block,
                           std::unordered_set<BasicBlock*>* predicated,
                           std::list<BasicBlock*>* order);
 

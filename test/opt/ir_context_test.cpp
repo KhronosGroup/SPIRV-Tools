@@ -567,6 +567,103 @@ TEST_F(IRContextTest, BasicDontVisitExportedVariable) {
   EXPECT_THAT(processed, UnorderedElementsAre(10));
 }
 
+TEST_F(IRContextTest, IdBoundTestAtLimit) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  uint32_t current_bound = context->module()->id_bound();
+  context->set_max_id_bound(current_bound);
+  uint32_t next_id_bound = context->TakeNextId();
+  EXPECT_EQ(next_id_bound, 0);
+  EXPECT_EQ(current_bound, context->module()->id_bound());
+  next_id_bound = context->TakeNextId();
+  EXPECT_EQ(next_id_bound, 0);
+}
+
+TEST_F(IRContextTest, IdBoundTestBelowLimit) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  uint32_t current_bound = context->module()->id_bound();
+  context->set_max_id_bound(current_bound + 100);
+  uint32_t next_id_bound = context->TakeNextId();
+  EXPECT_EQ(next_id_bound, current_bound);
+  EXPECT_EQ(current_bound + 1, context->module()->id_bound());
+  next_id_bound = context->TakeNextId();
+  EXPECT_EQ(next_id_bound, current_bound + 1);
+}
+
+TEST_F(IRContextTest, IdBoundTestNearLimit) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  uint32_t current_bound = context->module()->id_bound();
+  context->set_max_id_bound(current_bound + 1);
+  uint32_t next_id_bound = context->TakeNextId();
+  EXPECT_EQ(next_id_bound, current_bound);
+  EXPECT_EQ(current_bound + 1, context->module()->id_bound());
+  next_id_bound = context->TakeNextId();
+  EXPECT_EQ(next_id_bound, 0);
+}
+
+TEST_F(IRContextTest, IdBoundTestUIntMax) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4294967294 = OpLabel ; ID is UINT_MAX-1
+OpReturn
+OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  uint32_t current_bound = context->module()->id_bound();
+
+  // Expecting |BuildModule| to preserve the numeric ids.
+  EXPECT_EQ(current_bound, std::numeric_limits<uint32_t>::max());
+
+  context->set_max_id_bound(current_bound);
+  uint32_t next_id_bound = context->TakeNextId();
+  EXPECT_EQ(next_id_bound, 0);
+  EXPECT_EQ(current_bound, context->module()->id_bound());
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

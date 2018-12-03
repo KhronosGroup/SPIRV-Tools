@@ -59,6 +59,7 @@ class InstructionBuilder {
                            preserved_analyses) {}
 
   Instruction* AddNullaryOp(uint32_t type_id, SpvOp opcode) {
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newUnOp(new Instruction(
         GetContext(), opcode, type_id,
         opcode == SpvOpReturn ? 0 : GetContext()->TakeNextId(), {}));
@@ -66,6 +67,7 @@ class InstructionBuilder {
   }
 
   Instruction* AddUnaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1) {
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newUnOp(new Instruction(
         GetContext(), opcode, type_id, GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}}}));
@@ -74,6 +76,7 @@ class InstructionBuilder {
 
   Instruction* AddBinaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
                            uint32_t operand2) {
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newBinOp(new Instruction(
         GetContext(), opcode, type_id,
         opcode == SpvOpStore ? 0 : GetContext()->TakeNextId(),
@@ -84,6 +87,7 @@ class InstructionBuilder {
 
   Instruction* AddTernaryOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
                             uint32_t operand2, uint32_t operand3) {
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newTernOp(new Instruction(
         GetContext(), opcode, type_id, GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
@@ -95,6 +99,7 @@ class InstructionBuilder {
   Instruction* AddQuadOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
                          uint32_t operand2, uint32_t operand3,
                          uint32_t operand4) {
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newQuadOp(new Instruction(
         GetContext(), opcode, type_id, GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
@@ -106,6 +111,7 @@ class InstructionBuilder {
 
   Instruction* AddIdLiteralOp(uint32_t type_id, SpvOp opcode, uint32_t operand1,
                               uint32_t operand2) {
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> newBinOp(new Instruction(
         GetContext(), opcode, type_id, GetContext()->TakeNextId(),
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {operand1}},
@@ -124,6 +130,7 @@ class InstructionBuilder {
     for (size_t i = 0; i < operands.size(); i++) {
       ops.push_back({SPV_OPERAND_TYPE_ID, {operands[i]}});
     }
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> new_inst(new Instruction(
         GetContext(), opcode, type_id,
         result != 0 ? result : GetContext()->TakeNextId(), ops));
@@ -251,6 +258,7 @@ class InstructionBuilder {
   // The id |op1| is the left hand side of the operation.
   // The id |op2| is the right hand side of the operation.
   Instruction* AddIAdd(uint32_t type, uint32_t op1, uint32_t op2) {
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> inst(new Instruction(
         GetContext(), SpvOpIAdd, type, GetContext()->TakeNextId(),
         {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}}));
@@ -264,6 +272,7 @@ class InstructionBuilder {
   Instruction* AddULessThan(uint32_t op1, uint32_t op2) {
     analysis::Bool bool_type;
     uint32_t type = GetContext()->get_type_mgr()->GetId(&bool_type);
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> inst(new Instruction(
         GetContext(), SpvOpULessThan, type, GetContext()->TakeNextId(),
         {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}}));
@@ -277,6 +286,7 @@ class InstructionBuilder {
   Instruction* AddSLessThan(uint32_t op1, uint32_t op2) {
     analysis::Bool bool_type;
     uint32_t type = GetContext()->get_type_mgr()->GetId(&bool_type);
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> inst(new Instruction(
         GetContext(), SpvOpSLessThan, type, GetContext()->TakeNextId(),
         {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}}));
@@ -306,6 +316,7 @@ class InstructionBuilder {
   // bool) for |type|.
   Instruction* AddSelect(uint32_t type, uint32_t cond, uint32_t true_value,
                          uint32_t false_value) {
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> select(new Instruction(
         GetContext(), SpvOpSelect, type, GetContext()->TakeNextId(),
         std::initializer_list<Operand>{{SPV_OPERAND_TYPE_ID, {cond}},
@@ -330,6 +341,7 @@ class InstructionBuilder {
       ops.emplace_back(SPV_OPERAND_TYPE_ID,
                        std::initializer_list<uint32_t>{id});
     }
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> construct(
         new Instruction(GetContext(), SpvOpCompositeConstruct, type,
                         GetContext()->TakeNextId(), ops));
@@ -401,6 +413,7 @@ class InstructionBuilder {
       operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}});
     }
 
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> new_inst(
         new Instruction(GetContext(), SpvOpCompositeExtract, type,
                         GetContext()->TakeNextId(), operands));
@@ -424,6 +437,7 @@ class InstructionBuilder {
       operands.push_back({SPV_OPERAND_TYPE_ID, {index_id}});
     }
 
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> new_inst(
         new Instruction(GetContext(), SpvOpAccessChain, type_id,
                         GetContext()->TakeNextId(), operands));
@@ -434,6 +448,7 @@ class InstructionBuilder {
     std::vector<Operand> operands;
     operands.push_back({SPV_OPERAND_TYPE_ID, {base_ptr_id}});
 
+    // TODO(1841): Handle id overflow.
     std::unique_ptr<Instruction> new_inst(
         new Instruction(GetContext(), SpvOpLoad, type_id,
                         GetContext()->TakeNextId(), operands));

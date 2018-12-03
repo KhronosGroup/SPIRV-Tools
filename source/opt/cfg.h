@@ -128,7 +128,8 @@ class CFG {
   // id as |block| and will become a preheader for the loop.  The other block
   // is a new block that will be the new loop header.
   //
-  // Returns a pointer to the new loop header.
+  // Returns a pointer to the new loop header.  Returns |nullptr| if the new
+  // loop pointer could not be created.
   BasicBlock* SplitLoopHeader(BasicBlock* bb);
 
  private:
