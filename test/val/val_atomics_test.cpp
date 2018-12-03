@@ -1747,6 +1747,40 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateAtomics, VulkanMemoryModelDeviceScopeBad) {
+  const std::string body = R"(
+%val = OpAtomicAnd %u32 %u32_var %device %relaxed %u32_1
+)";
+
+  const std::string extra = R"(OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+                      SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateAtomics, VulkanMemoryModelDeviceScopeGood) {
+  const std::string body = R"(
+%val = OpAtomicAnd %u32 %u32_var %device %relaxed %u32_1
+)";
+
+  const std::string extra = R"(OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+                      SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
