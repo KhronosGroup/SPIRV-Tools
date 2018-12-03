@@ -86,6 +86,8 @@ bool IsSupportOptionalVulkan_1_0(uint32_t capability) {
     case SpvCapabilityInt64Atomics:
     case SpvCapabilityTransformFeedback:
     case SpvCapabilityGeometryStreams:
+    case SpvCapabilityFloat16:
+    case SpvCapabilityInt8:
       return true;
   }
   return false;
