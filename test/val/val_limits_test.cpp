@@ -353,7 +353,7 @@ TEST_F(ValidateLimits, OpTypeFunctionBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpTypeFunction may not take more than 255 arguments. "
-                        "OpTypeFunction <id> '2' has 256 arguments."));
+                        "OpTypeFunction <id> '2[%2]' has 256 arguments."));
 }
 
 // Valid: OpTypeFunction with 100 arguments (Custom limit: 100)
@@ -389,7 +389,7 @@ TEST_F(ValidateLimits, CustomizedOpTypeFunctionBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpTypeFunction may not take more than 100 arguments. "
-                        "OpTypeFunction <id> '2' has 101 arguments."));
+                        "OpTypeFunction <id> '2[%2]' has 101 arguments."));
 }
 
 // Valid: module has 65,535 global variables.
