@@ -3335,7 +3335,7 @@ TEST_P(ValidateOpenCLStdUMul24Like, FloatResultType) {
 TEST_P(ValidateOpenCLStdUMul24Like, U64ResultType) {
   const std::string ext_inst_name = GetParam();
   const std::string body =
-      "%val1 = OpExtInst %u64 %extinst " + ext_inst_name + " %u64_0 %u64\n";
+      "%val1 = OpExtInst %u64 %extinst " + ext_inst_name + " %u64_0 %u64_0\n";
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
@@ -4133,10 +4133,8 @@ TEST_P(ValidateOpenCLStdVStoreHalfLike, PNotPointer) {
   }
 
   CompileSuccessfully(GenerateKernelCode(ss.str()));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpenCL.std " + ext_inst_name +
-                        ": expected operand P to be a pointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 89 cannot be a type"));
 }
 
 TEST_P(ValidateOpenCLStdVStoreHalfLike, ConstPointer) {
@@ -4306,10 +4304,8 @@ TEST_P(ValidateOpenCLStdVLoadHalfLike, PNotPointer) {
      << " %u32_1 %f16_ptr_workgroup 2\n";
 
   CompileSuccessfully(GenerateKernelCode(ss.str()));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpenCL.std " + ext_inst_name +
-                        ": expected operand P to be a pointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 89 cannot be a type"));
 }
 
 TEST_P(ValidateOpenCLStdVLoadHalfLike, OffsetWrongStorageType) {
@@ -4479,10 +4475,8 @@ TEST_F(ValidateExtInst, VLoadNPNotPointer) {
         "%f32_ptr_uniform_constant 2\n";
 
   CompileSuccessfully(GenerateKernelCode(ss.str()));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpenCL.std vloadn: expected operand P to be a pointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 120 cannot be a type"));
 }
 
 TEST_F(ValidateExtInst, VLoadNWrongStorageClass) {
@@ -4592,10 +4586,8 @@ TEST_F(ValidateExtInst, VLoadHalfPNotPointer) {
         "%f16_ptr_uniform_constant\n";
 
   CompileSuccessfully(GenerateKernelCode(ss.str()));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpenCL.std vload_half: expected operand P to be a pointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 114 cannot be a type"));
 }
 
 TEST_F(ValidateExtInst, VLoadHalfWrongStorageClass) {
@@ -4746,10 +4738,8 @@ TEST_F(ValidateExtInst, VStoreNPNotPointer) {
         "%f32_ptr_generic\n";
 
   CompileSuccessfully(GenerateKernelCode(ss.str()));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpenCL.std vstoren: expected operand P to be a pointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 124 cannot be a type"));
 }
 
 TEST_F(ValidateExtInst, VStoreNPNotGeneric) {
@@ -5061,10 +5051,8 @@ TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotPointer) {
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpenCL.std printf: expected operand Format to be a pointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 134 cannot be a type"));
 }
 
 TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotUniformConstStorageClass) {
@@ -5154,10 +5142,8 @@ TEST_F(ValidateExtInst, OpenCLStdPrefetchPtrNotPointer) {
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpenCL.std prefetch: expected operand Ptr to be a pointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 99 cannot be a type"));
 }
 
 TEST_F(ValidateExtInst, OpenCLStdPrefetchPtrNotCrossWorkgroup) {

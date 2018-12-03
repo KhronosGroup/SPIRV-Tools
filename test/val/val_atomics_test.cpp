@@ -379,10 +379,8 @@ TEST_F(ValidateAtomics, AtomicLoadWrongPointerType) {
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("AtomicLoad: expected Pointer to be of type OpTypePointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 27 cannot be a type"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadWrongPointerDataType) {
@@ -624,11 +622,8 @@ TEST_F(ValidateAtomics, AtomicExchangeWrongPointerType) {
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "AtomicExchange: expected Pointer to be of type OpTypePointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 33 cannot be a type"));
 }
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongPointerDataType) {
@@ -740,10 +735,8 @@ TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerType) {
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicCompareExchange: expected Pointer to be of type "
-                        "OpTypePointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 33 cannot be a type"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerDataType) {

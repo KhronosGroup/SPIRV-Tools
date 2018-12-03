@@ -1207,7 +1207,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayWithUndefGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentBad) {
+TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentTypeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
@@ -1215,8 +1215,20 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentBad) {
 %4 = OpConstantComposite %3 %2 %2 %2 %1)";  // Uses a type as operand
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1 cannot be a type"));
+}
+TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 4
+%3 = OpTypeArray %1 %2
+%4 = OpTypePointer Uniform %1
+%5 = OpVariable %4 Uniform
+%6 = OpConstantComposite %3 %2 %2 %2 %5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpConstantComposite Constituent <id> '1' is not a "
+              HasSubstr("OpConstantComposite Constituent <id> '5' is not a "
                         "constant or undef."));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstituentTypeBad) {
@@ -1524,11 +1536,13 @@ TEST_F(ValidateIdWithMessage,
 %2 = OpTypeVector %1 4
 %3 = OpTypeInt 32 0
 %4 = OpSpecConstant %1 3.14
-%6 = OpSpecConstantComposite %2 %3 %4 %4 %4)";
+%5 = OpTypePointer Uniform %1
+%6 = OpVariable %5 Uniform
+%7 = OpSpecConstantComposite %2 %6 %4 %4 %4)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpSpecConstantComposite Constituent <id> '3' is not a "
+              HasSubstr("OpSpecConstantComposite Constituent <id> '6' is not a "
                         "constant or undef."));
 }
 
@@ -1651,11 +1665,13 @@ TEST_F(ValidateIdWithMessage,
  %3 = OpTypeVector %1 4
  %4 = OpTypeMatrix %3 4
  %5 = OpSpecConstantComposite %3 %2 %2 %2 %2
- %6 = OpSpecConstantComposite %4 %5 %5 %5 %1)";
+ %6 = OpTypePointer Uniform %1
+ %7 = OpVariable %6 Uniform
+ %8 = OpSpecConstantComposite %4 %5 %5 %5 %7)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+              HasSubstr("OpSpecConstantComposite Constituent <id> '7' is not a "
                         "constant composite or undef."));
 }
 
@@ -1770,11 +1786,13 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayConstConstituentBad) {
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
-%4 = OpSpecConstantComposite %3 %2 %2 %2 %1)";
+%4 = OpTypePointer Uniform %1
+%5 = OpVariable %4 Uniform
+%6 = OpSpecConstantComposite %3 %2 %2 %2 %5)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5' is not a "
                         "constant or undef."));
 }
 
@@ -1864,11 +1882,13 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructNonConstBad) {
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpSpecConstant %1 42
 %5 = OpUndef %2
-%6 = OpSpecConstantComposite %3 %4 %1 %5)";
+%6 = OpTypePointer Uniform %1
+%7 = OpVariable %6 Uniform
+%8 = OpSpecConstantComposite %3 %4 %7 %5)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+              HasSubstr("OpSpecConstantComposite Constituent <id> '7' is not a "
                         "constant or undef."));
 }
 
@@ -1955,9 +1975,7 @@ TEST_F(ValidateIdWithMessage, OpVariableInitializerIsTypeBad) {
 %3 = OpVariable %2 Input %2)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpVariable Initializer <id> '2' is not a constant or "
-                        "module-scope variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 2 cannot be a type"));
 }
 
 TEST_F(ValidateIdWithMessage, OpVariableInitializerIsFunctionVarBad) {
@@ -2444,15 +2462,16 @@ TEST_F(ValidateIdWithMessage, OpStorePointerBad) {
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
 %6 = OpVariable %3 UniformConstant
-%7 = OpFunction %1 None %4
-%8 = OpLabel
-     OpStore %3 %5
+%7 = OpConstant %2 0
+%8 = OpFunction %1 None %4
+%9 = OpLabel
+     OpStore %7 %5
      OpReturn
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpStore Pointer <id> '3' is not a logical pointer."));
+              HasSubstr("OpStore Pointer <id> '7' is not a logical pointer."));
 }
 
 // Disabled as bitcasting type to object is now not valid.
@@ -3339,6 +3358,7 @@ const char kDeeplyNestedStructureSetup[] = R"(
 %_ptr_Uniform_v3float = OpTypePointer Uniform %v3float
 %blockName_var = OpVariable %_ptr_Uniform_blockName Uniform
 %spec_int = OpSpecConstant %int 2
+%float_0 = OpConstant %float 0
 %func = OpFunction %void None %void_f
 %my_label = OpLabel
 )";
@@ -3383,7 +3403,7 @@ OpFunctionEnd
   )";
 
   const std::string expected_err = "The Result Type of " + instr +
-                                   " <id> '35' must be "
+                                   " <id> '36' must be "
                                    "OpTypePointer. Found OpTypeFloat.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -3401,12 +3421,9 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeVoidBad) {
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = "The Base <id> '1' in " + instr +
-                                   " instruction must "
-                                   "be a pointer.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1 cannot be a type"));
 }
 
 // Invalid. The base type of an access chain instruction must be a pointer.
@@ -3421,12 +3438,9 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeNonPtrVariableBad) {
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = "The Base <id> '8' in " + instr +
-                                   " instruction must "
-                                   "be a pointer.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 8 cannot be a type"));
 }
 
 // Invalid: The storage class of Base and Result do not match.
@@ -3645,7 +3659,7 @@ TEST_P(AccessChainInstructionTest, AccessChainUndefinedIndexBad) {
   std::string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" +
                       instr + R"( %_ptr_Private_float %my_matrix )" + elem +
-                      R"(%float %int_1
+                      R"(%float_0 %int_1
 OpReturn
 OpFunctionEnd
   )";
@@ -4842,10 +4856,7 @@ OpBranchConditional %bool %target_t %target_f
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Condition operand for OpBranchConditional must be of boolean type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 3 cannot be a type"));
 }
 
 // TODO: OpSwitch
@@ -4907,9 +4918,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsType) {
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpReturnValue Value <id> '1' does not represent a value."));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1 cannot be a type"));
 }
 
 TEST_F(ValidateIdWithMessage, OpReturnValueIsLabel) {
