@@ -114,12 +114,23 @@ uint32_t InstructionFolder::BinaryOperate(SpvOp opcode, uint32_t a,
       }
 
     // Shifting
-    case SpvOp::SpvOpShiftRightLogical: {
+    case SpvOp::SpvOpShiftRightLogical:
+      if (b > 32) {
+        // This is undefined behaviour.  Choose 0 for consistency.
+        return 0;
+      }
       return a >> b;
-    }
     case SpvOp::SpvOpShiftRightArithmetic:
+      if (b > 32) {
+        // This is undefined behaviour.  Choose 0 for consistency.
+        return 0;
+      }
       return (static_cast<int32_t>(a)) >> b;
     case SpvOp::SpvOpShiftLeftLogical:
+      if (b > 32) {
+        // This is undefined behaviour.  Choose 0 for consistency.
+        return 0;
+      }
       return a << b;
 
     // Bitwise operations
