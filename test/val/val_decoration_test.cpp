@@ -3699,7 +3699,7 @@ OpGroupDecorate %1 %1
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> "
-                "'1[%1]'"));
+                        "'1[%1]'"));
 }
 
 TEST_F(ValidateDecorations, GroupDecorateTargetsDecorationGroup2) {
@@ -3716,7 +3716,7 @@ OpGroupDecorate %1 %2 %1
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpGroupDecorate may not target OpDecorationGroup <id> "
-                "'1[%1]'"));
+                        "'1[%1]'"));
 }
 
 TEST_F(ValidateDecorations, RecurseThroughRuntimeArray) {

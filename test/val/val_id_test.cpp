@@ -784,7 +784,7 @@ class OpTypeArrayLengthTest
         spvValidate(ScopedContext().context, &cbinary, &diagnostic_);
     if (status != SPV_SUCCESS) {
       spvDiagnosticPrint(diagnostic_);
-      EXPECT_THAT(std::string(diagnostic_->error), 
+      EXPECT_THAT(std::string(diagnostic_->error),
                   testing::ContainsRegex(expected_err));
     }
     return status;
