@@ -53,7 +53,8 @@ OpFunctionEnd
 
   CompileSuccessfully(module);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 1 has not been defined"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID 1[%bool] has not been defined"));
 }
 
 TEST_F(ValidateAdjacency, OpLoopMergeEndsModuleFail) {
