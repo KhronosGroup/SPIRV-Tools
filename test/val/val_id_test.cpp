@@ -6228,6 +6228,37 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
+TEST_F(ValidateIdWithMessage, UnreachableDefUsedInPhi) {
+  const std::string spirv = kNoKernelGLSL450MemoryModel + R"(
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %bool = OpTypeBool
+          %6 = OpTypeFunction %float
+          %1 = OpFunction %void None %3
+          %7 = OpLabel
+          %8 = OpUndef %bool
+               OpSelectionMerge %9 None
+               OpBranchConditional %8 %10 %9
+         %10 = OpLabel
+         %11 = OpUndef %float
+               OpBranch %9
+         %12 = OpLabel
+         %13 = OpUndef %float
+               OpUnreachable
+          %9 = OpLabel
+         %14 = OpPhi %float %11 %10 %13 %7
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("In OpPhi instruction 14, ID 13 definition does not dominate "
+                "its parent 7\n  %14 = OpPhi %float %11 %10 %13 %7"));
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
