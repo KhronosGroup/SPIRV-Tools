@@ -671,9 +671,8 @@ TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image to be OpTypePointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 136 cannot be a type"));
 }
 
 TEST_F(ValidateImage, ImageTexelPointerImageNotImage) {

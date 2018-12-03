@@ -874,10 +874,8 @@ OpMemoryBarrier %u32 %u32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("MemoryBarrier: expected Memory Scope to be a 32-bit int"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 5 cannot be a type"));
 }
 
 TEST_F(ValidateBarriers,
