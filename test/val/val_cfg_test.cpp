@@ -470,8 +470,8 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceEntryBlock) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("First block .\\[\%entry\\] of function "
-                           ".\\[\%Main\\] is targeted by block .\\[\%bad\\]\n"
+              MatchesRegex("First block .\\[%entry\\] of function "
+                           ".\\[%Main\\] is targeted by block .\\[%bad\\]\n"
                            "  %Main = OpFunction %void None %10\n"));
 }
 
@@ -496,7 +496,7 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceValue) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("Block\\(s\\) \\{11\\[%11\\]\\} are referenced but not "
-                           "defined in function .\\[\%Main\\]\n"
+                           "defined in function .\\[%Main\\]\n"
                            "  %Main = OpFunction %void None %10\n"))
       << str;
 }
@@ -522,8 +522,8 @@ TEST_P(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("First block .\\[\%entry\\] of function .\\[\%Main\\] "
-                           "is targeted by block .\\[\%bad\\]\n"
+              MatchesRegex("First block .\\[%entry\\] of function .\\[%Main\\] "
+                           "is targeted by block .\\[%bad\\]\n"
                            "  %Main = OpFunction %void None %10\n"));
 }
 
@@ -551,8 +551,8 @@ TEST_P(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("First block .\\[\%entry\\] of function .\\[\%Main\\] "
-                           "is targeted by block .\\[\%bad\\]\n"
+              MatchesRegex("First block .\\[%entry\\] of function .\\[%Main\\] "
+                           "is targeted by block .\\[%bad\\]\n"
                            "  %Main = OpFunction %void None %10\n"));
 }
 
@@ -587,8 +587,8 @@ TEST_P(ValidateCFG, SwitchTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("First block .\\[\%entry\\] of function .\\[\%Main\\] "
-                           "is targeted by block .\\[\%bad\\]\n"
+              MatchesRegex("First block .\\[%entry\\] of function .\\[%Main\\] "
+                           "is targeted by block .\\[%bad\\]\n"
                            "  %Main = OpFunction %void None %10\n"));
 }
 
@@ -623,8 +623,8 @@ TEST_P(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex("Block\\(s\\) \\{.\\[\%middle2\\]\\} are referenced but not "
-                   "defined in function .\\[\%Main\\]\n"
+      MatchesRegex("Block\\(s\\) \\{.\\[%middle2\\]\\} are referenced but not "
+                   "defined in function .\\[%Main\\]\n"
                    "  %Main = OpFunction %void None %9\n"));
 }
 
@@ -656,8 +656,8 @@ TEST_P(ValidateCFG, HeaderDoesntDominatesMergeBad) {
     EXPECT_THAT(
         getDiagnosticString(),
         MatchesRegex("The selection construct with the selection header "
-                     ".\\[\%head\\] does not dominate the merge block "
-                     ".\\[\%merge\\]\n  %merge = OpLabel\n"));
+                     ".\\[%head\\] does not dominate the merge block "
+                     ".\\[%merge\\]\n  %merge = OpLabel\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -689,8 +689,8 @@ TEST_P(ValidateCFG, HeaderDoesntStrictlyDominateMergeBad) {
     EXPECT_THAT(
         getDiagnosticString(),
         MatchesRegex("The selection construct with the selection header "
-                     ".\\[\%head\\] does not strictly dominate the merge block "
-                     ".\\[\%head\\]\n  %head = OpLabel\n"));
+                     ".\\[%head\\] does not strictly dominate the merge block "
+                     ".\\[%head\\]\n  %head = OpLabel\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << str;
   }
@@ -940,8 +940,8 @@ TEST_P(ValidateCFG, BackEdgeBlockDoesntPostDominateContinueTargetBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("The continue construct with the continue target "
-                             ".\\[\%loop2_merge\\] is not post dominated by the "
-                             "back-edge block .\\[\%be_block\\]\n"
+                             ".\\[%loop2_merge\\] is not post dominated by the "
+                             "back-edge block .\\[%be_block\\]\n"
                              "  %be_block = OpLabel\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -975,7 +975,7 @@ TEST_P(ValidateCFG, BranchingToNonLoopHeaderBlockBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(
         getDiagnosticString(),
-        MatchesRegex("Back-edges \\(.\\[\%f\\] -> .\\[\%split\\]\\) can only "
+        MatchesRegex("Back-edges \\(.\\[%f\\] -> .\\[%split\\]\\) can only "
                      "be formed between a block and a loop header.\n"
                      "  %f = OpLabel\n"));
   } else {
@@ -1005,7 +1005,7 @@ TEST_P(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex(
-                    "Back-edges \\(.\\[\%split\\] -> .\\[\%split\\]\\) can only be "
+                    "Back-edges \\(.\\[%split\\] -> .\\[%split\\]\\) can only be "
                     "formed between a block and a loop header.\n"
                     "  %split = OpLabel\n"));
   } else {
@@ -1040,7 +1040,7 @@ TEST_P(ValidateCFG, MultipleBackEdgeBlocksToLoopHeaderBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex(
-                    "Loop header .\\[\%loop\\] is targeted by 2 back-edge blocks "
+                    "Loop header .\\[%loop\\] is targeted by 2 back-edge blocks "
                     "but the standard requires exactly one\n"
                     "  %loop = OpLabel\n"))
         << str;
@@ -1078,8 +1078,8 @@ TEST_P(ValidateCFG, ContinueTargetMustBePostDominatedByBackEdge) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("The continue construct with the continue target "
-                             ".\\[\%cheader\\] is not post dominated by the "
-                             "back-edge block .\\[\%be_block\\]\n"
+                             ".\\[%cheader\\] is not post dominated by the "
+                             "back-edge block .\\[%be_block\\]\n"
                              "  %be_block = OpLabel\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -1111,8 +1111,8 @@ TEST_P(ValidateCFG, BranchOutOfConstructToMergeBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("The continue construct with the continue target "
-                             ".\\[\%loop\\] is not post dominated by the "
-                             "back-edge block .\\[\%cont\\]\n"
+                             ".\\[%loop\\] is not post dominated by the "
+                             "back-edge block .\\[%cont\\]\n"
                              "  %cont = OpLabel\n"))
         << str;
   } else {
@@ -1147,8 +1147,8 @@ TEST_P(ValidateCFG, BranchOutOfConstructBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("The continue construct with the continue target "
-                             ".\\[\%loop\\] is not post dominated by the "
-                             "back-edge block .\\[\%cont\\]\n"
+                             ".\\[%loop\\] is not post dominated by the "
+                             "back-edge block .\\[%cont\\]\n"
                              "  %cont = OpLabel\n"));
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -1222,7 +1222,7 @@ TEST_F(ValidateCFG, LoopWithZeroBackEdgesBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex("Loop header .\\[\\%loop\\] is targeted by "
+      MatchesRegex("Loop header .\\[%loop\\] is targeted by "
                    "0 back-edge blocks but the standard requires exactly "
                    "one\n  %loop = OpLabel\n"));
 }

@@ -205,7 +205,7 @@ TEST_F(ValidateIdWithMessage, OpMemberNameTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpMemberName Type <id> '1[\%uint]' is not a struct type."));
+      HasSubstr("OpMemberName Type <id> '1[%uint]' is not a struct type."));
 }
 TEST_F(ValidateIdWithMessage, OpMemberNameMemberBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -216,8 +216,8 @@ TEST_F(ValidateIdWithMessage, OpMemberNameMemberBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpMemberName Member <id> '1[\%_struct_1]' index is larger "
-                "than Type <id> '1[\%_struct_1]'s member count."));
+      HasSubstr("OpMemberName Member <id> '1[%_struct_1]' index is larger "
+                "than Type <id> '1[%_struct_1]'s member count."));
 }
 
 TEST_F(ValidateIdWithMessage, OpLineGood) {
@@ -239,7 +239,7 @@ TEST_F(ValidateIdWithMessage, OpLineFileBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpLine Target <id> '1[\%uint]' is not an OpString."));
+              HasSubstr("OpLine Target <id> '1[%uint]' is not an OpString."));
 }
 
 TEST_F(ValidateIdWithMessage, OpDecorateGood) {
@@ -276,7 +276,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpMemberDecorate Structure type <id> '1[\%uint]' is not a struct type."));
+          "OpMemberDecorate Structure type <id> '1[%uint]' is not a struct type."));
 }
 TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -287,7 +287,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index 3 provided in OpMemberDecorate for struct <id> "
-                        "1[\%_struct_1] is out of bounds. The structure has 2 "
+                        "1[%_struct_1] is out of bounds. The structure has 2 "
                         "members. Largest valid index is 1."));
 }
 
@@ -366,7 +366,7 @@ TEST_F(ValidateIdWithMessage, OpGroupMemberDecorateIdNotStructBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpGroupMemberDecorate Structure type <id> '2[\%uint]' "
+              HasSubstr("OpGroupMemberDecorate Structure type <id> '2[%uint]' "
                         "is not a struct type."));
 }
 TEST_F(ValidateIdWithMessage, OpGroupMemberDecorateIndexOutOfBoundBad) {
@@ -381,7 +381,7 @@ TEST_F(ValidateIdWithMessage, OpGroupMemberDecorateIndexOutOfBoundBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index 3 provided in OpGroupMemberDecorate for struct "
-                        "<id> 2[\%_struct_2] is out of bounds. The structure "
+                        "<id> 2[%_struct_2] is out of bounds. The structure "
                         "has 3 members. Largest valid index is 2."));
 }
 
@@ -408,7 +408,7 @@ TEST_F(ValidateIdWithMessage, OpEntryPointFunctionBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpEntryPoint Entry Point <id> '1[\%void]' is not a "
+      HasSubstr("OpEntryPoint Entry Point <id> '1[%void]' is not a "
                 "function."));
 }
 TEST_F(ValidateIdWithMessage, OpEntryPointParameterCountBad) {
@@ -588,7 +588,7 @@ TEST_F(ValidateIdWithMessage, OpTypeVectorComponentTypeBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpTypeVector Component Type <id> "
-                "'2[\%_ptr_UniformConstant_float]' is not a scalar type."));
+                "'2[%_ptr_UniformConstant_float]' is not a scalar type."));
 }
 
 TEST_F(ValidateIdWithMessage, OpTypeVectorColumnCountLessThanTwoBad) {
@@ -744,7 +744,7 @@ TEST_F(ValidateIdWithMessage, OpTypeArrayElementTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypeArray Element Type <id> '2[\%uint_1]' is not a "
+              HasSubstr("OpTypeArray Element Type <id> '2[%uint_1]' is not a "
                         "type."));
 }
 
@@ -823,12 +823,12 @@ TEST_P(OpTypeArrayLengthTest, LengthZero) {
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("0", kSigned, width)),
-          "OpTypeArray Length <id> '2\\[\%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
           "least 1."));
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, width)),
-          "OpTypeArray Length <id> '2\\[\%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
           "least 1."));
 }
 
@@ -837,23 +837,23 @@ TEST_P(OpTypeArrayLengthTest, LengthNegative) {
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, width)),
-          "OpTypeArray Length <id> '2\\[\%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
           "least 1."));
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, width)),
-          "OpTypeArray Length <id> '2\\[\%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
           "least 1."));
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, width)),
-          "OpTypeArray Length <id> '2\\[\%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
           "least 1."));
   const std::string neg_max = "0x8" + std::string(width / 4 - 1, '0');
   EXPECT_EQ(
       SPV_ERROR_INVALID_ID,
       Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width)),
-          "OpTypeArray Length <id> '2\\[\%.*\\]' default value must be at "
+          "OpTypeArray Length <id> '2\\[%.*\\]' default value must be at "
           "least 1."));
 }
 
@@ -914,7 +914,7 @@ TEST_F(ValidateIdWithMessage, OpTypeRuntimeArrayBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpTypeRuntimeArray Element Type <id> '2[\%uint_0]' is not a "
+      HasSubstr("OpTypeRuntimeArray Element Type <id> '2[%uint_0]' is not a "
                 "type."));
 }
 // TODO: Object of this type can only be created with OpVariable using the
@@ -938,7 +938,7 @@ TEST_F(ValidateIdWithMessage, OpTypeStructMemberTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypeStruct Member Type <id> '3[\%double_0]' is not "
+              HasSubstr("OpTypeStruct Member Type <id> '3[%double_0]' is not "
                         "a type."));
 }
 
@@ -957,7 +957,7 @@ TEST_F(ValidateIdWithMessage, OpTypePointerBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypePointer Type <id> '2[\%uint_0]' is not a "
+              HasSubstr("OpTypePointer Type <id> '2[%uint_0]' is not a "
                         "type."));
 }
 
@@ -976,7 +976,7 @@ TEST_F(ValidateIdWithMessage, OpTypeFunctionReturnTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypeFunction Return Type <id> '2[\%uint_0]' is not "
+              HasSubstr("OpTypeFunction Return Type <id> '2[%uint_0]' is not "
                         "a type."));
 }
 TEST_F(ValidateIdWithMessage, OpTypeFunctionParameterBad) {
@@ -989,7 +989,7 @@ TEST_F(ValidateIdWithMessage, OpTypeFunctionParameterBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpTypeFunction Parameter Type <id> '3[\%uint_0]' is not a "
+      HasSubstr("OpTypeFunction Parameter Type <id> '3[%uint_0]' is not a "
                 "type."));
 }
 
@@ -1001,7 +1001,7 @@ TEST_F(ValidateIdWithMessage, OpTypeFunctionParameterTypeVoidBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypeFunction Parameter Type <id> '1[\%void]' cannot "
+              HasSubstr("OpTypeFunction Parameter Type <id> '1[%void]' cannot "
                         "be OpTypeVoid."));
 }
 
@@ -1029,7 +1029,7 @@ TEST_F(ValidateIdWithMessage, OpConstantTrueBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpConstantTrue Result Type <id> '1[\%void]' is not a boolean "
+      HasSubstr("OpConstantTrue Result Type <id> '1[%void]' is not a boolean "
                 "type."));
 }
 
@@ -1048,7 +1048,7 @@ TEST_F(ValidateIdWithMessage, OpConstantFalseBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpConstantFalse Result Type <id> '1[\%void]' is not a boolean "
+      HasSubstr("OpConstantFalse Result Type <id> '1[%void]' is not a boolean "
                 "type."));
 }
 
@@ -1100,7 +1100,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorResultTypeBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpConstantComposite Result Type <id> '1[\%float]' is not a "
+          "OpConstantComposite Result Type <id> '1[%float]' is not a "
           "composite type."));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorConstituentTypeBad) {
@@ -1115,8 +1115,8 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorConstituentTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpConstantComposite Constituent <id> '5[\%uint_42]'s type "
-                "does not match Result Type <id> '2[\%v4float]'s vector "
+      HasSubstr("OpConstantComposite Constituent <id> '5[%uint_42]'s type "
+                "does not match Result Type <id> '2[%v4float]'s vector "
                 "element type."));
 }
 TEST_F(ValidateIdWithMessage,
@@ -1133,7 +1133,7 @@ TEST_F(ValidateIdWithMessage,
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpConstantComposite Constituent <id> '5[%5]'s type does not "
-                "match Result Type <id> '2[\%v4float]'s vector element type."));
+                "match Result Type <id> '2[%v4float]'s vector element type."));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeMatrixGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -1183,7 +1183,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeMatrixConstituentTypeBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpConstantComposite Constituent <id> '10[%10]' vector "
                         "component count does not match Result Type <id> "
-                        "'4[\%mat4v4float]'s vector component count."));
+                        "'4[%mat4v4float]'s vector component count."));
 }
 TEST_F(ValidateIdWithMessage,
        OpConstantCompositeMatrixConstituentUndefTypeBad) {
@@ -1204,7 +1204,7 @@ TEST_F(ValidateIdWithMessage,
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpConstantComposite Constituent <id> '10[%10]' vector "
                         "component count does not match Result Type <id> "
-                        "'4[\%mat4v4float]'s vector component count."));
+                        "'4[%mat4v4float]'s vector component count."));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -1225,6 +1225,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayWithUndefGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
 TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentTypeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
@@ -1233,7 +1234,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentTypeBad) {
 %4 = OpConstantComposite %3 %2 %2 %2 %1)";  // Uses a type as operand
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[\%uint] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[%uint] cannot be a "
                                                "type"));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentBad) {
@@ -1262,8 +1263,8 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstituentTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpConstantComposite Constituent <id> "
-                        "'5[\%float_3_1400001]'s type does not match Result "
-                        "Type <id> '3[\%_arr_uint_uint_4]'s array element "
+                        "'5[%float_3_1400001]'s type does not match Result "
+                        "Type <id> '3[%_arr_uint_uint_4]'s array element "
                         "type."));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstituentUndefTypeBad) {
@@ -1279,7 +1280,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstituentUndefTypeBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpConstantComposite Constituent <id> "
                         "'5[%5]'s type does not match Result "
-                        "Type <id> '3[\%_arr_uint_uint_4]'s array element "
+                        "Type <id> '3[%_arr_uint_uint_4]'s array element "
                         "type."));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeStructGood) {
@@ -1316,8 +1317,8 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeStructMemberTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpConstantComposite Constituent <id> "
-                        "'5[\%ulong_4300000000]' type does not match the "
-                        "Result Type <id> '3[\%_struct_3]'s member type."));
+                        "'5[%ulong_4300000000]' type does not match the "
+                        "Result Type <id> '3[%_struct_3]'s member type."));
 }
 
 TEST_F(ValidateIdWithMessage, OpConstantCompositeStructMemberUndefTypeBad) {
@@ -1332,7 +1333,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeStructMemberUndefTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpConstantComposite Constituent <id> '5[%5]' type "
-                        "does not match the Result Type <id> '3[\%_struct_3]'s "
+                        "does not match the Result Type <id> '3[%_struct_3]'s "
                         "member type."));
 }
 
@@ -1353,7 +1354,7 @@ TEST_F(ValidateIdWithMessage, OpConstantSamplerResultTypeBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpConstantSampler Result Type <id> '1[\%float]' is not a sampler "
+          "OpConstantSampler Result Type <id> '1[%float]' is not a sampler "
           "type."));
 }
 
@@ -1402,7 +1403,7 @@ TEST_F(ValidateIdWithMessage, OpConstantNullBasicBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpConstantNull Result Type <id> '1[\%void]' cannot have a null "
+          "OpConstantNull Result Type <id> '1[%void]' cannot have a null "
           "value."));
 }
 
@@ -1418,7 +1419,7 @@ TEST_F(ValidateIdWithMessage, OpConstantNullArrayBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpConstantNull Result Type <id> '4[\%_arr_2_uint_4]' cannot have a "
+          "OpConstantNull Result Type <id> '4[%_arr_2_uint_4]' cannot have a "
           "null value."));
 }
 
@@ -1432,7 +1433,7 @@ TEST_F(ValidateIdWithMessage, OpConstantNullStructBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpConstantNull Result Type <id> '2[\%_struct_2]' cannot have a null value."));
+          "OpConstantNull Result Type <id> '2[%_struct_2]' cannot have a null value."));
 }
 
 TEST_F(ValidateIdWithMessage, OpConstantNullRuntimeArrayBad) {
@@ -1445,7 +1446,7 @@ TEST_F(ValidateIdWithMessage, OpConstantNullRuntimeArrayBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpConstantNull Result Type <id> '2[\%_runtimearr_bool]' cannot have "
+          "OpConstantNull Result Type <id> '2[%_runtimearr_bool]' cannot have "
           "a null value."));
 }
 
@@ -1553,8 +1554,8 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorConstituentTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> "
-                        "'5[\%uint_42]'s type does not match Result Type <id> "
-                        "'2[\%v4float]'s vector element type."));
+                        "'5[%uint_42]'s type does not match Result Type <id> "
+                        "'2[%v4float]'s vector element type."));
 }
 
 // Invalid: Constituent is not a constant
@@ -1589,7 +1590,7 @@ TEST_F(ValidateIdWithMessage,
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '5[%5]'s "
-                        "type does not match Result Type <id> '2[\%v4float]'s "
+                        "type does not match Result Type <id> '2[%v4float]'s "
                         "vector element type."));
 }
 
@@ -1605,7 +1606,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorNumComponentsBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> count does "
-                        "not match Result Type <id> '2[\%v3float]'s vector "
+                        "not match Result Type <id> '2[%v3float]'s vector "
                         "component count."));
 }
 
@@ -1662,7 +1663,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixConstituentTypeBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '10[%10]' "
                         "vector component count does not match Result Type "
-                        "<id> '4[\%mat4v4float]'s vector component count."));
+                        "<id> '4[%mat4v4float]'s vector component count."));
 }
 
 // Invalid: Matrix type expects 4 columns but only 3 specified.
@@ -1682,7 +1683,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixNumColsBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpSpecConstantComposite Constituent <id> count does "
-                "not match Result Type <id> '3[\%mat4v4float]'s matrix column "
+                "not match Result Type <id> '3[%mat4v4float]'s matrix column "
                 "count."));
 }
 
@@ -1722,7 +1723,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixColTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '8[%8]' type "
-                        "does not match Result Type <id> '7[\%mat4v4float]'s "
+                        "does not match Result Type <id> '7[%mat4v4float]'s "
                         "matrix column type."));
 }
 
@@ -1746,7 +1747,7 @@ TEST_F(ValidateIdWithMessage,
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '10[%10]' "
                         "vector component count does not match Result Type "
-                        "<id> '4[\%mat4v4float]'s vector component count."));
+                        "<id> '4[%mat4v4float]'s vector component count."));
 }
 
 // Invalid: Matrix in which some columns are Int and some are Float.
@@ -1767,7 +1768,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixColumnTypeBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '8[%8]' "
                         "component type does not match Result Type <id> "
-                        "'5[\%mat2v2float]'s matrix column component type."));
+                        "'5[%mat2v2float]'s matrix column component type."));
 }
 
 // Valid: Array of integers
@@ -1795,7 +1796,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayNumComponentsBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent count does not "
-                        "match Result Type <id> '3[\%_arr_uint_uint_4]'s array "
+                        "match Result Type <id> '3[%_arr_uint_uint_4]'s array "
                         "length."));
 }
 
@@ -1841,7 +1842,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayConstituentTypeBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '5[%5]'s "
                         "type does not match Result Type <id> "
-                        "'3[\%_arr_uint_uint_4]'s array element type."));
+                        "'3[%_arr_uint_uint_4]'s array element type."));
 }
 
 // Invalid: Array has a mix of Int and Undef-float.
@@ -1859,7 +1860,7 @@ TEST_F(ValidateIdWithMessage,
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '5[%5]'s "
                         "type does not match Result Type <id> "
-                        "'3[\%_arr_uint_2]'s array element type."));
+                        "'3[%_arr_uint_2]'s array element type."));
 }
 
 // Valid: Struct of {Int32,Int32,Int64}.
@@ -1888,8 +1889,8 @@ TEST_F(ValidateIdWithMessage,
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> "
-                        "'2[\%_struct_2]' count does not match Result Type "
-                        "<id> '2[\%_struct_2]'s struct member count."));
+                        "'2[%_struct_2]' count does not match Result Type "
+                        "<id> '2[%_struct_2]'s struct member count."));
 }
 
 // Valid: Struct uses Undef-int64.
@@ -1937,7 +1938,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '5[%5]' type "
-                        "does not match the Result Type <id> '3[\%_struct_3]'s "
+                        "does not match the Result Type <id> '3[%_struct_3]'s "
                         "member type."));
 }
 
@@ -1954,7 +1955,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberUndefTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpSpecConstantComposite Constituent <id> '5[%5]' type "
-                        "does not match the Result Type <id> '3[\%_struct_3]'s "
+                        "does not match the Result Type <id> '3[%_struct_3]'s "
                         "member type."));
 }
 
@@ -1997,7 +1998,7 @@ TEST_F(ValidateIdWithMessage, OpVariableResultTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpVariable Result Type <id> '1[\%uint]' is not a pointer "
+      HasSubstr("OpVariable Result Type <id> '1[%uint]' is not a pointer "
                 "type."));
 }
 TEST_F(ValidateIdWithMessage, OpVariableInitializerIsTypeBad) {
@@ -2007,7 +2008,7 @@ TEST_F(ValidateIdWithMessage, OpVariableInitializerIsTypeBad) {
 %3 = OpVariable %2 Input %2)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 2[\%_ptr_Input_uint] "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 2[%_ptr_Input_uint] "
                                                "cannot be a type"));
 }
 
@@ -2423,7 +2424,7 @@ TEST_F(ValidateIdWithMessage, OpLoadResultTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpLoad Result Type <id> "
-                        "'3[\%_ptr_UniformConstant_uint]' does not match "
+                        "'3[%_ptr_UniformConstant_uint]' does not match "
                         "Pointer <id> '5[%5]'s type."));
 }
 
@@ -2506,7 +2507,7 @@ TEST_F(ValidateIdWithMessage, OpStorePointerBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpStore Pointer <id> '7[\%uint_0]' is not a logical "
+              HasSubstr("OpStore Pointer <id> '7[%uint_0]' is not a logical "
                         "pointer."));
 }
 
@@ -2607,7 +2608,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpStore Pointer <id> '7[%7]'s type does not match "
-                        "Object <id> '6[\%float_3_1400001]'s type."));
+                        "Object <id> '6[%float_3_1400001]'s type."));
 }
 
 // The next series of test check test a relaxation of the rules for stores to
@@ -3032,7 +3033,7 @@ TEST_F(ValidateIdWithMessage, OpCopyMemoryBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Target <id> '5[%5]'s type does not match "
-                        "Source <id> '2[\%uint]'s type."));
+                        "Source <id> '2[%uint]'s type."));
 }
 
 TEST_F(ValidateIdWithMessage, OpCopyMemoryVoidTarget) {
@@ -3135,7 +3136,7 @@ TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSourceBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Source operand <id> '5[\%uint_4]' is not a pointer."));
+              HasSubstr("Source operand <id> '5[%uint_4]' is not a pointer."));
 }
 TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -3179,7 +3180,7 @@ TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Size operand <id> '9[\%float_1]' must be a scalar integer "
+      HasSubstr("Size operand <id> '9[%float_1]' must be a scalar integer "
                 "type."));
 }
 
@@ -3229,7 +3230,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Size operand <id> '3[\%uint_0]' cannot be a constant "
+              HasSubstr("Size operand <id> '3[%uint_0]' cannot be a constant "
                         "zero."));
 }
 
@@ -3254,7 +3255,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Size operand <id> '3[\%ulong_0]' cannot be a constant "
+              HasSubstr("Size operand <id> '3[%ulong_0]' cannot be a constant "
                         "zero."));
 }
 
@@ -3280,7 +3281,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Size operand <id> '3[\%int_n1]' cannot have the sign bit set "
+      HasSubstr("Size operand <id> '3[%int_n1]' cannot have the sign bit set "
                 "to 1."));
 }
 
@@ -3306,7 +3307,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Size operand <id> '3[\%long_n1]' cannot have the sign bit set "
+      HasSubstr("Size operand <id> '3[%long_n1]' cannot have the sign bit set "
                 "to 1."));
 }
 
@@ -3467,7 +3468,7 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[\%void] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[%void] cannot be a "
                                                "type"));
 }
 
@@ -3486,7 +3487,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand "
-    "8[\%_ptr_Private_float] cannot be a type"));
+    "8[%_ptr_Private_float] cannot be a type"));
 }
 
 // Invalid: The storage class of Base and Result do not match.
@@ -3789,7 +3790,7 @@ OpFunctionEnd
   )";
   const std::string expected_err = "Index is out of bounds: " + instr +
                                    " can not find index 3 into the structure "
-                                   "<id> '25[\%_struct_25]'. This structure "
+                                   "<id> '25[%_struct_25]'. This structure "
                                    "has 3 members. Largest valid index is 2.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -3936,9 +3937,9 @@ TEST_F(ValidateIdWithMessage, OpFunctionResultTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpFunction Result Type <id> '2[\%uint]' does not "
+              HasSubstr("OpFunction Result Type <id> '2[%uint]' does not "
                         "match the Function Type's return type <id> "
-                        "'1[\%void]'."));
+                        "'1[%void]'."));
 }
 TEST_F(ValidateIdWithMessage, OpReturnValueTypeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
@@ -3953,7 +3954,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpReturnValue Value <id> '3[\%float_0]'s type does "
+              HasSubstr("OpReturnValue Value <id> '3[%float_0]'s type does "
                         "not match OpFunction's return type."));
 }
 TEST_F(ValidateIdWithMessage, OpFunctionFunctionTypeBad) {
@@ -3968,7 +3969,7 @@ OpFunctionEnd)";
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpFunction Function Type <id> '2[\%uint]' is not a function "
+      HasSubstr("OpFunction Function Type <id> '2[%uint]' is not a function "
                 "type."));
 }
 
@@ -4029,7 +4030,7 @@ TEST_F(ValidateIdWithMessage, OpFunctionParameterResultTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpFunctionParameter Result Type <id> '1[\%void]' does not "
+      HasSubstr("OpFunctionParameter Result Type <id> '1[%void]' does not "
                 "match the OpTypeFunction parameter type of the same index."));
 }
 
@@ -4078,8 +4079,8 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallResultTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpFunctionCall Result Type <id> '1[\%void]'s type "
-                        "does not match Function <id> '2[\%uint]'s return "
+              HasSubstr("OpFunctionCall Result Type <id> '1[%void]'s type "
+                        "does not match Function <id> '2[%uint]'s return "
                         "type."));
 }
 TEST_F(ValidateIdWithMessage, OpFunctionCallFunctionBad) {
@@ -4098,7 +4099,7 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallFunctionBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpFunctionCall Function <id> '5[\%uint_42]' is not a "
+              HasSubstr("OpFunctionCall Function <id> '5[%uint_42]' is not a "
                         "function."));
 }
 TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentTypeBad) {
@@ -4127,8 +4128,8 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpFunctionCall Argument <id> '7[\%float_3_1400001]'s "
-                        "type does not match Function <id> '2[\%uint]'s "
+              HasSubstr("OpFunctionCall Argument <id> '7[%float_3_1400001]'s "
+                        "type does not match Function <id> '2[%uint]'s "
                         "parameter type."));
 }
 
@@ -4365,7 +4366,7 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleComponentCount) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpVectorShuffle component literals count does not match "
-                "Result Type <id> '2[\%v3uint]'s vector component count."));
+                "Result Type <id> '2[%v3uint]'s vector component count."));
 }
 
 TEST_F(ValidateIdWithMessage, OpVectorShuffleVector1Type) {
@@ -4642,7 +4643,7 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 3[\%true] is not a type "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 3[%true] is not a type "
                                                "id"));
 }
 
@@ -4755,9 +4756,9 @@ OpFunctionEnd
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpPhi's result type <id> 2[\%bool] does not match "
-                        "incoming value <id> 6[\%uint_0] type <id> "
-                        "5[\%uint]."));
+              HasSubstr("OpPhi's result type <id> 2[%bool] does not match "
+                        "incoming value <id> 6[%uint_0] type <id> "
+                        "5[%uint]."));
 }
 
 TEST_F(ValidateIdWithMessage, OpPhiPredecessorNotABlock) {
@@ -4783,7 +4784,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpPhi's incoming basic block <id> 3[\%true] is not an "
+      HasSubstr("OpPhi's incoming basic block <id> 3[%true] is not an "
                 "OpLabel."));
 }
 
@@ -4910,7 +4911,7 @@ OpBranchConditional %bool %target_t %target_f
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 3[\%bool] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 3[%bool] cannot be a "
                                                "type"));
 }
 
@@ -4973,7 +4974,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsType) {
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[\%void] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[%void] cannot be a "
                                                "type"));
 }
 
@@ -5008,7 +5009,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVoid) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpReturnValue value's type <id> '1[\%void]' is missing or "
+      HasSubstr("OpReturnValue value's type <id> '1[%void]' is missing or "
                 "void."));
 }
 
@@ -5046,7 +5047,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInLogical) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpReturnValue value's type <id> "
-                        "'3[\%_ptr_Function_uint]' is a pointer, which is "
+                        "'3[%_ptr_Function_uint]' is a pointer, which is "
                         "invalid in the Logical addressing model."));
 }
 
@@ -5362,7 +5363,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpDecorate SpecId decoration target <id> "
-                        "'1[\%uint_3]' is not a scalar specialization "
+                        "'1[%uint_3]' is not a scalar specialization "
                         "constant."));
 }
 
@@ -5498,7 +5499,7 @@ TEST_F(ValidateIdWithMessage, BadTypeId) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 4[\%float_0] is not a type "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 4[%float_0] is not a type "
                                                "id"));
 }
 

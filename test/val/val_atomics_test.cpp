@@ -381,7 +381,7 @@ TEST_F(ValidateAtomics, AtomicLoadWrongPointerType) {
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand "
-        "27[\%_ptr_Workgroup_float] cannot be a type"));
+        "27[%_ptr_Workgroup_float] cannot be a type"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadWrongPointerDataType) {
@@ -625,7 +625,7 @@ TEST_F(ValidateAtomics, AtomicExchangeWrongPointerType) {
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand "
-        "33[\%_ptr_Workgroup_v4float] cannot be a type"));
+        "33[%_ptr_Workgroup_v4float] cannot be a type"));
 }
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongPointerDataType) {
@@ -739,7 +739,7 @@ TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerType) {
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand "
-        "33[\%_ptr_Workgroup_v4float] cannot be a type"));
+        "33[%_ptr_Workgroup_v4float] cannot be a type"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerDataType) {

@@ -105,7 +105,7 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateOutOfBound) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index 1 provided in OpMemberDecorate for struct <id> "
-                        "2[\%_struct_2] is out of bounds. The structure has 1 "
+                        "2[%_struct_2] is out of bounds. The structure has 1 "
                         "members. Largest valid index is 0."));
 }
 
@@ -300,11 +300,11 @@ TEST_F(ValidateDecorations, StructContainsBuiltInStructBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Structure <id> 1[\%_struct_1] contains members with "
+              HasSubstr("Structure <id> 1[%_struct_1] contains members with "
                         "BuiltIn decoration. Therefore this structure may not "
                         "be contained as a member of another structure type. "
-                        "Structure <id> 4[\%_struct_4] contains structure <id> "
-                        "1[\%_struct_1]."));
+                        "Structure <id> 4[%_struct_4] contains structure <id> "
+                        "1[%_struct_1]."));
 }
 
 TEST_F(ValidateDecorations, StructContainsNonBuiltInStructGood) {
@@ -3342,7 +3342,7 @@ OpMemberDecorate %1 0 Coherent
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Coherent decoration targeting 1[\%_struct_1] (member "
+              HasSubstr("Coherent decoration targeting 1[%_struct_1] (member "
                         "index 0) is banned when using the Vulkan memory model."));
 }
 
@@ -3382,7 +3382,7 @@ OpMemberDecorate %1 1 Volatile
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Volatile decoration targeting 1[\%_struct_1] (member "
+              HasSubstr("Volatile decoration targeting 1[%_struct_1] (member "
                         "index 1) is banned when using the Vulkan memory "
                         "model."));
 }

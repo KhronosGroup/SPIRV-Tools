@@ -862,7 +862,7 @@ TEST_F(ValidateMemory, ArrayLenPointerIsAType) {
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 4[\%float] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 4[%float] cannot be a "
                                                "type"));
 }
 

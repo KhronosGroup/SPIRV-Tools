@@ -321,7 +321,7 @@ TEST_F(ValidateComposites, CompositeConstructVectorWrongConsituent1) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 5[\%float] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 5[%float] cannot be a "
                                                "type"));
 }
 
@@ -539,7 +539,7 @@ TEST_F(ValidateComposites, CopyObjectResultTypeNotType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-      HasSubstr("ID 19[\%float_0] is not a type id"));
+      HasSubstr("ID 19[%float_0] is not a type id"));
 }
 
 TEST_F(ValidateComposites, CopyObjectWrongOperandType) {
@@ -660,7 +660,7 @@ TEST_F(ValidateComposites, CompositeExtractNotObject) {
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 11[\%v4float] cannot "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 11[%v4float] cannot "
                                                "be a type"));
 }
 

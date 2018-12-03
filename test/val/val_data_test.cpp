@@ -686,7 +686,7 @@ TEST_F(ValidateData, void_array) {
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypeArray Element Type <id> '1[\%void]' is a void type."));
+              HasSubstr("OpTypeArray Element Type <id> '1[%void]' is a void type."));
 }
 
 TEST_F(ValidateData, void_runtime_array) {
@@ -699,7 +699,7 @@ TEST_F(ValidateData, void_runtime_array) {
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpTypeRuntimeArray Element Type <id> '1[\%void]' is a void type."));
+      HasSubstr("OpTypeRuntimeArray Element Type <id> '1[%void]' is a void type."));
 }
 }  // namespace
 }  // namespace val
