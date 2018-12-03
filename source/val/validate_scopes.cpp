@@ -90,6 +90,17 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
     }
   }
 
+  // WebGPU Specific rules
+  if (spvIsWebGPUEnv(_.context()->target_env)) {
+    // Scope for execution must be limited to Workgroup or Subgroup
+    if (value != SpvScopeWorkgroup && value != SpvScopeSubgroup) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << spvOpcodeString(opcode)
+             << ": in WebGPU environment Execution Scope is limited to "
+                "Workgroup and Subgroup";
+    }
+  }
+
   // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
 
   // General SPIRV rules
