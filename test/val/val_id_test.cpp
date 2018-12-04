@@ -6324,6 +6324,56 @@ TEST_F(ValidateIdWithMessage, UnreachableDefUsedInPhi) {
                 "dominate its parent 7[%7]\n  %14 = OpPhi %float %11 %10 %13 "
                 "%7"));
 }
+
+TEST_F(ValidateIdWithMessage, OpTypeForwardPointerNotAPointerType) {
+  std::string spirv = R"(
+     OpCapability GenericPointer
+     OpCapability VariablePointersStorageBuffer
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %1 "main"
+     OpExecutionMode %1 OriginLowerLeft
+     OpTypeForwardPointer %2 CrossWorkgroup
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%1 = OpFunction %2 DontInline %3
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Pointer type in OpTypeForwardPointer is not a pointer "
+                        "type.\n  OpTypeForwardPointer %void CrossWorkgroup"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeForwardPointerWrongStorageClass) {
+  std::string spirv = R"(
+     OpCapability GenericPointer
+     OpCapability VariablePointersStorageBuffer
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %1 "main"
+     OpExecutionMode %1 OriginLowerLeft
+     OpTypeForwardPointer %2 CrossWorkgroup
+%int = OpTypeInt 32 1
+%2 = OpTypePointer Function %int
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%1 = OpFunction %void None %3
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Storage class in OpTypeForwardPointer does not match the "
+                "pointer definition.\n  OpTypeForwardPointer "
+                "%_ptr_Function_int CrossWorkgroup"));
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

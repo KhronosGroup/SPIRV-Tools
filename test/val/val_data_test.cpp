@@ -574,8 +574,8 @@ OpTypeForwardPointer %_ptr_Generic_struct_A Generic
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Found a forward reference to a non-pointer type in "
-                        "OpTypeStruct instruction."));
+              HasSubstr("Pointer type in OpTypeForwardPointer is not a pointer "
+                        "type.\n  OpTypeForwardPointer %float Generic\n"));
 }
 
 TEST_F(ValidateData, forward_ref_points_to_non_struct) {
