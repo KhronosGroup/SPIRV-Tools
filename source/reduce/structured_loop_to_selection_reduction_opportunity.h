@@ -15,6 +15,7 @@
 #ifndef SOURCE_REDUCE_CUT_LOOP_REDUCTION_OPPORTUNITY_H_
 #define SOURCE_REDUCE_CUT_LOOP_REDUCTION_OPPORTUNITY_H_
 
+#include <source/opt/def_use_manager.h>
 #include "reduction_opportunity.h"
 #include "source/opt/dominator_analysis.h"
 #include "source/opt/function.h"
@@ -57,6 +58,9 @@ class StructuredLoopToSelectionReductionOpportunity
   // similar functionality, so there may be a case for further refactoring.
   uint32_t FindOrCreateGlobalUndef(IRContext* context, uint32_t type_id);
 
+  // TODO: comment.
+  uint32_t FindOrCreateGlobalVariable(IRContext* context, uint32_t type_id);
+
   void RedirectToClosestMergeBlock(uint32_t original_target_id,
                                    IRContext* context,
                                    const DominatorAnalysis& dominator_analysis,
@@ -79,6 +83,10 @@ class StructuredLoopToSelectionReductionOpportunity
       const DominatorAnalysis& dominator_analysis);
 
   void ChangeLoopToSelection(IRContext* context, const CFG& cfg);
+
+  void FixNonDominatedIdUses(
+      const DominatorAnalysis& dominator_analysis,
+      const spvtools::opt::analysis::DefUseManager& def_use_mgr);
 };
 
 }  // namespace reduce

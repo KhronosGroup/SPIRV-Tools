@@ -60,6 +60,16 @@ void StructuredLoopToSelectionReductionOpportunity::Apply() {
   // calculated.
   context->InvalidateAnalyses(IRContext::Analysis::kAnalysisCFG |
                               IRContext::Analysis::kAnalysisDominatorAnalysis);
+
+  // (4) By changing CFG edges we may have created scenarios where ids are used
+  // without being dominated.  Address this.
+  dominator_analysis = context->GetDominatorAnalysis(enclosing_function_);
+  auto def_use_mgr = context->get_def_use_mgr();
+  FixNonDominatedIdUses(*dominator_analysis, *def_use_mgr);
+
+  // Invalidate the analyses we just used to reflect changes.
+  context->InvalidateAnalyses(IRContext::Analysis::kAnalysisDefUse |
+                              IRContext::Analysis::kAnalysisDominatorAnalysis);
 }
 
 void StructuredLoopToSelectionReductionOpportunity::RedirectToClosestMergeBlock(
@@ -273,6 +283,33 @@ uint32_t StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalUndef(
   return undef_id;
 }
 
+uint32_t
+StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalVariable(
+    IRContext* context, uint32_t base_type_id) {
+  for (auto& inst : context->module()->types_values()) {
+    if (inst.opcode() != SpvOpVariable) {
+      continue;
+    }
+    if (context->get_type_mgr()->GetId(context->get_type_mgr()
+                                           ->GetType(inst.type_id())
+                                           ->AsPointer()
+                                           ->pointee_type()) == base_type_id) {
+      return inst.result_id();
+    }
+  }
+  auto pointer_type_id = context->get_type_mgr()->FindPointerToType(
+      base_type_id, SpvStorageClassPrivate);
+
+  // TODO: refactor to avoid duplication with FindOrCreateGlobalUndef.
+  const uint32_t var_id = context->TakeNextId();
+  std::unique_ptr<Instruction> undef_inst(new Instruction(
+      context, SpvOpVariable, pointer_type_id, var_id,
+      {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}}));
+  assert(var_id == undef_inst->result_id());
+  context->module()->AddGlobalValue(std::move(undef_inst));
+  return var_id;
+}
+
 void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection(
     IRContext* context, const CFG& cfg) {
   auto loop_merge_inst = loop_construct_header_->GetLoopMergeInst();
@@ -301,6 +338,39 @@ void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection(
       // TODO: add a test for the case where they are equal.
       AdaptPhiNodesForAddedEdge(loop_construct_header_->id(),
                                 cfg.block(loop_merge_block_id), context);
+    }
+  }
+}
+
+void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses(
+    const DominatorAnalysis& dominator_analysis,
+    const spvtools::opt::analysis::DefUseManager& def_use_mgr) {
+  for (auto& block : *enclosing_function_) {
+    for (auto& def : block) {
+      if (def.opcode() == SpvOpVariable) {
+        continue;
+      }
+      def_use_mgr.ForEachUse(&def, [this, &def, &dominator_analysis](
+                                       Instruction* use, uint32_t index) {
+        if (use->opcode() == SpvOpPhi) {
+          // TODO: Consider carefully what to do.  We should probably check
+          // dominance on the incoming edge.
+        } else if (!dominator_analysis.Dominates(&def, use)) {
+          if (def.opcode() == SpvOpAccessChain) {
+            auto base_type = def.context()->get_type_mgr()->GetId(
+                def.context()
+                    ->get_type_mgr()
+                    ->GetType(def.type_id())
+                    ->AsPointer()
+                    ->pointee_type());
+            use->SetOperand(
+                index, {FindOrCreateGlobalVariable(def.context(), base_type)});
+          } else {
+            use->SetOperand(
+                index, {FindOrCreateGlobalUndef(def.context(), def.type_id())});
+          }
+        }
+      });
     }
   }
 }
