@@ -14,9 +14,7 @@
 
 #include "source/val/validation_state.h"
 
-#include <algorithm>
 #include <cassert>
-#include <deque>
 #include <stack>
 #include <utility>
 
