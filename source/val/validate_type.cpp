@@ -297,7 +297,14 @@ spv_result_t ValidateTypeForwardPointer(ValidationState_t& _,
   const auto pointer_type_inst = _.FindDef(pointer_type_id);
   if (pointer_type_inst->opcode() != SpvOpTypePointer) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Pointer type in OpForwardPointer is not a pointer type.";
+           << "Pointer type in OpTypeForwardPointer is not a pointer type.";
+  }
+
+  if (inst->GetOperandAs<uint32_t>(1) !=
+      pointer_type_inst->GetOperandAs<uint32_t>(1)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Storage class in OpTypeForwardPointer does not match the "
+              "pointer definition.";
   }
 
   return SPV_SUCCESS;
