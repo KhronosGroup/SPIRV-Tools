@@ -275,6 +275,9 @@ class ValidationState_t {
     return (function_call_targets_.find(id) != function_call_targets_.end());
   }
 
+  bool IsFunctionCallDefined(const uint32_t id) {
+    return (id_to_function_.find(id) != id_to_function_.end());
+  }
   /// Registers the capability and its dependent capabilities
   void RegisterCapability(SpvCapability cap);
 

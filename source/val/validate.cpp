@@ -279,7 +279,15 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
                  << "A FunctionCall must happen within a function body.";
         }
 
-        vstate->AddFunctionCallTarget(inst->GetOperandAs<uint32_t>(2));
+        const auto called_id = inst->GetOperandAs<uint32_t>(2);
+        if (spvIsWebGPUEnv(context.target_env) &&
+            !vstate->IsFunctionCallDefined(called_id)) {
+          return vstate->diag(SPV_ERROR_INVALID_LAYOUT, &instruction)
+                 << "For WebGPU, functions need to be defined before being "
+                    "called.";
+        }
+
+        vstate->AddFunctionCallTarget(called_id);
       }
 
       if (vstate->in_function_body()) {
