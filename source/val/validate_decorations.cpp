@@ -781,6 +781,7 @@ void ComputeMemberConstraintsForArray(MemberConstraints* constraints,
 }
 
 spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
+  bool has_push_constant = false;
   for (const auto& inst : vstate.ordered_instructions()) {
     const auto& words = inst.words();
     if (SpvOpVariable == inst.opcode()) {
@@ -831,14 +832,26 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                     : (push_constant ? "PushConstant" : "StorageBuffer");
 
         if (spvIsVulkanEnv(vstate.context()->target_env)) {
-          // Vulkan 14.5.1: Check Block decoration for PushConstant variables.
-          if (push_constant && !hasDecoration(id, SpvDecorationBlock, vstate)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
-                   << "PushConstant id '" << id
-                   << "' is missing Block decoration.\n"
-                   << "From Vulkan spec, section 14.5.1:\n"
-                   << "Such variables must be identified with a Block "
-                      "decoration";
+          if (push_constant) {
+            // Vulkan 14.5.1: Check Block decoration for PushConstant variables.
+            if (!hasDecoration(id, SpvDecorationBlock, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
+                     << "PushConstant id '" << id
+                     << "' is missing Block decoration.\n"
+                     << "From Vulkan spec, section 14.5.1:\n"
+                     << "Such variables must be identified with a Block "
+                        "decoration";
+            }
+            // Vulkan 14.5.1: There must be no more than one PushConstant block.
+            if (has_push_constant) {
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
+                     << "PushConstant id '" << id
+                     << "': too many push constant blocks.\n"
+                     << "From Vulkan spec, section 14.5.1:\n"
+                     << "There must be no more than one push constant block "
+                     << "statically used per shader entry point.";
+            }
+            has_push_constant = true;
           }
           // Vulkan 14.5.2: Check DescriptorSet and Binding decoration for
           // Uniform and StorageBuffer variables.

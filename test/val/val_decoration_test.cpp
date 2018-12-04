@@ -2283,6 +2283,63 @@ TEST_F(ValidateDecorations, VulkanPushConstantMissingBlockBad) {
                         "decoration"));
 }
 
+TEST_F(ValidateDecorations, MultiplePushConstantInterfacesGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+             OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
+     %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer PushConstant %struct
+     %pc1 = OpVariable %ptr PushConstant
+     %pc2 = OpVariable %ptr PushConstant
+        %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, VulkanMultiplePushConstantInterfacesBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+             OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
+     %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer PushConstant %struct
+     %pc1 = OpVariable %ptr PushConstant
+     %pc2 = OpVariable %ptr PushConstant
+        %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("PushConstant id '2': too many push constant blocks.\n"
+                        "From Vulkan spec, section 14.5.1:\n"
+                        "There must be no more than one push constant block "
+                        "statically used per shader entry point."));
+}
+
 TEST_F(ValidateDecorations, VulkanUniformMissingDescriptorSetBad) {
   std::string spirv = R"(
             OpCapability Shader
