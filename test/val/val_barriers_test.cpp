@@ -175,9 +175,7 @@ OpMemoryModel Physical32 OpenCL
 %acquire_release = OpConstant %u32 8
 %acquire_and_release = OpConstant %u32 6
 %sequentially_consistent = OpConstant %u32 16
-%acquire_release_uniform_workgroup = OpConstant %u32 328
-%acquire_and_release_uniform = OpConstant %u32 70
-%uniform = OpConstant %u32 64
+%acquire_release_workgroup = OpConstant %u32 264
 
 %named_barrier = OpTypeNamedBarrier
 
@@ -215,7 +213,7 @@ OpControlBarrier %workgroup %workgroup %acquire
 OpControlBarrier %workgroup %device %release
 OpControlBarrier %cross_device %cross_device %acquire_release
 OpControlBarrier %cross_device %cross_device %sequentially_consistent
-OpControlBarrier %cross_device %cross_device %acquire_release_uniform_workgroup
+OpControlBarrier %cross_device %cross_device %acquire_release_workgroup
 )";
 
   CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_UNIVERSAL_1_1);
@@ -615,8 +613,8 @@ OpMemoryBarrier %device %uniform
 
 TEST_F(ValidateBarriers, OpMemoryBarrierKernelSuccess) {
   const std::string body = R"(
-OpMemoryBarrier %cross_device %acquire_release_uniform_workgroup
-OpMemoryBarrier %device %uniform
+OpMemoryBarrier %cross_device %acquire_release_workgroup
+OpMemoryBarrier %device %none
 )";
 
   CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_UNIVERSAL_1_1);
@@ -804,7 +802,7 @@ TEST_F(ValidateBarriers, OpNamedBarrierInitializeU64SubgroupCount) {
 TEST_F(ValidateBarriers, OpMemoryNamedBarrierSuccess) {
   const std::string body = R"(
 %barrier = OpNamedBarrierInitialize %named_barrier %u32_4
-OpMemoryNamedBarrier %barrier %workgroup %acquire_release_uniform_workgroup
+OpMemoryNamedBarrier %barrier %workgroup %acquire_release_workgroup
 )";
 
   CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_UNIVERSAL_1_1);
@@ -813,7 +811,7 @@ OpMemoryNamedBarrier %barrier %workgroup %acquire_release_uniform_workgroup
 
 TEST_F(ValidateBarriers, OpMemoryNamedBarrierNotNamedBarrier) {
   const std::string body = R"(
-OpMemoryNamedBarrier %u32_1 %workgroup %acquire_release_uniform_workgroup
+OpMemoryNamedBarrier %u32_1 %workgroup %acquire_release_workgroup
 )";
 
   CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_UNIVERSAL_1_1);
@@ -827,7 +825,7 @@ OpMemoryNamedBarrier %u32_1 %workgroup %acquire_release_uniform_workgroup
 TEST_F(ValidateBarriers, OpMemoryNamedBarrierFloatMemoryScope) {
   const std::string body = R"(
 %barrier = OpNamedBarrierInitialize %named_barrier %u32_4
-OpMemoryNamedBarrier %barrier %f32_1 %acquire_release_uniform_workgroup
+OpMemoryNamedBarrier %barrier %f32_1 %acquire_release_workgroup
 )";
 
   CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_UNIVERSAL_1_1);
@@ -857,7 +855,7 @@ OpMemoryNamedBarrier %barrier %workgroup %f32_0
 TEST_F(ValidateBarriers, OpMemoryNamedBarrierAcquireAndRelease) {
   const std::string body = R"(
 %barrier = OpNamedBarrierInitialize %named_barrier %u32_4
-OpMemoryNamedBarrier %barrier %workgroup %acquire_and_release_uniform
+OpMemoryNamedBarrier %barrier %workgroup %acquire_and_release
 )";
 
   CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_UNIVERSAL_1_1);
