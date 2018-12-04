@@ -929,6 +929,34 @@ const std::vector<uint32_t>& ValidationState_t::FunctionEntryPoints(
   }
 }
 
+std::set<uint32_t> ValidationState_t::EntryPointReferences(uint32_t id) const {
+  std::set<uint32_t> entry_points;
+  const auto inst = FindDef(id);
+  if (!inst) return entry_points;
+
+  std::vector<const Instruction*> stack;
+  stack.push_back(inst);
+  while (!stack.empty()) {
+    const auto current_inst = stack.back();
+    stack.pop_back();
+
+    if (const auto func = current_inst->function()) {
+      // Instruction lives in a function, we can stop searching.
+      const auto function_entry_points = FunctionEntryPoints(func->id());
+      entry_points.insert(function_entry_points.begin(),
+                          function_entry_points.end());
+    } else {
+      // Instruction is in the global scope, keep searching its uses.
+      for (auto pair : current_inst->uses()) {
+        const auto next_inst = pair.first;
+        stack.push_back(next_inst);
+      }
+    }
+  }
+
+  return entry_points;
+}
+
 std::string ValidationState_t::Disassemble(const Instruction& inst) const {
   const spv_parsed_instruction_t& c_inst(inst.c_inst());
   return Disassemble(c_inst.words, c_inst.num_words);
