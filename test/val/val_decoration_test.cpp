@@ -2289,16 +2289,19 @@ TEST_F(ValidateDecorations, MultiplePushConstantInterfacesGood) {
             OpMemoryModel Logical GLSL450
             OpEntryPoint Fragment %1 "main"
             OpExecutionMode %1 OriginUpperLeft
-             OpDecorate %struct Block
+
+            OpDecorate %struct Block
             OpMemberDecorate %struct 0 Offset 0
-     %void = OpTypeVoid
+
+    %void = OpTypeVoid
   %voidfn = OpTypeFunction %void
    %float = OpTypeFloat 32
   %struct = OpTypeStruct %float
      %ptr = OpTypePointer PushConstant %struct
      %pc1 = OpVariable %ptr PushConstant
      %pc2 = OpVariable %ptr PushConstant
-        %1 = OpFunction %void None %voidfn
+
+       %1 = OpFunction %void None %voidfn
    %label = OpLabel
             OpReturn
             OpFunctionEnd
@@ -2315,16 +2318,19 @@ TEST_F(ValidateDecorations, VulkanMultiplePushConstantInterfacesBad) {
             OpMemoryModel Logical GLSL450
             OpEntryPoint Fragment %1 "main"
             OpExecutionMode %1 OriginUpperLeft
-             OpDecorate %struct Block
+
+            OpDecorate %struct Block
             OpMemberDecorate %struct 0 Offset 0
-     %void = OpTypeVoid
+
+    %void = OpTypeVoid
   %voidfn = OpTypeFunction %void
    %float = OpTypeFloat 32
   %struct = OpTypeStruct %float
      %ptr = OpTypePointer PushConstant %struct
      %pc1 = OpVariable %ptr PushConstant
      %pc2 = OpVariable %ptr PushConstant
-        %1 = OpFunction %void None %voidfn
+       %1 = OpFunction %void None %voidfn
+
    %label = OpLabel
             OpReturn
             OpFunctionEnd
