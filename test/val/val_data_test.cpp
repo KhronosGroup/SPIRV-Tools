@@ -573,7 +573,7 @@ OpTypeForwardPointer %_ptr_Generic_struct_A Generic
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Pointer type in OpForwardPointer is not a pointer "
+              HasSubstr("Pointer type in OpTypeForwardPointer is not a pointer "
                         "type.\n  OpTypeForwardPointer %float Generic\n"));
 }
 
