@@ -32,8 +32,10 @@ class StructuredLoopToSelectionReductionOpportunity
   // Constructs an opportunity from a loop header block and the function that
   // encloses it.
   explicit StructuredLoopToSelectionReductionOpportunity(
-      BasicBlock* loop_construct_header, Function* enclosing_function)
-      : loop_construct_header_(loop_construct_header),
+      IRContext* context, BasicBlock* loop_construct_header,
+      Function* enclosing_function)
+      : context_(context),
+        loop_construct_header_(loop_construct_header),
         enclosing_function_(enclosing_function) {}
 
   // We require the loop header to be reachable.  A structured loop might
@@ -46,47 +48,46 @@ class StructuredLoopToSelectionReductionOpportunity
   void Apply() override;
 
  private:
+  IRContext* context_;
   BasicBlock* loop_construct_header_;
   Function* enclosing_function_;
 
-  // In a naive manner (linear time per invocation) checks whether the global
-  // value list has an OpUndef of the given type, adding one if not, and
-  // returns the id of such an OpUndef.
+  void RedirectToClosestMergeBlock(uint32_t original_target_id);
+
+  uint32_t FindClosestMerge(uint32_t block_id);
+
+  void RedirectEdge(uint32_t source_id, uint32_t original_target_id,
+                    uint32_t new_target_id);
+
+  void AdaptPhiNodesForRemovedEdge(uint32_t from_id, BasicBlock* to_block);
+
+  void AdaptPhiNodesForAddedEdge(uint32_t from_id, BasicBlock* to_id);
+
+  bool ContainedInStructuredControlFlowConstruct(
+      uint32_t block_id, BasicBlock* selection_construct_header);
+
+  void ChangeLoopToSelection();
+
+  void FixNonDominatedIdUses();
+
+  bool DefinitionSufficientlyDominatesUse(Instruction& def, Instruction* use,
+                                          uint32_t use_index,
+                                          BasicBlock& def_block);
+
+  // Checks whether the global value list has an OpUndef of the given type,
+  // adding one if not, and returns the id of such an OpUndef.
   //
   // TODO: This will likely be used by other reduction passes, so should be
   // factored out in due course.  Parts of the spirv-opt framework provide
   // similar functionality, so there may be a case for further refactoring.
-  uint32_t FindOrCreateGlobalUndef(IRContext* context, uint32_t type_id);
+  uint32_t FindOrCreateGlobalUndef(uint32_t type_id);
 
-  // TODO: comment.
-  uint32_t FindOrCreateGlobalVariable(IRContext* context, uint32_t type_id);
-
-  void RedirectToClosestMergeBlock(uint32_t original_target_id,
-                                   IRContext* context,
-                                   const DominatorAnalysis& dominator_analysis,
-                                   const CFG& cfg);
-
-  uint32_t FindClosestMerge(const CFG& cfg,
-                            const DominatorAnalysis& dominator_analysis,
-                            uint32_t block_id);
-
-  void RedirectEdge(uint32_t source_id, uint32_t original_target_id,
-                    uint32_t new_target_id, IRContext* context, const CFG& cfg);
-
-  void AdaptPhiNodesForRemovedEdge(uint32_t from_id, BasicBlock* to_block);
-
-  void AdaptPhiNodesForAddedEdge(uint32_t from_id, BasicBlock* to_id,
-                                 IRContext* context);
-
-  bool ContainedInStructuredControlFlowConstruct(
-      uint32_t block_id, BasicBlock* selection_construct_header,
-      const DominatorAnalysis& dominator_analysis);
-
-  void ChangeLoopToSelection(IRContext* context, const CFG& cfg);
-
-  void FixNonDominatedIdUses(
-      const DominatorAnalysis& dominator_analysis,
-      const spvtools::opt::analysis::DefUseManager& def_use_mgr);
+  // Checks whether the global value list has an OpVariable of the given type,
+  // adding one if not, and returns the id of such an OpVariable.
+  //
+  // TODO: This will likely be used by other reduction passes, so should be
+  // factored out in due course.
+  uint32_t FindOrCreateGlobalVariable(uint32_t type_id);
 };
 
 }  // namespace reduce

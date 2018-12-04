@@ -33,52 +33,45 @@ bool StructuredLoopToSelectionReductionOpportunity::PreconditionHolds() {
 }
 
 void StructuredLoopToSelectionReductionOpportunity::Apply() {
-  auto loop_merge_inst = loop_construct_header_->GetLoopMergeInst();
-
-  // Compute dominator analysis and CFG before we start to mess with edges in
-  // the function.
-  auto context = loop_merge_inst->context();
-  auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function_);
-  auto cfg = context->cfg();
+  // Force computation of dominator analysis and CFG before we start to mess
+  // with edges in the function.
+  context_->GetDominatorAnalysis(enclosing_function_);
+  context_->cfg();
 
   // (1) Redirect edges that point to the loop's continue target to their
   // closest merge block.
   RedirectToClosestMergeBlock(
-      loop_merge_inst->GetSingleWordOperand(kContinueNodeIndex), context,
-      *dominator_analysis, *cfg);
+      loop_construct_header_->GetLoopMergeInst()->GetSingleWordOperand(
+          kContinueNodeIndex));
 
   // (2) Redirect edges that point to the loop's merge block to their closest
   // merge block (which might be that of an enclosing selection, for instance).
   RedirectToClosestMergeBlock(
-      loop_merge_inst->GetSingleWordOperand(kMergeNodeIndex), context,
-      *dominator_analysis, *cfg);
+      loop_construct_header_->GetLoopMergeInst()->GetSingleWordOperand(
+          kMergeNodeIndex));
 
   // (3) Turn the loop construct header into a selection.
-  ChangeLoopToSelection(context, *cfg);
+  ChangeLoopToSelection();
 
-  // We have made control flow changes, so invalidate the analyses that were
-  // calculated.
-  context->InvalidateAnalyses(IRContext::Analysis::kAnalysisCFG |
-                              IRContext::Analysis::kAnalysisDominatorAnalysis);
+  // We have made control flow changes that do not preserve the analyses that
+  // were performed.
+  context_->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 
   // (4) By changing CFG edges we may have created scenarios where ids are used
-  // without being dominated.  Address this.
-  dominator_analysis = context->GetDominatorAnalysis(enclosing_function_);
-  auto def_use_mgr = context->get_def_use_mgr();
-  FixNonDominatedIdUses(*dominator_analysis, *def_use_mgr);
+  // without being dominated; we fix instances of this.
+  FixNonDominatedIdUses();
 
-  // Invalidate the analyses we just used to reflect changes.
-  context->InvalidateAnalyses(IRContext::Analysis::kAnalysisDefUse |
-                              IRContext::Analysis::kAnalysisDominatorAnalysis);
+  // Invalidate the analyses we just used.
+  context_->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 }
 
 void StructuredLoopToSelectionReductionOpportunity::RedirectToClosestMergeBlock(
-    uint32_t original_target_id, IRContext* context,
-    const DominatorAnalysis& dominator_analysis, const CFG& cfg) {
+    uint32_t original_target_id) {
   // Consider every predecessor of the node with respect to which edges should
   // be redirected.
-  for (auto pred : cfg.preds(original_target_id)) {
-    if (!dominator_analysis.IsReachable(pred)) {
+  for (auto pred : context_->cfg()->preds(original_target_id)) {
+    if (!context_->GetDominatorAnalysis(enclosing_function_)
+             ->IsReachable(pred)) {
       // We do not care about unreachable predecessors (and dominance
       // information, and thus the notion of structured control flow, makes
       // little sense for unreachable blocks).
@@ -86,7 +79,7 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectToClosestMergeBlock(
     }
     // Find the merge block of the structured control construct that most
     // tightly encloses the predecessor.
-    auto new_merge_target = FindClosestMerge(cfg, dominator_analysis, pred);
+    auto new_merge_target = FindClosestMerge(pred);
     assert(new_merge_target != pred);
 
     if (!new_merge_target) {
@@ -100,13 +93,12 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectToClosestMergeBlock(
 
     if (new_merge_target != original_target_id) {
       // Redirect the edge if it doesn't already point to the desired block.
-      RedirectEdge(pred, original_target_id, new_merge_target, context, cfg);
+      RedirectEdge(pred, original_target_id, new_merge_target);
     }
   }
 }
 
 uint32_t StructuredLoopToSelectionReductionOpportunity::FindClosestMerge(
-    const CFG& cfg, const DominatorAnalysis& dominator_analysis,
     uint32_t block_id) {
   // We want to find the merge block associated with the structured control flow
   // construct that most tightly contains block_id.
@@ -123,20 +115,22 @@ uint32_t StructuredLoopToSelectionReductionOpportunity::FindClosestMerge(
   //
   // then we are looking to find the merge block for the inner-most "if".
 
-  assert(dominator_analysis.IsReachable(block_id));
+  auto dominator_analysis = context_->GetDominatorAnalysis(enclosing_function_);
+  assert(dominator_analysis->IsReachable(block_id));
 
   // Starting from the given block, walk the dominator tree backwards until
   // we find the structured-control-construct-with-merge this block most tightly
   // belongs to, or ascertain that it belongs to no such construct.
-  for (auto current_dominator = cfg.block(block_id); /* return is guaranteed */;
+  for (auto current_dominator = context_->cfg()->block(block_id);
+       /* return is guaranteed */;
        current_dominator =
-           dominator_analysis.ImmediateDominator(current_dominator)) {
+           dominator_analysis->ImmediateDominator(current_dominator)) {
     assert(current_dominator);
     if (current_dominator->GetMergeInst()) {
       // The dominator has a merge instruction, so it heads a structured control
       // flow construct.  Is block_id part of it?
-      if (ContainedInStructuredControlFlowConstruct(block_id, current_dominator,
-                                                    dominator_analysis)) {
+      if (ContainedInStructuredControlFlowConstruct(block_id,
+                                                    current_dominator)) {
         // Yes.  Return the merge block for the construct.
         return current_dominator->MergeBlockIdIfAny();
       }
@@ -152,21 +146,21 @@ uint32_t StructuredLoopToSelectionReductionOpportunity::FindClosestMerge(
 
 bool StructuredLoopToSelectionReductionOpportunity::
     ContainedInStructuredControlFlowConstruct(
-        uint32_t block_id, BasicBlock* selection_construct_header,
-        const DominatorAnalysis& dominator_analysis) {
-  // SPIR-V spec says that to be part of a loop or selection, a block must at
-  // a minimum be dominated by the header of the construct.  Check that we
+        uint32_t block_id, BasicBlock* selection_construct_header) {
+  // The SPIR-V spec says that to be part of a loop or selection, a block must
+  // at a minimum be dominated by the header of the construct.  Check that we
   // only get here when that's the case.
 
-  assert(
-      dominator_analysis.Dominates(selection_construct_header->id(), block_id));
+  auto dominator_analysis = context_->GetDominatorAnalysis(enclosing_function_);
+  assert(dominator_analysis->Dominates(selection_construct_header->id(),
+                                       block_id));
   auto merge_inst = selection_construct_header->GetMergeInst();
   assert(merge_inst);
 
   // Next, the spec says that to be part of the construct the block cannot be
   // dominated by the merge block of the construct.
   auto merge_block_id = merge_inst->GetSingleWordOperand(kMergeNodeIndex);
-  if (dominator_analysis.Dominates(merge_block_id, block_id)) {
+  if (dominator_analysis->Dominates(merge_block_id, block_id)) {
     // The block is dominated by the construct's merge block.  Whether a loop or
     // selection, the block is not part of the construct.
     return false;
@@ -176,7 +170,7 @@ bool StructuredLoopToSelectionReductionOpportunity::
     // In the case of a loop we have the further requirement that, to be in
     // the construct, the block must not be dominated by the loop's continue
     // target.
-    if (dominator_analysis.Dominates(
+    if (dominator_analysis->Dominates(
             merge_inst->GetSingleWordOperand(kContinueNodeIndex), block_id)) {
       return false;
     }
@@ -206,14 +200,13 @@ bool StructuredLoopToSelectionReductionOpportunity::
 }
 
 void StructuredLoopToSelectionReductionOpportunity::RedirectEdge(
-    uint32_t source_id, uint32_t original_target_id, uint32_t new_target_id,
-    IRContext* context, const CFG& cfg) {
+    uint32_t source_id, uint32_t original_target_id, uint32_t new_target_id) {
   assert(source_id != original_target_id);
   assert(source_id != new_target_id);
   assert(original_target_id != new_target_id);
 
   // Redirect the edge; depends on what kind of branch instruction is involved.
-  auto terminator = cfg.block(source_id)->terminator();
+  auto terminator = context_->cfg()->block(source_id)->terminator();
   if (terminator->opcode() == SpvOpBranch) {
     assert(terminator->GetSingleWordOperand(0) == original_target_id);
     terminator->SetOperand(0, {new_target_id});
@@ -228,20 +221,27 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectEdge(
     }
   }
 
-  // The old and new targets may have phi nodes; these will need to respect the
-  // change in edges.
-  AdaptPhiNodesForRemovedEdge(source_id, cfg.block(original_target_id));
-  AdaptPhiNodesForAddedEdge(source_id, cfg.block(new_target_id), context);
+  // The old and new targets may have phi instructions; these will need to
+  // respect the change in edges.
+  AdaptPhiNodesForRemovedEdge(source_id,
+                              context_->cfg()->block(original_target_id));
+  AdaptPhiNodesForAddedEdge(source_id, context_->cfg()->block(new_target_id));
 }
 
 void StructuredLoopToSelectionReductionOpportunity::AdaptPhiNodesForRemovedEdge(
     uint32_t from_id, BasicBlock* to_block) {
   for (auto& inst : *to_block) {
     if (inst.opcode() != SpvOpPhi) {
+      // Phi instructions must appear first in a block, so if we find a non-phi
+      // instruction we are done.
       break;
     }
     Instruction::OperandList new_in_operands;
+    // Skipping the result id and result type (hence starting from 2), go
+    // through the OpPhi's operands in (variable, parent) pairs.
     for (uint32_t index = 2; index < inst.NumOperands(); index += 2) {
+      // Keep all pairs where the parent is not the block from which the edge
+      // is being removed.
       if (inst.GetOperand(index + 1).words[0] != from_id) {
         new_in_operands.push_back(inst.GetOperand(index));
         new_in_operands.push_back(inst.GetOperand(index + 1));
@@ -252,66 +252,24 @@ void StructuredLoopToSelectionReductionOpportunity::AdaptPhiNodesForRemovedEdge(
 }
 
 void StructuredLoopToSelectionReductionOpportunity::AdaptPhiNodesForAddedEdge(
-    uint32_t from_id, BasicBlock* to_block, IRContext* context) {
+    uint32_t from_id, BasicBlock* to_block) {
   for (auto& inst : *to_block) {
     if (inst.opcode() != SpvOpPhi) {
+      // Phi instructions must appear first in a block, so if we find a non-phi
+      // instruction we are done.
       break;
     }
-    auto undef_id = FindOrCreateGlobalUndef(context, inst.type_id());
+    // Add to the phi operand an (undef, from_id) pair to reflect the added
+    // edge.
+    auto undef_id = FindOrCreateGlobalUndef(inst.type_id());
     inst.AddOperand(Operand(SPV_OPERAND_TYPE_ID, {undef_id}));
     inst.AddOperand(Operand(SPV_OPERAND_TYPE_ID, {from_id}));
   }
 }
 
-uint32_t StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalUndef(
-    IRContext* context, uint32_t type_id) {
-  for (auto& inst : context->module()->types_values()) {
-    if (inst.opcode() != SpvOpUndef) {
-      continue;
-    }
-    if (inst.type_id() == type_id) {
-      return inst.result_id();
-    }
-  }
-  // TODO: this is adapted from MemPass::Type2Undef.  In due course it would
-  // be good to factor out this duplication.
-  const uint32_t undef_id = context->TakeNextId();
-  std::unique_ptr<Instruction> undef_inst(
-      new Instruction(context, SpvOpUndef, type_id, undef_id, {}));
-  assert(undef_id == undef_inst->result_id());
-  context->module()->AddGlobalValue(std::move(undef_inst));
-  return undef_id;
-}
-
-uint32_t
-StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalVariable(
-    IRContext* context, uint32_t base_type_id) {
-  for (auto& inst : context->module()->types_values()) {
-    if (inst.opcode() != SpvOpVariable) {
-      continue;
-    }
-    if (context->get_type_mgr()->GetId(context->get_type_mgr()
-                                           ->GetType(inst.type_id())
-                                           ->AsPointer()
-                                           ->pointee_type()) == base_type_id) {
-      return inst.result_id();
-    }
-  }
-  auto pointer_type_id = context->get_type_mgr()->FindPointerToType(
-      base_type_id, SpvStorageClassPrivate);
-
-  // TODO: refactor to avoid duplication with FindOrCreateGlobalUndef.
-  const uint32_t var_id = context->TakeNextId();
-  std::unique_ptr<Instruction> undef_inst(new Instruction(
-      context, SpvOpVariable, pointer_type_id, var_id,
-      {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}}));
-  assert(var_id == undef_inst->result_id());
-  context->module()->AddGlobalValue(std::move(undef_inst));
-  return var_id;
-}
-
-void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection(
-    IRContext* context, const CFG& cfg) {
+void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection() {
+  // Change the merge instruction from OpLoopMerge to OpSelectionMerge, with
+  // the same merge block.
   auto loop_merge_inst = loop_construct_header_->GetLoopMergeInst();
   auto const loop_merge_block_id =
       loop_merge_inst->GetSingleWordOperand(kMergeNodeIndex);
@@ -320,12 +278,17 @@ void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection(
       {{loop_merge_inst->GetOperand(kMergeNodeIndex).type,
         {loop_merge_block_id}},
        {SPV_OPERAND_TYPE_SELECTION_CONTROL, {SpvSelectionControlMaskNone}}});
+
+  // The loop header either finishes with OpBranch or OpBranchConditional.
+  // The latter is fine for a selection.  In the former case we need to turn
+  // it into OpBranchConditional.  We use "true" as the condition, and make
+  // the "else" branch be the merge block.
   auto terminator = loop_construct_header_->terminator();
   if (terminator->opcode() == SpvOpBranch) {
     analysis::Bool temp;
     const analysis::Bool* bool_type =
-        context->get_type_mgr()->GetRegisteredType(&temp)->AsBool();
-    auto const_mgr = context->get_constant_mgr();
+        context_->get_type_mgr()->GetRegisteredType(&temp)->AsBool();
+    auto const_mgr = context_->get_constant_mgr();
     auto true_const = const_mgr->GetConstant(bool_type, {true});
     auto true_const_result_id =
         const_mgr->GetDefiningInstruction(true_const)->result_id();
@@ -335,44 +298,108 @@ void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection(
                                  {SPV_OPERAND_TYPE_ID, {original_branch_id}},
                                  {SPV_OPERAND_TYPE_ID, {loop_merge_block_id}}});
     if (original_branch_id != loop_merge_block_id) {
-      // TODO: add a test for the case where they are equal.
+      // TODO(afd): consider adding a test for the case where they are equal.
       AdaptPhiNodesForAddedEdge(loop_construct_header_->id(),
-                                cfg.block(loop_merge_block_id), context);
+                                context_->cfg()->block(loop_merge_block_id));
     }
   }
 }
 
-void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses(
-    const DominatorAnalysis& dominator_analysis,
-    const spvtools::opt::analysis::DefUseManager& def_use_mgr) {
+void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses() {
+  // Consider each instruction in the function.
   for (auto& block : *enclosing_function_) {
     for (auto& def : block) {
       if (def.opcode() == SpvOpVariable) {
+        // Variables are defined at the start of the function, and can be
+        // accessed by all blocks, even by unreachable blocks that have no
+        // dominators, so we do not need to worry about them.
         continue;
       }
-      def_use_mgr.ForEachUse(&def, [this, &def, &dominator_analysis](
-                                       Instruction* use, uint32_t index) {
-        if (use->opcode() == SpvOpPhi) {
-          // TODO: Consider carefully what to do.  We should probably check
-          // dominance on the incoming edge.
-        } else if (!dominator_analysis.Dominates(&def, use)) {
-          if (def.opcode() == SpvOpAccessChain) {
-            auto base_type = def.context()->get_type_mgr()->GetId(
-                def.context()
-                    ->get_type_mgr()
-                    ->GetType(def.type_id())
-                    ->AsPointer()
-                    ->pointee_type());
-            use->SetOperand(
-                index, {FindOrCreateGlobalVariable(def.context(), base_type)});
-          } else {
-            use->SetOperand(
-                index, {FindOrCreateGlobalUndef(def.context(), def.type_id())});
-          }
-        }
-      });
+      context_->get_def_use_mgr()->ForEachUse(
+          &def, [this, &block, &def](Instruction* use, uint32_t index) {
+            // If a use is not appropriately dominated by its definition,
+            // replace the use with an OpUndef, unless the definition is an
+            // access chain in which case replace it with some (possibly fresh)
+            // global variable (as we cannot load from / store to OpUndef).
+            if (!DefinitionSufficientlyDominatesUse(def, use, index, block)) {
+              if (def.opcode() == SpvOpAccessChain) {
+                auto base_type = def.context()->get_type_mgr()->GetId(
+                    def.context()
+                        ->get_type_mgr()
+                        ->GetType(def.type_id())
+                        ->AsPointer()
+                        ->pointee_type());
+                use->SetOperand(index, {FindOrCreateGlobalVariable(base_type)});
+              } else {
+                use->SetOperand(index,
+                                {FindOrCreateGlobalUndef(def.type_id())});
+              }
+            }
+          });
     }
   }
+}
+
+bool StructuredLoopToSelectionReductionOpportunity::
+    DefinitionSufficientlyDominatesUse(Instruction& def, Instruction* use,
+                                       uint32_t use_index,
+                                       BasicBlock& def_block) {
+  if (use->opcode() == SpvOpPhi) {
+    // A use in a phi doesn't need to be dominated by its definition, but the
+    // associated parent block does need to be dominated by the definition.
+    return context_->GetDominatorAnalysis(enclosing_function_)
+        ->Dominates(def_block.id(), use->GetSingleWordOperand(use_index + 1));
+  }
+  // In non-phi cases, a use needs to be dominated by its definition.
+  return context_->GetDominatorAnalysis(enclosing_function_)
+      ->Dominates(&def, use);
+}
+
+uint32_t StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalUndef(
+    uint32_t type_id) {
+  for (auto& inst : context_->module()->types_values()) {
+    if (inst.opcode() != SpvOpUndef) {
+      continue;
+    }
+    if (inst.type_id() == type_id) {
+      return inst.result_id();
+    }
+  }
+  // TODO: this is adapted from MemPass::Type2Undef.  In due course it would
+  // be good to factor out this duplication.
+  const uint32_t undef_id = context_->TakeNextId();
+  std::unique_ptr<Instruction> undef_inst(
+      new Instruction(context_, SpvOpUndef, type_id, undef_id, {}));
+  assert(undef_id == undef_inst->result_id());
+  context_->module()->AddGlobalValue(std::move(undef_inst));
+  return undef_id;
+}
+
+uint32_t
+StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalVariable(
+    uint32_t base_type_id) {
+  for (auto& inst : context_->module()->types_values()) {
+    if (inst.opcode() != SpvOpVariable) {
+      continue;
+    }
+    if (context_->get_type_mgr()->GetId(context_->get_type_mgr()
+                                            ->GetType(inst.type_id())
+                                            ->AsPointer()
+                                            ->pointee_type()) == base_type_id) {
+      return inst.result_id();
+    }
+  }
+  auto pointer_type_id = context_->get_type_mgr()->FindPointerToType(
+      base_type_id, SpvStorageClassPrivate);
+
+  // TODO: refactor to avoid duplication with FindOrCreateGlobalUndef.
+  const uint32_t var_id = context_->TakeNextId();
+  std::unique_ptr<Instruction> undef_inst(new Instruction(
+      context_, SpvOpVariable, pointer_type_id, var_id,
+      {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}}));
+  assert(var_id == undef_inst->result_id());
+  context_->module()->AddGlobalValue(std::move(undef_inst));
+  return var_id;
 }
 
 }  // namespace reduce

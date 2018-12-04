@@ -1729,6 +1729,8 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
          %22 = OpTypeVector %21 4
          %23 = OpTypePointer Output %22
           %3 = OpVariable %23 Output
+        %114 = OpUndef %10
+        %115 = OpUndef %8
           %2 = OpFunction %6 None %7
          %24 = OpLabel
          %31 = OpAccessChain %13 %5 %12
@@ -1745,8 +1747,8 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
          %42 = OpINotEqual %8 %41 %15
                OpBranch %44
          %44 = OpLabel
-         %98 = OpPhi %10 %12 %24 %107 %46
-         %97 = OpPhi %8 %33 %24 %105 %46
+         %98 = OpPhi %10 %12 %24 %114 %46
+         %97 = OpPhi %8 %33 %24 %115 %46
                OpSelectionMerge %45 None	; Was OpLoopMerge %45 %46 None
                OpBranchConditional %97 %49 %45
          %49 = OpLabel
@@ -1861,8 +1863,8 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
          %23 = OpTypePointer Output %22
           %3 = OpVariable %23 Output
         %114 = OpUndef %10
-        %115 = OpConstantTrue %8
-        %116 = OpUndef %8
+        %115 = OpUndef %8
+        %116 = OpConstantTrue %8
           %2 = OpFunction %6 None %7
          %24 = OpLabel
          %31 = OpAccessChain %13 %5 %12
@@ -1879,8 +1881,8 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
          %42 = OpINotEqual %8 %41 %15
                OpBranch %44
          %44 = OpLabel
-         %98 = OpPhi %10 %12 %24 %107 %46
-         %97 = OpPhi %8 %33 %24 %105 %46
+         %98 = OpPhi %10 %12 %24 %114 %46
+         %97 = OpPhi %8 %33 %24 %115 %46
                OpSelectionMerge %45 None	; Was OpLoopMerge %45 %46 None
                OpBranchConditional %97 %49 %45
          %49 = OpLabel
@@ -1909,9 +1911,9 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
          %57 = OpLabel
                OpBranch %73
          %73 = OpLabel
-         %99 = OpPhi %10 %100 %57 %109 %75
+         %99 = OpPhi %10 %100 %57 %114 %75
                OpSelectionMerge %74 None ; Was OpLoopMerge %74 %75 None
-               OpBranchConditional %115 %76 %74
+               OpBranchConditional %116 %76 %74
          %76 = OpLabel
                OpSelectionMerge %78 None
                OpBranchConditional %42 %79 %80
@@ -1940,7 +1942,7 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
                OpBranch %74     ; Was OpBranch %75
          %75 = OpLabel
         %109 = OpPhi %10 ; Was OpPhi %10 %99 %85 %110 %92 %110 %78
-               OpBranchConditional %116 %73 %45 ; Was OpBranchConditional %113 %73 %74
+               OpBranchConditional %115 %73 %45 ; Was OpBranchConditional %113 %73 %74
          %74 = OpLabel
         %108 = OpPhi %10 %114 %78 %114 %73 ; Was OpPhi %10 %99 %80 %109 %75
                OpBranch %45 	; Was OpBranch %46
@@ -2248,6 +2250,119 @@ TEST(StructuredLoopToSelectionReductionPassTest, AccessChainIssue) {
                OpStore %56 %58
                OpReturn
                OpFunctionEnd
+  )";
+  CheckEqual(env, expected, context.get());
+}
+
+TEST(StructuredLoopToSelectionReductionPassTest, DominanceAndPhiIssue) {
+  // Exposes an interesting scenario where a use in a phi stops being dominated
+  // by the block with which it is associated in the phi.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %17 = OpTypeBool
+         %18 = OpConstantTrue %17
+         %19 = OpConstantFalse %17
+         %20 = OpTypeInt 32 1
+         %21 = OpConstant %20 5
+         %22 = OpConstant %20 6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %6
+         %6 = OpLabel
+              OpLoopMerge %16 %15 None
+              OpBranch %7
+         %7 = OpLabel
+              OpSelectionMerge %13 None
+              OpBranchConditional %18 %8 %9
+         %8 = OpLabel
+              OpSelectionMerge %12 None
+              OpBranchConditional %18 %10 %11
+         %9 = OpLabel
+              OpBranch %16
+        %10 = OpLabel
+              OpBranch %16
+        %11 = OpLabel
+        %23 = OpIAdd %20 %21 %22
+              OpBranch %12
+        %12 = OpLabel
+              OpBranch %13
+        %13 = OpLabel
+              OpBranch %14
+        %14 = OpLabel
+        %24 = OpPhi %20 %23 %13
+              OpBranchConditional %19 %15 %16
+        %15 = OpLabel
+              OpBranch %6
+        %16 = OpLabel
+              OpReturn
+              OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+  ASSERT_EQ(1, ops.size());
+
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %17 = OpTypeBool
+         %18 = OpConstantTrue %17
+         %19 = OpConstantFalse %17
+         %20 = OpTypeInt 32 1
+         %21 = OpConstant %20 5
+         %22 = OpConstant %20 6
+         %25 = OpUndef %20
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %6
+         %6 = OpLabel
+              OpSelectionMerge %16 None
+              OpBranchConditional %18 %7 %16
+         %7 = OpLabel
+              OpSelectionMerge %13 None
+              OpBranchConditional %18 %8 %9
+         %8 = OpLabel
+              OpSelectionMerge %12 None
+              OpBranchConditional %18 %10 %11
+         %9 = OpLabel
+              OpBranch %13
+        %10 = OpLabel
+              OpBranch %12
+        %11 = OpLabel
+        %23 = OpIAdd %20 %21 %22
+              OpBranch %12
+        %12 = OpLabel
+              OpBranch %13
+        %13 = OpLabel
+              OpBranch %14
+        %14 = OpLabel
+        %24 = OpPhi %20 %25 %13
+              OpBranchConditional %19 %16 %16
+        %15 = OpLabel
+              OpBranch %6
+        %16 = OpLabel
+              OpReturn
+              OpFunctionEnd
   )";
   CheckEqual(env, expected, context.get());
 }

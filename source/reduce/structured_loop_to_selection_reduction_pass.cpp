@@ -57,8 +57,8 @@ StructuredLoopToSelectionReductionPass::GetAvailableOpportunities(
       // We can turn this structured loop into a selection, so add the
       // opportunity to do so.
       result.push_back(
-          MakeUnique<StructuredLoopToSelectionReductionOpportunity>(&block,
-                                                                    &function));
+          MakeUnique<StructuredLoopToSelectionReductionOpportunity>(
+              context, &block, &function));
     }
   }
   return result;
