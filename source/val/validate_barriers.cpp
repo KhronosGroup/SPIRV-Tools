@@ -24,104 +24,12 @@
 #include "source/spirv_target_env.h"
 #include "source/util/bitutils.h"
 #include "source/val/instruction.h"
+#include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
 namespace val {
 namespace {
-
-// Validates Execution Scope operand.
-spv_result_t ValidateExecutionScope(ValidationState_t& _,
-                                    const Instruction* inst, uint32_t id) {
-  const SpvOp opcode = inst->opcode();
-  bool is_int32 = false, is_const_int32 = false;
-  uint32_t value = 0;
-  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
-
-  if (!is_int32) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(opcode)
-           << ": expected Execution Scope to be a 32-bit int";
-  }
-
-  if (!is_const_int32) {
-    return SPV_SUCCESS;
-  }
-
-  if (spvIsVulkanEnv(_.context()->target_env)) {
-    if (value != SpvScopeWorkgroup && value != SpvScopeSubgroup) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << spvOpcodeString(opcode)
-             << ": in Vulkan environment Execution Scope is limited to "
-                "Workgroup and Subgroup";
-    }
-
-    if (_.context()->target_env != SPV_ENV_VULKAN_1_0 &&
-        value != SpvScopeSubgroup) {
-      _.function(inst->function()->id())
-          ->RegisterExecutionModelLimitation([](SpvExecutionModel model,
-                                                std::string* message) {
-            if (model == SpvExecutionModelFragment ||
-                model == SpvExecutionModelVertex ||
-                model == SpvExecutionModelGeometry ||
-                model == SpvExecutionModelTessellationEvaluation) {
-              if (message) {
-                *message =
-                    "in Vulkan evironment, OpControlBarrier execution scope "
-                    "must be Subgroup for Fragment, Vertex, Geometry and "
-                    "TessellationEvaluation execution models";
-              }
-              return false;
-            }
-            return true;
-          });
-    }
-  }
-
-  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
-
-  return SPV_SUCCESS;
-}
-
-// Validates Memory Scope operand.
-spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
-                                 uint32_t id) {
-  const SpvOp opcode = inst->opcode();
-  bool is_int32 = false, is_const_int32 = false;
-  uint32_t value = 0;
-  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(id);
-
-  if (!is_int32) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(opcode)
-           << ": expected Memory Scope to be a 32-bit int";
-  }
-
-  if (!is_const_int32) {
-    return SPV_SUCCESS;
-  }
-
-  if (spvIsVulkanEnv(_.context()->target_env)) {
-    if (value == SpvScopeCrossDevice) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << spvOpcodeString(opcode)
-             << ": in Vulkan environment, Memory Scope cannot be CrossDevice";
-    }
-    if (_.context()->target_env == SPV_ENV_VULKAN_1_0 &&
-        value != SpvScopeDevice && value != SpvScopeWorkgroup &&
-        value != SpvScopeInvocation) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << spvOpcodeString(opcode)
-             << ": in Vulkan 1.0 environment Memory Scope is limited to "
-                "Device, "
-                "Workgroup and Invocation";
-    }
-  }
-
-  // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
-
-  return SPV_SUCCESS;
-}
 
 // Validates Memory Semantics operand.
 spv_result_t ValidateMemorySemantics(ValidationState_t& _,
@@ -138,11 +46,11 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
   }
 
   if (!is_const_int32) {
-    return SPV_SUCCESS;
-  }
-
-  if (spvOpcodeIsSpecConstant(_.FindDef(id)->opcode())) {
-    // We cannot assume the value of the spec constant.
+    if (_.HasCapability(SpvCapabilityShader)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Memory Semantics ids must be OpConstant when Shader "
+                "capability is present";
+    }
     return SPV_SUCCESS;
   }
 

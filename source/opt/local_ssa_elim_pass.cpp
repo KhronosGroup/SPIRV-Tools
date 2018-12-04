@@ -50,7 +50,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   ProcessFunction pfn = [this](Function* fp) {
     return SSARewriter(this).RewriteFunctionIntoSSA(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, get_module());
+  bool modified = context()->ProcessEntryPointCallTree(pfn);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

@@ -520,15 +520,18 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
   return SPV_SUCCESS;
 }
 
-// Returns true if structure id has given decoration. Handles also nested
-// structures.
-bool hasDecoration(uint32_t struct_id, SpvDecoration decoration,
+// Returns true if variable or structure id has given decoration. Handles also
+// nested structures.
+bool hasDecoration(uint32_t id, SpvDecoration decoration,
                    ValidationState_t& vstate) {
-  for (auto& dec : vstate.id_decorations(struct_id)) {
+  for (auto& dec : vstate.id_decorations(id)) {
     if (decoration == dec.dec_type()) return true;
   }
-  for (auto id : getStructMembers(struct_id, SpvOpTypeStruct, vstate)) {
-    if (hasDecoration(id, decoration, vstate)) {
+  if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) {
+    return false;
+  }
+  for (auto member_id : getStructMembers(id, SpvOpTypeStruct, vstate)) {
+    if (hasDecoration(member_id, decoration, vstate)) {
       return true;
     }
   }
@@ -781,12 +784,39 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
   for (const auto& inst : vstate.ordered_instructions()) {
     const auto& words = inst.words();
     if (SpvOpVariable == inst.opcode()) {
+      const auto var_id = inst.id();
       // For storage class / decoration combinations, see Vulkan 14.5.4 "Offset
       // and Stride Assignment".
       const auto storageClass = words[3];
       const bool uniform = storageClass == SpvStorageClassUniform;
+      const bool uniform_constant =
+          storageClass == SpvStorageClassUniformConstant;
       const bool push_constant = storageClass == SpvStorageClassPushConstant;
       const bool storage_buffer = storageClass == SpvStorageClassStorageBuffer;
+
+      // Vulkan 14.5.2: Check DescriptorSet and Binding decoration for
+      // UniformConstant which cannot be a struct.
+      if (spvIsVulkanEnv(vstate.context()->target_env)) {
+        if (uniform_constant) {
+          if (!hasDecoration(var_id, SpvDecorationDescriptorSet, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
+                   << "UniformConstant id '" << var_id
+                   << "' is missing DescriptorSet decoration.\n"
+                   << "From Vulkan spec, section 14.5.2:\n"
+                   << "These variables must have DescriptorSet and Binding "
+                      "decorations specified";
+          }
+          if (!hasDecoration(var_id, SpvDecorationBinding, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
+                   << "UniformConstant id '" << var_id
+                   << "' is missing Binding decoration.\n"
+                   << "From Vulkan spec, section 14.5.2:\n"
+                   << "These variables must have DescriptorSet and Binding "
+                      "decorations specified";
+          }
+        }
+      }
+
       if (uniform || push_constant || storage_buffer) {
         const auto ptrInst = vstate.FindDef(words[1]);
         assert(SpvOpTypePointer == ptrInst->opcode());
@@ -799,6 +829,39 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         const char* sc_str =
             uniform ? "Uniform"
                     : (push_constant ? "PushConstant" : "StorageBuffer");
+
+        if (spvIsVulkanEnv(vstate.context()->target_env)) {
+          // Vulkan 14.5.1: Check Block decoration for PushConstant variables.
+          if (push_constant && !hasDecoration(id, SpvDecorationBlock, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
+                   << "PushConstant id '" << id
+                   << "' is missing Block decoration.\n"
+                   << "From Vulkan spec, section 14.5.1:\n"
+                   << "Such variables must be identified with a Block "
+                      "decoration";
+          }
+          // Vulkan 14.5.2: Check DescriptorSet and Binding decoration for
+          // Uniform and StorageBuffer variables.
+          if (uniform || storage_buffer) {
+            if (!hasDecoration(var_id, SpvDecorationDescriptorSet, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
+                     << sc_str << " id '" << var_id
+                     << "' is missing DescriptorSet decoration.\n"
+                     << "From Vulkan spec, section 14.5.2:\n"
+                     << "These variables must have DescriptorSet and Binding "
+                        "decorations specified";
+            }
+            if (!hasDecoration(var_id, SpvDecorationBinding, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
+                     << sc_str << " id '" << var_id
+                     << "' is missing Binding decoration.\n"
+                     << "From Vulkan spec, section 14.5.2:\n"
+                     << "These variables must have DescriptorSet and Binding "
+                        "decorations specified";
+            }
+          }
+        }
+
         for (const auto& dec : vstate.id_decorations(id)) {
           const bool blockDeco = SpvDecorationBlock == dec.dec_type();
           const bool bufferDeco = SpvDecorationBufferBlock == dec.dec_type();
@@ -812,7 +875,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
             if (isMissingOffsetInStruct(id, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
-                     << " must be explicitly laid out with Offset decorations.";
+                     << " must be explicitly laid out with Offset "
+                        "decorations.";
             } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
@@ -933,7 +997,8 @@ spv_result_t CheckDecorationsOfConversions(ValidationState_t& vstate) {
             vstate.GetBitWidth(half_float_id) != 16) {
           return vstate.diag(SPV_ERROR_INVALID_ID, inst)
                  << "FPRoundingMode decoration can be applied only to the "
-                    "Object operand of an OpStore storing through a pointer to "
+                    "Object operand of an OpStore storing through a pointer "
+                    "to "
                     "a 16-bit floating-point scalar or vector object.";
         }
 

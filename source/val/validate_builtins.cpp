@@ -207,6 +207,11 @@ class BuiltInsValidator {
       const Instruction& referenced_inst,
       const Instruction& referenced_from_inst);
 
+  spv_result_t ValidateInstanceIdAtReference(
+      const Decoration& decoration, const Instruction& built_in_inst,
+      const Instruction& referenced_inst,
+      const Instruction& referenced_from_inst);
+
   spv_result_t ValidateInstanceIndexAtReference(
       const Decoration& decoration, const Instruction& built_in_inst,
       const Instruction& referenced_inst,
@@ -2096,6 +2101,43 @@ spv_result_t BuiltInsValidator::ValidateVertexIdOrInstanceIdAtDefinition(
     return _.diag(SPV_ERROR_INVALID_DATA, &inst)
            << "Vulkan spec doesn't allow BuiltIn VertexId/InstanceId "
               "to be used.";
+  }
+
+  if (label == SpvBuiltInInstanceId) {
+    return ValidateInstanceIdAtReference(decoration, inst, inst, inst);
+  }
+  return SPV_SUCCESS;
+}
+
+spv_result_t BuiltInsValidator::ValidateInstanceIdAtReference(
+    const Decoration& decoration, const Instruction& built_in_inst,
+    const Instruction& referenced_inst,
+    const Instruction& referenced_from_inst) {
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    for (const SpvExecutionModel execution_model : execution_models_) {
+      switch (execution_model) {
+        case SpvExecutionModelIntersectionNV:
+        case SpvExecutionModelClosestHitNV:
+        case SpvExecutionModelAnyHitNV:
+          // Do nothing, valid stages
+          break;
+        default:
+          return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
+                 << "Vulkan spec allows BuiltIn InstanceId to be used "
+                    "only with IntersectionNV, ClosestHitNV and AnyHitNV "
+                    "execution models. "
+                 << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
+                                     referenced_from_inst);
+          break;
+      }
+    }
+  }
+
+  if (function_id_ == 0) {
+    // Propagate this rule to all dependant ids in the global scope.
+    id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
+        &BuiltInsValidator::ValidateInstanceIdAtReference, this, decoration,
+        built_in_inst, referenced_from_inst, std::placeholders::_1));
   }
 
   return SPV_SUCCESS;

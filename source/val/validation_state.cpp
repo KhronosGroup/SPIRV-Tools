@@ -208,6 +208,10 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
                    /* diagnostic = */ nullptr);
     preallocateStorage();
   }
+
+  friendly_mapper_ = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
+      context_, words_, num_words_);
+  name_mapper_ = friendly_mapper_->GetNameMapper();
 }
 
 void ValidationState_t::preallocateStorage() {
@@ -239,21 +243,10 @@ void ValidationState_t::AssignNameToId(uint32_t id, std::string name) {
 }
 
 std::string ValidationState_t::getIdName(uint32_t id) const {
-  std::stringstream out;
-  out << id;
-  if (operand_names_.find(id) != end(operand_names_)) {
-    out << "[" << operand_names_.at(id) << "]";
-  }
-  return out.str();
-}
+  const std::string id_name = name_mapper_(id);
 
-std::string ValidationState_t::getIdOrName(uint32_t id) const {
   std::stringstream out;
-  if (operand_names_.find(id) != std::end(operand_names_)) {
-    out << operand_names_.at(id);
-  } else {
-    out << id;
-  }
+  out << id << "[%" << id_name << "]";
   return out.str();
 }
 
@@ -888,7 +881,10 @@ std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
     return std::make_tuple(false, false, 0);
   }
 
-  if (!spvOpcodeIsConstant(inst->opcode())) {
+  // Spec constant values cannot be evaluated so don't consider constant for
+  // the purpose of this method.
+  if (!spvOpcodeIsConstant(inst->opcode()) ||
+      spvOpcodeIsSpecConstant(inst->opcode())) {
     return std::make_tuple(true, false, 0);
   }
 

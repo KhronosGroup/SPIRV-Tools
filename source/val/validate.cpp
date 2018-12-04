@@ -116,18 +116,18 @@ void printDot(const ValidationState_t& _, const BasicBlock& other) {
     block_string += "end ";
   } else {
     for (auto block : *other.successors()) {
-      block_string += _.getIdOrName(block->id()) + " ";
+      block_string += _.getIdName(block->id()) + " ";
     }
   }
-  printf("%10s -> {%s\b}\n", _.getIdOrName(other.id()).c_str(),
+  printf("%10s -> {%s\b}\n", _.getIdName(other.id()).c_str(),
          block_string.c_str());
 }
 
 void PrintBlocks(ValidationState_t& _, Function func) {
   assert(func.first_block());
 
-  printf("%10s -> %s\n", _.getIdOrName(func.id()).c_str(),
-         _.getIdOrName(func.first_block()->id()).c_str());
+  printf("%10s -> %s\n", _.getIdName(func.id()).c_str(),
+         _.getIdName(func.first_block()->id()).c_str());
   for (const auto& block : func.ordered_blocks()) {
     printDot(_, *block);
   }
@@ -145,7 +145,7 @@ void PrintBlocks(ValidationState_t& _, Function func) {
 
 UNUSED(void PrintDotGraph(ValidationState_t& _, Function func)) {
   if (func.first_block()) {
-    std::string func_name(_.getIdOrName(func.id()));
+    std::string func_name(_.getIdName(func.id()));
     printf("digraph %s {\n", func_name.c_str());
     PrintBlocks(_, func);
     printf("}\n");
@@ -328,7 +328,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     // Miscellaneous
     if (auto error = DebugPass(*vstate, &instruction)) return error;
     if (auto error = AnnotationPass(*vstate, &instruction)) return error;
-    if (auto error = ExtInstPass(*vstate, &instruction)) return error;
+    if (auto error = ExtensionPass(*vstate, &instruction)) return error;
     if (auto error = ModeSettingPass(*vstate, &instruction)) return error;
     if (auto error = TypePass(*vstate, &instruction)) return error;
     if (auto error = ConstantPass(*vstate, &instruction)) return error;

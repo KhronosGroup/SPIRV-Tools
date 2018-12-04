@@ -65,6 +65,7 @@ OpExecutionMode %main OriginUpperLeft
 %workgroup = OpConstant %u32 2
 %subgroup = OpConstant %u32 3
 %invocation = OpConstant %u32 4
+%queuefamily = OpConstant %u32 5
 
 %relaxed = OpConstant %u32 0
 %acquire = OpConstant %u32 2
@@ -378,10 +379,9 @@ TEST_F(ValidateAtomics, AtomicLoadWrongPointerType) {
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("AtomicLoad: expected Pointer to be of type OpTypePointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 27[%_ptr_Workgroup_float] cannot be a type"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadWrongPointerDataType) {
@@ -404,8 +404,10 @@ TEST_F(ValidateAtomics, AtomicLoadWrongScopeType) {
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicLoad: expected Scope to be 32-bit int"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicLoad: expected Memory Scope to be a 32-bit int\n  %40 = "
+                "OpAtomicLoad %float %28 %float_1 %uint_0_1\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadWrongMemorySemanticsType) {
@@ -535,8 +537,10 @@ OpAtomicStore %f32_var %f32_1 %relaxed %f32_1
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicStore: expected Scope to be 32-bit int"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicStore: expected Memory Scope to be a 32-bit int\n  "
+                "OpAtomicStore %28 %float_1 %uint_0_1 %float_1\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreWrongMemorySemanticsType) {
@@ -619,11 +623,10 @@ TEST_F(ValidateAtomics, AtomicExchangeWrongPointerType) {
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "AtomicExchange: expected Pointer to be of type OpTypePointer"));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 33[%_ptr_Workgroup_v4float] cannot be a "
+                        "type"));
 }
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongPointerDataType) {
@@ -648,8 +651,11 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicExchange: expected Scope to be 32-bit int"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicExchange: expected Memory Scope to be a 32-bit int\n  %40 = "
+          "OpAtomicExchange %float %28 %float_1 %uint_0_1 %float_0\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongMemorySemanticsType) {
@@ -732,10 +738,10 @@ TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerType) {
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicCompareExchange: expected Pointer to be of type "
-                        "OpTypePointer"));
+              HasSubstr("Operand 33[%_ptr_Workgroup_v4float] cannot be a "
+                        "type"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongPointerDataType) {
@@ -762,7 +768,9 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicCompareExchange: expected Scope to be 32-bit int"));
+      HasSubstr("AtomicCompareExchange: expected Memory Scope to be a 32-bit "
+                "int\n  %40 = OpAtomicCompareExchange %float %28 %float_1 "
+                "%uint_0_1 %uint_0_1 %float_0 %float_0\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongMemorySemanticsType1) {
@@ -942,9 +950,11 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongScopeType) {
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicFlagTestAndSet: "
-                        "expected Scope to be 32-bit int"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicFlagTestAndSet: expected Memory Scope to be a 32-bit int\n  "
+          "%40 = OpAtomicFlagTestAndSet %bool %30 %ulong_1 %uint_0_1\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongMemorySemanticsType) {
@@ -1017,7 +1027,8 @@ OpAtomicFlagClear %u32_var %u64_1 %relaxed
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicFlagClear: expected Scope to be 32-bit int"));
+              HasSubstr("AtomicFlagClear: expected Memory Scope to be a 32-bit "
+                        "int\n  OpAtomicFlagClear %30 %ulong_1 %uint_0_1\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicFlagClearWrongMemorySemanticsType) {
@@ -1605,6 +1616,169 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr(
           "AtomicLoad: expected Memory Semantics to include a storage class"));
+}
+
+TEST_F(ValidateAtomics, VulkanMemoryModelAllowsQueueFamilyKHR) {
+  const std::string body = R"(
+%val = OpAtomicAnd %u32 %u32_var %queuefamily %relaxed %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+                      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateAtomics, NonVulkanMemoryModelDisallowsQueueFamilyKHR) {
+  const std::string body = R"(
+%val = OpAtomicAnd %u32 %u32_var %queuefamily %relaxed %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicAnd: Memory Scope QueueFamilyKHR requires "
+                        "capability VulkanMemoryModelKHR\n  %42 = OpAtomicAnd "
+                        "%uint %33 %uint_5 %uint_0_1 %uint_1\n"));
+}
+
+TEST_F(ValidateAtomics, SemanticsSpecConstantShader) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 0
+%workgroup = OpConstant %int 2
+%ptr_int_workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_workgroup Workgroup
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%ld = OpAtomicLoad %int %var %workgroup %spec_const
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory Semantics ids must be OpConstant when Shader "
+                        "capability is present"));
+}
+
+TEST_F(ValidateAtomics, SemanticsSpecConstantKernel) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 0
+%workgroup = OpConstant %int 2
+%ptr_int_workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_workgroup Workgroup
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%ld = OpAtomicLoad %int %var %workgroup %spec_const
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, ScopeSpecConstantShader) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 0
+%relaxed = OpConstant %int 0
+%ptr_int_workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_workgroup Workgroup
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%ld = OpAtomicLoad %int %var %spec_const %relaxed
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Scope ids must be OpConstant when Shader capability is present"));
+}
+
+TEST_F(ValidateAtomics, ScopeSpecConstantKernel) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%spec_const = OpSpecConstant %int 0
+%relaxed = OpConstant %int 0
+%ptr_int_workgroup = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_int_workgroup Workgroup
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+%ld = OpAtomicLoad %int %var %spec_const %relaxed
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, VulkanMemoryModelDeviceScopeBad) {
+  const std::string body = R"(
+%val = OpAtomicAnd %u32 %u32_var %device %relaxed %u32_1
+)";
+
+  const std::string extra = R"(OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+                      SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Use of device scope with VulkanKHR memory model requires the "
+                "VulkanMemoryModelDeviceScopeKHR capability"));
+}
+
+TEST_F(ValidateAtomics, VulkanMemoryModelDeviceScopeGood) {
+  const std::string body = R"(
+%val = OpAtomicAnd %u32 %u32_var %device %relaxed %u32_1
+)";
+
+  const std::string extra = R"(OpCapability VulkanMemoryModelKHR
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+                      SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 }  // namespace

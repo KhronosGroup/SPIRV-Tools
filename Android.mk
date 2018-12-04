@@ -1,6 +1,9 @@
 LOCAL_PATH := $(call my-dir)
 SPVTOOLS_OUT_PATH=$(if $(call host-path-is-absolute,$(TARGET_OUT)),$(TARGET_OUT),$(abspath $(TARGET_OUT)))
-SPVHEADERS_LOCAL_PATH := $(LOCAL_PATH)/external/spirv-headers
+
+ifeq ($(SPVHEADERS_LOCAL_PATH),)
+	SPVHEADERS_LOCAL_PATH := $(LOCAL_PATH)/external/spirv-headers
+endif
 
 SPVTOOLS_SRC_FILES := \
 		source/assembly_grammar.cpp \
@@ -51,7 +54,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_debug.cpp \
 		source/val/validate_decorations.cpp \
 		source/val/validate_derivatives.cpp \
-		source/val/validate_ext_inst.cpp \
+		source/val/validate_extensions.cpp \
 		source/val/validate_execution_limitations.cpp \
 		source/val/validate_function.cpp \
 		source/val/validate_id.cpp \
@@ -65,6 +68,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_logicals.cpp \
 		source/val/validate_non_uniform.cpp \
 		source/val/validate_primitives.cpp \
+		source/val/validate_scopes.cpp \
 		source/val/validate_type.cpp
 
 SPVTOOLS_OPT_SRC_FILES := \
@@ -151,6 +155,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/type_manager.cpp \
 		source/opt/types.cpp \
 		source/opt/unify_const_pass.cpp \
+		source/opt/upgrade_memory_model.cpp \
 		source/opt/value_number_table.cpp \
 		source/opt/vector_dce.cpp \
 		source/opt/workaround1209.cpp
@@ -315,7 +320,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := SPIRV-Tools
 LOCAL_C_INCLUDES := \
 		$(LOCAL_PATH)/include \
-		$(LOCAL_PATH)/external/spirv-headers/include \
+		$(SPVHEADERS_LOCAL_PATH)/include \
 		$(SPVTOOLS_OUT_PATH)
 LOCAL_EXPORT_C_INCLUDES := \
 		$(LOCAL_PATH)/include
@@ -328,7 +333,7 @@ LOCAL_MODULE := SPIRV-Tools-opt
 LOCAL_C_INCLUDES := \
 		$(LOCAL_PATH)/include \
 		$(LOCAL_PATH)/source \
-		$(LOCAL_PATH)/external/spirv-headers/include \
+		$(SPVHEADERS_LOCAL_PATH)/include \
 		$(SPVTOOLS_OUT_PATH)
 LOCAL_CXXFLAGS:=-std=c++11 -fno-exceptions -fno-rtti -Werror
 LOCAL_STATIC_LIBRARIES:=SPIRV-Tools

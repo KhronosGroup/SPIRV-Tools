@@ -22,46 +22,12 @@
 #include "source/spirv_target_env.h"
 #include "source/util/bitutils.h"
 #include "source/val/instruction.h"
+#include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
 namespace val {
 namespace {
-
-spv_result_t ValidateExecutionScope(ValidationState_t& _,
-                                    const Instruction* inst, uint32_t scope) {
-  SpvOp opcode = inst->opcode();
-  bool is_int32 = false, is_const_int32 = false;
-  uint32_t value = 0;
-  std::tie(is_int32, is_const_int32, value) = _.EvalInt32IfConst(scope);
-
-  if (!is_int32) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(opcode)
-           << ": expected Execution Scope to be a 32-bit int";
-  }
-
-  if (!is_const_int32) {
-    return SPV_SUCCESS;
-  }
-
-  if (spvIsVulkanEnv(_.context()->target_env) &&
-      _.context()->target_env != SPV_ENV_VULKAN_1_0 &&
-      value != SpvScopeSubgroup) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(opcode)
-           << ": in Vulkan environment Execution scope is limited to "
-              "Subgroup";
-  }
-
-  if (value != SpvScopeSubgroup && value != SpvScopeWorkgroup) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(opcode)
-           << ": Execution scope is limited to Subgroup or Workgroup";
-  }
-
-  return SPV_SUCCESS;
-}
 
 spv_result_t ValidateGroupNonUniformBallotBitCount(ValidationState_t& _,
                                                    const Instruction* inst) {

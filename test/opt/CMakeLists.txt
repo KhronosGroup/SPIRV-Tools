@@ -38,6 +38,7 @@ add_spvtools_unittest(TARGET opt
        fold_spec_const_op_composite_test.cpp
        fold_test.cpp
        freeze_spec_const_test.cpp
+       function_test.cpp
        if_conversion_test.cpp
        inline_opaque_test.cpp
        inline_test.cpp
@@ -61,7 +62,6 @@ add_spvtools_unittest(TARGET opt
        pass_manager_test.cpp
        pass_merge_return_test.cpp
        pass_remove_duplicates_test.cpp
-       pass_test.cpp pass_utils.cpp
        pass_utils.cpp
        private_to_local_test.cpp
        process_lines_test.cpp
@@ -87,4 +87,9 @@ add_spvtools_unittest(TARGET opt
        workaround1209_test.cpp
   LIBS SPIRV-Tools-opt
   PCH_FILE pch_test_opt
+)
+
+add_spvtools_unittest(TARGET upgrade_memory_model
+  SRCS upgrade_memory_model_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
 )
