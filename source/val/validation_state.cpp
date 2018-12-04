@@ -930,9 +930,9 @@ const std::vector<uint32_t>& ValidationState_t::FunctionEntryPoints(
 }
 
 std::set<uint32_t> ValidationState_t::EntryPointReferences(uint32_t id) const {
-  std::set<uint32_t> entry_points;
+  std::set<uint32_t> referenced_entry_points;
   const auto inst = FindDef(id);
-  if (!inst) return entry_points;
+  if (!inst) return referenced_entry_points;
 
   std::vector<const Instruction*> stack;
   stack.push_back(inst);
@@ -943,8 +943,8 @@ std::set<uint32_t> ValidationState_t::EntryPointReferences(uint32_t id) const {
     if (const auto func = current_inst->function()) {
       // Instruction lives in a function, we can stop searching.
       const auto function_entry_points = FunctionEntryPoints(func->id());
-      entry_points.insert(function_entry_points.begin(),
-                          function_entry_points.end());
+      referenced_entry_points.insert(function_entry_points.begin(),
+                                     function_entry_points.end());
     } else {
       // Instruction is in the global scope, keep searching its uses.
       for (auto pair : current_inst->uses()) {
@@ -954,7 +954,7 @@ std::set<uint32_t> ValidationState_t::EntryPointReferences(uint32_t id) const {
     }
   }
 
-  return entry_points;
+  return referenced_entry_points;
 }
 
 std::string ValidationState_t::Disassemble(const Instruction& inst) const {
