@@ -63,6 +63,9 @@ bool CheckAllImageOperandsHandled() {
     case SpvImageOperandsMakeTexelVisibleKHRMask:
     case SpvImageOperandsNonPrivateTexelKHRMask:
     case SpvImageOperandsVolatileTexelKHRMask:
+    // TODO(dneto): Support image operands for SignExtend, ZeroExtend
+    case SpvImageOperandsSignExtendMask:
+    case SpvImageOperandsZeroExtendMask:
       return true;
   }
   return false;
