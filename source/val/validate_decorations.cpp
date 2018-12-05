@@ -46,6 +46,13 @@ struct PairHash {
   }
 };
 
+// A functor for hashing decoration types.
+struct SpvDecorationHash {
+  std::size_t operator()(SpvDecoration dec) const {
+    return static_cast<std::size_t>(dec);
+  }
+};
+
 // Struct member layout attributes that are inherited through arrays.
 struct LayoutConstraints {
   explicit LayoutConstraints(
@@ -944,22 +951,24 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
 }
 
 spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
-  static const std::unordered_set<SpvDecoration> kAtMostOncePerID = {
-      SpvDecorationArrayStride,
-  };
-  static const std::unordered_set<SpvDecoration> kAtMostOncePerMember = {
-      SpvDecorationOffset,
-      SpvDecorationMatrixStride,
-      SpvDecorationRowMajor,
-      SpvDecorationColMajor,
-  };
-  static const std::vector<std::unordered_set<SpvDecoration>>
+  static const std::unordered_set<SpvDecoration, SpvDecorationHash>
+      kAtMostOncePerID = {
+          SpvDecorationArrayStride,
+      };
+  static const std::unordered_set<SpvDecoration, SpvDecorationHash>
+      kAtMostOncePerMember = {
+          SpvDecorationOffset,
+          SpvDecorationMatrixStride,
+          SpvDecorationRowMajor,
+          SpvDecorationColMajor,
+      };
+  static const std::vector<std::unordered_set<SpvDecoration, SpvDecorationHash>>
       kMutuallyExclusivePerMember = {
           {SpvDecorationRowMajor, SpvDecorationColMajor},
       };
   // For printing the decoration name.
-  static const std::unordered_map<SpvDecoration, std::string> kDecorationName =
-      {
+  static const std::unordered_map<SpvDecoration, std::string, SpvDecorationHash>
+      kDecorationName = {
           {SpvDecorationArrayStride, "ArrayStride"},
           {SpvDecorationOffset, "Offset"},
           {SpvDecorationMatrixStride, "MatrixStride"},
@@ -978,7 +987,7 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
     if (SpvOpDecorate == inst.opcode()) {
       const auto id = words[1];
       const auto dec_type = static_cast<SpvDecoration>(words[2]);
-      const auto k = std::make_tuple(dec_type, id);
+      const auto k = per_id_key(dec_type, id);
       const auto already_used = !seen_per_id.insert(k).second;
       if (already_used &&
           kAtMostOncePerID.find(dec_type) != kAtMostOncePerID.end()) {
@@ -991,7 +1000,7 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
       const auto id = words[1];
       const auto member_id = words[2];
       const auto dec_type = static_cast<SpvDecoration>(words[3]);
-      const auto k = std::make_tuple(dec_type, id, member_id);
+      const auto k = per_member_key(dec_type, id, member_id);
       const auto already_used = !seen_per_member.insert(k).second;
       if (already_used &&
           kAtMostOncePerMember.find(dec_type) != kAtMostOncePerMember.end()) {
@@ -1006,7 +1015,7 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
         if (s.find(dec_type) == s.end()) continue;
         for (auto excl_dec_type : s) {
           if (excl_dec_type == dec_type) continue;
-          const auto excl_k = std::make_tuple(excl_dec_type, id, member_id);
+          const auto excl_k = per_member_key(excl_dec_type, id, member_id);
           if (seen_per_member.find(excl_k) != seen_per_member.end()) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                    << "ID '" << id << "', member '" << member_id
