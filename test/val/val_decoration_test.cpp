@@ -2299,10 +2299,15 @@ TEST_F(ValidateDecorations, VulkanUniformMissingDescriptorSetBad) {
    %float = OpTypeFloat 32
   %struct = OpTypeStruct %float
      %ptr = OpTypePointer Uniform %struct
+%ptr_float = OpTypePointer Uniform %float
      %var = OpVariable %ptr Uniform
+     %int = OpTypeInt 32 0
+   %int_0 = OpConstant %int 0
 
        %1 = OpFunction %void None %voidfn
    %label = OpLabel
+       %2 = OpAccessChain %ptr_float %var %int_0
+       %3 = OpLoad %float %2
             OpReturn
             OpFunctionEnd
 )";
@@ -2333,10 +2338,15 @@ TEST_F(ValidateDecorations, VulkanUniformMissingBindingBad) {
    %float = OpTypeFloat 32
   %struct = OpTypeStruct %float
      %ptr = OpTypePointer Uniform %struct
+%ptr_float = OpTypePointer Uniform %float
      %var = OpVariable %ptr Uniform
+     %int = OpTypeInt 32 0
+   %int_0 = OpConstant %int 0
 
        %1 = OpFunction %void None %voidfn
    %label = OpLabel
+       %2 = OpAccessChain %ptr_float %var %int_0
+       %3 = OpLoad %float %2
             OpReturn
             OpFunctionEnd
 )";
@@ -2368,6 +2378,7 @@ TEST_F(ValidateDecorations, VulkanUniformConstantMissingDescriptorSetBad) {
 
        %1 = OpFunction %void None %voidfn
    %label = OpLabel
+       %2 = OpLoad %sampler %var
             OpReturn
             OpFunctionEnd
 )";
@@ -2400,6 +2411,7 @@ TEST_F(ValidateDecorations, VulkanUniformConstantMissingBindingBad) {
 
        %1 = OpFunction %void None %voidfn
    %label = OpLabel
+       %2 = OpLoad %sampler %var
             OpReturn
             OpFunctionEnd
 )";
@@ -2423,7 +2435,7 @@ TEST_F(ValidateDecorations, VulkanStorageBufferMissingDescriptorSetBad) {
             OpEntryPoint Fragment %1 "main"
             OpExecutionMode %1 OriginUpperLeft
 
-            OpDecorate %struct BufferBlock
+            OpDecorate %struct Block
             OpDecorate %var Binding 0
 
     %void = OpTypeVoid
@@ -2432,9 +2444,14 @@ TEST_F(ValidateDecorations, VulkanStorageBufferMissingDescriptorSetBad) {
   %struct = OpTypeStruct %float
      %ptr = OpTypePointer StorageBuffer %struct
      %var = OpVariable %ptr StorageBuffer
+%ptr_float = OpTypePointer StorageBuffer %float
+     %int = OpTypeInt 32 0
+   %int_0 = OpConstant %int 0
 
        %1 = OpFunction %void None %voidfn
    %label = OpLabel
+       %2 = OpAccessChain %ptr_float %var %int_0
+       %3 = OpLoad %float %2
             OpReturn
             OpFunctionEnd
 )";
@@ -2458,8 +2475,93 @@ TEST_F(ValidateDecorations, VulkanStorageBufferMissingBindingBad) {
             OpEntryPoint Fragment %1 "main"
             OpExecutionMode %1 OriginUpperLeft
 
-            OpDecorate %struct BufferBlock
+            OpDecorate %struct Block
             OpDecorate %var DescriptorSet 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer StorageBuffer %struct
+     %var = OpVariable %ptr StorageBuffer
+%ptr_float = OpTypePointer StorageBuffer %float
+     %int = OpTypeInt 32 0
+   %int_0 = OpConstant %int 0
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+       %2 = OpAccessChain %ptr_float %var %int_0
+       %3 = OpLoad %float %2
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("StorageBuffer id '3' is missing Binding decoration.\n"
+                        "From Vulkan spec, section 14.5.2:\n"
+                        "These variables must have DescriptorSet and Binding "
+                        "decorations specified"));
+}
+
+TEST_F(ValidateDecorations,
+       VulkanStorageBufferMissingDescriptorSetSubFunctionBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpExtension "SPV_KHR_storage_buffer_storage_class"
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct Block
+            OpDecorate %var Binding 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+     %ptr = OpTypePointer StorageBuffer %struct
+     %var = OpVariable %ptr StorageBuffer
+%ptr_float = OpTypePointer StorageBuffer %float
+     %int = OpTypeInt 32 0
+   %int_0 = OpConstant %int 0
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+    %call = OpFunctionCall %void %2
+            OpReturn
+            OpFunctionEnd
+       %2 = OpFunction %void None %voidfn
+  %label2 = OpLabel
+       %3 = OpAccessChain %ptr_float %var %int_0
+       %4 = OpLoad %float %3
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("StorageBuffer id '3' is missing DescriptorSet decoration.\n"
+                "From Vulkan spec, section 14.5.2:\n"
+                "These variables must have DescriptorSet and Binding "
+                "decorations specified"));
+}
+
+TEST_F(ValidateDecorations,
+       VulkanStorageBufferMissingDescriptorAndBindingUnusedGood) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpExtension "SPV_KHR_storage_buffer_storage_class"
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct BufferBlock
 
     %void = OpTypeVoid
   %voidfn = OpTypeFunction %void
@@ -2475,13 +2577,8 @@ TEST_F(ValidateDecorations, VulkanStorageBufferMissingBindingBad) {
 )";
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+  EXPECT_EQ(SPV_SUCCESS,
             ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("StorageBuffer id '3' is missing Binding decoration.\n"
-                        "From Vulkan spec, section 14.5.2:\n"
-                        "These variables must have DescriptorSet and Binding "
-                        "decorations specified"));
 }
 
 TEST_F(ValidateDecorations, UniformMissingDescriptorSetGood) {
