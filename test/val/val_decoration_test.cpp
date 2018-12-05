@@ -4510,6 +4510,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+<<<<<<< HEAD
 // Uniform decoration
 
 TEST_F(ValidateDecorations, UniformDecorationGood) {
@@ -4588,6 +4589,226 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Uniform decoration applied to a value with void type\n"
                         "  %call = OpFunctionCall %void %myfunc"));
+}
+
+TEST_F(ValidateDecorations, MultipleOffsetDecorationsOnSameID) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpMemberDecorate %struct 0 Offset 0
+            OpMemberDecorate %struct 0 Offset 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID '2', member '0' decorated with Offset multiple "
+                        "times is not allowed."));
+}
+
+TEST_F(ValidateDecorations, MultipleArrayStrideDecorationsOnSameID) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %array ArrayStride 4
+            OpDecorate %array ArrayStride 4
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+    %uint = OpTypeInt 32 0
+  %uint_4 = OpConstant %uint 4
+   %array = OpTypeArray %float %uint_4
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID '2' decorated with ArrayStride multiple "
+                        "times is not allowed."));
+}
+
+TEST_F(ValidateDecorations, MultipleMatrixStrideDecorationsOnSameID) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpMemberDecorate %struct 0 Offset 0
+            OpMemberDecorate %struct 0 ColMajor
+            OpMemberDecorate %struct 0 MatrixStride 16
+            OpMemberDecorate %struct 0 MatrixStride 16
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+   %fvec4 = OpTypeVector %float 4
+   %fmat4 = OpTypeMatrix %fvec4 4
+  %struct = OpTypeStruct %fmat4
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID '2', member '0' decorated with MatrixStride "
+                        "multiple times is not allowed."));
+}
+
+TEST_F(ValidateDecorations, MultipleRowMajorDecorationsOnSameID) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpMemberDecorate %struct 0 Offset 0
+            OpMemberDecorate %struct 0 MatrixStride 16
+            OpMemberDecorate %struct 0 RowMajor
+            OpMemberDecorate %struct 0 RowMajor
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+   %fvec4 = OpTypeVector %float 4
+   %fmat4 = OpTypeMatrix %fvec4 4
+  %struct = OpTypeStruct %fmat4
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID '2', member '0' decorated with RowMajor multiple "
+                        "times is not allowed."));
+}
+
+TEST_F(ValidateDecorations, MultipleColMajorDecorationsOnSameID) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpMemberDecorate %struct 0 Offset 0
+            OpMemberDecorate %struct 0 MatrixStride 16
+            OpMemberDecorate %struct 0 ColMajor
+            OpMemberDecorate %struct 0 ColMajor
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+   %fvec4 = OpTypeVector %float 4
+   %fmat4 = OpTypeMatrix %fvec4 4
+  %struct = OpTypeStruct %fmat4
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID '2', member '0' decorated with ColMajor multiple "
+                        "times is not allowed."));
+}
+
+TEST_F(ValidateDecorations, RowMajorAndColMajorDecorationsOnSameID) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpMemberDecorate %struct 0 Offset 0
+            OpMemberDecorate %struct 0 MatrixStride 16
+            OpMemberDecorate %struct 0 ColMajor
+            OpMemberDecorate %struct 0 RowMajor
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+   %fvec4 = OpTypeVector %float 4
+   %fmat4 = OpTypeMatrix %fvec4 4
+  %struct = OpTypeStruct %fmat4
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID '2', member '0' decorated with both RowMajor and "
+                        "ColMajor is not allowed."));
+}
+
+TEST_F(ValidateDecorations, BlockAndBufferBlockDecorationsOnSameID) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct Block
+            OpDecorate %struct BufferBlock
+            OpMemberDecorate %struct 0 Offset 0
+            OpMemberDecorate %struct 0 MatrixStride 16
+            OpMemberDecorate %struct 0 RowMajor
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+   %fvec4 = OpTypeVector %float 4
+   %fmat4 = OpTypeMatrix %fvec4 4
+  %struct = OpTypeStruct %fmat4
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "ID '2' decorated with both BufferBlock and Block is not allowed."));
 }
 
 }  // namespace
