@@ -175,20 +175,36 @@ spv_result_t ValidateForwardDecls(ValidationState_t& _) {
 //   capability is being used.
 // * No function can be targeted by both an OpEntryPoint instruction and an
 //   OpFunctionCall instruction.
+//
+// Additionally enforces that entry points for Vulkan and WebGPU should not have
+// recursion.
 spv_result_t ValidateEntryPoints(ValidationState_t& _) {
   _.ComputeFunctionToEntryPointMapping();
+  _.ComputeRecursiveEntryPoints();
 
   if (_.entry_points().empty() && !_.HasCapability(SpvCapabilityLinkage)) {
     return _.diag(SPV_ERROR_INVALID_BINARY, nullptr)
            << "No OpEntryPoint instruction was found. This is only allowed if "
               "the Linkage capability is being used.";
   }
+
   for (const auto& entry_point : _.entry_points()) {
     if (_.IsFunctionCallTarget(entry_point)) {
       return _.diag(SPV_ERROR_INVALID_BINARY, _.FindDef(entry_point))
              << "A function (" << entry_point
              << ") may not be targeted by both an OpEntryPoint instruction and "
                 "an OpFunctionCall instruction.";
+    }
+
+    // For Vulkan and WebGPU, the static function-call graph for an entry point
+    // must not contain cycles.
+    if (spvIsWebGPUEnv(_.context()->target_env) ||
+        spvIsVulkanEnv(_.context()->target_env)) {
+      if (_.recursive_entry_points().find(entry_point) !=
+          _.recursive_entry_points().end()) {
+        return _.diag(SPV_ERROR_INVALID_BINARY, _.FindDef(entry_point))
+               << "Entry points may not have a call graph with cycles.";
+      }
     }
   }
 

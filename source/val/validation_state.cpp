@@ -919,6 +919,39 @@ void ValidationState_t::ComputeFunctionToEntryPointMapping() {
   }
 }
 
+void ValidationState_t::ComputeRecursiveEntryPoints() {
+  for (const Function func : functions()) {
+    std::stack<uint32_t> call_stack;
+    std::set<uint32_t> visited;
+
+    for (const uint32_t new_call : func.function_call_targets()) {
+      call_stack.push(new_call);
+    }
+
+    while (!call_stack.empty()) {
+      const uint32_t called_func_id = call_stack.top();
+      call_stack.pop();
+
+      if (!visited.insert(called_func_id).second) continue;
+
+      if (called_func_id == func.id()) {
+        for (const uint32_t entry_point :
+             function_to_entry_points_[called_func_id])
+          recursive_entry_points_.insert(entry_point);
+        break;
+      }
+
+      const Function* called_func = function(called_func_id);
+      if (called_func) {
+        // Other checks should error out on this invalid SPIR-V.
+        for (const uint32_t new_call : called_func->function_call_targets()) {
+          call_stack.push(new_call);
+        }
+      }
+    }
+  }
+}
+
 const std::vector<uint32_t>& ValidationState_t::FunctionEntryPoints(
     uint32_t func) const {
   auto iter = function_to_entry_points_.find(func);
