@@ -1935,15 +1935,17 @@ OpDecorate %workgroup_id BuiltIn WorkgroupId
 
   generator.after_types_ = R"(
 %workgroup_size = OpConstantComposite %u32vec3 %u32_1 %u32_1 %u32_1
-  %workgroup_id = OpConstantComposite %u32vec2 %u32_1 %u32_1
+     %input_ptr = OpTypePointer Input %u32vec2
+  %workgroup_id = OpVariable %input_ptr Input
 )";
 
   EntryPoint entry_point;
   entry_point.name = "main";
   entry_point.execution_model = "GLCompute";
+  entry_point.interfaces = "%workgroup_id";
   entry_point.body = R"(
 %copy_size = OpCopyObject %u32vec3 %workgroup_size
-  %copy_id = OpCopyObject %u32vec2 %workgroup_id
+  %load_id = OpLoad %u32vec2 %workgroup_id
 )";
   generator.entry_points_.push_back(std::move(entry_point));
 
@@ -1952,7 +1954,7 @@ OpDecorate %workgroup_id BuiltIn WorkgroupId
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("According to the Vulkan spec BuiltIn WorkgroupId "
                         "variable needs to be a 3-component 32-bit int vector. "
-                        "ID <3> (OpConstantComposite) has 2 components."));
+                        "ID <2> (OpVariable) has 2 components."));
 }
 
 TEST_F(ValidateBuiltIns, TwoBuiltInsFirstFails) {
