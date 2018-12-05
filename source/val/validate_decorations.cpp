@@ -799,7 +799,9 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
       // UniformConstant which cannot be a struct.
       if (spvIsVulkanEnv(vstate.context()->target_env)) {
         if (uniform_constant) {
-          if (!hasDecoration(var_id, SpvDecorationDescriptorSet, vstate)) {
+          auto entry_points = vstate.EntryPointReferences(var_id);
+          if (!entry_points.empty() &&
+              !hasDecoration(var_id, SpvDecorationDescriptorSet, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                    << "UniformConstant id '" << var_id
                    << "' is missing DescriptorSet decoration.\n"
@@ -807,7 +809,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                    << "These variables must have DescriptorSet and Binding "
                       "decorations specified";
           }
-          if (!hasDecoration(var_id, SpvDecorationBinding, vstate)) {
+          if (!entry_points.empty() &&
+              !hasDecoration(var_id, SpvDecorationBinding, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                    << "UniformConstant id '" << var_id
                    << "' is missing Binding decoration.\n"
@@ -856,7 +859,9 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
           // Vulkan 14.5.2: Check DescriptorSet and Binding decoration for
           // Uniform and StorageBuffer variables.
           if (uniform || storage_buffer) {
-            if (!hasDecoration(var_id, SpvDecorationDescriptorSet, vstate)) {
+            auto entry_points = vstate.EntryPointReferences(var_id);
+            if (!entry_points.empty() &&
+                !hasDecoration(var_id, SpvDecorationDescriptorSet, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                      << sc_str << " id '" << var_id
                      << "' is missing DescriptorSet decoration.\n"
@@ -864,7 +869,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                      << "These variables must have DescriptorSet and Binding "
                         "decorations specified";
             }
-            if (!hasDecoration(var_id, SpvDecorationBinding, vstate)) {
+            if (!entry_points.empty() &&
+                !hasDecoration(var_id, SpvDecorationBinding, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                      << sc_str << " id '" << var_id
                      << "' is missing Binding decoration.\n"
