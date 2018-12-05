@@ -781,6 +781,8 @@ void ComputeMemberConstraintsForArray(MemberConstraints* constraints,
 }
 
 spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
+  // Set of entry points that are known to use a push constant.
+  std::unordered_set<uint32_t> uses_push_constant;
   for (const auto& inst : vstate.ordered_instructions()) {
     const auto& words = inst.words();
     if (SpvOpVariable == inst.opcode()) {
@@ -794,9 +796,25 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
       const bool push_constant = storageClass == SpvStorageClassPushConstant;
       const bool storage_buffer = storageClass == SpvStorageClassStorageBuffer;
 
-      // Vulkan 14.5.2: Check DescriptorSet and Binding decoration for
-      // UniformConstant which cannot be a struct.
       if (spvIsVulkanEnv(vstate.context()->target_env)) {
+        // Vulkan 14.5.1: There must be no more than one PushConstant block
+        // per entry point.
+        if (push_constant) {
+          auto entry_points = vstate.EntryPointReferences(var_id);
+          for (auto ep_id : entry_points) {
+            const bool already_used = !uses_push_constant.insert(ep_id).second;
+            if (already_used) {
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
+                     << "Entry point id '" << ep_id
+                     << "' uses more than one PushConstant interface.\n"
+                     << "From Vulkan spec, section 14.5.1:\n"
+                     << "There must be no more than one push constant block "
+                     << "statically used per shader entry point.";
+            }
+          }
+        }
+        // Vulkan 14.5.2: Check DescriptorSet and Binding decoration for
+        // UniformConstant which cannot be a struct.
         if (uniform_constant) {
           auto entry_points = vstate.EntryPointReferences(var_id);
           if (!entry_points.empty() &&
