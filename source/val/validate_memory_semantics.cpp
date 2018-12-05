@@ -47,6 +47,25 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
+  if (spvIsWebGPUEnv(_.context()->target_env)) {
+    uint32_t valid_bits = SpvMemorySemanticsAcquireMask |
+                          SpvMemorySemanticsReleaseMask |
+                          SpvMemorySemanticsAcquireReleaseMask |
+                          SpvMemorySemanticsUniformMemoryMask |
+                          SpvMemorySemanticsWorkgroupMemoryMask |
+                          SpvMemorySemanticsImageMemoryMask |
+                          SpvMemorySemanticsOutputMemoryKHRMask |
+                          SpvMemorySemanticsMakeAvailableKHRMask |
+                          SpvMemorySemanticsMakeVisibleKHRMask;
+    if (value & ~valid_bits) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "WebGPU spec disallows any bit masks in Memory Semantics that "
+                "are not Acquire, Release, AcquireRelease, UniformMemory, "
+                "WorkgroupMemory, ImageMemory, OutputMemoryKHR, "
+                "MakeAvailableKHR, or MakeVisibleKHR";
+    }
+  }
+
   const size_t num_memory_order_set_bits = spvtools::utils::CountSetBits(
       value & (SpvMemorySemanticsAcquireMask | SpvMemorySemanticsReleaseMask |
                SpvMemorySemanticsAcquireReleaseMask |

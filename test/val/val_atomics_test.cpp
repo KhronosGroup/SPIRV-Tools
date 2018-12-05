@@ -28,16 +28,13 @@ using ::testing::Not;
 
 using ValidateAtomics = spvtest::ValidateBase<bool>;
 
-std::string GenerateShaderCode(
-    const std::string& body,
-    const std::string& capabilities_and_extensions = "",
-    const std::string& memory_model = "GLSL450") {
+std::string GenerateShaderCodeImpl(
+    const std::string& body, const std::string& capabilities_and_extensions,
+    const std::string& definitions, const std::string& memory_model) {
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
-OpCapability Int64
 )";
-
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical " << memory_model << "\n";
   ss << R"(
@@ -48,16 +45,12 @@ OpExecutionMode %main OriginUpperLeft
 %bool = OpTypeBool
 %f32 = OpTypeFloat 32
 %u32 = OpTypeInt 32 0
-%u64 = OpTypeInt 64 0
-%s64 = OpTypeInt 64 1
 %f32vec4 = OpTypeVector %f32 4
 
 %f32_0 = OpConstant %f32 0
 %f32_1 = OpConstant %f32 1
 %u32_0 = OpConstant %u32 0
 %u32_1 = OpConstant %u32 1
-%u64_1 = OpConstant %u64 1
-%s64_1 = OpConstant %s64 1
 %f32vec4_0000 = OpConstantComposite %f32vec4 %f32_0 %f32_0 %f32_0 %f32_0
 
 %cross_device = OpConstant %u32 0
@@ -81,27 +74,60 @@ OpExecutionMode %main OriginUpperLeft
 %u32_ptr = OpTypePointer Workgroup %u32
 %u32_var = OpVariable %u32_ptr Workgroup
 
-%u64_ptr = OpTypePointer Workgroup %u64
-%s64_ptr = OpTypePointer Workgroup %s64
-%u64_var = OpVariable %u64_ptr Workgroup
-%s64_var = OpVariable %s64_ptr Workgroup
-
 %f32vec4_ptr = OpTypePointer Workgroup %f32vec4
 %f32vec4_var = OpVariable %f32vec4_ptr Workgroup
 
 %f32_ptr_function = OpTypePointer Function %f32
-
+)";
+  ss << definitions;
+  ss << R"(
 %main = OpFunction %void None %func
 %main_entry = OpLabel
 )";
-
   ss << body;
-
   ss << R"(
 OpReturn
 OpFunctionEnd)";
 
   return ss.str();
+}
+
+std::string GenerateShaderCode(
+    const std::string& body,
+    const std::string& capabilities_and_extensions = "",
+    const std::string& memory_model = "GLSL450") {
+  const std::string defintions = R"(
+%u64 = OpTypeInt 64 0
+%s64 = OpTypeInt 64 1
+
+%u64_1 = OpConstant %u64 1
+%s64_1 = OpConstant %s64 1
+
+%u64_ptr = OpTypePointer Workgroup %u64
+%s64_ptr = OpTypePointer Workgroup %s64
+%u64_var = OpVariable %u64_ptr Workgroup
+%s64_var = OpVariable %s64_ptr Workgroup
+)";
+  return GenerateShaderCodeImpl(
+      body, "OpCapability Int64\n" + capabilities_and_extensions, defintions,
+      memory_model);
+}
+
+std::string GenerateWebGPUShaderCode(
+    const std::string& body,
+    const std::string& capabilities_and_extensions = "") {
+  const std::string vulkan_memory_capability = R"(
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability VulkanMemoryModelKHR
+)";
+  const std::string vulkan_memory_extension = R"(
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  return GenerateShaderCodeImpl(body,
+                                vulkan_memory_capability +
+                                    capabilities_and_extensions +
+                                    vulkan_memory_extension,
+                                "", "VulkanKHR");
 }
 
 std::string GenerateKernelCode(
@@ -312,6 +338,32 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanInt64) {
           "AtomicLoad: 64-bit atomics require the Int64Atomics capability"));
 }
 
+TEST_F(ValidateAtomics, AtomicLoadWebGPUShaderSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %u32 %u32_var %device %relaxed
+%val2 = OpAtomicLoad %u32 %u32_var %workgroup %acquire
+)";
+
+  CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateAtomics, AtomicLoadWebGPUShaderSequentiallyConsistentFailure) {
+  const std::string body = R"(
+%val3 = OpAtomicLoad %u32 %u32_var %subgroup %sequentially_consistent
+)";
+
+  CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "WebGPU spec disallows any bit masks in Memory Semantics that are "
+          "not Acquire, Release, AcquireRelease, UniformMemory, "
+          "WorkgroupMemory, ImageMemory, OutputMemoryKHR, MakeAvailableKHR, or "
+          "MakeVisibleKHR\n  %34 = OpAtomicLoad %uint %29 %uint_3 %uint_16\n"));
+}
+
 TEST_F(ValidateAtomics, VK_KHR_shader_atomic_int64Success) {
   const std::string body = R"(
 %val1 = OpAtomicUMin %u64 %u64_var %device %relaxed %u64_1
@@ -488,6 +540,31 @@ OpAtomicStore %u32_var %device %sequentially_consistent %u32_1
       getDiagnosticString(),
       HasSubstr("Vulkan spec disallows OpAtomicStore with Memory Semantics "
                 "Acquire, AcquireRelease and SequentiallyConsistent"));
+}
+
+TEST_F(ValidateAtomics, AtomicStoreWebGPUSuccess) {
+  const std::string body = R"(
+OpAtomicStore %u32_var %device %release %u32_1
+)";
+
+  CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+TEST_F(ValidateAtomics, AtomicStoreWebGPUSequentiallyConsistent) {
+  const std::string body = R"(
+OpAtomicStore %u32_var %device %sequentially_consistent %u32_1
+)";
+
+  CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "WebGPU spec disallows any bit masks in Memory Semantics that are "
+          "not Acquire, Release, AcquireRelease, UniformMemory, "
+          "WorkgroupMemory, ImageMemory, OutputMemoryKHR, MakeAvailableKHR, or "
+          "MakeVisibleKHR\n  OpAtomicStore %29 %uint_1_0 %uint_16 %uint_1\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreWrongPointerType) {
@@ -1643,7 +1720,7 @@ TEST_F(ValidateAtomics, NonVulkanMemoryModelDisallowsQueueFamilyKHR) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicAnd: Memory Scope QueueFamilyKHR requires "
                         "capability VulkanMemoryModelKHR\n  %42 = OpAtomicAnd "
-                        "%uint %33 %uint_5 %uint_0_1 %uint_1\n"));
+                        "%uint %29 %uint_5 %uint_0_1 %uint_1\n"));
 }
 
 TEST_F(ValidateAtomics, SemanticsSpecConstantShader) {
