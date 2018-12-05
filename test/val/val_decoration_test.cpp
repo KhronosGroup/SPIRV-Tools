@@ -2283,28 +2283,35 @@ TEST_F(ValidateDecorations, VulkanPushConstantMissingBlockBad) {
                         "decoration"));
 }
 
-TEST_F(ValidateDecorations, MultiplePushConstantInterfacesGood) {
+TEST_F(ValidateDecorations, MultiplePushConstantsSingleEntryPointGood) {
   std::string spirv = R"(
-            OpCapability Shader
-            OpMemoryModel Logical GLSL450
-            OpEntryPoint Fragment %1 "main"
-            OpExecutionMode %1 OriginUpperLeft
+                OpCapability Shader
+                OpMemoryModel Logical GLSL450
+                OpEntryPoint Fragment %1 "main"
+                OpExecutionMode %1 OriginUpperLeft
+    
+                OpDecorate %struct Block
+                OpMemberDecorate %struct 0 Offset 0
+    
+        %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+       %float = OpTypeFloat 32
+         %int = OpTypeInt 32 0
+       %int_0 = OpConstant %int 0
+      %struct = OpTypeStruct %float
+         %ptr = OpTypePointer PushConstant %struct
+   %ptr_float = OpTypePointer PushConstant %float 
+         %pc1 = OpVariable %ptr PushConstant
+         %pc2 = OpVariable %ptr PushConstant
 
-            OpDecorate %struct Block
-            OpMemberDecorate %struct 0 Offset 0
-
-    %void = OpTypeVoid
-  %voidfn = OpTypeFunction %void
-   %float = OpTypeFloat 32
-  %struct = OpTypeStruct %float
-     %ptr = OpTypePointer PushConstant %struct
-     %pc1 = OpVariable %ptr PushConstant
-     %pc2 = OpVariable %ptr PushConstant
-
-       %1 = OpFunction %void None %voidfn
-   %label = OpLabel
-            OpReturn
-            OpFunctionEnd
+           %1 = OpFunction %void None %voidfn
+       %label = OpLabel
+           %2 = OpAccessChain %ptr_float %pc1 %int_0
+           %3 = OpLoad %float %2
+           %4 = OpAccessChain %ptr_float %pc2 %int_0
+           %5 = OpLoad %float %4
+                OpReturn
+                OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv);
@@ -2312,38 +2319,234 @@ TEST_F(ValidateDecorations, MultiplePushConstantInterfacesGood) {
       << getDiagnosticString();
 }
 
-TEST_F(ValidateDecorations, VulkanMultiplePushConstantInterfacesBad) {
+TEST_F(ValidateDecorations,
+       VulkanMultiplePushConstantsDifferentEntryPointGood) {
   std::string spirv = R"(
-            OpCapability Shader
-            OpMemoryModel Logical GLSL450
-            OpEntryPoint Fragment %1 "main"
-            OpExecutionMode %1 OriginUpperLeft
+                OpCapability Shader
+                OpMemoryModel Logical GLSL450
+                OpEntryPoint Vertex %1 "func1"
+                OpEntryPoint Fragment %2 "func2"
+                OpExecutionMode %2 OriginUpperLeft
+    
+                OpDecorate %struct Block
+                OpMemberDecorate %struct 0 Offset 0
+    
+        %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+       %float = OpTypeFloat 32
+         %int = OpTypeInt 32 0
+       %int_0 = OpConstant %int 0
+      %struct = OpTypeStruct %float
+         %ptr = OpTypePointer PushConstant %struct
+   %ptr_float = OpTypePointer PushConstant %float 
+         %pc1 = OpVariable %ptr PushConstant
+         %pc2 = OpVariable %ptr PushConstant
 
-            OpDecorate %struct Block
-            OpMemberDecorate %struct 0 Offset 0
+           %1 = OpFunction %void None %voidfn
+      %label1 = OpLabel
+           %3 = OpAccessChain %ptr_float %pc1 %int_0
+           %4 = OpLoad %float %3
+                OpReturn
+                OpFunctionEnd
 
-    %void = OpTypeVoid
-  %voidfn = OpTypeFunction %void
-   %float = OpTypeFloat 32
-  %struct = OpTypeStruct %float
-     %ptr = OpTypePointer PushConstant %struct
-     %pc1 = OpVariable %ptr PushConstant
-     %pc2 = OpVariable %ptr PushConstant
-       %1 = OpFunction %void None %voidfn
+           %2 = OpFunction %void None %voidfn
+      %label2 = OpLabel
+           %5 = OpAccessChain %ptr_float %pc2 %int_0
+           %6 = OpLoad %float %5
+                OpReturn
+                OpFunctionEnd
+)";
 
-   %label = OpLabel
-            OpReturn
-            OpFunctionEnd
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations,
+       VulkanMultiplePushConstantsUnusedSingleEntryPointGood) {
+  std::string spirv = R"(
+                OpCapability Shader
+                OpMemoryModel Logical GLSL450
+                OpEntryPoint Fragment %1 "main"
+                OpExecutionMode %1 OriginUpperLeft
+    
+                OpDecorate %struct Block
+                OpMemberDecorate %struct 0 Offset 0
+    
+        %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+       %float = OpTypeFloat 32
+         %int = OpTypeInt 32 0
+       %int_0 = OpConstant %int 0
+      %struct = OpTypeStruct %float
+         %ptr = OpTypePointer PushConstant %struct
+   %ptr_float = OpTypePointer PushConstant %float 
+         %pc1 = OpVariable %ptr PushConstant
+         %pc2 = OpVariable %ptr PushConstant
+
+           %1 = OpFunction %void None %voidfn
+       %label = OpLabel
+                OpReturn
+                OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, VulkanMultiplePushConstantsSingleEntryPointBad) {
+  std::string spirv = R"(
+                OpCapability Shader
+                OpMemoryModel Logical GLSL450
+                OpEntryPoint Fragment %1 "main"
+                OpExecutionMode %1 OriginUpperLeft
+    
+                OpDecorate %struct Block
+                OpMemberDecorate %struct 0 Offset 0
+    
+        %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+       %float = OpTypeFloat 32
+         %int = OpTypeInt 32 0
+       %int_0 = OpConstant %int 0
+      %struct = OpTypeStruct %float
+         %ptr = OpTypePointer PushConstant %struct
+   %ptr_float = OpTypePointer PushConstant %float 
+         %pc1 = OpVariable %ptr PushConstant
+         %pc2 = OpVariable %ptr PushConstant
+
+           %1 = OpFunction %void None %voidfn
+       %label = OpLabel
+           %2 = OpAccessChain %ptr_float %pc1 %int_0
+           %3 = OpLoad %float %2
+           %4 = OpAccessChain %ptr_float %pc2 %int_0
+           %5 = OpLoad %float %4
+                OpReturn
+                OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID,
             ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("PushConstant id '2': too many push constant blocks.\n"
-                        "From Vulkan spec, section 14.5.1:\n"
-                        "There must be no more than one push constant block "
-                        "statically used per shader entry point."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Entry point id '1' uses more than one PushConstant interface.\n"
+          "From Vulkan spec, section 14.5.1:\n"
+          "There must be no more than one push constant block "
+          "statically used per shader entry point."));
+}
+
+TEST_F(ValidateDecorations,
+       VulkanMultiplePushConstantsDifferentEntryPointSubFunctionGood) {
+  std::string spirv = R"(
+                OpCapability Shader
+                OpMemoryModel Logical GLSL450
+                OpEntryPoint Vertex %1 "func1"
+                OpEntryPoint Fragment %2 "func2"
+                OpExecutionMode %2 OriginUpperLeft
+    
+                OpDecorate %struct Block
+                OpMemberDecorate %struct 0 Offset 0
+    
+        %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+       %float = OpTypeFloat 32
+         %int = OpTypeInt 32 0
+       %int_0 = OpConstant %int 0
+      %struct = OpTypeStruct %float
+         %ptr = OpTypePointer PushConstant %struct
+   %ptr_float = OpTypePointer PushConstant %float 
+         %pc1 = OpVariable %ptr PushConstant
+         %pc2 = OpVariable %ptr PushConstant
+ 
+        %sub1 = OpFunction %void None %voidfn
+  %label_sub1 = OpLabel
+           %3 = OpAccessChain %ptr_float %pc1 %int_0
+           %4 = OpLoad %float %3
+                OpReturn
+                OpFunctionEnd
+
+        %sub2 = OpFunction %void None %voidfn
+  %label_sub2 = OpLabel
+           %5 = OpAccessChain %ptr_float %pc2 %int_0
+           %6 = OpLoad %float %5
+                OpReturn
+                OpFunctionEnd
+
+           %1 = OpFunction %void None %voidfn
+      %label1 = OpLabel
+       %call1 = OpFunctionCall %void %sub1
+                OpReturn
+                OpFunctionEnd
+
+           %2 = OpFunction %void None %voidfn
+      %label2 = OpLabel
+       %call2 = OpFunctionCall %void %sub2
+                OpReturn
+                OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations,
+       VulkanMultiplePushConstantsSingleEntryPointSubFunctionBad) {
+  std::string spirv = R"(
+                OpCapability Shader
+                OpMemoryModel Logical GLSL450
+                OpEntryPoint Fragment %1 "main"
+                OpExecutionMode %1 OriginUpperLeft
+    
+                OpDecorate %struct Block
+                OpMemberDecorate %struct 0 Offset 0
+    
+        %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+       %float = OpTypeFloat 32
+         %int = OpTypeInt 32 0
+       %int_0 = OpConstant %int 0
+      %struct = OpTypeStruct %float
+         %ptr = OpTypePointer PushConstant %struct
+   %ptr_float = OpTypePointer PushConstant %float 
+         %pc1 = OpVariable %ptr PushConstant
+         %pc2 = OpVariable %ptr PushConstant
+
+        %sub1 = OpFunction %void None %voidfn
+  %label_sub1 = OpLabel
+           %3 = OpAccessChain %ptr_float %pc1 %int_0
+           %4 = OpLoad %float %3
+                OpReturn
+                OpFunctionEnd
+
+        %sub2 = OpFunction %void None %voidfn
+  %label_sub2 = OpLabel
+           %5 = OpAccessChain %ptr_float %pc2 %int_0
+           %6 = OpLoad %float %5
+                OpReturn
+                OpFunctionEnd
+
+           %1 = OpFunction %void None %voidfn
+      %label1 = OpLabel
+       %call1 = OpFunctionCall %void %sub1
+       %call2 = OpFunctionCall %void %sub2
+                OpReturn
+                OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Entry point id '1' uses more than one PushConstant interface.\n"
+          "From Vulkan spec, section 14.5.1:\n"
+          "There must be no more than one push constant block "
+          "statically used per shader entry point."));
 }
 
 TEST_F(ValidateDecorations, VulkanUniformMissingDescriptorSetBad) {
