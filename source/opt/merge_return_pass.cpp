@@ -239,8 +239,21 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
   if (inst.result_id() != 0) {
     std::vector<Instruction*> users_to_update;
     context()->get_def_use_mgr()->ForEachUser(
-        &inst, [&users_to_update, &dom_tree, inst_bb, this](Instruction* user) {
-          BasicBlock* user_bb = context()->get_instr_block(user);
+        &inst, [&users_to_update, &dom_tree, &inst, inst_bb, this](Instruction* user) {
+          BasicBlock* user_bb = nullptr;
+          if (user->opcode() != SpvOpPhi) {
+            user_bb = context()->get_instr_block(user);
+          } else {
+            // For OpPhi, the use should be considered to be in the predecessor.
+            for(uint32_t i = 0; i < user->NumInOperands(); i+=2) {
+              if (user->GetSingleWordInOperand(i) == inst.result_id()) {
+                uint32_t user_bb_id = user->GetSingleWordInOperand(i+1);
+                user_bb = context()->get_instr_block(user_bb_id);
+                break;
+              }
+            }
+          }
+
           // If |user_bb| is nullptr, then |user| is not in the function.  It is
           // something like an OpName or decoration, which should not be
           // replaced with the result of the OpPhi.

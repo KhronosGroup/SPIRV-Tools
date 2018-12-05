@@ -1145,6 +1145,51 @@ OpFunctionEnd
   EXPECT_TRUE(messages.empty());
 }
 
+TEST_F(MergeReturnPassTest, StructuredControlFlowDontChangeEntryPhi) {
+  const std::string before =
+      R"(
+; CHECK: OpFunction %void
+; CHECK: OpLabel
+; CHECK: OpLabel
+; CHECK: [[pre_header:%\w+]] = OpLabel
+; CHECK: [[header:%\w+]] = OpLabel
+; CHECK-NEXT: OpPhi %bool {{%\w+}} [[pre_header]] [[iv:%\w+]] [[continue:%\w+]]
+; CHECK-NEXT: OpLoopMerge [[merge:%\w+]] [[continue]]
+; CHECK: [[continue]] = OpLabel
+; CHECK-NEXT: [[iv]] = Op
+; CHECK: [[merge]] = OpLabel
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+          %4 = OpTypeFunction %void
+          %1 = OpFunction %void None %4
+          %5 = OpLabel
+          %6 = OpUndef %bool
+               OpBranch %7
+          %7 = OpLabel
+          %8 = OpPhi %bool %6 %5 %9 %10
+               OpLoopMerge %11 %10 None
+               OpBranch %12
+         %12 = OpLabel
+         %13 = OpUndef %bool
+               OpSelectionMerge %10 DontFlatten
+               OpBranchConditional %13 %10 %14
+         %14 = OpLabel
+               OpReturn
+         %10 = OpLabel
+          %9 = OpUndef %bool
+               OpBranchConditional %13 %7 %11
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
