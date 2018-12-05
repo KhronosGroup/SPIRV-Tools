@@ -61,9 +61,11 @@ Options:
                                    different type with compatible layout and
                                    members.
   --version                        Display validator version information.
-  --target-env                     {vulkan1.0|vulkan1.1|opencl2.2|spv1.0|spv1.1|spv1.2|spv1.3|webgpu0}
+  --target-env                     {vulkan1.0|vulkan1.1|opencl2.2|spv1.0|spv1.1|spv1.2|spv1.3|spv1.4
+                                    |webgpu0}
                                    Use Vulkan 1.0, Vulkan 1.1, OpenCL 2.2, SPIR-V 1.0,
-                                   SPIR-V 1.1, SPIR-V 1.2, SPIR-V 1.3 or WIP WebGPU validation rules.
+                                   SPIR-V 1.1, SPIR-V 1.2, SPIR-V 1.3, SPIR-V 1.4, or
+                                   WIP WebGPU validation rules.
 )",
       argv0, argv0);
 }
