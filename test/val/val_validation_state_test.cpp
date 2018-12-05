@@ -57,19 +57,19 @@ OpExecutionMode %1 OriginUpperLeft
 %float = OpTypeFloat 32
 %_struct_6 = OpTypeStruct %float %float
 %7 = OpTypeFunction %_struct_6
-%1 = OpFunction %void Pure|Const %4
-%8 = OpLabel
-%2 = OpFunctionCall %_struct_6 %9
-OpKill
+%12 = OpFunction %_struct_6 None %7
+%13 = OpLabel
+OpUnreachable
 OpFunctionEnd
 %9 = OpFunction %_struct_6 None %7
 %10 = OpLabel
 %11 = OpFunctionCall %_struct_6 %12
 OpUnreachable
 OpFunctionEnd
-%12 = OpFunction %_struct_6 None %7
-%13 = OpLabel
-OpUnreachable
+%1 = OpFunction %void Pure|Const %4
+%8 = OpLabel
+%2 = OpFunctionCall %_struct_6 %9
+OpKill
 OpFunctionEnd
 )";
 
@@ -81,14 +81,14 @@ OpExecutionMode %1 OriginUpperLeft
 %float = OpTypeFloat 32
 %_struct_6 = OpTypeStruct %float %float
 %7 = OpTypeFunction %_struct_6
-%1 = OpFunction %void Pure|Const %4
-%8 = OpLabel
-%2 = OpFunctionCall %_struct_6 %9
-OpKill
-OpFunctionEnd
 %9 = OpFunction %_struct_6 None %7
 %10 = OpLabel
 %11 = OpFunctionCall %_struct_6 %9
+OpKill
+OpFunctionEnd
+%1 = OpFunction %void Pure|Const %4
+%8 = OpLabel
+%2 = OpFunctionCall %_struct_6 %9
 OpUnreachable
 OpFunctionEnd
 )";
@@ -101,11 +101,6 @@ OpExecutionMode %1 OriginUpperLeft
 %float = OpTypeFloat 32
 %_struct_6 = OpTypeStruct %float %float
 %7 = OpTypeFunction %_struct_6
-%1 = OpFunction %void Pure|Const %4
-%8 = OpLabel
-%2 = OpFunctionCall %_struct_6 %9
-OpKill
-OpFunctionEnd
 %9 = OpFunction %_struct_6 None %7
 %10 = OpLabel
 %11 = OpFunctionCall %_struct_6 %12
@@ -115,6 +110,11 @@ OpFunctionEnd
 %13 = OpLabel
 %14 = OpFunctionCall %_struct_6 %9
 OpUnreachable
+OpFunctionEnd
+%1 = OpFunction %void Pure|Const %4
+%8 = OpLabel
+%2 = OpFunctionCall %_struct_6 %9
+OpKill
 OpFunctionEnd
 )";
 
@@ -292,15 +292,18 @@ TEST_F(ValidationStateTest, CheckVulkanIndirectlyRecursiveBodyBad) {
                         " %1 = OpFunction %void Pure|Const %3\n"));
 }
 
+// Indirectly recursive functions are caught by the function definition layout
+// rules, because they cause a situation where there are 2 functions that have
+// to be before each other, and layout is checked earlier.
 TEST_F(ValidationStateTest, CheckWebGPUIndirectlyRecursiveBodyBad) {
   std::string spirv =
       std::string(kVulkanMemoryHeader) + kIndirectlyRecursiveBody;
   CompileSuccessfully(spirv, SPV_ENV_WEBGPU_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+  EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT,
             ValidateAndRetrieveValidationState(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Entry points may not have a call graph with cycles.\n "
-                        " %1 = OpFunction %void Pure|Const %3\n"));
+              HasSubstr("For WebGPU, functions need to be defined before being "
+                        "called.\n  %9 = OpFunctionCall %_struct_5 %10\n"));
 }
 
 }  // namespace
