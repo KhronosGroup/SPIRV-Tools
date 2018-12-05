@@ -264,6 +264,11 @@ class ValidationState_t {
   /// Returns all the entry points that can call |func|.
   const std::vector<uint32_t>& FunctionEntryPoints(uint32_t func) const;
 
+  /// Returns all the entry points that statically use |id|.
+  ///
+  /// Note: requires ComputeFunctionToEntryPointMapping to have been called.
+  std::set<uint32_t> EntryPointReferences(uint32_t id) const;
+
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
   void AddFunctionCallTarget(const uint32_t id) {
     function_call_targets_.insert(id);
