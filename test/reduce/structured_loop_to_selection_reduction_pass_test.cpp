@@ -2705,6 +2705,117 @@ TEST(StructuredLoopToSelectionReductionPassTest,
   CheckEqual(env, expected, context.get());
 }
 
+TEST(StructuredLoopToSelectionReductionPassTest, LoopBranchesStraightToMerge) {
+  std::string shader = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %4 = OpTypeFunction %2
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %14 %12 None
+               OpBranch %14
+         %12 = OpLabel
+               OpBranch %9
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  ASSERT_EQ(1, ops.size());
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string expected = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %4 = OpTypeFunction %2
+         %15 = OpTypeBool
+         %16 = OpConstantTrue %15
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpSelectionMerge %14 None
+               OpBranchConditional %16 %14 %14
+         %12 = OpLabel
+               OpBranch %9
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CheckEqual(env, expected, context.get());
+}
+
+TEST(StructuredLoopToSelectionReductionPassTest,
+     LoopConditionallyJumpsToMergeOrContinue) {
+  std::string shader = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeBool
+          %4 = OpTypeFunction %2
+          %7 = OpConstantTrue %3
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %14 %12 None
+               OpBranchConditional %7 %14 %12
+         %12 = OpLabel
+               OpBranch %9
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  ASSERT_EQ(1, ops.size());
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string expected = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeBool
+          %4 = OpTypeFunction %2
+          %7 = OpConstantTrue %3
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpSelectionMerge %14 None
+               OpBranchConditional %7 %14 %14
+         %12 = OpLabel
+               OpBranch %9
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CheckEqual(env, expected, context.get());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools

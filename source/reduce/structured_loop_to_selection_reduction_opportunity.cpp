@@ -320,7 +320,6 @@ void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection() {
                                  {SPV_OPERAND_TYPE_ID, {original_branch_id}},
                                  {SPV_OPERAND_TYPE_ID, {loop_merge_block_id}}});
     if (original_branch_id != loop_merge_block_id) {
-      // TODO(afd): consider adding a test for the case where they are equal.
       AdaptPhiInstructionsForAddedEdge(
           loop_construct_header_->id(),
           context_->cfg()->block(loop_merge_block_id));

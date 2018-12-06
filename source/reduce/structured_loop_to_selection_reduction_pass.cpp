@@ -49,6 +49,7 @@ StructuredLoopToSelectionReductionPass::GetAvailableOpportunities(
         // This is not a loop construct header.
         continue;
       }
+
       // Check whether the loop construct's continue target is the merge block
       // of some structured control flow construct.  If it is, we cautiously do
       // not consider applying a transformation.
@@ -66,6 +67,7 @@ StructuredLoopToSelectionReductionPass::GetAvailableOpportunities(
               block.id(), merge_block_id)) {
         continue;
       }
+
       // Check whether the loop construct merge block postdominates the loop
       // construct header.  If not (e.g. because the loop contains OpReturn,
       // OpKill or OpUnreachable), we cautiously do not consider applying
@@ -74,6 +76,7 @@ StructuredLoopToSelectionReductionPass::GetAvailableOpportunities(
               merge_block_id, block.id())) {
         continue;
       }
+
       // We can turn this structured loop into a selection, so add the
       // opportunity to do so.
       result.push_back(
