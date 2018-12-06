@@ -419,7 +419,7 @@ TEST_F(ValidateAtomics, AtomicLoadWrongMemorySemanticsType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicLoad: expected Memory Semantics to be 32-bit int"));
+      HasSubstr("AtomicLoad: expected Memory Semantics to be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreKernelSuccess) {
@@ -552,7 +552,7 @@ OpAtomicStore %f32_var %device %f32_1 %f32_1
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicStore: expected Memory Semantics to be 32-bit int"));
+      HasSubstr("AtomicStore: expected Memory Semantics to be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreWrongValueType) {
@@ -668,7 +668,8 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicExchange: expected Memory Semantics to be 32-bit int"));
+      HasSubstr(
+          "AtomicExchange: expected Memory Semantics to be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicExchangeWrongValueType) {
@@ -781,10 +782,9 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "AtomicCompareExchange: expected Memory Semantics to be 32-bit int"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicCompareExchange: expected Memory Semantics to "
+                        "be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongMemorySemanticsType2) {
@@ -795,10 +795,9 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "AtomicCompareExchange: expected Memory Semantics to be 32-bit int"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicCompareExchange: expected Memory Semantics to "
+                        "be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeUnequalRelease) {
@@ -966,7 +965,7 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetWrongMemorySemanticsType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicFlagTestAndSet: "
-                        "expected Memory Semantics to be 32-bit int"));
+                        "expected Memory Semantics to be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicFlagClearAcquire) {
@@ -1040,7 +1039,8 @@ OpAtomicFlagClear %u32_var %device %u64_1
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicFlagClear: expected Memory Semantics to be 32-bit int"));
+      HasSubstr(
+          "AtomicFlagClear: expected Memory Semantics to be a 32-bit int"));
 }
 
 TEST_F(ValidateAtomics, AtomicIIncrementAcquireAndRelease) {
@@ -1051,11 +1051,11 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("AtomicIIncrement: no more than one of the following Memory "
-                "Semantics bits can be set at the same time: Acquire, Release, "
-                "AcquireRelease or SequentiallyConsistent"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicIIncrement: Memory Semantics can have at most "
+                        "one of the following bits set: Acquire, Release, "
+                        "AcquireRelease or SequentiallyConsistent\n  %40 = "
+                        "OpAtomicIIncrement %uint %30 %uint_1_0 %uint_6\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicUniformMemorySemanticsShader) {
@@ -1089,9 +1089,11 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicIIncrement: Memory Semantics UniformMemory "
-                        "requires capability AtomicStorage"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicIIncrement: Memory Semantics AtomicCounterMemory "
+                "requires capability AtomicStorage\n  %40 = OpAtomicIIncrement "
+                "%uint %30 %uint_1_0 %uint_1288\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsWithCapability) {
