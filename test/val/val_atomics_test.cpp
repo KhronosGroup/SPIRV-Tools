@@ -1089,9 +1089,11 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicIIncrement: Memory Semantics UniformMemory "
-                        "requires capability AtomicStorage"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicIIncrement: Memory Semantics AtomicCounterMemory "
+                "requires capability AtomicStorage\n  %40 = OpAtomicIIncrement "
+                "%uint %30 %uint_1_0 %uint_1288\n"));
 }
 
 TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsWithCapability) {
