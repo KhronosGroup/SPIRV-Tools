@@ -205,6 +205,7 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
   if (id != 0) return id;
 
   std::unique_ptr<Instruction> typeInst;
+  // TODO(1841): Handle id overflow.
   id = context()->TakeNextId();
   RegisterType(id, *type);
   switch (type->kind()) {
@@ -397,6 +398,7 @@ uint32_t TypeManager::FindPointerToType(uint32_t type_id,
   }
 
   // Must create the pointer type.
+  // TODO(1841): Handle id overflow.
   uint32_t resultId = context()->TakeNextId();
   std::unique_ptr<Instruction> type_inst(
       new Instruction(context(), SpvOpTypePointer, 0, resultId,
