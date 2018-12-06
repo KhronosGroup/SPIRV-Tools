@@ -2367,6 +2367,109 @@ TEST(StructuredLoopToSelectionReductionPassTest, DominanceAndPhiIssue) {
   CheckEqual(env, expected, context.get());
 }
 
+TEST(StructuredLoopToSelectionReductionPassTest, OpLineBeforeOpPhi) {
+  // Test to ensure the pass knows OpLine and OpPhi instructions can be
+  // interleaved.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpString "somefile"
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeInt 32 1
+          %7 = OpConstant %6 10
+          %8 = OpConstant %6 20
+          %9 = OpConstant %6 30
+         %10 = OpTypeBool
+         %11 = OpConstantTrue %10
+          %2 = OpFunction %4 None %5
+         %12 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+               OpLoopMerge %14 %15 None
+               OpBranch %16
+         %16 = OpLabel
+               OpSelectionMerge %17 None
+               OpBranchConditional %11 %18 %19
+         %18 = OpLabel
+         %20 = OpIAdd %6 %7 %8
+         %21 = OpIAdd %6 %7 %9
+               OpBranch %17
+         %19 = OpLabel
+               OpBranch %14
+         %17 = OpLabel
+         %22 = OpPhi %6 %20 %18
+               OpLine %3 0 0
+         %23 = OpPhi %6 %21 %18
+               OpBranch %15
+         %15 = OpLabel
+               OpBranch %13
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+  ASSERT_EQ(1, ops.size());
+
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpString "somefile"
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeInt 32 1
+          %7 = OpConstant %6 10
+          %8 = OpConstant %6 20
+          %9 = OpConstant %6 30
+         %10 = OpTypeBool
+         %11 = OpConstantTrue %10
+         %24 = OpUndef %6
+          %2 = OpFunction %4 None %5
+         %12 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+               OpSelectionMerge %14 None
+               OpBranchConditional %11 %16 %14
+         %16 = OpLabel
+               OpSelectionMerge %17 None
+               OpBranchConditional %11 %18 %19
+         %18 = OpLabel
+         %20 = OpIAdd %6 %7 %8
+         %21 = OpIAdd %6 %7 %9
+               OpBranch %17
+         %19 = OpLabel
+               OpBranch %17
+         %17 = OpLabel
+         %22 = OpPhi %6 %20 %18 %24 %19
+               OpLine %3 0 0
+         %23 = OpPhi %6 %21 %18 %24 %19
+               OpBranch %14
+         %15 = OpLabel
+               OpBranch %13
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CheckEqual(env, expected, context.get());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools
