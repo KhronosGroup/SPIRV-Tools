@@ -189,9 +189,9 @@ Options (in lexicographical order):
                Looks for instructions in the same basic block that compute the
                same value, and deletes the redundant ones.
   --loop-fission
-               Splits any top level loops in which the register pressure has exceeded
-               a given threshold. The threshold must follow the use of this flag and
-               must be a positive integer value.
+               Splits any top level loops in which the register pressure has
+               exceeded a given threshold. The threshold must follow the use of
+               this flag and must be a positive integer value.
   --loop-fusion
                Identifies adjacent loops with the same lower and upper bound.
                If this is legal, then merge the loops into a single loop.
@@ -199,6 +199,9 @@ Options (in lexicographical order):
                registers too much, while reducing the number of loads from
                memory. Takes an additional positive integer argument to set
                the maximum number of registers.
+  --loop-invariant-code-motion
+               Identifies code in loops that has the same value for every
+               iteration of the loop, and move it to the loop pre-header.
   --loop-unroll
                Fully unrolls loops marked with the Unroll flag
   --loop-unroll-partial
