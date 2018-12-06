@@ -204,7 +204,11 @@ void MergeReturnPass::BranchToBlock(BasicBlock* block, uint32_t target) {
     RecordReturned(block);
     RecordReturnValue(block);
   }
+
   BasicBlock* target_block = context()->get_instr_block(target);
+  if (target_block->GetLoopMergeInst()) {
+    cfg()->SplitLoopHeader(target_block);
+  }
   UpdatePhiNodes(block, target_block);
 
   Instruction* return_inst = block->terminator();
@@ -368,6 +372,9 @@ void MergeReturnPass::BreakFromConstruct(
   // code, not the new header.
   if (block->GetLoopMergeInst()) {
     cfg()->SplitLoopHeader(block);
+  }
+  if (merge_block->GetLoopMergeInst()) {
+    cfg()->SplitLoopHeader(merge_block);
   }
 
   // Leave the phi instructions behind.
