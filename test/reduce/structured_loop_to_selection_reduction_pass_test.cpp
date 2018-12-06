@@ -2470,6 +2470,48 @@ TEST(StructuredLoopToSelectionReductionPassTest, OpLineBeforeOpPhi) {
   CheckEqual(env, expected, context.get());
 }
 
+TEST(StructuredLoopToSelectionReductionPassTest,
+     SelectionMergeIsContinueTarget) {
+  // Example where a loop's continue target is also the target of a selection.
+  // In this scenario we cautiously do not apply the transformation.
+  std::string shader = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeBool
+          %4 = OpTypeFunction %2
+          %1 = OpFunction %2 None %4
+          %5 = OpLabel
+          %6 = OpUndef %3
+               OpBranch %7
+          %7 = OpLabel
+          %8 = OpPhi %3 %6 %5 %9 %10
+               OpLoopMerge %11 %10 None
+               OpBranch %12
+         %12 = OpLabel
+         %13 = OpUndef %3
+               OpSelectionMerge %10 None
+               OpBranchConditional %13 %14 %10
+         %14 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+          %9 = OpUndef %3
+               OpBranchConditional %9 %7 %11
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  // There should be no opportunities.
+  ASSERT_EQ(0, ops.size());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools

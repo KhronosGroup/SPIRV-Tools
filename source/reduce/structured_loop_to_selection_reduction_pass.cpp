@@ -22,12 +22,24 @@ using namespace opt;
 
 namespace {
 const uint32_t kMergeNodeIndex = 0;
-}
+const uint32_t kContinueNodeIndex = 1;
+}  // namespace
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 StructuredLoopToSelectionReductionPass::GetAvailableOpportunities(
     opt::IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
+
+  std::set<uint32_t> merge_block_ids;
+  for (auto& function : *context->module()) {
+    for (auto& block : function) {
+      auto merge_inst = block.GetMergeInst();
+      if (merge_inst) {
+        merge_block_ids.insert(
+            merge_inst->GetSingleWordOperand(kMergeNodeIndex));
+      }
+    }
+  }
 
   // Consider each loop construct header in the module.
   for (auto& function : *context->module()) {
@@ -37,6 +49,14 @@ StructuredLoopToSelectionReductionPass::GetAvailableOpportunities(
         // This is not a loop construct header.
         continue;
       }
+      // Check whether the loop construct's continue target is the merge block
+      // of some structured control flow construct.  If it is, we cautiously do
+      // not consider applying a transformation.
+      if (merge_block_ids.find(loop_merge_inst->GetSingleWordOperand(
+              kContinueNodeIndex)) != merge_block_ids.end()) {
+        continue;
+      }
+
       // Check whether the loop construct header dominates its merge block.
       // If not, the merge block must be unreachable in the control flow graph
       // so we cautiously do not consider applying a transformation.
