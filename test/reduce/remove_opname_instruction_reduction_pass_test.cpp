@@ -38,8 +38,6 @@ TEST(RemoveOpnameInstructionReductionPassTest, NothingToRemove) {
                OpFunctionEnd
   )";
 
-  const std::string expected = original;
-
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context =
@@ -48,10 +46,7 @@ TEST(RemoveOpnameInstructionReductionPassTest, NothingToRemove) {
       TestSubclass<RemoveOpNameInstructionReductionPass>(env);
   const auto ops = pass.WrapGetAvailableOpportunities(context.get());
   ASSERT_EQ(0, ops.size());
-
-  CheckEqual(env, expected, context.get());
 }
-
 
 TEST(RemoveOpnameInstructionReductionPassTest, RemoveSingleOpName) {
   const std::string prologue = R"(
