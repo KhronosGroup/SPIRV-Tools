@@ -387,8 +387,8 @@ uint32_t StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalUndef(
       return inst.result_id();
     }
   }
-  // TODO: this is adapted from MemPass::Type2Undef.  In due course it would
-  // be good to factor out this duplication.
+  // TODO(2182): this is adapted from MemPass::Type2Undef.  In due course it
+  // would be good to factor out this duplication.
   const uint32_t undef_id = context_->TakeNextId();
   std::unique_ptr<Instruction> undef_inst(
       new Instruction(context_, SpvOpUndef, type_id, undef_id, {}));
