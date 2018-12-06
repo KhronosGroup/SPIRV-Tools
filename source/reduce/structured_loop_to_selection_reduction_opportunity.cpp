@@ -235,41 +235,30 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectEdge(
 
 void StructuredLoopToSelectionReductionOpportunity::
     AdaptPhiInstructionsForRemovedEdge(uint32_t from_id, BasicBlock* to_block) {
-  for (auto& inst : *to_block) {
-    if (inst.opcode() != SpvOpPhi) {
-      // Phi instructions must appear first in a block, so if we find a non-phi
-      // instruction we are done.
-      break;
-    }
+  to_block->ForEachPhiInst([&from_id](Instruction* phi_inst) {
     Instruction::OperandList new_in_operands;
-    // Skipping the result id and result type (hence starting from 2), go
-    // through the OpPhi's operands in (variable, parent) pairs.
-    for (uint32_t index = 2; index < inst.NumOperands(); index += 2) {
+    // Go through the OpPhi's input operands in (variable, parent) pairs.
+    for (uint32_t index = 0; index < phi_inst->NumInOperands(); index += 2) {
       // Keep all pairs where the parent is not the block from which the edge
       // is being removed.
-      if (inst.GetOperand(index + 1).words[0] != from_id) {
-        new_in_operands.push_back(inst.GetOperand(index));
-        new_in_operands.push_back(inst.GetOperand(index + 1));
+      if (phi_inst->GetOperand(index + 1).words[0] != from_id) {
+        new_in_operands.push_back(phi_inst->GetOperand(index));
+        new_in_operands.push_back(phi_inst->GetOperand(index + 1));
       }
     }
-    inst.SetInOperands(std::move(new_in_operands));
-  }
+    phi_inst->SetInOperands(std::move(new_in_operands));
+  });
 }
 
 void StructuredLoopToSelectionReductionOpportunity::
     AdaptPhiInstructionsForAddedEdge(uint32_t from_id, BasicBlock* to_block) {
-  for (auto& inst : *to_block) {
-    if (inst.opcode() != SpvOpPhi) {
-      // Phi instructions must appear first in a block, so if we find a non-phi
-      // instruction we are done.
-      break;
-    }
+  to_block->ForEachPhiInst([this, &from_id](Instruction* phi_inst) {
     // Add to the phi operand an (undef, from_id) pair to reflect the added
     // edge.
-    auto undef_id = FindOrCreateGlobalUndef(inst.type_id());
-    inst.AddOperand(Operand(SPV_OPERAND_TYPE_ID, {undef_id}));
-    inst.AddOperand(Operand(SPV_OPERAND_TYPE_ID, {from_id}));
-  }
+    auto undef_id = FindOrCreateGlobalUndef(phi_inst->type_id());
+    phi_inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {undef_id}));
+    phi_inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {from_id}));
+  });
 }
 
 void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection() {
