@@ -201,6 +201,8 @@ bool StructuredLoopToSelectionReductionOpportunity::
 
 void StructuredLoopToSelectionReductionOpportunity::RedirectEdge(
     uint32_t source_id, uint32_t original_target_id, uint32_t new_target_id) {
+  // Redirect edge source_id->original_target_id to edge
+  // source_id->new_target_id, where the blocks involved are all different.
   assert(source_id != original_target_id);
   assert(source_id != new_target_id);
   assert(original_target_id != new_target_id);
