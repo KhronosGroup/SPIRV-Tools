@@ -48,10 +48,6 @@ class StructuredLoopToSelectionReductionOpportunity
   void Apply() override;
 
  private:
-  IRContext* context_;
-  BasicBlock* loop_construct_header_;
-  Function* enclosing_function_;
-
   void RedirectToClosestMergeBlock(uint32_t original_target_id);
 
   uint32_t FindClosestMerge(uint32_t block_id);
@@ -88,6 +84,10 @@ class StructuredLoopToSelectionReductionOpportunity
   // TODO: This will likely be used by other reduction passes, so should be
   // factored out in due course.
   uint32_t FindOrCreateGlobalVariable(uint32_t type_id);
+
+  IRContext* context_;
+  BasicBlock* loop_construct_header_;
+  Function* enclosing_function_;
 };
 
 }  // namespace reduce
