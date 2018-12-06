@@ -273,7 +273,7 @@ The following CMake options are supported:
   See [`CMakeLists.txt`](CMakeLists.txt) for details.
 * `SPIRV_WERROR={ON|OFF}`, default `ON` - Forces a compilation error on any
   warnings encountered by enabling the compiler-specific compiler front-end
-  option.
+  option.  No compiler front-end options are enabled when this option is OFF.
 
 Additionally, you can pass additional C preprocessor definitions to SPIRV-Tools
 via setting `SPIRV_TOOLS_EXTRA_DEFINITIONS`. For example, by setting it to
