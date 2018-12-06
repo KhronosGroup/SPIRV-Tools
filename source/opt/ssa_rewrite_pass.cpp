@@ -90,6 +90,7 @@ std::string SSARewriter::PhiCandidate::PrettyPrint(const CFG* cfg) const {
 
 SSARewriter::PhiCandidate& SSARewriter::CreatePhiCandidate(uint32_t var_id,
                                                            BasicBlock* bb) {
+  // TODO(1841): Handle id overflow.
   uint32_t phi_result_id = pass_->context()->TakeNextId();
   auto result = phi_candidates_.emplace(
       phi_result_id, PhiCandidate(var_id, phi_result_id, bb));

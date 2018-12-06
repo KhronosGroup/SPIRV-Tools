@@ -99,6 +99,7 @@ class LoopUnswitch {
   BasicBlock* CreateBasicBlock(Function::iterator ip) {
     analysis::DefUseManager* def_use_mgr = context_->get_def_use_mgr();
 
+    // TODO(1841): Handle id overflow.
     BasicBlock* bb = &*ip.InsertBefore(std::unique_ptr<BasicBlock>(
         new BasicBlock(std::unique_ptr<Instruction>(new Instruction(
             context_, SpvOpLabel, 0, context_->TakeNextId(), {})))));
@@ -459,7 +460,10 @@ class LoopUnswitch {
   std::vector<BasicBlock*> ordered_loop_blocks_;
 
   // Returns the next usable id for the context.
-  uint32_t TakeNextId() { return context_->TakeNextId(); }
+  uint32_t TakeNextId() {
+    // TODO(1841): Handle id overflow.
+    return context_->TakeNextId();
+  }
 
   // Patches |bb|'s phi instruction by removing incoming value from unexisting
   // or tagged as dead branches.
@@ -474,28 +478,28 @@ class LoopUnswitch {
       return dead_blocks.count(id) ||
              std::find(bb_preds.begin(), bb_preds.end(), id) == bb_preds.end();
     };
-    bb->ForEachPhiInst([&phi_to_kill, &is_branch_dead, preserve_phi,
-                        this](Instruction* insn) {
-      uint32_t i = 0;
-      while (i < insn->NumInOperands()) {
-        uint32_t incoming_id = insn->GetSingleWordInOperand(i + 1);
-        if (is_branch_dead(incoming_id)) {
-          // Remove the incoming block id operand.
-          insn->RemoveInOperand(i + 1);
-          // Remove the definition id operand.
-          insn->RemoveInOperand(i);
-          continue;
-        }
-        i += 2;
-      }
-      // If there is only 1 remaining edge, propagate the value and
-      // kill the instruction.
-      if (insn->NumInOperands() == 2 && !preserve_phi) {
-        phi_to_kill.push_back(insn);
-        context_->ReplaceAllUsesWith(insn->result_id(),
-                                     insn->GetSingleWordInOperand(0));
-      }
-    });
+    bb->ForEachPhiInst(
+        [&phi_to_kill, &is_branch_dead, preserve_phi, this](Instruction* insn) {
+          uint32_t i = 0;
+          while (i < insn->NumInOperands()) {
+            uint32_t incoming_id = insn->GetSingleWordInOperand(i + 1);
+            if (is_branch_dead(incoming_id)) {
+              // Remove the incoming block id operand.
+              insn->RemoveInOperand(i + 1);
+              // Remove the definition id operand.
+              insn->RemoveInOperand(i);
+              continue;
+            }
+            i += 2;
+          }
+          // If there is only 1 remaining edge, propagate the value and
+          // kill the instruction.
+          if (insn->NumInOperands() == 2 && !preserve_phi) {
+            phi_to_kill.push_back(insn);
+            context_->ReplaceAllUsesWith(insn->result_id(),
+                                         insn->GetSingleWordInOperand(0));
+          }
+        });
     for (Instruction* insn : phi_to_kill) {
       context_->KillInst(insn);
     }
