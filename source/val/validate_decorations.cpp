@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/val/validate.h"
-
 #include <algorithm>
 #include <cassert>
 #include <string>
@@ -25,8 +23,10 @@
 
 #include "source/diagnostic.h"
 #include "source/opcode.h"
+#include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -1277,14 +1277,17 @@ spv_result_t CheckNonWritableDecoration(ValidationState_t& vstate,
   return SPV_SUCCESS;
 }
 
-// Returns SPV_SUCCESS if validation rules are satisfied for Uniform
-// decorations. Otherwise emits a diagnostic and returns something other than
-// SPV_SUCCESS. Assumes each decoration on a group has been propagated down to
-// the group members.
+// Returns SPV_SUCCESS if validation rules are satisfied for Uniform or
+// UniformId decorations. Otherwise emits a diagnostic and returns something
+// other than SPV_SUCCESS. Assumes each decoration on a group has been
+// propagated down to the group members.
 spv_result_t CheckUniformDecoration(ValidationState_t& vstate,
                                     const Instruction& inst,
-                                    const Decoration&) {
-  // Uniform must decorate an "object"
+                                    const Decoration& decoration) {
+  const char* const dec_name =
+      decoration.dec_type() == SpvDecorationUniform ? "Uniform" : "UniformId";
+
+  // Uniform or UniformId must decorate an "object"
   //  - has a result ID
   //  - is an instantiation of a non-void type.  So it has a type ID, and that
   //  type is not void.
@@ -1293,19 +1296,42 @@ spv_result_t CheckUniformDecoration(ValidationState_t& vstate,
 
   if (inst.type_id() == 0) {
     return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-           << "Uniform decoration applied to a non-object";
+           << dec_name << " decoration applied to a non-object";
   }
   if (Instruction* type_inst = vstate.FindDef(inst.type_id())) {
     if (type_inst->opcode() == SpvOpTypeVoid) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << "Uniform decoration applied to a value with void type";
+             << dec_name << " decoration applied to a value with void type";
     }
   } else {
     // We might never get here because this would have been rejected earlier in
     // the flow.
     return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-           << "Uniform decoration applied to an object with invalid type";
+           << dec_name << " decoration applied to an object with invalid type";
   }
+
+  // Check compatibility with the instruction.
+  if (decoration.dec_type() == SpvDecorationUniform &&
+      inst.opcode() != SpvOpDecorate) {
+    return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+           << dec_name << " decoration may only be used with OpDecorate";
+  }
+
+  if (decoration.dec_type() == SpvDecorationUniformId) {
+    if (inst.opcode() != SpvOpDecorateId) {
+      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+             << dec_name << " decoration may only be used with OpDecorateId";
+    }
+    assert(decoration.params().size() == 1 &&
+           "Grammar ensures UniformId has one parameter");
+
+    if (spvVersionForTargetEnv(vstate.context()->target_env) <
+        SPV_SPIRV_VERSION_WORD(1, 4)) {
+      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+             << dec_name << " decoration requires SPIR-V 1.4 or later";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -1376,6 +1402,7 @@ spv_result_t CheckDecorationsFromDecoration(ValidationState_t& vstate) {
           PASS_OR_BAIL(CheckNonWritableDecoration(vstate, *inst, decoration));
           break;
         case SpvDecorationUniform:
+        case SpvDecorationUniformId:
           PASS_OR_BAIL(CheckUniformDecoration(vstate, *inst, decoration));
           break;
         case SpvDecorationNoSignedWrap:

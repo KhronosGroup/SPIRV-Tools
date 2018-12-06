@@ -4737,6 +4737,43 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
+// Returns SPIR-V assembly for a shader that uses a Uniform
+// decoration having a scope id parameter.
+std::string ShaderWithUniformWithScopeID() {
+  return R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %int0 Uniform %subgroupscope
+%void = OpTypeVoid
+%int = OpTypeInt 32 1
+%int0 = OpConstantNull %int
+%subgroupscope = OpConstant %int 3
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+}
+
+TEST_F(ValidateDecorations, UniformDecorationWithScopeIdV13Bad) {
+  CompileSuccessfully(ShaderWithUniformWithScopeID());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Uniform decoration with a scope ID requires SPIR-V 1.4 or later\n"
+          "  %2 = OpConstantNull %int"));
+}
+
+TEST_F(ValidateDecorations, UniformDecorationWithScopeIdV14Good) {
+  CompileSuccessfully(ShaderWithUniformWithScopeID());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
 TEST_F(ValidateDecorations, UniformDecorationTargetsTypeBad) {
   const std::string spirv = R"(
 OpCapability Shader
