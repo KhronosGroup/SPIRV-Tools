@@ -104,7 +104,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
       !_.HasCapability(SpvCapabilityAtomicStorage)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
-           << ": Memory Semantics UniformMemory requires capability "
+           << ": Memory Semantics AtomicCounterMemory requires capability "
               "AtomicStorage";
   }
 
