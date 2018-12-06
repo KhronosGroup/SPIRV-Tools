@@ -241,9 +241,9 @@ void StructuredLoopToSelectionReductionOpportunity::
     for (uint32_t index = 0; index < phi_inst->NumInOperands(); index += 2) {
       // Keep all pairs where the parent is not the block from which the edge
       // is being removed.
-      if (phi_inst->GetOperand(index + 1).words[0] != from_id) {
-        new_in_operands.push_back(phi_inst->GetOperand(index));
-        new_in_operands.push_back(phi_inst->GetOperand(index + 1));
+      if (phi_inst->GetInOperand(index + 1).words[0] != from_id) {
+        new_in_operands.push_back(phi_inst->GetInOperand(index));
+        new_in_operands.push_back(phi_inst->GetInOperand(index + 1));
       }
     }
     phi_inst->SetInOperands(std::move(new_in_operands));
