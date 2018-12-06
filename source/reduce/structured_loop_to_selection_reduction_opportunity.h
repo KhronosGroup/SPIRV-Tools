@@ -48,24 +48,53 @@ class StructuredLoopToSelectionReductionOpportunity
   void Apply() override;
 
  private:
+  // Parameter |original_target_id| is the id of the loop's merge block or
+  // continue target.  This method considers each edge of the form
+  // b->orignal_target_id and transforms it into an edge of the form b->c, where
+  // c is the merge block of the structured control flow construct that most
+  // tightly contains b.
   void RedirectToClosestMergeBlock(uint32_t original_target_id);
 
+  // Returns the id of the merge block of the structured control flow construct
+  // that most tightly contains |block_id|, or 0 if none exists.
   uint32_t FindClosestMerge(uint32_t block_id);
 
+  // |source_id|, |original_target_id| and |new_target_id| are required to all
+  // be distinct, and there should be a CFG edge from |source_id| to
+  // |original_target_id|.  The method removes this edge and adds an edge from
+  // |source_id| to |new_target_id|.  It takes care of fixing up any OpPhi
+  // instructions associated with |original_target_id| and |new_target_id|.
   void RedirectEdge(uint32_t source_id, uint32_t original_target_id,
                     uint32_t new_target_id);
 
-  void AdaptPhiNodesForRemovedEdge(uint32_t from_id, BasicBlock* to_block);
+  // Removes any components of |to_block|'s phi instructions relating to
+  // |from_id|.
+  void AdaptPhiInstructionsForRemovedEdge(uint32_t from_id,
+                                          BasicBlock* to_block);
 
-  void AdaptPhiNodesForAddedEdge(uint32_t from_id, BasicBlock* to_id);
+  // Adds components to |to_block|'s phi instructions to account for a new
+  // incoming edge from |from_id|.
+  void AdaptPhiInstructionsForAddedEdge(uint32_t from_id, BasicBlock* to_block);
 
+  // Returns whether |block_id| is part of the structured control flow construct
+  // headed at |selection_construct_header|.
   bool ContainedInStructuredControlFlowConstruct(
       uint32_t block_id, BasicBlock* selection_construct_header);
 
+  // Turns the OpLoopMerge for the loop into OpSelectionMerge, and adapts the
+  // following branch instruction accordingly.
   void ChangeLoopToSelection();
 
+  // Fixes any scenarios where, due to CFG changes, ids have uses not dominated
+  // by their definitions, by changing such uses to uses of OpUndef or of dummy
+  // variables.
   void FixNonDominatedIdUses();
 
+  // Returns true if and only if at least one of the following holds:
+  // 1) |def| dominates |use|
+  // 2) |def| is an OpVariable
+  // 3) |use| is part of an OpPhi, with associated incoming block b, and |def|
+  // dominates b.
   bool DefinitionSufficientlyDominatesUse(Instruction& def, Instruction* use,
                                           uint32_t use_index,
                                           BasicBlock& def_block);

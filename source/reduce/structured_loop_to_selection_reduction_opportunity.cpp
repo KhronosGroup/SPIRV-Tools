@@ -225,13 +225,14 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectEdge(
 
   // The old and new targets may have phi instructions; these will need to
   // respect the change in edges.
-  AdaptPhiNodesForRemovedEdge(source_id,
-                              context_->cfg()->block(original_target_id));
-  AdaptPhiNodesForAddedEdge(source_id, context_->cfg()->block(new_target_id));
+  AdaptPhiInstructionsForRemovedEdge(
+      source_id, context_->cfg()->block(original_target_id));
+  AdaptPhiInstructionsForAddedEdge(source_id,
+                                   context_->cfg()->block(new_target_id));
 }
 
-void StructuredLoopToSelectionReductionOpportunity::AdaptPhiNodesForRemovedEdge(
-    uint32_t from_id, BasicBlock* to_block) {
+void StructuredLoopToSelectionReductionOpportunity::
+    AdaptPhiInstructionsForRemovedEdge(uint32_t from_id, BasicBlock* to_block) {
   for (auto& inst : *to_block) {
     if (inst.opcode() != SpvOpPhi) {
       // Phi instructions must appear first in a block, so if we find a non-phi
@@ -253,8 +254,8 @@ void StructuredLoopToSelectionReductionOpportunity::AdaptPhiNodesForRemovedEdge(
   }
 }
 
-void StructuredLoopToSelectionReductionOpportunity::AdaptPhiNodesForAddedEdge(
-    uint32_t from_id, BasicBlock* to_block) {
+void StructuredLoopToSelectionReductionOpportunity::
+    AdaptPhiInstructionsForAddedEdge(uint32_t from_id, BasicBlock* to_block) {
   for (auto& inst : *to_block) {
     if (inst.opcode() != SpvOpPhi) {
       // Phi instructions must appear first in a block, so if we find a non-phi
@@ -301,8 +302,9 @@ void StructuredLoopToSelectionReductionOpportunity::ChangeLoopToSelection() {
                                  {SPV_OPERAND_TYPE_ID, {loop_merge_block_id}}});
     if (original_branch_id != loop_merge_block_id) {
       // TODO(afd): consider adding a test for the case where they are equal.
-      AdaptPhiNodesForAddedEdge(loop_construct_header_->id(),
-                                context_->cfg()->block(loop_merge_block_id));
+      AdaptPhiInstructionsForAddedEdge(
+          loop_construct_header_->id(),
+          context_->cfg()->block(loop_merge_block_id));
     }
   }
 }
