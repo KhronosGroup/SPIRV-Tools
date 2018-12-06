@@ -27,6 +27,7 @@
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
+#include "source/util/make_unique.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -951,76 +952,119 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
 }
 
 spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
-  static const std::unordered_set<SpvDecoration, SpvDecorationHash>
-      kAtMostOncePerID = {
-          SpvDecorationArrayStride,
-      };
-  static const std::unordered_set<SpvDecoration, SpvDecorationHash>
-      kAtMostOncePerMember = {
-          SpvDecorationOffset,
-          SpvDecorationMatrixStride,
-          SpvDecorationRowMajor,
-          SpvDecorationColMajor,
-      };
-  static const std::vector<std::unordered_set<SpvDecoration, SpvDecorationHash>>
-      kMutuallyExclusivePerMember = {
-          {SpvDecorationRowMajor, SpvDecorationColMajor},
-      };
+  using AtMostOnceSet = std::unordered_set<SpvDecoration, SpvDecorationHash>;
+  using MutuallyExclusiveSets =
+      std::vector<std::unordered_set<SpvDecoration, SpvDecorationHash>>;
+  using AtMostOnceSetPtr = std::unique_ptr<AtMostOnceSet>;
+  using MutuallyExclusiveSetsPtr = std::unique_ptr<MutuallyExclusiveSets>;
+  using PerIDKey = std::tuple<SpvDecoration, uint32_t>;
+  using PerMemberKey = std::tuple<SpvDecoration, uint32_t, uint32_t>;
+  using DecorationNameTable =
+      std::unordered_map<SpvDecoration, std::string, SpvDecorationHash>;
+  using DecorationNameTablePtr = std::unique_ptr<DecorationNameTable>;
+
+  static AtMostOnceSetPtr at_most_once_per_id;
+  static AtMostOnceSetPtr at_most_once_per_member;
+  static MutuallyExclusiveSetsPtr mutually_exclusive_per_id;
+  static MutuallyExclusiveSetsPtr mutually_exclusive_per_member;
+  static DecorationNameTablePtr decoration_name;
+
+  if (!at_most_once_per_id) {
+    at_most_once_per_id = AtMostOnceSetPtr(new AtMostOnceSet{
+        SpvDecorationArrayStride,
+    });
+  }
+  if (!at_most_once_per_member) {
+    at_most_once_per_member = AtMostOnceSetPtr(new AtMostOnceSet{
+        SpvDecorationOffset,
+        SpvDecorationMatrixStride,
+        SpvDecorationRowMajor,
+        SpvDecorationColMajor,
+    });
+  }
+  if (!mutually_exclusive_per_id) {
+    mutually_exclusive_per_id =
+        MutuallyExclusiveSetsPtr(new MutuallyExclusiveSets{
+            {SpvDecorationBlock, SpvDecorationBufferBlock},
+        });
+  }
+  if (!mutually_exclusive_per_member) {
+    mutually_exclusive_per_member =
+        MutuallyExclusiveSetsPtr(new MutuallyExclusiveSets{
+            {SpvDecorationRowMajor, SpvDecorationColMajor},
+        });
+  }
+
   // For printing the decoration name.
-  static const std::unordered_map<SpvDecoration, std::string, SpvDecorationHash>
-      kDecorationName = {
-          {SpvDecorationArrayStride, "ArrayStride"},
-          {SpvDecorationOffset, "Offset"},
-          {SpvDecorationMatrixStride, "MatrixStride"},
-          {SpvDecorationRowMajor, "RowMajor"},
-          {SpvDecorationColMajor, "ColMajor"},
-      };
+  if (!decoration_name) {
+    decoration_name = DecorationNameTablePtr(new DecorationNameTable{
+        {SpvDecorationArrayStride, "ArrayStride"},
+        {SpvDecorationOffset, "Offset"},
+        {SpvDecorationMatrixStride, "MatrixStride"},
+        {SpvDecorationRowMajor, "RowMajor"},
+        {SpvDecorationColMajor, "ColMajor"},
+        {SpvDecorationBlock, "Block"},
+        {SpvDecorationBufferBlock, "BufferBlock"},
+    });
+  }
 
-  using per_id_key = std::tuple<SpvDecoration, uint32_t>;
-  using per_member_key = std::tuple<SpvDecoration, uint32_t, uint32_t>;
-
-  std::set<per_id_key> seen_per_id;
-  std::set<per_member_key> seen_per_member;
+  std::set<PerIDKey> seen_per_id;
+  std::set<PerMemberKey> seen_per_member;
 
   for (const auto& inst : vstate.ordered_instructions()) {
     const auto& words = inst.words();
     if (SpvOpDecorate == inst.opcode()) {
       const auto id = words[1];
       const auto dec_type = static_cast<SpvDecoration>(words[2]);
-      const auto k = per_id_key(dec_type, id);
+      const auto k = PerIDKey(dec_type, id);
       const auto already_used = !seen_per_id.insert(k).second;
       if (already_used &&
-          kAtMostOncePerID.find(dec_type) != kAtMostOncePerID.end()) {
+          at_most_once_per_id->find(dec_type) != at_most_once_per_id->end()) {
         return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                << "ID '" << id << "' decorated with "
-               << kDecorationName.at(dec_type)
+               << decoration_name->at(dec_type)
                << " multiple times is not allowed.";
+      }
+      // Verify certain mutually exclusive decorations are not both applied on
+      // a (ID, member) tuple.
+      for (const auto& s : *mutually_exclusive_per_id) {
+        if (s.find(dec_type) == s.end()) continue;
+        for (auto excl_dec_type : s) {
+          if (excl_dec_type == dec_type) continue;
+          const auto excl_k = PerIDKey(excl_dec_type, id);
+          if (seen_per_id.find(excl_k) != seen_per_id.end()) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
+                   << "ID '" << id << "' decorated with both "
+                   << decoration_name->at(dec_type) << " and "
+                   << decoration_name->at(excl_dec_type) << " is not allowed.";
+          }
+        }
       }
     } else if (SpvOpMemberDecorate == inst.opcode()) {
       const auto id = words[1];
       const auto member_id = words[2];
       const auto dec_type = static_cast<SpvDecoration>(words[3]);
-      const auto k = per_member_key(dec_type, id, member_id);
+      const auto k = PerMemberKey(dec_type, id, member_id);
       const auto already_used = !seen_per_member.insert(k).second;
-      if (already_used &&
-          kAtMostOncePerMember.find(dec_type) != kAtMostOncePerMember.end()) {
+      if (already_used && at_most_once_per_member->find(dec_type) !=
+                              at_most_once_per_member->end()) {
         return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                << "ID '" << id << "', member '" << member_id
-               << "' decorated with " << kDecorationName.at(dec_type)
+               << "' decorated with " << decoration_name->at(dec_type)
                << " multiple times is not allowed.";
       }
       // Verify certain mutually exclusive decorations are not both applied on
       // a (ID, member) tuple.
-      for (const auto& s : kMutuallyExclusivePerMember) {
+      for (const auto& s : *mutually_exclusive_per_member) {
         if (s.find(dec_type) == s.end()) continue;
         for (auto excl_dec_type : s) {
           if (excl_dec_type == dec_type) continue;
-          const auto excl_k = per_member_key(excl_dec_type, id, member_id);
+          const auto excl_k = PerMemberKey(excl_dec_type, id, member_id);
           if (seen_per_member.find(excl_k) != seen_per_member.end()) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                    << "ID '" << id << "', member '" << member_id
-                   << "' decorated with both " << kDecorationName.at(dec_type)
-                   << " and " << kDecorationName.at(excl_dec_type)
+                   << "' decorated with both " << decoration_name->at(dec_type)
+                   << " and " << decoration_name->at(excl_dec_type)
                    << " is not allowed.";
           }
         }
