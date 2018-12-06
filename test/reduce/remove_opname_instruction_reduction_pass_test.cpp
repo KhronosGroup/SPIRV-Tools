@@ -22,6 +22,37 @@ namespace spvtools {
 namespace reduce {
 namespace {
 
+TEST(RemoveOpnameInstructionReductionPassTest, NothingToRemove) {
+  const std::string original = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const std::string expected = original;
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, original, kReduceAssembleOption);
+  const auto pass =
+      TestSubclass<RemoveOpNameInstructionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+  ASSERT_EQ(0, ops.size());
+
+  CheckEqual(env, expected, context.get());
+}
+
+
 TEST(RemoveOpnameInstructionReductionPassTest, RemoveSingleOpName) {
   const std::string prologue = R"(
                OpCapability Shader
