@@ -206,6 +206,8 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectEdge(
   assert(original_target_id != new_target_id);
 
   // Redirect the edge; depends on what kind of branch instruction is involved.
+  // Since the source block was a loop header, its terminator must be one of
+  // OpBranch or OpBranchConditional.
   auto terminator = context_->cfg()->block(source_id)->terminator();
   if (terminator->opcode() == SpvOpBranch) {
     assert(terminator->GetSingleWordOperand(0) == original_target_id);
