@@ -60,8 +60,10 @@ class StructuredLoopToSelectionReductionOpportunity
   uint32_t FindClosestMerge(uint32_t block_id);
 
   // |source_id|, |original_target_id| and |new_target_id| are required to all
-  // be distinct, and there should be a CFG edge from |source_id| to
-  // |original_target_id|.  The method removes this edge and adds an edge from
+  // be distinct, with a CFG edge existing from |source_id| to
+  // |original_target_id|, and |original_target_id| being either the merge block
+  // or continue target for the loop being operated on.
+  // The method removes this edge and adds an edge from
   // |source_id| to |new_target_id|.  It takes care of fixing up any OpPhi
   // instructions associated with |original_target_id| and |new_target_id|.
   void RedirectEdge(uint32_t source_id, uint32_t original_target_id,

@@ -69,7 +69,15 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectToClosestMergeBlock(
     uint32_t original_target_id) {
   // Consider every predecessor of the node with respect to which edges should
   // be redirected.
+  std::set<uint32_t> already_seen;
   for (auto pred : context_->cfg()->preds(original_target_id)) {
+    if (already_seen.find(pred) != already_seen.end()) {
+      // We have already handled this predecessor (this scenario can arise if
+      // there are multiple edges from a block b to original_target_id).
+      continue;
+    }
+    already_seen.insert(pred);
+
     if (!context_->GetDominatorAnalysis(enclosing_function_)
              ->IsReachable(pred)) {
       // We do not care about unreachable predecessors (and dominance
@@ -207,23 +215,43 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectEdge(
   assert(source_id != new_target_id);
   assert(original_target_id != new_target_id);
 
-  // Redirect the edge; depends on what kind of branch instruction is involved.
-  // Since the source block was a loop header, its terminator must be one of
-  // OpBranch or OpBranchConditional.
+  // original_target_id must either be the merge target or continue construct
+  // for the loop being operated on.
+  assert(original_target_id ==
+             loop_construct_header_->GetMergeInst()->GetSingleWordOperand(
+                 kMergeNodeIndex) ||
+         original_target_id ==
+             loop_construct_header_->GetMergeInst()->GetSingleWordOperand(
+                 kContinueNodeIndex));
+
   auto terminator = context_->cfg()->block(source_id)->terminator();
+
+  // Figure out which operands of the terminator need to be considered for
+  // redirection.
+  std::vector<uint32_t> operand_indices;
   if (terminator->opcode() == SpvOpBranch) {
-    assert(terminator->GetSingleWordOperand(0) == original_target_id);
-    terminator->SetOperand(0, {new_target_id});
+    operand_indices = {0};
+  } else if (terminator->opcode() == SpvOpBranchConditional) {
+    operand_indices = {1, 2};
   } else {
-    assert(terminator->opcode() == SpvOpBranchConditional);
-    assert(terminator->GetSingleWordOperand(1) == original_target_id ||
-           terminator->GetSingleWordOperand(2) == original_target_id);
-    for (auto index : {1u, 2u}) {
-      if (terminator->GetSingleWordOperand(index) == original_target_id) {
-        terminator->SetOperand(index, {new_target_id});
-      }
+    assert(terminator->opcode() == SpvOpSwitch);
+    for (uint32_t label_index = 1; label_index < terminator->NumOperands();
+         label_index += 2) {
+      operand_indices.push_back(label_index);
     }
   }
+
+  // Redirect the relevant operands, asserting that at least one redirection is
+  // made.
+  bool redirected = false;
+  for (auto operand_index : operand_indices) {
+    if (terminator->GetSingleWordOperand(operand_index) == original_target_id) {
+      terminator->SetOperand(operand_index, {new_target_id});
+      redirected = true;
+    }
+  }
+  (void)(redirected);
+  assert(redirected);
 
   // The old and new targets may have phi instructions; these will need to
   // respect the change in edges.

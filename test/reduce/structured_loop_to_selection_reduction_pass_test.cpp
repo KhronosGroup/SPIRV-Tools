@@ -2512,6 +2512,199 @@ TEST(StructuredLoopToSelectionReductionPassTest,
   ASSERT_EQ(0, ops.size());
 }
 
+TEST(StructuredLoopToSelectionReductionPassTest,
+     SwitchSelectionMergeIsContinueTarget) {
+  // Another example where a loop's continue target is also the target of a
+  // selection; this time a selection associated with an OpSwitch.  We
+  // cautiously do not apply the transformation.
+  std::string shader = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeBool
+          %5 = OpTypeInt 32 1
+          %4 = OpTypeFunction %2
+          %6 = OpConstant %5 2
+          %7 = OpConstantTrue %3
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %14 %15 None
+               OpBranchConditional %7 %10 %14
+         %10 = OpLabel
+               OpSelectionMerge %15 None
+               OpSwitch %6 %12 1 %11 2 %11 3 %15
+         %11 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+               OpBranch %15
+         %15 = OpLabel
+               OpBranch %9
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  // There should be no opportunities.
+  ASSERT_EQ(0, ops.size());
+}
+
+TEST(StructuredLoopToSelectionReductionPassTest, ContinueTargetIsSwitchTarget) {
+  std::string shader = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeBool
+          %5 = OpTypeInt 32 1
+          %4 = OpTypeFunction %2
+          %6 = OpConstant %5 2
+          %7 = OpConstantTrue %3
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %14 %12 None
+               OpBranchConditional %7 %10 %14
+         %10 = OpLabel
+               OpSelectionMerge %15 None
+               OpSwitch %6 %12 1 %11 2 %11 3 %15
+         %11 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+               OpBranch %9
+         %15 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  ASSERT_EQ(1, ops.size());
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string expected = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeBool
+          %5 = OpTypeInt 32 1
+          %4 = OpTypeFunction %2
+          %6 = OpConstant %5 2
+          %7 = OpConstantTrue %3
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpSelectionMerge %14 None
+               OpBranchConditional %7 %10 %14
+         %10 = OpLabel
+               OpSelectionMerge %15 None
+               OpSwitch %6 %15 1 %11 2 %11 3 %15
+         %11 = OpLabel
+               OpBranch %15
+         %12 = OpLabel
+               OpBranch %9
+         %15 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CheckEqual(env, expected, context.get());
+}
+
+TEST(StructuredLoopToSelectionReductionPassTest,
+     MultipleSwitchTargetsAreContinueTarget) {
+  std::string shader = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeBool
+          %5 = OpTypeInt 32 1
+          %4 = OpTypeFunction %2
+          %6 = OpConstant %5 2
+          %7 = OpConstantTrue %3
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpLoopMerge %14 %12 None
+               OpBranchConditional %7 %10 %14
+         %10 = OpLabel
+               OpSelectionMerge %15 None
+               OpSwitch %6 %11 1 %12 2 %12 3 %15
+         %11 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+               OpBranch %9
+         %15 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  ASSERT_EQ(1, ops.size());
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string expected = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %1 "main"
+          %2 = OpTypeVoid
+          %3 = OpTypeBool
+          %5 = OpTypeInt 32 1
+          %4 = OpTypeFunction %2
+          %6 = OpConstant %5 2
+          %7 = OpConstantTrue %3
+          %1 = OpFunction %2 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpSelectionMerge %14 None
+               OpBranchConditional %7 %10 %14
+         %10 = OpLabel
+               OpSelectionMerge %15 None
+               OpSwitch %6 %11 1 %15 2 %15 3 %15
+         %11 = OpLabel
+               OpBranch %15
+         %12 = OpLabel
+               OpBranch %9
+         %15 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CheckEqual(env, expected, context.get());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools
