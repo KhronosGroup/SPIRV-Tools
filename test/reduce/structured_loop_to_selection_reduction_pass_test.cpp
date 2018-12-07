@@ -1542,7 +1542,7 @@ TEST(StructuredLoopToSelectionReductionPassTest, Complex) {
                OpBranch %74
          %75 = OpLabel
          %93 = OpLoad %8 %29
-               OpBranchConditional %93 %73 %45 ; Was OpBranchConditional %93 %73 %74
+               OpBranchConditional %93 %73 %74
          %74 = OpLabel
                OpBranch %45 	; Was OpBranch %46
          %46 = OpLabel
@@ -1942,9 +1942,9 @@ TEST(StructuredLoopToSelectionReductionPassTest, ComplexOptimized) {
                OpBranch %74     ; Was OpBranch %75
          %75 = OpLabel
         %109 = OpPhi %10 ; Was OpPhi %10 %99 %85 %110 %92 %110 %78
-               OpBranchConditional %115 %73 %45 ; Was OpBranchConditional %113 %73 %74
+               OpBranchConditional %115 %73 %74
          %74 = OpLabel
-        %108 = OpPhi %10 %114 %78 %114 %73 ; Was OpPhi %10 %99 %80 %109 %75
+        %108 = OpPhi %10 %114 %75 %114 %78 %114 %73 ; Was OpPhi %10 %99 %80 %109 %75
                OpBranch %45 	; Was OpBranch %46
          %46 = OpLabel
         %107 = OpPhi %10      ; Was OpPhi %10 %68 %66 %60 %65 %108 %74
@@ -3282,7 +3282,7 @@ TEST(StructuredLoopToSelectionReductionPassTest,
                OpSelectionMerge %12 None
                OpBranchConditional %6 %12 %12
          %13 = OpLabel
-               OpBranchConditional %6 %11 %9
+               OpBranchConditional %6 %11 %12
          %12 = OpLabel
                OpBranch %9
          %10 = OpLabel

@@ -50,14 +50,10 @@ class StructuredLoopToSelectionReductionOpportunity
  private:
   // Parameter |original_target_id| is the id of the loop's merge block or
   // continue target.  This method considers each edge of the form
-  // b->orignal_target_id and transforms it into an edge of the form b->c, where
-  // c is the merge block of the structured control flow construct that most
-  // tightly contains b.
+  // b->original_target_id and transforms it into an edge of the form b->c,
+  // where c is the merge block of the structured control flow construct that
+  // most tightly contains b.
   void RedirectToClosestMergeBlock(uint32_t original_target_id);
-
-  // Returns the id of the merge block of the structured control flow construct
-  // that most tightly contains |block_id|, or 0 if none exists.
-  uint32_t FindClosestMerge(uint32_t block_id);
 
   // |source_id|, |original_target_id| and |new_target_id| are required to all
   // be distinct, with a CFG edge existing from |source_id| to
@@ -77,11 +73,6 @@ class StructuredLoopToSelectionReductionOpportunity
   // Adds components to |to_block|'s phi instructions to account for a new
   // incoming edge from |from_id|.
   void AdaptPhiInstructionsForAddedEdge(uint32_t from_id, BasicBlock* to_block);
-
-  // Returns whether |block_id| is part of the structured control flow construct
-  // headed at |selection_construct_header|.
-  bool ContainedInStructuredControlFlowConstruct(
-      uint32_t block_id, BasicBlock* selection_construct_header);
 
   // Turns the OpLoopMerge for the loop into OpSelectionMerge, and adapts the
   // following branch instruction accordingly.
