@@ -150,6 +150,69 @@ TEST(RemoveOpnameInstructionReductionPassTest, TryApplyRemovesAllOpName) {
   }
 }
 
+TEST(RemoveOpnameInstructionReductionPassTest, TryApplyRemovesAllOpNameAndOpMemberName) {
+  const std::string prologue = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+  )";
+
+  const std::string epilogue = R"(
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %6 3
+          %9 = OpTypeStruct %6 %7 %8
+         %10 = OpTypePointer Function %9
+         %12 = OpConstant %7 0
+         %13 = OpConstant %6 1
+         %14 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %11 = OpVariable %10 Function
+         %15 = OpAccessChain %14 %11 %12
+               OpStore %15 %13
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const std::string original = prologue + R"(
+               OpName %4 "main"
+               OpName %9 "S"
+               OpMemberName %9 0 "f"
+               OpMemberName %9 1 "i"
+               OpMemberName %9 2 "v"
+               OpName %11 "s"
+  )" + epilogue;
+
+  const std::string expected = prologue + epilogue;
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  auto pass = TestSubclass<RemoveOpNameInstructionReductionPass>(env);
+
+  {
+    // Check the right number of opportunities is detected
+    const auto consumer = nullptr;
+    const auto context =
+        BuildModule(env, consumer, original, kReduceAssembleOption);
+    const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+    ASSERT_EQ(6, ops.size());
+  }
+
+  {
+    // The reduction should remove all OpName
+    std::vector<uint32_t> binary;
+    SpirvTools t(env);
+    ASSERT_TRUE(t.Assemble(original, &binary, kReduceAssembleOption));
+    auto reduced_binary = pass.TryApplyReduction(binary);
+    CheckEqual(env, expected, reduced_binary);
+  }
+}
+
 TEST(RemoveOpnameInstructionReductionPassTest, EnableRemoveUnreferencedInstruction) {
   const std::string source = R"(
                OpCapability Shader
