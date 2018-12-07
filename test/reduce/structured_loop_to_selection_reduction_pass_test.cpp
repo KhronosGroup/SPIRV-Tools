@@ -2932,6 +2932,120 @@ TEST(StructuredLoopToSelectionReductionPassTest, MultipleAccessChains) {
   CheckEqual(env, expected, context.get());
 }
 
+TEST(StructuredLoopToSelectionReductionPassTest,
+     UnreachableInnerLoopContinueBranchingToOuterLoop) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %2 = OpFunction %3 None %4
+          %7 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpLoopMerge %9 %10 None
+               OpBranch %11
+         %11 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %12
+         %13 = OpLabel
+               OpBranchConditional %6 %9 %11
+         %12 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpBranchConditional %6 %9 %8
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  ASSERT_EQ(2, ops.size());
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string after_op_0 = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %2 = OpFunction %3 None %4
+          %7 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpSelectionMerge %9 None
+               OpBranchConditional %6 %11 %9
+         %11 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %12
+         %13 = OpLabel
+               OpBranchConditional %6 %9 %11
+         %12 = OpLabel
+               OpBranch %9
+         %10 = OpLabel
+               OpBranchConditional %6 %9 %8
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CheckEqual(env, after_op_0, context.get());
+
+  ASSERT_TRUE(ops[1]->PreconditionHolds());
+  ops[1]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string after_op_1 = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %2 = OpFunction %3 None %4
+          %7 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpSelectionMerge %9 None
+               OpBranchConditional %6 %11 %9
+         %11 = OpLabel
+               OpSelectionMerge %12 None
+               OpBranchConditional %6 %12 %12
+         %13 = OpLabel
+               OpBranchConditional %6 %9 %11
+         %12 = OpLabel
+               OpBranch %9
+         %10 = OpLabel
+               OpBranchConditional %6 %9 %8
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CheckEqual(env, after_op_1, context.get());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools
