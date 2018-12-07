@@ -16,6 +16,7 @@
 #include <cerrno>
 #include <cstring>
 #include <functional>
+#include <source/reduce/remove_opname_instruction_reduction_pass.h>
 
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
@@ -204,6 +205,8 @@ int main(int argc, const char** argv) {
         return ExecuteCommand(command);
       });
 
+  reducer.AddReductionPass(
+      spvtools::MakeUnique<RemoveOpNameInstructionReductionPass>(target_env));
   reducer.AddReductionPass(
       spvtools::MakeUnique<OperandToConstReductionPass>(target_env));
   reducer.AddReductionPass(
