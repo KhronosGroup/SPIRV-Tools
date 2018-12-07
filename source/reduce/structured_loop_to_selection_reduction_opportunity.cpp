@@ -252,7 +252,7 @@ void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses() {
         // replace the use with an OpUndef, unless the definition is an
         // access chain, in which case replace it with some (possibly fresh)
         // variable (as we cannot load from / store to OpUndef).
-        if (!DefinitionSufficientlyDominatesUse(def, use, index, block)) {
+        if (!DefinitionSufficientlyDominatesUse(&def, use, index, block)) {
           if (def.opcode() == SpvOpAccessChain) {
             auto pointer_type =
                 context_->get_type_mgr()->GetType(def.type_id())->AsPointer();
@@ -282,7 +282,7 @@ void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses() {
 }
 
 bool StructuredLoopToSelectionReductionOpportunity::
-    DefinitionSufficientlyDominatesUse(Instruction& def, Instruction* use,
+    DefinitionSufficientlyDominatesUse(Instruction* def, Instruction* use,
                                        uint32_t use_index,
                                        BasicBlock& def_block) {
   if (use->opcode() == SpvOpPhi) {
@@ -293,7 +293,7 @@ bool StructuredLoopToSelectionReductionOpportunity::
   }
   // In non-phi cases, a use needs to be dominated by its definition.
   return context_->GetDominatorAnalysis(enclosing_function_)
-      ->Dominates(&def, use);
+      ->Dominates(def, use);
 }
 
 uint32_t StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalUndef(
@@ -331,7 +331,7 @@ StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalVariable(
   std::unique_ptr<Instruction> variable_inst(
       new Instruction(context_, SpvOpVariable, pointer_type_id, variable_id,
                       {{SPV_OPERAND_TYPE_STORAGE_CLASS,
-                        {context_->get_type_mgr()
+                        {(uint32_t)context_->get_type_mgr()
                              ->GetType(pointer_type_id)
                              ->AsPointer()
                              ->storage_class()}}}));

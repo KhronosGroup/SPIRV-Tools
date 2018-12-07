@@ -88,7 +88,7 @@ class StructuredLoopToSelectionReductionOpportunity
   // 2) |def| is an OpVariable
   // 3) |use| is part of an OpPhi, with associated incoming block b, and |def|
   // dominates b.
-  bool DefinitionSufficientlyDominatesUse(Instruction& def, Instruction* use,
+  bool DefinitionSufficientlyDominatesUse(Instruction* def, Instruction* use,
                                           uint32_t use_index,
                                           BasicBlock& def_block);
 
