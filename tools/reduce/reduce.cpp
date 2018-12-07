@@ -212,6 +212,8 @@ int main(int argc, const char** argv) {
   reducer.AddReductionPass(
       spvtools::MakeUnique<OperandToDominatingIdReductionPass>(target_env));
   reducer.AddReductionPass(
+      spvtools::MakeUnique<RemoveOpNameInstructionReductionPass>(target_env));
+  reducer.AddReductionPass(
       spvtools::MakeUnique<RemoveUnreferencedInstructionReductionPass>(
           target_env));
   reducer.AddReductionPass(
