@@ -2076,9 +2076,11 @@ TEST(StructuredLoopToSelectionReductionPassTest, AccessChainIssue) {
           %6 = OpTypeFloat 32
           %7 = OpTypeVector %6 2
           %8 = OpTypePointer Function %7
+         %60 = OpTypePointer Private %7
          %10 = OpConstant %6 0
          %11 = OpConstantComposite %7 %10 %10
          %12 = OpTypePointer Function %6
+         %59 = OpTypePointer Private %6
          %14 = OpTypeInt 32 1
          %15 = OpTypePointer Function %14
          %17 = OpConstant %14 0
@@ -2095,9 +2097,9 @@ TEST(StructuredLoopToSelectionReductionPassTest, AccessChainIssue) {
          %54 = OpTypeVector %6 4
          %55 = OpTypePointer Output %54
          %56 = OpVariable %55 Output
+          %9 = OpVariable %60 Private
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-          %9 = OpVariable %8 Function
          %13 = OpVariable %12 Function
          %16 = OpVariable %15 Function
          %38 = OpVariable %12 Function
@@ -2121,12 +2123,12 @@ TEST(StructuredLoopToSelectionReductionPassTest, AccessChainIssue) {
                OpSelectionMerge %37 None
                OpBranchConditional %35 %36 %44
          %36 = OpLabel
-         %41 = OpAccessChain %12 %9 %40
+         %41 = OpAccessChain %59 %9 %40
          %42 = OpLoad %6 %41
                OpStore %38 %42
                OpBranch %20
          %44 = OpLabel
-         %46 = OpAccessChain %12 %9 %45
+         %46 = OpAccessChain %59 %9 %45
                OpBranch %37
          %37 = OpLabel
          %47 = OpLoad %6 %46
@@ -2176,9 +2178,11 @@ TEST(StructuredLoopToSelectionReductionPassTest, AccessChainIssue) {
           %6 = OpTypeFloat 32
           %7 = OpTypeVector %6 2
           %8 = OpTypePointer Function %7
+         %60 = OpTypePointer Private %7
          %10 = OpConstant %6 0
          %11 = OpConstantComposite %7 %10 %10
          %12 = OpTypePointer Function %6
+         %59 = OpTypePointer Private %6
          %14 = OpTypeInt 32 1
          %15 = OpTypePointer Function %14
          %17 = OpConstant %14 0
@@ -2195,12 +2199,11 @@ TEST(StructuredLoopToSelectionReductionPassTest, AccessChainIssue) {
          %54 = OpTypeVector %6 4
          %55 = OpTypePointer Output %54
          %56 = OpVariable %55 Output
-         %59 = OpConstantTrue %25
-         %60 = OpTypePointer Private %6
-         %61 = OpVariable %60 Private
+          %9 = OpVariable %60 Private
+         %61 = OpConstantTrue %25
+         %62 = OpVariable %59 Private
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-          %9 = OpVariable %8 Function
          %13 = OpVariable %12 Function
          %16 = OpVariable %15 Function
          %38 = OpVariable %12 Function
@@ -2209,8 +2212,8 @@ TEST(StructuredLoopToSelectionReductionPassTest, AccessChainIssue) {
                OpStore %16 %17
                OpBranch %18
          %18 = OpLabel
-               OpSelectionMerge %20 None ; Was OpLoopMerge %20 %21 None
-               OpBranchConditional %59 %22 %20 ; Was OpBranch %22
+               OpSelectionMerge %20 None
+               OpBranchConditional %61 %22 %20
          %22 = OpLabel
          %23 = OpLoad %14 %16
          %26 = OpSLessThan %25 %23 %24
@@ -2224,21 +2227,21 @@ TEST(StructuredLoopToSelectionReductionPassTest, AccessChainIssue) {
                OpSelectionMerge %37 None
                OpBranchConditional %35 %36 %44
          %36 = OpLabel
-         %41 = OpAccessChain %12 %9 %40
+         %41 = OpAccessChain %59 %9 %40
          %42 = OpLoad %6 %41
                OpStore %38 %42
-               OpBranch %37 ; Was OpBranch %20
+               OpBranch %37
          %44 = OpLabel
-         %46 = OpAccessChain %12 %9 %45
+         %46 = OpAccessChain %59 %9 %45
                OpBranch %37
          %37 = OpLabel
-         %47 = OpLoad %6 %61 ; Was %47 = OpLoad %6 %46
+         %47 = OpLoad %6 %62
                OpStore %38 %47
          %48 = OpLoad %6 %38
          %49 = OpLoad %6 %13
          %50 = OpFAdd %6 %49 %48
                OpStore %13 %50
-               OpBranch %20; Was OpBranch %21
+               OpBranch %20
          %21 = OpLabel
          %51 = OpLoad %14 %16
          %53 = OpIAdd %14 %51 %52
@@ -2810,6 +2813,120 @@ TEST(StructuredLoopToSelectionReductionPassTest,
          %12 = OpLabel
                OpBranch %9
          %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CheckEqual(env, expected, context.get());
+}
+
+TEST(StructuredLoopToSelectionReductionPassTest,
+     MultipleAccessChains) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeStruct %6
+          %8 = OpTypeStruct %7
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %6 3
+         %12 = OpConstantComposite %7 %11
+         %13 = OpConstantComposite %8 %12
+         %14 = OpTypePointer Function %7
+         %16 = OpConstant %6 0
+         %19 = OpTypePointer Function %6
+         %15 = OpTypeBool
+         %18 = OpConstantTrue %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %10 = OpVariable %9 Function
+         %20 = OpVariable %19 Function
+               OpStore %10 %13
+               OpBranch %23
+         %23 = OpLabel
+               OpLoopMerge %25 %26 None
+               OpBranch %27
+         %27 = OpLabel
+               OpSelectionMerge %28 None
+               OpBranchConditional %18 %29 %25
+         %29 = OpLabel
+         %17 = OpAccessChain %14 %10 %16
+               OpBranch %28
+         %28 = OpLabel
+         %21 = OpAccessChain %19 %17 %16
+         %22 = OpLoad %6 %21
+         %24 = OpAccessChain %19 %10 %16 %16
+               OpStore %24 %22
+               OpBranch %25
+         %26 = OpLabel
+               OpBranch %23
+         %25 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  const auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  ASSERT_EQ(1, ops.size());
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeStruct %6
+          %8 = OpTypeStruct %7
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %6 3
+         %12 = OpConstantComposite %7 %11
+         %13 = OpConstantComposite %8 %12
+         %14 = OpTypePointer Function %7
+         %16 = OpConstant %6 0
+         %19 = OpTypePointer Function %6
+         %15 = OpTypeBool
+         %18 = OpConstantTrue %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %10 = OpVariable %9 Function
+         %20 = OpVariable %19 Function
+         %30 = OpVariable %14 Function
+               OpStore %10 %13
+               OpBranch %23
+         %23 = OpLabel
+               OpSelectionMerge %25 None
+               OpBranchConditional %18 %27 %25
+         %27 = OpLabel
+               OpSelectionMerge %28 None
+               OpBranchConditional %18 %29 %28
+         %29 = OpLabel
+         %17 = OpAccessChain %14 %10 %16
+               OpBranch %28
+         %28 = OpLabel
+         %21 = OpAccessChain %19 %30 %16
+         %22 = OpLoad %6 %21
+         %24 = OpAccessChain %19 %10 %16 %16
+               OpStore %24 %22
+               OpBranch %25
+         %26 = OpLabel
+               OpBranch %23
+         %25 = OpLabel
                OpReturn
                OpFunctionEnd
   )";

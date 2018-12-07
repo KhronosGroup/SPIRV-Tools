@@ -341,17 +341,20 @@ void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses() {
           &def, [this, &block, &def](Instruction* use, uint32_t index) {
             // If a use is not appropriately dominated by its definition,
             // replace the use with an OpUndef, unless the definition is an
-            // access chain in which case replace it with some (possibly fresh)
-            // global variable (as we cannot load from / store to OpUndef).
+            // access chain, in which case replace it with some (possibly fresh)
+            // variable (as we cannot load from / store to OpUndef).
             if (!DefinitionSufficientlyDominatesUse(def, use, index, block)) {
               if (def.opcode() == SpvOpAccessChain) {
-                auto base_type = def.context()->get_type_mgr()->GetId(
-                    def.context()
-                        ->get_type_mgr()
-                        ->GetType(def.type_id())
-                        ->AsPointer()
-                        ->pointee_type());
-                use->SetOperand(index, {FindOrCreateGlobalVariable(base_type)});
+                auto pointer_type = context_->get_type_mgr()->GetType(def.type_id())->AsPointer();
+                switch (pointer_type->storage_class()) {
+                  case SpvStorageClassFunction:
+                    use->SetOperand(index, {FindOrCreateFunctionVariable(context_->get_type_mgr()->GetId(pointer_type))});
+                    break;
+                  default:
+                    // TODO(...) Need to decide on suitable defaults for other storage classes.
+                    use->SetOperand(index, {FindOrCreateGlobalVariable(context_->get_type_mgr()->GetId(pointer_type))});
+                    break;
+                }
               } else {
                 use->SetOperand(index,
                                 {FindOrCreateGlobalUndef(def.type_id())});
@@ -399,30 +402,53 @@ uint32_t StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalUndef(
 
 uint32_t
 StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalVariable(
-    uint32_t base_type_id) {
+    uint32_t pointer_type_id) {
   for (auto& inst : context_->module()->types_values()) {
     if (inst.opcode() != SpvOpVariable) {
       continue;
     }
-    if (context_->get_type_mgr()->GetId(context_->get_type_mgr()
-                                            ->GetType(inst.type_id())
-                                            ->AsPointer()
-                                            ->pointee_type()) == base_type_id) {
+    if (inst.type_id() == pointer_type_id) {
       return inst.result_id();
     }
   }
-  auto pointer_type_id = context_->get_type_mgr()->FindPointerToType(
-      base_type_id, SpvStorageClassPrivate);
-
-  // TODO: refactor to avoid duplication with FindOrCreateGlobalUndef.
-  const uint32_t var_id = context_->TakeNextId();
-  std::unique_ptr<Instruction> undef_inst(new Instruction(
-      context_, SpvOpVariable, pointer_type_id, var_id,
-      {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassPrivate}}}));
-  assert(var_id == undef_inst->result_id());
-  context_->module()->AddGlobalValue(std::move(undef_inst));
-  return var_id;
+  const uint32_t variable_id = context_->TakeNextId();
+  std::unique_ptr<Instruction> variable_inst(new Instruction(
+      context_, SpvOpVariable, pointer_type_id, variable_id,
+      {{SPV_OPERAND_TYPE_STORAGE_CLASS, {context_->get_type_mgr()->GetType(pointer_type_id)->AsPointer()->storage_class()}}}));
+  context_->module()->AddGlobalValue(std::move(variable_inst));
+  return variable_id;
 }
+
+uint32_t
+StructuredLoopToSelectionReductionOpportunity::FindOrCreateFunctionVariable(
+        uint32_t pointer_type_id) {
+  // The pointer type of a function variable must have Function storage class.
+  assert (context_->get_type_mgr()->GetType(pointer_type_id)->AsPointer()->storage_class() == SpvStorageClassFunction);
+
+  // Go through the instructions in the function's first block until we find a suitable variable, or go past all the
+  // variables.
+  BasicBlock::iterator iter = enclosing_function_->begin()->begin();
+  for (;; ++iter) {
+    // We will either find a suitable variable, or find a non-variable instruction; we won't exhaust all instructions.
+    assert (iter != enclosing_function_->begin()->end());
+    if (iter->opcode() != SpvOpVariable) {
+      // If we see a non-variable, we have gone through all the variables.
+      break;
+    }
+    if (iter->type_id() == pointer_type_id) {
+      return iter->result_id();
+    }
+  }
+  // At this point, iter refers to the first non-function instruction of the function's entry block.
+  const uint32_t variable_id = context_->TakeNextId();
+  std::unique_ptr<Instruction> variable_inst(new Instruction(
+          context_, SpvOpVariable, pointer_type_id, variable_id,
+          {{SPV_OPERAND_TYPE_STORAGE_CLASS, {SpvStorageClassFunction}}}));
+  iter->InsertBefore(std::move(variable_inst));
+  return variable_id;
+}
+
+
 
 }  // namespace reduce
 }  // namespace spvtools
