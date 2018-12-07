@@ -131,7 +131,8 @@ spv_result_t DataRulesPass(ValidationState_t& _, const Instruction* inst);
 /// Performs instruction validation.
 spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst);
 
-/// Performs decoration validation.
+/// Performs decoration validation.  Assumes each decoration on a group
+/// has been propagated down to the group members.
 spv_result_t ValidateDecorations(ValidationState_t& _);
 
 /// Performs validation of built-in variables.

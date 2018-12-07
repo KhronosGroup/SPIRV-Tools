@@ -37,7 +37,7 @@ TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
     OpCapability Linkage
     OpMemoryModel Logical GLSL450
     OpDecorate %1 ArrayStride 4
-    OpDecorate %1 Uniform
+    OpDecorate %1 RelaxedPrecision
     %2 = OpTypeFloat 32
     %1 = OpTypeRuntimeArray %2
     ; Since %1 is used first in Decoration, it gets id 1.
@@ -49,7 +49,7 @@ TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
   EXPECT_THAT(
       vstate_->id_decorations(id),
       Eq(std::vector<Decoration>{Decoration(SpvDecorationArrayStride, {4}),
-                                 Decoration(SpvDecorationUniform)}));
+                                 Decoration(SpvDecorationRelaxedPrecision)}));
 }
 
 TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
@@ -4508,6 +4508,86 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Uniform decoration
+
+TEST_F(ValidateDecorations, UniformDecorationGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %int0 Uniform
+OpDecorate %var Uniform
+OpDecorate %val Uniform
+%void = OpTypeVoid
+%int = OpTypeInt 32 1
+%int0 = OpConstantNull %int
+%intptr = OpTypePointer Private %int
+%var = OpVariable %intptr Private
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+%val = OpLoad %int %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, UniformDecorationTargetsTypeBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %fn Uniform
+%void = OpTypeVoid
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Uniform decoration applied to a non-object"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("%2 = OpTypeFunction %void"));
+}
+
+TEST_F(ValidateDecorations, UniformDecorationTargetsVoidValueBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %call "call"
+OpName %myfunc "myfunc"
+OpDecorate %call Uniform
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%myfunc = OpFunction %void None %fnty
+%myfuncentry = OpLabel
+OpReturn
+OpFunctionEnd
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%call = OpFunctionCall %void %myfunc
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Uniform decoration applied to a value with void type\n"
+                        "  %call = OpFunctionCall %void %myfunc"));
 }
 
 }  // namespace
