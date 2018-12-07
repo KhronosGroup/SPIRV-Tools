@@ -261,7 +261,7 @@ OpDecorate %1 GLSLShared)";
 
 TEST_F(ValidateIdWithMessage, OpMemberDecorateGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
-     OpMemberDecorate %2 0 Uniform
+     OpMemberDecorate %2 0 RelaxedPrecision
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1 %1)";
   CompileSuccessfully(spirv.c_str());
@@ -269,7 +269,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateGood) {
 }
 TEST_F(ValidateIdWithMessage, OpMemberDecorateBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
-     OpMemberDecorate %1 0 Uniform
+     OpMemberDecorate %1 0 RelaxedPrecision
 %1 = OpTypeInt 32 0)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -279,7 +279,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateBad) {
 }
 TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
-     OpMemberDecorate %1 3 Uniform
+     OpMemberDecorate %1 3 RelaxedPrecision
 %int = OpTypeInt 32 0
 %1 = OpTypeStruct %int %int)";
   CompileSuccessfully(spirv.c_str());
@@ -293,7 +293,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
 TEST_F(ValidateIdWithMessage, OpGroupDecorateGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpDecorationGroup
-     OpDecorate %1 Uniform
+     OpDecorate %1 RelaxedPrecision
      OpDecorate %1 GLSLShared
      OpGroupDecorate %1 %3 %4
 %2 = OpTypeInt 32 0
@@ -305,7 +305,7 @@ TEST_F(ValidateIdWithMessage, OpGroupDecorateGood) {
 TEST_F(ValidateIdWithMessage, OpDecorationGroupBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpDecorationGroup
-     OpDecorate %1 Uniform
+     OpDecorate %1 RelaxedPrecision
      OpDecorate %1 GLSLShared
      OpMemberDecorate %1 0 Constant
     )";
@@ -334,7 +334,7 @@ TEST_F(ValidateIdWithMessage, OpGroupDecorateDecorationGroupBad) {
 TEST_F(ValidateIdWithMessage, OpGroupDecorateTargetBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpDecorationGroup
-     OpDecorate %1 Uniform
+     OpDecorate %1 RelaxedPrecision
      OpDecorate %1 GLSLShared
      OpGroupDecorate %1 %3
 %2 = OpTypeInt 32 0)";

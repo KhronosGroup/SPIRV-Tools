@@ -1139,9 +1139,12 @@ std::make_pair(std::string(kOpenCLMemoryModel) +
           "%intt = OpTypeInt 32 0\n" + std::string(kVoidFVoid),
           AllCapabilities()),
 std::make_pair(std::string(kOpenCLMemoryModel) +
+          // Uniform must target a non-void value.
           "OpEntryPoint Kernel %func \"compute\" \n"
-          "OpDecorate %intt Uniform\n"
-          "%intt = OpTypeInt 32 0\n" + std::string(kVoidFVoid),
+          "OpDecorate %int0 Uniform\n"
+          "%intt = OpTypeInt 32 0\n" +
+          "%int0 = OpConstantNull %intt"
+          + std::string(kVoidFVoid),
           ShaderDependencies()),
 std::make_pair(std::string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n"

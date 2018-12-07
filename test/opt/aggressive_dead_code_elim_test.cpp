@@ -5211,7 +5211,7 @@ OpFunctionEnd
 TEST_F(AggressiveDCETest, PartiallyDeadGroupMemberDecorate) {
   const std::string text = R"(
 ; CHECK: OpDecorate [[grp:%\w+]] Offset 0
-; CHECK: OpDecorate [[grp]] Uniform
+; CHECK: OpDecorate [[grp]] RelaxedPrecision
 ; CHECK: [[grp]] = OpDecorationGroup
 ; CHECK: OpGroupMemberDecorate [[grp]] [[output:%\w+]] 1
 ; CHECK: [[output]] = OpTypeStruct
@@ -5221,7 +5221,7 @@ OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %output
 OpExecutionMode %main OriginUpperLeft
 OpDecorate %1 Offset 0
-OpDecorate %1 Uniform
+OpDecorate %1 RelaxedPrecision
 %1 = OpDecorationGroup
 OpGroupMemberDecorate %1 %var_struct 0 %output_struct 1
 %void = OpTypeVoid
@@ -5250,7 +5250,7 @@ TEST_F(AggressiveDCETest,
        PartiallyDeadGroupMemberDecorateDifferentGroupDecorate) {
   const std::string text = R"(
 ; CHECK: OpDecorate [[grp:%\w+]] Offset 0
-; CHECK: OpDecorate [[grp]] Uniform
+; CHECK: OpDecorate [[grp]] RelaxedPrecision
 ; CHECK: [[grp]] = OpDecorationGroup
 ; CHECK: OpGroupMemberDecorate [[grp]] [[output:%\w+]] 1
 ; CHECK-NOT: OpGroupMemberDecorate
@@ -5261,7 +5261,7 @@ OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %output
 OpExecutionMode %main OriginUpperLeft
 OpDecorate %1 Offset 0
-OpDecorate %1 Uniform
+OpDecorate %1 RelaxedPrecision
 %1 = OpDecorationGroup
 OpGroupMemberDecorate %1 %var_struct 0
 OpGroupMemberDecorate %1 %output_struct 1
