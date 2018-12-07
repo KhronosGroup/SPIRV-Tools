@@ -27,7 +27,6 @@
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
-#include "source/util/make_unique.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -955,58 +954,38 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
   using AtMostOnceSet = std::unordered_set<SpvDecoration, SpvDecorationHash>;
   using MutuallyExclusiveSets =
       std::vector<std::unordered_set<SpvDecoration, SpvDecorationHash>>;
-  using AtMostOnceSetPtr = std::unique_ptr<AtMostOnceSet>;
-  using MutuallyExclusiveSetsPtr = std::unique_ptr<MutuallyExclusiveSets>;
   using PerIDKey = std::tuple<SpvDecoration, uint32_t>;
   using PerMemberKey = std::tuple<SpvDecoration, uint32_t, uint32_t>;
   using DecorationNameTable =
       std::unordered_map<SpvDecoration, std::string, SpvDecorationHash>;
-  using DecorationNameTablePtr = std::unique_ptr<DecorationNameTable>;
 
-  static AtMostOnceSetPtr at_most_once_per_id;
-  static AtMostOnceSetPtr at_most_once_per_member;
-  static MutuallyExclusiveSetsPtr mutually_exclusive_per_id;
-  static MutuallyExclusiveSetsPtr mutually_exclusive_per_member;
-  static DecorationNameTablePtr decoration_name;
-
-  if (!at_most_once_per_id) {
-    at_most_once_per_id = AtMostOnceSetPtr(new AtMostOnceSet{
-        SpvDecorationArrayStride,
-    });
-  }
-  if (!at_most_once_per_member) {
-    at_most_once_per_member = AtMostOnceSetPtr(new AtMostOnceSet{
-        SpvDecorationOffset,
-        SpvDecorationMatrixStride,
-        SpvDecorationRowMajor,
-        SpvDecorationColMajor,
-    });
-  }
-  if (!mutually_exclusive_per_id) {
-    mutually_exclusive_per_id =
-        MutuallyExclusiveSetsPtr(new MutuallyExclusiveSets{
-            {SpvDecorationBlock, SpvDecorationBufferBlock},
-        });
-  }
-  if (!mutually_exclusive_per_member) {
-    mutually_exclusive_per_member =
-        MutuallyExclusiveSetsPtr(new MutuallyExclusiveSets{
-            {SpvDecorationRowMajor, SpvDecorationColMajor},
-        });
-  }
-
+  static const auto* const at_most_once_per_id = new AtMostOnceSet{
+      SpvDecorationArrayStride,
+  };
+  static const auto* const at_most_once_per_member = new AtMostOnceSet{
+      SpvDecorationOffset,
+      SpvDecorationMatrixStride,
+      SpvDecorationRowMajor,
+      SpvDecorationColMajor,
+  };
+  static const auto* const mutually_exclusive_per_id =
+      new MutuallyExclusiveSets{
+          {SpvDecorationBlock, SpvDecorationBufferBlock},
+      };
+  static const auto* const mutually_exclusive_per_member =
+      new MutuallyExclusiveSets{
+          {SpvDecorationRowMajor, SpvDecorationColMajor},
+      };
   // For printing the decoration name.
-  if (!decoration_name) {
-    decoration_name = DecorationNameTablePtr(new DecorationNameTable{
-        {SpvDecorationArrayStride, "ArrayStride"},
-        {SpvDecorationOffset, "Offset"},
-        {SpvDecorationMatrixStride, "MatrixStride"},
-        {SpvDecorationRowMajor, "RowMajor"},
-        {SpvDecorationColMajor, "ColMajor"},
-        {SpvDecorationBlock, "Block"},
-        {SpvDecorationBufferBlock, "BufferBlock"},
-    });
-  }
+  static const auto* const decoration_name = new DecorationNameTable{
+      {SpvDecorationArrayStride, "ArrayStride"},
+      {SpvDecorationOffset, "Offset"},
+      {SpvDecorationMatrixStride, "MatrixStride"},
+      {SpvDecorationRowMajor, "RowMajor"},
+      {SpvDecorationColMajor, "ColMajor"},
+      {SpvDecorationBlock, "Block"},
+      {SpvDecorationBufferBlock, "BufferBlock"},
+  };
 
   std::set<PerIDKey> seen_per_id;
   std::set<PerMemberKey> seen_per_member;
@@ -1026,7 +1005,7 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
                << " multiple times is not allowed.";
       }
       // Verify certain mutually exclusive decorations are not both applied on
-      // a (ID, member) tuple.
+      // an ID.
       for (const auto& s : *mutually_exclusive_per_id) {
         if (s.find(dec_type) == s.end()) continue;
         for (auto excl_dec_type : s) {

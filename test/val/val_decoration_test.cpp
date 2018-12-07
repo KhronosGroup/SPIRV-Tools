@@ -4510,7 +4510,6 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-<<<<<<< HEAD
 // Uniform decoration
 
 TEST_F(ValidateDecorations, UniformDecorationGood) {
