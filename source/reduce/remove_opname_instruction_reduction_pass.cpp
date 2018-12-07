@@ -28,7 +28,7 @@ RemoveOpNameInstructionReductionPass::GetAvailableOpportunities(
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
   for (auto& inst : context->module()->debugs2()) {
-    if (inst.opcode() == SpvOpName) {
+    if (inst.opcode() == SpvOpName || inst.opcode() == SpvOpMemberName) {
       result.push_back(MakeUnique<RemoveInstructionReductionOpportunity>(&inst));
     }
   }
