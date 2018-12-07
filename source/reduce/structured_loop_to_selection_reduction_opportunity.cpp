@@ -95,11 +95,7 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectToClosestMergeBlock(
     if (context_->cfg()->block(pred)->MergeBlockIdIfAny()) {
       new_merge_target = context_->cfg()->block(pred)->MergeBlockIdIfAny();
     } else {
-      new_merge_target =
-          context_->cfg()
-              ->block(context_->GetStructuredCFGAnalysis()->ContainingConstruct(
-                  pred))
-              ->MergeBlockIdIfAny();
+      new_merge_target = context_->GetStructuredCFGAnalysis()->MergeBlock(pred);
     }
     assert(new_merge_target != pred);
 
