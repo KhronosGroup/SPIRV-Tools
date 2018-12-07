@@ -351,7 +351,9 @@ void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses() {
                     use->SetOperand(index, {FindOrCreateFunctionVariable(context_->get_type_mgr()->GetId(pointer_type))});
                     break;
                   default:
-                    // TODO(...) Need to decide on suitable defaults for other storage classes.
+                    // TODO(2183) Need to think carefully about whether it makes sense to add new variables for all
+                    // storage classes; it's fine for Private but might not be OK for input/output storage classes
+                    // for example.
                     use->SetOperand(index, {FindOrCreateGlobalVariable(context_->get_type_mgr()->GetId(pointer_type))});
                     break;
                 }

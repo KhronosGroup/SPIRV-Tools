@@ -2819,8 +2819,7 @@ TEST(StructuredLoopToSelectionReductionPassTest,
   CheckEqual(env, expected, context.get());
 }
 
-TEST(StructuredLoopToSelectionReductionPassTest,
-     MultipleAccessChains) {
+TEST(StructuredLoopToSelectionReductionPassTest, MultipleAccessChains) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
