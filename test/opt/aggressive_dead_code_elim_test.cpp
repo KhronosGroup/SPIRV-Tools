@@ -5134,7 +5134,6 @@ OpReturn
 OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
   auto pass = MakeUnique<AggressiveDCEPass>();
   auto consumer = [](spv_message_level_t, const char*, const spv_position_t&,
                      const char* message) {
