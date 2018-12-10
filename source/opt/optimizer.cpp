@@ -370,6 +370,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateRemoveDuplicatesPass());
   } else if (pass_name == "workaround-1209") {
     RegisterPass(CreateWorkaround1209Pass());
+  } else if (pass_name == "workaround-image-operands") {
+    RegisterPass(CreateWorkaroundImageOperandsPass());
   } else if (pass_name == "replace-invalid-opcode") {
     RegisterPass(CreateReplaceInvalidOpcodePass());
   } else if (pass_name == "inst-bindless-check") {
@@ -726,9 +728,9 @@ Optimizer::PassToken CreateWorkaround1209Pass() {
       MakeUnique<opt::Workaround1209>());
 }
 
-Optimizer::PassToken CreateWorkaroundUnknownImagesPass() {
+Optimizer::PassToken CreateWorkaroundImageOperandsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::DeanonymizeImages>());
+      MakeUnique<opt::WorkaroundImageOperands>());
 }
 
 Optimizer::PassToken CreateIfConversionPass() {

@@ -634,7 +634,9 @@ Optimizer::PassToken CreateCCPPass();
 // Current workaround: Avoid OpUnreachable instructions in loops.
 Optimizer::PassToken CreateWorkaround1209Pass();
 
-Optimizer::PassToken CreateWorkaroundUnknownImagesPass();
+// Creates a pass that works around a driver bug. This pass attempts to
+// replace "Unknown" OpImage Types with depth/non-depth as appropariate.
+Optimizer::PassToken CreateWorkaroundImageOperandsPass();
 
 // Creates a pass that converts if-then-else like assignments into OpSelect.
 Optimizer::PassToken CreateIfConversionPass();

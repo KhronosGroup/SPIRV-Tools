@@ -21,10 +21,10 @@ namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class DeanonymizeImages : public Pass {
+class WorkaroundImageOperands : public Pass {
  public:
-  const char* name() const override { return "workaround-1209"; }
-  Status Process(ir::IRContext*) override;
+  const char* name() const override { return "workaround-image-operands"; }
+  Status Process() override;
 
  private:
   // Returns true if the code changed.

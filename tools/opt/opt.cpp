@@ -357,9 +357,9 @@ Options (in lexicographical order):
                Rewrites instructions for which there are known driver bugs to
                avoid triggering those bugs.
                Current workarounds: Avoid OpUnreachable in loops.
-  --workaround-unknown-images
+  --workaround-image-operands
                Rewrites OpSampledImage instructions with operands that are of unknown
-               image type, with depth of non-depth.
+               image type, with depth or non-depth.
   --unify-const
                Remove the duplicated constants.
   -h, --help
