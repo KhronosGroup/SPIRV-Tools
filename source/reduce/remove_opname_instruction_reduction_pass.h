@@ -27,8 +27,7 @@ class RemoveOpNameInstructionReductionPass : public ReductionPass {
  public:
   // Creates the reduction pass in the context of the given target environment
   // |target_env|
-  explicit RemoveOpNameInstructionReductionPass(
-      const spv_target_env target_env)
+  explicit RemoveOpNameInstructionReductionPass(const spv_target_env target_env)
       : ReductionPass(target_env) {}
 
   ~RemoveOpNameInstructionReductionPass() override = default;

@@ -29,7 +29,8 @@ RemoveOpNameInstructionReductionPass::GetAvailableOpportunities(
 
   for (auto& inst : context->module()->debugs2()) {
     if (inst.opcode() == SpvOpName || inst.opcode() == SpvOpMemberName) {
-      result.push_back(MakeUnique<RemoveInstructionReductionOpportunity>(&inst));
+      result.push_back(
+          MakeUnique<RemoveInstructionReductionOpportunity>(&inst));
     }
   }
   return result;
