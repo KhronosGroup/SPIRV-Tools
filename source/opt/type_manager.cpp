@@ -261,22 +261,39 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
     case Type::kImage: {
       const Image* image = type->AsImage();
       uint32_t subtype = GetTypeInstruction(image->sampled_type());
-      typeInst = MakeUnique<Instruction>(
-          context(), SpvOpTypeImage, 0, id,
-          std::initializer_list<Operand>{
-              {SPV_OPERAND_TYPE_ID, {subtype}},
-              {SPV_OPERAND_TYPE_DIMENSIONALITY,
-               {static_cast<uint32_t>(image->dim())}},
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->depth()}},
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER,
-               {(image->is_arrayed() ? 1u : 0u)}},
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER,
-               {(image->is_multisampled() ? 1u : 0u)}},
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->sampled()}},
-              {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
-               {static_cast<uint32_t>(image->format())}},
-              {SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
-               {static_cast<uint32_t>(image->access_qualifier())}}});
+      if (image->has_access_qualifier()) {
+        typeInst = MakeUnique<Instruction>(
+            context(), SpvOpTypeImage, 0, id,
+            std::initializer_list<Operand>{
+                {SPV_OPERAND_TYPE_ID, {subtype}},
+                {SPV_OPERAND_TYPE_DIMENSIONALITY,
+                 {static_cast<uint32_t>(image->dim())}},
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->depth()}},
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                 {(image->is_arrayed() ? 1u : 0u)}},
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                 {(image->is_multisampled() ? 1u : 0u)}},
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->sampled()}},
+                {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
+                 {static_cast<uint32_t>(image->format())}},
+                {SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
+                 {static_cast<uint32_t>(image->access_qualifier())}}});
+      } else {
+        typeInst = MakeUnique<Instruction>(
+            context(), SpvOpTypeImage, 0, id,
+            std::initializer_list<Operand>{
+                {SPV_OPERAND_TYPE_ID, {subtype}},
+                {SPV_OPERAND_TYPE_DIMENSIONALITY,
+                 {static_cast<uint32_t>(image->dim())}},
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->depth()}},
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                 {(image->is_arrayed() ? 1u : 0u)}},
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                 {(image->is_multisampled() ? 1u : 0u)}},
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER, {image->sampled()}},
+                {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
+                 {static_cast<uint32_t>(image->format())}}});
+      }
       break;
     }
     case Type::kSampledImage: {
@@ -617,16 +634,27 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
                         inst.GetSingleWordInOperand(1));
       break;
     case SpvOpTypeImage: {
+      const bool has_access_qualifier = inst.NumInOperands() >= 8;
       const SpvAccessQualifier access =
-          inst.NumInOperands() < 8
-              ? SpvAccessQualifierReadOnly
-              : static_cast<SpvAccessQualifier>(inst.GetSingleWordInOperand(7));
-      type = new Image(
-          GetType(inst.GetSingleWordInOperand(0)),
-          static_cast<SpvDim>(inst.GetSingleWordInOperand(1)),
-          inst.GetSingleWordInOperand(2), inst.GetSingleWordInOperand(3) == 1,
-          inst.GetSingleWordInOperand(4) == 1, inst.GetSingleWordInOperand(5),
-          static_cast<SpvImageFormat>(inst.GetSingleWordInOperand(6)), access);
+          has_access_qualifier
+              ? static_cast<SpvAccessQualifier>(inst.GetSingleWordInOperand(7))
+              : SpvAccessQualifierReadOnly;
+      if (has_access_qualifier) {
+        type = new Image(
+            GetType(inst.GetSingleWordInOperand(0)),
+            static_cast<SpvDim>(inst.GetSingleWordInOperand(1)),
+            inst.GetSingleWordInOperand(2), inst.GetSingleWordInOperand(3) == 1,
+            inst.GetSingleWordInOperand(4) == 1, inst.GetSingleWordInOperand(5),
+            static_cast<SpvImageFormat>(inst.GetSingleWordInOperand(6)),
+            access);
+      } else {
+        type = new Image(
+            GetType(inst.GetSingleWordInOperand(0)),
+            static_cast<SpvDim>(inst.GetSingleWordInOperand(1)),
+            inst.GetSingleWordInOperand(2), inst.GetSingleWordInOperand(3) == 1,
+            inst.GetSingleWordInOperand(4) == 1, inst.GetSingleWordInOperand(5),
+            static_cast<SpvImageFormat>(inst.GetSingleWordInOperand(6)));
+      }
     } break;
     case SpvOpTypeSampler:
       type = new Sampler();

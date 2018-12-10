@@ -297,8 +297,9 @@ class Matrix : public Type {
 class Image : public Type {
  public:
   Image(Type* type, SpvDim dimen, uint32_t d, bool array, bool multisample,
-        uint32_t sampling, SpvImageFormat f,
-        SpvAccessQualifier qualifier = SpvAccessQualifierReadOnly);
+        uint32_t sampling, SpvImageFormat f, SpvAccessQualifier qualifier);
+  Image(Type* type, SpvDim dimen, uint32_t d, bool array, bool multisample,
+        uint32_t sampling, SpvImageFormat f);
   Image(const Image&) = default;
 
   std::string str() const override;
@@ -314,6 +315,7 @@ class Image : public Type {
   uint32_t sampled() const { return sampled_; }
   SpvImageFormat format() const { return format_; }
   SpvAccessQualifier access_qualifier() const { return access_qualifier_; }
+  bool has_access_qualifier() const { return has_access_qualifier_; }
 
   void GetExtraHashWords(std::vector<uint32_t>* words,
                          std::unordered_set<const Type*>* pSet) const override;
@@ -329,6 +331,7 @@ class Image : public Type {
   uint32_t sampled_;
   SpvImageFormat format_;
   SpvAccessQualifier access_qualifier_;
+  bool has_access_qualifier_;
 };
 
 class SampledImage : public Type {

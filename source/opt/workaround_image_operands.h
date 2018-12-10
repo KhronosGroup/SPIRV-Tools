@@ -27,6 +27,12 @@ class WorkaroundImageOperands : public Pass {
   Status Process() override;
 
  private:
+  void WalkImageUse(Instruction* use, Instruction* img_type,
+                    analysis::DefUseManager* def_use_mgr);
+  void WalkSampledImageUse(Instruction* use, uint32_t idx,
+                           Instruction* img_type,
+                           analysis::SampledImage* sampled_image,
+                           analysis::DefUseManager* def_use_mgr);
   // Returns true if the code changed.
   bool FixupOpTypeImage();
 };

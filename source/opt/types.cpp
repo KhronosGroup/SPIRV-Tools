@@ -328,9 +328,23 @@ Image::Image(Type* type, SpvDim dimen, uint32_t d, bool array, bool multisample,
       ms_(multisample),
       sampled_(sampling),
       format_(f),
-      access_qualifier_(qualifier) {
+      access_qualifier_(qualifier),
+      has_access_qualifier_(true) {
   // TODO(antiagainst): check sampled_type
 }
+
+Image::Image(Type* type, SpvDim dimen, uint32_t d, bool array, bool multisample,
+             uint32_t sampling, SpvImageFormat f)
+    : Type(kImage),
+      sampled_type_(type),
+      dim_(dimen),
+      depth_(d),
+      arrayed_(array),
+      ms_(multisample),
+      sampled_(sampling),
+      format_(f),
+      access_qualifier_(SpvAccessQualifierReadOnly),
+      has_access_qualifier_(false) {}
 
 bool Image::IsSameImpl(const Type* that, IsSameCache* seen) const {
   const Image* it = that->AsImage();
@@ -339,14 +353,18 @@ bool Image::IsSameImpl(const Type* that, IsSameCache* seen) const {
          ms_ == it->ms_ && sampled_ == it->sampled_ && format_ == it->format_ &&
          access_qualifier_ == it->access_qualifier_ &&
          sampled_type_->IsSameImpl(it->sampled_type_, seen) &&
+         has_access_qualifier_ == it->has_access_qualifier_ &&
          HasSameDecorations(that);
 }
 
 std::string Image::str() const {
   std::ostringstream oss;
   oss << "image(" << sampled_type_->str() << ", " << dim_ << ", " << depth_
-      << ", " << arrayed_ << ", " << ms_ << ", " << sampled_ << ", " << format_
-      << ", " << access_qualifier_ << ")";
+      << ", " << arrayed_ << ", " << ms_ << ", " << sampled_ << ", " << format_;
+  if (has_access_qualifier_) {
+    oss << ", " << access_qualifier_;
+  }
+  oss << ")";
   return oss.str();
 }
 
@@ -359,7 +377,9 @@ void Image::GetExtraHashWords(std::vector<uint32_t>* words,
   words->push_back(ms_);
   words->push_back(sampled_);
   words->push_back(format_);
-  words->push_back(access_qualifier_);
+  if (has_access_qualifier_) {
+    words->push_back(access_qualifier_);
+  }
 }
 
 bool SampledImage::IsSameImpl(const Type* that, IsSameCache* seen) const {
