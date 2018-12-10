@@ -5111,6 +5111,44 @@ OpFunctionEnd
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
 
+TEST_F(AggressiveDCETest, DeadDecorationGroupAndValidDecorationMgr) {
+  // The decoration group should be eliminated because the target of group
+  // decorate is dead.
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %1 Restrict
+OpDecorate %1 Aliased
+%1 = OpDecorationGroup
+OpGroupDecorate %1 %var
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_ptr = OpTypePointer Function %uint
+%main = OpFunction %void None %func
+%2 = OpLabel
+%var = OpVariable %uint_ptr Function
+OpReturn
+OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
+  auto pass = MakeUnique<AggressiveDCEPass>();
+  auto consumer = [](spv_message_level_t, const char*, const spv_position_t&,
+                     const char* message) {
+    std::cerr << message << std::endl;
+  };
+  auto context = BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer, text);
+
+  // Build the decoration manager before the pass.
+  context->get_decoration_mgr();
+
+  const auto status = pass->Run(context.get());
+  EXPECT_EQ(status, Pass::Status::SuccessWithChange);
+}
+
 TEST_F(AggressiveDCETest, ParitallyDeadDecorationGroup) {
   const std::string text = R"(
 ; CHECK: OpDecorate [[grp:%\w+]] Restrict

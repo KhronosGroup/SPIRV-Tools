@@ -252,6 +252,14 @@ bool IRContext::IsConsistent() {
     return false;
   }
 
+  if (AreAnalysesValid(kAnalysisDecorations)) {
+    analysis::DecorationManager* dec_mgr = get_decoration_mgr();
+    analysis::DecorationManager current(module());
+
+    if (*dec_mgr != current) {
+      return false;
+    }
+  }
   return true;
 }
 

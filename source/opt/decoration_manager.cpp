@@ -517,6 +517,11 @@ void DecorationManager::RemoveDecoration(Instruction* inst) {
       break;
   }
 }
+
+bool operator==(const DecorationManager& lhs, const DecorationManager& rhs) {
+  return lhs.id_to_decoration_insts_ == rhs.id_to_decoration_insts_;
+}
+
 }  // namespace analysis
 }  // namespace opt
 }  // namespace spvtools

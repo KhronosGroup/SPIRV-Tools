@@ -555,6 +555,14 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
 
+  // If the decoration manager is kept live then the context will try to keep it
+  // up to date.  ADCE deals with group decorations by changing the operands in
+  // |OpGroupDecorate| instruction directly without informing the decoration
+  // manager.  This can put it in an invalid state which will cause an error
+  // when the context tries to update it.  To avoid this problem invalidate
+  // the decoration manager upfront.
+  context()->InvalidateAnalyses(IRContext::Analysis::kAnalysisDecorations);
+
   // Eliminate Dead functions.
   bool modified = EliminateDeadFunctions();
 
