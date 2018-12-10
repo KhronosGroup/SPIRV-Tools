@@ -92,4 +92,5 @@ add_spvtools_unittest(TARGET opt
 add_spvtools_unittest(TARGET upgrade_memory_model
   SRCS upgrade_memory_model_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
+  PCH_FILE pch_test_opt
 )
