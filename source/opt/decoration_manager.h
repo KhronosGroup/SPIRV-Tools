@@ -125,6 +125,12 @@ class DecorationManager {
   void AddMemberDecoration(uint32_t member, uint32_t inst_id,
                            uint32_t decoration, uint32_t decoration_value);
 
+  friend bool operator==(const DecorationManager&, const DecorationManager&);
+  friend bool operator!=(const DecorationManager& lhs,
+                         const DecorationManager& rhs) {
+    return !(lhs == rhs);
+  }
+
  private:
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.
@@ -149,6 +155,25 @@ class DecorationManager {
                                                // tracked ID is not a
                                                // group.
   };
+
+  friend bool operator==(const TargetData& lhs, const TargetData& rhs) {
+    if (!std::is_permutation(lhs.direct_decorations.begin(),
+                             lhs.direct_decorations.end(),
+                             rhs.direct_decorations.begin())) {
+      return false;
+    }
+    if (!std::is_permutation(lhs.indirect_decorations.begin(),
+                             lhs.indirect_decorations.end(),
+                             rhs.indirect_decorations.begin())) {
+      return false;
+    }
+    if (!std::is_permutation(lhs.decorate_insts.begin(),
+                             lhs.decorate_insts.end(),
+                             rhs.decorate_insts.begin())) {
+      return false;
+    }
+    return true;
+  }
 
   // Mapping from ids to the instructions applying a decoration to those ids.
   // In other words, for each id you get all decoration instructions
