@@ -406,6 +406,34 @@ OpFunctionEnd
   Match(text, context.get());
 }
 
+TEST_F(IRBuilderTest, AccelerationStructureNV) {
+  const std::string text = R"(
+; CHECK: OpTypeAccelerationStructureNV
+OpCapability Shader
+OpCapability RayTracingNV
+OpExtension "SPV_NV_ray_tracing"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %8 "main"
+OpExecutionMode %8 OriginUpperLeft
+%1 = OpTypeVoid
+%2 = OpTypeBool
+%3 = OpTypeAccelerationStructureNV
+%7 = OpTypeFunction %1
+%8 = OpFunction %1 None %7
+%9 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  EXPECT_NE(nullptr, context);
+
+  InstructionBuilder builder(context.get(),
+                             &*context->module()->begin()->begin()->begin());
+  Match(text, context.get());
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

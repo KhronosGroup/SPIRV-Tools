@@ -156,7 +156,7 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new ReserveId());
   types.emplace_back(new Queue());
 
-  // Pipe, Forward Pointer, PipeStorage, NamedBarrier
+  // Pipe, Forward Pointer, PipeStorage, NamedBarrier, AccelerationStructureNV
   types.emplace_back(new Pipe(SpvAccessQualifierReadWrite));
   types.emplace_back(new Pipe(SpvAccessQualifierReadOnly));
   types.emplace_back(new ForwardPointer(1, SpvStorageClassInput));
@@ -164,6 +164,7 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new ForwardPointer(2, SpvStorageClassUniform));
   types.emplace_back(new PipeStorage());
   types.emplace_back(new NamedBarrier());
+  types.emplace_back(new AccelerationStructureNV());
 
   return types;
 }
@@ -1035,6 +1036,7 @@ TEST(TypeManager, GetTypeInstructionAllTypes) {
 ; CHECK: OpTypeForwardPointer [[uniform_ptr]] Uniform
 ; CHECK: OpTypePipeStorage
 ; CHECK: OpTypeNamedBarrier
+; CHECK: OpTypeAccelerationStructureNV
 OpCapability Shader
 OpCapability Int64
 OpCapability Linkage
