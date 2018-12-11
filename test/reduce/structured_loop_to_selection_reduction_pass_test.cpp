@@ -3294,6 +3294,147 @@ TEST(StructuredLoopToSelectionReductionPassTest,
   CheckEqual(env, after_another_op_0, context.get());
 }
 
+TEST(StructuredLoopToSelectionReductionPassTest, LongAccessChains) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeInt 32 1
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 5
+          %8 = OpTypeArray %5 %7
+          %9 = OpTypeStruct %8
+         %10 = OpTypeStruct %9 %9
+         %11 = OpConstant %6 2
+         %12 = OpTypeArray %10 %11
+         %13 = OpTypeStruct %12
+         %14 = OpTypePointer Function %13
+         %15 = OpConstant %5 0
+         %16 = OpConstant %5 1
+         %17 = OpConstant %5 2
+         %18 = OpConstant %5 3
+         %19 = OpConstant %5 4
+         %20 = OpConstantComposite %8 %15 %16 %17 %18 %19
+         %21 = OpConstantComposite %9 %20
+         %22 = OpConstant %5 5
+         %23 = OpConstant %5 6
+         %24 = OpConstant %5 7
+         %25 = OpConstant %5 8
+         %26 = OpConstant %5 9
+         %27 = OpConstantComposite %8 %22 %23 %24 %25 %26
+         %28 = OpConstantComposite %9 %27
+         %29 = OpConstantComposite %10 %21 %28
+         %30 = OpConstant %5 10
+         %31 = OpConstant %5 11
+         %32 = OpConstant %5 12
+         %33 = OpConstant %5 13
+         %34 = OpConstant %5 14
+         %35 = OpConstantComposite %8 %30 %31 %32 %33 %34
+         %36 = OpConstantComposite %9 %35
+         %37 = OpConstant %5 15
+         %38 = OpConstant %5 16
+         %39 = OpConstant %5 17
+         %40 = OpConstant %5 18
+         %41 = OpConstant %5 19
+         %42 = OpConstantComposite %8 %37 %38 %39 %40 %41
+         %43 = OpConstantComposite %9 %42
+         %44 = OpConstantComposite %10 %36 %43
+         %45 = OpConstantComposite %12 %29 %44
+         %46 = OpConstantComposite %13 %45
+         %47 = OpTypePointer Function %12
+         %48 = OpTypePointer Function %10
+         %49 = OpTypePointer Function %9
+         %50 = OpTypePointer Function %8
+         %51 = OpTypePointer Function %5
+         %52 = OpTypeBool
+         %53 = OpConstantTrue %52
+          %2 = OpFunction %3 None %4
+         %54 = OpLabel
+         %55 = OpVariable %14 Function
+               OpStore %55 %46
+               OpBranch %56
+         %56 = OpLabel
+               OpLoopMerge %57 %58 None
+               OpBranchConditional %53 %57 %59
+         %59 = OpLabel
+               OpSelectionMerge %60 None
+               OpBranchConditional %53 %61 %57
+         %61 = OpLabel
+         %62 = OpAccessChain %47 %55 %15
+               OpBranch %63
+         %63 = OpLabel
+               OpSelectionMerge %64 None
+               OpBranchConditional %53 %65 %57
+         %65 = OpLabel
+         %66 = OpAccessChain %48 %62 %16
+               OpBranch %67
+         %67 = OpLabel
+               OpSelectionMerge %68 None
+               OpBranchConditional %53 %69 %57
+         %69 = OpLabel
+         %70 = OpAccessChain %49 %66 %16
+               OpBranch %71
+         %71 = OpLabel
+               OpSelectionMerge %72 None
+               OpBranchConditional %53 %73 %57
+         %73 = OpLabel
+         %74 = OpAccessChain %50 %70 %15
+               OpBranch %75
+         %75 = OpLabel
+               OpSelectionMerge %76 None
+               OpBranchConditional %53 %77 %57
+         %77 = OpLabel
+         %78 = OpAccessChain %51 %74 %17
+               OpBranch %79
+         %79 = OpLabel
+               OpSelectionMerge %80 None
+               OpBranchConditional %53 %81 %57
+         %81 = OpLabel
+         %82 = OpLoad %5 %78
+               OpBranch %80
+         %80 = OpLabel
+               OpBranch %76
+         %76 = OpLabel
+               OpBranch %72
+         %72 = OpLabel
+               OpBranch %68
+         %68 = OpLabel
+               OpBranch %64
+         %64 = OpLabel
+               OpBranch %60
+         %60 = OpLabel
+               OpBranch %58
+         %58 = OpLabel
+               OpBranch %56
+         %57 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto pass = TestSubclass<StructuredLoopToSelectionReductionPass>(env);
+  auto ops = pass.WrapGetAvailableOpportunities(context.get());
+
+  ASSERT_EQ(1, ops.size());
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  CheckValid(env, context.get());
+
+  // TODO(2183): When we have a more general solution for handling access
+  // chains, write an expected result for this test.
+  // std::string expected = R"(
+  // Expected text for transformed shader
+  //)";
+  // CheckEqual(env, expected, context.get());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools
