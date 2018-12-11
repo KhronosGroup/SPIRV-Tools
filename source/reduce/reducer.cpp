@@ -105,7 +105,12 @@ Reducer::ReductionResultStatus Reducer::Run(
                      << reductions_applied << ".";
         impl_->consumer(SPV_MSG_INFO, nullptr, {},
                         (stringstream.str().c_str()));
-        if (impl_->interestingness_function(maybe_result, reductions_applied)) {
+        if (!spvtools::SpirvTools(impl_->target_env).Validate(maybe_result)) {
+          // The reduction step went wrong and an invalid binary was produced.  By design, this shouldn't happen;
+          // this is a safeguard to stop an invalid binary from being regarded as interesting.
+          impl_->consumer(SPV_MSG_INFO, nullptr, {},
+                  "Reduction step produced an invalid binary.");
+        } else if (impl_->interestingness_function(maybe_result, reductions_applied)) {
           // Success!  The binary produced by this reduction step is
           // interesting, so make it the binary of interest henceforth, and
           // note that it's worth doing another round of reduction passes.
