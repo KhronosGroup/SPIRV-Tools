@@ -64,5 +64,9 @@ std::string ToString(spv_target_env env, const opt::IRContext* ir) {
   return result;
 }
 
+void NopDiagnostic(spv_message_level_t /*level*/, const char* /*source*/,
+                   const spv_position_t& /*position*/,
+                   const char* /*message*/) {}
+
 }  // namespace reduce
 }  // namespace spvtools

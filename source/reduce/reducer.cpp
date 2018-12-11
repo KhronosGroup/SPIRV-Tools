@@ -81,6 +81,11 @@ Reducer::ReductionResultStatus Reducer::Run(
 
     // Iterate through the available passes
     for (auto& pass : impl_->passes) {
+      // If this pass hasn't reached its minimum granularity then it's
+      // worth eventually doing another round of reductions, in order to
+      // try this pass at a finer granularity.
+      another_round_worthwhile |= !pass->ReachedMinimumGranularity();
+
       // Keep applying this pass at its current granularity until it stops
       // working or we hit the reduction step limit.
       impl_->consumer(SPV_MSG_INFO, nullptr, {},
@@ -89,14 +94,10 @@ Reducer::ReductionResultStatus Reducer::Run(
         auto maybe_result = pass->TryApplyReduction(current_binary);
         if (maybe_result.empty()) {
           // This pass did not have any impact, so move on to the next pass.
-          // If this pass hasn't reached its minimum granularity then it's
-          // worth eventually doing another round of reductions, in order to
-          // try this pass at a finer granularity.
           impl_->consumer(
               SPV_MSG_INFO, nullptr, {},
               ("Pass " + pass->GetName() + " did not make a reduction step.")
                   .c_str());
-          another_round_worthwhile |= !pass->ReachedMinimumGranularity();
           break;
         }
         std::stringstream stringstream;
@@ -106,11 +107,13 @@ Reducer::ReductionResultStatus Reducer::Run(
         impl_->consumer(SPV_MSG_INFO, nullptr, {},
                         (stringstream.str().c_str()));
         if (!spvtools::SpirvTools(impl_->target_env).Validate(maybe_result)) {
-          // The reduction step went wrong and an invalid binary was produced.  By design, this shouldn't happen;
-          // this is a safeguard to stop an invalid binary from being regarded as interesting.
+          // The reduction step went wrong and an invalid binary was produced.
+          // By design, this shouldn't happen; this is a safeguard to stop an
+          // invalid binary from being regarded as interesting.
           impl_->consumer(SPV_MSG_INFO, nullptr, {},
-                  "Reduction step produced an invalid binary.");
-        } else if (impl_->interestingness_function(maybe_result, reductions_applied)) {
+                          "Reduction step produced an invalid binary.");
+        } else if (impl_->interestingness_function(maybe_result,
+                                                   reductions_applied)) {
           // Success!  The binary produced by this reduction step is
           // interesting, so make it the binary of interest henceforth, and
           // note that it's worth doing another round of reduction passes.
