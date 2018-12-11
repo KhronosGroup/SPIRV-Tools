@@ -252,6 +252,14 @@ bool IRContext::IsConsistent() {
     return false;
   }
 
+  if (AreAnalysesValid(kAnalysisDecorations)) {
+    analysis::DecorationManager* dec_mgr = get_decoration_mgr();
+    analysis::DecorationManager current(module());
+
+    if (*dec_mgr != current) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -665,6 +673,7 @@ uint32_t IRContext::GetBuiltinVarId(uint32_t builtin) {
     uint32_t type_id = type_mgr->GetTypeInstruction(reg_type);
     uint32_t varTyPtrId =
         type_mgr->FindPointerToType(type_id, SpvStorageClassInput);
+    // TODO(1841): Handle id overflow.
     var_id = TakeNextId();
     std::unique_ptr<Instruction> newVarOp(
         new Instruction(this, SpvOpVariable, varTyPtrId, var_id,

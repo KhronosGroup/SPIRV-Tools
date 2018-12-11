@@ -121,7 +121,9 @@ bool MergeReturnPass::ProcessStructured(
     // Predicate successors of the original return blocks as necessary.
     if (std::find(return_blocks.begin(), return_blocks.end(), block) !=
         return_blocks.end()) {
-      PredicateBlocks(block, &predicated, &order);
+      if (!PredicateBlocks(block, &predicated, &order)) {
+        return false;
+      }
     }
 
     // Generate state for next block
@@ -204,7 +206,11 @@ void MergeReturnPass::BranchToBlock(BasicBlock* block, uint32_t target) {
     RecordReturned(block);
     RecordReturnValue(block);
   }
+
   BasicBlock* target_block = context()->get_instr_block(target);
+  if (target_block->GetLoopMergeInst()) {
+    cfg()->SplitLoopHeader(target_block);
+  }
   UpdatePhiNodes(block, target_block);
 
   Instruction* return_inst = block->terminator();
@@ -239,8 +245,22 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
   if (inst.result_id() != 0) {
     std::vector<Instruction*> users_to_update;
     context()->get_def_use_mgr()->ForEachUser(
-        &inst, [&users_to_update, &dom_tree, inst_bb, this](Instruction* user) {
-          BasicBlock* user_bb = context()->get_instr_block(user);
+        &inst,
+        [&users_to_update, &dom_tree, &inst, inst_bb, this](Instruction* user) {
+          BasicBlock* user_bb = nullptr;
+          if (user->opcode() != SpvOpPhi) {
+            user_bb = context()->get_instr_block(user);
+          } else {
+            // For OpPhi, the use should be considered to be in the predecessor.
+            for (uint32_t i = 0; i < user->NumInOperands(); i += 2) {
+              if (user->GetSingleWordInOperand(i) == inst.result_id()) {
+                uint32_t user_bb_id = user->GetSingleWordInOperand(i + 1);
+                user_bb = context()->get_instr_block(user_bb_id);
+                break;
+              }
+            }
+          }
+
           // If |user_bb| is nullptr, then |user| is not in the function.  It is
           // something like an OpName or decoration, which should not be
           // replaced with the result of the OpPhi.
@@ -288,14 +308,14 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
   }
 }
 
-void MergeReturnPass::PredicateBlocks(
+bool MergeReturnPass::PredicateBlocks(
     BasicBlock* return_block, std::unordered_set<BasicBlock*>* predicated,
     std::list<BasicBlock*>* order) {
   // The CFG is being modified as the function proceeds so avoid caching
   // successors.
 
   if (predicated->count(return_block)) {
-    return;
+    return true;
   }
 
   BasicBlock* block = nullptr;
@@ -328,12 +348,15 @@ void MergeReturnPass::PredicateBlocks(
     while (state->LoopMergeId() == next->id()) {
       state++;
     }
-    BreakFromConstruct(block, next, predicated, order);
+    if (!BreakFromConstruct(block, next, predicated, order)) {
+      return false;
+    }
     block = next;
   }
+  return true;
 }
 
-void MergeReturnPass::BreakFromConstruct(
+bool MergeReturnPass::BreakFromConstruct(
     BasicBlock* block, BasicBlock* merge_block,
     std::unordered_set<BasicBlock*>* predicated,
     std::list<BasicBlock*>* order) {
@@ -353,7 +376,12 @@ void MergeReturnPass::BreakFromConstruct(
   // If |block| is a loop header, then the back edge must jump to the original
   // code, not the new header.
   if (block->GetLoopMergeInst()) {
-    cfg()->SplitLoopHeader(block);
+    if (cfg()->SplitLoopHeader(block) == nullptr) {
+      return false;
+    }
+  }
+  if (merge_block->GetLoopMergeInst()) {
+    cfg()->SplitLoopHeader(merge_block);
   }
 
   // Leave the phi instructions behind.
@@ -407,6 +435,7 @@ void MergeReturnPass::BreakFromConstruct(
 
   assert(old_body->begin() != old_body->end());
   assert(block->begin() != block->end());
+  return true;
 }
 
 void MergeReturnPass::RecordReturned(BasicBlock* block) {

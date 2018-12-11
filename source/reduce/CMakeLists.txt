@@ -19,7 +19,10 @@ set(SPIRV_TOOLS_REDUCE_SOURCES
         reduction_opportunity.h
         reduction_pass.h
         remove_instruction_reduction_opportunity.h
+        remove_opname_instruction_reduction_pass.h
         remove_unreferenced_instruction_reduction_pass.h
+        structured_loop_to_selection_reduction_opportunity.h
+        structured_loop_to_selection_reduction_pass.h
 
         change_operand_reduction_opportunity.cpp
         operand_to_const_reduction_pass.cpp
@@ -29,6 +32,9 @@ set(SPIRV_TOOLS_REDUCE_SOURCES
         reduction_pass.cpp
         remove_instruction_reduction_opportunity.cpp
         remove_unreferenced_instruction_reduction_pass.cpp
+        remove_opname_instruction_reduction_pass.cpp
+        structured_loop_to_selection_reduction_opportunity.cpp
+        structured_loop_to_selection_reduction_pass.cpp
         )
 
 if(MSVC)

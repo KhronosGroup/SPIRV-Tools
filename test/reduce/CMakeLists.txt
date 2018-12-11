@@ -18,7 +18,9 @@ add_spvtools_unittest(TARGET reduce
         reduce_test_util.cpp
         reduce_test_util.h
         reducer_test.cpp
+        remove_opname_instruction_reduction_pass_test.cpp
         remove_unreferenced_instruction_reduction_pass_test.cpp
+        structured_loop_to_selection_reduction_pass_test.cpp
         LIBS SPIRV-Tools-reduce
         )
 

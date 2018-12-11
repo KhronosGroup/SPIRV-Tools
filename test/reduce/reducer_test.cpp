@@ -16,6 +16,7 @@
 
 #include "source/reduce/operand_to_const_reduction_pass.h"
 #include "source/reduce/reducer.h"
+#include "source/reduce/remove_opname_instruction_reduction_pass.h"
 #include "source/reduce/remove_unreferenced_instruction_reduction_pass.h"
 
 namespace spvtools {
@@ -27,7 +28,7 @@ void NopDiagnostic(spv_message_level_t /*level*/, const char* /*source*/,
                    const spv_position_t& /*position*/,
                    const char* /*message*/) {}
 
-// This changes is its mind each time IsInteresting is invoked as to whether the
+// This changes its mind each time IsInteresting is invoked as to whether the
 // binary is interesting, until some limit is reached after which the binary is
 // always deemed interesting.  This is useful to test that reduction passes
 // interleave in interesting ways for a while, and then always succeed after
@@ -222,6 +223,77 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
         return ping_pong_interesting.IsInteresting(binary);
       });
   reducer.AddReductionPass(MakeUnique<OperandToConstReductionPass>(env));
+  reducer.AddReductionPass(
+      MakeUnique<RemoveUnreferencedInstructionReductionPass>(env));
+
+  std::vector<uint32_t> binary_in;
+  SpirvTools t(env);
+
+  ASSERT_TRUE(t.Assemble(original, &binary_in, kReduceAssembleOption));
+  std::vector<uint32_t> binary_out;
+  spvtools::ReducerOptions reducer_options;
+  reducer_options.set_step_limit(500);
+
+  reducer.Run(std::move(binary_in), &binary_out, reducer_options);
+
+  CheckEqual(env, expected, binary_out);
+}
+
+TEST(ReducerTest, RemoveOpnameAndRemoveUnreferenced) {
+  const std::string original = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+               OpName %3 "a"
+               OpName %4 "this-name-counts-as-usage-for-load-instruction"
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %7 = OpTypeFloat 32
+          %8 = OpTypePointer Function %7
+          %9 = OpConstant %7 1
+          %2 = OpFunction %5 None %6
+         %10 = OpLabel
+          %3 = OpVariable %8 Function
+          %4 = OpLoad %7 %3
+               OpStore %3 %7
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const std::string expected = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %7 = OpTypeFloat 32
+          %8 = OpTypePointer Function %7
+          %9 = OpConstant %7 1
+          %2 = OpFunction %5 None %6
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  Reducer reducer(env);
+  // Make ping-pong interesting very quickly, as there are not much
+  // opportunities.
+  PingPongInteresting ping_pong_interesting(1);
+  reducer.SetMessageConsumer(NopDiagnostic);
+  reducer.SetInterestingnessFunction(
+      [&](const std::vector<uint32_t>& binary, uint32_t) -> bool {
+        return ping_pong_interesting.IsInteresting(binary);
+      });
+  reducer.AddReductionPass(
+      MakeUnique<RemoveOpNameInstructionReductionPass>(env));
   reducer.AddReductionPass(
       MakeUnique<RemoveUnreferencedInstructionReductionPass>(env));
 

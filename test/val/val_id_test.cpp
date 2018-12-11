@@ -261,7 +261,7 @@ OpDecorate %1 GLSLShared)";
 
 TEST_F(ValidateIdWithMessage, OpMemberDecorateGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
-     OpMemberDecorate %2 0 Uniform
+     OpMemberDecorate %2 0 RelaxedPrecision
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1 %1)";
   CompileSuccessfully(spirv.c_str());
@@ -269,7 +269,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateGood) {
 }
 TEST_F(ValidateIdWithMessage, OpMemberDecorateBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
-     OpMemberDecorate %1 0 Uniform
+     OpMemberDecorate %1 0 RelaxedPrecision
 %1 = OpTypeInt 32 0)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -279,7 +279,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateBad) {
 }
 TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
-     OpMemberDecorate %1 3 Uniform
+     OpMemberDecorate %1 3 RelaxedPrecision
 %int = OpTypeInt 32 0
 %1 = OpTypeStruct %int %int)";
   CompileSuccessfully(spirv.c_str());
@@ -293,7 +293,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
 TEST_F(ValidateIdWithMessage, OpGroupDecorateGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpDecorationGroup
-     OpDecorate %1 Uniform
+     OpDecorate %1 RelaxedPrecision
      OpDecorate %1 GLSLShared
      OpGroupDecorate %1 %3 %4
 %2 = OpTypeInt 32 0
@@ -305,7 +305,7 @@ TEST_F(ValidateIdWithMessage, OpGroupDecorateGood) {
 TEST_F(ValidateIdWithMessage, OpDecorationGroupBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpDecorationGroup
-     OpDecorate %1 Uniform
+     OpDecorate %1 RelaxedPrecision
      OpDecorate %1 GLSLShared
      OpMemberDecorate %1 0 Constant
     )";
@@ -334,7 +334,7 @@ TEST_F(ValidateIdWithMessage, OpGroupDecorateDecorationGroupBad) {
 TEST_F(ValidateIdWithMessage, OpGroupDecorateTargetBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpDecorationGroup
-     OpDecorate %1 Uniform
+     OpDecorate %1 RelaxedPrecision
      OpDecorate %1 GLSLShared
      OpGroupDecorate %1 %3
 %2 = OpTypeInt 32 0)";
@@ -6323,6 +6323,56 @@ TEST_F(ValidateIdWithMessage, UnreachableDefUsedInPhi) {
       HasSubstr("In OpPhi instruction 14[%14], ID 13[%13] definition does not "
                 "dominate its parent 7[%7]\n  %14 = OpPhi %float %11 %10 %13 "
                 "%7"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeForwardPointerNotAPointerType) {
+  std::string spirv = R"(
+     OpCapability GenericPointer
+     OpCapability VariablePointersStorageBuffer
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %1 "main"
+     OpExecutionMode %1 OriginLowerLeft
+     OpTypeForwardPointer %2 CrossWorkgroup
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%1 = OpFunction %2 DontInline %3
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Pointer type in OpTypeForwardPointer is not a pointer "
+                        "type.\n  OpTypeForwardPointer %void CrossWorkgroup"));
+}
+
+TEST_F(ValidateIdWithMessage, OpTypeForwardPointerWrongStorageClass) {
+  std::string spirv = R"(
+     OpCapability GenericPointer
+     OpCapability VariablePointersStorageBuffer
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %1 "main"
+     OpExecutionMode %1 OriginLowerLeft
+     OpTypeForwardPointer %2 CrossWorkgroup
+%int = OpTypeInt 32 1
+%2 = OpTypePointer Function %int
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%1 = OpFunction %void None %3
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Storage class in OpTypeForwardPointer does not match the "
+                "pointer definition.\n  OpTypeForwardPointer "
+                "%_ptr_Function_int CrossWorkgroup"));
 }
 }  // namespace
 }  // namespace val

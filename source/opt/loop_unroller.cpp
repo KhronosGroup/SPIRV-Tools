@@ -377,6 +377,7 @@ void LoopUnrollerUtilsImpl::Init(Loop* loop) {
 // number of bodies.
 void LoopUnrollerUtilsImpl::PartiallyUnrollResidualFactor(Loop* loop,
                                                           size_t factor) {
+  // TODO(1841): Handle id overflow.
   std::unique_ptr<Instruction> new_label{new Instruction(
       context_, SpvOp::SpvOpLabel, 0, context_->TakeNextId(), {})};
   std::unique_ptr<BasicBlock> new_exit_bb{new BasicBlock(std::move(new_label))};
@@ -834,6 +835,7 @@ void LoopUnrollerUtilsImpl::AssignNewResultIds(BasicBlock* basic_block) {
 
   // Label instructions aren't covered by normal traversal of the
   // instructions.
+  // TODO(1841): Handle id overflow.
   uint32_t new_label_id = context_->TakeNextId();
 
   // Assign a new id to the label.
@@ -850,6 +852,7 @@ void LoopUnrollerUtilsImpl::AssignNewResultIds(BasicBlock* basic_block) {
     }
 
     // Give the instruction a new id.
+    // TODO(1841): Handle id overflow.
     inst.SetResultId(context_->TakeNextId());
     def_use_mgr->AnalyzeInstDef(&inst);
 

@@ -222,6 +222,12 @@ class ValidationState_t {
   /// Returns a list of entry point function ids
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
 
+  /// Returns the set of entry points that root call graphs that contain
+  /// recursion.
+  const std::set<uint32_t>& recursive_entry_points() const {
+    return recursive_entry_points_;
+  }
+
   /// Registers execution mode for the given entry point.
   void RegisterExecutionModeForEntryPoint(uint32_t entry_point,
                                           SpvExecutionMode execution_mode) {
@@ -261,8 +267,18 @@ class ValidationState_t {
   /// Note: called after fully parsing the binary.
   void ComputeFunctionToEntryPointMapping();
 
+  /// Traverse call tree and computes recursive_entry_points_.
+  /// Note: called after fully parsing the binary and calling
+  /// ComputeFunctionToEntryPointMapping.
+  void ComputeRecursiveEntryPoints();
+
   /// Returns all the entry points that can call |func|.
   const std::vector<uint32_t>& FunctionEntryPoints(uint32_t func) const;
+
+  /// Returns all the entry points that statically use |id|.
+  ///
+  /// Note: requires ComputeFunctionToEntryPointMapping to have been called.
+  std::set<uint32_t> EntryPointReferences(uint32_t id) const;
 
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
   void AddFunctionCallTarget(const uint32_t id) {
@@ -275,6 +291,9 @@ class ValidationState_t {
     return (function_call_targets_.find(id) != function_call_targets_.end());
   }
 
+  bool IsFunctionCallDefined(const uint32_t id) {
+    return (id_to_function_.find(id) != id_to_function_.end());
+  }
   /// Registers the capability and its dependent capabilities
   void RegisterCapability(SpvCapability cap);
 
@@ -601,6 +620,10 @@ class ValidationState_t {
   /// Maps an entry point id to its desciptions.
   std::unordered_map<uint32_t, std::vector<EntryPointDescription>>
       entry_point_descriptions_;
+
+  /// IDs that are entry points, ie, arguments to OpEntryPoint, and root a call
+  /// graph that recurses.
+  std::set<uint32_t> recursive_entry_points_;
 
   /// Functions IDs that are target of OpFunctionCall.
   std::unordered_set<uint32_t> function_call_targets_;

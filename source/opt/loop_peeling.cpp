@@ -39,6 +39,7 @@ void LoopPeeling::DuplicateAndConnectLoop(
   assert(CanPeelLoop() && "Cannot peel loop!");
 
   std::vector<BasicBlock*> ordered_loop_blocks;
+  // TODO(1841): Handle failure to create pre-header.
   BasicBlock* pre_header = loop_->GetOrCreatePreHeaderBlock();
 
   loop_->ComputeLoopStructuredOrder(&ordered_loop_blocks);
@@ -131,6 +132,7 @@ void LoopPeeling::DuplicateAndConnectLoop(
 
   // Force the creation of a new preheader for the original loop and set it as
   // the merge block for the cloned loop.
+  // TODO(1841): Handle failure to create pre-header.
   cloned_loop_->SetMergeBlock(loop_->GetOrCreatePreHeaderBlock());
 }
 
@@ -345,6 +347,7 @@ BasicBlock* LoopPeeling::CreateBlockBefore(BasicBlock* bb) {
   CFG& cfg = *context_->cfg();
   assert(cfg.preds(bb->id()).size() == 1 && "More than one predecessor");
 
+  // TODO(1841): Handle id overflow.
   std::unique_ptr<BasicBlock> new_bb =
       MakeUnique<BasicBlock>(std::unique_ptr<Instruction>(new Instruction(
           context_, SpvOpLabel, 0, context_->TakeNextId(), {})));
@@ -391,6 +394,7 @@ BasicBlock* LoopPeeling::CreateBlockBefore(BasicBlock* bb) {
 
 BasicBlock* LoopPeeling::ProtectLoop(Loop* loop, Instruction* condition,
                                      BasicBlock* if_merge) {
+  // TODO(1841): Handle failure to create pre-header.
   BasicBlock* if_block = loop->GetOrCreatePreHeaderBlock();
   // Will no longer be a pre-header because of the if.
   loop->SetPreHeaderBlock(nullptr);
