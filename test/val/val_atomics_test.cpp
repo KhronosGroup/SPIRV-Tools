@@ -1160,10 +1160,11 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
 
 // Disabling this test until
 // https://github.com/KhronosGroup/glslang/issues/1618 is resolved.
-//TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsNoCapability) {
+// TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsNoCapability) {
 //  const std::string body = R"(
-//OpAtomicStore %u32_var %device %relaxed %u32_1
-//%val1 = OpAtomicIIncrement %u32 %u32_var %device %acquire_release_atomic_counter_workgroup
+// OpAtomicStore %u32_var %device %relaxed %u32_1
+//%val1 = OpAtomicIIncrement %u32 %u32_var %device
+//%acquire_release_atomic_counter_workgroup
 //)";
 //
 //  CompileSuccessfully(GenerateKernelCode(body));
@@ -1171,7 +1172,8 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
 //  EXPECT_THAT(
 //      getDiagnosticString(),
 //      HasSubstr("AtomicIIncrement: Memory Semantics AtomicCounterMemory "
-//                "requires capability AtomicStorage\n  %40 = OpAtomicIIncrement "
+//                "requires capability AtomicStorage\n  %40 = OpAtomicIIncrement
+//                "
 //                "%uint %30 %uint_1_0 %uint_1288\n"));
 //}
 
