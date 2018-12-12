@@ -23,11 +23,6 @@ namespace spvtools {
 namespace reduce {
 namespace {
 
-// Don't print reducer info during testing.
-void NopDiagnostic(spv_message_level_t /*level*/, const char* /*source*/,
-                   const spv_position_t& /*position*/,
-                   const char* /*message*/) {}
-
 // This changes its mind each time IsInteresting is invoked as to whether the
 // binary is interesting, until some limit is reached after which the binary is
 // always deemed interesting.  This is useful to test that reduction passes

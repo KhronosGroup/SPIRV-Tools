@@ -72,6 +72,10 @@ const uint32_t kReduceAssembleOption =
 const uint32_t kReduceDisassembleOption =
     SPV_BINARY_TO_TEXT_OPTION_NO_HEADER | SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
+// Don't print reducer info during testing.
+void NopDiagnostic(spv_message_level_t /*level*/, const char* /*source*/,
+                   const spv_position_t& /*position*/, const char* /*message*/);
+
 }  // namespace reduce
 }  // namespace spvtools
 
