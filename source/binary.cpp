@@ -124,7 +124,7 @@ class Parser {
   // object.
   spvtools::DiagnosticStream diagnostic(spv_result_t error) {
     return spvtools::DiagnosticStream({0, 0, _.instruction_count}, consumer_,
-                                       "", error);
+                                      "", error);
   }
 
   // Returns a diagnostic stream object with the default parse error code.
