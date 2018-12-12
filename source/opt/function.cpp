@@ -71,6 +71,61 @@ void Function::ForEachInst(const std::function<void(const Instruction*)>& f,
         ->ForEachInst(f, run_on_debug_line_insts);
 }
 
+bool Function::WhileEachInst(const std::function<bool(Instruction*)>& f,
+                           bool run_on_debug_line_insts) {
+  if (def_inst_) {
+    if (!def_inst_->WhileEachInst(f, run_on_debug_line_insts)) {
+      return false;
+    }
+  }
+
+  for (auto& param : params_) {
+    if (!param->WhileEachInst(f, run_on_debug_line_insts)) {
+      return false;
+    }
+  }
+
+  for (auto& bb : blocks_) {
+    if (!bb->WhileEachInst(f, run_on_debug_line_insts)) {
+      return false;
+    }
+  }
+
+  if (end_inst_) return end_inst_->WhileEachInst(f, run_on_debug_line_insts);
+
+  return true;
+}
+
+bool Function::WhileEachInst(const std::function<bool(const Instruction*)>& f,
+                           bool run_on_debug_line_insts) const {
+  if (def_inst_) {
+    if (!static_cast<const Instruction*>(def_inst_.get())
+        ->WhileEachInst(f, run_on_debug_line_insts)) {
+      return false;
+    }
+  }
+
+  for (const auto& param : params_) {
+    if (!static_cast<const Instruction*>(param.get())
+        ->WhileEachInst(f, run_on_debug_line_insts)) {
+      return false;
+    }
+  }
+
+  for (const auto& bb : blocks_) {
+    if (!static_cast<const BasicBlock*>(bb.get())->WhileEachInst(
+        f, run_on_debug_line_insts)) {
+      return false;
+    }
+  }
+
+  if (end_inst_)
+    return static_cast<const Instruction*>(end_inst_.get())
+        ->WhileEachInst(f, run_on_debug_line_insts);
+
+  return true;
+}
+
 void Function::ForEachParam(const std::function<void(Instruction*)>& f,
                             bool run_on_debug_line_insts) {
   for (auto& param : params_)
