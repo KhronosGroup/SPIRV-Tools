@@ -81,8 +81,9 @@ class InlinePass : public Pass {
                          std::vector<std::unique_ptr<Instruction>>* new_vars,
                          std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
-  // Create return variable for callee clone code.  The return type of |calleeFn| must not be void.  Returns  the id of the return variable
-  // if created.  Returns 0 if the return variable could not be created.
+  // Create return variable for callee clone code.  The return type of
+  // |calleeFn| must not be void.  Returns  the id of the return variable if
+  // created.  Returns 0 if the return variable could not be created.
   uint32_t CreateReturnVar(Function* calleeFn,
                            std::vector<std::unique_ptr<Instruction>>* new_vars);
 

@@ -111,9 +111,9 @@ class Function {
   void ForEachInst(const std::function<void(const Instruction*)>& f,
                    bool run_on_debug_line_insts = false) const;
   bool WhileEachInst(const std::function<bool(Instruction*)>& f,
-                   bool run_on_debug_line_insts = false);
+                     bool run_on_debug_line_insts = false);
   bool WhileEachInst(const std::function<bool(const Instruction*)>& f,
-                   bool run_on_debug_line_insts = false) const;
+                     bool run_on_debug_line_insts = false) const;
 
   // Runs the given function |f| on each parameter instruction in this function,
   // and optionally on debug line instructions that might precede them.
