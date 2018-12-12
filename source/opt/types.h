@@ -56,6 +56,7 @@ class Pipe;
 class ForwardPointer;
 class PipeStorage;
 class NamedBarrier;
+class AccelerationStructureNV;
 
 // Abstract class for a SPIR-V type. It has a bunch of As<sublcass>() methods,
 // which is used as a way to probe the actual <subclass>.
@@ -90,6 +91,7 @@ class Type {
     kForwardPointer,
     kPipeStorage,
     kNamedBarrier,
+    kAccelerationStructureNV,
   };
 
   Type(Kind k) : kind_(k) {}
@@ -170,6 +172,7 @@ class Type {
   DeclareCastMethod(ForwardPointer);
   DeclareCastMethod(PipeStorage);
   DeclareCastMethod(NamedBarrier);
+  DeclareCastMethod(AccelerationStructureNV);
 #undef DeclareCastMethod
 
   bool operator==(const Type& other) const;
@@ -595,6 +598,7 @@ DefineParameterlessType(ReserveId, reserve_id);
 DefineParameterlessType(Queue, queue);
 DefineParameterlessType(PipeStorage, pipe_storage);
 DefineParameterlessType(NamedBarrier, named_barrier);
+DefineParameterlessType(AccelerationStructureNV, acceleration_structure);
 #undef DefineParameterlessType
 
 }  // namespace analysis
