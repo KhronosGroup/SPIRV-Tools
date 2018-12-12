@@ -123,6 +123,7 @@ std::unique_ptr<Type> Type::Clone() const {
     DeclareKindCase(ForwardPointer);
     DeclareKindCase(PipeStorage);
     DeclareKindCase(NamedBarrier);
+    DeclareKindCase(AccelerationStructureNV);
 #undef DeclareKindCase
     default:
       assert(false && "Unhandled type");
@@ -166,6 +167,7 @@ bool Type::operator==(const Type& other) const {
     DeclareKindCase(ForwardPointer);
     DeclareKindCase(PipeStorage);
     DeclareKindCase(NamedBarrier);
+    DeclareKindCase(AccelerationStructureNV);
 #undef DeclareKindCase
     default:
       assert(false && "Unhandled type");
@@ -214,6 +216,7 @@ void Type::GetHashWords(std::vector<uint32_t>* words,
     DeclareKindCase(ForwardPointer);
     DeclareKindCase(PipeStorage);
     DeclareKindCase(NamedBarrier);
+    DeclareKindCase(AccelerationStructureNV);
 #undef DeclareKindCase
     default:
       assert(false && "Unhandled type");
