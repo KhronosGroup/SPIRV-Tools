@@ -163,12 +163,12 @@ uint32_t InlinePass::CreateReturnVar(
     Function* calleeFn, std::vector<std::unique_ptr<Instruction>>* new_vars) {
   uint32_t returnVarId = 0;
   const uint32_t calleeTypeId = calleeFn->type_id();
-  analysis::Type* calleeType = context()->get_type_mgr()->GetType(calleeTypeId);
-  assert(calleeType->AsVoid() == nullptr &&
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+  assert(type_mgr->GetType(calleeTypeId)->AsVoid() == nullptr &&
          "Cannot create a return variable of type void.");
   // Find or create ptr to callee return type.
-  uint32_t returnVarTypeId = context()->get_type_mgr()->FindPointerToType(
-      calleeTypeId, SpvStorageClassFunction);
+  uint32_t returnVarTypeId =
+      type_mgr->FindPointerToType(calleeTypeId, SpvStorageClassFunction);
 
   if (returnVarTypeId == 0) {
     returnVarTypeId = AddPointerToType(calleeTypeId, SpvStorageClassFunction);
