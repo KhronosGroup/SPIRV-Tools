@@ -200,6 +200,7 @@ TEST(TypeManager, TypeStrings) {
     %pipe    = OpTypePipe ReadOnly
     %ps      = OpTypePipeStorage
     %nb      = OpTypeNamedBarrier
+    %rtacc   = OpTypeAccelerationStructureNV
   )";
 
   std::vector<std::pair<uint32_t, std::string>> type_id_strs = {
@@ -231,6 +232,7 @@ TEST(TypeManager, TypeStrings) {
       {26, "pipe(0)"},
       {27, "pipe_storage"},
       {28, "named_barrier"},
+      {29, "AccelerationStructureNV"},
   };
 
   std::unique_ptr<IRContext> context =
