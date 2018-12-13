@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "reduce_test_util.h"
-#include "source/opt/build_module.h"
 #include "source/reduce/operand_to_undef_reduction_pass.h"
+#include "source/opt/build_module.h"
+#include "test/reduce/reduce_test_util.h"
 
 namespace spvtools {
 namespace reduce {
 namespace {
 
 TEST(OperandToUndefReductionPassTest, BasicCheck) {
-
   // The following shader has 10 opportunities for replacing with undef.
 
   //    #version 310 es
@@ -38,7 +37,7 @@ TEST(OperandToUndefReductionPassTest, BasicCheck) {
   //    {
   //        _GLF_color =
   //            vec4(                          // opportunity
-  //                uniform1.x / 2.0,          // opportunity x2 (does not include 2.0, as this is a constant)
+  //                uniform1.x / 2.0,          // opportunity x2 (2.0 is const)
   //                uniform1.y / uniform1.x,   // opportunity x3
   //                uniform1.x + uniform1.x,   // opportunity x3
   //                uniform1.y);               // opportunity
@@ -82,25 +81,24 @@ TEST(OperandToUndefReductionPassTest, BasicCheck) {
           %5 = OpLabel
          %19 = OpAccessChain %18 %13 %15 %17
          %20 = OpLoad %6 %19
-         %22 = OpFDiv %6 %20 %21                           ; opportunity %20 (%21 is const)
+         %22 = OpFDiv %6 %20 %21                         ; opportunity %20 (%21 is const)
          %24 = OpAccessChain %18 %13 %15 %23
          %25 = OpLoad %6 %24
          %26 = OpAccessChain %18 %13 %15 %17
          %27 = OpLoad %6 %26
-         %28 = OpFDiv %6 %25 %27                           ; opportunity %25 %27
+         %28 = OpFDiv %6 %25 %27                         ; opportunity %25 %27
          %29 = OpAccessChain %18 %13 %15 %17
          %30 = OpLoad %6 %29
          %31 = OpAccessChain %18 %13 %15 %17
          %32 = OpLoad %6 %31
-         %33 = OpFAdd %6 %30 %32                           ; opportunity %30 %32
+         %33 = OpFAdd %6 %30 %32                         ; opportunity %30 %32
          %34 = OpAccessChain %18 %13 %15 %23
          %35 = OpLoad %6 %34
-         %36 = OpCompositeConstruct %7 %22 %28 %33 %35     ; opportunity %22 %28 %33 %35
-               OpStore %9 %36                              ; opportunity %36
+         %36 = OpCompositeConstruct %7 %22 %28 %33 %35   ; opportunity %22 %28 %33 %35
+               OpStore %9 %36                            ; opportunity %36
                OpReturn
                OpFunctionEnd
   )";
-
 
   // This is the same as original, except where noted.
   std::string expected = R"(
@@ -182,7 +180,6 @@ TEST(OperandToUndefReductionPassTest, BasicCheck) {
 }
 
 TEST(OperandToUndefReductionPassTest, WithCalledFunction) {
-
   // The following shader has no opportunities.
   // Most importantly, the noted function operand is not changed.
 
@@ -206,7 +203,7 @@ TEST(OperandToUndefReductionPassTest, WithCalledFunction) {
          %14 = OpConstantComposite %7 %13 %13 %13 %13
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %15 = OpFunctionCall %7 %16                    ; do not replace %16 with undef
+         %15 = OpFunctionCall %7 %16            ; do not replace %16 with undef
                OpReturn
                OpFunctionEnd
          %16 = OpFunction %7 None %8

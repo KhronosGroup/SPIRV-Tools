@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "operand_to_undef_reduction_pass.h"
-#include "change_operand_to_undef_reduction_opportunity.h"
+#include "source/reduce/operand_to_undef_reduction_pass.h"
+
 #include "source/opt/instruction.h"
+#include "source/reduce/change_operand_to_undef_reduction_opportunity.h"
 
 namespace spvtools {
 namespace reduce {
@@ -22,13 +23,13 @@ namespace reduce {
 using namespace opt;
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
-OperandToUndefReductionPass::GetAvailableOpportunities(IRContext* context) const {
+OperandToUndefReductionPass::GetAvailableOpportunities(
+    IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
   for (auto& function : *context->module()) {
     for (auto& block : function) {
       for (auto& inst : block) {
-
         // Skip instructions that result in a pointer type.
         auto type_id = inst.type_id();
         if (type_id) {
@@ -46,10 +47,12 @@ OperandToUndefReductionPass::GetAvailableOpportunities(IRContext* context) const
 
           if (spvIsInIdType(operand.type)) {
             const auto operand_id = operand.words[0];
-            auto operand_id_def = context->get_def_use_mgr()->GetDef(operand_id);
+            auto operand_id_def =
+                context->get_def_use_mgr()->GetDef(operand_id);
 
             // Skip constant and undef operands.
-            // We always want the reducer to make the module "smaller", which ensures termination.
+            // We always want the reducer to make the module "smaller", which
+            // ensures termination.
             // Therefore, we assume: id > undef id > constant id.
             if (spvOpcodeIsConstantOrUndef(operand_id_def->opcode())) {
               continue;
@@ -63,7 +66,8 @@ OperandToUndefReductionPass::GetAvailableOpportunities(IRContext* context) const
             // Only consider operands that have a type.
             auto operand_type_id = operand_id_def->type_id();
             if (operand_type_id) {
-              auto operand_type_id_def = context->get_def_use_mgr()->GetDef(operand_type_id);
+              auto operand_type_id_def =
+                  context->get_def_use_mgr()->GetDef(operand_type_id);
 
               // Skip pointer operands.
               if (operand_type_id_def->opcode() == SpvOpTypePointer) {
@@ -71,7 +75,8 @@ OperandToUndefReductionPass::GetAvailableOpportunities(IRContext* context) const
               }
 
               result.push_back(
-                  MakeUnique<ChangeOperandToUndefReductionOpportunity>(context, &inst, index));
+                  MakeUnique<ChangeOperandToUndefReductionOpportunity>(
+                      context, &inst, index));
             }
           }
         }

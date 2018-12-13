@@ -15,7 +15,7 @@
 #ifndef SOURCE_REDUCE_OPERAND_TO_CONST_REDUCTION_PASS_H_
 #define SOURCE_REDUCE_OPERAND_TO_CONST_REDUCTION_PASS_H_
 
-#include "reduction_pass.h"
+#include "source/reduce/reduction_pass.h"
 
 namespace spvtools {
 namespace reduce {

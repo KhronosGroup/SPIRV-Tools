@@ -15,10 +15,10 @@
 #ifndef SOURCE_REDUCE_CUT_LOOP_REDUCTION_OPPORTUNITY_H_
 #define SOURCE_REDUCE_CUT_LOOP_REDUCTION_OPPORTUNITY_H_
 
-#include <source/opt/def_use_manager.h>
-#include "reduction_opportunity.h"
+#include "source/opt/def_use_manager.h"
 #include "source/opt/dominator_analysis.h"
 #include "source/opt/function.h"
+#include "source/reduce/reduction_opportunity.h"
 
 namespace spvtools {
 namespace reduce {

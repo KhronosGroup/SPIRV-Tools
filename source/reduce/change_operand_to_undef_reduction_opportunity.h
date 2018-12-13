@@ -15,8 +15,8 @@
 #ifndef SOURCE_REDUCE_CHANGE_OPERAND_TO_UNDEF_REDUCTION_OPPORTUNITY_H_
 #define SOURCE_REDUCE_CHANGE_OPERAND_TO_UNDEF_REDUCTION_OPPORTUNITY_H_
 
-#include "reduction_opportunity.h"
 #include "source/opt/instruction.h"
+#include "source/reduce/reduction_opportunity.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
@@ -27,7 +27,9 @@ class ChangeOperandToUndefReductionOpportunity : public ReductionOpportunity {
  public:
   // Constructs the opportunity to replace operand |operand_index| of |inst|
   // with undef.
-  ChangeOperandToUndefReductionOpportunity(opt::IRContext* context, opt::Instruction* inst, uint32_t operand_index)
+  ChangeOperandToUndefReductionOpportunity(opt::IRContext* context,
+                                           opt::Instruction* inst,
+                                           uint32_t operand_index)
       : context_(context),
         inst_(inst),
         operand_index_(operand_index),

@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "structured_loop_to_selection_reduction_opportunity.h"
+#include "source/reduce/structured_loop_to_selection_reduction_opportunity.h"
+
 #include "source/opt/aggressive_dead_code_elim_pass.h"
 #include "source/opt/ir_context.h"
-#include "reduction_util.h"
+#include "source/reduce/reduction_util.h"
 
 namespace spvtools {
 namespace reduce {
@@ -274,7 +275,8 @@ void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses() {
                 break;
             }
           } else {
-            use->SetOperand(index, {FindOrCreateGlobalUndef(context_, def.type_id())});
+            use->SetOperand(index,
+                            {FindOrCreateGlobalUndef(context_, def.type_id())});
           }
         }
       });

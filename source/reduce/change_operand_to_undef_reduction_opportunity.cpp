@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "change_operand_to_undef_reduction_opportunity.h"
-#include "reduction_util.h"
+#include "source/reduce/change_operand_to_undef_reduction_opportunity.h"
 
 #include "source/opt/ir_context.h"
+#include "source/reduce/reduction_util.h"
 
 namespace spvtools {
 namespace reduce {
@@ -32,7 +32,7 @@ void ChangeOperandToUndefReductionOpportunity::Apply() {
   auto operand_id_def = context_->get_def_use_mgr()->GetDef(operand_id);
   auto operand_type_id = operand_id_def->type_id();
   // The opportunity should not exist unless this holds.
-  assert (operand_type_id);
+  assert(operand_type_id);
   auto undef_id = FindOrCreateGlobalUndef(context_, operand_type_id);
   inst_->SetOperand(operand_index_, {undef_id});
 }

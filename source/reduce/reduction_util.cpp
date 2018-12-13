@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/reduce/reduction_util.h"
+
 #include "source/opt/ir_context.h"
-#include "reduction_util.h"
 
 namespace spvtools {
 namespace reduce {
 
 using namespace opt;
 
-uint32_t FindOrCreateGlobalUndef(IRContext* context,
-    uint32_t type_id) {
+uint32_t FindOrCreateGlobalUndef(IRContext* context, uint32_t type_id) {
   for (auto& inst : context->module()->types_values()) {
     if (inst.opcode() != SpvOpUndef) {
       continue;
@@ -39,7 +39,6 @@ uint32_t FindOrCreateGlobalUndef(IRContext* context,
   context->module()->AddGlobalValue(std::move(undef_inst));
   return undef_id;
 }
-
 
 }  // namespace reduce
 }  // namespace spvtools

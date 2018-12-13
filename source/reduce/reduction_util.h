@@ -17,8 +17,8 @@
 
 #include "spirv-tools/libspirv.hpp"
 
-#include "reduction_opportunity.h"
 #include "source/opt/ir_context.h"
+#include "source/reduce/reduction_opportunity.h"
 
 namespace spvtools {
 namespace reduce {
