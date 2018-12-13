@@ -92,14 +92,6 @@ class StructuredLoopToSelectionReductionOpportunity
                                           uint32_t use_index,
                                           BasicBlock& def_block);
 
-  // Checks whether the global value list has an OpUndef of the given type,
-  // adding one if not, and returns the id of such an OpUndef.
-  //
-  // TODO(2184): This will likely be used by other reduction passes, so should
-  // be factored out in due course.  Parts of the spirv-opt framework provide
-  // similar functionality, so there may be a case for further refactoring.
-  uint32_t FindOrCreateGlobalUndef(uint32_t type_id);
-
   // Checks whether the global value list has an OpVariable of the given pointer
   // type, adding one if not, and returns the id of such an OpVariable.
   //
