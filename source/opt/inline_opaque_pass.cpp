@@ -99,7 +99,7 @@ Pass::Status InlineOpaquePass::InlineOpaque(Function* func) {
 void InlineOpaquePass::Initialize() { InitializeInline(); }
 
 Pass::Status InlineOpaquePass::ProcessImpl() {
-  Status status;
+  Status status = Status::SuccessWithoutChange;
   // Do opaque inlining on each function in entry point call tree
   ProcessFunction pfn = [&status, this](Function* fp) {
     status = CombineStatus(status, InlineOpaque(fp));

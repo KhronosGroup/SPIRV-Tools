@@ -64,7 +64,7 @@ Pass::Status InlineExhaustivePass::InlineExhaustive(Function* func) {
 }
 
 Pass::Status InlineExhaustivePass::ProcessImpl() {
-  Status status;
+  Status status = Status::SuccessWithoutChange;
   // Attempt exhaustive inlining on each entry point function in module
   ProcessFunction pfn = [&status, this](Function* fp) {
     status = CombineStatus(status, InlineExhaustive(fp));
