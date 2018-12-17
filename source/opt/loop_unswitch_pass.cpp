@@ -74,6 +74,10 @@ class LoopUnswitch {
 
     for (uint32_t bb_id : loop_->GetBlocks()) {
       BasicBlock* bb = cfg.block(bb_id);
+      if (loop_->GetLatchBlock() == bb) {
+        continue;
+      }
+
       if (bb->terminator()->IsBranch() &&
           bb->terminator()->opcode() != SpvOpBranch) {
         if (IsConditionLoopInvariant(bb->terminator())) {
