@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "source/opt/log.h"
+#include "source/spirv_target_env.h"
 #include "source/util/string_utils.h"
 #include "spirv-tools/libspirv.hpp"
 #include "spirv-tools/optimizer.hpp"
@@ -338,6 +339,11 @@ Options (in lexicographical order):
   --strip-reflect
                Remove all reflection information.  For now, this covers
                reflection information defined by SPV_GOOGLE_hlsl_functionality1.
+  --target-env=<env>
+               Set the target environment. Without this flag the target
+               enviroment defaults to spv1.3.
+               <env> must be one of vulkan1.0, vulkan1.1, opencl2.2, spv1.0,
+               spv1.1, spv1.2, spv1.3, or webgpu0.
   --time-report
                Print the resource utilization of each pass (e.g., CPU time,
                RSS) to standard error output. Currently it supports only Unix
@@ -566,6 +572,17 @@ OptStatus ParseFlags(int argc, const char** argv,
         optimizer_options->set_max_id_bound(max_id_bound);
         validator_options->SetUniversalLimit(spv_validator_limit_max_id_bound,
                                              max_id_bound);
+      } else if (0 == strncmp(cur_arg,
+                              "--target-env=", sizeof("--target-env=") - 1)) {
+        const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
+        const auto target_env_str = split_flag.second.c_str();
+        spv_target_env target_env;
+        if (!spvParseTargetEnv(target_env_str, &target_env)) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Invalid value passed to --target-env");
+          return {OPT_STOP, 1};
+        }
+        optimizer->SetTargetEnv(target_env);
       } else {
         // Some passes used to accept the form '--pass arg', canonicalize them
         // to '--pass=arg'.
