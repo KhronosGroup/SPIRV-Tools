@@ -341,7 +341,7 @@ Options (in lexicographical order):
                reflection information defined by SPV_GOOGLE_hlsl_functionality1.
   --target-env=<env>
                Set the target environment. Without this flag the target
-               enviroment defaults to spv1.0.
+               enviroment defaults to spv1.3.
                <env> must be one of vulkan1.0, vulkan1.1, opencl2.2, spv1.0,
                spv1.1, spv1.2, spv1.3, or webgpu0.
   --time-report
