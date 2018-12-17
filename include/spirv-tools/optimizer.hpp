@@ -149,7 +149,7 @@ class Optimizer {
   bool FlagHasValidForm(const std::string& flag) const;
 
   // Allows changing, after creation time, the target environment to be
-  // optimizing for.  Should be called before calling Run().
+  // optimized for.  Should be called before calling Run().
   void SetTargetEnv(const spv_target_env env);
 
   // Optimizes the given SPIR-V module |original_binary| and writes the

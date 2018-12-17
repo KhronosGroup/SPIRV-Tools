@@ -56,7 +56,7 @@ Optimizer::PassToken::~PassToken() {}
 struct Optimizer::Impl {
   explicit Impl(spv_target_env env) : target_env(env), pass_manager() {}
 
-  spv_target_env target_env;  // Target environment.
+  spv_target_env target_env;        // Target environment.
   opt::PassManager pass_manager;    // Internal implementation pass manager.
 };
 
