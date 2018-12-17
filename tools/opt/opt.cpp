@@ -22,8 +22,8 @@
 #include <string>
 #include <vector>
 
-#include "source/spirv_target_env.h"
 #include "source/opt/log.h"
+#include "source/spirv_target_env.h"
 #include "source/util/string_utils.h"
 #include "spirv-tools/libspirv.hpp"
 #include "spirv-tools/optimizer.hpp"
@@ -572,8 +572,8 @@ OptStatus ParseFlags(int argc, const char** argv,
         optimizer_options->set_max_id_bound(max_id_bound);
         validator_options->SetUniversalLimit(spv_validator_limit_max_id_bound,
                                              max_id_bound);
-      } else if (0 == strncmp(cur_arg, "--target-env=",
-                              sizeof("--target-env=") - 1)) {
+      } else if (0 == strncmp(cur_arg,
+                              "--target-env=", sizeof("--target-env=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         const auto target_env_str = split_flag.second.c_str();
         spv_target_env target_env;
