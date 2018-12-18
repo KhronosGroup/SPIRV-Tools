@@ -1158,24 +1158,18 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
                         "requires capability Shader"));
 }
 
-// Disabling this test until
-// https://github.com/KhronosGroup/glslang/issues/1618 is resolved.
-// TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsNoCapability) {
-//  const std::string body = R"(
-// OpAtomicStore %u32_var %device %relaxed %u32_1
-//%val1 = OpAtomicIIncrement %u32 %u32_var %device
-//%acquire_release_atomic_counter_workgroup
-//)";
-//
-//  CompileSuccessfully(GenerateKernelCode(body));
-//  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-//  EXPECT_THAT(
-//      getDiagnosticString(),
-//      HasSubstr("AtomicIIncrement: Memory Semantics AtomicCounterMemory "
-//                "requires capability AtomicStorage\n  %40 = OpAtomicIIncrement
-//                "
-//                "%uint %30 %uint_1_0 %uint_1288\n"));
-//}
+// Lack of the AtomicStorage capability is intentionally ignored, see
+// https://github.com/KhronosGroup/glslang/issues/1618 for the reasoning why.
+TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsNoCapability) {
+  const std::string body = R"(
+ OpAtomicStore %u32_var %device %relaxed %u32_1
+%val1 = OpAtomicIIncrement %u32 %u32_var %device
+%acquire_release_atomic_counter_workgroup
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
 
 TEST_F(ValidateAtomics, AtomicCounterMemorySemanticsWithCapability) {
   const std::string body = R"(
