@@ -39,8 +39,6 @@ namespace opt {
 namespace {
 
 static const uint32_t kTypePointerStorageClassInIdx = 0;
-static const uint32_t kBranchCondTrueLabIdInIdx = 1;
-static const uint32_t kBranchCondFalseLabIdInIdx = 2;
 
 }  // anonymous namespace
 
