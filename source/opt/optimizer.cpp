@@ -217,9 +217,8 @@ Optimizer& Optimizer::RegisterSizePasses() {
 }
 
 Optimizer& Optimizer::RegisterWebGPUPasses() {
-  return RegisterPass(CreateEliminateDeadFunctionsPass())
-      .RegisterPass(CreateAggressiveDCEPass())
-      .RegisterPass(CreateEliminateDeadConstantPass());
+  return RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateDeadBranchElimPass());
 }
 
 bool Optimizer::RegisterPassesFromFlags(const std::vector<std::string>& flags) {

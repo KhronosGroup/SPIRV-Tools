@@ -79,6 +79,12 @@ std::string GetSizePasses() {
   return GetListOfPassesAsString(optimizer);
 }
 
+std::string GetWebGPUPasses() {
+  spvtools::Optimizer optimizer(SPV_ENV_WEBGPU_0);
+  optimizer.RegisterWebGPUPasses();
+  return GetListOfPassesAsString(optimizer);
+}
+
 void PrintUsage(const char* program) {
   // NOTE: Please maintain flags in lexicographical order.
   printf(
@@ -364,11 +370,10 @@ Options (in lexicographical order):
                environmet to webgpu0. Other passes may be turned on via
                additional flags, but such combinations are not tested.
                Using --target-env with this flag is not allowed.
-               This flag is the equivalent of setting the following flags:
-                 --target-env=webgpu0
-                 --eliminate-dead-functions
-                 --eliminate-dead-code-aggressive
-                 --eliminate-dead-const
+
+               This flag is the equivalent of passing in --target-env=webgpu0
+               and specifying the following optimization code names:
+               %s
 
                NOTE: This flag is a WIP and its behaviour is subject to change.
   --workaround-1209
@@ -383,7 +388,8 @@ Options (in lexicographical order):
                Display optimizer version information.
 )",
       program, program, GetLegalizationPasses().c_str(),
-      GetOptimizationPasses().c_str(), GetSizePasses().c_str());
+      GetOptimizationPasses().c_str(), GetSizePasses().c_str(),
+      GetWebGPUPasses().c_str());
 }
 
 // Reads command-line flags  the file specified in |oconfig_flag|. This string
