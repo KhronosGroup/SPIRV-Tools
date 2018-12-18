@@ -65,11 +65,11 @@ if %VS_VERSION% == 2013 (
   cmake -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_INSTALL_PREFIX=install -DRE2_BUILD_TESTING=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe ..
 )
 
-if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo "Build everything... %DATE% %TIME%"
 ninja
-if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 echo "Build Completed %DATE% %TIME%"
 
 :: ################################################
@@ -78,7 +78,8 @@ echo "Build Completed %DATE% %TIME%"
 if NOT %VS_VERSION% == 2013 (
   echo "Running Tests... %DATE% %TIME%"
   ctest -C %BUILD_TYPE% --output-on-failure --timeout 300
-  if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+  echo %ERRORLEVEL%
+  if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
   echo "Tests Completed %DATE% %TIME%"
 )
 
