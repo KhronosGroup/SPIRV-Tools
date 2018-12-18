@@ -906,6 +906,40 @@ TEST_F(UnswitchTest, UnswitchNotUniform) {
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
+TEST_F(UnswitchTest, DontUnswitchLatch) {
+  // Check that the unswitch is not triggered for the latch branch.
+  const std::string text = R"(
+         OpCapability Shader
+    %1 = OpExtInstImport "GLSL.std.450"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Fragment %4 "main"
+         OpExecutionMode %4 OriginUpperLeft
+         OpSource ESSL 310
+ %void = OpTypeVoid
+    %3 = OpTypeFunction %void
+ %bool = OpTypeBool
+%false = OpConstantFalse %bool
+    %4 = OpFunction %void None %3
+    %5 = OpLabel
+         OpBranch %6
+    %6 = OpLabel
+         OpLoopMerge %8 %9 None
+         OpBranch %7
+    %7 = OpLabel
+         OpBranch %9
+    %9 = OpLabel
+         OpBranchConditional %false %6 %8
+    %8 = OpLabel
+         OpReturn
+         OpFunctionEnd
+  )";
+
+  auto result =
+      SinglePassRunAndDisassemble<LoopUnswitchPass>(text, true, false);
+
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
