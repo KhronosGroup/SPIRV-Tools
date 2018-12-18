@@ -79,6 +79,12 @@ std::string GetSizePasses() {
   return GetListOfPassesAsString(optimizer);
 }
 
+std::string GetWebGPUPasses() {
+  spvtools::Optimizer optimizer(SPV_ENV_WEBGPU_0);
+  optimizer.RegisterWebGPUPasses();
+  return GetListOfPassesAsString(optimizer);
+}
+
 void PrintUsage(const char* program) {
   // NOTE: Please maintain flags in lexicographical order.
   printf(
@@ -359,6 +365,17 @@ Options (in lexicographical order):
                This pass looks for components of vectors that are unused, and
                removes them from the vector.  Note this would still leave around
                lots of dead code that a pass of ADCE will be able to remove.
+  --webgpu-mode
+               Turns on the prescribed passes for WebGPU and sets the target
+               environmet to webgpu0. Other passes may be turned on via
+               additional flags, but such combinations are not tested.
+               Using --target-env with this flag is not allowed.
+
+               This flag is the equivalent of passing in --target-env=webgpu0
+               and specifying the following optimization code names:
+               %s
+
+               NOTE: This flag is a WIP and its behaviour is subject to change.
   --workaround-1209
                Rewrites instructions for which there are known driver bugs to
                avoid triggering those bugs.
@@ -371,7 +388,8 @@ Options (in lexicographical order):
                Display optimizer version information.
 )",
       program, program, GetLegalizationPasses().c_str(),
-      GetOptimizationPasses().c_str(), GetSizePasses().c_str());
+      GetOptimizationPasses().c_str(), GetSizePasses().c_str(),
+      GetWebGPUPasses().c_str());
 }
 
 // Reads command-line flags  the file specified in |oconfig_flag|. This string
@@ -515,6 +533,8 @@ OptStatus ParseFlags(int argc, const char** argv,
                      spvtools::ValidatorOptions* validator_options,
                      spvtools::OptimizerOptions* optimizer_options) {
   std::vector<std::string> pass_flags;
+  bool target_env_set = false;
+  bool webgpu_mode_set = false;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
@@ -574,6 +594,12 @@ OptStatus ParseFlags(int argc, const char** argv,
                                              max_id_bound);
       } else if (0 == strncmp(cur_arg,
                               "--target-env=", sizeof("--target-env=") - 1)) {
+        if (webgpu_mode_set) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Cannot use both --webgpu-mode and --target-env at "
+                          "the same time");
+          return {OPT_STOP, 1};
+        }
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         const auto target_env_str = split_flag.second.c_str();
         spv_target_env target_env;
@@ -583,6 +609,16 @@ OptStatus ParseFlags(int argc, const char** argv,
           return {OPT_STOP, 1};
         }
         optimizer->SetTargetEnv(target_env);
+      } else if (0 == strcmp(cur_arg, "--webgpu-mode")) {
+        if (target_env_set) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Cannot use both --webgpu-mode and --target-env at "
+                          "the same time");
+          return {OPT_STOP, 1};
+        }
+
+        optimizer->SetTargetEnv(SPV_ENV_WEBGPU_0);
+        optimizer->RegisterWebGPUPasses();
       } else {
         // Some passes used to accept the form '--pass arg', canonicalize them
         // to '--pass=arg'.
