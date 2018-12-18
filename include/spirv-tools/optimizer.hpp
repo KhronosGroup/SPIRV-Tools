@@ -101,6 +101,11 @@ class Optimizer {
   // from time to time.
   Optimizer& RegisterSizePasses();
 
+  // Registers passes that have been prescribed for WebGPU environments.
+  // This sequence of passes is subject to constant review and will change
+  // from time to time.
+  Optimizer& RegisterWebGPUPasses();
+
   // Registers passes that attempt to legalize the generated code.
   //
   // Note: this recipe is specially designed for legalizing SPIR-V. It should be
