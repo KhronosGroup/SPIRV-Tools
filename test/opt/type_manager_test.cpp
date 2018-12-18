@@ -232,7 +232,7 @@ TEST(TypeManager, TypeStrings) {
       {26, "pipe(0)"},
       {27, "pipe_storage"},
       {28, "named_barrier"},
-      {29, "AccelerationStructureNV"},
+      {29, "accelerationStructureNV"},
   };
 
   std::unique_ptr<IRContext> context =
