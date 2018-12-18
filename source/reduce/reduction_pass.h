@@ -39,13 +39,13 @@ class ReductionPass {
 
   virtual ~ReductionPass() = default;
 
-  // Apply the reduction pass to the given binary.
+  // Applies the reduction pass to the given binary.
   std::vector<uint32_t> TryApplyReduction(const std::vector<uint32_t>& binary);
 
-  // Set a consumer to which relevant messages will be directed.
+  // Sets a consumer to which relevant messages will be directed.
   void SetMessageConsumer(MessageConsumer consumer);
 
-  // Determines whether the granularity with which reduction opportunities are
+  // Returns true if the granularity with which reduction opportunities are
   // applied has reached a minimum.
   bool ReachedMinimumGranularity() const;
 
@@ -54,8 +54,8 @@ class ReductionPass {
   virtual std::string GetName() const = 0;
 
  protected:
-  // Finds the reduction opportunities relevant to this pass that could be
-  // applied to a given SPIR-V module.
+  // Finds and returns the reduction opportunities relevant to this pass that
+  // could be applied to the given SPIR-V module.
   virtual std::vector<std::unique_ptr<ReductionOpportunity>>
   GetAvailableOpportunities(opt::IRContext* context) const = 0;
 

@@ -22,7 +22,7 @@
 namespace spvtools {
 namespace reduce {
 
-// Captures the opportunity to change an id operand of an instruction to undef.
+// An opportunity to replace an id operand of an instruction with undef.
 class ChangeOperandToUndefReductionOpportunity : public ReductionOpportunity {
  public:
   // Constructs the opportunity to replace operand |operand_index| of |inst|
@@ -35,13 +35,9 @@ class ChangeOperandToUndefReductionOpportunity : public ReductionOpportunity {
         operand_index_(operand_index),
         original_id_(inst->GetOperand(operand_index).words[0]) {}
 
-  // Determines whether the opportunity can be applied; it may have been viable
-  // when discovered but later disabled by the application of some other
-  // reduction opportunity.
   bool PreconditionHolds() override;
 
  protected:
-  // Apply the change of operand.
   void Apply() override;
 
  private:

@@ -21,8 +21,9 @@ namespace spvtools {
 namespace reduce {
 
 // A reduction pass for removing OpName instructions.  As well as making the
-// module smaller, removing an OpName instruction may create opportunities to
-// remove the instruction that create the id to which the OpName applies.
+// module smaller, removing an OpName instruction may create opportunities
+// for subsequently removing the instructions that create the ids to which the
+// OpName applies.
 class RemoveOpNameInstructionReductionPass : public ReductionPass {
  public:
   // Creates the reduction pass in the context of the given target environment
@@ -32,12 +33,9 @@ class RemoveOpNameInstructionReductionPass : public ReductionPass {
 
   ~RemoveOpNameInstructionReductionPass() override = default;
 
-  // The name of this pass.
   std::string GetName() const final;
 
  protected:
-  // Finds all opportunities for removing opName instructions in the
-  // given module.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 

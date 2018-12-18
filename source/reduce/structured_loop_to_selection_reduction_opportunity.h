@@ -25,7 +25,7 @@ namespace reduce {
 
 using namespace opt;
 
-// Captures an opportunity to replace a structured loop with a selection.
+// An opportunity to replace a structured loop with a selection.
 class StructuredLoopToSelectionReductionOpportunity
     : public ReductionOpportunity {
  public:
@@ -38,13 +38,12 @@ class StructuredLoopToSelectionReductionOpportunity
         loop_construct_header_(loop_construct_header),
         enclosing_function_(enclosing_function) {}
 
-  // We require the loop header to be reachable.  A structured loop might
+  // Returns true if the loop header is reachable.  A structured loop might
   // become unreachable as a result of turning another structured loop into
   // a selection.
   bool PreconditionHolds() override;
 
  protected:
-  // Perform the structured loop to selection transformation.
   void Apply() override;
 
  private:

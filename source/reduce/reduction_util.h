@@ -23,8 +23,8 @@
 namespace spvtools {
 namespace reduce {
 
-// Checks whether the global value list has an OpUndef of the given type,
-// adding one if not, and returns the id of such an OpUndef.
+// Returns an OpUndef id from the global value list that is of the given type,
+// adding one if it does not exist.
 uint32_t FindOrCreateGlobalUndef(opt::IRContext* context, uint32_t type_id);
 
 }  // namespace reduce

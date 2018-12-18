@@ -20,8 +20,7 @@
 namespace spvtools {
 namespace reduce {
 
-// A reduction pass for turning id operands of instructions into ids of
-// undef.
+// A reduction pass for replacing id operands of instructions with ids of undef.
 class OperandToUndefReductionPass : public ReductionPass {
  public:
   // Creates the reduction pass in the context of the given target environment
@@ -31,12 +30,9 @@ class OperandToUndefReductionPass : public ReductionPass {
 
   ~OperandToUndefReductionPass() override = default;
 
-  // The name of this pass.
   std::string GetName() const final;
 
  protected:
-  // Finds all opportunities for replacing an operand with an undef in the
-  // given module.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 
