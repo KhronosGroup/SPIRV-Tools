@@ -46,29 +46,22 @@ Function* Function::Clone(IRContext* ctx) const {
 
 void Function::ForEachInst(const std::function<void(Instruction*)>& f,
                            bool run_on_debug_line_insts) {
-  if (def_inst_) def_inst_->ForEachInst(f, run_on_debug_line_insts);
-  for (auto& param : params_) param->ForEachInst(f, run_on_debug_line_insts);
-  for (auto& bb : blocks_) bb->ForEachInst(f, run_on_debug_line_insts);
-  if (end_inst_) end_inst_->ForEachInst(f, run_on_debug_line_insts);
+  WhileEachInst(
+      [&f](Instruction* inst) {
+        f(inst);
+        return true;
+      },
+      run_on_debug_line_insts);
 }
 
 void Function::ForEachInst(const std::function<void(const Instruction*)>& f,
                            bool run_on_debug_line_insts) const {
-  if (def_inst_)
-    static_cast<const Instruction*>(def_inst_.get())
-        ->ForEachInst(f, run_on_debug_line_insts);
-
-  for (const auto& param : params_)
-    static_cast<const Instruction*>(param.get())
-        ->ForEachInst(f, run_on_debug_line_insts);
-
-  for (const auto& bb : blocks_)
-    static_cast<const BasicBlock*>(bb.get())->ForEachInst(
-        f, run_on_debug_line_insts);
-
-  if (end_inst_)
-    static_cast<const Instruction*>(end_inst_.get())
-        ->ForEachInst(f, run_on_debug_line_insts);
+  WhileEachInst(
+      [&f](const Instruction* inst) {
+        f(inst);
+        return true;
+      },
+      run_on_debug_line_insts);
 }
 
 bool Function::WhileEachInst(const std::function<bool(Instruction*)>& f,
