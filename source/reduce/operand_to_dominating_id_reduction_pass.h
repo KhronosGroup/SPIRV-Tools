@@ -39,12 +39,9 @@ class OperandToDominatingIdReductionPass : public ReductionPass {
 
   ~OperandToDominatingIdReductionPass() override = default;
 
-  // The name of this pass.
   std::string GetName() const final;
 
  protected:
-  // Finds all opportunities for replacing an operand with a dominating
-  // instruction in a given module.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 
