@@ -752,6 +752,7 @@ ScalarReplacementPass::GetUsedComponents(Instruction* inst) {
         }
       }
       case SpvOpName:
+      case SpvOpMemberName:
       case SpvOpStore:
         // No components are used.
         return true;
