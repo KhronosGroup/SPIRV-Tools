@@ -1317,6 +1317,57 @@ TEST_F(MergeReturnPassTest, GeneratePhiInOuterLoop) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
+
+TEST_F(MergeReturnPassTest, InnerLoopMergeIsOuterLoopContinue) {
+  const std::string before =
+      R"(
+      ; CHECK: OpLoopMerge
+      ; CHECK-NEXT: OpBranch [[bb1:%\w+]]
+      ; CHECK: [[bb1]] = OpLabel
+      ; CHECK-NEXT: OpBranch [[outer_loop_header:%\w+]]
+      ; CHECK: [[outer_loop_header]] = OpLabel
+      ; CHECK-NEXT: OpLoopMerge [[outer_loop_merge:%\w+]] [[outer_loop_continue:%\w+]] None
+      ; CHECK: [[outer_loop_continue]] = OpLabel
+      ; CHECK-NEXT: OpBranch [[outer_loop_header]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %6 = OpTypeFunction %bool
+       %true = OpConstantTrue %bool
+          %2 = OpFunction %void None %4
+          %8 = OpLabel
+          %9 = OpFunctionCall %bool %10
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %bool None %6
+         %11 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+               OpLoopMerge %13 %14 None
+               OpBranchConditional %true %15 %13
+         %15 = OpLabel
+               OpLoopMerge %14 %16 None
+               OpBranchConditional %true %17 %14
+         %17 = OpLabel
+               OpReturnValue %true
+         %16 = OpLabel
+               OpBranch %15
+         %14 = OpLabel
+               OpBranch %12
+         %13 = OpLabel
+               OpReturnValue %true
+               OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
