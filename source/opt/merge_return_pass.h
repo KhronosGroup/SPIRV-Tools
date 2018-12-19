@@ -275,6 +275,8 @@ class MergeReturnPass : public MemPass {
   // new edge from |new_source|.  The value for that edge will be an Undef. If
   // |target| only had a single predecessor, then it is marked as needing new
   // phi nodes.  See |MarkForNewPhiNodes|.
+  //
+  // The CFG must not include the edge from |new_source| to |target| yet.
   void UpdatePhiNodes(BasicBlock* new_source, BasicBlock* target);
 
   StructuredControlState& CurrentState() { return state_.back(); }
