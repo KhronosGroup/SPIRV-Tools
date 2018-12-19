@@ -282,6 +282,7 @@ bool CommonUniformElimPass::UniformAccessChainConvert(Function* func) {
       uint32_t replId;
       GenACLoadRepl(ptrInst, &newInsts, &replId);
       inst = ReplaceAndDeleteLoad(inst, replId, ptrInst);
+      assert(inst->opcode() != SpvOpPhi);
       inst = inst->InsertBefore(std::move(newInsts));
       modified = true;
     }
@@ -355,6 +356,10 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(Function* func) {
     if (mergeBlockId == bp->id()) {
       mergeBlockId = 0;
       insertItr = bp->begin();
+      while (insertItr->opcode() == SpvOpPhi) {
+        ++insertItr;
+      }
+
       // Update insertItr until it will not be removed. Without this code,
       // ReplaceAndDeleteLoad() can set |insertItr| as a dangling pointer.
       while (IsUniformLoadToBeRemoved(&*insertItr)) ++insertItr;
