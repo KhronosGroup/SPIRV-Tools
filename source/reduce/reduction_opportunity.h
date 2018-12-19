@@ -20,23 +20,24 @@
 namespace spvtools {
 namespace reduce {
 
-// Abstract class capturing an opportunity to apply a reducing transformation.
+// Abstract class: an opportunity to apply a reducing transformation.
 class ReductionOpportunity {
  public:
   ReductionOpportunity() = default;
   virtual ~ReductionOpportunity() = default;
 
-  // Determines whether the opportunity can be applied; it may have been viable
-  // when discovered but later disabled by the application of some other
-  // reduction opportunity.
+  // Returns true if this opportunity has not been disabled by the application
+  // of another conflicting opportunity.
   virtual bool PreconditionHolds() = 0;
 
-  // A no-op if PreconditoinHolds() returns false; otherwise applies the
-  // opportunity.
+  // Applies the opportunity, mutating the module from which the opportunity was
+  // created. It is a no-op if PreconditionHolds() returns false.
   void TryToApply();
 
  protected:
-  // Apply the reduction opportunity.
+  // Applies the opportunity, mutating the module from which the opportunity was
+  // created.
+  // Precondition: PreconditionHolds() must return true.
   virtual void Apply() = 0;
 };
 

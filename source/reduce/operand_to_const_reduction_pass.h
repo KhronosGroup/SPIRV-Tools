@@ -15,12 +15,12 @@
 #ifndef SOURCE_REDUCE_OPERAND_TO_CONST_REDUCTION_PASS_H_
 #define SOURCE_REDUCE_OPERAND_TO_CONST_REDUCTION_PASS_H_
 
-#include "reduction_pass.h"
+#include "source/reduce/reduction_pass.h"
 
 namespace spvtools {
 namespace reduce {
 
-// A reduction pass for turning id operands of instructions into ids of
+// A reduction pass for replacing id operands of instructions with ids of
 // constants.  This reduces the extent to which ids of non-constants are used,
 // paving the way for instructions that generate them to be eliminated by other
 // passes.
@@ -33,12 +33,9 @@ class OperandToConstReductionPass : public ReductionPass {
 
   ~OperandToConstReductionPass() override = default;
 
-  // The name of this pass.
   std::string GetName() const final;
 
  protected:
-  // Finds all opportunities for replacing an operand with a constant in the
-  // given module.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 
