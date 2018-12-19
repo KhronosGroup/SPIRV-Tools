@@ -744,6 +744,9 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
     case SpvOpTypeNamedBarrier:
       type = new NamedBarrier();
       break;
+    case SpvOpTypeAccelerationStructureNV:
+      type = new AccelerationStructureNV();
+      break;
     default:
       SPIRV_UNIMPLEMENTED(consumer_, "unhandled type");
       break;

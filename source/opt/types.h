@@ -598,7 +598,7 @@ DefineParameterlessType(ReserveId, reserve_id);
 DefineParameterlessType(Queue, queue);
 DefineParameterlessType(PipeStorage, pipe_storage);
 DefineParameterlessType(NamedBarrier, named_barrier);
-DefineParameterlessType(AccelerationStructureNV, acceleration_structure);
+DefineParameterlessType(AccelerationStructureNV, accelerationStructureNV);
 #undef DefineParameterlessType
 
 }  // namespace analysis
