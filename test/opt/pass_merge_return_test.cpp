@@ -1254,6 +1254,69 @@ TEST_F(MergeReturnPassTest, StructuredControlFlowPartialReplacePhi) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
+
+TEST_F(MergeReturnPassTest, GeneratePhiInOuterLoop) {
+  const std::string before =
+      R"(
+      ; CHECK: OpLoopMerge
+      ; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]]
+      ; CHECK: [[continue]] = OpLabel
+      ; CHECK-NEXT: [[undef:%\w+]] = OpUndef
+      ; CHECK: [[merge]] = OpLabel
+      ; CHECK-NEXT: [[phi:%\w+]] = OpPhi %bool [[undef]] [[continue]] {{%\w+}} {{%\w+}}
+      ; CHECK: OpCopyObject %bool [[phi]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %8 = OpTypeFunction %bool
+      %false = OpConstantFalse %bool
+          %4 = OpFunction %void None %3
+          %5 = OpLabel
+         %63 = OpFunctionCall %bool %9
+               OpReturn
+               OpFunctionEnd
+          %9 = OpFunction %bool None %8
+         %10 = OpLabel
+               OpBranch %31
+         %31 = OpLabel
+               OpLoopMerge %33 %34 None
+               OpBranch %32
+         %32 = OpLabel
+               OpSelectionMerge %34 None
+               OpBranchConditional %false %46 %34
+         %46 = OpLabel
+               OpLoopMerge %51 %52 None
+               OpBranch %53
+         %53 = OpLabel
+               OpBranchConditional %false %50 %51
+         %50 = OpLabel
+               OpReturnValue %false
+         %52 = OpLabel
+               OpBranch %46
+         %51 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
+         %64 = OpUndef %bool
+               OpBranchConditional %false %31 %33
+         %33 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+         %60 = OpCopyObject %bool %64
+               OpBranch %17
+         %17 = OpLabel
+               OpReturnValue %false
+               OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<MergeReturnPass>(before, false);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

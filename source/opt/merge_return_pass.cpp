@@ -360,7 +360,7 @@ bool MergeReturnPass::BreakFromConstruct(
     BasicBlock* block, BasicBlock* merge_block,
     std::unordered_set<BasicBlock*>* predicated,
     std::list<BasicBlock*>* order) {
-  // Make sure the cfg is build here.  If we don't then it becomes very hard
+  // Make sure the CFG is build here.  If we don't then it becomes very hard
   // to know which new blocks need to be updated.
   context()->BuildInvalidAnalyses(IRContext::kAnalysisCFG);
 
@@ -403,6 +403,7 @@ bool MergeReturnPass::BreakFromConstruct(
   // 1. Load of the return status flag
   // 2. Branch to |merge_block| (true) or old body (false)
   // 3. Update OpPhi instructions in |merge_block|.
+  // 4. Update the CFG.
   //
   // Sine we are branching to the merge block of the current construct, there is
   // no need for an OpSelectionMerge.
@@ -421,10 +422,6 @@ bool MergeReturnPass::BreakFromConstruct(
   builder.AddConditionalBranch(load_id, merge_block->id(), old_body->id(),
                                old_body->id());
 
-  // Update the cfg
-  cfg()->AddEdges(block);
-  cfg()->RegisterBlock(old_body);
-
   // 3. Update OpPhi instructions in |merge_block|.
   BasicBlock* merge_original_pred = MarkedSinglePred(merge_block);
   if (merge_original_pred == nullptr) {
@@ -432,6 +429,12 @@ bool MergeReturnPass::BreakFromConstruct(
   } else if (merge_original_pred == block) {
     MarkForNewPhiNodes(merge_block, old_body);
   }
+
+  // 4. Update the CFG.  We do this after updating the OpPhi instructions
+  // because |UpdatePhiNodes| assumes the edge from |block| has not been added
+  // to the CFG yet.
+  cfg()->AddEdges(block);
+  cfg()->RegisterBlock(old_body);
 
   assert(old_body->begin() != old_body->end());
   assert(block->begin() != block->end());
