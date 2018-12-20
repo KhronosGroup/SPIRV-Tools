@@ -47,7 +47,8 @@ class CopyPropagateArrays : public MemPass {
     return IRContext::kAnalysisDefUse | IRContext::kAnalysisCFG |
            IRContext::kAnalysisInstrToBlockMapping |
            IRContext::kAnalysisLoopAnalysis | IRContext::kAnalysisDecorations |
-           IRContext::kAnalysisDominatorAnalysis | IRContext::kAnalysisNameMap;
+           IRContext::kAnalysisDominatorAnalysis | IRContext::kAnalysisNameMap |
+           IRContext::kAnalysisConstants | IRContext::kAnalysisTypes;
   }
 
  private:

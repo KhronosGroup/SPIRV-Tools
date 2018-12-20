@@ -44,7 +44,9 @@ class DeadBranchElimPass : public MemPass {
   Status Process() override;
 
   IRContext::Analysis GetPreservedAnalyses() override {
-    return IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping;
+    return IRContext::kAnalysisDefUse |
+           IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisConstants | IRContext::kAnalysisTypes;
   }
 
  private:

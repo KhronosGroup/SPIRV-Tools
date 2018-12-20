@@ -34,7 +34,8 @@ class LoopUnroller : public Pass {
     return IRContext::kAnalysisDefUse |
            IRContext::kAnalysisInstrToBlockMapping |
            IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
-           IRContext::kAnalysisNameMap;
+           IRContext::kAnalysisNameMap | IRContext::kAnalysisConstants |
+           IRContext::kAnalysisTypes;
   }
 
  private:
