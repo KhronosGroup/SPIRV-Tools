@@ -124,7 +124,14 @@ bool LICMPass::HoistInstruction(Loop* loop, Instruction* inst) {
   if (!pre_header_bb) {
     return false;
   }
-  inst->InsertBefore(std::move(&(*pre_header_bb->tail())));
+  Instruction* insertion_point = &*pre_header_bb->tail();
+  Instruction* previous_node = insertion_point->PreviousNode();
+  if (previous_node && (previous_node->opcode() == SpvOpLoopMerge ||
+                        previous_node->opcode() == SpvOpSelectionMerge)) {
+    insertion_point = previous_node;
+  }
+
+  inst->InsertBefore(insertion_point);
   context()->set_instr_block(inst, pre_header_bb);
   return true;
 }
