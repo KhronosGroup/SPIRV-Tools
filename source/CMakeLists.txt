@@ -110,9 +110,9 @@ macro(spvtools_vendor_tables VENDOR_TABLE)
       --vendor-insts-output=${INSTS_FILE}
     DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
     COMMENT "Generate extended instruction tables for ${VENDOR_TABLE}.")
-  list(APPEND EXTINST_CPP_DEPENDS ${INSTS_FILE})
   add_custom_target(spirv-tools-${VENDOR_TABLE} DEPENDS ${INSTS_FILE})
   set_property(TARGET spirv-tools-${VENDOR_TABLE} PROPERTY FOLDER "SPIRV-Tools build")
+  list(APPEND EXTINST_CPP_DEPENDS spirv-tools-${VENDOR_TABLE})
 endmacro(spvtools_vendor_tables)
 
 macro(spvtools_extinst_lang_headers NAME GRAMMAR_FILE)
@@ -125,9 +125,9 @@ macro(spvtools_extinst_lang_headers NAME GRAMMAR_FILE)
       --extinst-output-base=${OUTBASE}
     DEPENDS ${LANG_HEADER_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
     COMMENT "Generate language specific header for ${NAME}.")
-  list(APPEND EXTINST_CPP_DEPENDS ${OUT_H})
   add_custom_target(spirv-tools-header-${NAME} DEPENDS ${OUT_H})
   set_property(TARGET spirv-tools-header-${NAME} PROPERTY FOLDER "SPIRV-Tools build")
+  list(APPEND EXTINST_CPP_DEPENDS spirv-tools-header-${NAME})
 endmacro(spvtools_extinst_lang_headers)
 
 spvtools_core_tables("unified1")
@@ -159,36 +159,18 @@ list(APPEND OPCODE_CPP_DEPENDS ${GENERATOR_INC_FILE})
 # The following .cpp files include the above generated .inc files.
 # Add those .inc files as their dependencies.
 #
-# Why using such an awkward way?
-# * If we use add_custom_target() to define a target to generate all .inc files
-#   and let ${SPIRV_TOOLS} depend on it, then we need to run ninja twice every
-#   time the grammar is updated: the first time is for generating those .inc
-#   files, and the second time is for rebuilding .cpp files, when ninja finds
-#   out that .inc files are updated.
-# * If we use add_custom_command() with PRE_BUILD, then the grammar processing
-#   script will always run no matter whether the grammar is updated.
-# * add_dependencies() is used to add *target* dependencies to a target.
-# * The following solution only generates .inc files when the script or the
-#   grammar files is updated, and in a single ninja run.
-set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/opcode.cpp
-  PROPERTIES OBJECT_DEPENDS "${OPCODE_CPP_DEPENDS}")
-set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/operand.cpp
-  PROPERTIES OBJECT_DEPENDS "${OPERAND_CPP_DEPENDS}")
-set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
-  PROPERTIES OBJECT_DEPENDS "${EXTINST_CPP_DEPENDS}")
-set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.cpp
-  PROPERTIES OBJECT_DEPENDS "${ENUM_STRING_MAPPING_CPP_DEPENDS}")
+# We need to wrap the .inc files with a custom target to avoid problems when
+# multiple targets depend on the same custom command.
+add_custom_target(core_tables
+  DEPENDS ${OPCODE_CPP_DEPENDS} ${OPERAND_CPP_DEPENDS})
+add_custom_target(enum_string_mapping
+  DEPENDS ${EXTENSION_H_DEPENDS} ${ENUM_STRING_MAPPING_CPP_DEPENDS})
+add_custom_target(extinst_tables
+  DEPENDS ${EXTINST_CPP_DEPENDS})
 
 set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
   PROPERTIES HEADER_FILE_ONLY TRUE)
-set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
-  PROPERTIES OBJECT_DEPENDS "${EXTENSION_H_DEPENDS}")
 
 set(SPIRV_TOOLS_BUILD_VERSION_INC
   ${spirv-tools_BINARY_DIR}/build-version.inc)
@@ -361,6 +343,7 @@ target_include_directories(${SPIRV_TOOLS}
   )
 set_property(TARGET ${SPIRV_TOOLS} PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(${SPIRV_TOOLS})
+add_dependencies( ${SPIRV_TOOLS} core_tables enum_string_mapping extinst_tables )
 
 add_library(${SPIRV_TOOLS}-shared SHARED ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS}-shared)
@@ -376,6 +359,7 @@ target_compile_definitions(${SPIRV_TOOLS}-shared
   PRIVATE SPIRV_TOOLS_IMPLEMENTATION
   PUBLIC SPIRV_TOOLS_SHAREDLIB
 )
+add_dependencies( ${SPIRV_TOOLS}-shared core_tables enum_string_mapping extinst_tables )
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
   install(TARGETS ${SPIRV_TOOLS} ${SPIRV_TOOLS}-shared
