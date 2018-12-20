@@ -61,7 +61,7 @@ class LICMPass : public Pass {
   // Returns true if |bb| is immediately contained in |loop|
   bool IsImmediatelyContainedInLoop(Loop* loop, Function* f, BasicBlock* bb);
 
-  // Move the instruction to the given BasicBlock
+  // Move the instruction to the preheader of |loop|.
   // This method will update the instruction to block mapping for the context
   bool HoistInstruction(Loop* loop, Instruction* inst);
 };
