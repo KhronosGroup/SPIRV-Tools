@@ -75,7 +75,8 @@ class InstrumentPass : public Pass {
     return IRContext::kAnalysisDefUse |
            IRContext::kAnalysisInstrToBlockMapping |
            IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
-           IRContext::kAnalysisNameMap | IRContext::kAnalysisBuiltinVarId;
+           IRContext::kAnalysisNameMap | IRContext::kAnalysisBuiltinVarId |
+           IRContext::kAnalysisConstants | IRContext::kAnalysisTypes;
   }
 
  protected:

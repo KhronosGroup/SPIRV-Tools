@@ -74,6 +74,12 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisIdToFuncMapping) {
     BuildIdToFuncMapping();
   }
+  if (set & kAnalysisConstants) {
+    BuildConstantManager();
+  }
+  if (set & kAnalysisTypes) {
+    BuildTypeManager();
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
@@ -116,6 +122,12 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   }
   if (analyses_to_invalidate & kAnalysisIdToFuncMapping) {
     id_to_func_.clear();
+  }
+  if (analyses_to_invalidate & kAnalysisConstants) {
+    constant_mgr_.reset(nullptr);
+  }
+  if (analyses_to_invalidate & kAnalysisTypes) {
+    type_mgr_.reset(nullptr);
   }
 
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
