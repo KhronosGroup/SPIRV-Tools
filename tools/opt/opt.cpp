@@ -447,12 +447,15 @@ OptStatus ParseFlags(int argc, const char** argv,
 // Parses and handles the -Oconfig flag. |prog_name| contains the name of
 // the spirv-opt binary (used to build a new argv vector for the recursive
 // invocation to ParseFlags). |opt_flag| contains the -Oconfig=FILENAME flag.
-// |optimizer|, |in_file| and |out_file| are as in ParseFlags.
+// |optimizer|, |in_file|, |out_file|, |validator_options|, and
+// |optimizer_options| are as in ParseFlags.
 //
 // This returns the same OptStatus instance returned by ParseFlags.
 OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
                            spvtools::Optimizer* optimizer, const char** in_file,
-                           const char** out_file) {
+                           const char** out_file,
+                           spvtools::ValidatorOptions* validator_options,
+                           spvtools::OptimizerOptions* optimizer_options) {
   std::vector<std::string> flags;
   flags.push_back(prog_name);
 
@@ -476,7 +479,7 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
   }
 
   return ParseFlags(static_cast<int>(flags.size()), new_argv, optimizer,
-                    in_file, out_file, nullptr, nullptr);
+                    in_file, out_file, validator_options, optimizer_options);
 }
 
 // Canonicalize the flag in |argv[argi]| of the form '--pass arg' into
@@ -563,7 +566,8 @@ OptStatus ParseFlags(int argc, const char** argv,
         }
       } else if (0 == strncmp(cur_arg, "-Oconfig=", sizeof("-Oconfig=") - 1)) {
         OptStatus status =
-            ParseOconfigFlag(argv[0], cur_arg, optimizer, in_file, out_file);
+            ParseOconfigFlag(argv[0], cur_arg, optimizer, in_file, out_file,
+                             validator_options, optimizer_options);
         if (status.action != OPT_CONTINUE) {
           return status;
         }
