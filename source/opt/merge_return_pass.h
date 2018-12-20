@@ -104,7 +104,7 @@ class MergeReturnPass : public MemPass {
   Status Process() override;
 
   IRContext::Analysis GetPreservedAnalyses() override {
-    return IRContext::kAnalysisNone;
+    return IRContext::kAnalysisConstants | IRContext::kAnalysisTypes;
   }
 
  private:

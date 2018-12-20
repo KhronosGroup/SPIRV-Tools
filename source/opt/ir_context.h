@@ -76,7 +76,9 @@ class IRContext {
     kAnalysisStructuredCFG = 1 << 11,
     kAnalysisBuiltinVarId = 1 << 12,
     kAnalysisIdToFuncMapping = 1 << 13,
-    kAnalysisEnd = 1 << 14
+    kAnalysisConstants = 1 << 14,
+    kAnalysisTypes = 1 << 15,
+    kAnalysisEnd = 1 << 16
   };
 
   using ProcessFunction = std::function<bool(Function*)>;
@@ -292,8 +294,9 @@ class IRContext {
   // created yet, it creates one.  NOTE: Once created, the constant manager
   // remains active and it is never re-built.
   analysis::ConstantManager* get_constant_mgr() {
-    if (!constant_mgr_)
-      constant_mgr_ = MakeUnique<analysis::ConstantManager>(this);
+    if (!AreAnalysesValid(kAnalysisConstants)) {
+      BuildConstantManager();
+    }
     return constant_mgr_.get();
   }
 
@@ -301,8 +304,9 @@ class IRContext {
   // yet, it creates one. NOTE: Once created, the type manager remains active it
   // is never re-built.
   analysis::TypeManager* get_type_mgr() {
-    if (!type_mgr_)
-      type_mgr_ = MakeUnique<analysis::TypeManager>(consumer(), this);
+    if (!AreAnalysesValid(kAnalysisTypes)) {
+      BuildTypeManager();
+    }
     return type_mgr_.get();
   }
 
@@ -582,6 +586,20 @@ class IRContext {
   void BuildStructuredCFGAnalysis() {
     struct_cfg_analysis_ = MakeUnique<StructuredCFGAnalysis>(this);
     valid_analyses_ = valid_analyses_ | kAnalysisStructuredCFG;
+  }
+
+  // Builds the constant manager from scratch, even if it was already
+  // valid.
+  void BuildConstantManager() {
+    constant_mgr_ = MakeUnique<analysis::ConstantManager>(this);
+    valid_analyses_ = valid_analyses_ | kAnalysisConstants;
+  }
+
+  // Builds the type manager from scratch, even if it was already
+  // valid.
+  void BuildTypeManager() {
+    type_mgr_ = MakeUnique<analysis::TypeManager>(consumer(), this);
+    valid_analyses_ = valid_analyses_ | kAnalysisTypes;
   }
 
   // Removes all computed dominator and post-dominator trees. This will force
