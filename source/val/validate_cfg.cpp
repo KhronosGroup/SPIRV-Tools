@@ -652,16 +652,27 @@ spv_result_t StructuredControlFlowChecks(
       }
     }
 
-    // Check that for all non-header blocks, all predecessors are within this
-    // construct.
     Construct::ConstructBlockSet construct_blocks = construct.blocks(function);
     for (auto block : construct_blocks) {
+      std::string construct_name, header_name, exit_name;
+      std::tie(construct_name, header_name, exit_name) =
+          ConstructNames(construct.type());
+      // Check that all exits from the construct are via structured exits.
+      for (auto succ : *block->successors()) {
+        if (block->reachable() && !construct_blocks.count(succ) &&
+            !construct.IsStructuredExit(_, succ)) {
+          return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+                 << "block <ID> " << _.getIdName(block->id()) << " exits the "
+                 << construct_name << " headed by <ID> "
+                 << _.getIdName(header->id())
+                 << ", but not via a structured exit";
+        }
+      }
       if (block == header) continue;
+      // Check that for all non-header blocks, all predecessors are within this
+      // construct.
       for (auto pred : *block->predecessors()) {
         if (pred->reachable() && !construct_blocks.count(pred)) {
-          std::string construct_name, header_name, exit_name;
-          std::tie(construct_name, header_name, exit_name) =
-              ConstructNames(construct.type());
           return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(pred->id()))
                  << "block <ID> " << pred->id() << " branches to the "
                  << construct_name << " construct, but not to the "
@@ -680,6 +691,7 @@ spv_result_t StructuredControlFlowChecks(
       }
     }
   }
+
   return SPV_SUCCESS;
 }
 
@@ -836,7 +848,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       auto edges = CFA<BasicBlock>::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
       for (auto edge : edges) {
-        edge.first->SetImmediateDominator(edge.second);
+        if (edge.first != edge.second)
+          edge.first->SetImmediateDominator(edge.second);
       }
 
       /// calculate post dominators
