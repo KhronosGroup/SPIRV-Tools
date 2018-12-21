@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "structured_loop_to_selection_reduction_opportunity.h"
+#include "source/reduce/structured_loop_to_selection_reduction_opportunity.h"
+
 #include "source/opt/aggressive_dead_code_elim_pass.h"
 #include "source/opt/ir_context.h"
+#include "source/reduce/reduction_util.h"
 
 namespace spvtools {
 namespace reduce {
@@ -191,7 +193,7 @@ void StructuredLoopToSelectionReductionOpportunity::
   to_block->ForEachPhiInst([this, &from_id](Instruction* phi_inst) {
     // Add to the phi operand an (undef, from_id) pair to reflect the added
     // edge.
-    auto undef_id = FindOrCreateGlobalUndef(phi_inst->type_id());
+    auto undef_id = FindOrCreateGlobalUndef(context_, phi_inst->type_id());
     phi_inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {undef_id}));
     phi_inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {from_id}));
   });
@@ -273,7 +275,8 @@ void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses() {
                 break;
             }
           } else {
-            use->SetOperand(index, {FindOrCreateGlobalUndef(def.type_id())});
+            use->SetOperand(index,
+                            {FindOrCreateGlobalUndef(context_, def.type_id())});
           }
         }
       });
@@ -294,26 +297,6 @@ bool StructuredLoopToSelectionReductionOpportunity::
   // In non-phi cases, a use needs to be dominated by its definition.
   return context_->GetDominatorAnalysis(enclosing_function_)
       ->Dominates(def, use);
-}
-
-uint32_t StructuredLoopToSelectionReductionOpportunity::FindOrCreateGlobalUndef(
-    uint32_t type_id) {
-  for (auto& inst : context_->module()->types_values()) {
-    if (inst.opcode() != SpvOpUndef) {
-      continue;
-    }
-    if (inst.type_id() == type_id) {
-      return inst.result_id();
-    }
-  }
-  // TODO(2182): this is adapted from MemPass::Type2Undef.  In due course it
-  // would be good to factor out this duplication.
-  const uint32_t undef_id = context_->TakeNextId();
-  std::unique_ptr<Instruction> undef_inst(
-      new Instruction(context_, SpvOpUndef, type_id, undef_id, {}));
-  assert(undef_id == undef_inst->result_id());
-  context_->module()->AddGlobalValue(std::move(undef_inst));
-  return undef_id;
 }
 
 uint32_t

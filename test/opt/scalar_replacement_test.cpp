@@ -1149,7 +1149,6 @@ TEST_F(ScalarReplacementTest, NoPartialAccesses2) {
 ; CHECK: OpVariable [[float_ptr]] Function
 ; CHECK: OpVariable [[float_ptr]] Function
 ; CHECK: OpVariable [[float_ptr]] Function
-; CHECK: OpVariable [[float_ptr]] Function
 ; CHECK-NOT: OpVariable
 ;
 OpCapability Shader
@@ -1553,6 +1552,45 @@ OpFunctionEnd
   auto result =
       SinglePassRunAndDisassemble<ScalarReplacementPass>(text, true, false, 0);
   EXPECT_EQ(Pass::Status::SuccessWithChange, std::get<1>(result));
+}
+
+TEST_F(ScalarReplacementTest, AmbigousPointer) {
+  const std::string text = R"(
+; CHECK: [[s1:%\w+]] = OpTypeStruct %uint
+; CHECK: [[s2:%\w+]] = OpTypeStruct %uint
+; CHECK: [[s3:%\w+]] = OpTypeStruct [[s2]]
+; CHECK: [[s3_const:%\w+]] = OpConstantComposite [[s3]]
+; CHECK: [[s2_ptr:%\w+]] = OpTypePointer Function [[s2]]
+; CHECK: OpCompositeExtract [[s2]] [[s3_const]]
+
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+  %_struct_7 = OpTypeStruct %uint
+  %_struct_8 = OpTypeStruct %uint
+  %_struct_9 = OpTypeStruct %_struct_8
+     %uint_1 = OpConstant %uint 1
+         %11 = OpConstantComposite %_struct_8 %uint_1
+         %12 = OpConstantComposite %_struct_9 %11
+%_ptr_Function__struct_9 = OpTypePointer Function %_struct_9
+%_ptr_Function__struct_7 = OpTypePointer Function %_struct_7
+          %2 = OpFunction %void None %5
+         %15 = OpLabel
+        %var = OpVariable %_ptr_Function__struct_9 Function
+               OpStore %var %12
+         %ld = OpLoad %_struct_9 %var
+         %ex = OpCompositeExtract %_struct_8 %ld 0
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
 }
 
 }  // namespace

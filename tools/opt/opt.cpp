@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "source/opt/log.h"
+#include "source/spirv_target_env.h"
 #include "source/util/string_utils.h"
 #include "spirv-tools/libspirv.hpp"
 #include "spirv-tools/optimizer.hpp"
@@ -75,6 +76,12 @@ std::string GetOptimizationPasses() {
 std::string GetSizePasses() {
   spvtools::Optimizer optimizer(kDefaultEnvironment);
   optimizer.RegisterSizePasses();
+  return GetListOfPassesAsString(optimizer);
+}
+
+std::string GetWebGPUPasses() {
+  spvtools::Optimizer optimizer(SPV_ENV_WEBGPU_0);
+  optimizer.RegisterWebGPUPasses();
   return GetListOfPassesAsString(optimizer);
 }
 
@@ -338,6 +345,11 @@ Options (in lexicographical order):
   --strip-reflect
                Remove all reflection information.  For now, this covers
                reflection information defined by SPV_GOOGLE_hlsl_functionality1.
+  --target-env=<env>
+               Set the target environment. Without this flag the target
+               enviroment defaults to spv1.3.
+               <env> must be one of vulkan1.0, vulkan1.1, opencl2.2, spv1.0,
+               spv1.1, spv1.2, spv1.3, or webgpu0.
   --time-report
                Print the resource utilization of each pass (e.g., CPU time,
                RSS) to standard error output. Currently it supports only Unix
@@ -353,6 +365,17 @@ Options (in lexicographical order):
                This pass looks for components of vectors that are unused, and
                removes them from the vector.  Note this would still leave around
                lots of dead code that a pass of ADCE will be able to remove.
+  --webgpu-mode
+               Turns on the prescribed passes for WebGPU and sets the target
+               environmet to webgpu0. Other passes may be turned on via
+               additional flags, but such combinations are not tested.
+               Using --target-env with this flag is not allowed.
+
+               This flag is the equivalent of passing in --target-env=webgpu0
+               and specifying the following optimization code names:
+               %s
+
+               NOTE: This flag is a WIP and its behaviour is subject to change.
   --workaround-1209
                Rewrites instructions for which there are known driver bugs to
                avoid triggering those bugs.
@@ -365,7 +388,8 @@ Options (in lexicographical order):
                Display optimizer version information.
 )",
       program, program, GetLegalizationPasses().c_str(),
-      GetOptimizationPasses().c_str(), GetSizePasses().c_str());
+      GetOptimizationPasses().c_str(), GetSizePasses().c_str(),
+      GetWebGPUPasses().c_str());
 }
 
 // Reads command-line flags  the file specified in |oconfig_flag|. This string
@@ -423,12 +447,15 @@ OptStatus ParseFlags(int argc, const char** argv,
 // Parses and handles the -Oconfig flag. |prog_name| contains the name of
 // the spirv-opt binary (used to build a new argv vector for the recursive
 // invocation to ParseFlags). |opt_flag| contains the -Oconfig=FILENAME flag.
-// |optimizer|, |in_file| and |out_file| are as in ParseFlags.
+// |optimizer|, |in_file|, |out_file|, |validator_options|, and
+// |optimizer_options| are as in ParseFlags.
 //
 // This returns the same OptStatus instance returned by ParseFlags.
 OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
                            spvtools::Optimizer* optimizer, const char** in_file,
-                           const char** out_file) {
+                           const char** out_file,
+                           spvtools::ValidatorOptions* validator_options,
+                           spvtools::OptimizerOptions* optimizer_options) {
   std::vector<std::string> flags;
   flags.push_back(prog_name);
 
@@ -452,7 +479,7 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
   }
 
   return ParseFlags(static_cast<int>(flags.size()), new_argv, optimizer,
-                    in_file, out_file, nullptr, nullptr);
+                    in_file, out_file, validator_options, optimizer_options);
 }
 
 // Canonicalize the flag in |argv[argi]| of the form '--pass arg' into
@@ -509,6 +536,8 @@ OptStatus ParseFlags(int argc, const char** argv,
                      spvtools::ValidatorOptions* validator_options,
                      spvtools::OptimizerOptions* optimizer_options) {
   std::vector<std::string> pass_flags;
+  bool target_env_set = false;
+  bool webgpu_mode_set = false;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
@@ -537,7 +566,8 @@ OptStatus ParseFlags(int argc, const char** argv,
         }
       } else if (0 == strncmp(cur_arg, "-Oconfig=", sizeof("-Oconfig=") - 1)) {
         OptStatus status =
-            ParseOconfigFlag(argv[0], cur_arg, optimizer, in_file, out_file);
+            ParseOconfigFlag(argv[0], cur_arg, optimizer, in_file, out_file,
+                             validator_options, optimizer_options);
         if (status.action != OPT_CONTINUE) {
           return status;
         }
@@ -566,6 +596,33 @@ OptStatus ParseFlags(int argc, const char** argv,
         optimizer_options->set_max_id_bound(max_id_bound);
         validator_options->SetUniversalLimit(spv_validator_limit_max_id_bound,
                                              max_id_bound);
+      } else if (0 == strncmp(cur_arg,
+                              "--target-env=", sizeof("--target-env=") - 1)) {
+        if (webgpu_mode_set) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Cannot use both --webgpu-mode and --target-env at "
+                          "the same time");
+          return {OPT_STOP, 1};
+        }
+        const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
+        const auto target_env_str = split_flag.second.c_str();
+        spv_target_env target_env;
+        if (!spvParseTargetEnv(target_env_str, &target_env)) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Invalid value passed to --target-env");
+          return {OPT_STOP, 1};
+        }
+        optimizer->SetTargetEnv(target_env);
+      } else if (0 == strcmp(cur_arg, "--webgpu-mode")) {
+        if (target_env_set) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Cannot use both --webgpu-mode and --target-env at "
+                          "the same time");
+          return {OPT_STOP, 1};
+        }
+
+        optimizer->SetTargetEnv(SPV_ENV_WEBGPU_0);
+        optimizer->RegisterWebGPUPasses();
       } else {
         // Some passes used to accept the form '--pass arg', canonicalize them
         // to '--pass=arg'.

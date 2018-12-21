@@ -119,15 +119,8 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
            << ": Memory Semantics UniformMemory requires capability Shader";
   }
 
-  // Disabling this check until
-  // https://github.com/KhronosGroup/glslang/issues/1618 is resolved.
-  //   if (value & SpvMemorySemanticsAtomicCounterMemoryMask &&
-  //      !_.HasCapability(SpvCapabilityAtomicStorage)) {
-  //    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-  //           << spvOpcodeString(opcode)
-  //           << ": Memory Semantics AtomicCounterMemory requires capability "
-  //              "AtomicStorage";
-  //  }
+  // Checking for SpvCapabilityAtomicStorage is intentionally not done here. See
+  // https://github.com/KhronosGroup/glslang/issues/1618 for the reasoning why.
 
   if (value & (SpvMemorySemanticsMakeAvailableKHRMask |
                SpvMemorySemanticsMakeVisibleKHRMask)) {

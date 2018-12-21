@@ -41,7 +41,8 @@ class InlinePass : public Pass {
  protected:
   InlinePass();
 
-  // Add pointer to type to module and return resultId.
+  // Add pointer to type to module and return resultId.  Returns 0 if the type
+  // could not be created.
   uint32_t AddPointerToType(uint32_t type_id, SpvStorageClass storage_class);
 
   // Add unconditional branch to labelId to end of block block_ptr.
@@ -67,20 +68,22 @@ class InlinePass : public Pass {
   std::unique_ptr<Instruction> NewLabel(uint32_t label_id);
 
   // Returns the id for the boolean false value. Looks in the module first
-  // and creates it if not found. Remembers it for future calls.
+  // and creates it if not found. Remembers it for future calls.  Returns 0 if
+  // the value could not be created.
   uint32_t GetFalseId();
 
   // Map callee params to caller args
   void MapParams(Function* calleeFn, BasicBlock::iterator call_inst_itr,
                  std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
-  // Clone and map callee locals
-  void CloneAndMapLocals(Function* calleeFn,
+  // Clone and map callee locals.  Return true if successful.
+  bool CloneAndMapLocals(Function* calleeFn,
                          std::vector<std::unique_ptr<Instruction>>* new_vars,
                          std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
-  // Create return variable for callee clone code if needed. Return id
-  // if created, otherwise 0.
+  // Create return variable for callee clone code.  The return type of
+  // |calleeFn| must not be void.  Returns  the id of the return variable if
+  // created.  Returns 0 if the return variable could not be created.
   uint32_t CreateReturnVar(Function* calleeFn,
                            std::vector<std::unique_ptr<Instruction>>* new_vars);
 
@@ -92,7 +95,7 @@ class InlinePass : public Pass {
   // Look in preCallSB for instructions that need cloning. Look in
   // postCallSB for instructions already cloned. Add cloned instruction
   // to postCallSB.
-  void CloneSameBlockOps(std::unique_ptr<Instruction>* inst,
+  bool CloneSameBlockOps(std::unique_ptr<Instruction>* inst,
                          std::unordered_map<uint32_t, uint32_t>* postCallSB,
                          std::unordered_map<uint32_t, Instruction*>* preCallSB,
                          std::unique_ptr<BasicBlock>* block_ptr);
@@ -111,7 +114,9 @@ class InlinePass : public Pass {
   // Also return in new_vars additional OpVariable instructions required by
   // and to be inserted into the caller function after the block at
   // call_block_itr is replaced with new_blocks.
-  void GenInlineCode(std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
+  //
+  // Returns true if successful.
+  bool GenInlineCode(std::vector<std::unique_ptr<BasicBlock>>* new_blocks,
                      std::vector<std::unique_ptr<Instruction>>* new_vars,
                      BasicBlock::iterator call_inst_itr,
                      UptrVectorIterator<BasicBlock> call_block_itr);

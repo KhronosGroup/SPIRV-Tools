@@ -101,6 +101,11 @@ class Optimizer {
   // from time to time.
   Optimizer& RegisterSizePasses();
 
+  // Registers passes that have been prescribed for WebGPU environments.
+  // This sequence of passes is subject to constant review and will change
+  // from time to time.
+  Optimizer& RegisterWebGPUPasses();
+
   // Registers passes that attempt to legalize the generated code.
   //
   // Note: this recipe is specially designed for legalizing SPIR-V. It should be
@@ -147,6 +152,10 @@ class Optimizer {
   // If |flag| takes one of the forms above, it returns true.  Otherwise, it
   // returns false.
   bool FlagHasValidForm(const std::string& flag) const;
+
+  // Allows changing, after creation time, the target environment to be
+  // optimized for.  Should be called before calling Run().
+  void SetTargetEnv(const spv_target_env env);
 
   // Optimizes the given SPIR-V module |original_binary| and writes the
   // optimized binary into |optimized_binary|.

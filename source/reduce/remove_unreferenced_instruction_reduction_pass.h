@@ -22,7 +22,7 @@ namespace reduce {
 
 // A reduction pass for removing non-control-flow instructions in blocks in
 // cases where the instruction's id is not referenced.  As well as making the
-// module smaller, removing an instruction that referenced particular ids may
+// module smaller, removing an instruction that references particular ids may
 // create opportunities for subsequently removing the instructions that
 // generated those ids.
 class RemoveUnreferencedInstructionReductionPass : public ReductionPass {
@@ -35,12 +35,9 @@ class RemoveUnreferencedInstructionReductionPass : public ReductionPass {
 
   ~RemoveUnreferencedInstructionReductionPass() override = default;
 
-  // The name of this pass.
   std::string GetName() const final;
 
  protected:
-  // Finds all opportunities for removing unreferenced instructions in the
-  // given module.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 
