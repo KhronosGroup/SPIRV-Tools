@@ -372,7 +372,12 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   if (storage_class != SpvStorageClassWorkgroup &&
       storage_class != SpvStorageClassCrossWorkgroup &&
       storage_class != SpvStorageClassPrivate &&
-      storage_class != SpvStorageClassFunction) {
+      storage_class != SpvStorageClassFunction &&
+      storage_class != SpvStorageClassRayPayloadNV &&
+      storage_class != SpvStorageClassIncomingRayPayloadNV &&
+      storage_class != SpvStorageClassHitAttributeNV &&
+      storage_class != SpvStorageClassCallableDataNV &&
+      storage_class != SpvStorageClassIncomingCallableDataNV) {
     const auto storage_index = 2;
     const auto storage_id = result_type->GetOperandAs<uint32_t>(storage_index);
     const auto storage = _.FindDef(storage_id);
