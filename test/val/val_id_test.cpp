@@ -2104,6 +2104,29 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateIdWithMessage, OpVariableContainsRayPayloadBoolGood) {
+  std::string spirv = R"(
+OpCapability RayTracingNV
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_NV_ray_tracing"
+OpMemoryModel Logical GLSL450
+%bool = OpTypeBool
+%PerRayData = OpTypeStruct %bool
+%_ptr_PerRayData = OpTypePointer RayPayloadNV %PerRayData
+%var = OpVariable %_ptr_PerRayData RayPayloadNV
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%load = OpLoad %PerRayData %var
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateIdWithMessage, OpVariablePointerNoVariablePointersBad) {
   const std::string spirv = R"(
 OpCapability Shader
