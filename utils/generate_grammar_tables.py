@@ -405,11 +405,12 @@ class EnumerantInitializer(object):
             min_version=self.version)
 
 
-def generate_enum_operand_kind_entry(entry):
+def generate_enum_operand_kind_entry(entry, extension_map):
     """Returns the C initializer for the given operand enum entry.
 
     Arguments:
       - entry: a dict containing information about an enum entry
+      - extension_map: a dict mapping enum value to list of extensions
 
     Returns:
       a string containing the C initializer for spv_operand_desc_t
@@ -417,7 +418,10 @@ def generate_enum_operand_kind_entry(entry):
     enumerant = entry.get('enumerant')
     value = entry.get('value')
     caps = entry.get('capabilities', [])
-    exts = entry.get('extensions', [])
+    if value in extension_map:
+      exts = extension_map[value]
+    else:
+      exts = []
     params = entry.get('parameters', [])
     params = [p.get('kind') for p in params]
     params = zip(params, [''] * len(params))
@@ -444,8 +448,18 @@ def generate_enum_operand_kind(enum):
         functor = lambda k: (int(k['value'], 16), k['enumerant'])
     entries = sorted(enum.get('enumerants', []), key=functor)
 
+    # SubgroupEqMask and SubgroupEqMaskKHR are the same number with
+    # same semantics, but one has no extension list while the other
+    # does.  Both should have the extension list.
+    extension_map = { }
+    for e in entries:
+      value = e.get('value')
+      exts = e.get('extensions', None)
+      if exts is not None:
+        extension_map[value] = exts
+
     name = '{}_{}Entries'.format(PYGEN_VARIABLE_PREFIX, kind)
-    entries = ['  {}'.format(generate_enum_operand_kind_entry(e))
+    entries = ['  {}'.format(generate_enum_operand_kind_entry(e, extension_map))
                for e in entries]
 
     template = ['static const spv_operand_desc_t {name}[] = {{',
@@ -608,6 +622,12 @@ def generate_all_string_enum_mappings(extensions, operand_kinds):
     return '\n\n'.join(tables)
 
 
+def precondition_operand_kinds(operand_kinds):
+    """For operand kinds that have the same number, make sure they all have
+    the same extension list"""
+    return operand_kinds
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Generate SPIR-V info tables')
@@ -701,6 +721,7 @@ def main():
                 operand_kinds.extend(core_grammar['operand_kinds'])
                 operand_kinds.extend(debuginfo_grammar['operand_kinds'])
                 extensions = get_extension_list(instructions, operand_kinds)
+                operand_kinds = precondition_operand_kinds(operand_kinds)
         if args.core_insts_output is not None:
             make_path_to_file(args.core_insts_output)
             make_path_to_file(args.operand_kinds_output)

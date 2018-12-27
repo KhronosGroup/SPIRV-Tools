@@ -2407,6 +2407,34 @@ OpMemoryModel Logical GLSL450
                         "specified if the VulkanKHR memory model is used"));
 }
 
+// In the grammar, SubgroupEqMask and SubgroupMaskKHR have different enabling
+// lists of extensions.
+TEST_F(ValidateCapability,
+       SubgroupEqMaskEnabledByExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability SubgroupBallotKHR
+OpExtension "SPV_KHR_shader_ballot"
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpDecorate %var BuiltIn SubgroupEqMask
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%ptr_uint = OpTypePointer Private %uint
+%var = OpVariable %ptr_uint Private
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+%val = OpLoad %uint %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_0))
+      << getDiagnosticString();
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
