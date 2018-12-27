@@ -1280,7 +1280,8 @@ spv_result_t CheckNonWritableDecoration(ValidationState_t& vstate,
 // Returns SPV_SUCCESS if validation rules are satisfied for Uniform or
 // UniformId decorations. Otherwise emits a diagnostic and returns something
 // other than SPV_SUCCESS. Assumes each decoration on a group has been
-// propagated down to the group members.
+// propagated down to the group members.  The |inst| parameter is the object
+// being decorated.
 spv_result_t CheckUniformDecoration(ValidationState_t& vstate,
                                     const Instruction& inst,
                                     const Decoration& decoration) {
@@ -1310,18 +1311,10 @@ spv_result_t CheckUniformDecoration(ValidationState_t& vstate,
            << dec_name << " decoration applied to an object with invalid type";
   }
 
-  // Check compatibility with the instruction.
-  if (decoration.dec_type() == SpvDecorationUniform &&
-      inst.opcode() != SpvOpDecorate) {
-    return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-           << dec_name << " decoration may only be used with OpDecorate";
-  }
+  // Use of Uniform with OpDecorate is checked elsewhere.
+  // Use of UniformId with OpDecorateId is checked elsewhere.
 
   if (decoration.dec_type() == SpvDecorationUniformId) {
-    if (inst.opcode() != SpvOpDecorateId) {
-      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << dec_name << " decoration may only be used with OpDecorateId";
-    }
     assert(decoration.params().size() == 1 &&
            "Grammar ensures UniformId has one parameter");
 
@@ -1391,7 +1384,6 @@ spv_result_t CheckDecorationsFromDecoration(ValidationState_t& vstate) {
     // been propagated down to the group members.
     if (inst->opcode() == SpvOpDecorationGroup) continue;
 
-    // Validates FPRoundingMode decoration
     for (const auto& decoration : decorations) {
       switch (decoration.dec_type()) {
         case SpvDecorationFPRoundingMode:

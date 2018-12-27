@@ -2265,8 +2265,8 @@ OpMemoryModel Logical Simple
   EXPECT_EQ(SPV_ERROR_MISSING_EXTENSION,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("operand 5255 requires one of these extensions: "
-                        "SPV_NV_viewport_array2"));
+              HasSubstr("operand ShaderViewportMaskNV(5255) requires one of "
+                        "these extensions: SPV_NV_viewport_array2"));
 }
 
 TEST_F(ValidateCapability,
@@ -2347,8 +2347,8 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_MISSING_EXTENSION,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("operand 5568 requires one of these extensions: "
-                        "SPV_INTEL_subgroups"));
+              HasSubstr("operand SubgroupShuffleINTEL(5568) requires one of "
+                        "these extensions: SPV_INTEL_subgroups"));
 }
 
 TEST_F(ValidateCapability,
