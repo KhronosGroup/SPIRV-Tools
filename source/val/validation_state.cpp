@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "source/opcode.h"
+#include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
@@ -146,6 +147,16 @@ spv_result_t CountInstructions(void* user_data,
   return SPV_SUCCESS;
 }
 
+// Add features based on SPIR-V core version number.
+void UpdateFeaturesBasedOnSpirvVersion(ValidationState_t::Feature* features,
+                                       spv_target_env env) {
+  assert(features);
+  uint32_t version_word = spvVersionForTargetEnv(env);
+  if (version_word >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+    features->select_between_composites = true;
+  }
+}
+
 }  // namespace
 
 ValidationState_t::ValidationState_t(const spv_const_context ctx,
@@ -179,6 +190,8 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
   assert(opt && "Validator options may not be Null.");
 
   const auto env = context_->target_env;
+
+  UpdateFeaturesBasedOnSpirvVersion(&features_, env);
 
   if (spvIsVulkanEnv(env)) {
     // Vulkan 1.1 includes VK_KHR_relaxed_block_layout in core.

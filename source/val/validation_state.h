@@ -109,6 +109,10 @@ class ValidationState_t {
     // Permit UConvert as an OpSpecConstantOp operation.
     // The Kernel capability already enables it, separately from this flag.
     bool uconvert_spec_constant_op = false;
+
+    // SPIR-V 1.4 allows us to select between any two composite values
+    // of the same type.
+    bool select_between_composites = false;
   };
 
   ValidationState_t(const spv_const_context context,

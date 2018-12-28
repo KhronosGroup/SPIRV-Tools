@@ -24,6 +24,7 @@ namespace spvtools {
 namespace val {
 namespace {
 
+using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::Not;
 
@@ -143,6 +144,18 @@ OpExecutionMode %main OriginUpperLeft
 %boolvec2_tf = OpConstantComposite %boolvec2 %true %false
 %boolvec3_tft = OpConstantComposite %boolvec3 %true %false %true
 %boolvec4_tftf = OpConstantComposite %boolvec4 %true %false %true %false
+
+%arr_u32_2 = OpTypeArray %u32 %u32_2
+%st_u32_u32 = OpTypeStruct %u32 %u32
+%mat_f32_2_2 = OpTypeMatrix %f32vec2 2
+
+%nul_arr_u32_2 = OpConstantNull %arr_u32_2
+%nul_st_u32_u32 = OpConstantNull %st_u32_u32
+%nul_mat_f32_2_2 = OpConstantNull %mat_f32_2_2
+
+%arr_u32_2_1_2 = OpConstantComposite %arr_u32_2 %u32_1 %u32_2
+%st_u32_u32_1_2 = OpConstantComposite %st_u32_u32 %u32_1 %u32_2
+%mat_f32_2_2_01_12 = OpConstantComposite %mat_f32_2_2 %f32vec2_01 %f32vec2_12
 
 %f32vec4ptr = OpTypePointer Function %f32vec4
 
@@ -585,6 +598,20 @@ TEST_F(ValidateLogicals, OpSelectWrongTypeId) {
       HasSubstr("Expected scalar or vector type as Result Type: Select"));
 }
 
+TEST_F(ValidateLogicals, OpSelectWrongTypeIdV14) {
+  // In 1.4, the message changes to allow composites.
+  const std::string body = R"(
+%val1 = OpSelect %void %true %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected scalar or composite type as Result Type: Select"));
+}
+
 TEST_F(ValidateLogicals, OpSelectPointerNoCapability) {
   const std::string body = R"(
 %x = OpVariable %f32vec4ptr Function
@@ -685,6 +712,75 @@ TEST_F(ValidateLogicals, OpSelectWrongRightObject) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected both objects to be of Result Type: Select"));
+}
+
+TEST_F(ValidateLogicals, OpSelectArrayV13Bad) {
+  const std::string body = R"(
+%val1 = OpSelect %arr_u32_2 %true %nul_arr_u32_2 %arr_u32_2_1_2
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected scalar or vector type as Result Type: Select"));
+}
+
+TEST_F(ValidateLogicals, OpSelectArrayV14Good) {
+  const std::string body = R"(
+%val1 = OpSelect %arr_u32_2 %true %nul_arr_u32_2 %arr_u32_2_1_2
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateLogicals, OpSelectStructV13Bad) {
+  const std::string body = R"(
+%val1 = OpSelect %st_u32_u32 %true %nul_st_u32_u32 %st_u32_u32_1_2
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected scalar or vector type as Result Type: Select"));
+}
+
+TEST_F(ValidateLogicals, OpSelectStructV14Good) {
+  const std::string body = R"(
+%val1 = OpSelect %st_u32_u32 %true %nul_st_u32_u32 %st_u32_u32_1_2
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateLogicals, OpSelectMatrixV13Bad) {
+  const std::string body = R"(
+%val1 = OpSelect %mat_f32_2_2 %true %nul_mat_f32_2_2 %mat_f32_2_2_01_12
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected scalar or vector type as Result Type: Select"));
+}
+
+TEST_F(ValidateLogicals, OpSelectMatrixV14Good) {
+  const std::string body = R"(
+%val1 = OpSelect %mat_f32_2_2 %true %nul_mat_f32_2_2 %mat_f32_2_2_01_12
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 TEST_F(ValidateLogicals, OpIEqualSuccess) {
