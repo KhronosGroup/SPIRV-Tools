@@ -29,6 +29,7 @@ namespace {
 using spvtest::EnumCase;
 using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
+using ::testing::HasSubstr;
 using ::testing::Eq;
 
 // Test assembly of Memory Access masks
@@ -94,6 +95,52 @@ INSTANTIATE_TEST_SUITE_P(
     }));
 #undef CASE
 // clang-format on
+
+
+using MemoryRoundTripTest = RoundTripTest;
+
+TEST_F(MemoryRoundTripTest, OpPtrEqualGood) {
+  std::string spirv = "%2 = OpPtrEqual %1 %3 %4\n";
+  std::string disassembly = EncodeAndDecodeSuccessfully(
+      spirv, SPV_BINARY_TO_TEXT_OPTION_NONE, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpPtrEqualV13Bad) {
+  std::string spirv = "%2 = OpPtrEqual %1 %3 %4\n";
+  std::string err = CompileFailure(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_THAT(err, HasSubstr("Invalid Opcode name 'OpPtrEqual'"));
+}
+
+TEST_F(MemoryRoundTripTest, OpPtrNotEqualGood) {
+  std::string spirv = "%2 = OpPtrNotEqual %1 %3 %4\n";
+  std::string disassembly = EncodeAndDecodeSuccessfully(
+      spirv, SPV_BINARY_TO_TEXT_OPTION_NONE, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpPtrNotEqualV13Bad) {
+  std::string spirv = "%2 = OpPtrNotEqual %1 %3 %4\n";
+  std::string err = CompileFailure(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_THAT(err, HasSubstr("Invalid Opcode name 'OpPtrNotEqual'"));
+}
+
+TEST_F(MemoryRoundTripTest, OpPtrDiffGood) {
+  std::string spirv = "%2 = OpPtrDiff %1 %3 %4\n";
+  std::string disassembly = EncodeAndDecodeSuccessfully(
+      spirv, SPV_BINARY_TO_TEXT_OPTION_NONE, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpPtrDiffV13Good) {
+  // OpPtrDiff is enabled by a capability as well, so we can assemble
+  // it even in older SPIR-V environments.  We do that so we can
+  // write tests.
+  std::string spirv = "%2 = OpPtrDiff %1 %3 %4\n";
+  std::string disassembly = EncodeAndDecodeSuccessfully(
+      spirv, SPV_BINARY_TO_TEXT_OPTION_NONE, SPV_ENV_UNIVERSAL_1_4);
+}
+
 
 // TODO(dneto): OpVariable with initializers
 // TODO(dneto): OpImageTexelPointer
