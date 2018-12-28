@@ -434,8 +434,10 @@ def generate_enum_operand_kind_entry(entry, extension_map):
         enumerant, value, caps, exts, params, version))
 
 
-def generate_enum_operand_kind(enum):
-    """Returns the C definition for the given operand kind."""
+def generate_enum_operand_kind(enum, synthetic_exts_list):
+    """Returns the C definition for the given operand kind.
+    Also appends to |synthetic_exts_list| a list of extension
+    lists used."""
     kind = enum.get('kind')
     assert kind is not None
 
@@ -451,12 +453,19 @@ def generate_enum_operand_kind(enum):
     # SubgroupEqMask and SubgroupEqMaskKHR are the same number with
     # same semantics, but one has no extension list while the other
     # does.  Both should have the extension list.
+    # So create a mapping from enum value to the union of the extensions
+    # across all those grammar entries.  Preserve order.
     extension_map = { }
     for e in entries:
       value = e.get('value')
-      exts = e.get('extensions', None)
-      if exts is not None:
-        extension_map[value] = exts
+      extension_map[value] = []
+    for e in entries:
+      value = e.get('value')
+      exts = e.get('extensions', [])
+      for ext in exts:
+        if ext not in extension_map[value]:
+          extension_map[value].append(ext)
+    synthetic_exts_list.extend(extension_map.values())
 
     name = '{}_{}Entries'.format(PYGEN_VARIABLE_PREFIX, kind)
     entries = ['  {}'.format(generate_enum_operand_kind_entry(e, extension_map))
@@ -484,9 +493,9 @@ def generate_operand_kind_table(enums):
     exts = [entry.get('extensions', [])
             for enum in enums
             for entry in enum.get('enumerants', [])]
+    enums = [generate_enum_operand_kind(e, exts) for e in enums]
     exts_arrays = generate_extension_arrays(exts)
 
-    enums = [generate_enum_operand_kind(e) for e in enums]
     # We have three operand kinds that requires their optional counterpart to
     # exist in the operand info table.
     three_optional_enums = ['ImageOperands', 'AccessQualifier', 'MemoryAccess']
