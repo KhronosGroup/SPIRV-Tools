@@ -72,7 +72,7 @@ Options:
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
-  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_3;
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_4;
   spvtools::ValidatorOptions options;
   bool continue_processing = true;
   int return_code = 0;
@@ -104,15 +104,17 @@ int main(int argc, char** argv) {
         }
       } else if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", spvSoftwareVersionDetailsString());
-        printf("Targets:\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n",
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0),
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2),
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_3),
-               spvTargetEnvDescription(SPV_ENV_OPENCL_2_2),
-               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
-               spvTargetEnvDescription(SPV_ENV_VULKAN_1_1),
-               spvTargetEnvDescription(SPV_ENV_WEBGPU_0));
+        printf(
+            "Targets:\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n",
+            spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0),
+            spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
+            spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2),
+            spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_3),
+            spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_4),
+            spvTargetEnvDescription(SPV_ENV_OPENCL_2_2),
+            spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
+            spvTargetEnvDescription(SPV_ENV_VULKAN_1_1),
+            spvTargetEnvDescription(SPV_ENV_WEBGPU_0));
         continue_processing = false;
         return_code = 0;
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
