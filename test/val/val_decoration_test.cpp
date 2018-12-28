@@ -4750,13 +4750,17 @@ OpName %subgroupscope "subgroupscope"
 OpName %call "call"
 OpName %myfunc "myfunc"
 OpName %int0 "int0"
+OpName %float0 "float0"
 OpName %fn "fn"
 )") + inst +
          R"(
 %void = OpTypeVoid
+%float = OpTypeFloat 32
 %int = OpTypeInt 32 1
 %int0 = OpConstantNull %int
+%int_99 = OpConstant %int 99
 %subgroupscope = OpConstant %int 3
+%float0 = OpConstantNull %float
 %fn = OpTypeFunction %void
 %myfunc = OpFunction %void None %fn
 %myfuncentry = OpLabel
@@ -4771,8 +4775,9 @@ OpFunctionEnd
 }
 
 TEST_F(ValidateDecorations, UniformIdDecorationWithScopeIdV13Bad) {
-  CompileSuccessfully(ShaderWithUniformLikeDecoration(
-      "OpDecorateId %int0 UniformId %subgroupscope"));
+  const std::string spirv = ShaderWithUniformLikeDecoration(
+      "OpDecorateId %int0 UniformId %subgroupscope");
+  CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_WRONG_VERSION,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
@@ -4781,8 +4786,9 @@ TEST_F(ValidateDecorations, UniformIdDecorationWithScopeIdV13Bad) {
 }
 
 TEST_F(ValidateDecorations, UniformIdDecorationWithScopeIdV14Good) {
-  CompileSuccessfully(ShaderWithUniformLikeDecoration(
-      "OpDecorateId %int0 UniformId %subgroupscope"));
+  const std::string spirv = ShaderWithUniformLikeDecoration(
+      "OpDecorateId %int0 UniformId %subgroupscope");
+  CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
@@ -4799,15 +4805,14 @@ TEST_F(ValidateDecorations, UniformDecorationTargetsTypeBad) {
 }
 
 TEST_F(ValidateDecorations, UniformIdDecorationTargetsTypeBad) {
-  // This doesn't even assemble.
   const std::string spirv = ShaderWithUniformLikeDecoration(
-      "OpDecorateId %fn Uniform %subgroupscope");
+      "OpDecorateId %fn UniformId %subgroupscope");
 
-  spv_binary binary = nullptr;
-  spvtest::ScopedContext context(SPV_ENV_UNIVERSAL_1_4);
-  EXPECT_NE(SPV_SUCCESS, spvTextToBinary(context.context, spirv.data(),
-                                         spirv.size(), &binary, nullptr));
-  spvBinaryDestroy(binary);
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("UniformId decoration applied to a non-object"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("%fn = OpTypeFunction %void"));
 }
 
 TEST_F(ValidateDecorations, UniformDecorationTargetsVoidValueBad) {
@@ -4832,6 +4837,33 @@ TEST_F(ValidateDecorations, UniformIdDecorationTargetsVoidValueBad) {
       getDiagnosticString(),
       HasSubstr("UniformId decoration applied to a value with void type\n"
                 "  %call = OpFunctionCall %void %myfunc"));
+}
+
+TEST_F(ValidateDecorations,
+       UniformDecorationWithScopeIdV14IdIsFloatValueIsBad) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %float0");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Scope for a UniformId decoration must be a 32-bit "
+                        "integer scalar constant:\n"
+                        "  %float0 = OpConstantNull %float\napplied to:\n"
+                        "  %int0 = OpConstantNull %int"));
+}
+
+TEST_F(ValidateDecorations,
+       UniformDecorationWithScopeIdV14IdIsInvalidIntValueBad) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %int_99");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid scope value:\n  %int_99 = OpConstant %int 99\n"
+                        "for UniformId decoration applied to:\n"
+                        "  %int0 = OpConstantNull %int"));
 }
 
 TEST_F(ValidateDecorations, UniformDecorationWithWrongInstructionBad) {
