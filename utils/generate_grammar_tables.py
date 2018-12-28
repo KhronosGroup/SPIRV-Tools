@@ -441,13 +441,13 @@ def generate_enum_operand_kind(enum, synthetic_exts_list):
     kind = enum.get('kind')
     assert kind is not None
 
-    # Sort all enumerants first according to their values and then
-    # their names so that the symbols with the same values are
-    # grouped together.
+    # Sort all enumerants according to their values, but otherwise
+    # preserve their order so the first name listed in the grammar
+    # as the preferred name for disassembly.
     if enum.get('category') == 'ValueEnum':
-        functor = lambda k: (k['value'], k['enumerant'])
+        functor = lambda k: (k['value'])
     else:
-        functor = lambda k: (int(k['value'], 16), k['enumerant'])
+        functor = lambda k: (int(k['value'], 16))
     entries = sorted(enum.get('enumerants', []), key=functor)
 
     # SubgroupEqMask and SubgroupEqMaskKHR are the same number with
