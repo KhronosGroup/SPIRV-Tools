@@ -1480,7 +1480,7 @@ OpMemoryModel Logical GLSL450
 %v4float_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %func = OpFunction %void None %void_fn
 %1 = OpLabel
-%ex = OpVectorExtractDynamic %float %v4float_0 %1
+%ex = OpVectorExtractDynamic %float %v4float_0 %v4float_0
 OpReturn
 OpFunctionEnd
 )";
