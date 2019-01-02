@@ -574,7 +574,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<VectorDCE>(before_predefs + before,
-                                            after_predefs + after, true, true);
+                                   after_predefs + after, true, true);
 }
 
 TEST_F(VectorDCETest, InsertObjectLive) {
