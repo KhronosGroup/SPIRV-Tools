@@ -337,26 +337,23 @@ bool VectorDCE::RewriteInstructions(
 bool VectorDCE::RewriteInsertInstruction(
     Instruction* current_inst, const utils::BitVector& live_components) {
   // If the value being inserted is not live, then we can skip the insert.
-  bool modified = false;
 
   if (current_inst->NumInOperands() == 2) {
     // If there are no indices, then this is the same as a copy.
-    modified = true;
     context()->KillNamesAndDecorates(current_inst->result_id());
     uint32_t object_id =
         current_inst->GetSingleWordInOperand(kInsertObjectIdInIdx);
     context()->ReplaceAllUsesWith(current_inst->result_id(), object_id);
-    return modified;
+    return true;
   }
 
   uint32_t insert_index = current_inst->GetSingleWordInOperand(2);
   if (!live_components.Get(insert_index)) {
-    modified = true;
     context()->KillNamesAndDecorates(current_inst->result_id());
     uint32_t composite_id =
         current_inst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
     context()->ReplaceAllUsesWith(current_inst->result_id(), composite_id);
-    return modified;
+    return true;
   }
 
   // If the values already in the composite are not used, then replace it with
@@ -368,9 +365,10 @@ bool VectorDCE::RewriteInsertInstruction(
     uint32_t undef_id = Type2Undef(current_inst->type_id());
     current_inst->SetInOperand(kInsertCompositeIdInIdx, {undef_id});
     context()->AnalyzeUses(current_inst);
+    return true;
   }
 
-  return modified;
+  return false;
 }
 
 void VectorDCE::AddItemToWorkListIfNeeded(
