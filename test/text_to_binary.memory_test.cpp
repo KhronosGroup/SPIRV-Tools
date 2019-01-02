@@ -250,11 +250,171 @@ TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessMixedGood) {
   EXPECT_THAT(disassembly, Eq(spirv));
 }
 
+TEST_F(MemoryRoundTripTest, OpCopyMemoryTwoAccessV13Good) {
+  std::string spirv = "OpCopyMemory %1 %2 Volatile Volatile\n";
+  // Note: This will assemble but should not validate for SPIR-V 1.3
+  EXPECT_THAT(CompiledInstructions(spirv, SPV_ENV_UNIVERSAL_1_3),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 1, 1})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryTwoAccessV14Good) {
+  std::string spirv = "OpCopyMemory %1 %2 Volatile Volatile\n";
+  EXPECT_THAT(CompiledInstructions(spirv, SPV_ENV_UNIVERSAL_1_4),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 1, 1})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryTwoAccessMixedV14Good) {
+  std::string spirv =
+      "OpCopyMemory %1 %2 Volatile|Nontemporal|"
+      "MakePointerVisibleKHR %3 "
+      "Aligned|MakePointerAvailableKHR|NonPrivatePointerKHR 16 %4\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 21, 3, 42, 16, 4})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+// OpCopyMemorySized
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedNoMemAccessGood) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedTooFewArgsBad) {
+  std::string spirv = "OpCopyMemorySized %1 %2\n";
+  std::string err = CompileFailure(spirv);
+  EXPECT_THAT(err, HasSubstr("Expected operand, found end of stream"));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedTooManyArgsBad) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 %4\n";
+  std::string err = CompileFailure(spirv);
+  EXPECT_THAT(err, HasSubstr("Invalid memory access operand '%4'"));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessNoneGood) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 None\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 0})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessVolatileGood) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 Volatile\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 1})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessAligned8Good) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 Aligned 8\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 2, 8})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessNontemporalGood) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 Nontemporal\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 4})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessAvGood) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 MakePointerAvailableKHR %4\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 8, 4})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessVisGood) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 MakePointerVisibleKHR %4\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 16, 4})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessNonPrivateGood) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 NonPrivatePointerKHR\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 32})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedAccessMixedGood) {
+  std::string spirv =
+      "OpCopyMemorySized %1 %2 %3 "
+      "Volatile|Aligned|Nontemporal|MakePointerAvailableKHR|"
+      "MakePointerVisibleKHR|NonPrivatePointerKHR 16 %4 %5\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 63, 16, 4, 5})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedTwoAccessV13Good) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 Volatile Volatile\n";
+  // Note: This will assemble but should not validate for SPIR-V 1.3
+  EXPECT_THAT(CompiledInstructions(spirv, SPV_ENV_UNIVERSAL_1_3),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 1, 1})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedTwoAccessV14Good) {
+  std::string spirv = "OpCopyMemorySized %1 %2 %3 Volatile Volatile\n";
+  EXPECT_THAT(CompiledInstructions(spirv, SPV_ENV_UNIVERSAL_1_4),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 1, 1})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemorySizedTwoAccessMixedV14Good) {
+  std::string spirv =
+      "OpCopyMemorySized %1 %2 %3 Volatile|Nontemporal|"
+      "MakePointerVisibleKHR %4 "
+      "Aligned|MakePointerAvailableKHR|NonPrivatePointerKHR 16 %5\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemorySized, {1, 2, 3, 21, 4, 42, 16, 5})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+
 // TODO(dneto): OpVariable with initializers
 // TODO(dneto): OpImageTexelPointer
 // TODO(dneto): OpLoad
 // TODO(dneto): OpStore
-// TODO(dneto): OpCopyMemorySized
 // TODO(dneto): OpAccessChain
 // TODO(dneto): OpInBoundsAccessChain
 // TODO(dneto): OpPtrAccessChain
