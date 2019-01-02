@@ -860,6 +860,26 @@ spv_result_t ValidateCopyMemoryMemoryAccess(ValidationState_t& _,
       if (_.features().copy_memory_permits_two_memory_accesses) {
         if (auto error = CheckMemoryAccess(_, inst, second_access_index))
           return error;
+
+        // In the two-access form:
+        //  - the first is the target (write) access and it can't have
+        //  make-visible.
+        //  - the second is the source (read) access and it can't have
+        //  make-available.
+        // This is a proposed rule. See
+        // https://gitlab.khronos.org/spirv/SPIR-V/issues/413
+        if (first_access & SpvMemoryAccessMakePointerVisibleKHRMask) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Target memory access must not include "
+                    "MakePointerVisibleKHR";
+        }
+        const auto second_access =
+            inst->GetOperandAs<uint32_t>(second_access_index);
+        if (second_access & SpvMemoryAccessMakePointerAvailableKHRMask) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Source memory access must not include "
+                    "MakePointerAvailableKHR";
+        }
       } else {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(static_cast<SpvOp>(inst->opcode()))

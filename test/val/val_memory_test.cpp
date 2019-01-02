@@ -1343,32 +1343,6 @@ OpFunctionEnd
                 "VulkanMemoryModelDeviceScopeKHR capability"));
 }
 
-TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemoryGood1) {
-  const std::string spirv = R"(
-OpCapability Shader
-OpCapability VulkanMemoryModelKHR
-OpCapability VulkanMemoryModelDeviceScopeKHR
-OpCapability Linkage
-OpExtension "SPV_KHR_vulkan_memory_model"
-OpMemoryModel Logical VulkanKHR
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%device = OpConstant %int 1
-%int_ptr_ssbo = OpTypePointer StorageBuffer %int
-%var1 = OpVariable %int_ptr_ssbo StorageBuffer
-%var2 = OpVariable %int_ptr_ssbo StorageBuffer
-%voidfn = OpTypeFunction %void
-%func = OpFunction %void None %voidfn
-%entry = OpLabel
-OpCopyMemory %var1 %var2 MakePointerAvailableKHR|NonPrivatePointerKHR %device
-OpReturn
-OpFunctionEnd
-)";
-
-  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-}
-
 TEST_F(ValidateMemory, VulkanMemoryModelDeviceScopeCopyMemoryGood2) {
   const std::string spirv = R"(
 OpCapability Shader
