@@ -154,6 +154,7 @@ void UpdateFeaturesBasedOnSpirvVersion(ValidationState_t::Feature* features,
   uint32_t version_word = spvVersionForTargetEnv(env);
   if (version_word >= SPV_SPIRV_VERSION_WORD(1, 4)) {
     features->select_between_composites = true;
+    features->copy_memory_permits_two_memory_accesses = true;
   }
 }
 

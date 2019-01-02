@@ -113,6 +113,10 @@ class ValidationState_t {
     // SPIR-V 1.4 allows us to select between any two composite values
     // of the same type.
     bool select_between_composites = false;
+
+    // SPIR-V 1.4 allows two memory access operands for OpCopyMemory and
+    // OpCopyMemorySized.
+    bool copy_memory_permits_two_memory_accesses = false;
   };
 
   ValidationState_t(const spv_const_context context,
