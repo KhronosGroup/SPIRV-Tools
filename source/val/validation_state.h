@@ -106,10 +106,6 @@ class ValidationState_t {
     // Members need not be listed in offset order
     bool scalar_block_layout = false;
 
-    // Permit UConvert as an OpSpecConstantOp operation.
-    // The Kernel capability already enables it, separately from this flag.
-    bool uconvert_spec_constant_op = false;
-
     // SPIR-V 1.4 allows us to select between any two composite values
     // of the same type.
     bool select_between_composites = false;
@@ -117,6 +113,10 @@ class ValidationState_t {
     // SPIR-V 1.4 allows two memory access operands for OpCopyMemory and
     // OpCopyMemorySized.
     bool copy_memory_permits_two_memory_accesses = false;
+
+    // SPIR-V 1.4 allows UConvert as a spec constant op in any environment.
+    // The Kernel capability already enables it, separately from this flag.
+    bool uconvert_spec_constant_op = false;
   };
 
   ValidationState_t(const spv_const_context context,

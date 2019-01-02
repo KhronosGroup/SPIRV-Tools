@@ -155,6 +155,7 @@ void UpdateFeaturesBasedOnSpirvVersion(ValidationState_t::Feature* features,
   if (version_word >= SPV_SPIRV_VERSION_WORD(1, 4)) {
     features->select_between_composites = true;
     features->copy_memory_permits_two_memory_accesses = true;
+    features->uconvert_spec_constant_op = true;
   }
 }
 
