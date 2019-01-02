@@ -29,8 +29,8 @@ namespace {
 using spvtest::EnumCase;
 using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
-using ::testing::HasSubstr;
 using ::testing::Eq;
+using ::testing::HasSubstr;
 
 // Test assembly of Memory Access masks
 
@@ -96,11 +96,14 @@ INSTANTIATE_TEST_SUITE_P(
 #undef CASE
 // clang-format on
 
-
 using MemoryRoundTripTest = RoundTripTest;
+
+// OpPtrEqual appeared in SPIR-V 1.4
 
 TEST_F(MemoryRoundTripTest, OpPtrEqualGood) {
   std::string spirv = "%2 = OpPtrEqual %1 %3 %4\n";
+  EXPECT_THAT(CompiledInstructions(spirv, SPV_ENV_UNIVERSAL_1_4),
+              Eq(MakeInstruction(SpvOpPtrEqual, {1, 2, 3, 4})));
   std::string disassembly = EncodeAndDecodeSuccessfully(
       spirv, SPV_BINARY_TO_TEXT_OPTION_NONE, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_THAT(disassembly, Eq(spirv));
@@ -112,8 +115,12 @@ TEST_F(MemoryRoundTripTest, OpPtrEqualV13Bad) {
   EXPECT_THAT(err, HasSubstr("Invalid Opcode name 'OpPtrEqual'"));
 }
 
+// OpPtrNotEqual appeared in SPIR-V 1.4
+
 TEST_F(MemoryRoundTripTest, OpPtrNotEqualGood) {
   std::string spirv = "%2 = OpPtrNotEqual %1 %3 %4\n";
+  EXPECT_THAT(CompiledInstructions(spirv, SPV_ENV_UNIVERSAL_1_4),
+              Eq(MakeInstruction(SpvOpPtrNotEqual, {1, 2, 3, 4})));
   std::string disassembly = EncodeAndDecodeSuccessfully(
       spirv, SPV_BINARY_TO_TEXT_OPTION_NONE, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_THAT(disassembly, Eq(spirv));
@@ -125,8 +132,12 @@ TEST_F(MemoryRoundTripTest, OpPtrNotEqualV13Bad) {
   EXPECT_THAT(err, HasSubstr("Invalid Opcode name 'OpPtrNotEqual'"));
 }
 
+// OpPtrDiff appeared in SPIR-V 1.4
+
 TEST_F(MemoryRoundTripTest, OpPtrDiffGood) {
   std::string spirv = "%2 = OpPtrDiff %1 %3 %4\n";
+  EXPECT_THAT(CompiledInstructions(spirv, SPV_ENV_UNIVERSAL_1_4),
+              Eq(MakeInstruction(SpvOpPtrDiff, {1, 2, 3, 4})));
   std::string disassembly = EncodeAndDecodeSuccessfully(
       spirv, SPV_BINARY_TO_TEXT_OPTION_NONE, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_THAT(disassembly, Eq(spirv));
@@ -141,12 +152,108 @@ TEST_F(MemoryRoundTripTest, OpPtrDiffV13Good) {
       spirv, SPV_BINARY_TO_TEXT_OPTION_NONE, SPV_ENV_UNIVERSAL_1_4);
 }
 
+// OpCopyMemory
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryNoMemAccessGood) {
+  std::string spirv = "OpCopyMemory %1 %2\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryTooFewArgsBad) {
+  std::string spirv = "OpCopyMemory %1\n";
+  std::string err = CompileFailure(spirv);
+  EXPECT_THAT(err, HasSubstr("Expected operand, found end of stream"));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryTooManyArgsBad) {
+  std::string spirv = "OpCopyMemory %1 %2 %3\n";
+  std::string err = CompileFailure(spirv);
+  EXPECT_THAT(err, HasSubstr("Invalid memory access operand '%3'"));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessNoneGood) {
+  std::string spirv = "OpCopyMemory %1 %2 None\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 0})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessVolatileGood) {
+  std::string spirv = "OpCopyMemory %1 %2 Volatile\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 1})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessAligned8Good) {
+  std::string spirv = "OpCopyMemory %1 %2 Aligned 8\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 2, 8})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessNontemporalGood) {
+  std::string spirv = "OpCopyMemory %1 %2 Nontemporal\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 4})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessAvGood) {
+  std::string spirv = "OpCopyMemory %1 %2 MakePointerAvailableKHR %3\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 8, 3})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessVisGood) {
+  std::string spirv = "OpCopyMemory %1 %2 MakePointerVisibleKHR %3\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 16, 3})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessNonPrivateGood) {
+  std::string spirv = "OpCopyMemory %1 %2 NonPrivatePointerKHR\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 32})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
+
+TEST_F(MemoryRoundTripTest, OpCopyMemoryAccessMixedGood) {
+  std::string spirv =
+      "OpCopyMemory %1 %2 "
+      "Volatile|Aligned|Nontemporal|MakePointerAvailableKHR|"
+      "MakePointerVisibleKHR|NonPrivatePointerKHR 16 %3 %4\n";
+  EXPECT_THAT(CompiledInstructions(spirv),
+              Eq(MakeInstruction(SpvOpCopyMemory, {1, 2, 63, 16, 3, 4})));
+  std::string disassembly =
+      EncodeAndDecodeSuccessfully(spirv, SPV_BINARY_TO_TEXT_OPTION_NONE);
+  EXPECT_THAT(disassembly, Eq(spirv));
+}
 
 // TODO(dneto): OpVariable with initializers
 // TODO(dneto): OpImageTexelPointer
 // TODO(dneto): OpLoad
 // TODO(dneto): OpStore
-// TODO(dneto): OpCopyMemory
 // TODO(dneto): OpCopyMemorySized
 // TODO(dneto): OpAccessChain
 // TODO(dneto): OpInBoundsAccessChain
