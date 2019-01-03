@@ -6090,6 +6090,18 @@ TEST_F(ValidateDecorations, NonWritableVarWorkgroupBad) {
                         "buffer\n  %var_wg"));
 }
 
+TEST_F(ValidateDecorations, NonWritableVarWorkgroupV14Bad) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_wg");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target of NonWritable decoration is invalid: must "
+                        "point to a storage image, uniform block, storage "
+                        "buffer, or variable in Private or Function storage "
+                        "class\n  %var_wg"));
+}
+
 TEST_F(ValidateDecorations, NonWritableVarPrivateBad) {
   std::string spirv = ShaderWithNonWritableTarget("%var_priv");
 
@@ -6099,6 +6111,25 @@ TEST_F(ValidateDecorations, NonWritableVarPrivateBad) {
               HasSubstr("Target of NonWritable decoration is invalid: must "
                         "point to a storage image, uniform block, or storage "
                         "buffer\n  %var_priv"));
+}
+
+TEST_F(ValidateDecorations, NonWritableVarPrivateV13Bad) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_priv");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target of NonWritable decoration is invalid: must "
+                        "point to a storage image, uniform block, or storage "
+                        "buffer\n  %var_priv"));
+}
+
+TEST_F(ValidateDecorations, NonWritableVarPrivateV14Good) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_priv");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 TEST_F(ValidateDecorations, NonWritableVarFunctionBad) {
@@ -6186,6 +6217,25 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_ID,
                 "is not valid for the WebGPU execution environment."))));
+
+TEST_F(ValidateDecorations, NonWritableVarFunctionV13Bad) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_func");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Target of NonWritable decoration is invalid: must "
+                        "point to a storage image, uniform block, or storage "
+                        "buffer\n  %var_func"));
+}
+
+TEST_F(ValidateDecorations, NonWritableVarFunctionV14Good) {
+  std::string spirv = ShaderWithNonWritableTarget("%var_func");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
 
 }  // namespace
 }  // namespace val

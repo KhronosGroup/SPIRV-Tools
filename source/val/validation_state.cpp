@@ -156,6 +156,7 @@ void UpdateFeaturesBasedOnSpirvVersion(ValidationState_t::Feature* features,
     features->select_between_composites = true;
     features->copy_memory_permits_two_memory_accesses = true;
     features->uconvert_spec_constant_op = true;
+    features->nonwritable_var_in_function_or_private = true;
   }
 }
 

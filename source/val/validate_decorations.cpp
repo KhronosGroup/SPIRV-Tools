@@ -1311,20 +1311,33 @@ spv_result_t CheckNonWritableDecoration(ValidationState_t& vstate,
   if (decoration.struct_member_index() == Decoration::kInvalidMember) {
     // The target must be a memory object declaration.
     // First, it must be a variable or function parameter.
-    if (inst.opcode() != SpvOpVariable &&
-        inst.opcode() != SpvOpFunctionParameter) {
+    const auto opcode = inst.opcode();
+    const auto type_id = inst.type_id();
+    if (opcode != SpvOpVariable && opcode != SpvOpFunctionParameter) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
              << "Target of NonWritable decoration must be a memory object "
                 "declaration (a variable or a function parameter)";
     }
-    // Second, it must point to a UBO, SSBO, or storage image.
-    const auto type_id = inst.type_id();
-    if (!vstate.IsPointerToUniformBlock(type_id) &&
-        !vstate.IsPointerToStorageBuffer(type_id) &&
-        !vstate.IsPointerToStorageImage(type_id)) {
+    const auto var_storage_class = opcode == SpvOpVariable
+                                       ? inst.GetOperandAs<SpvStorageClass>(2)
+                                       : SpvStorageClassMax;
+    if ((var_storage_class == SpvStorageClassFunction ||
+         var_storage_class == SpvStorageClassPrivate) &&
+        vstate.features().nonwritable_var_in_function_or_private) {
+      // New permitted feature in SPIR-V 1.4.
+    } else if (
+        // It may point to a UBO, SSBO, or storage image.
+        vstate.IsPointerToUniformBlock(type_id) ||
+        vstate.IsPointerToStorageBuffer(type_id) ||
+        vstate.IsPointerToStorageImage(type_id)) {
+    } else {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
              << "Target of NonWritable decoration is invalid: must point to a "
-                "storage image, uniform block, or storage buffer";
+                "storage image, uniform block, "
+             << (vstate.features().nonwritable_var_in_function_or_private
+                     ? "storage buffer, or variable in Private or Function "
+                       "storage class"
+                     : "or storage buffer");
     }
   }
 
