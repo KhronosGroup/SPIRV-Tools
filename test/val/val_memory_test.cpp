@@ -1517,6 +1517,7 @@ TEST_F(ValidateMemory, ArrayLengthStructIsLabel) {
   const std::string spirv = R"(
 OpCapability Tessellation
 OpMemoryModel Logical GLSL450
+OpName %20 "incorrect"
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -1533,7 +1534,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 7[%7] requires a type"));
+              HasSubstr("Operand 1[%incorrect] requires a type"));
 }
 
 }  // namespace
