@@ -2409,8 +2409,7 @@ OpMemoryModel Logical GLSL450
 
 // In the grammar, SubgroupEqMask and SubgroupMaskKHR have different enabling
 // lists of extensions.
-TEST_F(ValidateCapability,
-       SubgroupEqMaskEnabledByExtension) {
+TEST_F(ValidateCapability, SubgroupEqMaskEnabledByExtension) {
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability SubgroupBallotKHR

@@ -964,10 +964,12 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
             vstate.RegisterPointerToUniformBlock(ptrInst->id());
             vstate.RegisterStructForUniformBlock(id);
           }
-          if ((uniform && bufferDeco) || (storage_buffer && blockDeco)) {
+          if ((uniform && bufferDeco) ||
+              ((storage_buffer || phys_storage_buffer) && blockDeco)) {
             vstate.RegisterPointerToStorageBuffer(ptrInst->id());
             vstate.RegisterStructForStorageBuffer(id);
           }
+
           if (blockRules || bufferRules) {
             const char* deco_str = blockDeco ? "Block" : "BufferBlock";
             spv_result_t recursive_status = SPV_SUCCESS;
@@ -1295,6 +1297,38 @@ bool IsValidScope(uint64_t scope) {
       break;
   }
   return false;
+}
+
+// Returns SPV_SUCCESS if validation rules are satisfied for the NonWritable
+// decoration.  Otherwise emits a diagnostic and returns something other than
+// SPV_SUCCESS.  The |inst| parameter is the object being decorated.  This must
+// be called after TypePass and AnnotateCheckDecorationsOfBuffers are called.
+spv_result_t CheckNonWritableDecoration(ValidationState_t& vstate,
+                                        const Instruction& inst,
+                                        const Decoration& decoration) {
+  assert(inst.id() && "Parser ensures the target of the decoration has an ID");
+
+  if (decoration.struct_member_index() == Decoration::kInvalidMember) {
+    // The target must be a memory object declaration.
+    // First, it must be a variable or function parameter.
+    if (inst.opcode() != SpvOpVariable &&
+        inst.opcode() != SpvOpFunctionParameter) {
+      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+             << "Target of NonWritable decoration must be a memory object "
+                "declaration (a variable or a function parameter)";
+    }
+    // Second, it must point to a UBO, SSBO, or storage image.
+    const auto type_id = inst.type_id();
+    if (!vstate.IsPointerToUniformBlock(type_id) &&
+        !vstate.IsPointerToStorageBuffer(type_id) &&
+        !vstate.IsPointerToStorageImage(type_id)) {
+      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+             << "Target of NonWritable decoration is invalid: must point to a "
+                "storage image, uniform block, or storage buffer";
+    }
+  }
+
+  return SPV_SUCCESS;
 }
 
 // Returns SPV_SUCCESS if validation rules are satisfied for Uniform or

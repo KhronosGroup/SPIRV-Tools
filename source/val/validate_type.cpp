@@ -319,6 +319,7 @@ spv_result_t ValidateTypePointer(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
+}  // namespace
 
 spv_result_t ValidateTypeFunction(ValidationState_t& _,
                                   const Instruction* inst) {
@@ -436,8 +437,6 @@ spv_result_t ValidateTypeCooperativeMatrixNV(ValidationState_t& _,
 
   return SPV_SUCCESS;
 }
-
-}  // namespace
 
 spv_result_t TypePass(ValidationState_t& _, const Instruction* inst) {
   if (!spvOpcodeGeneratesType(inst->opcode()) &&
