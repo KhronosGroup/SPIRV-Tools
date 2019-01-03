@@ -257,6 +257,21 @@ class ValidObjectFile1_3(ReturnCodeIsZero, CorrectObjectFilePreamble):
     return True, ''
 
 
+class ValidObjectFile1_4(ReturnCodeIsZero, CorrectObjectFilePreamble):
+  """Mixin class for checking that every input file generates a valid SPIR-V 1.4
+    object file following the object file naming rule, and there is no output on
+    stdout/stderr."""
+
+  def check_object_file_preamble(self, status):
+    for input_filename in status.input_filenames:
+      object_filename = get_object_filename(input_filename)
+      success, message = self.verify_object_file_preamble(
+          os.path.join(status.directory, object_filename), 0x10400)
+      if not success:
+        return False, message
+    return True, ''
+
+
 class ValidObjectFileWithAssemblySubstr(SuccessfulReturn,
                                         CorrectObjectFilePreamble):
   """Mixin class for checking that every input file generates a valid object
