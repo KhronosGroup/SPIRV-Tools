@@ -171,6 +171,16 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "Operand " << _.getIdName(operand_word)
                    << " cannot be a type";
+          } else if (def->type_id() == 0 && !spvOpcodeGeneratesType(opcode) &&
+                     !spvOpcodeIsDebug(opcode) &&
+                     !spvOpcodeIsDecoration(opcode) &&
+                     !spvOpcodeIsBranch(opcode) && opcode != SpvOpPhi &&
+                     opcode != SpvOpExtInst && opcode != SpvOpExtInstImport &&
+                     opcode != SpvOpSelectionMerge &&
+                     opcode != SpvOpLoopMerge && opcode != SpvOpFunction) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << "Operand " << _.getIdName(operand_word)
+                   << " requires a type";
           } else {
             ret = SPV_SUCCESS;
           }
