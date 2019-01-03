@@ -1513,6 +1513,30 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
+TEST_F(ValidateMemory, ArrayLengthStructIsLabel) {
+  const std::string spirv = R"(
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpName %20 "incorrect"
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%uint = OpTypeInt 32 0
+%4 = OpFunction %void None %3
+%20 = OpLabel
+%24 = OpArrayLength %uint %20 0
+%25 = OpLoad %v4float %24
+OpReturnValue %25
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 1[%incorrect] requires a type"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
