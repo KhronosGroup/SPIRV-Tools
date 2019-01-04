@@ -81,6 +81,7 @@ add_spvtools_unittest(TARGET opt
        type_manager_test.cpp
        types_test.cpp
        unify_const_test.cpp
+       upgrade_memory_model_test.cpp
        utils_test.cpp pass_utils.cpp
        value_table_test.cpp
        vector_dce_test.cpp
