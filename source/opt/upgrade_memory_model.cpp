@@ -613,7 +613,7 @@ void UpgradeMemoryModel::UpgradeExtInst(Instruction* ext_inst) {
       context()->get_type_mgr()->GetTypeInstruction(&struct_type);
   // Change the operation
   GLSLstd450 new_op = is_modf ? GLSLstd450ModfStruct : GLSLstd450FrexpStruct;
-  ext_inst->SetOperand(3u, {new_op});
+  ext_inst->SetOperand(3u, {static_cast<uint32_t>(new_op)});
   // Remove the pointer argument
   ext_inst->RemoveOperand(5u);
   // Set the type id to the new struct.
