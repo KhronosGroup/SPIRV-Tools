@@ -412,6 +412,11 @@ void ValidationState_t::RegisterExtension(Extension ext) {
       // https://github.com/KhronosGroup/SPIRV-Tools/issues/1375
       features_.declare_float16_type = true;
       break;
+    case kSPV_AMD_gpu_shader_int16:
+      // This is not yet in the extension, but it's recommended for it.
+      // See https://github.com/KhronosGroup/glslang/issues/848
+      features_.uconvert_spec_constant_op = true;
+      break;
     case kSPV_AMD_shader_ballot:
       // The grammar doesn't encode the fact that SPV_AMD_shader_ballot
       // enables the use of group operations Reduce, InclusiveScan,
