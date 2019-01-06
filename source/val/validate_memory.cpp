@@ -277,7 +277,20 @@ uint32_t GetMakeVisibleScope(const Instruction* inst, uint32_t mask) {
 }
 
 spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
-                               uint32_t mask) {
+                               uint32_t index) {
+  SpvStorageClass dst_sc, src_sc;
+  std::tie(dst_sc, src_sc) = GetStorageClass(_, inst);
+  if (inst->operands().size() <= index) {
+    if (src_sc == SpvStorageClassPhysicalStorageBufferEXT ||
+        dst_sc == SpvStorageClassPhysicalStorageBufferEXT) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst) << "Memory accesses with "
+                                                   "PhysicalStorageBufferEXT "
+                                                   "must use Aligned.";
+    }
+    return SPV_SUCCESS;
+  }
+
+  uint32_t mask = inst->GetOperandAs<uint32_t>(index);
   if (mask & SpvMemoryAccessMakePointerAvailableKHRMask) {
     if (inst->opcode() == SpvOpLoad) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -314,13 +327,12 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
   }
 
   if (mask & SpvMemoryAccessNonPrivatePointerKHRMask) {
-    SpvStorageClass dst_sc, src_sc;
-    std::tie(dst_sc, src_sc) = GetStorageClass(_, inst);
     if (dst_sc != SpvStorageClassUniform &&
         dst_sc != SpvStorageClassWorkgroup &&
         dst_sc != SpvStorageClassCrossWorkgroup &&
         dst_sc != SpvStorageClassGeneric && dst_sc != SpvStorageClassImage &&
-        dst_sc != SpvStorageClassStorageBuffer) {
+        dst_sc != SpvStorageClassStorageBuffer &&
+        dst_sc != SpvStorageClassPhysicalStorageBufferEXT) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "NonPrivatePointerKHR requires a pointer in Uniform, "
                 "Workgroup, CrossWorkgroup, Generic, Image or StorageBuffer "
@@ -330,11 +342,21 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
         src_sc != SpvStorageClassWorkgroup &&
         src_sc != SpvStorageClassCrossWorkgroup &&
         src_sc != SpvStorageClassGeneric && src_sc != SpvStorageClassImage &&
-        src_sc != SpvStorageClassStorageBuffer) {
+        src_sc != SpvStorageClassStorageBuffer &&
+        src_sc != SpvStorageClassPhysicalStorageBufferEXT) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "NonPrivatePointerKHR requires a pointer in Uniform, "
                 "Workgroup, CrossWorkgroup, Generic, Image or StorageBuffer "
                 "storage classes.";
+    }
+  }
+
+  if (!(mask & SpvMemoryAccessAlignedMask)) {
+    if (src_sc == SpvStorageClassPhysicalStorageBufferEXT ||
+        dst_sc == SpvStorageClassPhysicalStorageBufferEXT) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst) << "Memory accesses with "
+                                                   "PhysicalStorageBufferEXT "
+                                                   "must use Aligned.";
     }
   }
 
@@ -414,7 +436,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   }
 
   // Variable pointer related restrictions.
-  auto pointee = _.FindDef(result_type->word(3));
+  const auto pointee = _.FindDef(result_type->word(3));
   if (_.addressing_model() == SpvAddressingModelLogical &&
       !_.options()->relax_logical_pointer) {
     // VariablePointersStorageBuffer is implied by VariablePointers.
@@ -507,6 +529,46 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  if (storage_class == SpvStorageClassPhysicalStorageBufferEXT) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "PhysicalStorageBufferEXT must not be used with OpVariable.";
+  }
+
+  auto pointee_base = pointee;
+  while (pointee_base->opcode() == SpvOpTypeArray) {
+    pointee_base = _.FindDef(pointee_base->GetOperandAs<uint32_t>(1u));
+  }
+  if (pointee_base->opcode() == SpvOpTypePointer) {
+    if (pointee_base->GetOperandAs<uint32_t>(1u) ==
+        SpvStorageClassPhysicalStorageBufferEXT) {
+      // check for AliasedPointerEXT/RestrictPointerEXT
+      const auto& decorations = _.id_decorations(inst->id());
+
+      bool foundAliased = std::any_of(
+          decorations.begin(), decorations.end(), [](const Decoration& d) {
+            return SpvDecorationAliasedPointerEXT == d.dec_type();
+          });
+
+      bool foundRestrict = std::any_of(
+          decorations.begin(), decorations.end(), [](const Decoration& d) {
+            return SpvDecorationRestrictPointerEXT == d.dec_type();
+          });
+
+      if (!foundAliased && !foundRestrict) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpVariable " << inst->id()
+               << ": expected AliasedPointerEXT or RestrictPointerEXT for "
+                  "PhysicalStorageBufferEXT pointer.";
+      }
+      if (foundAliased && foundRestrict) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpVariable " << inst->id()
+               << ": can't specify both AliasedPointerEXT and "
+                  "RestrictPointerEXT for PhysicalStorageBufferEXT pointer.";
+      }
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -550,11 +612,7 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
            << "'s type.";
   }
 
-  if (inst->operands().size() > 3) {
-    if (auto error =
-            CheckMemoryAccess(_, inst, inst->GetOperandAs<uint32_t>(3)))
-      return error;
-  }
+  if (auto error = CheckMemoryAccess(_, inst, 3)) return error;
 
   return SPV_SUCCESS;
 }
@@ -642,11 +700,7 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  if (inst->operands().size() > 2) {
-    if (auto error =
-            CheckMemoryAccess(_, inst, inst->GetOperandAs<uint32_t>(2)))
-      return error;
-  }
+  if (auto error = CheckMemoryAccess(_, inst, 2)) return error;
 
   return SPV_SUCCESS;
 }
@@ -710,11 +764,7 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
              << _.getIdName(source_type->id()) << "'s type.";
     }
 
-    if (inst->operands().size() > 2) {
-      if (auto error =
-              CheckMemoryAccess(_, inst, inst->GetOperandAs<uint32_t>(2)))
-        return error;
-    }
+    if (auto error = CheckMemoryAccess(_, inst, 2)) return error;
   } else {
     const auto size_id = inst->GetOperandAs<uint32_t>(2);
     const auto size = _.FindDef(size_id);
@@ -758,11 +808,7 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
         break;
     }
 
-    if (inst->operands().size() > 3) {
-      if (auto error =
-              CheckMemoryAccess(_, inst, inst->GetOperandAs<uint32_t>(3)))
-        return error;
-    }
+    if (auto error = CheckMemoryAccess(_, inst, 3)) return error;
   }
   return SPV_SUCCESS;
 }
