@@ -36,6 +36,9 @@ git clone --depth=1 https://github.com/google/re2                 external/re2
 if %VS_VERSION% == 2017 (
   call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
   echo "Using VS 2017..."
+  echo "Updating VS 2017..."
+  call "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" update --passive --norestart --installpath "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community"
+  echo "Updated VS 2017..."
 ) else if %VS_VERSION% == 2015 (
   call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
   echo "Using VS 2015..."
