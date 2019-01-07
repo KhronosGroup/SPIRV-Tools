@@ -822,7 +822,7 @@ TEST_F(UpgradeMemoryModelTest, CopyMemoryTwoScopes) {
 ; CHECK-NOT: OpDecorate
 ; CHECK-DAG: [[queuefamily:%\w+]] = OpConstant {{%\w+}} 5
 ; CHECK-DAG: [[workgroup:%\w+]] = OpConstant {{%\w+}} 2
-; CHECK: OpCopyMemory {{%\w+}} {{%\w+}} MakePointerAvailableKHR|MakePointerVisibleKHR|NonPrivatePointerKHR [[workgroup] [[queuefamily]]]
+; CHECK: OpCopyMemory {{%\w+}} {{%\w+}} MakePointerAvailableKHR|MakePointerVisibleKHR|NonPrivatePointerKHR [[workgroup]] [[queuefamily]]
 OpCapability Shader
 OpCapability Linkage
 OpExtension "SPV_KHR_storage_buffer_storage_class"
