@@ -160,14 +160,14 @@ void UpgradeMemoryModel::UpgradeInstructions() {
       }
       // According to SPV_KHR_vulkan_memory_model, if both available and
       // visible flags are used the first scope operand is for availability
-      // (reads) and the second is for visibility (writes).
-      if (src_coherent) {
-        inst->AddOperand(
-            {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(src_scope)}});
-      }
+      // (writes) and the second is for visibility (reads).
       if (dst_coherent) {
         inst->AddOperand(
             {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(dst_scope)}});
+      }
+      if (src_coherent) {
+        inst->AddOperand(
+            {SPV_OPERAND_TYPE_SCOPE_ID, {GetScopeConstant(src_scope)}});
       }
     });
   }
