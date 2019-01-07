@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2019.2-dev 2019-01-07
+ - Start v2019.2-dev
+
 v2019.1 2019-01-07
  - General:
    - Created a new tool called spirv-reduce.
