@@ -171,6 +171,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       grammar_(ctx),
       addressing_model_(SpvAddressingModelMax),
       memory_model_(SpvMemoryModelMax),
+      pointer_size_and_alignment_(0),
       in_function_(false),
       num_of_warnings_(0),
       max_num_of_warnings_(max_warnings) {
@@ -435,6 +436,17 @@ bool ValidationState_t::HasAnyOfExtensions(
 
 void ValidationState_t::set_addressing_model(SpvAddressingModel am) {
   addressing_model_ = am;
+  switch (am) {
+    case SpvAddressingModelPhysical32:
+      pointer_size_and_alignment_ = 4;
+      break;
+    default:
+      // fall through
+    case SpvAddressingModelPhysical64:
+    case SpvAddressingModelPhysicalStorageBuffer64EXT:
+      pointer_size_and_alignment_ = 8;
+      break;
+  }
 }
 
 SpvAddressingModel ValidationState_t::addressing_model() const {

@@ -339,6 +339,11 @@ class ValidationState_t {
   /// Returns the addressing model of this module, or Logical if uninitialized.
   SpvAddressingModel addressing_model() const;
 
+  /// Returns the addressing model of this module, or Logical if uninitialized.
+  uint32_t pointer_size_and_alignment() const {
+    return pointer_size_and_alignment_;
+  }
+
   /// Sets the memory model of this module.
   void set_memory_model(SpvMemoryModel mm);
 
@@ -656,6 +661,9 @@ class ValidationState_t {
 
   SpvAddressingModel addressing_model_;
   SpvMemoryModel memory_model_;
+  // pointer size derived from addressing model. Assumes all storage classes
+  // have the same pointer size (for physical pointer types).
+  uint32_t pointer_size_and_alignment_;
 
   /// NOTE: See correspoding getter functions
   bool in_function_;
