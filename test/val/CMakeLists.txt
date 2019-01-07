@@ -20,7 +20,7 @@ set(VAL_TEST_COMMON_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/val_fixtures.h
 )
 
-add_spvtools_unittest(TARGET val_abcde
+add_spvtools_unittest(TARGET val_abcdef
   SRCS
        val_adjacency_test.cpp
        val_arithmetics_test.cpp
@@ -39,6 +39,7 @@ add_spvtools_unittest(TARGET val_abcde
        val_explicit_reserved_test.cpp
        val_extensions_test.cpp
        val_ext_inst_test.cpp
+       val_function_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
   PCH_FILE pch_test_val
