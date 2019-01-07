@@ -73,12 +73,12 @@ void UpgradeMemoryModel::UpgradeInstructions() {
   for (auto& func : *get_module()) {
     func.ForEachInst([this](Instruction* inst) {
       if (inst->opcode() == SpvOpExtInst) {
-        auto import =
-            get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
-        if (reinterpret_cast<char*>(import->GetInOperand(0u).words.data()) ==
-            std::string("GLSL.std.450")) {
-          auto ext_inst = inst->GetSingleWordInOperand(1u);
-          if (ext_inst == GLSLstd450Modf || ext_inst == GLSLstd450Frexp) {
+        auto ext_inst = inst->GetSingleWordInOperand(1u);
+        if (ext_inst == GLSLstd450Modf || ext_inst == GLSLstd450Frexp) {
+          auto import =
+              get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0u));
+          if (reinterpret_cast<char*>(import->GetInOperand(0u).words.data()) ==
+              std::string("GLSL.std.450")) {
             UpgradeExtInst(inst);
           }
         }
