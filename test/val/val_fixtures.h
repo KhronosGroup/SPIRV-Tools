@@ -37,6 +37,11 @@ class ValidateBase : public ::testing::Test,
   // Returns the a spv_const_binary struct
   spv_const_binary get_const_binary();
 
+  // Assembles the given SPIR-V text, checks that it fails to assemble,
+  // and returns resulting diagnostic.  No internal state is updated.
+  std::string CompileFailure(std::string code,
+                             spv_target_env env = SPV_ENV_UNIVERSAL_1_0);
+
   // Checks that 'code' is valid SPIR-V text representation and stores the
   // binary version for further method calls.
   void CompileSuccessfully(std::string code,
@@ -98,6 +103,17 @@ void ValidateBase<T>::TearDown() {
   DestroyBinary();
   DestroyDiagnostic();
   spvValidatorOptionsDestroy(options_);
+}
+
+template <typename T>
+std::string ValidateBase<T>::CompileFailure(std::string code,
+                                            spv_target_env env) {
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_NE(SPV_SUCCESS,
+            spvTextToBinary(ScopedContext(env).context, code.c_str(),
+                            code.size(), &binary_, &diagnostic));
+  std::string result(diagnostic->error);
+  return result;
 }
 
 template <typename T>
