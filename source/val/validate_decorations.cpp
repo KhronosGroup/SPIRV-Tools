@@ -683,6 +683,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
     const auto& descs = vstate.entry_point_descriptions(entry_point);
     int num_builtin_inputs = 0;
     int num_builtin_outputs = 0;
+    std::unordered_set<Instruction*> seen_vars;
     for (const auto& desc : descs) {
       for (auto interface : desc.interfaces) {
         Instruction* var_instr = vstate.FindDef(interface);
@@ -694,14 +695,31 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
         }
         const SpvStorageClass storage_class =
             var_instr->GetOperandAs<SpvStorageClass>(2);
-        if (storage_class != SpvStorageClassInput &&
-            storage_class != SpvStorageClassOutput) {
-          return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
-                 << "OpEntryPoint interfaces must be OpVariables with "
-                    "Storage Class of Input(1) or Output(3). Found Storage "
-                    "Class "
-                 << storage_class << " for Entry Point id " << entry_point
-                 << ".";
+        if (spvVersionForTargetEnv(vstate.context()->target_env) >=
+            SPV_SPIRV_VERSION_WORD(1, 4)) {
+          // Starting in 1.4, OpEntryPoint must list all global variables
+          // it statically uses and those interfaces must be unique.
+          if (storage_class == SpvStorageClassFunction) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                   << "OpEntryPoint interfaces should only list global "
+                      "variables";
+          }
+
+          if (!seen_vars.insert(var_instr).second) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                   << "Non-unique OpEntryPoint interface "
+                   << vstate.getIdName(interface) << " is disallowed";
+          }
+        } else {
+          if (storage_class != SpvStorageClassInput &&
+              storage_class != SpvStorageClassOutput) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                   << "OpEntryPoint interfaces must be OpVariables with "
+                      "Storage Class of Input(1) or Output(3). Found Storage "
+                      "Class "
+                   << storage_class << " for Entry Point id " << entry_point
+                   << ".";
+          }
         }
 
         const uint32_t ptr_id = var_instr->word(1);
