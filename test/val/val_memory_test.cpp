@@ -3507,8 +3507,8 @@ OpFunctionEnd
               HasSubstr("The types of Operand 1 and Operand 2 must match"));
 }
 
-INSTANTIATE_TEST_CASE_P(PointerComparisons, ValidatePointerComparisons,
-                        Values("OpPtrEqual", "OpPtrNotEqual", "OpPtrDiff"));
+INSTANTIATE_TEST_SUITE_P(PointerComparisons, ValidatePointerComparisons,
+                         Values("OpPtrEqual", "OpPtrNotEqual", "OpPtrDiff"));
 
 }  // namespace
 }  // namespace val

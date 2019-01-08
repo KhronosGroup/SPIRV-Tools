@@ -1354,6 +1354,57 @@ spv_result_t ValidateCooperativeMatrixLoadStoreNV(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidatePtrComparison(ValidationState_t& _,
+                                   const Instruction* inst) {
+  if (_.addressing_model() == SpvAddressingModelLogical &&
+      !_.features().variable_pointers_storage_buffer) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Instruction cannot be used without a variable pointers "
+              "capability";
+  }
+
+  const auto result_type = _.FindDef(inst->type_id());
+  if (inst->opcode() == SpvOpPtrDiff) {
+    if (!result_type || result_type->opcode() != SpvOpTypeInt) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Result Type must be an integer scalar";
+    }
+  } else {
+    if (!result_type || result_type->opcode() != SpvOpTypeBool) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Result Type must be OpTypeBool";
+    }
+  }
+
+  const auto op1 = _.FindDef(inst->GetOperandAs<uint32_t>(2u));
+  const auto op2 = _.FindDef(inst->GetOperandAs<uint32_t>(3u));
+  if (!op1 || !op2 || op1->type_id() != op2->type_id()) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The types of Operand 1 and Operand 2 must match";
+  }
+  const auto op1_type = _.FindDef(op1->type_id());
+  if (!op1_type || op1_type->opcode() != SpvOpTypePointer) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Operand type must be a pointer";
+  }
+
+  if (_.addressing_model() == SpvAddressingModelLogical) {
+    SpvStorageClass sc = op1_type->GetOperandAs<SpvStorageClass>(1u);
+    if (sc != SpvStorageClassWorkgroup && sc != SpvStorageClassStorageBuffer) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Invalid pointer storage class";
+    }
+
+    if (sc == SpvStorageClassWorkgroup && !_.features().variable_pointers) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Workgroup storage class pointer requires VariablePointers "
+                "capability to be specified";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
@@ -1389,6 +1440,11 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
       break;
     case SpvOpCooperativeMatrixLengthNV:
       if (auto error = ValidateCooperativeMatrixLengthNV(_, inst)) return error;
+      break;
+    case SpvOpPtrEqual:
+    case SpvOpPtrNotEqual:
+    case SpvOpPtrDiff:
+      if (auto error = ValidatePtrComparison(_, inst)) return error;
       break;
     case SpvOpImageTexelPointer:
     case SpvOpGenericPtrMemSemantics:
