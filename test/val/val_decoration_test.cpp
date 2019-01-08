@@ -5173,6 +5173,26 @@ TEST_F(ValidateDecorations, NoSignedWrapRequiresExtensionBad) {
                         "SPV_KHR_no_integer_wrap_decoration"));
 }
 
+TEST_F(ValidateDecorations, NoSignedWrapRequiresExtensionV13Bad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these extensions: "
+                        "SPV_KHR_no_integer_wrap_decoration"));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapOkInSPV14Good) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
 TEST_F(ValidateDecorations, NoSignedWrapIAddGood) {
   std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
                                         "%val = OpIAdd %int %zero %zero");
@@ -5293,6 +5313,26 @@ TEST_F(ValidateDecorations, NoUnsignedWrapRequiresExtensionBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("requires one of these extensions: "
                         "SPV_KHR_no_integer_wrap_decoration"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapRequiresExtensionV13Bad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these extensions: "
+                        "SPV_KHR_no_integer_wrap_decoration"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapOkInSPV14Good) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 TEST_F(ValidateDecorations, NoUnsignedWrapIAddGood) {
