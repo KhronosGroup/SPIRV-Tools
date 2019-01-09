@@ -4810,6 +4810,282 @@ TEST_F(ValidateDecorations, BlockAndBufferBlockDecorationsOnSameID) {
           "ID '2' decorated with both BufferBlock and Block is not allowed."));
 }
 
+std::string MakeIntegerShader(
+    const std::string& decoration, const std::string& inst,
+    const std::string& extension =
+        "OpExtension \"SPV_KHR_no_integer_wrap_decoration\"") {
+  return R"(
+OpCapability Shader
+OpCapability Linkage
+)" + extension +
+         R"(
+%glsl = OpExtInstImport "GLSL.std.450"
+%opencl = OpExtInstImport "OpenCL.std"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpName %entry "entry"
+)" + decoration +
+         R"(
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+     %int = OpTypeInt 32 1
+    %zero = OpConstantNull %int
+   %float = OpTypeFloat 32
+  %float0 = OpConstantNull %float
+    %main = OpFunction %void None %voidfn
+   %entry = OpLabel
+)" + inst +
+         R"(
+OpReturn
+OpFunctionEnd)";
+}
+
+// NoSignedWrap
+
+TEST_F(ValidateDecorations, NoSignedWrapOnTypeBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %void NoSignedWrap", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("NoSignedWrap decoration may not be applied to TypeVoid"));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapOnLabelBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %entry NoSignedWrap", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NoSignedWrap decoration may not be applied to Label"));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapRequiresExtensionBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these extensions: "
+                        "SPV_KHR_no_integer_wrap_decoration"));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapIAddGood) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpIAdd %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapISubGood) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpISub %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapIMulGood) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpIMul %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapShiftLeftLogicalGood) {
+  std::string spirv =
+      MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                        "%val = OpShiftLeftLogical %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapSNegateGood) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpSNegate %int %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapSRemBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpSRem %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NoSignedWrap decoration may not be applied to SRem"));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapFAddBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                                        "%val = OpFAdd %float %float0 %float0");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NoSignedWrap decoration may not be applied to FAdd"));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapExtInstOpenCLGood) {
+  std::string spirv =
+      MakeIntegerShader("OpDecorate %val NoSignedWrap",
+                        "%val = OpExtInst %int %opencl s_abs %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoSignedWrapExtInstGLSLGood) {
+  std::string spirv = MakeIntegerShader(
+      "OpDecorate %val NoSignedWrap", "%val = OpExtInst %int %glsl SAbs %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+// TODO(dneto): For NoSignedWrap and NoUnsignedWrap, permit
+// "OpExtInst for instruction numbers specified in the extended
+// instruction-set specifications as accepting this decoration."
+
+// NoUnignedWrap
+
+TEST_F(ValidateDecorations, NoUnsignedWrapOnTypeBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %void NoUnsignedWrap", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("NoUnsignedWrap decoration may not be applied to TypeVoid"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapOnLabelBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %entry NoUnsignedWrap", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("NoUnsignedWrap decoration may not be applied to Label"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapRequiresExtensionBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpIAdd %int %zero %zero", "");
+
+  CompileSuccessfully(spirv);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these extensions: "
+                        "SPV_KHR_no_integer_wrap_decoration"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapIAddGood) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpIAdd %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapISubGood) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpISub %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapIMulGood) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpIMul %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapShiftLeftLogicalGood) {
+  std::string spirv =
+      MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                        "%val = OpShiftLeftLogical %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapSNegateGood) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpSNegate %int %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapSRemBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpSRem %int %zero %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("NoUnsignedWrap decoration may not be applied to SRem"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapFAddBad) {
+  std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                                        "%val = OpFAdd %float %float0 %float0");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("NoUnsignedWrap decoration may not be applied to FAdd"));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapExtInstOpenCLGood) {
+  std::string spirv =
+      MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                        "%val = OpExtInst %int %opencl s_abs %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, NoUnsignedWrapExtInstGLSLGood) {
+  std::string spirv =
+      MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
+                        "%val = OpExtInst %int %glsl SAbs %zero");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+// TODO(dneto): For NoUnsignedWrap and NoUnsignedWrap, permit
+// "OpExtInst for instruction numbers specified in the extended
+// instruction-set specifications as accepting this decoration."
+
 TEST_F(ValidateDecorations, PSBAliasedRestrictPointerSuccess) {
   const std::string body = R"(
 OpCapability PhysicalStorageBufferAddressesEXT
@@ -4952,10 +5228,9 @@ OpFunctionEnd
 
   CompileSuccessfully(body.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "expected Aliased or Restrict for PhysicalStorageBufferEXT pointer"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected Aliased or Restrict for "
+                        "PhysicalStorageBufferEXT pointer"));
 }
 
 TEST_F(ValidateDecorations, PSBAliasedRestrictFunctionParamBoth) {
