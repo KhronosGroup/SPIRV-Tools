@@ -1180,6 +1180,36 @@ spv_result_t CheckUniformDecoration(ValidationState_t& vstate,
   return SPV_SUCCESS;
 }
 
+// Returns SPV_SUCCESS if validation rules are satisfied for NoSignedWrap or
+// NoUnsignedWrap decorations. Otherwise emits a diagnostic and returns
+// something other than SPV_SUCCESS. Assumes each decoration on a group has been
+// propagated down to the group members.
+spv_result_t CheckIntegerWrapDecoration(ValidationState_t& vstate,
+                                        const Instruction& inst,
+                                        const Decoration& decoration) {
+  switch (inst.opcode()) {
+    case SpvOpIAdd:
+    case SpvOpISub:
+    case SpvOpIMul:
+    case SpvOpShiftLeftLogical:
+    case SpvOpSNegate:
+      return SPV_SUCCESS;
+    case SpvOpExtInst:
+      // TODO(dneto): Only certain extended instructions allow these
+      // decorations.  For now allow anything.
+      return SPV_SUCCESS;
+    default:
+      break;
+  }
+
+  return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+         << (decoration.dec_type() == SpvDecorationNoSignedWrap
+                 ? "NoSignedWrap"
+                 : "NoUnsignedWrap")
+         << " decoration may not be applied to "
+         << spvOpcodeString(inst.opcode());
+}
+
 #define PASS_OR_BAIL_AT_LINE(X, LINE)           \
   {                                             \
     spv_result_t e##LINE = (X);                 \
@@ -1215,6 +1245,10 @@ spv_result_t CheckDecorationsFromDecoration(ValidationState_t& vstate) {
           break;
         case SpvDecorationUniform:
           PASS_OR_BAIL(CheckUniformDecoration(vstate, *inst, decoration));
+          break;
+        case SpvDecorationNoSignedWrap:
+        case SpvDecorationNoUnsignedWrap:
+          PASS_OR_BAIL(CheckIntegerWrapDecoration(vstate, *inst, decoration));
           break;
         default:
           break;
