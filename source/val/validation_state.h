@@ -104,6 +104,10 @@ class ValidationState_t {
     // - ArrayStride and MatrixStride are multiples of scalar alignment
     // Members need not be listed in offset order
     bool scalar_block_layout = false;
+
+    // Permit UConvert as an OpSpecConstantOp operation.
+    // The Kernel capability already enables it, separately from this flag.
+    bool uconvert_spec_constant_op = false;
   };
 
   ValidationState_t(const spv_const_context context,
