@@ -197,6 +197,14 @@ bool ContainsInvalidBool(ValidationState_t& _, const Instruction* storage,
   return false;
 }
 
+bool HasDecoration(ValidationState_t& _, uint32_t id, SpvDecoration dec) {
+  const auto& decorations = _.id_decorations(id);
+
+  return std::any_of(
+      decorations.begin(), decorations.end(),
+      [dec](const Decoration& d) { return dec == d.dec_type(); });
+}
+
 std::pair<SpvStorageClass, SpvStorageClass> GetStorageClass(
     ValidationState_t& _, const Instruction* inst) {
   SpvStorageClass dst_sc = SpvStorageClassMax;
@@ -542,18 +550,10 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     if (pointee_base->GetOperandAs<uint32_t>(1u) ==
         SpvStorageClassPhysicalStorageBufferEXT) {
       // check for AliasedPointerEXT/RestrictPointerEXT
-      const auto& decorations = _.id_decorations(inst->id());
-
-      bool foundAliased = std::any_of(
-          decorations.begin(), decorations.end(), [](const Decoration& d) {
-            return SpvDecorationAliasedPointerEXT == d.dec_type();
-          });
-
-      bool foundRestrict = std::any_of(
-          decorations.begin(), decorations.end(), [](const Decoration& d) {
-            return SpvDecorationRestrictPointerEXT == d.dec_type();
-          });
-
+      bool foundAliased =
+          HasDecoration(_, inst->id(), SpvDecorationAliasedPointerEXT);
+      bool foundRestrict =
+          HasDecoration(_, inst->id(), SpvDecorationRestrictPointerEXT);
       if (!foundAliased && !foundRestrict) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpVariable " << inst->id()
@@ -565,6 +565,79 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                << "OpVariable " << inst->id()
                << ": can't specify both AliasedPointerEXT and "
                   "RestrictPointerEXT for PhysicalStorageBufferEXT pointer.";
+      }
+    }
+  }
+
+  // Vulkan specific validation rules for OpTypeRuntimeArray
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    const auto type_index = 2;
+    const auto value_id = result_type->GetOperandAs<uint32_t>(type_index);
+    auto value_type = _.FindDef(value_id);
+    // OpTypeRuntimeArray should only ever be in a container like OpTypeStruct,
+    // so should never appear as a bare variable.
+    // Unless the module has the RuntimeDescriptorArrayEXT capability.
+    if (value_type && value_type->opcode() == SpvOpTypeRuntimeArray) {
+      if (!_.HasCapability(SpvCapabilityRuntimeDescriptorArrayEXT)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpVariable, <id> '" << _.getIdName(inst->id())
+               << "', is attempting to create memory for an illegal type, "
+                  "OpTypeRuntimeArray.\nFor Vulkan OpTypeRuntimeArray can only "
+                  "appear as the final member of an OpTypeStruct, thus cannot "
+                  "be instantiated via OpVariable";
+      } else {
+        // A bare variable OpTypeRuntimeArray is allowed in this context, but
+        // still need to check the storage class.
+        if (storage_class != SpvStorageClassStorageBuffer &&
+            storage_class != SpvStorageClassUniform &&
+            storage_class != SpvStorageClassUniformConstant) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "For Vulkan with RuntimeDescriptorArrayEXT, an variable "
+                    "containing OpTypeRuntimeArray must have storage class of "
+                    "StorageBuffer, Uniform, or UniformConstant.";
+        }
+      }
+    }
+
+    // If an OpStruct has an OpTypeRuntimeArray somewhere within it, then it
+    // must either have the storage class StorageBuffer and be be decorated
+    // with Block, or it must be in the Uniform storage class and be decorated
+    // as BufferBlock.
+    if (value_type && value_type->opcode() == SpvOpTypeStruct) {
+      bool contains_RTA = false;
+      for (size_t member_type_index = 1;
+           member_type_index < value_type->operands().size();
+           ++member_type_index) {
+        const auto member_type_id =
+            value_type->GetOperandAs<uint32_t>(member_type_index);
+        const auto member_type = _.FindDef(member_type_id);
+        if (member_type->opcode() == SpvOpTypeRuntimeArray) {
+          contains_RTA = true;
+          break;
+        }
+      }
+
+      if (contains_RTA) {
+        if (storage_class == SpvStorageClassStorageBuffer) {
+          if (!HasDecoration(_, value_id, SpvDecorationBlock)) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << "For Vulkan, an OpTypeStruct variable containing an "
+                      "OpTypeRuntimeArray must be decorated with Block if it "
+                      "has storage class StorageBuffer.";
+          }
+        } else if (storage_class == SpvStorageClassUniform) {
+          if (!HasDecoration(_, value_id, SpvDecorationBufferBlock)) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << "For Vulkan, an OpTypeStruct variable containing an "
+                      "OpTypeRuntimeArray must be decorated with BufferBlock "
+                      "if it has storage class Uniform.";
+          }
+        } else {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "For Vulkan, OpTypeStruct variables containing "
+                    "OpTypeRuntimeArray must have storage class of "
+                    "StorageBuffer or Uniform.";
+        }
       }
     }
   }
