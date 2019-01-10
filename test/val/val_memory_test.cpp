@@ -2119,9 +2119,9 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("For WebGPU, OpTypeStruct variables containing "
-                "OpTypeRuntimeArray must have storage class of StorageBuffer\n "
-                " %6 = OpVariable %_ptr_Uniform__struct_3 Uniform\n"));
+      HasSubstr(
+          "OpDecorate decoration 'BufferBlock' is not valid for the WebGPU "
+          "execution environment.\n  OpDecorate %_struct_3 BufferBlock\n"));
 }
 
 TEST_F(ValidateMemory, VulkanRTAInsideUniformStructWithoutBufferBlockBad) {

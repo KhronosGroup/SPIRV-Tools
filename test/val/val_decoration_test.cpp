@@ -20,16 +20,34 @@
 #include "gmock/gmock.h"
 #include "source/val/decoration.h"
 #include "test/unit_spirv.h"
+#include "test/val/val_code_generator.h"
 #include "test/val/val_fixtures.h"
 
 namespace spvtools {
 namespace val {
 namespace {
 
+using ::testing::Combine;
 using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::HasSubstr;
+using ::testing::Values;
+
+struct TestResult {
+  TestResult(spv_result_t in_validation_result = SPV_SUCCESS,
+             const char* in_pre_error_str = nullptr,
+             const char* in_post_error_str = nullptr)
+      : validation_result(in_validation_result),
+        pre_error_str(in_pre_error_str),
+        post_error_str(in_post_error_str) {}
+  spv_result_t validation_result;
+  const char* pre_error_str;
+  const char* post_error_str;
+};
 
 using ValidateDecorations = spvtest::ValidateBase<bool>;
+using ValidateWebGPUCombineDecorationResult =
+    spvtest::ValidateBase<std::tuple<const char*, TestResult>>;
 
 TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
   std::string spirv = R"(
@@ -5740,6 +5758,73 @@ TEST_F(ValidateDecorations, NonWritableVarFunctionBad) {
                         "point to a storage image, uniform block, or storage "
                         "buffer\n  %var_func"));
 }
+
+TEST_P(ValidateWebGPUCombineDecorationResult, Decorate) {
+  const char* const decoration = std::get<0>(GetParam());
+  const TestResult& test_result = std::get<1>(GetParam());
+
+  CodeGenerator generator = CodeGenerator::GetWebGPUShaderCodeGenerator();
+  generator.before_types_ = "OpDecorate %u32 ";
+  generator.before_types_ += decoration;
+  generator.before_types_ += "\n";
+
+  EntryPoint entry_point;
+  entry_point.name = "main";
+  entry_point.execution_model = "Vertex";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(test_result.validation_result,
+            ValidateInstructions(SPV_ENV_WEBGPU_0));
+  if (test_result.pre_error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.pre_error_str));
+  }
+  if (test_result.post_error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.post_error_str));
+  }
+}
+
+TEST_P(ValidateWebGPUCombineDecorationResult, DecorateMember) {
+  const char* const decoration = std::get<0>(GetParam());
+  const TestResult& test_result = std::get<1>(GetParam());
+
+  CodeGenerator generator = CodeGenerator::GetWebGPUShaderCodeGenerator();
+  generator.before_types_ = "OpMemberDecorate %struct_type 0 ";
+  generator.before_types_ += decoration;
+  generator.before_types_ += "\n";
+
+  generator.after_types_ = "%struct_type = OpTypeStruct %u32\n";
+
+  EntryPoint entry_point;
+  entry_point.name = "main";
+  entry_point.execution_model = "Vertex";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(test_result.validation_result,
+            ValidateInstructions(SPV_ENV_WEBGPU_0));
+  if (test_result.pre_error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.pre_error_str));
+  }
+  if (test_result.post_error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.post_error_str));
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    DecorationCapabilityFailure, ValidateWebGPUCombineDecorationResult,
+    Combine(Values("CPacked", "Patch", "Sample", "Constant",
+                   "SaturatedConversion", "NonUniformEXT"),
+            Values(TestResult(SPV_ERROR_INVALID_CAPABILITY,
+                              "requires one of these capabilities", ""))), );
+
+INSTANTIATE_TEST_CASE_P(
+    DecorationWhitelistFailure, ValidateWebGPUCombineDecorationResult,
+    Combine(Values("RelaxedPrecision", "BufferBlock", "GLSLShared",
+                   "GLSLPacked", "Invariant", "Volatile", "Coherent"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_ID, "",
+                "is not valid for the WebGPU execution environment."))), );
 
 }  // namespace
 }  // namespace val
