@@ -722,6 +722,9 @@ Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
 // conform to that model's requirements.
 Optimizer::PassToken CreateUpgradeMemoryModelPass();
 
+// Creates a pass to move code closer its uses.
+Optimizer::PassToken CreateCodeSinkingPass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
