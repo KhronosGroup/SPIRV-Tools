@@ -204,11 +204,18 @@ spv_result_t LogicalsPass(ValidationState_t& _, const Instruction* inst) {
                  << "Expected bool scalar or vector type as condition: "
                  << spvOpcodeString(opcode);
 
-        if (_.GetDimension(condition_type) != dimension)
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Expected vector sizes of Result Type and the condition to "
-                    "be"
-                 << " equal: " << spvOpcodeString(opcode);
+        if (_.GetDimension(condition_type) != dimension) {
+          // If the condition is a vector type, then the result must also be a
+          // vector with matching dimensions. In SPIR-V 1.4, a scalar condition
+          // can be used to select between vector types. |composites| is a
+          // proxy for SPIR-V 1.4 functionality.
+          if (!composites || _.IsBoolVectorType(condition_type)) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << "Expected vector sizes of Result Type and the condition "
+                      "to be equal: "
+                   << spvOpcodeString(opcode);
+          }
+        }
 
         if (result_type != left_type || result_type != right_type)
           return _.diag(SPV_ERROR_INVALID_DATA, inst)

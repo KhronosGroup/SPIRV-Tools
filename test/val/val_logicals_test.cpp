@@ -1045,6 +1045,84 @@ OpFunctionEnd
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateLogicals, SelectVectorsScalarCondition) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int4 = OpTypeVector %int 4
+%int4_0 = OpConstantNull %int4
+%true = OpConstantTrue %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%1 = OpLabel
+%select = OpSelect %int4 %true %int4_0 %int4_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected vector sizes of Result Type and the "
+                        "condition to be equal: Select"));
+}
+
+TEST_F(ValidateLogicals, SelectVectorsScalarCondition1p4) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int4 = OpTypeVector %int 4
+%int4_0 = OpConstantNull %int4
+%true = OpConstantTrue %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%1 = OpLabel
+%select = OpSelect %int4 %true %int4_0 %int4_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateLogicals, SelectVectorsVectorConditionMismatchedDimensions1p4) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool3 = OpTypeVector %bool 3
+%int = OpTypeInt 32 0
+%int4 = OpTypeVector %int 4
+%int4_0 = OpConstantNull %int4
+%bool3_null = OpConstantNull %bool3
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%1 = OpLabel
+%select = OpSelect %int4 %bool3_null %int4_0 %int4_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected vector sizes of Result Type and the "
+                        "condition to be equal: Select"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
