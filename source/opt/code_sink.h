@@ -42,6 +42,15 @@ class CodeSinkingPass : public Pass {
 
  private:
 
+  bool SinkInstInBB(BasicBlock* bb, bool b);
+  bool SinkInst(Instruction* inst, bool b);
+  BasicBlock* FindNewBasicBlockFor(Instruction* inst);
+  bool ReferencesMutableMemory(Instruction* inst, bool b);
+  bool HasMemorySync(Function* function);
+  bool HasPossibleStore(Instruction* var_inst);
+  bool IntersectsPath(uint32_t start,
+                      uint32_t end,
+                      const std::unordered_set<uint32_t>& set);
 };
 
 }  // namespace opt
