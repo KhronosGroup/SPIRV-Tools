@@ -53,11 +53,17 @@ bool CodeSinkingPass::SinkInstInBB(BasicBlock* bb, bool function_has_memory_sync
 }
 
 bool CodeSinkingPass::SinkInst(Instruction* inst, bool function_has_memory_sync) {
+/*
   if (inst->result_id() == 0) {
     return false;
   }
 
   if (!inst->IsOpcodeCodeMotionSafe()) {
+    return false;
+  }
+*/
+
+  if (inst->opcode() != SpvOpLoad && inst->opcode() != SpvOpAccessChain) {
     return false;
   }
 
@@ -66,7 +72,6 @@ bool CodeSinkingPass::SinkInst(Instruction* inst, bool function_has_memory_sync)
   }
 
   if (BasicBlock* target_bb = FindNewBasicBlockFor(inst)) {
-
     Instruction* pos = &*target_bb->begin();
     while(pos->opcode() == SpvOpPhi) {
       pos = pos->NextNode();
@@ -74,8 +79,6 @@ bool CodeSinkingPass::SinkInst(Instruction* inst, bool function_has_memory_sync)
 
     inst->InsertBefore(pos);
     context()->set_instr_block(inst, target_bb);
-    std::cerr << "Moving instruction: " << inst->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) << std::endl;
-    std::cerr << "Moving before: " << pos->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) << std::endl;
     return true;
   }
   return false;
@@ -85,8 +88,6 @@ BasicBlock* CodeSinkingPass::FindNewBasicBlockFor(Instruction* inst) {
   assert(inst->result_id() != 0 && "Instruction should not have a result.");
   BasicBlock* original_bb = context()->get_instr_block(inst);
   BasicBlock* bb = original_bb;
-
-  std::cerr << "Looking for a basic block for: " << inst->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) << std::endl;
 
   std::unordered_set<uint32_t> bbs_with_uses;
   get_def_use_mgr()->ForEachUse(inst, [&bbs_with_uses, this](Instruction* use, uint32_t idx) {
