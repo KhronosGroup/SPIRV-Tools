@@ -396,11 +396,6 @@ class ValidationState_t {
   std::vector<Decoration>& id_decorations(uint32_t id) {
     return id_decorations_[id];
   }
-  const std::vector<Decoration>& id_decorations(uint32_t id) const {
-    // TODO: This would throw or generate SIGABRT if id has no
-    // decorations. Remove/refactor this function.
-    return id_decorations_.at(id);
-  }
 
   // Returns const pointer to the internal decoration container.
   const std::map<uint32_t, std::vector<Decoration>>& id_decorations() const {
