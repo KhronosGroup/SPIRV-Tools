@@ -24,7 +24,22 @@
 namespace spvtools {
 namespace opt {
 
-// See optimizer.hpp for documentation.
+// This pass does code sinking for OpAccessChain and OpLoad on variables in
+// uniform storage or is read only memory.  Code sinking is a transformation
+// where an instruction is moved into a more deeply nested construct.
+//
+// The goal is to move these instructions as close as possible to their uses
+// without having to execute them more often or to replicate the instruction.
+// Moving the instruction in this way can lead to shorter live ranges, which an
+// lead to less register pressure.  It can also causes instruction to be
+// executed less often because they could be moved into one path of a selection
+// construct.
+//
+// This optimization can cause register pressure to rise if the operands of the
+// instructions go dead after the instructions being moved. That is why we only
+// move certain OpLoad and OpAccessChain instructions.  They generally have
+// constants, loop induction variables, and global pointers as operands.  The
+// operands are live for a longer time in most cases.
 class CodeSinkingPass : public Pass {
  public:
   const char* name() const override { return "code-sink"; }
