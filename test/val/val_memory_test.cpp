@@ -1986,7 +1986,7 @@ OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
 OpDecorate %array_t ArrayStride 4
 OpMemberDecorate %struct_t 0 Offset 0
-OpDecorate %struct_t BufferBlock
+OpDecorate %struct_t Block
 %uint_t = OpTypeInt 32 0
 %struct_t = OpTypeStruct %uint_t
 %array_t = OpTypeRuntimeArray %struct_t
