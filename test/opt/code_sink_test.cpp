@@ -506,7 +506,7 @@ TEST_F(CodeSinkTest, MoveWithAtomicWithoutSync) {
 %_ptr_Uniform__arr_uint_uint_4 = OpTypePointer Uniform %_arr_uint_uint_4
          %11 = OpVariable %_ptr_Uniform__arr_uint_uint_4 Uniform
          %12 = OpTypeFunction %void
-          %1 = OpFunction %void None %12p
+          %1 = OpFunction %void None %12
          %13 = OpLabel
          %14 = OpAccessChain %_ptr_Uniform_uint %11 %uint_0
          %15 = OpLoad %uint %14
