@@ -21,13 +21,13 @@
 #include <vector>
 
 #include <source/spirv_optimizer_options.h>
+#include "code_sink.h"
 #include "source/opt/build_module.h"
 #include "source/opt/log.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
 #include "source/util/make_unique.h"
 #include "source/util/string_utils.h"
-#include "code_sink.h"
 
 namespace spvtools {
 
