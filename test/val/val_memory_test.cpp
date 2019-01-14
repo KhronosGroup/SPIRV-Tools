@@ -1771,10 +1771,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("For Vulkan with RuntimeDescriptorArrayEXT, an variable "
-                "containing OpTypeRuntimeArray must have storage class of "
-                "StorageBuffer, Uniform, or UniformConstant.\n  %5 = "
-                "OpVariable %_ptr_Workgroup__runtimearr_uint Workgroup\n"));
+      HasSubstr("For Vulkan with RuntimeDescriptorArrayEXT, a variable containing OpTypeRuntimeArray must have storage class of StorageBuffer, Uniform, or UniformConstant.\n  %5 = OpVariable %_ptr_Workgroup__runtimearr_uint Workgroup\n"));
 }
 
 TEST_F(ValidateMemory, VulkanRTAInsideStorageBufferStructGood) {
@@ -1974,6 +1971,35 @@ OpFunctionEnd
           "valid in Vulkan environment.\n  %_runtimearr__runtimearr_uint = "
           "OpTypeRuntimeArray %_runtimearr_uint\n"));
 }
+
+TEST_F(ValidateMemory, VulkanUniformStructInsideRTAWithRuntimeDescriptorArrayGood) {
+  std::string spirv = R"(
+OpCapability RuntimeDescriptorArrayEXT
+OpCapability Shader
+OpExtension "SPV_EXT_descriptor_indexing"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+OpDecorate %array_t ArrayStride 4
+OpMemberDecorate %struct_t 0 Offset 0
+OpDecorate %struct_t BufferBlock
+%uint_t = OpTypeInt 32 0
+%struct_t = OpTypeStruct %uint_t
+%array_t = OpTypeRuntimeArray %struct_t
+%array_ptr = OpTypePointer Uniform %array_t
+%2 = OpVariable %array_ptr Uniform
+%void = OpTypeVoid
+%func_t = OpTypeFunction %void
+%func = OpFunction %void None %func_t
+%1 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
 
 TEST_F(ValidateMemory, VulkanRTAInsideRTAInsideStructBad) {
   std::string spirv = R"(
@@ -2175,6 +2201,66 @@ OpFunctionEnd
       HasSubstr("OpTypeArray Element Type <id> '6[%_runtimearr_uint]' is not "
                 "valid in Vulkan environment.\n  %_arr__runtimearr_uint_uint_1 "
                 "= OpTypeArray %_runtimearr_uint %uint_1\n"));
+}
+
+TEST_F(ValidateMemory,
+       VulkanRTAStructInsideRTAWithRuntimeDescriptorArrayGood) {
+  std::string spirv = R"(
+OpCapability RuntimeDescriptorArrayEXT
+OpCapability Shader
+OpExtension "SPV_EXT_descriptor_indexing"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+OpDecorate %array_t ArrayStride 4
+OpMemberDecorate %struct_t 0 Offset 0
+OpDecorate %struct_t Block
+%uint_t = OpTypeInt 32 0
+%inner_array_t = OpTypeRuntimeArray %uint_t
+%struct_t = OpTypeStruct %inner_array_t
+%array_t = OpTypeRuntimeArray %struct_t
+%array_ptr = OpTypePointer StorageBuffer %array_t
+%2 = OpVariable %array_ptr StorageBuffer
+%void = OpTypeVoid
+%func_t = OpTypeFunction %void
+%func = OpFunction %void None %func_t
+%1 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanRTAStructInsideArrayGood) {
+  std::string spirv = R"(
+OpCapability RuntimeDescriptorArrayEXT
+OpCapability Shader
+OpExtension "SPV_EXT_descriptor_indexing"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+OpDecorate %array_t ArrayStride 4
+OpMemberDecorate %struct_t 0 Offset 0
+OpDecorate %struct_t Block
+%uint_t = OpTypeInt 32 0
+%inner_array_t = OpTypeRuntimeArray %uint_t
+%struct_t = OpTypeStruct %inner_array_t
+%array_size = OpConstant %uint_t 5
+%array_t = OpTypeArray %struct_t %array_size
+%array_ptr = OpTypePointer StorageBuffer %array_t
+%2 = OpVariable %array_ptr StorageBuffer
+%void = OpTypeVoid
+%func_t = OpTypeFunction %void
+%func = OpFunction %void None %func_t
+%1 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
 }  // namespace
