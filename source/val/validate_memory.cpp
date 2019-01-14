@@ -197,14 +197,6 @@ bool ContainsInvalidBool(ValidationState_t& _, const Instruction* storage,
   return false;
 }
 
-bool HasDecoration(ValidationState_t& _, uint32_t id, SpvDecoration dec) {
-  const auto& decorations = _.id_decorations(id);
-
-  return std::any_of(
-      decorations.begin(), decorations.end(),
-      [dec](const Decoration& d) { return dec == d.dec_type(); });
-}
-
 std::pair<SpvStorageClass, SpvStorageClass> GetStorageClass(
     ValidationState_t& _, const Instruction* inst) {
   SpvStorageClass dst_sc = SpvStorageClassMax;
@@ -551,9 +543,9 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         SpvStorageClassPhysicalStorageBufferEXT) {
       // check for AliasedPointerEXT/RestrictPointerEXT
       bool foundAliased =
-          HasDecoration(_, inst->id(), SpvDecorationAliasedPointerEXT);
+          _.HasDecoration(inst->id(), SpvDecorationAliasedPointerEXT);
       bool foundRestrict =
-          HasDecoration(_, inst->id(), SpvDecorationRestrictPointerEXT);
+          _.HasDecoration(inst->id(), SpvDecorationRestrictPointerEXT);
       if (!foundAliased && !foundRestrict) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpVariable " << inst->id()
@@ -592,7 +584,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
             storage_class != SpvStorageClassUniform &&
             storage_class != SpvStorageClassUniformConstant) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
-                 << "For Vulkan with RuntimeDescriptorArrayEXT, an variable "
+                 << "For Vulkan with RuntimeDescriptorArrayEXT, a variable "
                     "containing OpTypeRuntimeArray must have storage class of "
                     "StorageBuffer, Uniform, or UniformConstant.";
         }
@@ -600,7 +592,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
 
     // If an OpStruct has an OpTypeRuntimeArray somewhere within it, then it
-    // must either have the storage class StorageBuffer and be be decorated
+    // must either have the storage class StorageBuffer and be decorated
     // with Block, or it must be in the Uniform storage class and be decorated
     // as BufferBlock.
     if (value_type && value_type->opcode() == SpvOpTypeStruct) {
@@ -619,14 +611,14 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
 
       if (contains_RTA) {
         if (storage_class == SpvStorageClassStorageBuffer) {
-          if (!HasDecoration(_, value_id, SpvDecorationBlock)) {
+          if (!_.HasDecoration(value_id, SpvDecorationBlock)) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "For Vulkan, an OpTypeStruct variable containing an "
                       "OpTypeRuntimeArray must be decorated with Block if it "
                       "has storage class StorageBuffer.";
           }
         } else if (storage_class == SpvStorageClassUniform) {
-          if (!HasDecoration(_, value_id, SpvDecorationBufferBlock)) {
+          if (!_.HasDecoration(value_id, SpvDecorationBufferBlock)) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "For Vulkan, an OpTypeStruct variable containing an "
                       "OpTypeRuntimeArray must be decorated with BufferBlock "
