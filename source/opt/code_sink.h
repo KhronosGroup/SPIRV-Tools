@@ -41,17 +41,45 @@ class CodeSinkingPass : public Pass {
   }
 
  private:
+  // Sinks the instructions in |bb| as much as possible.  Returns true if
+  // something changes.
+  bool SinkInstructionsInBB(BasicBlock* bb);
 
-  bool SinkInstInBB(BasicBlock* bb, bool b);
-  bool SinkInst(Instruction* inst, bool b);
+  // Tries the sink |inst| as much as possible.  Returns true if the instruction
+  // is moved.
+  bool SinkInstruction(Instruction* inst);
+
+  // Returns the basic block in which to move |inst| to move is as close as
+  // possible to the uses of |inst| without increasing the number of time |inst|
+  // will be executed.  Return |nullptr| if there is not need to move |inst|.
   BasicBlock* FindNewBasicBlockFor(Instruction* inst);
-  bool ReferencesMutableMemory(Instruction* inst, bool b);
-  bool HasMemorySync();
+
+  // Return true if |inst| reference memory and it is possible that the data in
+  // the memory changes at some point.
+  bool ReferencesMutableMemory(Instruction* inst);
+
+  // Returns true if the module contains that instruction that is a memory sync.
+  bool HasUniformMemorySync();
+
+  // Returns true if there is it possible that there is a store ti the variable
+  // |var_inst|.
   bool HasPossibleStore(Instruction* var_inst);
-  bool IntersectsPath(uint32_t start,
-                      uint32_t end,
+
+  // Returns true if one of the basic blocks in |set| exists on a path from the
+  // basic block |start| to |end|.
+  bool IntersectsPath(uint32_t start, uint32_t end,
                       const std::unordered_set<uint32_t>& set);
-  bool IsSync(uint32_t mem_semantics_id) const;
+
+  // Returns true if |mem_semantics_id| is a memory semantics is that will
+  // implies any memory ordering constraints.
+  bool IsSyncOnUniform(uint32_t mem_semantics_id) const;
+
+  // Stores whether or not a check has for uniform storage had taken place.
+  bool checked_for_uniform_sync_;
+
+  // Cache of whether or not the module has a memory sync on uniform storage.
+  // only valid if |check_for_uniform_sync_| is true.
+  bool has_uniform_sync_;
 };
 
 }  // namespace opt
