@@ -1771,7 +1771,10 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("For Vulkan with RuntimeDescriptorArrayEXT, a variable containing OpTypeRuntimeArray must have storage class of StorageBuffer, Uniform, or UniformConstant.\n  %5 = OpVariable %_ptr_Workgroup__runtimearr_uint Workgroup\n"));
+      HasSubstr("For Vulkan with RuntimeDescriptorArrayEXT, a variable "
+                "containing OpTypeRuntimeArray must have storage class of "
+                "StorageBuffer, Uniform, or UniformConstant.\n  %5 = "
+                "OpVariable %_ptr_Workgroup__runtimearr_uint Workgroup\n"));
 }
 
 TEST_F(ValidateMemory, VulkanRTAInsideStorageBufferStructGood) {
@@ -1972,7 +1975,8 @@ OpFunctionEnd
           "OpTypeRuntimeArray %_runtimearr_uint\n"));
 }
 
-TEST_F(ValidateMemory, VulkanUniformStructInsideRTAWithRuntimeDescriptorArrayGood) {
+TEST_F(ValidateMemory,
+       VulkanUniformStructInsideRTAWithRuntimeDescriptorArrayGood) {
   std::string spirv = R"(
 OpCapability RuntimeDescriptorArrayEXT
 OpCapability Shader
@@ -1999,7 +2003,6 @@ OpFunctionEnd
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
-
 
 TEST_F(ValidateMemory, VulkanRTAInsideRTAInsideStructBad) {
   std::string spirv = R"(
@@ -2203,8 +2206,7 @@ OpFunctionEnd
                 "= OpTypeArray %_runtimearr_uint %uint_1\n"));
 }
 
-TEST_F(ValidateMemory,
-       VulkanRTAStructInsideRTAWithRuntimeDescriptorArrayGood) {
+TEST_F(ValidateMemory, VulkanRTAStructInsideRTAWithRuntimeDescriptorArrayGood) {
   std::string spirv = R"(
 OpCapability RuntimeDescriptorArrayEXT
 OpCapability Shader

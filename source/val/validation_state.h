@@ -407,8 +407,7 @@ class ValidationState_t {
   /// otherwise returns false.
   bool HasDecoration(uint32_t id, SpvDecoration dec) {
     const auto& decorations = id_decorations_.find(id);
-    if (decorations == id_decorations_.end())
-      return false;
+    if (decorations == id_decorations_.end()) return false;
 
     return std::any_of(
         decorations->second.begin(), decorations->second.end(),
