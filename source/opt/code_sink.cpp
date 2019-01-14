@@ -28,23 +28,24 @@ namespace opt {
 Pass::Status CodeSinkingPass::Process() {
   bool modified = false;
 
+  bool has_memory_sync = HasMemorySync();
   for (Function& function : *get_module()) {
-    bool has_memory_sync = HasMemorySync(&function);
     cfg()->ForEachBlockInPostOrder(
-        function.entry().get(), [&modified, has_memory_sync, this](BasicBlock* bb) {
+        function.entry().get(),
+        [&modified, has_memory_sync, this](BasicBlock* bb) {
           if (SinkInstInBB(bb, has_memory_sync)) {
             modified = true;
           }
         });
   }
-
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool CodeSinkingPass::SinkInstInBB(BasicBlock* bb, bool function_has_memory_sync) {
+bool CodeSinkingPass::SinkInstInBB(BasicBlock* bb,
+                                   bool module_has_memory_sync) {
   bool modified = false;
-  for( auto inst = bb->rbegin(); inst != bb->rend(); ++inst) {
-    if (SinkInst(&*inst, function_has_memory_sync)) {
+  for (auto inst = bb->rbegin(); inst != bb->rend(); ++inst) {
+    if (SinkInst(&*inst, module_has_memory_sync)) {
       inst = bb->rbegin();
       modified = true;
     }
@@ -52,28 +53,18 @@ bool CodeSinkingPass::SinkInstInBB(BasicBlock* bb, bool function_has_memory_sync
   return modified;
 }
 
-bool CodeSinkingPass::SinkInst(Instruction* inst, bool function_has_memory_sync) {
-/*
-  if (inst->result_id() == 0) {
-    return false;
-  }
-
-  if (!inst->IsOpcodeCodeMotionSafe()) {
-    return false;
-  }
-*/
-
+bool CodeSinkingPass::SinkInst(Instruction* inst, bool module_has_memory_sync) {
   if (inst->opcode() != SpvOpLoad && inst->opcode() != SpvOpAccessChain) {
     return false;
   }
 
-  if (ReferencesMutableMemory(inst, function_has_memory_sync)) {
+  if (ReferencesMutableMemory(inst, module_has_memory_sync)) {
     return false;
   }
 
   if (BasicBlock* target_bb = FindNewBasicBlockFor(inst)) {
     Instruction* pos = &*target_bb->begin();
-    while(pos->opcode() == SpvOpPhi) {
+    while (pos->opcode() == SpvOpPhi) {
       pos = pos->NextNode();
     }
 
@@ -90,15 +81,16 @@ BasicBlock* CodeSinkingPass::FindNewBasicBlockFor(Instruction* inst) {
   BasicBlock* bb = original_bb;
 
   std::unordered_set<uint32_t> bbs_with_uses;
-  get_def_use_mgr()->ForEachUse(inst, [&bbs_with_uses, this](Instruction* use, uint32_t idx) {
-    if (use->opcode() != SpvOpPhi) {
-      bbs_with_uses.insert(context()->get_instr_block(use)->id());
-    } else {
-      bbs_with_uses.insert(use->GetSingleWordOperand(idx+1));
-    }
-  });
+  get_def_use_mgr()->ForEachUse(
+      inst, [&bbs_with_uses, this](Instruction* use, uint32_t idx) {
+        if (use->opcode() != SpvOpPhi) {
+          bbs_with_uses.insert(context()->get_instr_block(use)->id());
+        } else {
+          bbs_with_uses.insert(use->GetSingleWordOperand(idx + 1));
+        }
+      });
 
-  while(true) {
+  while (true) {
     if (bbs_with_uses.count(bb->id())) {
       break;
     }
@@ -122,8 +114,11 @@ BasicBlock* CodeSinkingPass::FindNewBasicBlockFor(Instruction* inst) {
       bool used_in_multiple_blocks = false;
       uint32_t bb_used_in = 0;
 
-      bb->ForEachSuccessorLabel([this, bb, &bb_used_in, &used_in_multiple_blocks,&bbs_with_uses](uint32_t *succ_bb_id) {
-        if (IntersectsPath(*succ_bb_id, bb->MergeBlockIdIfAny(), bbs_with_uses)) {
+      bb->ForEachSuccessorLabel([this, bb, &bb_used_in,
+                                 &used_in_multiple_blocks,
+                                 &bbs_with_uses](uint32_t* succ_bb_id) {
+        if (IntersectsPath(*succ_bb_id, bb->MergeBlockIdIfAny(),
+                           bbs_with_uses)) {
           if (bb_used_in == 0) {
             bb_used_in = *succ_bb_id;
           } else {
@@ -139,7 +134,12 @@ BasicBlock* CodeSinkingPass::FindNewBasicBlockFor(Instruction* inst) {
       if (bb_used_in == 0) {
         bb = context()->get_instr_block(bb->MergeBlockIdIfAny());
       } else {
-        if (IntersectsPath(bb->MergeBlockIdIfAny(), original_bb->id(), bbs_with_uses)) {
+        if (cfg()->preds(bb_used_in).size() != 1) {
+          break;
+        }
+
+        if (IntersectsPath(bb->MergeBlockIdIfAny(), original_bb->id(),
+                           bbs_with_uses)) {
           break;
         }
         bb = context()->get_instr_block(bb_used_in);
@@ -151,7 +151,8 @@ BasicBlock* CodeSinkingPass::FindNewBasicBlockFor(Instruction* inst) {
   return (bb != original_bb ? bb : nullptr);
 }
 
-bool CodeSinkingPass::ReferencesMutableMemory(Instruction* inst, bool function_has_memory_sync) {
+bool CodeSinkingPass::ReferencesMutableMemory(Instruction* inst,
+                                              bool module_has_memory_sync) {
   if (!inst->IsLoad()) {
     return false;
   }
@@ -165,7 +166,7 @@ bool CodeSinkingPass::ReferencesMutableMemory(Instruction* inst, bool function_h
     return false;
   }
 
-  if (function_has_memory_sync) {
+  if (module_has_memory_sync) {
     return true;
   }
 
@@ -176,13 +177,14 @@ bool CodeSinkingPass::ReferencesMutableMemory(Instruction* inst, bool function_h
   return HasPossibleStore(base_ptr);
 }
 
-bool CodeSinkingPass::HasMemorySync(Function* function) {
-  return function->WhileEachInst([](Instruction* inst) {
-    switch(inst->opcode()) {
-      case SpvOpControlBarrier:
-        return inst->GetSingleWordInOperand(2) != SpvMemorySemanticsMaskNone;
+bool CodeSinkingPass::HasMemorySync() {
+  bool has_sync = false;
+  get_module()->ForEachInst([this, &has_sync](Instruction* inst) {
+    switch (inst->opcode()) {
       case SpvOpMemoryBarrier:
-        return true;
+        has_sync = true;
+        break;
+      case SpvOpControlBarrier:
       case SpvOpAtomicLoad:
       case SpvOpAtomicStore:
       case SpvOpAtomicExchange:
@@ -198,19 +200,43 @@ bool CodeSinkingPass::HasMemorySync(Function* function) {
       case SpvOpAtomicOr:
       case SpvOpAtomicXor:
       case SpvOpAtomicFlagTestAndSet:
-      case SpvOpAtomicFlagClear:
-        return inst->GetSingleWordInOperand(2) != SpvMemorySemanticsMaskNone;
+      case SpvOpAtomicFlagClear: {
+        uint32_t mem_semantics_id = inst->GetSingleWordInOperand(2);
+        if (IsSync(mem_semantics_id)) {
+          has_sync = true;
+        }
+        break;
+      }
+
       case SpvOpAtomicCompareExchange:
       case SpvOpAtomicCompareExchangeWeak:
-        return inst->GetSingleWordInOperand(2) != SpvMemorySemanticsMaskNone ||
-            inst->GetSingleWordInOperand(3) != SpvMemorySemanticsMaskNone;
+        if (IsSync(inst->GetSingleWordInOperand(2)) ||
+            IsSync(inst->GetSingleWordInOperand(3))) {
+          has_sync = true;
+        }
+        break;
       default:
-        return false;
+        break;
     }
   });
+  return has_sync;
 }
+
+bool CodeSinkingPass::IsSync(uint32_t mem_semantics_id) const {
+  const analysis::Constant* mem_semanditcs_const =
+      context()->get_constant_mgr()->FindDeclaredConstant(mem_semantics_id);
+  if (mem_semanditcs_const == nullptr) {
+    return true;
+  }
+  assert(mem_semanditcs_const->AsIntConstant() &&
+         "Memory semantics should be an integer.");
+  return mem_semanditcs_const->GetU32() != SpvMemorySemanticsMaskNone;
+}
+
 bool CodeSinkingPass::HasPossibleStore(Instruction* var_inst) {
-  assert(var_inst->opcode() == SpvOpVariable || var_inst->opcode() == SpvOpAccessChain || var_inst->opcode() == SpvOpPtrAccessChain);
+  assert(var_inst->opcode() == SpvOpVariable ||
+         var_inst->opcode() == SpvOpAccessChain ||
+         var_inst->opcode() == SpvOpPtrAccessChain);
 
   return get_def_use_mgr()->WhileEachUser(var_inst, [this](Instruction* use) {
     switch (use->opcode()) {
@@ -225,15 +251,14 @@ bool CodeSinkingPass::HasPossibleStore(Instruction* var_inst) {
   });
 }
 
-bool CodeSinkingPass::IntersectsPath(uint32_t start,
-                                     uint32_t end,
+bool CodeSinkingPass::IntersectsPath(uint32_t start, uint32_t end,
                                      const std::unordered_set<uint32_t>& set) {
   std::vector<uint32_t> worklist;
   worklist.push_back(start);
   std::unordered_set<uint32_t> already_done;
   already_done.insert(start);
 
-  while(!worklist.empty()) {
+  while (!worklist.empty()) {
     BasicBlock* bb = context()->get_instr_block(worklist.back());
     worklist.pop_back();
 

@@ -46,11 +46,12 @@ class CodeSinkingPass : public Pass {
   bool SinkInst(Instruction* inst, bool b);
   BasicBlock* FindNewBasicBlockFor(Instruction* inst);
   bool ReferencesMutableMemory(Instruction* inst, bool b);
-  bool HasMemorySync(Function* function);
+  bool HasMemorySync();
   bool HasPossibleStore(Instruction* var_inst);
   bool IntersectsPath(uint32_t start,
                       uint32_t end,
                       const std::unordered_set<uint32_t>& set);
+  bool IsSync(uint32_t mem_semantics_id) const;
 };
 
 }  // namespace opt
