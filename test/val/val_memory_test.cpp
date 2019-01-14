@@ -457,6 +457,93 @@ OpFunctionEnd
           "  %5 = OpVariable %_ptr_Uniform_float Uniform %float_1\n"));
 }
 
+TEST_F(ValidateMemory, WebGPUOutputStorageClassWithoutInitializerBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Output %float
+%1 = OpVariable %float_ptr Output
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpVariable, <id> '4[%4]', must have an initializer.\n"
+                "From WebGPU execution environment spec:\n"
+                "All variables in the following storage classes must have an "
+                "initializer: Output, Private, or Function\n"
+                "  %4 = OpVariable %_ptr_Output_float Output\n"));
+}
+
+TEST_F(ValidateMemory, WebGPUFunctionStorageClassWithoutInitializerBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Function %float
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%1 = OpLabel
+%2 = OpVariable %float_ptr Function
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpVariable, <id> '7[%7]', must have an initializer.\n"
+                "From WebGPU execution environment spec:\n"
+                "All variables in the following storage classes must have an "
+                "initializer: Output, Private, or Function\n"
+                "  %7 = OpVariable %_ptr_Function_float Function\n"));
+}
+
+TEST_F(ValidateMemory, WebGPUPrivateStorageClassWithoutInitializerBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Private %float
+%1 = OpVariable %float_ptr Private
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_WEBGPU_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpVariable, <id> '4[%4]', must have an initializer.\n"
+                "From WebGPU execution environment spec:\n"
+                "All variables in the following storage classes must have an "
+                "initializer: Output, Private, or Function\n"
+                "  %4 = OpVariable %_ptr_Private_float Private\n"));
+}
+
 TEST_F(ValidateMemory, VulkanInitializerWithOutputStorageClassesGood) {
   std::string spirv = R"(
 OpCapability Shader
