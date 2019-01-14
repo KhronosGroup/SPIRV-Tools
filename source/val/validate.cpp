@@ -260,7 +260,6 @@ spv_result_t ValidateEntryPoints(ValidationState_t& _) {
 
     // For WebGPU all entry point names must be unique.
     if (spvIsWebGPUEnv(_.context()->target_env)) {
-      // Validate that entry point names are unique
       const auto result = ValidateEntryPointNamesUnique(_);
       if (result != SPV_SUCCESS) return result;
     }
