@@ -529,6 +529,20 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  // WebGPU: All variables with storage class Output, Private, or Function MUST
+  // have an initializer.
+  if (spvIsWebGPUEnv(_.context()->target_env) && inst->operands().size() <= 3 &&
+      (storage_class == SpvStorageClassOutput ||
+       storage_class == SpvStorageClassPrivate ||
+       storage_class == SpvStorageClassFunction)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpVariable, <id> '" << _.getIdName(inst->id())
+           << "', must have an initializer.\n"
+           << "From WebGPU execution environment spec:\n"
+           << "All variables in the following storage classes must have an "
+           << "initializer: Output, Private, or Function";
+  }
+
   if (storage_class == SpvStorageClassPhysicalStorageBufferEXT) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "PhysicalStorageBufferEXT must not be used with OpVariable.";
