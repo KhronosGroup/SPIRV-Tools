@@ -58,7 +58,7 @@ TEST_P(GoodMaskParseTest, GoodMaskExpressions) {
   spvContextDestroy(context);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ParseMask, GoodMaskParseTest,
     ::testing::ValuesIn(std::vector<MaskCase>{
         {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 0, "None"},
@@ -102,12 +102,12 @@ TEST_P(BadFPFastMathMaskParseTest, BadMaskExpressions) {
   spvContextDestroy(context);
 }
 
-INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,
-                        ::testing::ValuesIn(std::vector<const char*>{
-                            nullptr, "", "NotValidEnum", "|", "NotInf|",
-                            "|NotInf", "NotInf||NotNaN",
-                            "Unroll"  // A good word, but for the wrong enum
-                        }), );
+INSTANTIATE_TEST_SUITE_P(ParseMask, BadFPFastMathMaskParseTest,
+                         ::testing::ValuesIn(std::vector<const char*>{
+                             nullptr, "", "NotValidEnum", "|", "NotInf|",
+                             "|NotInf", "NotInf||NotNaN",
+                             "Unroll"  // A good word, but for the wrong enum
+                         }), );
 
 TEST_F(TextToBinaryTest, InvalidText) {
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
@@ -197,7 +197,7 @@ TEST_P(TextToBinaryFloatValueTest, Samples) {
                                               {1, 2, GetParam().second})})));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FloatValues, TextToBinaryFloatValueTest,
     ::testing::ValuesIn(std::vector<std::pair<std::string, uint32_t>>{
         {"0.0", 0x00000000},          // +0
@@ -227,7 +227,7 @@ TEST_P(TextToBinaryHalfValueTest, Samples) {
                                               {1, 2, GetParam().second})})));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     HalfValues, TextToBinaryHalfValueTest,
     ::testing::ValuesIn(std::vector<std::pair<std::string, uint32_t>>{
         {"0.0", 0x00000000},

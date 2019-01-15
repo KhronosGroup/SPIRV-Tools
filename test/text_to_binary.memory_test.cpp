@@ -45,7 +45,7 @@ TEST_P(MemoryAccessTest, AnySingleMemoryAccessMask) {
                                  GetParam().operands())));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryMemoryAccessTest, MemoryAccessTest,
     ::testing::ValuesIn(std::vector<EnumCase<SpvMemoryAccessMask>>{
         {SpvMemoryAccessMaskNone, "None", {}},
@@ -76,7 +76,7 @@ TEST_P(StorageClassTest, AnyStorageClass) {
 
 // clang-format off
 #define CASE(NAME) { SpvStorageClass##NAME, #NAME, {} }
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryStorageClassTest, StorageClassTest,
     ::testing::ValuesIn(std::vector<EnumCase<SpvStorageClass>>{
         CASE(UniformConstant),

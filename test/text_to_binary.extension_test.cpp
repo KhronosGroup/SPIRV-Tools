@@ -135,7 +135,7 @@ TEST_P(ExtensionRoundTripTest, Samples) {
 
 // SPV_KHR_shader_ballot
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_shader_ballot, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -166,7 +166,7 @@ INSTANTIATE_TEST_CASE_P(
                                                  SpvBuiltInSubgroupLtMaskKHR})},
             })), );
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_shader_ballot_vulkan_1_1, ExtensionRoundTripTest,
     // In SPIR-V 1.3 and Vulkan 1.1 we can drop the KHR suffix on the
     // builtin enums.
@@ -198,7 +198,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // The old builtin names (with KHR suffix) still work in the assmebler, and
 // map to the enums without the KHR.
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_shader_ballot_vulkan_1_1_alias_check, ExtensionAssemblyTest,
     // In SPIR-V 1.3 and Vulkan 1.1 we can drop the KHR suffix on the
     // builtin enums.
@@ -223,7 +223,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_KHR_shader_draw_parameters
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_shader_draw_parameters, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -245,7 +245,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_KHR_subgroup_vote
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_subgroup_vote, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -264,7 +264,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_KHR_16bit_storage
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_16bit_storage, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -291,7 +291,7 @@ INSTANTIATE_TEST_CASE_P(
                                  {SpvCapabilityStorageInputOutput16})},
             })), );
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_16bit_storage_alias_check, ExtensionAssemblyTest,
     Combine(ValuesIn(CommonVulkanEnvs()),
             ValuesIn(std::vector<AssemblyCase>{
@@ -307,7 +307,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_KHR_device_group
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_device_group, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -322,7 +322,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_KHR_8bit_storage
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_8bit_storage, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -342,7 +342,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_KHR_multiview
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_multiview, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -360,7 +360,7 @@ INSTANTIATE_TEST_CASE_P(
 
 #define PREAMBLE \
   "%1 = OpExtInstImport \"SPV_AMD_shader_explicit_vertex_parameter\"\n"
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_AMD_shader_explicit_vertex_parameter, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -380,7 +380,7 @@ INSTANTIATE_TEST_CASE_P(
 // SPV_AMD_shader_trinary_minmax
 
 #define PREAMBLE "%1 = OpExtInstImport \"SPV_AMD_shader_trinary_minmax\"\n"
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_AMD_shader_trinary_minmax, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -439,7 +439,7 @@ INSTANTIATE_TEST_CASE_P(
 // SPV_AMD_gcn_shader
 
 #define PREAMBLE "%1 = OpExtInstImport \"SPV_AMD_gcn_shader\"\n"
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_AMD_gcn_shader, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -464,7 +464,7 @@ INSTANTIATE_TEST_CASE_P(
 // SPV_AMD_shader_ballot
 
 #define PREAMBLE "%1 = OpExtInstImport \"SPV_AMD_shader_ballot\"\n"
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_AMD_shader_ballot, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -495,7 +495,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_KHR_variable_pointers
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_variable_pointers, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -512,7 +512,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_KHR_vulkan_memory_model
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_vulkan_memory_model, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
@@ -656,7 +656,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_GOOGLE_decorate_string
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_GOOGLE_decorate_string, ExtensionRoundTripTest,
     Combine(
         // We'll get coverage over operand tables by trying the universal
@@ -676,7 +676,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_GOOGLE_hlsl_functionality1
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_GOOGLE_hlsl_functionality1, ExtensionRoundTripTest,
     Combine(
         // We'll get coverage over operand tables by trying the universal
@@ -693,7 +693,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_NV_viewport_array2
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_NV_viewport_array2, ExtensionRoundTripTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
                    SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3,
@@ -721,7 +721,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_NV_shader_subgroup_partitioned
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_NV_shader_subgroup_partitioned, ExtensionRoundTripTest,
     Combine(
         Values(SPV_ENV_UNIVERSAL_1_3, SPV_ENV_VULKAN_1_1),
@@ -763,7 +763,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // SPV_EXT_descriptor_indexing
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SPV_EXT_descriptor_indexing, ExtensionRoundTripTest,
     Combine(
         Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,

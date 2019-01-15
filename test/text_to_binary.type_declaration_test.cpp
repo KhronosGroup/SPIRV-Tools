@@ -48,7 +48,7 @@ TEST_P(DimTest, AnyDim) {
 
 // clang-format off
 #define CASE(NAME) {SpvDim##NAME, #NAME}
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryDim, DimTest,
     ::testing::ValuesIn(std::vector<EnumCase<SpvDim>>{
         CASE(1D),
@@ -84,7 +84,7 @@ TEST_P(ImageFormatTest, AnyImageFormatAndNoAccessQualifier) {
 
 // clang-format off
 #define CASE(NAME) {SpvImageFormat##NAME, #NAME}
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryImageFormat, ImageFormatTest,
     ::testing::ValuesIn(std::vector<EnumCase<SpvImageFormat>>{
         CASE(Unknown),
@@ -153,7 +153,7 @@ TEST_P(ImageAccessQualifierTest, AnyAccessQualifier) {
 
 // clang-format off
 #define CASE(NAME) {SpvAccessQualifier##NAME, #NAME}
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     AccessQualifier, ImageAccessQualifierTest,
     ::testing::ValuesIn(std::vector<EnumCase<SpvAccessQualifier>>{
       CASE(ReadOnly),
@@ -178,7 +178,7 @@ TEST_P(OpTypePipeTest, AnyAccessQualifier) {
 
 // clang-format off
 #define CASE(NAME) {SpvAccessQualifier##NAME, #NAME}
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryTypePipe, OpTypePipeTest,
     ::testing::ValuesIn(std::vector<EnumCase<SpvAccessQualifier>>{
                             CASE(ReadOnly),

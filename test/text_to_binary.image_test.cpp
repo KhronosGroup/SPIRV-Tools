@@ -50,7 +50,7 @@ TEST_P(ImageOperandsTest, Sample) {
 }
 
 #define MASK(NAME) SpvImageOperands##NAME##Mask
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryImageOperandsAny, ImageOperandsTest,
     ::testing::ValuesIn(std::vector<ImageOperandsCase>{
         // TODO(dneto): Rev32 adds many more values, and rearranges their
@@ -69,7 +69,7 @@ INSTANTIATE_TEST_CASE_P(
     }), );
 #undef MASK
 #define MASK(NAME) static_cast<uint32_t>(SpvImageOperands##NAME##Mask)
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryImageOperandsCombination, ImageOperandsTest,
     ::testing::ValuesIn(std::vector<ImageOperandsCase>{
         // TODO(dneto): Rev32 adds many more values, and rearranges their
@@ -173,24 +173,24 @@ TEST_P(ImageSparseReadImageOperandsTest, Sample) {
 }
 
 #define MASK(NAME) SpvImageOperands##NAME##Mask
-INSTANTIATE_TEST_CASE_P(ImageSparseReadImageOperandsAny,
-                        ImageSparseReadImageOperandsTest,
-                        ::testing::ValuesIn(std::vector<ImageOperandsCase>{
-                            // Image operands are optional.
-                            {"", {}},
-                            // Test each kind, alone.
-                            {" Bias %5", {MASK(Bias), 5}},
-                            {" Lod %5", {MASK(Lod), 5}},
-                            {" Grad %5 %6", {MASK(Grad), 5, 6}},
-                            {" ConstOffset %5", {MASK(ConstOffset), 5}},
-                            {" Offset %5", {MASK(Offset), 5}},
-                            {" ConstOffsets %5", {MASK(ConstOffsets), 5}},
-                            {" Sample %5", {MASK(Sample), 5}},
-                            {" MinLod %5", {MASK(MinLod), 5}},
-                        }), );
+INSTANTIATE_TEST_SUITE_P(ImageSparseReadImageOperandsAny,
+                         ImageSparseReadImageOperandsTest,
+                         ::testing::ValuesIn(std::vector<ImageOperandsCase>{
+                             // Image operands are optional.
+                             {"", {}},
+                             // Test each kind, alone.
+                             {" Bias %5", {MASK(Bias), 5}},
+                             {" Lod %5", {MASK(Lod), 5}},
+                             {" Grad %5 %6", {MASK(Grad), 5, 6}},
+                             {" ConstOffset %5", {MASK(ConstOffset), 5}},
+                             {" Offset %5", {MASK(Offset), 5}},
+                             {" ConstOffsets %5", {MASK(ConstOffsets), 5}},
+                             {" Sample %5", {MASK(Sample), 5}},
+                             {" MinLod %5", {MASK(MinLod), 5}},
+                         }), );
 #undef MASK
 #define MASK(NAME) static_cast<uint32_t>(SpvImageOperands##NAME##Mask)
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ImageSparseReadImageOperandsCombination, ImageSparseReadImageOperandsTest,
     ::testing::ValuesIn(std::vector<ImageOperandsCase>{
         // values.

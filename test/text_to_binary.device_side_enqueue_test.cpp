@@ -49,7 +49,7 @@ TEST_P(OpEnqueueKernelGood, Sample) {
                                  GetParam().local_size_operands)));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryTest, OpEnqueueKernelGood,
     ::testing::ValuesIn(std::vector<KernelEnqueueCase>{
         // Provide IDs for pointer-to-local arguments for the

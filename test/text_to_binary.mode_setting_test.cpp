@@ -69,7 +69,7 @@ TEST_P(OpMemoryModelTest, AnyMemoryModelCase) {
         #MEMORY                                                          \
   }
 // clang-format off
-INSTANTIATE_TEST_CASE_P(TextToBinaryMemoryModel, OpMemoryModelTest,
+INSTANTIATE_TEST_SUITE_P(TextToBinaryMemoryModel, OpMemoryModelTest,
                         ValuesIn(std::vector<MemoryModelCase>{
                           // These cases exercise each addressing model, and
                           // each memory model, but not necessarily in
@@ -116,7 +116,7 @@ TEST_P(OpEntryPointTest, AnyEntryPointCase) {
 
 // clang-format off
 #define CASE(NAME) SpvExecutionModel##NAME, #NAME
-INSTANTIATE_TEST_CASE_P(TextToBinaryEntryPoint, OpEntryPointTest,
+INSTANTIATE_TEST_SUITE_P(TextToBinaryEntryPoint, OpEntryPointTest,
                         ValuesIn(std::vector<EntryPointCase>{
                           { CASE(Vertex), "" },
                           { CASE(TessellationControl), "my tess" },
@@ -151,7 +151,7 @@ TEST_P(OpExecutionModeTest, AnyExecutionMode) {
 }
 
 #define CASE(NAME) SpvExecutionMode##NAME, #NAME
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryExecutionMode, OpExecutionModeTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
             ValuesIn(std::vector<EnumCase<SpvExecutionMode>>{
@@ -190,7 +190,7 @@ INSTANTIATE_TEST_CASE_P(
                 {CASE(ContractionOff), {}},
             })), );
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryExecutionModeV11, OpExecutionModeTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_1),
             ValuesIn(std::vector<EnumCase<SpvExecutionMode>>{
@@ -224,7 +224,7 @@ TEST_P(OpCapabilityTest, AnyCapability) {
 
 // clang-format off
 #define CASE(NAME) { SpvCapability##NAME, #NAME }
-INSTANTIATE_TEST_CASE_P(TextToBinaryCapability, OpCapabilityTest,
+INSTANTIATE_TEST_SUITE_P(TextToBinaryCapability, OpCapabilityTest,
                         ValuesIn(std::vector<EnumCase<SpvCapability>>{
                             CASE(Matrix),
                             CASE(Shader),

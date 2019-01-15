@@ -137,7 +137,7 @@ TEST_P(ValidateStorage, OtherStorageInsideFunction) {
       "Variables must have a function[7] storage class inside of a function"));
 }
 
-INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateStorage,
+INSTANTIATE_TEST_SUITE_P(MatrixOp, ValidateStorage,
                         ::testing::Values(
                              "Input",
                              "Uniform",

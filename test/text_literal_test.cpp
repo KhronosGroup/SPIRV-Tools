@@ -106,7 +106,7 @@ TEST_P(GoodStringTest, GoodStrings) {
   EXPECT_EQ(std::get<1>(GetParam()), l.str);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextLiteral, GoodStringTest,
     ::testing::ValuesIn(std::vector<std::pair<const char*, const char*>>{
         {R"("-")", "-"},
@@ -230,7 +230,7 @@ TextLiteralCase Make_Bad_Unsigned(uint32_t bitwidth, const char* text) {
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DecimalIntegers, IntegerTest,
     ::testing::ValuesIn(std::vector<TextLiteralCase>{
         // Check max value and overflow value for 1-bit numbers.
@@ -290,7 +290,7 @@ TEST_P(IntegerLeadingMinusTest, CantHaveLeadingMinusOnUnsigned) {
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DecimalAndHexIntegers, IntegerLeadingMinusTest,
     ::testing::ValuesIn(std::vector<TextLiteralCase>{
         // Unsigned numbers never allow a leading minus sign.
@@ -306,7 +306,7 @@ INSTANTIATE_TEST_CASE_P(
     }),);
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     HexIntegers, IntegerTest,
     ::testing::ValuesIn(std::vector<TextLiteralCase>{
         // Check 0x and 0X prefices.

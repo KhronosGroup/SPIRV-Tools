@@ -47,7 +47,7 @@ TEST_P(SamplerAddressingModeTest, AnySamplerAddressingMode) {
 
 // clang-format off
 #define CASE(NAME) { SpvSamplerAddressingMode##NAME, #NAME }
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinarySamplerAddressingMode, SamplerAddressingModeTest,
     ::testing::ValuesIn(std::vector<EnumCase<SpvSamplerAddressingMode>>{
         CASE(None),
@@ -79,7 +79,7 @@ TEST_P(SamplerFilterModeTest, AnySamplerFilterMode) {
 
 // clang-format off
 #define CASE(NAME) { SpvSamplerFilterMode##NAME, #NAME}
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinarySamplerFilterMode, SamplerFilterModeTest,
     ::testing::ValuesIn(std::vector<EnumCase<SpvSamplerFilterMode>>{
         CASE(Nearest),
@@ -114,7 +114,7 @@ TEST_P(OpConstantValidTest, ValidTypes) {
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryOpConstantValid, OpConstantValidTest,
     ::testing::ValuesIn(std::vector<ConstantTestCase>{
       // Check 16 bits
@@ -255,7 +255,7 @@ TEST_P(OpConstantInvalidLeadingMinusTest, InvalidCase) {
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryOpConstantInvalidLeadingMinus, OpConstantInvalidLeadingMinusTest,
     ::testing::ValuesIn(std::vector<InvalidLeadingMinusCase>{
       {"OpTypeInt 16 0", "-0"},
@@ -293,7 +293,7 @@ TEST_P(OpConstantInvalidFloatConstant, Samples) {
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryInvalidFloatConstant, OpConstantInvalidFloatConstant,
     ::testing::ValuesIn(std::vector<InvalidFloatConstantCase>{
         {16, "abc"},
@@ -339,7 +339,7 @@ TEST_P(OpConstantInvalidTypeTest, InvalidTypes) {
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryOpConstantInvalidValidType, OpConstantInvalidTypeTest,
     ::testing::ValuesIn(std::vector<std::string>{
       {"OpTypeVoid",
@@ -381,7 +381,7 @@ TEST_P(OpSpecConstantValidTest, ValidTypes) {
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryOpSpecConstantValid, OpSpecConstantValidTest,
     ::testing::ValuesIn(std::vector<ConstantTestCase>{
       // Check 16 bits
@@ -449,7 +449,7 @@ TEST_P(OpSpecConstantInvalidTypeTest, InvalidTypes) {
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryOpSpecConstantInvalidValidType, OpSpecConstantInvalidTypeTest,
     ::testing::ValuesIn(std::vector<std::string>{
       {"OpTypeVoid",
@@ -481,7 +481,7 @@ const int64_t kMaxUnsigned48Bit = (int64_t(1) << 48) - 1;
 const int64_t kMaxSigned48Bit = (int64_t(1) << 47) - 1;
 const int64_t kMinSigned48Bit = -kMaxSigned48Bit - 1;
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     OpConstantRoundTrip, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
         // 16 bit
@@ -524,7 +524,7 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -1.79767e+308\n",
     }), );
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     OpConstantHalfRoundTrip, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
         "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x0p+0\n",
@@ -561,7 +561,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // clang-format off
 // (Clang-format really wants to break up these strings across lines.
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     OpConstantRoundTripNonFinite, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
   "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1p+128\n",         // -inf
@@ -591,7 +591,7 @@ INSTANTIATE_TEST_CASE_P(
     }),);
 // clang-format on
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     OpSpecConstantRoundTrip, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
         // 16 bit
@@ -662,7 +662,7 @@ TEST_P(OpSpecConstantOpTestWithIds, Assembly) {
 #define CASE4(NAME) { SpvOp##NAME, #NAME, {3, 4, 5, 6} }
 #define CASE5(NAME) { SpvOp##NAME, #NAME, {3, 4, 5, 6, 7} }
 #define CASE6(NAME) { SpvOp##NAME, #NAME, {3, 4, 5, 6, 7, 8} }
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryOpSpecConstantOp, OpSpecConstantOpTestWithIds,
     ::testing::ValuesIn(std::vector<EnumCase<SpvOp>>{
         // Conversion
@@ -768,7 +768,7 @@ TEST_P(OpSpecConstantOpTestWithTwoIdsThenLiteralNumbers, Assembly) {
 }
 
 #define CASE(NAME) SpvOp##NAME, #NAME
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryOpSpecConstantOp,
     OpSpecConstantOpTestWithTwoIdsThenLiteralNumbers,
     ::testing::ValuesIn(std::vector<EnumCase<SpvOp>>{
@@ -806,7 +806,7 @@ TEST_P(OpSpecConstantOpTestWithOneIdThenLiteralNumbers, Assembly) {
 }
 
 #define CASE(NAME) SpvOp##NAME, #NAME
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TextToBinaryOpSpecConstantOp,
     OpSpecConstantOpTestWithOneIdThenLiteralNumbers,
     ::testing::ValuesIn(std::vector<EnumCase<SpvOp>>{
