@@ -15,6 +15,7 @@
 #ifndef SOURCE_VAL_VALIDATION_STATE_H_
 #define SOURCE_VAL_VALIDATION_STATE_H_
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -396,15 +397,21 @@ class ValidationState_t {
   std::vector<Decoration>& id_decorations(uint32_t id) {
     return id_decorations_[id];
   }
-  const std::vector<Decoration>& id_decorations(uint32_t id) const {
-    // TODO: This would throw or generate SIGABRT if id has no
-    // decorations. Remove/refactor this function.
-    return id_decorations_.at(id);
-  }
 
   // Returns const pointer to the internal decoration container.
   const std::map<uint32_t, std::vector<Decoration>>& id_decorations() const {
     return id_decorations_;
+  }
+
+  /// Returns true if the given id <id> has the given decoration <dec>,
+  /// otherwise returns false.
+  bool HasDecoration(uint32_t id, SpvDecoration dec) {
+    const auto& decorations = id_decorations_.find(id);
+    if (decorations == id_decorations_.end()) return false;
+
+    return std::any_of(
+        decorations->second.begin(), decorations->second.end(),
+        [dec](const Decoration& d) { return dec == d.dec_type(); });
   }
 
   /// Finds id's def, if it exists.  If found, returns the definition otherwise
