@@ -208,9 +208,9 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
              << " contains members with BuiltIn decoration. Therefore this "
              << "structure may not be contained as a member of another "
              << "structure "
-             << "type. Structure <id> "
-             << _.getIdName(struct_id) << " contains structure <id> "
-             << _.getIdName(member_type_id) << ".";
+             << "type. Structure <id> " << _.getIdName(struct_id)
+             << " contains structure <id> " << _.getIdName(member_type_id)
+             << ".";
     }
     if (_.IsForwardPointer(member_type_id)) {
       // If we're dealing with a forward pointer:

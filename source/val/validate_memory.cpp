@@ -294,7 +294,8 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
     if (src_sc == SpvStorageClassPhysicalStorageBufferEXT ||
         dst_sc == SpvStorageClassPhysicalStorageBufferEXT) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-          << "Memory accesses with PhysicalStorageBufferEXT must use Aligned.";
+             << "Memory accesses with PhysicalStorageBufferEXT must use "
+                "Aligned.";
     }
     return SPV_SUCCESS;
   }
@@ -364,7 +365,8 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
     if (src_sc == SpvStorageClassPhysicalStorageBufferEXT ||
         dst_sc == SpvStorageClassPhysicalStorageBufferEXT) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-          << "Memory accesses with PhysicalStorageBufferEXT must use Aligned.";
+             << "Memory accesses with PhysicalStorageBufferEXT must use "
+                "Aligned.";
     }
   }
 
@@ -451,8 +453,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     if (pointee->opcode() == SpvOpTypePointer) {
       if (!_.HasCapability(SpvCapabilityVariablePointersStorageBuffer)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-            << "In Logical addressing, variables may not allocate a pointer "
-            << "type";
+               << "In Logical addressing, variables may not allocate a pointer "
+               << "type";
       } else if (storage_class != SpvStorageClassFunction &&
                  storage_class != SpvStorageClassPrivate) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
