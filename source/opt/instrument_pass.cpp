@@ -168,10 +168,10 @@ void InstrumentPass::GenStageStreamWriteCode(uint32_t stage_idx,
   switch (stage_idx) {
     case SpvExecutionModelVertex: {
       // Load and store VertexId and InstanceId
-      GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInVertexId),
-                           kInstVertOutVertexId, base_offset_id, builder);
-      GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInInstanceId),
-                           kInstVertOutInstanceId, base_offset_id, builder);
+      GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInVertexIndex),
+                           kInstVertOutVertexIndex, base_offset_id, builder);
+      GenBuiltinOutputCode(context()->GetBuiltinVarId(SpvBuiltInInstanceIndex),
+                           kInstVertOutInstanceIndex, base_offset_id, builder);
     } break;
     case SpvExecutionModelGLCompute: {
       // Load and store GlobalInvocationId. Second word is unused; store zero.

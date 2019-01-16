@@ -1650,7 +1650,7 @@ OpCapability Sampled1D
 OpExtension "SPV_KHR_storage_buffer_storage_class"
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
-OpEntryPoint Vertex %main "main" %_ %coords2D %gl_VertexID %gl_InstanceID
+OpEntryPoint Vertex %main "main" %_ %coords2D %gl_VertexIndex %gl_InstanceIndex
 OpSource GLSL 450
 OpName %main "main"
 OpName %lod "lod"
@@ -1684,8 +1684,8 @@ OpMemberDecorate %_struct_61 0 Offset 0
 OpMemberDecorate %_struct_61 1 Offset 4
 OpDecorate %63 DescriptorSet 7
 OpDecorate %63 Binding 0
-OpDecorate %gl_VertexID BuiltIn VertexId
-OpDecorate %gl_InstanceID BuiltIn InstanceId
+OpDecorate %gl_VertexIndex BuiltIn VertexIndex
+OpDecorate %gl_InstanceIndex BuiltIn InstanceIndex
 %void = OpTypeVoid
 %12 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -1730,8 +1730,8 @@ OpDecorate %gl_InstanceID BuiltIn InstanceId
 %uint_2 = OpConstant %uint 2
 %uint_3 = OpConstant %uint 3
 %_ptr_Input_uint = OpTypePointer Input %uint
-%gl_VertexID = OpVariable %_ptr_Input_uint Input
-%gl_InstanceID = OpVariable %_ptr_Input_uint Input
+%gl_VertexIndex = OpVariable %_ptr_Input_uint Input
+%gl_InstanceIndex = OpVariable %_ptr_Input_uint Input
 %uint_5 = OpConstant %uint 5
 %uint_6 = OpConstant %uint 6
 %uint_7 = OpConstant %uint 7
@@ -1819,11 +1819,11 @@ OpStore %81 %55
 %83 = OpIAdd %uint %68 %uint_3
 %84 = OpAccessChain %_ptr_StorageBuffer_uint %63 %uint_1 %83
 OpStore %84 %uint_0
-%87 = OpLoad %uint %gl_VertexID
+%87 = OpLoad %uint %gl_VertexIndex
 %88 = OpIAdd %uint %68 %uint_4
 %89 = OpAccessChain %_ptr_StorageBuffer_uint %63 %uint_1 %88
 OpStore %89 %87
-%91 = OpLoad %uint %gl_InstanceID
+%91 = OpLoad %uint %gl_InstanceIndex
 %93 = OpIAdd %uint %68 %uint_5
 %94 = OpAccessChain %_ptr_StorageBuffer_uint %63 %uint_1 %93
 OpStore %94 %91
