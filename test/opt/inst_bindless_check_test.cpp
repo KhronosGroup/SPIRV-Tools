@@ -92,7 +92,8 @@ OpDecorate %_entryPointOutput_vColor Location 0
 )";
 
   const std::string new_annots =
-      R"(OpDecorate %_struct_55 Block
+      R"(OpDecorate %_runtimearr_uint ArrayStride 4
+OpDecorate %_struct_55 Block
 OpMemberDecorate %_struct_55 0 Offset 0
 OpMemberDecorate %_struct_55 1 Offset 4
 OpDecorate %57 DescriptorSet 7
@@ -441,6 +442,7 @@ OpDecorate %PerViewConstantBuffer_t Block
 OpDecorate %g_sAniso DescriptorSet 0
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
+OpDecorate %_runtimearr_uint ArrayStride 4
 OpDecorate %_struct_63 Block
 OpMemberDecorate %_struct_63 0 Offset 0
 OpMemberDecorate %_struct_63 1 Offset 4
@@ -735,6 +737,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 OpDecorate %10 DescriptorSet 7
 OpDecorate %10 Binding 0
 OpDecorate %gl_FragCoord BuiltIn FragCoord
+OpDecorate %_runtimearr_uint ArrayStride 4
 OpDecorate %_struct_34 Block
 OpMemberDecorate %_struct_34 0 Offset 0
 OpMemberDecorate %_struct_34 1 Offset 4
@@ -968,6 +971,7 @@ OpMemberDecorate %PerViewConstantBuffer_t 0 Offset 0
 OpDecorate %PerViewConstantBuffer_t Block
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
+OpDecorate %_runtimearr_uint ArrayStride 4
 OpDecorate %_struct_51 Block
 OpMemberDecorate %_struct_51 0 Offset 0
 OpMemberDecorate %_struct_51 1 Offset 4
@@ -1193,6 +1197,7 @@ OpMemberDecorate %PerViewConstantBuffer_t 0 Offset 0
 OpDecorate %PerViewConstantBuffer_t Block
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
+OpDecorate %_runtimearr_uint ArrayStride 4
 OpDecorate %_struct_49 Block
 OpMemberDecorate %_struct_49 0 Offset 0
 OpMemberDecorate %_struct_49 1 Offset 4
@@ -1418,6 +1423,7 @@ OpMemberDecorate %PerViewConstantBuffer_t 0 Offset 0
 OpDecorate %PerViewConstantBuffer_t Block
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
+OpDecorate %_runtimearr_uint ArrayStride 4
 OpDecorate %_struct_48 Block
 OpMemberDecorate %_struct_48 0 Offset 0
 OpMemberDecorate %_struct_48 1 Offset 4
@@ -1672,6 +1678,7 @@ OpDecorate %foo Block
 OpDecorate %__0 DescriptorSet 0
 OpDecorate %__0 Binding 5
 OpDecorate %coords2D Location 0
+OpDecorate %_runtimearr_uint ArrayStride 4
 OpDecorate %_struct_61 Block
 OpMemberDecorate %_struct_61 0 Offset 0
 OpMemberDecorate %_struct_61 1 Offset 4
