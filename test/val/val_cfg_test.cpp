@@ -2060,6 +2060,32 @@ TEST_F(ValidateCFG, KernelWithPhiPtr) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, SwitchTargetMustBeLabel) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "foo"
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+          %1 = OpFunction %void None %5
+          %6 = OpLabel
+          %7 = OpCopyObject %uint %uint_0
+               OpSelectionMerge %8 None
+               OpSwitch %uint_0 %8 0 %7
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("'Target Label' operands for OpSwitch must "
+                        "be IDs of an OpLabel instruction"));
+}
+
 /// TODO(umar): Nested CFG constructs
 
 }  // namespace

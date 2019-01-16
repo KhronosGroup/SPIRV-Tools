@@ -155,6 +155,26 @@ spv_result_t ValidateBranchConditional(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateSwitch(ValidationState_t& _, const Instruction* inst) {
+  const auto num_operands = inst->operands().size();
+  // At least two operands (selector, default), any more than that are
+  // literal/target.
+
+  // target operands must be OpLabel
+  for (size_t i = 2; i < num_operands; i += 2) {
+    // literal, id
+    const auto id = inst->GetOperandAs<uint32_t>(i + 1);
+    const auto target = _.FindDef(id);
+    if (!target || SpvOpLabel != target->opcode()) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "'Target Label' operands for OpSwitch must be IDs of an "
+                "OpLabel instruction";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateReturnValue(ValidationState_t& _,
                                  const Instruction* inst) {
   const auto value_id = inst->GetOperandAs<uint32_t>(0);
@@ -769,6 +789,9 @@ spv_result_t ControlFlowPass(ValidationState_t& _, const Instruction* inst) {
       break;
     case SpvOpReturnValue:
       if (auto error = ValidateReturnValue(_, inst)) return error;
+      break;
+    case SpvOpSwitch:
+      if (auto error = ValidateSwitch(_, inst)) return error;
       break;
     default:
       break;
