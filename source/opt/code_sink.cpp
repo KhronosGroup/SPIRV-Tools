@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Google LLC
+// Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ bool CodeSinkingPass::SinkInstruction(Instruction* inst) {
 }
 
 BasicBlock* CodeSinkingPass::FindNewBasicBlockFor(Instruction* inst) {
-  assert(inst->result_id() != 0 && "Instruction should not have a result.");
+  assert(inst->result_id() != 0 && "Instruction should have a result.");
   BasicBlock* original_bb = context()->get_instr_block(inst);
   BasicBlock* bb = original_bb;
 
@@ -131,7 +131,7 @@ BasicBlock* CodeSinkingPass::FindNewBasicBlockFor(Instruction* inst) {
 
     // If more than one successor, which is not the merge block, uses |inst|
     // then we have to leave |inst| in bb because there is none of the
-    // successors dominate all uses of |inst".
+    // successors dominate all uses of |inst|.
     if (used_in_multiple_blocks) {
       break;
     }
@@ -251,7 +251,7 @@ bool CodeSinkingPass::IsSyncOnUniform(uint32_t mem_semantics_id) const {
          "Memory semantics should be an integer.");
   uint32_t mem_semantics_int = mem_semantics_const->GetU32();
 
-  // If it does not effect uniform memory, then it is does not apply to uniform
+  // If it does not affect uniform memory, then it is does not apply to uniform
   // memory.
   if ((mem_semantics_int & SpvMemorySemanticsUniformMemoryMask) == 0) {
     return false;

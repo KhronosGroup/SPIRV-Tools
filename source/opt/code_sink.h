@@ -25,13 +25,13 @@ namespace spvtools {
 namespace opt {
 
 // This pass does code sinking for OpAccessChain and OpLoad on variables in
-// uniform storage or is read only memory.  Code sinking is a transformation
+// uniform storage or in read only memory.  Code sinking is a transformation
 // where an instruction is moved into a more deeply nested construct.
 //
 // The goal is to move these instructions as close as possible to their uses
 // without having to execute them more often or to replicate the instruction.
-// Moving the instruction in this way can lead to shorter live ranges, which an
-// lead to less register pressure.  It can also causes instruction to be
+// Moving the instruction in this way can lead to shorter live ranges, which can
+// lead to less register pressure.  It can also cause instructions to be
 // executed less often because they could be moved into one path of a selection
 // construct.
 //
@@ -65,19 +65,22 @@ class CodeSinkingPass : public Pass {
   bool SinkInstruction(Instruction* inst);
 
   // Returns the basic block in which to move |inst| to move is as close as
-  // possible to the uses of |inst| without increasing the number of time |inst|
-  // will be executed.  Return |nullptr| if there is not need to move |inst|.
+  // possible to the uses of |inst| without increasing the number of times
+  // |inst| will be executed.  Return |nullptr| if there is no need to move
+  // |inst|.
   BasicBlock* FindNewBasicBlockFor(Instruction* inst);
 
   // Return true if |inst| reference memory and it is possible that the data in
   // the memory changes at some point.
   bool ReferencesMutableMemory(Instruction* inst);
 
-  // Returns true if the module contains that instruction that is a memory sync.
+  // Returns true if the module contains an instruction that has a memory
+  // semantics id as an operand, and the memory semantics enforces a
+  // synchronization of uniform memory.  See section 3.25 of the SPIR-V
+  // specification.
   bool HasUniformMemorySync();
 
-  // Returns true if there is it possible that there is a store ti the variable
-  // |var_inst|.
+  // Returns true if there may be a store to the variable |var_inst|.
   bool HasPossibleStore(Instruction* var_inst);
 
   // Returns true if one of the basic blocks in |set| exists on a path from the
@@ -85,11 +88,12 @@ class CodeSinkingPass : public Pass {
   bool IntersectsPath(uint32_t start, uint32_t end,
                       const std::unordered_set<uint32_t>& set);
 
-  // Returns true if |mem_semantics_id| is a memory semantics is that will
-  // implies any memory ordering constraints.
+  // Returns true if |mem_semantics_id| is the id of a constant that, when
+  // interpreted as a memory semantics mask enforces synchronization of uniform
+  // memory.  See section 3.25 of the SPIR-V specification.
   bool IsSyncOnUniform(uint32_t mem_semantics_id) const;
 
-  // Stores whether or not a check has for uniform storage had taken place.
+  // True if a check has for uniform storage has taken place.
   bool checked_for_uniform_sync_;
 
   // Cache of whether or not the module has a memory sync on uniform storage.
