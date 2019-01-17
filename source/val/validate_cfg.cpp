@@ -112,6 +112,19 @@ spv_result_t ValidatePhi(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateBranch(ValidationState_t& _, const Instruction* inst) {
+  // target operands must be OpLabel
+  const auto id = inst->GetOperandAs<uint32_t>(0);
+  const auto target = _.FindDef(id);
+  if (!target || SpvOpLabel != target->opcode()) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "'Target Label' operands for OpBranch must be the ID "
+              "of an OpLabel instruction";
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateBranchConditional(ValidationState_t& _,
                                        const Instruction* inst) {
   // num_operands is either 3 or 5 --- if 5, the last two need to be literal
@@ -783,6 +796,9 @@ spv_result_t ControlFlowPass(ValidationState_t& _, const Instruction* inst) {
   switch (inst->opcode()) {
     case SpvOpPhi:
       if (auto error = ValidatePhi(_, inst)) return error;
+      break;
+    case SpvOpBranch:
+      if (auto error = ValidateBranch(_, inst)) return error;
       break;
     case SpvOpBranchConditional:
       if (auto error = ValidateBranchConditional(_, inst)) return error;
