@@ -261,27 +261,6 @@ std::string GetWebGPUShaderTypes() {
 )";
 }
 
-// std::string GetInitialValueForType(std::string type) {
-//  // Missing entries require having an appropriate OpConstant* added to the
-//  // above *ShaderTypes strings.
-//  if (type == "%f32") return "%f32_0";
-//  if (type == "%f64") return "%f64_0";
-//  if (type == "%u32") return "%u32_0";
-//  if (type == "%u64") return "%u64_0";
-//  if (type == "%f32vec2") return "%f32vec2_01";
-//  if (type == "%f32vec3") return "%f32vec3_012";
-//  if (type == "%f32vec4") return "%f32vec3_0123";
-//  if (type == "%f64vec2") return "%f64vec2_01";
-//  if (type == "%f64vec3") return "%f64vec3_012";
-//  if (type == "%f64vec4") return "%f64vec3_0123";
-//  if (type == "%u32vec2") return "%u32vec2_01";
-//  if (type == "%u64vec2") return "%u64vec2_01";
-
-//  // Default return value intentianally causes a failure in cases where an
-//  // initializer is required.
-//  return "";
-//}
-
 CodeGenerator GetDefaultShaderCodeGenerator() {
   CodeGenerator generator;
   generator.capabilities_ = GetDefaultShaderCapabilities();
