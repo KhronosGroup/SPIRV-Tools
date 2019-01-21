@@ -3285,7 +3285,7 @@ TEST_F(ValidateDecorations,
       getDiagnosticString(),
       HasSubstr("Structure id 6 decorated as Block for variable in Uniform "
                 "storage class must follow standard uniform buffer layout "
-                "rules: member 2 at offset 24 is not aligned to 16"));
+                "rules: member 2 at offset 152 is not aligned to 16"));
 }
 
 TEST_F(ValidateDecorations,
@@ -5300,6 +5300,42 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, InvalidStraddle) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpMemberDecorate %inner_struct 0 Offset 0
+OpMemberDecorate %inner_struct 1 Offset 4
+OpDecorate %outer_struct Block
+OpMemberDecorate %outer_struct 0 Offset 0
+OpMemberDecorate %outer_struct 1 Offset 8
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float2 = OpTypeVector %float 2
+%inner_struct = OpTypeStruct %float %float2
+%outer_struct = OpTypeStruct %float2 %inner_struct
+%ptr_ssbo_outer = OpTypePointer StorageBuffer %outer_struct
+%var = OpVariable %ptr_ssbo_outer StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure id 2 decorated as Block for variable in "
+                        "StorageBuffer storage class must follow relaxed "
+                        "storage buffer layout rules: member 1 is an "
+                        "improperly straddling vector at offset 12"));
 }
 
 }  // namespace

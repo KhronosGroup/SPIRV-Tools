@@ -379,6 +379,7 @@ bool IsAlignedTo(uint32_t offset, uint32_t alignment) {
 // or row major-ness.
 spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                          const char* decoration_str, bool blockRules,
+                         uint32_t incoming_offset,
                          MemberConstraints& constraints,
                          ValidationState_t& vstate) {
   if (vstate.options()->skip_block_layout) return SPV_SUCCESS;
@@ -429,7 +430,8 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
         }
       }
     }
-    member_offsets.push_back(MemberOffsetPair{memberIdx, offset});
+    member_offsets.push_back(
+        MemberOffsetPair{memberIdx, incoming_offset + offset});
   }
   std::stable_sort(
       member_offsets.begin(), member_offsets.end(),
@@ -493,9 +495,9 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
     // Check struct members recursively.
     spv_result_t recursive_status = SPV_SUCCESS;
     if (SpvOpTypeStruct == opcode &&
-        SPV_SUCCESS != (recursive_status =
-                            checkLayout(id, storage_class_str, decoration_str,
-                                        blockRules, constraints, vstate)))
+        SPV_SUCCESS != (recursive_status = checkLayout(
+                            id, storage_class_str, decoration_str, blockRules,
+                            offset, constraints, vstate)))
       return recursive_status;
     // Check matrix stride.
     if (SpvOpTypeMatrix == opcode) {
@@ -514,7 +516,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       if (SpvOpTypeStruct == arrayInst->opcode() &&
           SPV_SUCCESS != (recursive_status = checkLayout(
                               typeId, storage_class_str, decoration_str,
-                              blockRules, constraints, vstate)))
+                              blockRules, offset, constraints, vstate)))
         return recursive_status;
       // Check array stride.
       for (auto& decoration : vstate.id_decorations(id)) {
@@ -942,12 +944,12 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                         "decorations.";
             } else if (blockRules &&
                        (SPV_SUCCESS != (recursive_status = checkLayout(
-                                            id, sc_str, deco_str, true,
+                                            id, sc_str, deco_str, true, 0,
                                             constraints, vstate)))) {
               return recursive_status;
             } else if (bufferRules &&
                        (SPV_SUCCESS != (recursive_status = checkLayout(
-                                            id, sc_str, deco_str, false,
+                                            id, sc_str, deco_str, false, 0,
                                             constraints, vstate)))) {
               return recursive_status;
             }
@@ -972,9 +974,7 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
       SpvDecorationArrayStride,
   };
   static const auto* const at_most_once_per_member = new AtMostOnceSet{
-      SpvDecorationOffset,
-      SpvDecorationMatrixStride,
-      SpvDecorationRowMajor,
+      SpvDecorationOffset, SpvDecorationMatrixStride, SpvDecorationRowMajor,
       SpvDecorationColMajor,
   };
   static const auto* const mutually_exclusive_per_id =
