@@ -861,8 +861,15 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
       if (uniform || push_constant || storage_buffer || phys_storage_buffer) {
         const auto ptrInst = vstate.FindDef(words[1]);
         assert(SpvOpTypePointer == ptrInst->opcode());
-        const auto id = ptrInst->words()[3];
-        if (SpvOpTypeStruct != vstate.FindDef(id)->opcode()) continue;
+        auto id = ptrInst->words()[3];
+        auto id_inst = vstate.FindDef(id);
+        // Jump through one level of arraying.
+        if (id_inst->opcode() == SpvOpTypeArray ||
+            id_inst->opcode() == SpvOpTypeRuntimeArray) {
+          id = id_inst->GetOperandAs<uint32_t>(1u);
+          id_inst = vstate.FindDef(id);
+        }
+        if (SpvOpTypeStruct != id_inst->opcode()) continue;
         MemberConstraints constraints;
         ComputeMemberConstraintsForStruct(&constraints, id, LayoutConstraints(),
                                           vstate);

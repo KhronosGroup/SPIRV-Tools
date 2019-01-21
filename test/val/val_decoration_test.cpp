@@ -5338,6 +5338,81 @@ OpFunctionEnd
                         "improperly straddling vector at offset 12"));
 }
 
+TEST_F(ValidateDecorations, DescriptorArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpMemberDecorate %struct 1 Offset 1
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%float2 = OpTypeVector %float 2
+%struct = OpTypeStruct %float %float2
+%struct_array = OpTypeArray %struct %int_2
+%ptr_ssbo_array = OpTypePointer StorageBuffer %struct_array
+%var = OpVariable %ptr_ssbo_array StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure id 2 decorated as Block for variable in "
+                        "StorageBuffer storage class must follow standard "
+                        "storage buffer layout rules: member 1 at offset 1 is "
+                        "not aligned to 8"));
+}
+
+TEST_F(ValidateDecorations, DescriptorRuntimeArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability RuntimeDescriptorArrayEXT
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_EXT_descriptor_indexing"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpMemberDecorate %struct 1 Offset 1
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%float2 = OpTypeVector %float 2
+%struct = OpTypeStruct %float %float2
+%struct_array = OpTypeRuntimeArray %struct
+%ptr_ssbo_array = OpTypePointer StorageBuffer %struct_array
+%var = OpVariable %ptr_ssbo_array StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure id 2 decorated as Block for variable in "
+                        "StorageBuffer storage class must follow standard "
+                        "storage buffer layout rules: member 1 at offset 1 is "
+                        "not aligned to 8"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
