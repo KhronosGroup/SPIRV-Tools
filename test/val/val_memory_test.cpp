@@ -2468,9 +2468,10 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpTypeArray Element Type <id> '6[%_runtimearr_uint]' is not "
-                "valid in Vulkan environments.\n  %_arr__runtimearr_uint_uint_1 "
-                "= OpTypeArray %_runtimearr_uint %uint_1\n"));
+      HasSubstr(
+          "OpTypeArray Element Type <id> '6[%_runtimearr_uint]' is not "
+          "valid in Vulkan environments.\n  %_arr__runtimearr_uint_uint_1 "
+          "= OpTypeArray %_runtimearr_uint %uint_1\n"));
 }
 
 TEST_F(ValidateMemory,
@@ -2504,9 +2505,10 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpTypeArray Element Type <id> '6[%_runtimearr_uint]' is not "
-                "valid in Vulkan environments.\n  %_arr__runtimearr_uint_uint_1 "
-                "= OpTypeArray %_runtimearr_uint %uint_1\n"));
+      HasSubstr(
+          "OpTypeArray Element Type <id> '6[%_runtimearr_uint]' is not "
+          "valid in Vulkan environments.\n  %_arr__runtimearr_uint_uint_1 "
+          "= OpTypeArray %_runtimearr_uint %uint_1\n"));
 }
 
 TEST_F(ValidateMemory, VulkanRTAStructInsideRTAWithRuntimeDescriptorArrayGood) {
