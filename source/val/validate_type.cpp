@@ -113,7 +113,7 @@ spv_result_t ValidateTypeArray(ValidationState_t& _, const Instruction* inst) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpTypeArray Element Type <id> '" << _.getIdName(element_type_id)
            << "' is not valid in "
-           << spvLogStringForEnv(_.context()->target_env) << " environment.";
+           << spvLogStringForEnv(_.context()->target_env) << " environments.";
   }
 
   const auto length_index = 2;
@@ -177,7 +177,7 @@ spv_result_t ValidateTypeRuntimeArray(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpTypeRuntimeArray Element Type <id> '"
            << _.getIdName(element_id) << "' is not valid in "
-           << spvLogStringForEnv(_.context()->target_env) << " environment.";
+           << spvLogStringForEnv(_.context()->target_env) << " environments.";
   }
 
   return SPV_SUCCESS;
