@@ -815,6 +815,12 @@ INSTANTIATE_TEST_CASE_P(
             Values("Input"), Values("%bool"), Values(TestResult())), );
 
 INSTANTIATE_TEST_CASE_P(
+    FrontFacingSuccess,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FrontFacing"), Values("Fragment"), Values("Input"),
+            Values("%bool"), Values(TestResult())), );
+
+INSTANTIATE_TEST_CASE_P(
     FrontFacingAndHelperInvocationNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -822,6 +828,15 @@ INSTANTIATE_TEST_CASE_P(
         Values("Vertex", "GLCompute", "Geometry", "TessellationControl",
                "TessellationEvaluation"),
         Values("Input"), Values("%bool"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "to be used only with Fragment execution model"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    FrontFacingNotFragment,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(
+        Values("FrontFacing"), Values("Vertex", "GLCompute"), Values("Input"),
+        Values("%bool"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "to be used only with Fragment execution model"))), );
 
@@ -836,10 +851,29 @@ INSTANTIATE_TEST_CASE_P(
                 "uses storage class Output"))), );
 
 INSTANTIATE_TEST_CASE_P(
+    FrontFacingNotInput,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FrontFacing"), Values("Fragment"), Values("Output"),
+            Values("%bool"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Input storage class",
+                "uses storage class Output"))), );
+
+INSTANTIATE_TEST_CASE_P(
     FrontFacingAndHelperInvocationNotBool,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FrontFacing", "HelperInvocation"), Values("Fragment"),
             Values("Input"), Values("%f32", "%u32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a bool scalar",
+                              "is not a bool scalar"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    FrontFacingNotBool,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FrontFacing"), Values("Fragment"), Values("Input"),
+            Values("%f32", "%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a bool scalar",
                               "is not a bool scalar"))), );
