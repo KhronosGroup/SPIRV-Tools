@@ -509,23 +509,53 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                  << " not satisfying alignment to " << alignment;
       }
     }
-    // Check arrays and runtime arrays.
-    if (SpvOpTypeArray == opcode || SpvOpTypeRuntimeArray == opcode) {
-      const auto typeId = inst->word(2);
-      const auto arrayInst = vstate.FindDef(typeId);
-      if (SpvOpTypeStruct == arrayInst->opcode() &&
-          SPV_SUCCESS != (recursive_status = checkLayout(
-                              typeId, storage_class_str, decoration_str,
-                              blockRules, offset, constraints, vstate)))
-        return recursive_status;
+
+    // Check arrays and runtime arrays recursively.
+    auto array_inst = inst;
+    auto array_alignment = alignment;
+    while (array_inst->opcode() == SpvOpTypeArray ||
+           array_inst->opcode() == SpvOpTypeRuntimeArray) {
+      const auto typeId = array_inst->word(2);
+      const auto element_inst = vstate.FindDef(typeId);
       // Check array stride.
-      for (auto& decoration : vstate.id_decorations(id)) {
-        if (SpvDecorationArrayStride == decoration.dec_type() &&
-            !IsAlignedTo(decoration.params()[0], alignment))
-          return fail(memberIdx)
-                 << "is an array with stride " << decoration.params()[0]
-                 << " not satisfying alignment to " << alignment;
+      auto array_stride = 0;
+      for (auto& decoration : vstate.id_decorations(array_inst->id())) {
+        if (SpvDecorationArrayStride == decoration.dec_type()) {
+          array_stride = decoration.params()[0];
+          if (!IsAlignedTo(array_stride, array_alignment))
+            return fail(memberIdx)
+                   << "contains an array with stride " << decoration.params()[0]
+                   << " not satisfying alignment to " << alignment;
+        }
       }
+
+      bool is_int32 = false;
+      bool is_const = false;
+      uint32_t num_elements = 0;
+      if (array_inst->opcode() == SpvOpTypeArray) {
+        std::tie(is_int32, is_const, num_elements) =
+            vstate.EvalInt32IfConst(array_inst->word(3));
+      }
+      num_elements = std::max(1u, num_elements);
+      // Check each element recursively if it is a struct. There is a
+      // limitation to this check if the array size is a spec constant or is a
+      // runtime array then we will only check a single element. This means
+      // some improper straddles might be missed.
+      for (uint32_t i = 0; i < num_elements; ++i) {
+        uint32_t next_offset = i * array_stride + offset;
+        if (SpvOpTypeStruct == element_inst->opcode() &&
+            SPV_SUCCESS != (recursive_status = checkLayout(
+                                typeId, storage_class_str, decoration_str,
+                                blockRules, next_offset, constraints, vstate)))
+          return recursive_status;
+      }
+
+      // Proceed to the element in case it is an array.
+      array_inst = element_inst;
+      array_alignment = scalar_block_layout
+                            ? getScalarAlignment(array_inst->id(), vstate)
+                            : getBaseAlignment(array_inst->id(), blockRules,
+                                               constraint, constraints, vstate);
     }
     nextValidOffset = offset + size;
     if (!scalar_block_layout && blockRules &&
