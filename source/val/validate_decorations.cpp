@@ -981,7 +981,9 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
       SpvDecorationArrayStride,
   };
   static const auto* const at_most_once_per_member = new AtMostOnceSet{
-      SpvDecorationOffset, SpvDecorationMatrixStride, SpvDecorationRowMajor,
+      SpvDecorationOffset,
+      SpvDecorationMatrixStride,
+      SpvDecorationRowMajor,
       SpvDecorationColMajor,
   };
   static const auto* const mutually_exclusive_per_id =
