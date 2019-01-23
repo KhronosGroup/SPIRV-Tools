@@ -2696,15 +2696,15 @@ spv_result_t BuiltInsValidator::Run() {
 
 // Validates correctness of built-in variables.
 spv_result_t ValidateBuiltIns(ValidationState_t& _) {
-  if (!spvIsVulkanEnv(_.context()->target_env) &&
-      !spvIsWebGPUEnv(_.context()->target_env)) {
-    // Early return. All currently implemented rules are based on Vulkan spec.
+  if (!spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
+    // Early return. All currently implemented rules are based on Vulkan or
+    // WebGPU spec.
     //
     // TODO: If you are adding validation rules for environments other than
-    // Vulkan (or general rules which are not environment independent), then you
-    // need to modify or remove this condition. Consider also adding early
-    // returns into BuiltIn-specific rules, so that the system doesn't spawn new
-    // rules which don't do anything.
+    // Vulkan or WebGPU (or general rules which are not environment
+    // independent), then you need to modify or remove this condition. Consider
+    // also adding early returns into BuiltIn-specific rules, so that the system
+    // doesn't spawn new rules which don't do anything.
     return SPV_SUCCESS;
   }
 
