@@ -12,30 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_REDUCE_OPERAND_TO_CONST_REDUCTION_PASS_H_
-#define SOURCE_REDUCE_OPERAND_TO_CONST_REDUCTION_PASS_H_
+#ifndef SOURCE_REDUCE_CUT_LOOP_REDUCTION_PASS_H_
+#define SOURCE_REDUCE_CUT_LOOP_REDUCTION_PASS_H_
 
-#include "source/reduce/reduction_pass.h"
+#include "reduction_opportunity_finder.h"
 
 namespace spvtools {
 namespace reduce {
 
-// A reduction pass for replacing id operands of instructions with ids of
-// constants.  This reduces the extent to which ids of non-constants are used,
-// paving the way for instructions that generate them to be eliminated by other
-// passes.
-class OperandToConstReductionPass : public ReductionPass {
+// A finder for opportunities to turn structured loops into selections,
+// generalizing from a human-writable language the idea of turning a loop:
+//
+// while (c) {
+//   body;
+// }
+//
+// into:
+//
+// if (c) {
+//   body;
+// }
+//
+// Applying such opportunities results in continue constructs of transformed
+// loops becoming unreachable, so that it may be possible to remove them
+// subsequently.
+class StructuredLoopToSelectionReductionOpportunityFinder
+    : public ReductionOpportunityFinder {
  public:
-  // Creates the reduction pass in the context of the given target environment
-  // |target_env|
-  explicit OperandToConstReductionPass(const spv_target_env target_env)
-      : ReductionPass(target_env) {}
+  StructuredLoopToSelectionReductionOpportunityFinder() = default;
 
-  ~OperandToConstReductionPass() override = default;
+  ~StructuredLoopToSelectionReductionOpportunityFinder() override = default;
 
   std::string GetName() const final;
 
- protected:
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
       opt::IRContext* context) const final;
 
@@ -45,4 +54,4 @@ class OperandToConstReductionPass : public ReductionPass {
 }  // namespace reduce
 }  // namespace spvtools
 
-#endif  // SOURCE_REDUCE_OPERAND_TO_CONST_REDUCTION_PASS_H_
+#endif  // SOURCE_REDUCE_CUT_LOOP_REDUCTION_PASS_H_
