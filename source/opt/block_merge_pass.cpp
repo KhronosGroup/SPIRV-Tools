@@ -18,105 +18,18 @@
 
 #include <vector>
 
+#include "source/opt/block_merge_util.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/iterator.h"
 
 namespace spvtools {
 namespace opt {
 
-bool BlockMergePass::canMergeWithSuccessor(IRContext* context, BasicBlock *block) {
-  // Find block with single successor which has no other predecessors.
-  auto ii = block->end();
-  --ii;
-  Instruction* br = &*ii;
-  if (br->opcode() != SpvOpBranch) {
-    return false;
-  }
-
-  const uint32_t lab_id = br->GetSingleWordInOperand(0);
-  if (context->cfg()->preds(lab_id).size() != 1) {
-    return false;
-  }
-
-  bool pred_is_merge = IsMerge(context, block);
-  bool succ_is_merge = IsMerge(context, lab_id);
-  if (pred_is_merge && succ_is_merge) {
-    // Cannot merge two merges together.
-    return false;
-  }
-
-  Instruction* merge_inst = block->GetMergeInst();
-  const bool pred_is_header = IsHeader(block);
-  if (pred_is_header && lab_id != merge_inst->GetSingleWordInOperand(0u)) {
-    bool succ_is_header = IsHeader(context, lab_id);
-    if (pred_is_header && succ_is_header) {
-      // Cannot merge two headers together when the successor is not the merge
-      // block of the predecessor.
-      return false;
-    }
-
-    // If this is a header block and the successor is not its merge, we must
-    // be careful about which blocks we are willing to merge together.
-    // OpLoopMerge must be followed by a conditional or unconditional branch.
-    // The merge must be a loop merge because a selection merge cannot be
-    // followed by an unconditional branch.
-    BasicBlock* succ_block = context->get_instr_block(lab_id);
-    SpvOp succ_term_op = succ_block->terminator()->opcode();
-    assert(merge_inst->opcode() == SpvOpLoopMerge);
-    if (succ_term_op != SpvOpBranch &&
-        succ_term_op != SpvOpBranchConditional) {
-      return false;
-    }
-  }
-  return true;
-}
-
-void BlockMergePass::mergeWithSuccessor(IRContext* context, Function* func, Function::iterator bi) {
-  auto ii = bi->end();
-  --ii;
-  Instruction *br = &*ii;
-  const uint32_t lab_id = br->GetSingleWordInOperand(0);
-  Instruction *merge_inst = bi->GetMergeInst();
-  bool pred_is_header = IsHeader(&*bi);
-
-  // Merge blocks.
-  context->KillInst(br);
-  auto sbi = bi;
-  for (; sbi != func->end(); ++sbi)
-    if (sbi->id() == lab_id) break;
-  // If bi is sbi's only predecessor, it dominates sbi and thus
-  // sbi must follow bi in func's ordering.
-  assert(sbi != func->end());
-
-  // Update the inst-to-block mapping for the instructions in sbi.
-  for (auto &inst : *sbi) {
-    context->set_instr_block(&inst, &*bi);
-  }
-
-  // Now actually move the instructions.
-  bi->AddInstructions(&*sbi);
-
-  if (merge_inst) {
-    if (pred_is_header && lab_id == merge_inst->GetSingleWordInOperand(0u)) {
-      // Merging the header and merge blocks, so remove the structured control
-      // flow declaration.
-      context->KillInst(merge_inst);
-    } else {
-      // Move the merge instruction to just before the terminator.
-      merge_inst->InsertBefore(bi->terminator());
-    }
-  }
-  context->ReplaceAllUsesWith(lab_id, bi->id());
-  context->KillInst(sbi->GetLabelInst());
-  (void) sbi.Erase();
-}
-
 bool BlockMergePass::MergeBlocks(Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end();) {
-
-    if (canMergeWithSuccessor(context(), &*bi)) {
-      mergeWithSuccessor(context(), func, bi);
+    if (blockmergeutil::CanMergeWithSuccessor(context(), &*bi)) {
+      blockmergeutil::MergeWithSuccessor(context(), func, bi);
       // Reprocess block.
       modified = true;
     } else {
@@ -125,27 +38,6 @@ bool BlockMergePass::MergeBlocks(Function* func) {
   }
   return modified;
 }
-
-bool BlockMergePass::IsHeader(IRContext* context, uint32_t id) {
-  return IsHeader(context->get_instr_block(context->get_def_use_mgr()->GetDef(id)));
-}
-
-bool BlockMergePass::IsHeader(BasicBlock* block) {
-  return block->GetMergeInst() != nullptr;
-}
-
-bool BlockMergePass::IsMerge(IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->WhileEachUse(id, [](Instruction* user,
-                                                 uint32_t index) {
-    SpvOp op = user->opcode();
-    if ((op == SpvOpLoopMerge || op == SpvOpSelectionMerge) && index == 0u) {
-      return false;
-    }
-    return true;
-  });
-}
-
-bool BlockMergePass::IsMerge(IRContext* context, BasicBlock* block) { return IsMerge(context, block->id()); }
 
 Pass::Status BlockMergePass::Process() {
   // Process all entry point functions.

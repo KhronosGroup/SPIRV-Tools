@@ -48,24 +48,11 @@ class BlockMergePass : public Pass {
            IRContext::kAnalysisTypes;
   }
 
-  static bool canMergeWithSuccessor(IRContext* context, BasicBlock *block);
-
-  static void mergeWithSuccessor(IRContext* context, Function* func, Function::iterator bi);
-
  private:
 
   // Search |func| for blocks which have a single Branch to a block
   // with no other predecessors. Merge these blocks into a single block.
   bool MergeBlocks(Function* func);
-
-  // Returns true if |block| (or |id|) contains a merge instruction.
-  static bool IsHeader(BasicBlock* block);
-  static bool IsHeader(IRContext* context, uint32_t id);
-
-  // Returns true if |block| (or |id|) is the merge target of a merge
-  // instruction.
-  static bool IsMerge(IRContext* context, BasicBlock* block);
-  static bool IsMerge(IRContext* context, uint32_t id);
 
 };
 
