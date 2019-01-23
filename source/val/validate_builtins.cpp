@@ -937,12 +937,14 @@ spv_result_t BuiltInsValidator::ValidateClipOrCullDistanceAtReference(
 
 spv_result_t BuiltInsValidator::ValidateFragCoordAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
     if (spv_result_t error = ValidateF32Vec(
             decoration, inst, 4,
             [this, &inst](const std::string& message) -> spv_result_t {
               return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                     << "According to the Vulkan spec BuiltIn FragCoord "
+                     << "According to the "
+                     << spvLogStringForEnv(_.context()->target_env)
+                     << " spec BuiltIn FragCoord "
                         "variable needs to be a 4-component 32-bit float "
                         "vector. "
                      << message;
@@ -959,12 +961,13 @@ spv_result_t BuiltInsValidator::ValidateFragCoordAtReference(
     const Decoration& decoration, const Instruction& built_in_inst,
     const Instruction& referenced_inst,
     const Instruction& referenced_from_inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
     const SpvStorageClass storage_class = GetStorageClass(referenced_from_inst);
     if (storage_class != SpvStorageClassMax &&
         storage_class != SpvStorageClassInput) {
       return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-             << "Vulkan spec allows BuiltIn FragCoord to be only used for "
+             << spvLogStringForEnv(_.context()->target_env)
+             << " spec allows BuiltIn FragCoord to be only used for "
                 "variables with Input storage class. "
              << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                  referenced_from_inst)
@@ -974,7 +977,8 @@ spv_result_t BuiltInsValidator::ValidateFragCoordAtReference(
     for (const SpvExecutionModel execution_model : execution_models_) {
       if (execution_model != SpvExecutionModelFragment) {
         return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-               << "Vulkan spec allows BuiltIn FragCoord to be used only with "
+               << spvLogStringForEnv(_.context()->target_env)
+               << " spec allows BuiltIn FragCoord to be used only with "
                   "Fragment execution model. "
                << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                    referenced_from_inst, execution_model);

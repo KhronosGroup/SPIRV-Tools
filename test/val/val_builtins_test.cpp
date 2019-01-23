@@ -719,6 +719,11 @@ INSTANTIATE_TEST_CASE_P(
             Values("%f32vec4"), Values(TestResult())), );
 
 INSTANTIATE_TEST_CASE_P(
+    FragCoordSuccess, ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
+            Values("%f32vec4"), Values(TestResult())), );
+
+INSTANTIATE_TEST_CASE_P(
     FragCoordNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -730,7 +735,25 @@ INSTANTIATE_TEST_CASE_P(
                           "to be used only with Fragment execution model"))), );
 
 INSTANTIATE_TEST_CASE_P(
+    FragCoordNotFragment,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(
+        Values("FragCoord"), Values("Vertex", "GLCompute"), Values("Input"),
+        Values("%f32vec4"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "to be used only with Fragment execution model"))), );
+
+INSTANTIATE_TEST_CASE_P(
     FragCoordNotInput, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FragCoord"), Values("Fragment"), Values("Output"),
+            Values("%f32vec4"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Input storage class",
+                "uses storage class Output"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    FragCoordNotInput, ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Output"),
             Values("%f32vec4"),
             Values(TestResult(
@@ -748,8 +771,26 @@ INSTANTIATE_TEST_CASE_P(
                               "is not a float vector"))), );
 
 INSTANTIATE_TEST_CASE_P(
+    FragCoordNotFloatVector,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
+            Values("%f32arr4", "%u32vec4"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 4-component 32-bit float vector",
+                              "is not a float vector"))), );
+
+INSTANTIATE_TEST_CASE_P(
     FragCoordNotFloatVec4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
+            Values("%f32vec3"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 4-component 32-bit float vector",
+                              "has 3 components"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    FragCoordNotFloatVec4,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
             Values("%f32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
