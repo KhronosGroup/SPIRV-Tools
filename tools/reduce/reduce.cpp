@@ -77,7 +77,26 @@ USAGE: %s [options] <input> <interestingness-test>
 The SPIR-V binary is read from <input>.
 
 Whether a binary is interesting is determined by <interestingness-test>, which
-is typically a script.
+should be the path to a script.
+
+ * The script must be executable.
+
+ * The script should take the path to a SPIR-V binary file (.spv) as its single
+   argument, and exit with code 0 if and only if the binary file is
+   interesting.
+
+ * Example: an interestingness test for reducing a SPIR-V binary file that
+   causes tool "foo" to exit with error code 1 and print "Fatal error: bar" to
+   standard error should:
+     - invoke "foo" on the binary passed as the script argument;
+     - capture the return code and standard error from "bar";
+     - exit with code 0 if and only if the return code of "foo" was 1 and the
+       standard error from "bar" contained "Fatal error: bar".
+
+ * The reducer does not place a time limit on how long the interestingness test
+   takes to run, so it is advisable to use per-command timeouts inside the
+   script when invoking SPIR-V-processing tools (such as "foo" in the above
+   example).
 
 NOTE: The reducer is a work in progress.
 
@@ -85,8 +104,8 @@ Options (in lexicographical order):
   -h, --help
                Print this help.
   --step-limit
-               32-bit unsigned integer specifying maximum number of
-               steps the reducer will take before giving up.
+               32-bit unsigned integer specifying maximum number of steps the
+               reducer will take before giving up.
   --version
                Display reducer version information.
 )",
