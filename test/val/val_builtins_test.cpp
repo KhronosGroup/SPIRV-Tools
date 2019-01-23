@@ -611,9 +611,6 @@ TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, Variable) {
   CodeGenerator generator = GetVariableCodeGenerator(
       SPV_ENV_WEBGPU_0, built_in, execution_model, storage_class, data_type);
 
-  //  fprintf(stderr, "%s\n", generator.Build().c_str());
-  //  fflush(stderr);
-
   CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
   ASSERT_EQ(test_result.validation_result,
             ValidateInstructions(SPV_ENV_WEBGPU_0));
