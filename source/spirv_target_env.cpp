@@ -249,6 +249,10 @@ bool spvIsWebGPUEnv(spv_target_env env) {
   return false;
 }
 
+bool spvIsVulkanOrWebGPUEnv(spv_target_env env) {
+  return spvIsVulkanEnv(env) || spvIsWebGPUEnv(env);
+}
+
 std::string spvLogStringForEnv(spv_target_env env) {
   switch (env) {
     case SPV_ENV_OPENCL_1_2:

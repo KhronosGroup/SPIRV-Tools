@@ -32,6 +32,9 @@ bool spvIsOpenCLEnv(spv_target_env env);
 // Returns true if |env| is an WEBGPU environment, false otherwise.
 bool spvIsWebGPUEnv(spv_target_env env);
 
+// Returns true if |env| is a VULKAN or WEBGPU environment, false otherwise.
+bool spvIsVulkanOrWebGPUEnv(spv_target_env env);
+
 // Returns the version number for the given SPIR-V target environment.
 uint32_t spvVersionForTargetEnv(spv_target_env env);
 
