@@ -449,12 +449,11 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpVariable, <id> '5[%5]', has a disallowed initializer & storage "
-          "class combination.\nFrom WebGPU execution environment spec:\n"
-          "Variable declarations that include initializers must have one of "
-          "the following storage classes: Output, Private, or Function\n"
-          "  %5 = OpVariable %_ptr_Uniform_float Uniform %float_1\n"));
+      HasSubstr("OpVariable, <id> '5[%5]', has a disallowed initializer & "
+                "storage class combination.\nFrom WebGPU spec:\nVariable "
+                "declarations that include initializers must have one of the "
+                "following storage classes: Output, Private, or Function\n  %5 "
+                "= OpVariable %_ptr_Uniform_float Uniform %float_1\n"));
 }
 
 TEST_F(ValidateMemory, WebGPUOutputStorageClassWithoutInitializerBad) {
@@ -628,12 +627,11 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpVariable, <id> '5[%5]', has a disallowed initializer & storage "
-          "class combination.\nFrom Vulkan spec, Appendix A:\n"
-          "Variable declarations that include initializers must have one of "
-          "the following storage classes: Output, Private, or Function\n  "
-          "%5 = OpVariable %_ptr_Input_float Input %float_1\n"));
+      HasSubstr("OpVariable, <id> '5[%5]', has a disallowed initializer & "
+                "storage class combination.\nFrom Vulkan spec:\nVariable "
+                "declarations that include initializers must have one of the "
+                "following storage classes: Output, Private, or Function\n  %5 "
+                "= OpVariable %_ptr_Input_float Input %float_1\n"));
 }
 
 TEST_F(ValidateMemory, ArrayLenCorrectResultType) {
