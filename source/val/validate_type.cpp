@@ -107,8 +107,7 @@ spv_result_t ValidateTypeArray(ValidationState_t& _, const Instruction* inst) {
            << "' is a void type.";
   }
 
-  if ((spvIsVulkanEnv(_.context()->target_env) ||
-       spvIsWebGPUEnv(_.context()->target_env)) &&
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env) &&
       element_type->opcode() == SpvOpTypeRuntimeArray) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpTypeArray Element Type <id> '" << _.getIdName(element_type_id)
@@ -171,8 +170,7 @@ spv_result_t ValidateTypeRuntimeArray(ValidationState_t& _,
            << _.getIdName(element_id) << "' is a void type.";
   }
 
-  if ((spvIsVulkanEnv(_.context()->target_env) ||
-       spvIsWebGPUEnv(_.context()->target_env)) &&
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env) &&
       element_type->opcode() == SpvOpTypeRuntimeArray) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpTypeRuntimeArray Element Type <id> '"
@@ -226,8 +224,7 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
       }
     }
 
-    if ((spvIsVulkanEnv(_.context()->target_env) ||
-         spvIsWebGPUEnv(_.context()->target_env)) &&
+    if (spvIsVulkanOrWebGPUEnv(_.context()->target_env) &&
         member_type->opcode() == SpvOpTypeRuntimeArray) {
       const bool is_last_member =
           member_type_index == inst->operands().size() - 1;
