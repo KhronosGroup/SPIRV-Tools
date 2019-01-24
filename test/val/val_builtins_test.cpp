@@ -1993,14 +1993,6 @@ INSTANTIATE_TEST_CASE_P(
                               "is not a float vector"))), );
 
 INSTANTIATE_TEST_CASE_P(
-    PositionArrayedF32Vec4Vertex, ValidateWebGPUCombineBuiltInArrayedVariable,
-    Combine(Values("Position"), Values("Vertex"), Values("Output"),
-            Values("%f32"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 4-component 32-bit float vector",
-                              "is not a float vector"))), );
-
-INSTANTIATE_TEST_CASE_P(
     ClipAndCullDistanceOutputSuccess,
     ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("ClipDistance", "CullDistance"),
