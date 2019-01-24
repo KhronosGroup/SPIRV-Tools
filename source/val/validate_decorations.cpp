@@ -1017,14 +1017,14 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
   // to the same id.
   static const SpvDecoration mutually_exclusive_per_id[][2] = {
       {SpvDecorationBlock, SpvDecorationBufferBlock}};
-  static const uint32_t num_mutually_exclusive_per_id_pairs =
+  static const auto num_mutually_exclusive_per_id_pairs =
       sizeof(mutually_exclusive_per_id) / (2 * sizeof(SpvDecoration));
 
   // An Array of pairs where the decorations in the pair cannot both be applied
   // to the same member.
   static const SpvDecoration mutually_exclusive_per_member[][2] = {
       {SpvDecorationRowMajor, SpvDecorationColMajor}};
-  static const uint32_t num_mutually_exclusive_per_mem_pairs =
+  static const auto num_mutually_exclusive_per_mem_pairs =
       sizeof(mutually_exclusive_per_member) / (2 * sizeof(SpvDecoration));
 
   std::set<PerIDKey> seen_per_id;
