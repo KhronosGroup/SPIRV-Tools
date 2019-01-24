@@ -2339,13 +2339,15 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
 
 spv_result_t BuiltInsValidator::ValidateComputeShaderI32Vec3InputAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
     if (spv_result_t error = ValidateI32Vec(
             decoration, inst, 3,
             [this, &decoration,
              &inst](const std::string& message) -> spv_result_t {
               return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                     << "According to the Vulkan spec BuiltIn "
+                     << "According to the "
+                     << spvLogStringForEnv(_.context()->target_env)
+                     << " spec BuiltIn "
                      << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                                       decoration.params()[0])
                      << " variable needs to be a 3-component 32-bit int "
@@ -2365,12 +2367,13 @@ spv_result_t BuiltInsValidator::ValidateComputeShaderI32Vec3InputAtReference(
     const Decoration& decoration, const Instruction& built_in_inst,
     const Instruction& referenced_inst,
     const Instruction& referenced_from_inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
     const SpvStorageClass storage_class = GetStorageClass(referenced_from_inst);
     if (storage_class != SpvStorageClassMax &&
         storage_class != SpvStorageClassInput) {
       return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-             << "Vulkan spec allows BuiltIn "
+             << spvLogStringForEnv(_.context()->target_env)
+             << " spec allows BuiltIn "
              << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                               decoration.params()[0])
              << " to be only used for variables with Input storage class. "
@@ -2380,11 +2383,15 @@ spv_result_t BuiltInsValidator::ValidateComputeShaderI32Vec3InputAtReference(
     }
 
     for (const SpvExecutionModel execution_model : execution_models_) {
-      if (execution_model != SpvExecutionModelGLCompute &&
-          execution_model != SpvExecutionModelTaskNV &&
-          execution_model != SpvExecutionModelMeshNV) {
+      bool has_vulkan_model = execution_model == SpvExecutionModelGLCompute ||
+                              execution_model == SpvExecutionModelTaskNV ||
+                              execution_model == SpvExecutionModelMeshNV;
+      bool has_webgpu_model = execution_model == SpvExecutionModelGLCompute;
+      if ((spvIsVulkanEnv(_.context()->target_env) && !has_vulkan_model) ||
+          (spvIsWebGPUEnv(_.context()->target_env) && !has_webgpu_model)) {
         return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-               << "Vulkan spec allows BuiltIn "
+               << spvLogStringForEnv(_.context()->target_env)
+               << " spec allows BuiltIn "
                << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                                 decoration.params()[0])
                << " to be used only with GLCompute execution model. "
