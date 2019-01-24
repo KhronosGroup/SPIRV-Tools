@@ -1983,8 +1983,11 @@ INSTANTIATE_TEST_CASE_P(
                               "needs to be a 32-bit float array",
                               "components are not float scalar"))), );
 
-TEST_F(ValidateBuiltIns, WorkgroupSizeSuccess) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+CodeGenerator GetWorkgroupSizeSuccessGenerator(spv_target_env env) {
+  CodeGenerator generator = env == SPV_ENV_WEBGPU_0
+                                ? GetWebGPUShaderCodeGenerator()
+                                : GetDefaultShaderCodeGenerator();
+
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2001,12 +2004,27 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
   generator.entry_points_.push_back(std::move(entry_point));
 
+  return generator;
+}
+
+TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeSuccess) {
+  CodeGenerator generator =
+      GetWorkgroupSizeSuccessGenerator(SPV_ENV_VULKAN_1_0);
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
-TEST_F(ValidateBuiltIns, WorkgroupSizeFragment) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeSuccess) {
+  CodeGenerator generator = GetWorkgroupSizeSuccessGenerator(SPV_ENV_WEBGPU_0);
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+CodeGenerator GetWorkgroupSizeFragmentGenerator(spv_target_env env) {
+  CodeGenerator generator = env == SPV_ENV_WEBGPU_0
+                                ? GetWebGPUShaderCodeGenerator()
+                                : GetDefaultShaderCodeGenerator();
+
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2024,6 +2042,13 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
   generator.entry_points_.push_back(std::move(entry_point));
 
+  return generator;
+}
+
+TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeFragment) {
+  CodeGenerator generator =
+      GetWorkgroupSizeFragmentGenerator(SPV_ENV_VULKAN_1_0);
+
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
@@ -2035,8 +2060,23 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
                         "called with execution model Fragment"));
 }
 
+TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeFragment) {
+  CodeGenerator generator = GetWorkgroupSizeFragmentGenerator(SPV_ENV_WEBGPU_0);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("WebGPU spec allows BuiltIn WorkgroupSize to be used "
+                        "only with GLCompute execution model"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("is referencing ID <2> (OpConstantComposite) which is "
+                        "decorated with BuiltIn WorkgroupSize in function <1> "
+                        "called with execution model Fragment"));
+}
+
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotConstant) {
   CodeGenerator generator = GetDefaultShaderCodeGenerator();
+
   generator.before_types_ = R"(
 OpDecorate %copy BuiltIn WorkgroupSize
 )";
@@ -2060,8 +2100,11 @@ OpDecorate %copy BuiltIn WorkgroupSize
                         "constant. ID <2> (OpCopyObject) is not a constant"));
 }
 
-TEST_F(ValidateBuiltIns, WorkgroupSizeNotVector) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+CodeGenerator GetWorkgroupSizeNotVectorGenerator(spv_target_env env) {
+  CodeGenerator generator = env == SPV_ENV_WEBGPU_0
+                                ? GetWebGPUShaderCodeGenerator()
+                                : GetDefaultShaderCodeGenerator();
+
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2078,6 +2121,13 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
   generator.entry_points_.push_back(std::move(entry_point));
 
+  return generator;
+}
+
+TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotVector) {
+  CodeGenerator generator =
+      GetWorkgroupSizeNotVectorGenerator(SPV_ENV_VULKAN_1_0);
+
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
@@ -2086,8 +2136,23 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
                         "ID <2> (OpConstant) is not an int vector."));
 }
 
-TEST_F(ValidateBuiltIns, WorkgroupSizeNotIntVector) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeNotVector) {
+  CodeGenerator generator =
+      GetWorkgroupSizeNotVectorGenerator(SPV_ENV_WEBGPU_0);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("According to the WebGPU spec BuiltIn WorkgroupSize "
+                        "variable needs to be a 3-component 32-bit int vector. "
+                        "ID <2> (OpConstant) is not an int vector."));
+}
+
+CodeGenerator GetWorkgroupSizeNotIntVectorGenerator(spv_target_env env) {
+  CodeGenerator generator = env == SPV_ENV_WEBGPU_0
+                                ? GetWebGPUShaderCodeGenerator()
+                                : GetDefaultShaderCodeGenerator();
+
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2104,6 +2169,13 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
   generator.entry_points_.push_back(std::move(entry_point));
 
+  return generator;
+}
+
+TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotIntVector) {
+  CodeGenerator generator =
+      GetWorkgroupSizeNotIntVectorGenerator(SPV_ENV_VULKAN_1_0);
+
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
@@ -2112,8 +2184,23 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
                         "ID <2> (OpConstantComposite) is not an int vector."));
 }
 
-TEST_F(ValidateBuiltIns, WorkgroupSizeNotVec3) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeNotIntVector) {
+  CodeGenerator generator =
+      GetWorkgroupSizeNotIntVectorGenerator(SPV_ENV_WEBGPU_0);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("According to the WebGPU spec BuiltIn WorkgroupSize "
+                        "variable needs to be a 3-component 32-bit int vector. "
+                        "ID <2> (OpConstantComposite) is not an int vector."));
+}
+
+CodeGenerator GetWorkgroupSizeNotVec3Generator(spv_target_env env) {
+  CodeGenerator generator = env == SPV_ENV_WEBGPU_0
+                                ? GetWebGPUShaderCodeGenerator()
+                                : GetDefaultShaderCodeGenerator();
+
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2130,10 +2217,28 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
   generator.entry_points_.push_back(std::move(entry_point));
 
+  return generator;
+}
+
+TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotVec3) {
+  CodeGenerator generator =
+      GetWorkgroupSizeNotVec3Generator(SPV_ENV_VULKAN_1_0);
+
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("According to the Vulkan spec BuiltIn WorkgroupSize "
+                        "variable needs to be a 3-component 32-bit int vector. "
+                        "ID <2> (OpConstantComposite) has 2 components."));
+}
+
+TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeNotVec3) {
+  CodeGenerator generator = GetWorkgroupSizeNotVec3Generator(SPV_ENV_WEBGPU_0);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("According to the WebGPU spec BuiltIn WorkgroupSize "
                         "variable needs to be a 3-component 32-bit int vector. "
                         "ID <2> (OpConstantComposite) has 2 components."));
 }

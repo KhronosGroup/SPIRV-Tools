@@ -2407,8 +2407,9 @@ spv_result_t BuiltInsValidator::ValidateComputeShaderI32Vec3InputAtReference(
 
 spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
-    if (!spvOpcodeIsConstant(inst.opcode())) {
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
+    if (spvIsVulkanEnv(_.context()->target_env) &&
+        !spvOpcodeIsConstant(inst.opcode())) {
       return _.diag(SPV_ERROR_INVALID_DATA, &inst)
              << "Vulkan spec requires BuiltIn WorkgroupSize to be a "
                 "constant. "
@@ -2419,9 +2420,10 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
             decoration, inst, 3,
             [this, &inst](const std::string& message) -> spv_result_t {
               return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                     << "According to the Vulkan spec BuiltIn WorkgroupSize "
-                        "variable "
-                        "needs to be a 3-component 32-bit int vector. "
+                     << "According to the "
+                     << spvLogStringForEnv(_.context()->target_env)
+                     << " spec BuiltIn WorkgroupSize variable needs to be a "
+                        "3-component 32-bit int vector. "
                      << message;
             })) {
       return error;
@@ -2436,11 +2438,12 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtReference(
     const Decoration& decoration, const Instruction& built_in_inst,
     const Instruction& referenced_inst,
     const Instruction& referenced_from_inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
     for (const SpvExecutionModel execution_model : execution_models_) {
       if (execution_model != SpvExecutionModelGLCompute) {
         return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-               << "Vulkan spec allows BuiltIn "
+               << spvLogStringForEnv(_.context()->target_env)
+               << " spec allows BuiltIn "
                << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                                 decoration.params()[0])
                << " to be used only with GLCompute execution model. "
