@@ -2239,9 +2239,10 @@ spv_result_t BuiltInsValidator::ValidateLocalInvocationIndexAtReference(
 
   if (function_id_ == 0) {
     // Propagate this rule to all dependant ids in the global scope.
-    id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
-        &BuiltInsValidator::ValidateLocalInvocationIndexAtReference, this, decoration,
-        built_in_inst, referenced_from_inst, std::placeholders::_1));
+    id_to_at_reference_checks_[referenced_from_inst.id()].push_back(
+        std::bind(&BuiltInsValidator::ValidateLocalInvocationIndexAtReference,
+                  this, decoration, built_in_inst, referenced_from_inst,
+                  std::placeholders::_1));
   }
 
   return SPV_SUCCESS;
@@ -2606,7 +2607,7 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInInstanceId: {
       return ValidateVertexIdOrInstanceIdAtDefinition(decoration, inst);
     }
-    case SpvBuiltInLocalInvocationIndex:{
+    case SpvBuiltInLocalInvocationIndex: {
       return ValidateLocalInvocationIndexAtDefinition(decoration, inst);
     }
     case SpvBuiltInWorkDim:
