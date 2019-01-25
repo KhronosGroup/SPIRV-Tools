@@ -21,6 +21,8 @@ namespace spvtools {
 namespace opt {
 namespace blockmergeutil {
 
+namespace {
+
 // Returns true if |block| contains a merge instruction.
 bool IsHeader(BasicBlock* block) { return block->GetMergeInst() != nullptr; }
 
@@ -46,6 +48,8 @@ bool IsMerge(IRContext* context, uint32_t id) {
 bool IsMerge(IRContext* context, BasicBlock* block) {
   return IsMerge(context, block->id());
 }
+
+}  // Anonymous namespace
 
 bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
   // Find block with single successor which has no other predecessors.
