@@ -108,7 +108,7 @@ void OperandToDominatingIdReductionOpportunityFinder::
 }
 
 std::string OperandToDominatingIdReductionOpportunityFinder::GetName() const {
-  return "OperandToDominatingIdReductionPass";
+  return "OperandToDominatingIdReductionOpportunityFinder";
 }
 
 }  // namespace reduce
