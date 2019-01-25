@@ -89,7 +89,7 @@ StructuredLoopToSelectionReductionOpportunityFinder::GetAvailableOpportunities(
 
 std::string StructuredLoopToSelectionReductionOpportunityFinder::GetName()
     const {
-  return "StructuredLoopToSelectionReductionPass";
+  return "StructuredLoopToSelectionReductionOpportunityFinder";
 }
 
 }  // namespace reduce
