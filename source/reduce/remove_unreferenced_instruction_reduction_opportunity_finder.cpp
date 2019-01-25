@@ -54,7 +54,7 @@ RemoveUnreferencedInstructionReductionOpportunityFinder::
 
 std::string RemoveUnreferencedInstructionReductionOpportunityFinder::GetName()
     const {
-  return "RemoveUnreferencedInstructionReductionPass";
+  return "RemoveUnreferencedInstructionReductionOpportunityFinder";
 }
 
 }  // namespace reduce
