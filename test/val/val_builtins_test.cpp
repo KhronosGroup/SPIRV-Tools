@@ -1800,6 +1800,16 @@ INSTANTIATE_TEST_CASE_P(
                               "needs to be a 32-bit int scalar",
                               "has bit width 64"))), );
 
+INSTANTIATE_TEST_CASE_P(
+    WhitelistRejection,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("PointSize", "ClipDistance", "CullDistance", "VertexId",
+                   "InstanceId", "PointCoord", "SampleMask", "HelperInvocation",
+                   "WorkgroupId"),
+            Values("Vertex"), Values("Input"), Values("%u32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "WebGPU does not allow BuiltIn"))), );
+
 CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
                                               const char* const built_in,
                                               const char* const execution_model,

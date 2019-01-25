@@ -101,6 +101,28 @@ SpvStorageClass GetStorageClass(const Instruction& inst) {
   return SpvStorageClassMax;
 }
 
+bool IsBuiltInValidForWebGPU(SpvBuiltIn label) {
+  switch (label) {
+    case SpvBuiltInPosition:
+    case SpvBuiltInVertexIndex:
+    case SpvBuiltInInstanceIndex:
+    case SpvBuiltInFrontFacing:
+    case SpvBuiltInFragCoord:
+    case SpvBuiltInFragDepth:
+    case SpvBuiltInNumWorkgroups:
+    case SpvBuiltInWorkgroupSize:
+    case SpvBuiltInLocalInvocationId:
+    case SpvBuiltInGlobalInvocationId:
+    case SpvBuiltInLocalInvocationIndex: {
+      return true;
+    }
+    default:
+      break;
+  }
+
+  return false;
+}
+
 // Helper class managing validation of built-ins.
 // TODO: Generic functionality of this class can be moved into
 // ValidationState_t to be made available to other users.
@@ -2463,6 +2485,15 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtReference(
 spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   const SpvBuiltIn label = SpvBuiltIn(decoration.params()[0]);
+
+  if (spvIsWebGPUEnv(_.context()->target_env) &&
+      !IsBuiltInValidForWebGPU(label)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+           << "WebGPU does not allow BuiltIn "
+           << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                            decoration.params()[0]);
+  }
+
   // If you are adding a new BuiltIn enum, please register it here.
   // If the newly added enum has validation rules associated with it
   // consider leaving a TODO and/or creating an issue.
