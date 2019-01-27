@@ -14,6 +14,7 @@
 set(SPIRV_TOOLS_REDUCE_SOURCES
         change_operand_reduction_opportunity.h
         change_operand_to_undef_reduction_opportunity.h
+        merge_blocks_reduction_opportunity.h
         merge_blocks_reduction_opportunity_finder.h
         operand_to_const_reduction_opportunity_finder.h
         operand_to_undef_reduction_opportunity_finder.h
@@ -31,6 +32,7 @@ set(SPIRV_TOOLS_REDUCE_SOURCES
 
         change_operand_reduction_opportunity.cpp
         change_operand_to_undef_reduction_opportunity.cpp
+        merge_blocks_reduction_opportunity.cpp
         merge_blocks_reduction_opportunity_finder.cpp
         operand_to_const_reduction_opportunity_finder.cpp
         operand_to_undef_reduction_opportunity_finder.cpp

@@ -15,6 +15,8 @@
 #ifndef SOURCE_REDUCE_MERGE_BLOCKS_REDUCTION_OPPORTUNITY_H_
 #define SOURCE_REDUCE_MERGE_BLOCKS_REDUCTION_OPPORTUNITY_H_
 
+#include "source/opt/basic_block.h"
+#include "source/opt/function.h"
 #include "reduction_opportunity.h"
 
 namespace spvtools {
@@ -24,7 +26,7 @@ namespace reduce {
 class MergeBlocksReductionOpportunity : public ReductionOpportunity {
  public:
   // TODO: comment.
-  MergeBlocksReductionOpportunity() = default;
+  MergeBlocksReductionOpportunity(opt::IRContext* context, opt::Function* function, opt::BasicBlock* block);
 
   bool PreconditionHolds() override;
 
@@ -32,6 +34,9 @@ class MergeBlocksReductionOpportunity : public ReductionOpportunity {
   void Apply() override;
 
  private:
+  opt::IRContext* context_;
+  opt::Function* function_;
+  opt::BasicBlock* successor_block_;
 
 };
 
