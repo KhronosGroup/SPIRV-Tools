@@ -741,6 +741,40 @@ OpFunctionEnd
   SinglePassRunAndMatch<BlockMergePass>(text, true);
 }
 
+TEST_F(BlockMergeTest, DoNotMergeOpPhi) {
+  // Blocks A and B should not be merged if B starts with OpPhi, as this would
+  // lead to invalid SPIR-V.
+  const std::string text =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource ESSL 310
+OpName %main "main"
+OpName %x "x"
+OpName %y "y"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_1 = OpConstant %int 1
+%main = OpFunction %void None %6
+%10 = OpLabel
+%x = OpVariable %_ptr_Function_int Function
+%y = OpVariable %_ptr_Function_int Function
+OpStore %x %int_1
+%11 = OpLoad %int %x
+OpBranch %12
+%12 = OpLabel
+%13 = OpPhi %int %11 %10
+OpStore %y %13
+OpReturn
+OpFunctionEnd
+)";
+  SinglePassRunAndCheck<BlockMergePass>(text, text, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow

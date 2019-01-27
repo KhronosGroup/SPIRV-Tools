@@ -49,6 +49,16 @@ bool IsMerge(IRContext* context, BasicBlock* block) {
   return IsMerge(context, block->id());
 }
 
+// Returns true if block |id| starts with an OpPhi instruction.
+bool StartsWithOpPhi(IRContext* context, uint32_t id) {
+  bool result = false;
+  context->cfg()->block(id)->ForEachPhiInst([&result](Instruction* /*unused*/) {
+    // If any OpPhi is found then the block must start with OpPhi.
+    result = true;
+  });
+  return result;
+}
+
 }  // Anonymous namespace
 
 bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
@@ -62,6 +72,11 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
 
   const uint32_t lab_id = br->GetSingleWordInOperand(0);
   if (context->cfg()->preds(lab_id).size() != 1) {
+    return false;
+  }
+
+  if (StartsWithOpPhi(context, lab_id)) {
+    // Cannot merge if the successor starts with OpPhi.
     return false;
   }
 
