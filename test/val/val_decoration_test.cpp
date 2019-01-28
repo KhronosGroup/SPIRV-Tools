@@ -2100,7 +2100,7 @@ TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
-TEST_F(ValidateDecorations, BlockArrayBaseAlignmentGood) {
+TEST_F(ValidateDecorations, BlockArrayExtendedAlignmentGood) {
   // For uniform buffer, Array base alignment is 16, and ArrayStride
   // must be a multiple of 16.
   std::string spirv = R"(
@@ -2133,7 +2133,7 @@ TEST_F(ValidateDecorations, BlockArrayBaseAlignmentGood) {
       << getDiagnosticString();
 }
 
-TEST_F(ValidateDecorations, BlockArrayBadAlignmentBad) {
+TEST_F(ValidateDecorations, BlockArrayBaseAlignmentBad) {
   // For uniform buffer, Array base alignment is 16.
   std::string spirv = R"(
                OpCapability Shader
@@ -2170,7 +2170,7 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentBad) {
           "member 1 at offset 8 is not aligned to 16"));
 }
 
-TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithRelaxedLayoutStillBad) {
+TEST_F(ValidateDecorations, BlockArrayBaseAlignmentWithRelaxedLayoutStillBad) {
   // For uniform buffer, Array base alignment is 16, and ArrayStride
   // must be a multiple of 16.  This case uses relaxed block layout.  Relaxed
   // layout only relaxes rules for vector alignment, not array alignment.
@@ -2213,7 +2213,7 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithRelaxedLayoutStillBad) {
           "member 1 at offset 8 is not aligned to 16"));
 }
 
-TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithVulkan1_1StillBad) {
+TEST_F(ValidateDecorations, BlockArrayBaseAlignmentWithVulkan1_1StillBad) {
   // Same as previous test, but with Vulkan 1.1, which includes
   // VK_KHR_relaxed_block_layout in core.
   std::string spirv = R"(
@@ -2252,6 +2252,42 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithVulkan1_1StillBad) {
           "Structure id 4 decorated as Block for variable in Uniform "
           "storage class must follow relaxed uniform buffer layout rules: "
           "member 1 at offset 8 is not aligned to 16"));
+}
+
+TEST_F(ValidateDecorations, BlockArrayBaseAlignmentWithBlockStandardLayoutGood) {
+  // Same as previous test, but with VK_KHR_uniform_buffer_standard_layout
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpDecorate %_arr_float_uint_2 ArrayStride 16
+               OpDecorate %u DescriptorSet 0
+               OpDecorate %u Binding 0
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 8
+               OpDecorate %S Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+          %S = OpTypeStruct %v2float %_arr_float_uint_2
+%_ptr_Uniform_S = OpTypePointer Uniform %S
+          %u = OpVariable %_ptr_Uniform_S Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  spvValidatorOptionsSetUniformBufferStandardLayout(getValidatorOptions(), true);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 TEST_F(ValidateDecorations, VulkanBufferBlockOnStorageBufferBad) {

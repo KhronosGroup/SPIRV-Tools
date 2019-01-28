@@ -95,6 +95,11 @@ void spvValidatorOptionsSetRelaxBlockLayout(spv_validator_options options,
   options->relax_block_layout = val;
 }
 
+void spvValidatorOptionsSetUniformBufferStandardLayout(spv_validator_options options,
+                                            bool val) {
+  options->uniform_buffer_standard_layout = val;
+}
+
 void spvValidatorOptionsSetScalarBlockLayout(spv_validator_options options,
                                              bool val) {
   options->scalar_block_layout = val;
