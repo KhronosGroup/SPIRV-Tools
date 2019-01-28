@@ -1129,9 +1129,14 @@ std::make_pair(std::string(kOpenCLMemoryModel) +
           "%intt = OpTypeInt 32 0\n" + std::string(kVoidFVoid),
           AllCapabilities()),
 std::make_pair(std::string(kOpenCLMemoryModel) +
+          // NonWritable must target something valid, such as a storage image.
           "OpEntryPoint Kernel %func \"compute\" \n"
-          "OpDecorate %intt NonWritable\n"
-          "%intt = OpTypeInt 32 0\n" + std::string(kVoidFVoid),
+          "OpDecorate %var NonWritable "
+          "%float = OpTypeFloat 32 "
+          "%imstor = OpTypeImage %float 2D 0 0 0 2 Unknown "
+          "%ptr = OpTypePointer UniformConstant %imstor "
+          "%var = OpVariable %ptr UniformConstant "
+          + std::string(kVoidFVoid),
           AllCapabilities()),
 std::make_pair(std::string(kOpenCLMemoryModel) +
           "OpEntryPoint Kernel %func \"compute\" \n"
