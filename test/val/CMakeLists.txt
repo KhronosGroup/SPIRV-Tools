@@ -15,6 +15,7 @@
 set(VAL_TEST_COMMON_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../test_fixture.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../unit_spirv.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/val_code_generator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val_code_generator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/val_fixtures.h
 )
