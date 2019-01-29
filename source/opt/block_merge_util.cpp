@@ -49,17 +49,14 @@ bool IsMerge(IRContext* context, BasicBlock* block) {
   return IsMerge(context, block->id());
 }
 
-// Requires that any OpPhi in |successor| has |predecessor| as its sole parent.
-// Replaces all uses of such OpPhis with the id associated with |predecessor|,
-// and removes the OpPhi instructions.
-void EliminateOpPhiInstructions(IRContext* context, BasicBlock* successor,
-                                BasicBlock* predecessor) {
-  successor->ForEachPhiInst([context, predecessor](Instruction* phi) {
+// Removes any OpPhi instructions in |block|, which should have exactly one
+// predecessor, replacing uses of OpPhi ids with the ids associated with the
+// predecessor.
+void EliminateOpPhiInstructions(IRContext* context, BasicBlock* block) {
+  block->ForEachPhiInst([context, block](Instruction* phi) {
     assert(2 == phi->NumInOperands() &&
-           phi->GetSingleWordInOperand(1) == predecessor->id() &&
-           "Blocks 'successor' and 'predecessor' are being merged, so "
-           "'predecessor' must be the sole predecessor of 'successor', and "
-           "thus any parent referenced in OpPhi must be 'predecessor'.");
+           "A block can only have one predecessor for block merging to make "
+           "sense.");
     context->ReplaceAllUsesWith(phi->result_id(),
                                 phi->GetSingleWordInOperand(0));
     context->KillInst(phi);
@@ -141,7 +138,7 @@ void MergeWithSuccessor(IRContext* context, Function* func,
     context->set_instr_block(&inst, &*bi);
   }
 
-  EliminateOpPhiInstructions(context, &*sbi, &*bi);
+  EliminateOpPhiInstructions(context, &*sbi);
 
   // Now actually move the instructions.
   bi->AddInstructions(&*sbi);
