@@ -442,6 +442,8 @@ This is a work in progress, with initially only shrinks a module in a few ways.
 * `spirv-reduce` - the standalone reducer
   * `<spirv-dir>/tools/reduce`
 
+Run `spirv-reduce --help` to see how to specify interestingness.
+
 ### Control flow dumper tool
 
 The control flow dumper prints the control flow graph for a SPIR-V module as a
