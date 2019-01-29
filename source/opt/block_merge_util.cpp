@@ -49,14 +49,21 @@ bool IsMerge(IRContext* context, BasicBlock* block) {
   return IsMerge(context, block->id());
 }
 
-// Returns true if block |id| starts with an OpPhi instruction.
-bool StartsWithOpPhi(IRContext* context, uint32_t id) {
-  bool result = false;
-  context->cfg()->block(id)->ForEachPhiInst([&result](Instruction* /*unused*/) {
-    // If any OpPhi is found then the block must start with OpPhi.
-    result = true;
+// Requires that any OpPhi in |successor| has |predecessor| as its sole parent.
+// Replaces all uses of such OpPhis with the id associated with |predecessor|,
+// and removes the OpPhi instructions.
+void EliminateOpPhiInstructions(IRContext* context, BasicBlock* successor,
+                                BasicBlock* predecessor) {
+  successor->ForEachPhiInst([context, predecessor](Instruction* phi) {
+    assert(2 == phi->NumInOperands() &&
+           phi->GetSingleWordInOperand(1) == predecessor->id() &&
+           "Blocks 'successor' and 'predecessor' are being merged, so "
+           "'predecessor' must be the sole predecessor of 'successor', and "
+           "thus any parent referenced in OpPhi must be 'predecessor'.");
+    context->ReplaceAllUsesWith(phi->result_id(),
+                                phi->GetSingleWordInOperand(0));
+    context->KillInst(phi);
   });
-  return result;
 }
 
 }  // Anonymous namespace
@@ -72,11 +79,6 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
 
   const uint32_t lab_id = br->GetSingleWordInOperand(0);
   if (context->cfg()->preds(lab_id).size() != 1) {
-    return false;
-  }
-
-  if (StartsWithOpPhi(context, lab_id)) {
-    // Cannot merge if the successor starts with OpPhi.
     return false;
   }
 
@@ -138,6 +140,8 @@ void MergeWithSuccessor(IRContext* context, Function* func,
   for (auto& inst : *sbi) {
     context->set_instr_block(&inst, &*bi);
   }
+
+  EliminateOpPhiInstructions(context, &*sbi, &*bi);
 
   // Now actually move the instructions.
   bi->AddInstructions(&*sbi);
