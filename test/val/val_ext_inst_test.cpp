@@ -506,7 +506,7 @@ INSTANTIATE_TEST_SUITE_P(AllSqrtLike, ValidateGlslStd450SqrtLike,
                              "Sqrt",
                              "InverseSqrt",
                              "Normalize",
-                         }), );
+                         }));
 
 TEST_P(ValidateGlslStd450FMinLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -568,7 +568,7 @@ INSTANTIATE_TEST_SUITE_P(AllFMinLike, ValidateGlslStd450FMinLike,
                              "Reflect",
                              "NMin",
                              "NMax",
-                         }), );
+                         }));
 
 TEST_P(ValidateGlslStd450FClampLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -643,7 +643,7 @@ INSTANTIATE_TEST_SUITE_P(AllFClampLike, ValidateGlslStd450FClampLike,
                              "Fma",
                              "FaceForward",
                              "NClamp",
-                         }), );
+                         }));
 
 TEST_P(ValidateGlslStd450SAbsLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -723,7 +723,7 @@ INSTANTIATE_TEST_SUITE_P(AllSAbsLike, ValidateGlslStd450SAbsLike,
                              "FindILsb",
                              "FindUMsb",
                              "FindSMsb",
-                         }), );
+                         }));
 
 TEST_F(ValidateExtInst, FindUMsbNot32Bit) {
   const std::string body = R"(
@@ -871,7 +871,7 @@ INSTANTIATE_TEST_SUITE_P(AllUMinLike, ValidateGlslStd450UMinLike,
                              "SMin",
                              "UMax",
                              "SMax",
-                         }), );
+                         }));
 
 TEST_P(ValidateGlslStd450UClampLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -1032,7 +1032,7 @@ INSTANTIATE_TEST_SUITE_P(AllUClampLike, ValidateGlslStd450UClampLike,
                          ::testing::ValuesIn(std::vector<std::string>{
                              "UClamp",
                              "SClamp",
-                         }), );
+                         }));
 
 TEST_P(ValidateGlslStd450SinLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -1103,7 +1103,7 @@ INSTANTIATE_TEST_SUITE_P(AllSinLike, ValidateGlslStd450SinLike,
                              "Exp2",
                              "Log",
                              "Log2",
-                         }), );
+                         }));
 
 TEST_P(ValidateGlslStd450PowLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -1172,7 +1172,7 @@ INSTANTIATE_TEST_SUITE_P(AllPowLike, ValidateGlslStd450PowLike,
                          ::testing::ValuesIn(std::vector<std::string>{
                              "Atan2",
                              "Pow",
-                         }), );
+                         }));
 
 TEST_F(ValidateExtInst, GlslStd450DeterminantSuccess) {
   const std::string body = R"(
@@ -1802,7 +1802,7 @@ INSTANTIATE_TEST_SUITE_P(AllPack, ValidateGlslStd450Pack,
                              "PackSnorm2x16",
                              "PackUnorm2x16",
                              "PackHalf2x16",
-                         }), );
+                         }));
 
 TEST_F(ValidateExtInst, PackDouble2x32Success) {
   const std::string body = R"(
@@ -2041,7 +2041,7 @@ INSTANTIATE_TEST_SUITE_P(AllUnpack, ValidateGlslStd450Unpack,
                              "UnpackSnorm2x16",
                              "UnpackUnorm2x16",
                              "UnpackHalf2x16",
-                         }), );
+                         }));
 
 TEST_F(ValidateExtInst, UnpackDouble2x32Success) {
   const std::string body = R"(
@@ -2851,7 +2851,7 @@ INSTANTIATE_TEST_SUITE_P(
         "native_log",   "native_log2", "native_log10", "native_recip",
         "native_rsqrt", "native_sin",  "native_sqrt",  "native_tan",
         "degrees",      "radians",     "sign",
-    }), );
+    }));
 
 TEST_P(ValidateOpenCLStdFMinLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -2914,7 +2914,7 @@ INSTANTIATE_TEST_SUITE_P(AllFMinLike, ValidateOpenCLStdFMinLike,
                              "powr",      "remainder",     "half_divide",
                              "half_powr", "native_divide", "native_powr",
                              "step",      "fmax_common",   "fmin_common",
-                         }), );
+                         }));
 
 TEST_P(ValidateOpenCLStdFClampLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -2988,7 +2988,7 @@ INSTANTIATE_TEST_SUITE_P(AllFClampLike, ValidateOpenCLStdFClampLike,
                              "fclamp",
                              "mix",
                              "smoothstep",
-                         }), );
+                         }));
 
 TEST_P(ValidateOpenCLStdSAbsLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -3055,7 +3055,7 @@ INSTANTIATE_TEST_SUITE_P(AllSAbsLike, ValidateOpenCLStdSAbsLike,
                              "ctz",
                              "popcount",
                              "u_abs",
-                         }), );
+                         }));
 
 TEST_P(ValidateOpenCLStdUMinLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -3166,7 +3166,7 @@ INSTANTIATE_TEST_SUITE_P(AllUMinLike, ValidateOpenCLStdUMinLike,
                              "u_rhadd",
                              "u_abs_diff",
                              "u_mul_hi",
-                         }), );
+                         }));
 
 TEST_P(ValidateOpenCLStdUClampLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -3292,7 +3292,7 @@ INSTANTIATE_TEST_SUITE_P(AllUClampLike, ValidateOpenCLStdUClampLike,
                              "u_mad_sat",
                              "s_mad_sat",
                              "u_mad_hi",
-                         }), );
+                         }));
 
 // -------------------------------------------------------------
 TEST_P(ValidateOpenCLStdUMul24Like, Success) {
@@ -3402,7 +3402,7 @@ INSTANTIATE_TEST_SUITE_P(AllUMul24Like, ValidateOpenCLStdUMul24Like,
                          ::testing::ValuesIn(std::vector<std::string>{
                              "s_mul24",
                              "u_mul24",
-                         }), );
+                         }));
 
 TEST_P(ValidateOpenCLStdUMad24Like, Success) {
   const std::string ext_inst_name = GetParam();
@@ -3537,7 +3537,7 @@ INSTANTIATE_TEST_SUITE_P(AllUMad24Like, ValidateOpenCLStdUMad24Like,
                          ::testing::ValuesIn(std::vector<std::string>{
                              "s_mad24",
                              "u_mad24",
-                         }), );
+                         }));
 
 TEST_F(ValidateExtInst, OpenCLStdCrossSuccess) {
   const std::string body = R"(
@@ -3666,7 +3666,7 @@ INSTANTIATE_TEST_SUITE_P(AllLengthLike, ValidateOpenCLStdLengthLike,
                          ::testing::ValuesIn(std::vector<std::string>{
                              "length",
                              "fast_length",
-                         }), );
+                         }));
 
 TEST_P(ValidateOpenCLStdDistanceLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -3755,7 +3755,7 @@ INSTANTIATE_TEST_SUITE_P(AllDistanceLike, ValidateOpenCLStdDistanceLike,
                          ::testing::ValuesIn(std::vector<std::string>{
                              "distance",
                              "fast_distance",
-                         }), );
+                         }));
 
 TEST_P(ValidateOpenCLStdNormalizeLike, Success) {
   const std::string ext_inst_name = GetParam();
@@ -3815,7 +3815,7 @@ INSTANTIATE_TEST_SUITE_P(AllNormalizeLike, ValidateOpenCLStdNormalizeLike,
                          ::testing::ValuesIn(std::vector<std::string>{
                              "normalize",
                              "fast_normalize",
-                         }), );
+                         }));
 
 TEST_F(ValidateExtInst, OpenCLStdBitselectSuccess) {
   const std::string body = R"(
@@ -4216,7 +4216,7 @@ INSTANTIATE_TEST_SUITE_P(AllVStoreHalfLike, ValidateOpenCLStdVStoreHalfLike,
                              "vstore_halfn_r",
                              "vstorea_halfn",
                              "vstorea_halfn_r",
-                         }), );
+                         }));
 
 TEST_P(ValidateOpenCLStdVLoadHalfLike, SuccessPhysical32) {
   const std::string ext_inst_name = GetParam();
@@ -4379,7 +4379,7 @@ INSTANTIATE_TEST_SUITE_P(AllVLoadHalfLike, ValidateOpenCLStdVLoadHalfLike,
                          ::testing::ValuesIn(std::vector<std::string>{
                              "vload_halfn",
                              "vloada_halfn",
-                         }), );
+                         }));
 
 TEST_F(ValidateExtInst, VLoadNSuccessFloatPhysical32) {
   std::ostringstream ss;
@@ -5304,7 +5304,7 @@ INSTANTIATE_TEST_SUITE_P(AllFractLike, ValidateOpenCLStdFractLike,
                              "fract",
                              "modf",
                              "sincos",
-                         }), );
+                         }));
 
 TEST_F(ValidateExtInst, OpenCLStdRemquoSuccess) {
   const std::string body = R"(

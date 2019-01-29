@@ -104,7 +104,7 @@ INSTANTIATE_TEST_SUITE_P(NoUses, FlattenDecorationTest,
                               "OpDecorate %group NoPerspective\n"
                               "%group = OpDecorationGroup\n",
                               ""},
-                         }), );
+                         }));
 
 INSTANTIATE_TEST_SUITE_P(OpGroupDecorate, FlattenDecorationTest,
                          ::testing::ValuesIn(std::vector<FlattenDecorationCase>{
@@ -150,7 +150,7 @@ INSTANTIATE_TEST_SUITE_P(OpGroupDecorate, FlattenDecorationTest,
                               "OpGroupDecorate %group %hue %saturation\n",
                               "OpDecorate %hue Location 42\n"
                               "OpDecorate %saturation Location 42\n"},
-                         }), );
+                         }));
 
 INSTANTIATE_TEST_SUITE_P(OpGroupMemberDecorate, FlattenDecorationTest,
                          ::testing::ValuesIn(std::vector<FlattenDecorationCase>{
@@ -193,7 +193,7 @@ INSTANTIATE_TEST_SUITE_P(OpGroupMemberDecorate, FlattenDecorationTest,
                               "OpMemberDecorate %Point 0 Offset 8\n"
                               "OpMemberDecorate %Point 2 NoPerspective\n"
                               "OpMemberDecorate %Point 2 Offset 16\n"},
-                         }), );
+                         }));
 
 INSTANTIATE_TEST_SUITE_P(UnrelatedDecorations, FlattenDecorationTest,
                          ::testing::ValuesIn(std::vector<FlattenDecorationCase>{
@@ -232,7 +232,7 @@ INSTANTIATE_TEST_SUITE_P(UnrelatedDecorations, FlattenDecorationTest,
                               "OpMemberDecorate %Point 0 Offset 0\n"
                               "OpMemberDecorate %Point 0 Flat\n"
                               "OpMemberDecorate %Point 1 Offset 4\n"},
-                         }), );
+                         }));
 
 }  // namespace
 }  // namespace opt

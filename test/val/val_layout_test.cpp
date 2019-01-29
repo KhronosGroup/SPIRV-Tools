@@ -160,7 +160,7 @@ INSTANTIATE_TEST_SUITE_P(InstructionsOrder,
                     , std::make_tuple(std::string("%fLabel   = OpLabel")       , Equals<39>             , All)
                     , std::make_tuple(std::string("OpNop")                     , Equals<40>             , Range<40,kRangeEnd>())
                     , std::make_tuple(std::string("OpReturn ; %func2 return")  , Equals<41>             , All)
-    )),);
+    )));
 // clang-format on
 
 // Creates a new vector which removes the string if the substr is found in the

@@ -78,7 +78,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryMemoryModel, OpMemoryModelTest,
                             CASE(Logical,GLSL450),
                             CASE(Physical32,OpenCL),
                             CASE(Physical64,OpenCL),
-                        }),);
+                        }));
 #undef CASE
 // clang-format on
 
@@ -125,7 +125,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryEntryPoint, OpEntryPointTest,
                           { CASE(Fragment), "FAT32" },
                           { CASE(GLCompute), "cubic" },
                           { CASE(Kernel), "Sanders" },
-                        }),);
+                        }));
 #undef CASE
 // clang-format on
 
@@ -188,7 +188,7 @@ INSTANTIATE_TEST_SUITE_P(
                 {CASE(OutputTriangleStrip), {}},
                 {CASE(VecTypeHint), {96}},
                 {CASE(ContractionOff), {}},
-            })), );
+            })));
 
 INSTANTIATE_TEST_SUITE_P(
     TextToBinaryExecutionModeV11, OpExecutionModeTest,
@@ -197,7 +197,7 @@ INSTANTIATE_TEST_SUITE_P(
                 {CASE(Initializer)},
                 {CASE(Finalizer)},
                 {CASE(SubgroupSize), {12}},
-                {CASE(SubgroupsPerWorkgroup), {64}}})), );
+                {CASE(SubgroupsPerWorkgroup), {64}}})));
 #undef CASE
 
 TEST_F(OpExecutionModeTest, WrongMode) {
@@ -280,7 +280,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryCapability, OpCapabilityTest,
                             CASE(DerivativeControl),
                             CASE(InterpolationFunction),
                             CASE(TransformFeedback),
-                        }),);
+                        }));
 #undef CASE
 // clang-format on
 

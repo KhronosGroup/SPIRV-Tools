@@ -52,7 +52,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryFunctionTest, OpFunctionControlTest,
                             CASE(DontInlineMask, "DontInline"),
                             CASE(PureMask, "Pure"),
                             CASE(ConstMask, "Const"),
-                        }),);
+                        }));
 #undef CASE
 // clang-format on
 

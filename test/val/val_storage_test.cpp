@@ -147,7 +147,7 @@ INSTANTIATE_TEST_SUITE_P(MatrixOp, ValidateStorage,
                              "Private",
                              "PushConstant",
                              "AtomicCounter",
-                             "Image"),);
+                             "Image"));
 // clang-format on
 
 TEST_F(ValidateStorage, GenericVariableOutsideFunction) {

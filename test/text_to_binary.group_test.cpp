@@ -49,7 +49,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryGroupOperation, GroupOperationTest,
                             CASE(Reduce),
                             CASE(InclusiveScan),
                             CASE(ExclusiveScan),
-                        }),);
+                        }));
 #undef CASE
 // clang-format on
 

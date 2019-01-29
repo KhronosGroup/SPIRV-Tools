@@ -58,7 +58,7 @@ INSTANTIATE_TEST_SUITE_P(
         CASE(Rect),
         CASE(Buffer),
         CASE(SubpassData),
-    }),);
+    }));
 #undef CASE
 // clang-format on
 
@@ -127,7 +127,7 @@ INSTANTIATE_TEST_SUITE_P(
         CASE(Rg8ui),
         CASE(R16ui),
         CASE(R8ui),
-    }),);
+    }));
 #undef CASE
 // clang-format on
 
@@ -159,7 +159,7 @@ INSTANTIATE_TEST_SUITE_P(
       CASE(ReadOnly),
       CASE(WriteOnly),
       CASE(ReadWrite),
-    }),);
+    }));
 // clang-format on
 #undef CASE
 
@@ -184,7 +184,7 @@ INSTANTIATE_TEST_SUITE_P(
                             CASE(ReadOnly),
                             CASE(WriteOnly),
                             CASE(ReadWrite),
-    }),);
+    }));
 #undef CASE
 // clang-format on
 

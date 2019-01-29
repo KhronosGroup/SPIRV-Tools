@@ -87,7 +87,7 @@ INSTANTIATE_TEST_SUITE_P(
         {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 4, "Pure"},
         {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 8, "Const"},
         {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 0xd, "Inline|Const|Pure"},
-    }), );
+    }));
 
 using BadFPFastMathMaskParseTest = ::testing::TestWithParam<const char*>;
 
@@ -107,7 +107,7 @@ INSTANTIATE_TEST_SUITE_P(ParseMask, BadFPFastMathMaskParseTest,
                              nullptr, "", "NotValidEnum", "|", "NotInf|",
                              "|NotInf", "NotInf||NotNaN",
                              "Unroll"  // A good word, but for the wrong enum
-                         }), );
+                         }));
 
 TEST_F(TextToBinaryTest, InvalidText) {
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
@@ -213,7 +213,7 @@ INSTANTIATE_TEST_SUITE_P(
         {"-2.5", 0xc0200000},
         {"!0xff800000", 0xff800000},  // -inf
         {"!0xff800001", 0xff800001},  // NaN
-    }), );
+    }));
 
 using TextToBinaryHalfValueTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
@@ -245,7 +245,7 @@ INSTANTIATE_TEST_SUITE_P(
         {"0x1.8p4", 0x00004e00},
         {"0x1.801p4", 0x00004e00},
         {"0x1.804p4", 0x00004e01},
-    }), );
+    }));
 
 TEST(CreateContext, InvalidEnvironment) {
   spv_target_env env;

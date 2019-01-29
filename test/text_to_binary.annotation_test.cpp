@@ -106,12 +106,12 @@ INSTANTIATE_TEST_SUITE_P(
                 {CASE(NoContraction), {}},
                 {CASE(InputAttachmentIndex), {102}},
                 {CASE(Alignment), {16}},
-            })), );
+            })));
 
 INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateSimpleV11, OpDecorateSimpleTest,
                          Combine(Values(SPV_ENV_UNIVERSAL_1_1),
                                  Values(EnumCase<SpvDecoration>{
-                                     CASE(MaxByteOffset), {128}})), );
+                                     CASE(MaxByteOffset), {128}})));
 #undef CASE
 
 TEST_F(OpDecorateSimpleTest, WrongDecoration) {
@@ -209,7 +209,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateBuiltIn, OpDecorateEnumTest,
                             CASE(SubgroupLocalInvocationId),
                             CASE(VertexIndex),
                             CASE(InstanceIndex),
-                        }),);
+                        }));
 #undef CASE
 // clang-format on
 
@@ -232,7 +232,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateFuncParamAttr, OpDecorateEnumTest,
                             CASE(NoCapture),
                             CASE(NoWrite),
                             CASE(NoReadWrite),
-                      }),);
+                      }));
 #undef CASE
 // clang-format on
 
@@ -251,7 +251,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateFPRoundingMode, OpDecorateEnumTest,
                             CASE(RTZ),
                             CASE(RTP),
                             CASE(RTN),
-                      }),);
+                      }));
 #undef CASE
 // clang-format on
 
@@ -276,7 +276,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateFPFastMathMode, OpDecorateEnumTest,
                             CASE(NSZMask, NSZ),
                             CASE(AllowRecipMask, AllowRecip),
                             CASE(FastMask, Fast),
-                      }),);
+                      }));
 #undef CASE
 // clang-format on
 
@@ -335,7 +335,7 @@ INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateLinkage, OpDecorateLinkageTest,
                             { CASE(Export), "foo" },
                             { CASE(Import), "some kind of long name with spaces etc." },
                             // TODO(dneto): utf-8, escaping, quoting cases.
-                      }),);
+                      }));
 #undef CASE
 // clang-format on
 
@@ -468,12 +468,12 @@ INSTANTIATE_TEST_SUITE_P(
                 {CASE(NoContraction), {}},
                 {CASE(InputAttachmentIndex), {102}},
                 {CASE(Alignment), {16}},
-            })), );
+            })));
 
 INSTANTIATE_TEST_SUITE_P(
     TextToBinaryDecorateSimpleV11, OpMemberDecorateSimpleTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_1),
-            Values(EnumCase<SpvDecoration>{CASE(MaxByteOffset), {128}})), );
+            Values(EnumCase<SpvDecoration>{CASE(MaxByteOffset), {128}})));
 #undef CASE
 
 TEST_F(OpMemberDecorateSimpleTest, WrongDecoration) {
