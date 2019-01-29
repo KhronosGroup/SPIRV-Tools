@@ -25,10 +25,7 @@ set VS_VERSION=%2
 set PATH=C:\python27;%PATH%
 
 cd %SRC%
-git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
-git clone --depth=1 https://github.com/google/googletest          external/googletest
-git clone --depth=1 https://github.com/google/effcee              external/effcee
-git clone --depth=1 https://github.com/google/re2                 external/re2
+python utils\git-sync-deps
 
 :: #########################################
 :: set up msvc build env

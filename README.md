@@ -206,14 +206,6 @@ We intend to maintain a linear history on the GitHub `master` branch.
 * `test/`: Tests, using the [googletest][googletest] framework
 * `tools/`: Command line executables
 
-Example of getting sources, assuming SPIRV-Tools is configured as a standalone project:
-
-    git clone https://github.com/KhronosGroup/SPIRV-Tools.git   spirv-tools
-    git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-tools/external/spirv-headers
-    git clone https://github.com/google/googletest.git          spirv-tools/external/googletest
-    git clone https://github.com/google/effcee.git              spirv-tools/external/effcee
-    git clone https://github.com/google/re2.git                 spirv-tools/external/re2
-
 ### Tests
 
 The project contains a number of tests, used to drive development
@@ -256,14 +248,12 @@ configurations. Assume that `<spirv-dir>` is the root directory of the checked
 out code:
 
 ```sh
-cd <spirv-dir>
-git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/spirv-headers
-git clone https://github.com/google/effcee.git external/effcee
-git clone https://github.com/google/re2.git external/re2
-git clone https://github.com/google/googletest.git external/googletest # optional
+git clone https://github.com/KhronosGroup/SPIRV-Tools.git spirv-tools
+cd spirv-tools
+python ./utils/git-sync-deps
 
 mkdir build && cd build
-cmake [-G <platform-generator>] <spirv-dir>
+cmake [-G <platform-generator>] ..
 ```
 
 Once the build files have been generated, build using your preferred

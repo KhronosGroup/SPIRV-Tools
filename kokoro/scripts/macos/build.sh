@@ -31,10 +31,7 @@ chmod +x ninja
 export PATH="$PWD:$PATH"
 
 cd $SRC
-git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
-git clone --depth=1 https://github.com/google/googletest          external/googletest
-git clone --depth=1 https://github.com/google/effcee              external/effcee
-git clone --depth=1 https://github.com/google/re2                 external/re2
+./utils/git-sync-deps
 
 mkdir build && cd $SRC/build
 

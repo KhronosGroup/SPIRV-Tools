@@ -33,15 +33,15 @@ export PATH="$PWD:$PATH"
 cd $GITHUB_DIR
 git clone https://github.com/google/shaderc.git
 SHADERC_DIR=$GITHUB_DIR/shaderc
-cd $SHADERC_DIR/third_party
+cd $SHADERC_DIR
 
 # Get shaderc dependencies. Link the appropriate SPIRV-Tools.
-git clone https://github.com/google/googletest.git
-git clone https://github.com/google/glslang.git
+./utils/git-sync-deps
+
+cd $SHADERC_DIR/third_party
+# Link the Shaderc spirv-tools to the current bots tools
+rm -rf spirv-tools
 ln -s $GITHUB_DIR/SPIRV-Tools spirv-tools
-git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-headers
-git clone https://github.com/google/re2
-git clone https://github.com/google/effcee
 
 cd $SHADERC_DIR
 mkdir build
