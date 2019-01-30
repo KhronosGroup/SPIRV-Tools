@@ -26,6 +26,7 @@
 #include "gmock/gmock.h"
 #include "source/spirv_target_env.h"
 #include "test/unit_spirv.h"
+#include "test/val/val_code_generator.h"
 #include "test/val/val_fixtures.h"
 
 namespace spvtools {
@@ -62,223 +63,6 @@ using ValidateVulkanCombineBuiltInArrayedVariable = spvtest::ValidateBase<
 using ValidateWebGPUCombineBuiltInArrayedVariable = spvtest::ValidateBase<
     std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
 
-struct EntryPoint {
-  std::string name;
-  std::string execution_model;
-  std::string execution_modes;
-  std::string body;
-  std::string interfaces;
-};
-
-class CodeGenerator {
- public:
-  std::string Build() const;
-
-  std::vector<EntryPoint> entry_points_;
-  std::string capabilities_;
-  std::string extensions_;
-  std::string memory_model_;
-  std::string before_types_;
-  std::string types_;
-  std::string after_types_;
-  std::string add_at_the_end_;
-};
-
-std::string CodeGenerator::Build() const {
-  std::ostringstream ss;
-
-  ss << capabilities_;
-  ss << extensions_;
-  ss << memory_model_;
-
-  for (const EntryPoint& entry_point : entry_points_) {
-    ss << "OpEntryPoint " << entry_point.execution_model << " %"
-       << entry_point.name << " \"" << entry_point.name << "\" "
-       << entry_point.interfaces << "\n";
-  }
-
-  for (const EntryPoint& entry_point : entry_points_) {
-    ss << entry_point.execution_modes << "\n";
-  }
-
-  ss << before_types_;
-  ss << types_;
-  ss << after_types_;
-
-  for (const EntryPoint& entry_point : entry_points_) {
-    ss << "\n";
-    ss << "%" << entry_point.name << " = OpFunction %void None %func\n";
-    ss << "%" << entry_point.name << "_entry = OpLabel\n";
-    ss << entry_point.body;
-    ss << "\nOpReturn\nOpFunctionEnd\n";
-  }
-
-  ss << add_at_the_end_;
-
-  return ss.str();
-}
-
-std::string GetDefaultShaderCapabilities() {
-  return R"(
-OpCapability Shader
-OpCapability Geometry
-OpCapability Tessellation
-OpCapability Float64
-OpCapability Int64
-OpCapability MultiViewport
-OpCapability SampleRateShading
-)";
-}
-
-std::string GetWebGPUShaderCapabilities() {
-  return R"(
-OpCapability Shader
-OpCapability VulkanMemoryModelKHR
-)";
-}
-
-std::string GetDefaultShaderTypes() {
-  return R"(
-%void = OpTypeVoid
-%func = OpTypeFunction %void
-%bool = OpTypeBool
-%f32 = OpTypeFloat 32
-%f64 = OpTypeFloat 64
-%u32 = OpTypeInt 32 0
-%u64 = OpTypeInt 64 0
-%f32vec2 = OpTypeVector %f32 2
-%f32vec3 = OpTypeVector %f32 3
-%f32vec4 = OpTypeVector %f32 4
-%f64vec2 = OpTypeVector %f64 2
-%f64vec3 = OpTypeVector %f64 3
-%f64vec4 = OpTypeVector %f64 4
-%u32vec2 = OpTypeVector %u32 2
-%u32vec3 = OpTypeVector %u32 3
-%u64vec3 = OpTypeVector %u64 3
-%u32vec4 = OpTypeVector %u32 4
-%u64vec2 = OpTypeVector %u64 2
-
-%f32_0 = OpConstant %f32 0
-%f32_1 = OpConstant %f32 1
-%f32_2 = OpConstant %f32 2
-%f32_3 = OpConstant %f32 3
-%f32_4 = OpConstant %f32 4
-%f32_h = OpConstant %f32 0.5
-%f32vec2_01 = OpConstantComposite %f32vec2 %f32_0 %f32_1
-%f32vec2_12 = OpConstantComposite %f32vec2 %f32_1 %f32_2
-%f32vec3_012 = OpConstantComposite %f32vec3 %f32_0 %f32_1 %f32_2
-%f32vec3_123 = OpConstantComposite %f32vec3 %f32_1 %f32_2 %f32_3
-%f32vec4_0123 = OpConstantComposite %f32vec4 %f32_0 %f32_1 %f32_2 %f32_3
-%f32vec4_1234 = OpConstantComposite %f32vec4 %f32_1 %f32_2 %f32_3 %f32_4
-
-%f64_0 = OpConstant %f64 0
-%f64_1 = OpConstant %f64 1
-%f64_2 = OpConstant %f64 2
-%f64_3 = OpConstant %f64 3
-%f64vec2_01 = OpConstantComposite %f64vec2 %f64_0 %f64_1
-%f64vec3_012 = OpConstantComposite %f64vec3 %f64_0 %f64_1 %f64_2
-%f64vec4_0123 = OpConstantComposite %f64vec4 %f64_0 %f64_1 %f64_2 %f64_3
-
-%u32_0 = OpConstant %u32 0
-%u32_1 = OpConstant %u32 1
-%u32_2 = OpConstant %u32 2
-%u32_3 = OpConstant %u32 3
-%u32_4 = OpConstant %u32 4
-
-%u64_0 = OpConstant %u64 0
-%u64_1 = OpConstant %u64 1
-%u64_2 = OpConstant %u64 2
-%u64_3 = OpConstant %u64 3
-
-%u32vec2_01 = OpConstantComposite %u32vec2 %u32_0 %u32_1
-%u32vec2_12 = OpConstantComposite %u32vec2 %u32_1 %u32_2
-%u32vec4_0123 = OpConstantComposite %u32vec4 %u32_0 %u32_1 %u32_2 %u32_3
-%u64vec2_01 = OpConstantComposite %u64vec2 %u64_0 %u64_1
-
-%u32arr2 = OpTypeArray %u32 %u32_2
-%u32arr3 = OpTypeArray %u32 %u32_3
-%u32arr4 = OpTypeArray %u32 %u32_4
-%u64arr2 = OpTypeArray %u64 %u32_2
-%u64arr3 = OpTypeArray %u64 %u32_3
-%u64arr4 = OpTypeArray %u64 %u32_4
-%f32arr2 = OpTypeArray %f32 %u32_2
-%f32arr3 = OpTypeArray %f32 %u32_3
-%f32arr4 = OpTypeArray %f32 %u32_4
-%f64arr2 = OpTypeArray %f64 %u32_2
-%f64arr3 = OpTypeArray %f64 %u32_3
-%f64arr4 = OpTypeArray %f64 %u32_4
-
-%f32vec3arr3 = OpTypeArray %f32vec3 %u32_3
-%f32vec4arr3 = OpTypeArray %f32vec4 %u32_3
-%f64vec4arr3 = OpTypeArray %f64vec4 %u32_3
-)";
-}
-
-std::string GetWebGPUShaderTypes() {
-  return R"(
-%void = OpTypeVoid
-%func = OpTypeFunction %void
-%bool = OpTypeBool
-%f32 = OpTypeFloat 32
-%u32 = OpTypeInt 32 0
-%f32vec2 = OpTypeVector %f32 2
-%f32vec3 = OpTypeVector %f32 3
-%f32vec4 = OpTypeVector %f32 4
-%u32vec2 = OpTypeVector %u32 2
-%u32vec3 = OpTypeVector %u32 3
-%u32vec4 = OpTypeVector %u32 4
-
-%f32_0 = OpConstant %f32 0
-%f32_1 = OpConstant %f32 1
-%f32_2 = OpConstant %f32 2
-%f32_3 = OpConstant %f32 3
-%f32_4 = OpConstant %f32 4
-%f32_h = OpConstant %f32 0.5
-%f32vec2_01 = OpConstantComposite %f32vec2 %f32_0 %f32_1
-%f32vec2_12 = OpConstantComposite %f32vec2 %f32_1 %f32_2
-%f32vec3_012 = OpConstantComposite %f32vec3 %f32_0 %f32_1 %f32_2
-%f32vec3_123 = OpConstantComposite %f32vec3 %f32_1 %f32_2 %f32_3
-%f32vec4_0123 = OpConstantComposite %f32vec4 %f32_0 %f32_1 %f32_2 %f32_3
-%f32vec4_1234 = OpConstantComposite %f32vec4 %f32_1 %f32_2 %f32_3 %f32_4
-
-%u32_0 = OpConstant %u32 0
-%u32_1 = OpConstant %u32 1
-%u32_2 = OpConstant %u32 2
-%u32_3 = OpConstant %u32 3
-%u32_4 = OpConstant %u32 4
-
-%u32vec2_01 = OpConstantComposite %u32vec2 %u32_0 %u32_1
-%u32vec2_12 = OpConstantComposite %u32vec2 %u32_1 %u32_2
-%u32vec4_0123 = OpConstantComposite %u32vec4 %u32_0 %u32_1 %u32_2 %u32_3
-
-%u32arr2 = OpTypeArray %u32 %u32_2
-%u32arr3 = OpTypeArray %u32 %u32_3
-%u32arr4 = OpTypeArray %u32 %u32_4
-%f32arr2 = OpTypeArray %f32 %u32_2
-%f32arr3 = OpTypeArray %f32 %u32_3
-%f32arr4 = OpTypeArray %f32 %u32_4
-
-%f32vec3arr3 = OpTypeArray %f32vec3 %u32_3
-%f32vec4arr3 = OpTypeArray %f32vec4 %u32_3
-)";
-}
-
-CodeGenerator GetDefaultShaderCodeGenerator() {
-  CodeGenerator generator;
-  generator.capabilities_ = GetDefaultShaderCapabilities();
-  generator.memory_model_ = "OpMemoryModel Logical GLSL450\n";
-  generator.types_ = GetDefaultShaderTypes();
-  return generator;
-}
-
-CodeGenerator GetWebGPUShaderCodeGenerator() {
-  CodeGenerator generator;
-  generator.capabilities_ = GetWebGPUShaderCapabilities();
-  generator.memory_model_ = "OpMemoryModel Logical VulkanKHR\n";
-  generator.extensions_ = "OpExtension \"SPV_KHR_vulkan_memory_model\"\n";
-  generator.types_ = GetWebGPUShaderTypes();
-  return generator;
-}
 
 bool InitializerRequired(spv_target_env env, const char* const storage_class) {
   return spvIsWebGPUEnv(env) && (strncmp(storage_class, "Output", 6) == 0 ||
@@ -291,9 +75,9 @@ CodeGenerator GetInMainCodeGenerator(spv_target_env env,
                                      const char* const execution_model,
                                      const char* const storage_class,
                                      const char* const data_type) {
-  CodeGenerator generator = spvIsWebGPUEnv(env)
-                                ? GetWebGPUShaderCodeGenerator()
-                                : GetDefaultShaderCodeGenerator();
+  CodeGenerator generator =
+      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
+                          : CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = "OpMemberDecorate %built_in_type 0 BuiltIn ";
   generator.before_types_ += built_in;
@@ -400,9 +184,9 @@ CodeGenerator GetInFunctionCodeGenerator(spv_target_env env,
                                          const char* const execution_model,
                                          const char* const storage_class,
                                          const char* const data_type) {
-  CodeGenerator generator = spvIsWebGPUEnv(env)
-                                ? GetWebGPUShaderCodeGenerator()
-                                : GetDefaultShaderCodeGenerator();
+  CodeGenerator generator =
+      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
+                          : CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = "OpMemberDecorate %built_in_type 0 BuiltIn ";
   generator.before_types_ += built_in;
@@ -523,9 +307,9 @@ CodeGenerator GetVariableCodeGenerator(spv_target_env env,
                                        const char* const execution_model,
                                        const char* const storage_class,
                                        const char* const data_type) {
-  CodeGenerator generator = spvIsWebGPUEnv(env)
-                                ? GetWebGPUShaderCodeGenerator()
-                                : GetDefaultShaderCodeGenerator();
+  CodeGenerator generator =
+      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
+                          : CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = "OpDecorate %built_in_var BuiltIn ";
   generator.before_types_ += built_in;
@@ -624,25 +408,25 @@ TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, Variable) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"),
             Values("Vertex", "Geometry", "TessellationControl",
                    "TessellationEvaluation"),
             Values("Output"), Values("%f32arr2", "%f32arr4"),
-            Values(TestResult())), );
+            Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"),
             Values("Fragment", "Geometry", "TessellationControl",
                    "TessellationEvaluation"),
             Values("Input"), Values("%f32arr2", "%f32arr4"),
-            Values(TestResult())), );
+            Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceFragmentOutput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("Fragment"),
@@ -652,9 +436,9 @@ INSTANTIATE_TEST_CASE_P(
                 "Vulkan spec doesn't allow BuiltIn ClipDistance/CullDistance "
                 "to be used for variables with Output storage class if "
                 "execution model is Fragment.",
-                "which is called with execution model Fragment."))), );
+                "which is called with execution model Fragment."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     VertexIdAndInstanceIdVertexInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("VertexId", "InstanceId"), Values("Vertex"), Values("Input"),
@@ -662,9 +446,9 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow BuiltIn VertexId/InstanceId to be "
-                "used."))), );
+                "used."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceVertexInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("Vertex"),
@@ -674,9 +458,9 @@ INSTANTIATE_TEST_CASE_P(
                 "Vulkan spec doesn't allow BuiltIn ClipDistance/CullDistance "
                 "to be used for variables with Input storage class if "
                 "execution model is Vertex.",
-                "which is called with execution model Vertex."))), );
+                "which is called with execution model Vertex."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("GLCompute"),
@@ -684,41 +468,41 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be used only with Fragment, Vertex, TessellationControl, "
-                "TessellationEvaluation or Geometry execution models"))), );
+                "TessellationEvaluation or Geometry execution models"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceNotArray,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("Fragment"),
             Values("Input"), Values("%f32vec2", "%f32vec4", "%f32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float array",
-                              "is not an array"))), );
+                              "is not an array"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceNotFloatArray,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("Fragment"),
             Values("Input"), Values("%u32arr2", "%u64arr4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float array",
-                              "components are not float scalar"))), );
+                              "components are not float scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceNotF32Array,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("Fragment"),
             Values("Input"), Values("%f64arr2", "%f64arr4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float array",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragCoordSuccess, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
-            Values("%f32vec4"), Values(TestResult())), );
+            Values("%f32vec4"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragCoordNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -727,50 +511,50 @@ INSTANTIATE_TEST_CASE_P(
                "TessellationEvaluation"),
         Values("Input"), Values("%f32vec4"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))), );
+                          "to be used only with Fragment execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragCoordNotInput, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Output"),
             Values("%f32vec4"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragCoordNotFloatVector,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
             Values("%f32arr4", "%u32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "is not a float vector"))), );
+                              "is not a float vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragCoordNotFloatVec4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
             Values("%f32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "has 3 components"))), );
+                              "has 3 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragCoordNotF32Vec4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
             Values("%f64vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragDepthSuccess, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
-            Values("%f32"), Values(TestResult())), );
+            Values("%f32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragDepthNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -779,9 +563,9 @@ INSTANTIATE_TEST_CASE_P(
                "TessellationEvaluation"),
         Values("Output"), Values("%f32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))), );
+                          "to be used only with Fragment execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragDepthNotOutput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragDepth"), Values("Fragment"), Values("Input"),
@@ -789,38 +573,38 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Output storage class",
-                "uses storage class Input"))), );
+                "uses storage class Input"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragDepthNotFloatScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
             Values("%f32vec4", "%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
-                              "is not a float scalar"))), );
+                              "is not a float scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FragDepthNotF32, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
             Values("%f64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FrontFacingAndHelperInvocationSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FrontFacing", "HelperInvocation"), Values("Fragment"),
-            Values("Input"), Values("%bool"), Values(TestResult())), );
+            Values("Input"), Values("%bool"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FrontFacingSuccess,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FrontFacing"), Values("Fragment"), Values("Input"),
-            Values("%bool"), Values(TestResult())), );
+            Values("%bool"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FrontFacingAndHelperInvocationNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -829,18 +613,18 @@ INSTANTIATE_TEST_CASE_P(
                "TessellationEvaluation"),
         Values("Input"), Values("%bool"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))), );
+                          "to be used only with Fragment execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FrontFacingNotFragment,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(
         Values("FrontFacing"), Values("Vertex", "GLCompute"), Values("Input"),
         Values("%bool"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))), );
+                          "to be used only with Fragment execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FrontFacingAndHelperInvocationNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FrontFacing", "HelperInvocation"), Values("Fragment"),
@@ -848,9 +632,9 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FrontFacingNotInput,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FrontFacing"), Values("Fragment"), Values("Output"),
@@ -858,47 +642,47 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FrontFacingAndHelperInvocationNotBool,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FrontFacing", "HelperInvocation"), Values("Fragment"),
             Values("Input"), Values("%f32", "%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a bool scalar",
-                              "is not a bool scalar"))), );
+                              "is not a bool scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FrontFacingNotBool,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FrontFacing"), Values("Fragment"), Values("Input"),
             Values("%f32", "%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a bool scalar",
-                              "is not a bool scalar"))), );
+                              "is not a bool scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3Success,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
                    "WorkgroupId"),
             Values("GLCompute"), Values("Input"), Values("%u32vec3"),
-            Values(TestResult())), );
+            Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotGLCompute,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
-                   "WorkgroupId"),
-            Values("Vertex", "Fragment", "Geometry", "TessellationControl",
-                   "TessellationEvaluation"),
-            Values("Input"), Values("%u32vec3"),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "to be used only with GLCompute execution model"))), );
+    Combine(
+        Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
+               "WorkgroupId"),
+        Values("Vertex", "Fragment", "Geometry", "TessellationControl",
+               "TessellationEvaluation"),
+        Values("Input"), Values("%u32vec3"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "to be used only with GLCompute execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
@@ -907,9 +691,9 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotIntVector,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
@@ -918,9 +702,9 @@ INSTANTIATE_TEST_CASE_P(
             Values("%u32arr3", "%f32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit int vector",
-                              "is not an int vector"))), );
+                              "is not an int vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotIntVec3,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
@@ -928,9 +712,9 @@ INSTANTIATE_TEST_CASE_P(
             Values("GLCompute"), Values("Input"), Values("%u32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit int vector",
-                              "has 4 components"))), );
+                              "has 4 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotInt32Vec,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
@@ -938,15 +722,15 @@ INSTANTIATE_TEST_CASE_P(
             Values("GLCompute"), Values("Input"), Values("%u64vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit int vector",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InvocationIdSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InvocationId"), Values("Geometry", "TessellationControl"),
-            Values("Input"), Values("%u32"), Values(TestResult())), );
+            Values("Input"), Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InvocationIdInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InvocationId"),
@@ -954,9 +738,9 @@ INSTANTIATE_TEST_CASE_P(
             Values("Input"), Values("%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "to be used only with TessellationControl or "
-                              "Geometry execution models"))), );
+                              "Geometry execution models"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InvocationIdNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InvocationId"), Values("Geometry", "TessellationControl"),
@@ -964,44 +748,43 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InvocationIdNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InvocationId"), Values("Geometry", "TessellationControl"),
             Values("Input"), Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))), );
+                              "is not an int scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InvocationIdNotInt32,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InvocationId"), Values("Geometry", "TessellationControl"),
             Values("Input"), Values("%u64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InstanceIndexSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
-            Values("%u32"), Values(TestResult())), );
+            Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InstanceIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("InstanceIndex"),
-        Values("Geometry", "Fragment", "GLCompute", "TessellationControl",
-               "TessellationEvaluation"),
-        Values("Input"), Values("%u32"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Vertex execution model"))), );
+    Combine(Values("InstanceIndex"),
+            Values("Geometry", "Fragment", "GLCompute", "TessellationControl",
+                   "TessellationEvaluation"),
+            Values("Input"), Values("%u32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with Vertex execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InstanceIndexNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InstanceIndex"), Values("Vertex"), Values("Output"),
@@ -1009,39 +792,39 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InstanceIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
             Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))), );
+                              "is not an int scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InstanceIndexNotInt32,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
             Values("%u64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Layer", "ViewportIndex"), Values("Fragment"),
-            Values("Input"), Values("%u32"), Values(TestResult())), );
+            Values("Input"), Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Layer", "ViewportIndex"), Values("Geometry"),
-            Values("Output"), Values("%u32"), Values(TestResult())), );
+            Values("Output"), Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Layer", "ViewportIndex"),
@@ -1050,9 +833,9 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be used only with Vertex, TessellationEvaluation, "
-                "Geometry, or Fragment execution models"))), );
+                "Geometry, or Fragment execution models"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexExecutionModelEnabledByCapability,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Layer", "ViewportIndex"),
@@ -1060,9 +843,9 @@ INSTANTIATE_TEST_CASE_P(
             Values("%u32"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
-                "requires the ShaderViewportIndexLayerEXT capability"))), );
+                "requires the ShaderViewportIndexLayerEXT capability"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexFragmentNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1070,9 +853,9 @@ INSTANTIATE_TEST_CASE_P(
         Values("%u32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "Output storage class if execution model is Fragment",
-                          "which is called with execution model Fragment"))), );
+                          "which is called with execution model Fragment"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexGeometryNotOutput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1082,34 +865,34 @@ INSTANTIATE_TEST_CASE_P(
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "Input storage class if execution model is Vertex, "
                           "TessellationEvaluation, or Geometry",
-                          "which is called with execution model"))), );
+                          "which is called with execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Layer", "ViewportIndex"), Values("Fragment"),
             Values("Input"), Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))), );
+                              "is not an int scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexNotInt32,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Layer", "ViewportIndex"), Values("Fragment"),
             Values("Input"), Values("%u64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PatchVerticesSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PatchVertices"),
             Values("TessellationEvaluation", "TessellationControl"),
-            Values("Input"), Values("%u32"), Values(TestResult())), );
+            Values("Input"), Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PatchVerticesInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PatchVertices"),
@@ -1117,9 +900,9 @@ INSTANTIATE_TEST_CASE_P(
             Values("Input"), Values("%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "to be used only with TessellationControl or "
-                              "TessellationEvaluation execution models"))), );
+                              "TessellationEvaluation execution models"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PatchVerticesNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PatchVertices"),
@@ -1128,9 +911,9 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PatchVerticesNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PatchVertices"),
@@ -1138,9 +921,9 @@ INSTANTIATE_TEST_CASE_P(
             Values("Input"), Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))), );
+                              "is not an int scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PatchVerticesNotInt32,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PatchVertices"),
@@ -1148,14 +931,14 @@ INSTANTIATE_TEST_CASE_P(
             Values("Input"), Values("%u64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointCoordSuccess, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointCoord"), Values("Fragment"), Values("Input"),
-            Values("%f32vec2"), Values(TestResult())), );
+            Values("%f32vec2"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointCoordNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1164,9 +947,9 @@ INSTANTIATE_TEST_CASE_P(
                "TessellationEvaluation"),
         Values("Input"), Values("%f32vec2"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))), );
+                          "to be used only with Fragment execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointCoordNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointCoord"), Values("Fragment"), Values("Output"),
@@ -1174,51 +957,51 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointCoordNotFloatVector,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointCoord"), Values("Fragment"), Values("Input"),
             Values("%f32arr2", "%u32vec2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float vector",
-                              "is not a float vector"))), );
+                              "is not a float vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointCoordNotFloatVec3,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointCoord"), Values("Fragment"), Values("Input"),
             Values("%f32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float vector",
-                              "has 3 components"))), );
+                              "has 3 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointCoordNotF32Vec4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointCoord"), Values("Fragment"), Values("Input"),
             Values("%f64vec2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float vector",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointSizeOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointSize"),
             Values("Vertex", "Geometry", "TessellationControl",
                    "TessellationEvaluation"),
-            Values("Output"), Values("%f32"), Values(TestResult())), );
+            Values("Output"), Values("%f32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointSizeInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointSize"),
             Values("Geometry", "TessellationControl", "TessellationEvaluation"),
-            Values("Input"), Values("%f32"), Values(TestResult())), );
+            Values("Input"), Values("%f32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointSizeVertexInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointSize"), Values("Vertex"), Values("Input"),
@@ -1228,9 +1011,9 @@ INSTANTIATE_TEST_CASE_P(
                 "Vulkan spec doesn't allow BuiltIn PointSize "
                 "to be used for variables with Input storage class if "
                 "execution model is Vertex.",
-                "which is called with execution model Vertex."))), );
+                "which is called with execution model Vertex."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointSizeInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointSize"), Values("GLCompute", "Fragment"),
@@ -1238,56 +1021,56 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be used only with Vertex, TessellationControl, "
-                "TessellationEvaluation or Geometry execution models"))), );
+                "TessellationEvaluation or Geometry execution models"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointSizeNotFloatScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointSize"), Values("Vertex"), Values("Output"),
             Values("%f32vec4", "%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
-                              "is not a float scalar"))), );
+                              "is not a float scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointSizeNotF32, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PointSize"), Values("Vertex"), Values("Output"),
             Values("%f64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"),
             Values("Vertex", "Geometry", "TessellationControl",
                    "TessellationEvaluation"),
-            Values("Output"), Values("%f32vec4"), Values(TestResult())), );
+            Values("Output"), Values("%f32vec4"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionOutputSuccess,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("Vertex"), Values("Output"),
-            Values("%f32vec4"), Values(TestResult())), );
+            Values("%f32vec4"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionOutputFailure,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("Fragment", "GLCompute"),
             Values("Output"), Values("%f32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "WebGPU spec allows BuiltIn Position to be used "
-                              "only with the Vertex execution model."))), );
+                              "only with the Vertex execution model."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"),
             Values("Geometry", "TessellationControl", "TessellationEvaluation"),
-            Values("Input"), Values("%f32vec4"), Values(TestResult())), );
+            Values("Input"), Values("%f32vec4"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionInputFailure,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1295,9 +1078,9 @@ INSTANTIATE_TEST_CASE_P(
         Values("Input"), Values("%f32vec4"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "WebGPU spec allows BuiltIn Position to be only used "
-                          "for variables with Output storage class"))), );
+                          "for variables with Output storage class"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionVertexInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("Vertex"), Values("Input"),
@@ -1307,9 +1090,9 @@ INSTANTIATE_TEST_CASE_P(
                 "Vulkan spec doesn't allow BuiltIn Position "
                 "to be used for variables with Input storage class if "
                 "execution model is Vertex.",
-                "which is called with execution model Vertex."))), );
+                "which is called with execution model Vertex."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("GLCompute", "Fragment"),
@@ -1317,68 +1100,68 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be used only with Vertex, TessellationControl, "
-                "TessellationEvaluation or Geometry execution models"))), );
+                "TessellationEvaluation or Geometry execution models"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionNotFloatVector,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("Geometry"), Values("Input"),
             Values("%f32arr4", "%u32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "is not a float vector"))), );
+                              "is not a float vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionNotFloatVector,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(
         Values("Position"), Values("Vertex"), Values("Output"),
         Values("%f32arr4", "%u32vec4"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "needs to be a 4-component 32-bit float vector"))), );
+                          "needs to be a 4-component 32-bit float vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionNotFloatVec4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("Geometry"), Values("Input"),
             Values("%f32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "has 3 components"))), );
+                              "has 3 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionNotFloatVec4,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(
         Values("Position"), Values("Vertex"), Values("Output"),
         Values("%f32vec3"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "needs to be a 4-component 32-bit float vector"))), );
+                          "needs to be a 4-component 32-bit float vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionNotF32Vec4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("Geometry"), Values("Input"),
             Values("%f64vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PrimitiveId"),
             Values("Fragment", "TessellationControl", "TessellationEvaluation",
                    "Geometry"),
-            Values("Input"), Values("%u32"), Values(TestResult())), );
+            Values("Input"), Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PrimitiveId"), Values("Geometry"), Values("Output"),
-            Values("%u32"), Values(TestResult())), );
+            Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PrimitiveId"), Values("Vertex", "GLCompute"),
@@ -1386,9 +1169,9 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be used only with Fragment, TessellationControl, "
-                "TessellationEvaluation or Geometry execution models"))), );
+                "TessellationEvaluation or Geometry execution models"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdFragmentNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1396,9 +1179,9 @@ INSTANTIATE_TEST_CASE_P(
         Values("%u32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "Output storage class if execution model is Fragment",
-                          "which is called with execution model Fragment"))), );
+                          "which is called with execution model Fragment"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdGeometryNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PrimitiveId"),
@@ -1407,32 +1190,32 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Output storage class if execution model is Tessellation",
-                "which is called with execution model Tessellation"))), );
+                "which is called with execution model Tessellation"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PrimitiveId"), Values("Fragment"), Values("Input"),
             Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))), );
+                              "is not an int scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdNotInt32,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PrimitiveId"), Values("Fragment"), Values("Input"),
             Values("%u64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleIdSuccess, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SampleId"), Values("Fragment"), Values("Input"),
-            Values("%u32"), Values(TestResult())), );
+            Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleIdInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1441,40 +1224,40 @@ INSTANTIATE_TEST_CASE_P(
                "TessellationEvaluation"),
         Values("Input"), Values("%u32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))), );
+                          "to be used only with Fragment execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleIdNotInput, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
         Values("SampleId"), Values("Fragment"), Values("Output"),
         Values("%u32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "Vulkan spec allows BuiltIn SampleId to be only used "
-                          "for variables with Input storage class"))), );
+                          "for variables with Input storage class"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleIdNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SampleId"), Values("Fragment"), Values("Input"),
             Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))), );
+                              "is not an int scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleIdNotInt32, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SampleId"), Values("Fragment"), Values("Input"),
             Values("%u64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleMaskSuccess, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SampleMask"), Values("Fragment"), Values("Input", "Output"),
-            Values("%u32arr2", "%u32arr4"), Values(TestResult())), );
+            Values("%u32arr2", "%u32arr4"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleMaskInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1483,9 +1266,9 @@ INSTANTIATE_TEST_CASE_P(
                "TessellationEvaluation"),
         Values("Input"), Values("%u32arr2"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))), );
+                          "to be used only with Fragment execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleMaskWrongStorageClass,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SampleMask"), Values("Fragment"), Values("Workgroup"),
@@ -1493,42 +1276,42 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec allows BuiltIn SampleMask to be only used for "
-                "variables with Input or Output storage class"))), );
+                "variables with Input or Output storage class"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleMaskNotArray,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SampleMask"), Values("Fragment"), Values("Input"),
             Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int array",
-                              "is not an array"))), );
+                              "is not an array"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleMaskNotIntArray,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SampleMask"), Values("Fragment"), Values("Input"),
             Values("%f32arr2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int array",
-                              "components are not int scalar"))), );
+                              "components are not int scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SampleMaskNotInt32Array,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SampleMask"), Values("Fragment"), Values("Input"),
             Values("%u64arr2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int array",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SamplePositionSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SamplePosition"), Values("Fragment"), Values("Input"),
-            Values("%f32vec2"), Values(TestResult())), );
+            Values("%f32vec2"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SamplePositionNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1537,9 +1320,9 @@ INSTANTIATE_TEST_CASE_P(
                "TessellationEvaluation"),
         Values("Input"), Values("%f32vec2"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))), );
+                          "to be used only with Fragment execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SamplePositionNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SamplePosition"), Values("Fragment"), Values("Output"),
@@ -1547,41 +1330,41 @@ INSTANTIATE_TEST_CASE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SamplePositionNotFloatVector,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SamplePosition"), Values("Fragment"), Values("Input"),
             Values("%f32arr2", "%u32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float vector",
-                              "is not a float vector"))), );
+                              "is not a float vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SamplePositionNotFloatVec2,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SamplePosition"), Values("Fragment"), Values("Input"),
             Values("%f32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float vector",
-                              "has 3 components"))), );
+                              "has 3 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SamplePositionNotF32Vec2,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("SamplePosition"), Values("Fragment"), Values("Input"),
             Values("%f64vec2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float vector",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessCoordSuccess, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessCoord"), Values("TessellationEvaluation"),
-            Values("Input"), Values("%f32vec3"), Values(TestResult())), );
+            Values("Input"), Values("%f32vec3"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessCoordNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1591,57 +1374,57 @@ INSTANTIATE_TEST_CASE_P(
         Values("Input"), Values("%f32vec3"),
         Values(TestResult(
             SPV_ERROR_INVALID_DATA,
-            "to be used only with TessellationEvaluation execution model"))), );
+            "to be used only with TessellationEvaluation execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessCoordNotInput, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessCoord"), Values("Fragment"), Values("Output"),
             Values("%f32vec3"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
-                "uses storage class Output"))), );
+                "uses storage class Output"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessCoordNotFloatVector,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessCoord"), Values("Fragment"), Values("Input"),
             Values("%f32arr3", "%u32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit float vector",
-                              "is not a float vector"))), );
+                              "is not a float vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessCoordNotFloatVec3,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessCoord"), Values("Fragment"), Values("Input"),
             Values("%f32vec2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit float vector",
-                              "has 2 components"))), );
+                              "has 2 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessCoordNotF32Vec3,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessCoord"), Values("Fragment"), Values("Input"),
             Values("%f64vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit float vector",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterTeseInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationEvaluation"),
-            Values("Input"), Values("%f32arr4"), Values(TestResult())), );
+            Values("Input"), Values("%f32arr4"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterTescOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationControl"),
-            Values("Output"), Values("%f32arr4"), Values(TestResult())), );
+            Values("Output"), Values("%f32arr4"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"),
@@ -1649,9 +1432,9 @@ INSTANTIATE_TEST_CASE_P(
             Values("Input"), Values("%f32arr4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "to be used only with TessellationControl or "
-                              "TessellationEvaluation execution models."))), );
+                              "TessellationEvaluation execution models."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterOutputTese,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationEvaluation"),
@@ -1660,9 +1443,9 @@ INSTANTIATE_TEST_CASE_P(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
                 "used for variables with Output storage class if execution "
-                "model is TessellationEvaluation."))), );
+                "model is TessellationEvaluation."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterInputTesc,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationControl"),
@@ -1671,57 +1454,57 @@ INSTANTIATE_TEST_CASE_P(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
                 "used for variables with Input storage class if execution "
-                "model is TessellationControl."))), );
+                "model is TessellationControl."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterNotArray,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationEvaluation"),
             Values("Input"), Values("%f32vec4", "%f32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float array",
-                              "is not an array"))), );
+                              "is not an array"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterNotFloatArray,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationEvaluation"),
             Values("Input"), Values("%u32arr4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float array",
-                              "components are not float scalar"))), );
+                              "components are not float scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterNotFloatArr4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationEvaluation"),
             Values("Input"), Values("%f32arr3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float array",
-                              "has 3 components"))), );
+                              "has 3 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterNotF32Arr4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationEvaluation"),
             Values("Input"), Values("%f64arr4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float array",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerTeseInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationEvaluation"),
-            Values("Input"), Values("%f32arr2"), Values(TestResult())), );
+            Values("Input"), Values("%f32arr2"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerTescOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationControl"),
-            Values("Output"), Values("%f32arr2"), Values(TestResult())), );
+            Values("Output"), Values("%f32arr2"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"),
@@ -1729,9 +1512,9 @@ INSTANTIATE_TEST_CASE_P(
             Values("Input"), Values("%f32arr2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "to be used only with TessellationControl or "
-                              "TessellationEvaluation execution models."))), );
+                              "TessellationEvaluation execution models."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerOutputTese,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationEvaluation"),
@@ -1740,9 +1523,9 @@ INSTANTIATE_TEST_CASE_P(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
                 "used for variables with Output storage class if execution "
-                "model is TessellationEvaluation."))), );
+                "model is TessellationEvaluation."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerInputTesc,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationControl"),
@@ -1751,62 +1534,75 @@ INSTANTIATE_TEST_CASE_P(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
                 "used for variables with Input storage class if execution "
-                "model is TessellationControl."))), );
+                "model is TessellationControl."))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerNotArray,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationEvaluation"),
             Values("Input"), Values("%f32vec2", "%f32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float array",
-                              "is not an array"))), );
+                              "is not an array"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerNotFloatArray,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationEvaluation"),
             Values("Input"), Values("%u32arr2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float array",
-                              "components are not float scalar"))), );
+                              "components are not float scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerNotFloatArr2,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationEvaluation"),
             Values("Input"), Values("%f32arr3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float array",
-                              "has 3 components"))), );
+                              "has 3 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerNotF32Arr2,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationEvaluation"),
             Values("Input"), Values("%f64arr2"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 2-component 32-bit float array",
-                              "has components with bit width 64"))), );
+                              "has components with bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     VertexIndexSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("VertexIndex"), Values("Vertex"), Values("Input"),
-            Values("%u32"), Values(TestResult())), );
+            Values("%u32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
+    VertexIndexSuccess,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("VertexIndex"), Values("Vertex"), Values("Input"),
+            Values("%u32"), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
     VertexIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("VertexIndex"),
-        Values("Fragment", "GLCompute", "Geometry", "TessellationControl",
-               "TessellationEvaluation"),
-        Values("Input"), Values("%u32"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Vertex execution model"))), );
+    Combine(Values("VertexIndex"),
+            Values("Fragment", "GLCompute", "Geometry", "TessellationControl",
+                   "TessellationEvaluation"),
+            Values("Input"), Values("%u32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with Vertex execution model"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
+    VertexIndexInvalidExecutionModel,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("VertexIndex"), Values("Fragment", "GLCompute"),
+            Values("Input"), Values("%u32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with Vertex execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
     VertexIndexNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -1814,34 +1610,53 @@ INSTANTIATE_TEST_CASE_P(
         Values("%u32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "Vulkan spec allows BuiltIn VertexIndex to be only "
-                          "used for variables with Input storage class"))), );
+                          "used for variables with Input storage class"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
+    VertexIndexNotInput,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(
+        Values("VertexIndex"), Values("Vertex"), Values("Output"),
+        Values("%u32"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "WebGPU spec allows BuiltIn VertexIndex to be only "
+                          "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
     VertexIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("VertexIndex"), Values("Vertex"), Values("Input"),
             Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))), );
+                              "is not an int scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
+    VertexIndexNotIntScalar,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("VertexIndex"), Values("Vertex"), Values("Input"),
+            Values("%f32", "%u32vec3"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
+INSTANTIATE_TEST_SUITE_P(
     VertexIndexNotInt32,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("VertexIndex"), Values("Vertex"), Values("Input"),
             Values("%u64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
 CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
                                               const char* const built_in,
                                               const char* const execution_model,
                                               const char* const storage_class,
                                               const char* const data_type) {
-  CodeGenerator generator = spvIsWebGPUEnv(env)
-                                ? GetWebGPUShaderCodeGenerator()
-                                : GetDefaultShaderCodeGenerator();
+  CodeGenerator generator =
+      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
+                          : CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = "OpDecorate %built_in_var BuiltIn ";
   generator.before_types_ += built_in;
@@ -1939,50 +1754,50 @@ TEST_P(ValidateWebGPUCombineBuiltInArrayedVariable, Variable) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(PointSizeArrayedF32TessControl,
-                        ValidateVulkanCombineBuiltInArrayedVariable,
-                        Combine(Values("PointSize"),
-                                Values("TessellationControl"), Values("Input"),
-                                Values("%f32"), Values(TestResult())), );
+INSTANTIATE_TEST_SUITE_P(PointSizeArrayedF32TessControl,
+                         ValidateVulkanCombineBuiltInArrayedVariable,
+                         Combine(Values("PointSize"),
+                                 Values("TessellationControl"), Values("Input"),
+                                 Values("%f32"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointSizeArrayedF64TessControl, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("PointSize"), Values("TessellationControl"), Values("Input"),
             Values("%f64"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
-                              "has bit width 64"))), );
+                              "has bit width 64"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PointSizeArrayedF32Vertex, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("PointSize"), Values("Vertex"), Values("Output"),
             Values("%f32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
-                              "is not a float scalar"))), );
+                              "is not a float scalar"))));
 
-INSTANTIATE_TEST_CASE_P(PositionArrayedF32Vec4TessControl,
-                        ValidateVulkanCombineBuiltInArrayedVariable,
-                        Combine(Values("Position"),
-                                Values("TessellationControl"), Values("Input"),
-                                Values("%f32vec4"), Values(TestResult())), );
+INSTANTIATE_TEST_SUITE_P(PositionArrayedF32Vec4TessControl,
+                         ValidateVulkanCombineBuiltInArrayedVariable,
+                         Combine(Values("Position"),
+                                 Values("TessellationControl"), Values("Input"),
+                                 Values("%f32vec4"), Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionArrayedF32Vec3TessControl,
     ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("Position"), Values("TessellationControl"), Values("Input"),
             Values("%f32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "has 3 components"))), );
+                              "has 3 components"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     PositionArrayedF32Vec4Vertex, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("Position"), Values("Vertex"), Values("Output"),
             Values("%f32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "is not a float vector"))), );
+                              "is not a float vector"))));
 
 INSTANTIATE_TEST_CASE_P(
     PositionArrayedF32Vec4Vertex, ValidateWebGPUCombineBuiltInArrayedVariable,
@@ -1990,35 +1805,35 @@ INSTANTIATE_TEST_CASE_P(
             Values("%f32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
-                              "is not a float vector"))), );
+                              "is not a float vector"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceOutputSuccess,
     ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("ClipDistance", "CullDistance"),
             Values("Geometry", "TessellationControl", "TessellationEvaluation"),
             Values("Output"), Values("%f32arr2", "%f32arr4"),
-            Values(TestResult())), );
+            Values(TestResult())));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceVertexInput, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("ClipDistance", "CullDistance"), Values("Fragment"),
             Values("Input"), Values("%f32arr4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float array",
-                              "components are not float scalar"))), );
+                              "components are not float scalar"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceNotArray, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("ClipDistance", "CullDistance"),
             Values("Geometry", "TessellationControl", "TessellationEvaluation"),
             Values("Input"), Values("%f32vec2", "%f32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float array",
-                              "components are not float scalar"))), );
+                              "components are not float scalar"))));
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeSuccess) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2040,7 +1855,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeFragment) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2070,7 +1885,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotConstant) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %copy BuiltIn WorkgroupSize
 )";
@@ -2095,7 +1910,7 @@ OpDecorate %copy BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotVector) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2121,7 +1936,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotIntVector) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2147,7 +1962,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotVec3) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2173,7 +1988,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotInt32Vec) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2200,7 +2015,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizePrivateVar) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 )";
@@ -2223,7 +2038,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, GeometryPositionInOutSuccess) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpMemberDecorate %input_type 0 BuiltIn Position
@@ -2262,7 +2077,7 @@ OpStore %output_pos %pos
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupIdNotVec3) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
 OpDecorate %workgroup_id BuiltIn WorkgroupId
@@ -2293,7 +2108,7 @@ OpDecorate %workgroup_id BuiltIn WorkgroupId
 }
 
 TEST_F(ValidateBuiltIns, TwoBuiltInsFirstFails) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpMemberDecorate %input_type 0 BuiltIn FragCoord
@@ -2333,7 +2148,7 @@ OpStore %output_pos %pos
 }
 
 TEST_F(ValidateBuiltIns, TwoBuiltInsSecondFails) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpMemberDecorate %input_type 0 BuiltIn Position
@@ -2373,7 +2188,7 @@ OpStore %output_pos %pos
 }
 
 TEST_F(ValidateBuiltIns, VertexPositionVariableSuccess) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpDecorate %position BuiltIn Position
 )";
@@ -2397,7 +2212,7 @@ OpStore %position %f32vec4_0123
 }
 
 TEST_F(ValidateBuiltIns, FragmentPositionTwoEntryPoints) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpMemberDecorate %output_type 0 BuiltIn Position
 )";
@@ -2447,7 +2262,7 @@ OpFunctionEnd
 }
 
 TEST_F(ValidateBuiltIns, FragmentFragDepthNoDepthReplacing) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpMemberDecorate %output_type 0 BuiltIn FragDepth
 )";
@@ -2486,7 +2301,7 @@ OpFunctionEnd
 }
 
 TEST_F(ValidateBuiltIns, FragmentFragDepthOneMainHasDepthReplacingOtherHasnt) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
 OpMemberDecorate %output_type 0 BuiltIn FragDepth
 )";
@@ -2536,7 +2351,7 @@ OpFunctionEnd
 }
 
 TEST_F(ValidateBuiltIns, AllowInstanceIdWithIntersectionShader) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.capabilities_ += R"(
 OpCapability RayTracingNV
 )";
@@ -2576,7 +2391,7 @@ OpFunctionEnd
 }
 
 TEST_F(ValidateBuiltIns, DisallowInstanceIdWithRayGenShader) {
-  CodeGenerator generator = GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.capabilities_ += R"(
 OpCapability RayTracingNV
 )";
