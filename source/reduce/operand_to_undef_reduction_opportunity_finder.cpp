@@ -87,7 +87,7 @@ OperandToUndefReductionOpportunityFinder::GetAvailableOpportunities(
 }
 
 std::string OperandToUndefReductionOpportunityFinder::GetName() const {
-  return "OperandToUndefReductionPass";
+  return "OperandToUndefReductionOpportunityFinder";
 }
 
 }  // namespace reduce
