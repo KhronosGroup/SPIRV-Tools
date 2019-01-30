@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_REDUCE_OPERAND_TO_DOMINATING_ID_REDUCTION_PASS_H_
-#define SOURCE_REDUCE_OPERAND_TO_DOMINATING_ID_REDUCTION_PASS_H_
+#ifndef SOURCE_REDUCE_OPERAND_TO_DOMINATING_ID_REDUCTION_OPPORTUNITY_FINDER_H_
+#define SOURCE_REDUCE_OPERAND_TO_DOMINATING_ID_REDUCTION_OPPORTUNITY_FINDER_H_
 
 #include "reduction_opportunity_finder.h"
 
@@ -53,4 +53,4 @@ class OperandToDominatingIdReductionOpportunityFinder
 }  // namespace reduce
 }  // namespace spvtools
 
-#endif  // SOURCE_REDUCE_OPERAND_TO_DOMINATING_ID_REDUCTION_PASS_H_
+#endif  // SOURCE_REDUCE_OPERAND_TO_DOMINATING_ID_REDUCTION_OPPORTUNITY_FINDER_H_

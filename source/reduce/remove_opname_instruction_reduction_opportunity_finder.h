@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_REDUCE_REMOVE_OPNAME_INSTRUCTION_REDUCTION_PASS_H_
-#define SOURCE_REDUCE_REMOVE_OPNAME_INSTRUCTION_REDUCTION_PASS_H_
+#ifndef SOURCE_REDUCE_REMOVE_OPNAME_INSTRUCTION_REDUCTION_OPPORTUNITY_FINDER_H_
+#define SOURCE_REDUCE_REMOVE_OPNAME_INSTRUCTION_REDUCTION_OPPORTUNITY_FINDER_H_
 
 #include "reduction_opportunity_finder.h"
 
@@ -42,4 +42,4 @@ class RemoveOpNameInstructionReductionOpportunityFinder
 }  // namespace reduce
 }  // namespace spvtools
 
-#endif  // SOURCE_REDUCE_REMOVE_OpName_INSTRUCTION_REDUCTION_PASS_H_
+#endif  // SOURCE_REDUCE_REMOVE_OPNAME_INSTRUCTION_REDUCTION_OPPORTUNITY_FINDER_H_
