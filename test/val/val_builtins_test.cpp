@@ -1756,6 +1756,40 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int scalar",
                               "has bit width 64"))));
 
+INSTANTIATE_TEST_CASE_P(
+    LocalInvocationIndexSuccess,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("LocalInvocationIndex"), Values("GLCompute"),
+            Values("Input"), Values("%u32"), Values(TestResult())), );
+
+INSTANTIATE_TEST_CASE_P(
+    LocalInvocationIndexInvalidExecutionModel,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("LocalInvocationIndex"), Values("Fragment", "Vertex"),
+            Values("Input"), Values("%u32"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be used only with GLCompute execution model"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    LocalInvocationIndexNotInput,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(
+        Values("LocalInvocationIndex"), Values("GLCompute"), Values("Output"),
+        Values("%u32"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "WebGPU spec allows BuiltIn LocalInvocationIndex to "
+                          "be only used for variables with Input storage "
+                          "class"))), );
+
+INSTANTIATE_TEST_CASE_P(
+    LocalInvocationIndexNotIntScalar,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("LocalInvocationIndex"), Values("GLCompute"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int", "is not an int"))), );
+
 CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
                                               const char* const built_in,
                                               const char* const execution_model,
