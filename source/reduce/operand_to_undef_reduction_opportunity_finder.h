@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_REDUCE_OPERAND_TO_UNDEF_REDUCTION_PASS_H_
-#define SOURCE_REDUCE_OPERAND_TO_UNDEF_REDUCTION_PASS_H_
+#ifndef SOURCE_REDUCE_OPERAND_TO_UNDEF_REDUCTION_OPPORTUNITY_FINDER_H_
+#define SOURCE_REDUCE_OPERAND_TO_UNDEF_REDUCTION_OPPORTUNITY_FINDER_H_
 
 #include "source/reduce/reduction_opportunity_finder.h"
 
@@ -40,4 +40,4 @@ class OperandToUndefReductionOpportunityFinder
 }  // namespace reduce
 }  // namespace spvtools
 
-#endif  // SOURCE_REDUCE_OPERAND_TO_UNDEF_REDUCTION_PASS_H_
+#endif  // SOURCE_REDUCE_OPERAND_TO_UNDEF_REDUCTION_OPPORTUNITY_FINDER_H_
