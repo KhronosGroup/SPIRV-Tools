@@ -37,7 +37,7 @@ RemoveOpNameInstructionReductionOpportunityFinder::GetAvailableOpportunities(
 }
 
 std::string RemoveOpNameInstructionReductionOpportunityFinder::GetName() const {
-  return "RemoveOpNameInstructionReductionPass";
+  return "RemoveOpNameInstructionReductionOpportunityFinder";
 }
 
 }  // namespace reduce
