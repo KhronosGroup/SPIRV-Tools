@@ -759,11 +759,10 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     InstanceIndexInvalidExecutionModel,
     ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("InstanceIndex"), Values("Fragment", "GLCompute"),
-        Values("Input"), Values("%u32"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Vertex execution model"))));
+    Combine(Values("InstanceIndex"), Values("Fragment", "GLCompute"),
+            Values("Input"), Values("%u32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with Vertex execution model"))));
 
 INSTANTIATE_TEST_SUITE_P(
     InstanceIndexNotInput,
