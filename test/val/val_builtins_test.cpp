@@ -745,6 +745,13 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
+    ComputeShaderInputInt32Vec3Success,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
+            Values("GLCompute"), Values("Input"), Values("%u32vec3"),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotGLCompute,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -757,10 +764,29 @@ INSTANTIATE_TEST_SUITE_P(
                           "to be used only with GLCompute execution model"))));
 
 INSTANTIATE_TEST_SUITE_P(
+    ComputeShaderInputInt32Vec3NotGLCompute,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(
+        Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
+        Values("Vertex", "Fragment"), Values("Input"), Values("%u32vec3"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "to be used only with GLCompute execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
                    "WorkgroupId"),
+            Values("GLCompute"), Values("Output"), Values("%u32vec3"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Input storage class",
+                "uses storage class Output"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ComputeShaderInputInt32Vec3NotInput,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
             Values("GLCompute"), Values("Output"), Values("%u32vec3"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
@@ -779,10 +805,29 @@ INSTANTIATE_TEST_SUITE_P(
                               "is not an int vector"))));
 
 INSTANTIATE_TEST_SUITE_P(
+    ComputeShaderInputInt32Vec3NotIntVector,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
+            Values("GLCompute"), Values("Input"),
+            Values("%u32arr3", "%f32vec3"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 3-component 32-bit int vector",
+                              "is not an int vector"))));
+
+INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotIntVec3,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
                    "WorkgroupId"),
+            Values("GLCompute"), Values("Input"), Values("%u32vec4"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 3-component 32-bit int vector",
+                              "has 4 components"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ComputeShaderInputInt32Vec3NotIntVec3,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
             Values("GLCompute"), Values("Input"), Values("%u32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit int vector",
