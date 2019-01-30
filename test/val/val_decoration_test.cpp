@@ -30,18 +30,14 @@ namespace {
 using ::testing::Combine;
 using ::testing::Eq;
 using ::testing::HasSubstr;
-using ::testing::HasSubstr;
 using ::testing::Values;
 
 struct TestResult {
   TestResult(spv_result_t in_validation_result = SPV_SUCCESS,
-             const char* in_pre_error_str = nullptr,
-             const char* in_post_error_str = nullptr)
-      : validation_result(in_validation_result),
-        pre_error_str(in_pre_error_str),
-        post_error_str(in_post_error_str) {}
+             const std::string in_error_str = "")
+      : validation_result(in_validation_result), error_str(in_error_str) {}
   spv_result_t validation_result;
-  const char* pre_error_str;
+  const std::string error_str;
   const char* post_error_str;
 };
 
@@ -5776,11 +5772,8 @@ TEST_P(ValidateWebGPUCombineDecorationResult, Decorate) {
   CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
   ASSERT_EQ(test_result.validation_result,
             ValidateInstructions(SPV_ENV_WEBGPU_0));
-  if (test_result.pre_error_str) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.pre_error_str));
-  }
-  if (test_result.post_error_str) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.post_error_str));
+  if (test_result.error_str != "") {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
 }
 
@@ -5803,28 +5796,25 @@ TEST_P(ValidateWebGPUCombineDecorationResult, DecorateMember) {
   CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
   ASSERT_EQ(test_result.validation_result,
             ValidateInstructions(SPV_ENV_WEBGPU_0));
-  if (test_result.pre_error_str) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.pre_error_str));
-  }
-  if (test_result.post_error_str) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.post_error_str));
+  if (test_result.error_str != "") {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DecorationCapabilityFailure, ValidateWebGPUCombineDecorationResult,
     Combine(Values("CPacked", "Patch", "Sample", "Constant",
                    "SaturatedConversion", "NonUniformEXT"),
             Values(TestResult(SPV_ERROR_INVALID_CAPABILITY,
-                              "requires one of these capabilities", ""))), );
+                              "requires one of these capabilities"))));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DecorationWhitelistFailure, ValidateWebGPUCombineDecorationResult,
     Combine(Values("RelaxedPrecision", "BufferBlock", "GLSLShared",
                    "GLSLPacked", "Invariant", "Volatile", "Coherent"),
             Values(TestResult(
-                SPV_ERROR_INVALID_ID, "",
-                "is not valid for the WebGPU execution environment."))), );
+                SPV_ERROR_INVALID_ID,
+                "is not valid for the WebGPU execution environment."))));
 
 }  // namespace
 }  // namespace val

@@ -179,8 +179,6 @@ std::string LogStringForDecoration(uint32_t decoration) {
       return "HlslCounterBufferGOOGLE";
     case SpvDecorationHlslSemanticGOOGLE:
       return "HlslSemanticGOOGLE";
-    case SpvDecorationMax:
-      return "Max";
     default:
       break;
   }

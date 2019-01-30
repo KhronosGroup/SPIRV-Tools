@@ -2101,7 +2101,7 @@ OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
 OpDecorate %array_t ArrayStride 4
 OpMemberDecorate %struct_t 0 Offset 0
-OpDecorate %struct_t BufferBlock
+OpDecorate %struct_t Block
 %uint_t = OpTypeInt 32 0
 %array_t = OpTypeRuntimeArray %uint_t
 %struct_t = OpTypeStruct %array_t
@@ -2119,9 +2119,9 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpDecorate decoration 'BufferBlock' is not valid for the WebGPU "
-          "execution environment.\n  OpDecorate %_struct_3 BufferBlock\n"));
+      HasSubstr("For WebGPU, OpTypeStruct variables containing "
+                "OpTypeRuntimeArray must have storage class of StorageBuffer\n "
+                " %6 = OpVariable %_ptr_Uniform__struct_3 Uniform\n"));
 }
 
 TEST_F(ValidateMemory, VulkanRTAInsideUniformStructWithoutBufferBlockBad) {
