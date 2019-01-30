@@ -48,6 +48,7 @@ add_spvtools_unittest(TARGET val_limits
   SRCS val_limits_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
+  PCH_FILE pch_test_val
 )
 
 add_spvtools_unittest(TARGET val_ijklmnop
