@@ -596,6 +596,11 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%f32"), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
+    FragDepthSuccess, ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
+            Values("%f32"), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
     FragDepthNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -603,6 +608,15 @@ INSTANTIATE_TEST_SUITE_P(
         Values("Vertex", "GLCompute", "Geometry", "TessellationControl",
                "TessellationEvaluation"),
         Values("Output"), Values("%f32"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "to be used only with Fragment execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragDepthNotFragment,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(
+        Values("FragDepth"), Values("Vertex", "GLCompute"), Values("Output"),
+        Values("%f32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "to be used only with Fragment execution model"))));
 
@@ -617,8 +631,27 @@ INSTANTIATE_TEST_SUITE_P(
                 "uses storage class Input"))));
 
 INSTANTIATE_TEST_SUITE_P(
+    FragDepthNotOutput,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FragDepth"), Values("Fragment"), Values("Input"),
+            Values("%f32"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Output storage class",
+                "uses storage class Input"))));
+
+INSTANTIATE_TEST_SUITE_P(
     FragDepthNotFloatScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
+            Values("%f32vec4", "%u32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit float scalar",
+                              "is not a float scalar"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragDepthNotFloatScalar,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
             Values("%f32vec4", "%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -2335,16 +2368,20 @@ OpFunctionEnd
               HasSubstr("called with execution model Fragment"));
 }
 
-TEST_F(ValidateBuiltIns, FragmentFragDepthNoDepthReplacing) {
-  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
+CodeGenerator GetNoDepthReplacingGenerator(spv_target_env env) {
+  CodeGenerator generator =
+      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
+                          : CodeGenerator::GetDefaultShaderCodeGenerator();
+
   generator.before_types_ = R"(
 OpMemberDecorate %output_type 0 BuiltIn FragDepth
 )";
 
   generator.after_types_ = R"(
 %output_type = OpTypeStruct %f32
+%output_null = OpConstantNull %output_type
 %output_ptr = OpTypePointer Output %output_type
-%output = OpVariable %output_ptr Output
+%output = OpVariable %output_ptr Output %output_null
 %output_f32_ptr = OpTypePointer Output %f32
 )";
 
@@ -2358,7 +2395,7 @@ OpMemberDecorate %output_type 0 BuiltIn FragDepth
 )";
   generator.entry_points_.push_back(std::move(entry_point));
 
-  generator.add_at_the_end_ = R"(
+  const std::string function_body = R"(
 %foo = OpFunction %void None %func
 %foo_entry = OpLabel
 %frag_depth = OpAccessChain %output_f32_ptr %output %u32_0
@@ -2367,6 +2404,18 @@ OpReturn
 OpFunctionEnd
 )";
 
+  if (spvIsWebGPUEnv(env)) {
+    generator.after_types_ += function_body;
+  } else {
+    generator.add_at_the_end_ = function_body;
+  }
+
+  return generator;
+}
+
+TEST_F(ValidateBuiltIns, VulkanFragmentFragDepthNoDepthReplacing) {
+  CodeGenerator generator = GetNoDepthReplacingGenerator(SPV_ENV_VULKAN_1_0);
+
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
@@ -2374,16 +2423,31 @@ OpFunctionEnd
                         "be declared when using BuiltIn FragDepth"));
 }
 
-TEST_F(ValidateBuiltIns, FragmentFragDepthOneMainHasDepthReplacingOtherHasnt) {
-  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
+TEST_F(ValidateBuiltIns, WebGPUFragmentFragDepthNoDepthReplacing) {
+  CodeGenerator generator = GetNoDepthReplacingGenerator(SPV_ENV_WEBGPU_0);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("WebGPU spec requires DepthReplacing execution mode to "
+                        "be declared when using BuiltIn FragDepth"));
+}
+
+CodeGenerator GetOneMainHasDepthReplacingOtherHasntGenerator(
+    spv_target_env env) {
+  CodeGenerator generator =
+      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
+                          : CodeGenerator::GetDefaultShaderCodeGenerator();
+
   generator.before_types_ = R"(
 OpMemberDecorate %output_type 0 BuiltIn FragDepth
 )";
 
   generator.after_types_ = R"(
 %output_type = OpTypeStruct %f32
+%output_null = OpConstantNull %output_type
 %output_ptr = OpTypePointer Output %output_type
-%output = OpVariable %output_ptr Output
+%output = OpVariable %output_ptr Output %output_null
 %output_f32_ptr = OpTypePointer Output %f32
 )";
 
@@ -2408,7 +2472,7 @@ OpMemberDecorate %output_type 0 BuiltIn FragDepth
 )";
   generator.entry_points_.push_back(std::move(entry_point));
 
-  generator.add_at_the_end_ = R"(
+  const std::string function_body = R"(
 %foo = OpFunction %void None %func
 %foo_entry = OpLabel
 %frag_depth = OpAccessChain %output_f32_ptr %output %u32_0
@@ -2417,10 +2481,36 @@ OpReturn
 OpFunctionEnd
 )";
 
+  if (spvIsWebGPUEnv(env)) {
+    generator.after_types_ += function_body;
+  } else {
+    generator.add_at_the_end_ = function_body;
+  }
+
+  return generator;
+}
+
+TEST_F(ValidateBuiltIns,
+       VulkanFragmentFragDepthOneMainHasDepthReplacingOtherHasnt) {
+  CodeGenerator generator =
+      GetOneMainHasDepthReplacingOtherHasntGenerator(SPV_ENV_VULKAN_1_0);
+
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Vulkan spec requires DepthReplacing execution mode to "
+                        "be declared when using BuiltIn FragDepth"));
+}
+
+TEST_F(ValidateBuiltIns,
+       WebGPUFragmentFragDepthOneMainHasDepthReplacingOtherHasnt) {
+  CodeGenerator generator =
+      GetOneMainHasDepthReplacingOtherHasntGenerator(SPV_ENV_WEBGPU_0);
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("WebGPU spec requires DepthReplacing execution mode to "
                         "be declared when using BuiltIn FragDepth"));
 }
 

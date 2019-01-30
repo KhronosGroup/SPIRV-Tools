@@ -998,12 +998,14 @@ spv_result_t BuiltInsValidator::ValidateFragCoordAtReference(
 
 spv_result_t BuiltInsValidator::ValidateFragDepthAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
     if (spv_result_t error = ValidateF32(
             decoration, inst,
             [this, &inst](const std::string& message) -> spv_result_t {
               return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                     << "According to the Vulkan spec BuiltIn FragDepth "
+                     << "According to the "
+                     << spvLogStringForEnv(_.context()->target_env)
+                     << " spec BuiltIn FragDepth "
                         "variable needs to be a 32-bit float scalar. "
                      << message;
             })) {
@@ -1019,12 +1021,13 @@ spv_result_t BuiltInsValidator::ValidateFragDepthAtReference(
     const Decoration& decoration, const Instruction& built_in_inst,
     const Instruction& referenced_inst,
     const Instruction& referenced_from_inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
+  if (spvIsVulkanOrWebGPUEnv(_.context()->target_env)) {
     const SpvStorageClass storage_class = GetStorageClass(referenced_from_inst);
     if (storage_class != SpvStorageClassMax &&
         storage_class != SpvStorageClassOutput) {
       return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-             << "Vulkan spec allows BuiltIn FragDepth to be only used for "
+             << spvLogStringForEnv(_.context()->target_env)
+             << " spec allows BuiltIn FragDepth to be only used for "
                 "variables with Output storage class. "
              << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                  referenced_from_inst)
@@ -1034,7 +1037,8 @@ spv_result_t BuiltInsValidator::ValidateFragDepthAtReference(
     for (const SpvExecutionModel execution_model : execution_models_) {
       if (execution_model != SpvExecutionModelFragment) {
         return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-               << "Vulkan spec allows BuiltIn FragDepth to be used only with "
+               << spvLogStringForEnv(_.context()->target_env)
+               << " spec allows BuiltIn FragDepth to be used only with "
                   "Fragment execution model. "
                << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                    referenced_from_inst, execution_model);
@@ -1047,7 +1051,8 @@ spv_result_t BuiltInsValidator::ValidateFragDepthAtReference(
       const auto* modes = _.GetExecutionModes(entry_point);
       if (!modes || !modes->count(SpvExecutionModeDepthReplacing)) {
         return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-               << "Vulkan spec requires DepthReplacing execution mode to be "
+               << spvLogStringForEnv(_.context()->target_env)
+               << " spec requires DepthReplacing execution mode to be "
                   "declared when using BuiltIn FragDepth. "
                << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                    referenced_from_inst);
