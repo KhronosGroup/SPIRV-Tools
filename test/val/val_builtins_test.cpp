@@ -741,11 +741,25 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%u32"), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
+    InstanceIndexSuccess,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
+            Values("%u32"), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
     InstanceIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InstanceIndex"),
             Values("Geometry", "Fragment", "GLCompute", "TessellationControl",
                    "TessellationEvaluation"),
+            Values("Input"), Values("%u32"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with Vertex execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    InstanceIndexInvalidExecutionModel,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("InstanceIndex"), Values("Fragment", "GLCompute"),
             Values("Input"), Values("%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "to be used only with Vertex execution model"))));
@@ -761,8 +775,27 @@ INSTANTIATE_TEST_SUITE_P(
                 "uses storage class Output"))));
 
 INSTANTIATE_TEST_SUITE_P(
+    InstanceIndexNotInput,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("InstanceIndex"), Values("Vertex"), Values("Output"),
+            Values("%u32"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Input storage class",
+                "uses storage class Output"))));
+
+INSTANTIATE_TEST_SUITE_P(
     InstanceIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
+            Values("%f32", "%u32vec3"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    InstanceIndexNotIntScalar,
+    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
             Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
