@@ -34,6 +34,10 @@
 #include "tools/io.h"
 #include "tools/util/cli_consumer.h"
 
+#if __APPLE__
+  #include "TargetConditionals.h"
+#endif
+
 using namespace spvtools::reduce;
 
 namespace {
@@ -42,7 +46,11 @@ using ErrorOrInt = std::pair<std::string, int>;
 
 // Check that the std::system function can actually be used.
 bool CheckExecuteCommand() {
+#if __APPLE__ && (TARGET_OS_IOS || TARGET_OS_TV)
+  int res = 0;
+#else
   int res = std::system(nullptr);
+#endif
   return res != 0;
 }
 
@@ -50,7 +58,11 @@ bool CheckExecuteCommand() {
 // Returns true if and only if the command's exit status was 0.
 bool ExecuteCommand(const std::string& command) {
   errno = 0;
+#if __APPLE__ && (TARGET_OS_IOS || TARGET_OS_TV)
+  int status = -1;
+#else
   int status = std::system(command.c_str());
+#endif
   assert(errno == 0 && "failed to execute command");
   // The result returned by 'system' is implementation-defined, but is
   // usually the case that the returned value is 0 when the command's exit
