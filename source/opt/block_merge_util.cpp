@@ -53,7 +53,7 @@ bool IsMerge(IRContext* context, BasicBlock* block) {
 // predecessor, replacing uses of OpPhi ids with the ids associated with the
 // predecessor.
 void EliminateOpPhiInstructions(IRContext* context, BasicBlock* block) {
-  block->ForEachPhiInst([context, block](Instruction* phi) {
+  block->ForEachPhiInst([context](Instruction* phi) {
     assert(2 == phi->NumInOperands() &&
            "A block can only have one predecessor for block merging to make "
            "sense.");
