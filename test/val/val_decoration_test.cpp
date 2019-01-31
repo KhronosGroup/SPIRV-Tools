@@ -34,11 +34,10 @@ using ::testing::Values;
 
 struct TestResult {
   TestResult(spv_result_t in_validation_result = SPV_SUCCESS,
-             const std::string in_error_str = "")
+             const std::string& in_error_str = "")
       : validation_result(in_validation_result), error_str(in_error_str) {}
   spv_result_t validation_result;
   const std::string error_str;
-  const char* post_error_str;
 };
 
 using ValidateDecorations = spvtest::ValidateBase<bool>;
@@ -5796,7 +5795,7 @@ TEST_P(ValidateWebGPUCombineDecorationResult, DecorateMember) {
   CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
   ASSERT_EQ(test_result.validation_result,
             ValidateInstructions(SPV_ENV_WEBGPU_0));
-  if (test_result.error_str != "") {
+  if (!test_result.error_str.empty()) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
 }
