@@ -440,7 +440,7 @@ TEST(MergeBlocksReductionPassTest, Loops) {
 
 }
 
-TEST(MergeBlocksReductionPassTest, NoMergeWithOpPhi) {
+TEST(MergeBlocksReductionPassTest, MergeWithOpPhi) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -469,6 +469,7 @@ TEST(MergeBlocksReductionPassTest, NoMergeWithOpPhi) {
                OpReturn
                OpFunctionEnd
   )";
+
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context =
@@ -476,8 +477,39 @@ TEST(MergeBlocksReductionPassTest, NoMergeWithOpPhi) {
   const auto ops =
           MergeBlocksReductionOpportunityFinder().GetAvailableOpportunities(
                   context.get());
-  // There should be no opportunities, because block %12 starts with an OpPhi.
-  ASSERT_EQ(0, ops.size());
+  ASSERT_EQ(1, ops.size());
+
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+
+  std::string after = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "x"
+               OpName %10 "y"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+         %11 = OpLoad %6 %8
+               OpStore %10 %11
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CheckEqual(env, after, context.get());
+
 }
 
 
