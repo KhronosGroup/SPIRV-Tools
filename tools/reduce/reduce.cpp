@@ -242,8 +242,7 @@ int main(int argc, const char** argv) {
       spvtools::MakeUnique<
           StructuredLoopToSelectionReductionOpportunityFinder>());
   reducer.AddReductionPass(
-          spvtools::MakeUnique<
-                  MergeBlocksReductionOpportunityFinder>());
+      spvtools::MakeUnique<MergeBlocksReductionOpportunityFinder>());
 
   reducer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 

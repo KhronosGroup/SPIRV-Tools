@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/reduce/merge_blocks_reduction_opportunity_finder.h"
 #include "source/opt/block_merge_util.h"
 #include "source/reduce/merge_blocks_reduction_opportunity.h"
-#include "source/reduce/merge_blocks_reduction_opportunity_finder.h"
 
 namespace spvtools {
 namespace reduce {
@@ -25,14 +25,19 @@ std::string MergeBlocksReductionOpportunityFinder::GetName() const {
   return "MergeBlocksReductionOpportunityFinder";
 }
 
-std::vector<std::unique_ptr<ReductionOpportunity>> MergeBlocksReductionOpportunityFinder::GetAvailableOpportunities(
-        opt::IRContext* context) const {
+std::vector<std::unique_ptr<ReductionOpportunity>>
+MergeBlocksReductionOpportunityFinder::GetAvailableOpportunities(
+    opt::IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
+  // Consider every block in every function.
   for (auto& function : *context->module()) {
-    for (auto &block : function) {
+    for (auto& block : function) {
+      // See whether it is possible to merge this block with its successor.
       if (blockmergeutil::CanMergeWithSuccessor(context, &block)) {
-        result.push_back(spvtools::MakeUnique<MergeBlocksReductionOpportunity>(context, &function, &block));
+        // It is, so record an opportunity to do this.
+        result.push_back(spvtools::MakeUnique<MergeBlocksReductionOpportunity>(
+            context, &function, &block));
       }
     }
   }

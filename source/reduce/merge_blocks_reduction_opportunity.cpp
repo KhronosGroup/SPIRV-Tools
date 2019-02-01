@@ -22,26 +22,32 @@ namespace reduce {
 
 using namespace opt;
 
-MergeBlocksReductionOpportunity::MergeBlocksReductionOpportunity(IRContext* context, Function* function, BasicBlock* block) {
+MergeBlocksReductionOpportunity::MergeBlocksReductionOpportunity(
+    IRContext* context, Function* function, BasicBlock* block) {
   // Precondition: the terminator has to be OpBranch.
-  assert (block->terminator()->opcode() == SpvOpBranch);
+  assert(block->terminator()->opcode() == SpvOpBranch);
   context_ = context;
   function_ = function;
   // Get the successor block associated with the OpBranch.
-  successor_block_ = context->cfg()->block(block->terminator()->GetSingleWordInOperand(0));
+  successor_block_ =
+      context->cfg()->block(block->terminator()->GetSingleWordInOperand(0));
 }
 
-
 bool MergeBlocksReductionOpportunity::PreconditionHolds() {
+  // By construction, it is not possible for the merging of A->B to disable the
+  // merging of C->D, even when B and C are the same block.
   return true;
 }
 
 void MergeBlocksReductionOpportunity::Apply() {
-  // While the original block that targeted the successor may not exist anymore (it might have been merged with another
-  // block), some block must exist that targets the successor.  Find it.
+  // While the original block that targeted the successor may not exist anymore
+  // (it might have been merged with another block), some block must exist that
+  // targets the successor.  Find it.
 
   const auto predecessors = context_->cfg()->preds(successor_block_->id());
-  assert (1 == predecessors.size() && "For a successor to be merged into its predecessor, exactly one predecessor must be present.");
+  assert(1 == predecessors.size() &&
+         "For a successor to be merged into its predecessor, exactly one "
+         "predecessor must be present.");
   const uint32_t predecessor_id = predecessors[0];
 
   for (auto bi = function_->begin(); bi != function_->end(); ++bi) {
@@ -53,8 +59,8 @@ void MergeBlocksReductionOpportunity::Apply() {
     }
   }
 
-  assert (false && "Unreachable: we should have found a block with the desired id.");
-
+  assert(false &&
+         "Unreachable: we should have found a block with the desired id.");
 }
 
 }  // namespace reduce

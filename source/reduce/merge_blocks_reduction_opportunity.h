@@ -15,9 +15,9 @@
 #ifndef SOURCE_REDUCE_MERGE_BLOCKS_REDUCTION_OPPORTUNITY_H_
 #define SOURCE_REDUCE_MERGE_BLOCKS_REDUCTION_OPPORTUNITY_H_
 
+#include "reduction_opportunity.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/function.h"
-#include "reduction_opportunity.h"
 
 namespace spvtools {
 namespace reduce {
@@ -25,8 +25,11 @@ namespace reduce {
 // An opportunity to merge two blocks into one.
 class MergeBlocksReductionOpportunity : public ReductionOpportunity {
  public:
-  // TODO: comment.
-  MergeBlocksReductionOpportunity(opt::IRContext* context, opt::Function* function, opt::BasicBlock* block);
+  // Creates the opportunity to merge |block| with its successor, where |block|
+  // is inside |function|, and |context| is the enclosing IR context.
+  MergeBlocksReductionOpportunity(opt::IRContext* context,
+                                  opt::Function* function,
+                                  opt::BasicBlock* block);
 
   bool PreconditionHolds() override;
 
@@ -36,8 +39,12 @@ class MergeBlocksReductionOpportunity : public ReductionOpportunity {
  private:
   opt::IRContext* context_;
   opt::Function* function_;
-  opt::BasicBlock* successor_block_;
 
+  // Rather than holding on to the block that can be merged with its successor,
+  // we hold on to its successor. This is because the predecessor block might
+  // get merged with *its* predecessor, and so will no longer exist, while the
+  // successor will continue to exist until this opportunity gets applied.
+  opt::BasicBlock* successor_block_;
 };
 
 }  // namespace reduce

@@ -62,10 +62,10 @@ TEST(MergeBlocksReductionPassTest, BasicCheck) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context =
-          BuildModule(env, consumer, shader, kReduceAssembleOption);
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
   const auto ops =
-          MergeBlocksReductionOpportunityFinder().GetAvailableOpportunities(
-                  context.get());
+      MergeBlocksReductionOpportunityFinder().GetAvailableOpportunities(
+          context.get());
   ASSERT_EQ(5, ops.size());
 
   // Try order 3, 0, 2, 4, 1
@@ -254,9 +254,7 @@ TEST(MergeBlocksReductionPassTest, BasicCheck) {
   )";
 
   CheckEqual(env, after_op_1, context.get());
-
 }
-
 
 TEST(MergeBlocksReductionPassTest, Loops) {
   std::string shader = R"(
@@ -354,10 +352,10 @@ TEST(MergeBlocksReductionPassTest, Loops) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context =
-          BuildModule(env, consumer, shader, kReduceAssembleOption);
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
   const auto ops =
-          MergeBlocksReductionOpportunityFinder().GetAvailableOpportunities(
-                  context.get());
+      MergeBlocksReductionOpportunityFinder().GetAvailableOpportunities(
+          context.get());
   ASSERT_EQ(11, ops.size());
 
   for (auto& ri : ops) {
@@ -437,7 +435,6 @@ TEST(MergeBlocksReductionPassTest, Loops) {
   )";
 
   CheckEqual(env, after, context.get());
-
 }
 
 TEST(MergeBlocksReductionPassTest, MergeWithOpPhi) {
@@ -473,10 +470,10 @@ TEST(MergeBlocksReductionPassTest, MergeWithOpPhi) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context =
-          BuildModule(env, consumer, shader, kReduceAssembleOption);
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
   const auto ops =
-          MergeBlocksReductionOpportunityFinder().GetAvailableOpportunities(
-                  context.get());
+      MergeBlocksReductionOpportunityFinder().GetAvailableOpportunities(
+          context.get());
   ASSERT_EQ(1, ops.size());
 
   ASSERT_TRUE(ops[0]->PreconditionHolds());
@@ -509,9 +506,7 @@ TEST(MergeBlocksReductionPassTest, MergeWithOpPhi) {
   )";
 
   CheckEqual(env, after, context.get());
-
 }
-
 
 }  // namespace
 }  // namespace reduce

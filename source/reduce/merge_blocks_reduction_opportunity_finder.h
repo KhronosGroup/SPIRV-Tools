@@ -22,7 +22,7 @@ namespace reduce {
 
 // A finder of opportunities to merge blocks together.
 class MergeBlocksReductionOpportunityFinder
-        : public ReductionOpportunityFinder {
+    : public ReductionOpportunityFinder {
  public:
   MergeBlocksReductionOpportunityFinder() = default;
 
@@ -31,7 +31,7 @@ class MergeBlocksReductionOpportunityFinder
   std::string GetName() const final;
 
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
-          opt::IRContext* context) const final;
+      opt::IRContext* context) const final;
 
  private:
 };
