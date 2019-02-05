@@ -414,11 +414,11 @@ TEST_P(ValidateFunctionCall, NonMemoryObjectDeclarationVariablePointers) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(StorageClass, ValidateFunctionCall,
-                        Values("UniformConstant", "Input", "Uniform", "Output",
-                               "Workgroup", "Private", "Function",
-                               "PushConstant", "Image", "StorageBuffer",
-                               "AtomicCounter"));
+INSTANTIATE_TEST_SUITE_P(StorageClass, ValidateFunctionCall,
+                         Values("UniformConstant", "Input", "Uniform", "Output",
+                                "Workgroup", "Private", "Function",
+                                "PushConstant", "Image", "StorageBuffer",
+                                "AtomicCounter"));
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
