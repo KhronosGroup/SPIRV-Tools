@@ -222,6 +222,97 @@ TEST(Optimizer, CanRegisterPassesFromFlags) {
   EXPECT_EQ(msg_level, SPV_MSG_ERROR);
 }
 
+TEST(Optimizer, WebGPUModeSetsCorrectPasses) {
+  Optimizer opt(SPV_ENV_WEBGPU_0);
+  opt.RegisterWebGPUPasses();
+  std::vector<const char*> pass_names = opt.GetPassNames();
+
+  std::vector<std::string> registered_passes;
+  for (auto name = pass_names.begin(); name != pass_names.end(); ++name)
+    registered_passes.push_back(*name);
+
+  std::vector<std::string> expected_passes = {"eliminate-dead-branches",
+                                              "eliminate-dead-code-aggressive",
+                                              "flatten-decorations"};
+  std::sort(registered_passes.begin(), registered_passes.end());
+  std::sort(expected_passes.begin(), expected_passes.end());
+
+  ASSERT_EQ(registered_passes.size(), expected_passes.size());
+  for (size_t i = 0; i < registered_passes.size(); i++)
+    EXPECT_EQ(registered_passes[i], expected_passes[i]);
+}
+
+TEST(Optimizer, WebGPUModeFlattenDecorationsRuns) {
+  const std::string input = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %main "main" %hue %saturation %value
+OpExecutionMode %main OriginUpperLeft
+OpName %main "main"
+OpName %void_fn "void_fn"
+OpName %hue "hue"
+OpName %saturation "saturation"
+OpName %value "value"
+OpDecorate %group Flat
+OpDecorate %group NoPerspective
+%group = OpDecorationGroup
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Input_float = OpTypePointer Input %float
+%hue = OpVariable %_ptr_Input_float Input
+%saturation = OpVariable %_ptr_Input_float Input
+%value = OpVariable %_ptr_Input_float Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string expected = R"(OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %main "main" %hue %saturation %value
+OpExecutionMode %main OriginUpperLeft
+OpName %main "main"
+OpName %void_fn "void_fn"
+OpName %hue "hue"
+OpName %saturation "saturation"
+OpName %value "value"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Input_float = OpTypePointer Input %float
+%hue = OpVariable %_ptr_Input_float Input
+%saturation = OpVariable %_ptr_Input_float Input
+%value = OpVariable %_ptr_Input_float Input
+%main = OpFunction %void None %void_fn
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SpirvTools tools(SPV_ENV_WEBGPU_0);
+  std::vector<uint32_t> binary;
+  tools.Assemble(input, &binary);
+
+  Optimizer opt(SPV_ENV_WEBGPU_0);
+  opt.RegisterWebGPUPasses();
+
+  std::vector<uint32_t> optimized;
+  ValidatorOptions validator_options;
+  ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized,
+                      validator_options, true));
+
+  std::string disassembly;
+  tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
+
+  EXPECT_EQ(disassembly, expected);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
