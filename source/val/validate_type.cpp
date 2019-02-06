@@ -273,7 +273,8 @@ spv_result_t ValidateTypePointer(ValidationState_t& _,
   const auto storage_class = inst->GetOperandAs<SpvStorageClass>(1);
   if (storage_class == SpvStorageClassUniformConstant) {
     // Unpack an optional level of arraying.
-    if (type->opcode() == SpvOpTypeArray) {
+    if (type->opcode() == SpvOpTypeArray ||
+        type->opcode() == SpvOpTypeRuntimeArray) {
       type_id = type->GetOperandAs<uint32_t>(1);
       type = _.FindDef(type_id);
     }
