@@ -20,7 +20,7 @@ set(VAL_TEST_COMMON_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/val_fixtures.h
 )
 
-add_spvtools_unittest(TARGET val_abcdef
+add_spvtools_unittest(TARGET val_abcde
   SRCS
        val_adjacency_test.cpp
        val_arithmetics_test.cpp
@@ -39,7 +39,6 @@ add_spvtools_unittest(TARGET val_abcdef
        val_explicit_reserved_test.cpp
        val_extensions_test.cpp
        val_ext_inst_test.cpp
-       val_function_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
   PCH_FILE pch_test_val
@@ -52,8 +51,9 @@ add_spvtools_unittest(TARGET val_limits
   PCH_FILE pch_test_val
 )
 
-add_spvtools_unittest(TARGET val_ijklmnop
+add_spvtools_unittest(TARGET val_fghijklmnop
   SRCS
+       val_function_test.cpp
        val_id_test.cpp
        val_image_test.cpp
        val_interfaces_test.cpp
