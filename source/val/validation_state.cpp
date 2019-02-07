@@ -168,6 +168,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       global_vars_(),
       local_vars_(),
       struct_nesting_depth_(),
+      struct_has_nested_blockorbufferblock_struct_(),
       grammar_(ctx),
       addressing_model_(SpvAddressingModelMax),
       memory_model_(SpvMemoryModelMax),
@@ -185,6 +186,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       features_.env_relaxed_block_layout = true;
     }
   }
+  //_.HasNestedBlockOrBufferBlockStruct(memberTypeInstr->id());
 
   switch (env) {
     case SPV_ENV_WEBGPU_0:

@@ -361,6 +361,7 @@ spv_result_t LimitCheckStruct(ValidationState_t& _, const Instruction* inst) {
   // The nesting depth of a struct is 1+(largest depth of any member).
   // Scalars are at depth 0.
   uint32_t max_member_depth = 0;
+  bool has_nested_blockOrBufferBlock_struct = false;
   // Struct members start at word 2 of OpTypeStruct instruction.
   for (size_t word_i = 2; word_i < inst->words().size(); ++word_i) {
     auto member = inst->word(word_i);
@@ -368,7 +369,12 @@ spv_result_t LimitCheckStruct(ValidationState_t& _, const Instruction* inst) {
     if (memberTypeInstr && SpvOpTypeStruct == memberTypeInstr->opcode()) {
       max_member_depth = std::max(
           max_member_depth, _.struct_nesting_depth(memberTypeInstr->id()));
+
+    if(_.HasDecoration(memberTypeInstr->id(), SpvDecorationBlock)
+     || _.HasNestedBlockOrBufferBlockStruct(memberTypeInstr->id()))
+      has_nested_blockOrBufferBlock_struct = true;
     }
+
   }
 
   const uint32_t depth_limit = _.options()->universal_limits_.max_struct_depth;
@@ -379,6 +385,14 @@ spv_result_t LimitCheckStruct(ValidationState_t& _, const Instruction* inst) {
            << "Structure Nesting Depth may not be larger than " << depth_limit
            << ". Found " << cur_depth << ".";
   }
+
+  _.SetHasNestedBlockOrBufferBlockStruct(inst->id(), has_nested_blockOrBufferBlock_struct);
+  if(_.HasNestedBlockOrBufferBlockStruct(inst->id()) && _.HasDecoration(inst->id(), SpvDecorationBlock)){
+    int debug = 1;
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "A block decorated structure may not have a block decorated struct memeber " << debug;
+  }
+
   return SPV_SUCCESS;
 }
 
