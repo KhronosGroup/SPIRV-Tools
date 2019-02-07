@@ -57,8 +57,8 @@ Optimizer::PassToken::~PassToken() {}
 struct Optimizer::Impl {
   explicit Impl(spv_target_env env) : target_env(env), pass_manager() {}
 
-  spv_target_env target_env;        // Target environment.
-  opt::PassManager pass_manager;    // Internal implementation pass manager.
+  spv_target_env target_env;      // Target environment.
+  opt::PassManager pass_manager;  // Internal implementation pass manager.
 };
 
 Optimizer::Optimizer(spv_target_env env) : impl_(new Impl(env)) {}
@@ -380,7 +380,7 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
   } else if (pass_name == "replace-invalid-opcode") {
     RegisterPass(CreateReplaceInvalidOpcodePass());
   } else if (pass_name == "inst-bindless-check") {
-    RegisterPass(CreateInstBindlessCheckPass(7, 23));
+    RegisterPass(CreateInstBindlessCheckPass(7, 23, true));
     RegisterPass(CreateSimplificationPass());
     RegisterPass(CreateDeadBranchElimPass());
     RegisterPass(CreateBlockMergePass());
@@ -789,9 +789,11 @@ Optimizer::PassToken CreateUpgradeMemoryModelPass() {
 }
 
 Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
-                                                 uint32_t shader_id) {
+                                                 uint32_t shader_id,
+                                                 bool runtime_array_enable) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::InstBindlessCheckPass>(desc_set, shader_id));
+      MakeUnique<opt::InstBindlessCheckPass>(desc_set, shader_id,
+                                             runtime_array_enable));
 }
 
 Optimizer::PassToken CreateCodeSinkingPass() {
