@@ -25,12 +25,11 @@ bool RemoveFunctionReductionOpportunity::PreconditionHolds() {
 }
 
 void RemoveFunctionReductionOpportunity::Apply() {
-  opt::eliminatedeadfunctionsutil::EliminateFunctionInstructions(context_,
-                                                                 function_);
   for (opt::Module::iterator function_it = context_->module()->begin();
        function_it != context_->module()->end(); ++function_it) {
     if (&*function_it == function_) {
-      function_it.Erase();
+      opt::eliminatedeadfunctionsutil::EliminateFunction(context_,
+                                                         &function_it);
       return;
     }
   }

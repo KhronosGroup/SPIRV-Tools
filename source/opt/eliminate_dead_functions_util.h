@@ -24,8 +24,10 @@ namespace opt {
 // by various analyses and passes.
 namespace eliminatedeadfunctionsutil {
 
-// Remove all of the instruction in the function body
-void EliminateFunctionInstructions(IRContext* context, Function* func);
+// Removes all of the function's instructions, removes the function from the
+// module, and returns the next iterator.
+Module::iterator EliminateFunction(IRContext* context,
+                                   Module::iterator* func_iter);
 
 }  // namespace eliminatedeadfunctionsutil
 }  // namespace opt

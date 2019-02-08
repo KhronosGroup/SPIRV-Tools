@@ -21,11 +21,12 @@ namespace opt {
 // and passes.
 namespace eliminatedeadfunctionsutil {
 
-// Removes all of the instruction in the function body.
-// Does not remove the function from the module.
-void EliminateFunctionInstructions(IRContext* context, Function* func) {
-  func->ForEachInst([context](Instruction* inst) { context->KillInst(inst); },
+Module::iterator EliminateFunction(IRContext* context,
+                                   Module::iterator* func_iter) {
+  (*func_iter)
+      ->ForEachInst([context](Instruction* inst) { context->KillInst(inst); },
                     true);
+  return func_iter->Erase();
 }
 
 }  // namespace eliminatedeadfunctionsutil

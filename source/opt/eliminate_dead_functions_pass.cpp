@@ -37,9 +37,8 @@ Pass::Status EliminateDeadFunctionsPass::Process() {
        funcIter != get_module()->end();) {
     if (live_function_set.count(&*funcIter) == 0) {
       modified = true;
-      eliminatedeadfunctionsutil::EliminateFunctionInstructions(context(),
-                                                                &*funcIter);
-      funcIter = funcIter.Erase();
+      funcIter =
+          eliminatedeadfunctionsutil::EliminateFunction(context(), &funcIter);
     } else {
       ++funcIter;
     }
