@@ -231,9 +231,9 @@ TEST(Optimizer, WebGPUModeSetsCorrectPasses) {
   for (auto name = pass_names.begin(); name != pass_names.end(); ++name)
     registered_passes.push_back(*name);
 
-  std::vector<std::string> expected_passes = {"eliminate-dead-branches",
-                                              "eliminate-dead-code-aggressive",
-                                              "flatten-decorations"};
+  std::vector<std::string> expected_passes = {
+      "eliminate-dead-branches", "eliminate-dead-code-aggressive",
+      "flatten-decorations", "strip-debug"};
   std::sort(registered_passes.begin(), registered_passes.end());
   std::sort(expected_passes.begin(), expected_passes.end());
 
@@ -243,18 +243,12 @@ TEST(Optimizer, WebGPUModeSetsCorrectPasses) {
 }
 
 TEST(Optimizer, WebGPUModeFlattenDecorationsRuns) {
-  const std::string input = R"(
-OpCapability Shader
+  const std::string input = R"(OpCapability Shader
 OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical VulkanKHR
 OpEntryPoint Fragment %main "main" %hue %saturation %value
 OpExecutionMode %main OriginUpperLeft
-OpName %main "main"
-OpName %void_fn "void_fn"
-OpName %hue "hue"
-OpName %saturation "saturation"
-OpName %value "value"
 OpDecorate %group Flat
 OpDecorate %group NoPerspective
 %group = OpDecorationGroup
@@ -275,21 +269,16 @@ OpFunctionEnd
 OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical VulkanKHR
-OpEntryPoint Fragment %main "main" %hue %saturation %value
-OpExecutionMode %main OriginUpperLeft
-OpName %main "main"
-OpName %void_fn "void_fn"
-OpName %hue "hue"
-OpName %saturation "saturation"
-OpName %value "value"
+OpEntryPoint Fragment %1 "main" %2 %3 %4
+OpExecutionMode %1 OriginUpperLeft
 %void = OpTypeVoid
-%void_fn = OpTypeFunction %void
+%7 = OpTypeFunction %void
 %float = OpTypeFloat 32
 %_ptr_Input_float = OpTypePointer Input %float
-%hue = OpVariable %_ptr_Input_float Input
-%saturation = OpVariable %_ptr_Input_float Input
-%value = OpVariable %_ptr_Input_float Input
-%main = OpFunction %void None %void_fn
+%2 = OpVariable %_ptr_Input_float Input
+%3 = OpVariable %_ptr_Input_float Input
+%4 = OpVariable %_ptr_Input_float Input
+%1 = OpFunction %void None %7
 %10 = OpLabel
 OpReturn
 OpFunctionEnd
@@ -310,7 +299,54 @@ OpFunctionEnd
   std::string disassembly;
   tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
 
-  EXPECT_EQ(disassembly, expected);
+  EXPECT_EQ(expected, disassembly);
+}
+
+TEST(Optimizer, WebGPUModeStripDebugRuns) {
+  const std::string input = R"(OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Vertex %func "shader"
+OpName %main "main"
+OpName %void_fn "void_fn"
+%void = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func = OpFunction %void None %void_f
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string expected = R"(OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Vertex %1 "shader"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%1 = OpFunction %void None %5
+%6 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SpirvTools tools(SPV_ENV_WEBGPU_0);
+  std::vector<uint32_t> binary;
+  tools.Assemble(input, &binary);
+
+  Optimizer opt(SPV_ENV_WEBGPU_0);
+  opt.RegisterWebGPUPasses();
+
+  std::vector<uint32_t> optimized;
+  ValidatorOptions validator_options;
+  ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized,
+                      validator_options, true));
+
+  std::string disassembly;
+  tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
+
+  EXPECT_EQ(expected, disassembly);
 }
 
 }  // namespace

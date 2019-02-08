@@ -218,7 +218,8 @@ Optimizer& Optimizer::RegisterSizePasses() {
 }
 
 Optimizer& Optimizer::RegisterWebGPUPasses() {
-  return RegisterPass(CreateFlattenDecorationPass())
+  return RegisterPass(CreateStripDebugInfoPass())
+      .RegisterPass(CreateFlattenDecorationPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass());
 }
