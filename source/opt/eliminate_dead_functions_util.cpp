@@ -17,8 +17,6 @@
 namespace spvtools {
 namespace opt {
 
-// Provides functionality for eliminating functions, for use by various analyses
-// and passes.
 namespace eliminatedeadfunctionsutil {
 
 Module::iterator EliminateFunction(IRContext* context,
