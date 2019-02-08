@@ -257,6 +257,38 @@ TEST(RemoveFunctionTest, NoRemovalsDueToOpName) {
   ASSERT_EQ(0, ops.size());
 }
 
+TEST(RemoveFunctionTest, NoRemovalDueToLinkageDecoration) {
+  // The non-entry point function is not removable because it is referenced by a
+  // linkage decoration. Thus no function can be removed.
+  std::string shader = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpName %1 "main"
+               OpDecorate %2 LinkageAttributes "ExportedFunc" Export
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %1 = OpFunction %4 None %5
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %2 = OpFunction %4 None %5
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
+  auto ops =
+      RemoveFunctionReductionOpportunityFinder().GetAvailableOpportunities(
+          context.get());
+  ASSERT_EQ(0, ops.size());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools
