@@ -34,6 +34,14 @@ MergeBlocksReductionOpportunity::MergeBlocksReductionOpportunity(
 }
 
 bool MergeBlocksReductionOpportunity::PreconditionHolds() {
+  // Merge block opportunities can disable each other.
+  // Example: Given blocks: A->B->C.
+  // A is a loop header; B and C are blocks in the loop; C ends with OpReturn.
+  // There are two opportunities: B and C can be merged with their predecessors.
+  // Merge C. B now ends with OpReturn. We now just have: A->B.
+  // Merge B is now disabled, as this would lead to A, a loop header, ending
+  // with an OpReturn, which is invalid.
+
   const auto predecessors = context_->cfg()->preds(successor_block_->id());
   assert(1 == predecessors.size() &&
          "For a successor to be merged into its predecessor, exactly one "
