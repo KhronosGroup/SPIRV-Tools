@@ -34,9 +34,13 @@ MergeBlocksReductionOpportunity::MergeBlocksReductionOpportunity(
 }
 
 bool MergeBlocksReductionOpportunity::PreconditionHolds() {
-  // By construction, it is not possible for the merging of A->B to disable the
-  // merging of C->D, even when B and C are the same block.
-  return true;
+  const auto predecessors = context_->cfg()->preds(successor_block_->id());
+  assert(1 == predecessors.size() &&
+         "For a successor to be merged into its predecessor, exactly one "
+         "predecessor must be present.");
+  const uint32_t predecessor_id = predecessors[0];
+  BasicBlock* predecessor_block = context_->get_instr_block(predecessor_id);
+  return blockmergeutil::CanMergeWithSuccessor(context_, predecessor_block);
 }
 
 void MergeBlocksReductionOpportunity::Apply() {
@@ -50,6 +54,7 @@ void MergeBlocksReductionOpportunity::Apply() {
          "predecessor must be present.");
   const uint32_t predecessor_id = predecessors[0];
 
+  // We need an iterator pointing to the predecessor, hence the loop.
   for (auto bi = function_->begin(); bi != function_->end(); ++bi) {
     if (bi->id() == predecessor_id) {
       blockmergeutil::MergeWithSuccessor(context_, function_, bi);
