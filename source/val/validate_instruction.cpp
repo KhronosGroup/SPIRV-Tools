@@ -390,7 +390,7 @@ spv_result_t LimitCheckStruct(ValidationState_t& _, const Instruction* inst) {
   if(_.HasNestedBlockOrBufferBlockStruct(inst->id()) && _.HasDecoration(inst->id(), SpvDecorationBlock)){
     int debug = 1;
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "A block decorated structure may not have a block decorated struct memeber " << debug;
+             << "A block decorated structure may not have a block decorated struct member " << debug;
   }
 
   return SPV_SUCCESS;
