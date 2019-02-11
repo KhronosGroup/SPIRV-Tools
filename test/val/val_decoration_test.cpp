@@ -1511,7 +1511,7 @@ TEST_F(ValidateDecorations, BlockLayoutPermitsTightVec3ScalarPackingGood) {
 }
 
 
-TEST_F(ValidateDecorations, BlockcantappearwithinaBlockBad) {
+TEST_F(ValidateDecorations, BlockCantAppearWithinABlockBad) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1587
   std::string spirv = R"(
                OpCapability Shader
@@ -1574,8 +1574,12 @@ TEST_F(ValidateDecorations, BlockcantappearwithinaBlockBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
-      << getDiagnosticString();
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Structure id 2 decorated as Block is a member of Structure id"
+                "1 which is decorated as Block"
+                "rules: A block cannot appear within a block"));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {
@@ -2371,10 +2375,10 @@ TEST_F(ValidateDecorations, MultiplePushConstantsSingleEntryPointGood) {
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2382,7 +2386,7 @@ TEST_F(ValidateDecorations, MultiplePushConstantsSingleEntryPointGood) {
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2409,10 +2413,10 @@ TEST_F(ValidateDecorations,
                 OpEntryPoint Vertex %1 "func1"
                 OpEntryPoint Fragment %2 "func2"
                 OpExecutionMode %2 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2420,7 +2424,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2451,10 +2455,10 @@ TEST_F(ValidateDecorations,
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2462,7 +2466,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2483,10 +2487,10 @@ TEST_F(ValidateDecorations, VulkanMultiplePushConstantsSingleEntryPointBad) {
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2494,7 +2498,7 @@ TEST_F(ValidateDecorations, VulkanMultiplePushConstantsSingleEntryPointBad) {
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2528,10 +2532,10 @@ TEST_F(ValidateDecorations,
                 OpEntryPoint Vertex %1 "func1"
                 OpEntryPoint Fragment %2 "func2"
                 OpExecutionMode %2 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2539,10 +2543,10 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
- 
+
         %sub1 = OpFunction %void None %voidfn
   %label_sub1 = OpLabel
            %3 = OpAccessChain %ptr_float %pc1 %int_0
@@ -2582,10 +2586,10 @@ TEST_F(ValidateDecorations,
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2593,7 +2597,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
