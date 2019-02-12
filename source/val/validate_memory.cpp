@@ -399,6 +399,18 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  // 2.18.2. It is invalid to apply both Restrict and Aliased to the same <id>.
+  bool foundAliased2 =
+      _.HasDecoration(inst->id(), SpvDecorationAliasedPointerEXT);
+  bool foundRestrict2 =
+      _.HasDecoration(inst->id(), SpvDecorationRestrictPointerEXT);
+  if (foundAliased2 && foundRestrict2) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpVariable " << inst->id()
+           << ": expected AliasedPointerEXT or RestrictPointerEXT for "
+                        "a variable";
+  }
+
   const auto storage_class =
       inst->GetOperandAs<SpvStorageClass>(storage_class_index);
   if (storage_class != SpvStorageClassWorkgroup &&
@@ -547,7 +559,6 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
            << "PhysicalStorageBufferEXT must not be used with OpVariable.";
   }
 
-// dummy change
   auto pointee_base = pointee;
   while (pointee_base->opcode() == SpvOpTypeArray) {
     pointee_base = _.FindDef(pointee_base->GetOperandAs<uint32_t>(1u));
@@ -566,15 +577,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                << ": expected AliasedPointerEXT or RestrictPointerEXT for "
                << "PhysicalStorageBufferEXT pointer.";
       }
-      if (foundAliased && foundRestrict) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "OpVariable " << inst->id()
-               << ": can't specify both AliasedPointerEXT and "
-               << "RestrictPointerEXT for PhysicalStorageBufferEXT pointer.";
-      }
     }
   }
-// dummy change
 
   // Vulkan specific validation rules for OpTypeRuntimeArray
   if (spvIsVulkanEnv(_.context()->target_env)) {
