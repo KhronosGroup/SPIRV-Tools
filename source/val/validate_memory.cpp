@@ -547,6 +547,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
            << "PhysicalStorageBufferEXT must not be used with OpVariable.";
   }
 
+// dummy change
   auto pointee_base = pointee;
   while (pointee_base->opcode() == SpvOpTypeArray) {
     pointee_base = _.FindDef(pointee_base->GetOperandAs<uint32_t>(1u));
@@ -573,6 +574,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       }
     }
   }
+// dummy change
 
   // Vulkan specific validation rules for OpTypeRuntimeArray
   if (spvIsVulkanEnv(_.context()->target_env)) {
