@@ -232,6 +232,14 @@ class Function {
     return function_call_targets_;
   }
 
+  BasicBlock* GetMergeHeader(BasicBlock* merge_block) {
+    return merge_block_header_[merge_block];
+  }
+
+  BasicBlock* GetContinueHeader(BasicBlock* continue_target) {
+    return continue_target_header_[continue_target];
+  }
+
  private:
   // Computes the representation of the augmented CFG.
   // Populates augmented_successors_map_ and augmented_predecessors_map_.
@@ -339,6 +347,9 @@ class Function {
 
   /// This map provides the header block for a given merge block.
   std::unordered_map<BasicBlock*, BasicBlock*> merge_block_header_;
+
+  /// This map provides the header block for a given continue target.
+  std::unordered_map<BasicBlock*, BasicBlock*> continue_target_header_;
 
   /// Stores the control flow nesting depth of a given basic block
   std::unordered_map<BasicBlock*, int> block_depth_;

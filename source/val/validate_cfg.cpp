@@ -29,6 +29,7 @@
 
 #include "source/cfa.h"
 #include "source/opcode.h"
+#include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
@@ -610,6 +611,122 @@ spv_result_t StructuredControlFlowChecks(
   return SPV_SUCCESS;
 }
 
+spv_result_t PerformWebGPUCfgChecks(
+    ValidationState_t& _, Function* function,
+    const std::vector<std::pair<uint32_t, uint32_t>>& back_edges) {
+  for (auto& block : function->ordered_blocks()) {
+    if (block->reachable()) continue;
+    if (block->is_type(kBlockTypeMerge)) {
+      // 1. Find the referencing merge and confirm that it is reachable.
+      BasicBlock* merge_header = function->GetMergeHeader(block);
+      assert(merge_header != nullptr);
+      if (!merge_header->reachable()) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable merge-blocks must be referenced by "
+                  "a reachable merge instruction.";
+      }
+
+      // 2. Check that the only instructions are OpLabel and OpUnreachable.
+      auto* label_inst = block->label();
+      auto* terminator_inst = block->terminator();
+      assert(label_inst != nullptr);
+      assert(terminator_inst != nullptr);
+
+      if (terminator_inst->opcode() != SpvOpUnreachable) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable merge-blocks must terminate with "
+                  "OpUnreachable.";
+      }
+
+      auto label_idx = label_inst - &_.ordered_instructions()[0];
+      auto terminator_idx = terminator_inst - &_.ordered_instructions()[0];
+      if (label_idx + 1 != terminator_idx) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable merge-blocks must only contain an "
+                  "OpLabel and OpUnreachable instruction.";
+      }
+
+      // 3. Use label instruction to confirm there is only 1 use of the block.
+      if (label_inst->uses().size() != 1) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable merge-blocks must only be "
+                  "referenced by a single merge instruction, and cannot be the "
+                  "target of an OpBranch.";
+      }
+    } else if (block->is_type(kBlockTypeContinue)) {
+      // 1. Find referencing loop and confirm that it is reachable.
+      BasicBlock* continue_header = function->GetContinueHeader(block);
+      assert(continue_header != nullptr);
+      if (!continue_header->reachable()) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable continue-targe must be referenced "
+                  "by a reachable loop instruction.";
+      }
+
+      // 2. Confirm that continue-target has only a single back edge to loop
+      // block.
+      auto target_id = block->id();
+      auto header_id = continue_header->id();
+      bool seen_back_edge = false;
+      for (auto& edge : back_edges) {
+        auto from = edge.first;
+        if (from != target_id) continue;
+        if (seen_back_edge) {
+          return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+                 << "For WebGPU, unreachable continue-target must only have a "
+                    "single back edge.";
+        }
+        seen_back_edge = true;
+        auto to = edge.second;
+        if (to != header_id) {
+          return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+                 << "For WebGPU, unreachable continue-target must only have a "
+                    "back edge to the loop instruction.";
+        }
+      }
+
+      if (!seen_back_edge) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable continue-target must have a "
+                  "back edge to the loop instruction.";
+      }
+
+      // 3. Check that the only instructions are OpLabel and OpBranch.
+      auto* label_inst = block->label();
+      auto* terminator_inst = block->terminator();
+      assert(label_inst != nullptr);
+      assert(terminator_inst != nullptr);
+
+      if (terminator_inst->opcode() != SpvOpBranch) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable continue-target must terminate with "
+                  "OpBranch.";
+      }
+
+      auto label_idx = label_inst - &_.ordered_instructions()[0];
+      auto terminator_idx = terminator_inst - &_.ordered_instructions()[0];
+      if (label_idx + 1 != terminator_idx) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable continue-target must only contain "
+                  "an OpLabel and an OpBranch instruction.";
+      }
+
+      // 4. Use OpLabel instruction to confirm there is only 1 use of the block.
+      if (label_inst->uses().size() != 1) {
+        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+               << "For WebGPU, unreachable continue-target must only be "
+                  "referenced by a single loop instruction, and cannot be the "
+                  "target of an OpBranch.";
+      }
+    } else {
+      return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
+             << "For WebGPU, all blocks must be reachable, unless they are "
+             << "degenerate cases of merge-block or continue-target.";
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t PerformCfgChecks(ValidationState_t& _) {
   for (auto& function : _.functions()) {
     // Check all referenced blocks are defined within a function
@@ -688,6 +805,14 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
                    << " appears in the binary before its dominator "
                    << _.getIdName(idom->id());
           }
+        }
+
+        // For WebGPU check that all unreachable blocks are degenerate cases for
+        // merge-block or continue-target.
+        if (spvIsWebGPUEnv(_.context()->target_env)) {
+          spv_result_t result =
+              PerformWebGPUCfgChecks(_, &function, back_edges);
+          if (result != SPV_SUCCESS) return result;
         }
       }
       // If we have structed control flow, check that no block has a control
