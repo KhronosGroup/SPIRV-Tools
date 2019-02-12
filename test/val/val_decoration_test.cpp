@@ -2303,10 +2303,10 @@ TEST_F(ValidateDecorations, MultiplePushConstantsSingleEntryPointGood) {
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2314,7 +2314,7 @@ TEST_F(ValidateDecorations, MultiplePushConstantsSingleEntryPointGood) {
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2341,10 +2341,10 @@ TEST_F(ValidateDecorations,
                 OpEntryPoint Vertex %1 "func1"
                 OpEntryPoint Fragment %2 "func2"
                 OpExecutionMode %2 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2352,7 +2352,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2383,10 +2383,10 @@ TEST_F(ValidateDecorations,
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2394,7 +2394,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2415,10 +2415,10 @@ TEST_F(ValidateDecorations, VulkanMultiplePushConstantsSingleEntryPointBad) {
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2426,7 +2426,7 @@ TEST_F(ValidateDecorations, VulkanMultiplePushConstantsSingleEntryPointBad) {
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2460,10 +2460,10 @@ TEST_F(ValidateDecorations,
                 OpEntryPoint Vertex %1 "func1"
                 OpEntryPoint Fragment %2 "func2"
                 OpExecutionMode %2 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2471,10 +2471,10 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
- 
+
         %sub1 = OpFunction %void None %voidfn
   %label_sub1 = OpLabel
            %3 = OpAccessChain %ptr_float %pc1 %int_0
@@ -2514,10 +2514,10 @@ TEST_F(ValidateDecorations,
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2525,7 +2525,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -5097,6 +5097,36 @@ TEST_F(ValidateDecorations, NoUnsignedWrapExtInstGLSLGood) {
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
+
+TEST_F(ValidateDecorations, AliasedRestrictBothBad) {
+  const std::string body = R"(
+OpCapability PhysicalStorageBufferAddressesEXT
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_EXT_physical_storage_buffer"
+OpMemoryModel Logical GLSL450
+OpDecorate %inner RestrictPointerEXT
+OpDecorate %inner AliasedPointerEXT
+OpMemberDecorate %inner 0 Offset 0
+OpDecorate %outer Block
+OpMemberDecorate %outer 0 Offset 0
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%int = OpTypeInt 32 0
+%inner = OpTypeStruct %int
+%outer = OpTypeStruct %inner
+%ptr_ssbo_outer = OpTypePointer PhysicalStorageBufferEXT %outer
+%var = OpVariable %ptr_ssbo_outer PhysicalStorageBufferEXT
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected AliasedPointerEXT or RestrictPointerEXT for "
+                        "a variable"));
+}
+
 // TODO(dneto): For NoUnsignedWrap and NoUnsignedWrap, permit
 // "OpExtInst for instruction numbers specified in the extended
 // instruction-set specifications as accepting this decoration."
@@ -5153,37 +5183,6 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected AliasedPointerEXT or RestrictPointerEXT for "
                         "PhysicalStorageBufferEXT pointer"));
-}
-
-TEST_F(ValidateDecorations, PSBAliasedRestrictPointerBoth) {
-  const std::string body = R"(
-OpCapability PhysicalStorageBufferAddressesEXT
-OpCapability Int64
-OpCapability Shader
-OpExtension "SPV_EXT_physical_storage_buffer"
-OpMemoryModel PhysicalStorageBuffer64EXT GLSL450
-OpEntryPoint Fragment %main "main"
-OpExecutionMode %main OriginUpperLeft
-OpDecorate %val1 RestrictPointerEXT
-OpDecorate %val1 AliasedPointerEXT
-%uint64 = OpTypeInt 64 0
-%ptr = OpTypePointer PhysicalStorageBufferEXT %uint64
-%pptr_f = OpTypePointer Function %ptr
-%void = OpTypeVoid
-%voidfn = OpTypeFunction %void
-%main = OpFunction %void None %voidfn
-%entry = OpLabel
-%val1 = OpVariable %pptr_f Function
-OpReturn
-OpFunctionEnd
-)";
-
-  CompileSuccessfully(body.c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("can't specify both AliasedPointerEXT and RestrictPointerEXT "
-                "for PhysicalStorageBufferEXT pointer"));
 }
 
 TEST_F(ValidateDecorations, PSBAliasedRestrictFunctionParamSuccess) {
