@@ -385,7 +385,6 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
       Instruction* inst = const_cast<Instruction*>(&instruction);
       vstate->RegisterInstruction(inst);
     }
-    if (auto error = UpdateIdUse(*vstate, &instruction)) return error;
   }
 
   if (!vstate->has_memory_model_specified())
@@ -398,6 +397,11 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   // Catch undefined forward references before performing further checks.
   if (auto error = ValidateForwardDecls(*vstate)) return error;
+
+  for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
+    auto& instruction = vstate->ordered_instructions()[i];
+    if (auto error = UpdateIdUse(*vstate, &instruction)) return error;
+  }
 
   // Validate individual opcodes.
   for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
