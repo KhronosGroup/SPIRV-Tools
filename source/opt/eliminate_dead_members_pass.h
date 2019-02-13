@@ -114,7 +114,7 @@ class EliminateDeadMembersPass : public MemPass {
   // members. If the member being inserted is not live, then |inst| is killed.
   // This function must be called after the |OpTypeStruct| instruction for the
   // type has been updated.  Return true if something changed.
-  bool UpdateCompsiteInsert(Instruction* inst);
+  bool UpdateCompositeInsert(Instruction* inst);
 
   // Update the |OpArrayLength| instruction |inst| to reference the correct
   // member. The member referenced in the instruction must be live.  Return true

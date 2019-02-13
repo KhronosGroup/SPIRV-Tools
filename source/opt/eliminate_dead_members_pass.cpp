@@ -274,7 +274,7 @@ bool EliminateDeadMembersPass::RemoveDeadMembers() {
         modified |= UpdateCompsiteExtract(inst);
         break;
       case SpvOpCompositeInsert:
-        modified |= UpdateCompsiteInsert(inst);
+        modified |= UpdateCompositeInsert(inst);
         break;
       case SpvOpArrayLength:
         modified |= UpdateOpArrayLength(inst);
@@ -536,7 +536,7 @@ bool EliminateDeadMembersPass::UpdateCompsiteExtract(Instruction* inst) {
   return true;
 }
 
-bool EliminateDeadMembersPass::UpdateCompsiteInsert(Instruction* inst) {
+bool EliminateDeadMembersPass::UpdateCompositeInsert(Instruction* inst) {
   uint32_t composite_id = inst->GetSingleWordInOperand(1);
   Instruction* composite_inst = get_def_use_mgr()->GetDef(composite_id);
   uint32_t type_id = composite_inst->type_id();

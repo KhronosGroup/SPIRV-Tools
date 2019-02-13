@@ -29,8 +29,10 @@ TEST_F(EliminateDeadMemberTest, RemoveMember1) {
   // Update OpMemberDecorate for |y| and |z|.
   // Update OpAccessChain for access to |z|.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "x"
-; CHECK: OpMemberName %type__Globals 1 "z"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "x"
+; CHECK-NEXT: OpMemberName %type__Globals 1 "z"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 0
 ; CHECK: OpMemberDecorate %type__Globals 1 Offset 8
 ; CHECK: %type__Globals = OpTypeStruct %float %float
@@ -98,12 +100,12 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberWithGroupDecorations) {
   // Update OpGroupMemberDecorate for %type__Globals member 1 and 2.
   // Update OpAccessChain for access to %type__Globals member 2.
   const std::string text = R"(
-; CHECK: [[gr1:%\w+]] = OpDecorationGroup
-; CHECK: [[gr2:%\w+]] = OpDecorationGroup
-; CHECK: [[gr3:%\w+]] = OpDecorationGroup
-; CHECK: OpDecorate [[gr1]] Offset 0
-; CHECK: OpDecorate [[gr2]] Offset 4
-; CHECK: OpDecorate [[gr3]] Offset 8
+; CHECK: OpDecorate [[gr1:%\w+]] Offset 0
+; CHECK: OpDecorate [[gr2:%\w+]] Offset 4
+; CHECK: OpDecorate [[gr3:%\w+]] Offset 8
+; CHECK: [[gr1]] = OpDecorationGroup
+; CHECK: [[gr2]] = OpDecorationGroup
+; CHECK: [[gr3]] = OpDecorationGroup
 ; CHECK: OpGroupMemberDecorate [[gr1]] %type__Globals 0
 ; CHECK-NOT: OpGroupMemberDecorate [[gr2]]
 ; CHECK: OpGroupMemberDecorate [[gr3]] %type__Globals 1
@@ -116,9 +118,6 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberWithGroupDecorations) {
                OpSource HLSL 600
                OpName %type__Globals "type.$Globals"
                OpName %_Globals "$Globals"
-        %gr1 = OpDecorationGroup
-        %gr2 = OpDecorationGroup
-        %gr3 = OpDecorationGroup
                OpDecorate %gl_Position BuiltIn Position
                OpDecorate %in_var_Position Location 0
                OpDecorate %_Globals DescriptorSet 0
@@ -127,6 +126,9 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberWithGroupDecorations) {
                OpDecorate %gr2 Offset 4
                OpDecorate %gr3 Offset 8
                OpDecorate %type__Globals Block
+        %gr1 = OpDecorationGroup
+        %gr2 = OpDecorationGroup
+        %gr3 = OpDecorationGroup
                OpGroupMemberDecorate %gr1 %type__Globals 0
                OpGroupMemberDecorate %gr2 %type__Globals 1
                OpGroupMemberDecorate %gr3 %type__Globals 2
@@ -173,8 +175,10 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberUpdateConstant) {
   // Test that the member "x" is removed.
   // Update the OpConstantComposite instruction.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "y"
-; CHECK: OpMemberName %type__Globals 1 "z"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "y"
+; CHECK-NEXT: OpMemberName %type__Globals 1 "z"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 4
 ; CHECK: OpMemberDecorate %type__Globals 1 Offset 8
 ; CHECK: %type__Globals = OpTypeStruct %float %float
@@ -246,8 +250,10 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberUpdateCompositeConstruct) {
   // Test that the member "x" is removed.
   // Update the OpConstantComposite instruction.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "y"
-; CHECK: OpMemberName %type__Globals 1 "z"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "y"
+; CHECK-NEXT: OpMemberName %type__Globals 1 "z"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 4
 ; CHECK: OpMemberDecorate %type__Globals 1 Offset 8
 ; CHECK: %type__Globals = OpTypeStruct %float %float
@@ -321,7 +327,9 @@ TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateInserExtract1) {
   // Remove the OpCompositeInsert instruction since the member being inserted is
   // dead.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "y"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "y"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 4
 ; CHECK-NOT: OpMemberDecorate %type__Globals 1 Offset
 ; CHECK: %type__Globals = OpTypeStruct %float
@@ -369,7 +377,9 @@ TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateInserExtract2) {
   // Update the OpCompositeExtract instruction.
   // Update the OpCompositeInsert instruction.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "y"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "y"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 4
 ; CHECK-NOT: OpMemberDecorate %type__Globals 1 Offset
 ; CHECK: %type__Globals = OpTypeStruct %float
@@ -417,7 +427,9 @@ TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateInserExtract3) {
   // substruct. Update the OpCompositeExtract instruction. Update the
   // OpCompositeInsert instruction.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "y"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "y"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 16
 ; CHECK-NOT: OpMemberDecorate %type__Globals 1 Offset
 ; CHECK: OpMemberDecorate [[struct:%\w+]] 0 Offset 4
@@ -470,7 +482,9 @@ TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateInserExtract4) {
   // substruct. Update the OpCompositeExtract instruction. Update the
   // OpCompositeInsert instruction.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "y"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "y"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 16
 ; CHECK-NOT: OpMemberDecorate %type__Globals 1 Offset
 ; CHECK: OpMemberDecorate [[struct:%\w+]] 0 Offset 4
@@ -528,7 +542,9 @@ TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateArrayLength) {
   // Member "z" is live because of the OpArrayLength instruction.
   // Update the OpArrayLength instruction.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "z"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "z"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 16
 ; CHECK-NOT: OpMemberDecorate %type__Globals 1 Offset
 ; CHECK: %type__Globals = OpTypeStruct %_runtimearr_float
@@ -740,7 +756,9 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberAccessChainWithArrays) {
   // Leave only 1 member in each of the structs.
   // Update OpMemberName, OpMemberDecorate, and OpAccessChain.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "y"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "y"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 16
 ; CHECK: OpMemberDecorate [[struct:%\w+]] 0 Offset 4
 ; CHECK: [[struct]] = OpTypeStruct %float
@@ -800,8 +818,10 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberInboundsAccessChain) {
   // Update OpMemberDecorate for |y| and |z|.
   // Update OpInboundsAccessChain for access to |z|.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "x"
-; CHECK: OpMemberName %type__Globals 1 "z"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "x"
+; CHECK-NEXT: OpMemberName %type__Globals 1 "z"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 0
 ; CHECK: OpMemberDecorate %type__Globals 1 Offset 8
 ; CHECK: %type__Globals = OpTypeStruct %float %float
@@ -870,8 +890,10 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberPtrAccessChain) {
   // Update OpMemberDecorate for |y| and |z|.
   // Update OpInboundsAccessChain for access to |z|.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "x"
-; CHECK: OpMemberName %type__Globals 1 "z"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "x"
+; CHECK-NEXT: OpMemberName %type__Globals 1 "z"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 0
 ; CHECK: OpMemberDecorate %type__Globals 1 Offset 16
 ; CHECK: %type__Globals = OpTypeStruct %float %float
@@ -927,8 +949,10 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberInBoundsPtrAccessChain) {
   // Update OpMemberDecorate for |y| and |z|.
   // Update OpInboundsAccessChain for access to |z|.
   const std::string text = R"(
-; CHECK: OpMemberName %type__Globals 0 "x"
-; CHECK: OpMemberName %type__Globals 1 "z"
+; CHECK: OpName
+; CHECK-NEXT: OpMemberName %type__Globals 0 "x"
+; CHECK-NEXT: OpMemberName %type__Globals 1 "z"
+; CHECK-NOT: OpMemberName
 ; CHECK: OpMemberDecorate %type__Globals 0 Offset 0
 ; CHECK: OpMemberDecorate %type__Globals 1 Offset 16
 ; CHECK: %type__Globals = OpTypeStruct %float %float
