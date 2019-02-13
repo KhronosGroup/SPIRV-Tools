@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+// Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -136,6 +136,7 @@ class EliminateDeadMembersPass : public MemPass {
   // A map from a type id to a set of indices representing the members of the
   // type that are used, and must be kept.
   std::unordered_map<uint32_t, std::set<uint32_t>> used_members_;
+  void MarkStructOperandsAsFullyUsed(const Instruction* inst);
 };
 
 }  // namespace opt

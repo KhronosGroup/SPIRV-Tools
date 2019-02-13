@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Google LLC
+// Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,15 @@ Pass::Status EliminateDeadMembersPass::Process() {
 }
 
 void EliminateDeadMembersPass::FindLiveMembers() {
+  // Until we have implemented the rewritting of OpSpecConsantOp instructions,
+  // we have to mark them as fully used just to be safe.
+  for (auto& inst : get_module()->types_values()) {
+    if (inst.opcode() != SpvOpSpecConstantOp) {
+      continue;
+    }
+    MarkTypeAsFullyUsed(inst.type_id());
+  }
+
   for (const Function& func : *get_module()) {
     FindLiveMembers(func);
   }
@@ -73,14 +82,22 @@ void EliminateDeadMembersPass::FindLiveMembers(const Instruction* inst) {
     case SpvOpArrayLength:
       MarkMembersAsLiveForArrayLength(inst);
       break;
+    case SpvOpLoad:
+    case SpvOpCompositeInsert:
+      break;
     default:
+      // This path is here for safety.  All instructions that can reference
+      // structs in a function body should be handled above.  However, this will
+      // keep the pass valid, but not optimal, as new instructions get added
+      // or if something was missed.
+      MarkStructOperandsAsFullyUsed(inst);
       break;
   }
 }
 
 void EliminateDeadMembersPass::MarkMembersAsLiveForStore(
     const Instruction* inst) {
-  // We should on have to mark the members as live if the store is to
+  // We should only have to mark the members as live if the store is to
   // memory that is read outside of the shader.  Other passes can remove all
   // store to memory that is not visible outside of the shader, so we do not
   // complicate the code for now.
@@ -572,6 +589,16 @@ bool EliminateDeadMembersPass::UpdateOpArrayLength(Instruction* inst) {
   inst->SetInOperand(1, {new_member_idx});
   context()->UpdateDefUse(inst);
   return true;
+}
+
+void EliminateDeadMembersPass::MarkStructOperandsAsFullyUsed(
+    const Instruction* inst) {
+  inst->ForEachInId([this](const uint32_t* id) {
+    Instruction* instruction = get_def_use_mgr()->GetDef(*id);
+    if (instruction->type_id() != 0) {
+      MarkTypeAsFullyUsed(instruction->type_id());
+    }
+  });
 }
 
 }  // namespace opt

@@ -228,7 +228,7 @@ Optimizer::PassToken CreateEliminateDeadFunctionsPass();
 
 // Creates an eliminate-dead-members pass.
 // An eliminate-dead-members pass will remove all unused members of structures.
-// This will not effect the data layout of the remaining members.
+// This will not affect the data layout of the remaining members.
 Optimizer::PassToken CreateEliminateDeadMembersPass();
 
 // Creates a set-spec-constant-default-value pass from a mapping from spec-ids
