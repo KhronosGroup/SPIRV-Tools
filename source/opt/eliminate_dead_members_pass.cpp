@@ -187,15 +187,22 @@ void EliminateDeadMembersPass::MarkMembersAsLiveForAccessChain(
                     : 2);
   for (; i < inst->NumInOperands(); ++i) {
     Instruction* type_inst = get_def_use_mgr()->GetDef(type_id);
-    const analysis::IntConstant* member_idx =
-        const_mgr->FindDeclaredConstant(inst->GetSingleWordInOperand(i))
-            ->AsIntConstant();
-    assert(member_idx);
     switch (type_inst->opcode()) {
-      case SpvOpTypeStruct:
-        used_members_[type_id].insert(member_idx->GetU32());
-        type_id = type_inst->GetSingleWordInOperand(member_idx->GetU32());
-        break;
+      case SpvOpTypeStruct: {
+        const analysis::IntConstant* member_idx =
+            const_mgr->FindDeclaredConstant(inst->GetSingleWordInOperand(i))
+                ->AsIntConstant();
+        assert(member_idx);
+        if (member_idx->type()->AsInteger()->width() == 32) {
+          used_members_[type_id].insert(member_idx->GetU32());
+          type_id = type_inst->GetSingleWordInOperand(member_idx->GetU32());
+        } else {
+          used_members_[type_id].insert(
+              static_cast<uint32_t>(member_idx->GetU64()));
+          type_id = type_inst->GetSingleWordInOperand(
+              static_cast<uint32_t>(member_idx->GetU64()));
+        }
+      } break;
       case SpvOpTypeArray:
       case SpvOpTypeRuntimeArray:
       case SpvOpTypeVector:
@@ -416,39 +423,46 @@ bool EliminateDeadMembersPass::UpdateAccessChain(Instruction* inst) {
   for (uint32_t i = static_cast<uint32_t>(new_operands.size());
        i < inst->NumInOperands(); ++i) {
     Instruction* type_inst = get_def_use_mgr()->GetDef(type_id);
-    const analysis::IntConstant* member_idx =
-        const_mgr->FindDeclaredConstant(inst->GetSingleWordInOperand(i))
-            ->AsIntConstant();
-    assert(member_idx);
-    uint32_t new_member_idx = GetNewMemberIndex(type_id, member_idx->GetU32());
-    assert(new_member_idx != kRemovedMember);
-    if (member_idx->GetU32() != new_member_idx) {
-      InstructionBuilder ir_builder(
-          context(), inst,
-          IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
-      uint32_t const_id =
-          ir_builder.GetUintConstant(new_member_idx)->result_id();
-      new_operands.emplace_back(Operand({SPV_OPERAND_TYPE_ID, {const_id}}));
-      modified = true;
-    } else {
-      new_operands.emplace_back(inst->GetInOperand(i));
-    }
     switch (type_inst->opcode()) {
-      case SpvOpTypeStruct:
-        assert(i != 1 || (inst->opcode() != SpvOpPtrAccessChain &&
-                          inst->opcode() != SpvOpInBoundsPtrAccessChain));
-        // The type will have already been rewriten, so use the new member
+      case SpvOpTypeStruct: {
+        const analysis::IntConstant* member_idx =
+            const_mgr->FindDeclaredConstant(inst->GetSingleWordInOperand(i))
+                ->AsIntConstant();
+        assert(member_idx);
+        uint32_t orig_member_idx;
+        if (member_idx->type()->AsInteger()->width() == 32) {
+          orig_member_idx = member_idx->GetU32();
+        } else {
+          orig_member_idx = static_cast<uint32_t>(member_idx->GetU64());
+        }
+        uint32_t new_member_idx = GetNewMemberIndex(type_id, orig_member_idx);
+        assert(new_member_idx != kRemovedMember);
+        if (orig_member_idx != new_member_idx) {
+          InstructionBuilder ir_builder(
+              context(), inst,
+              IRContext::kAnalysisDefUse |
+                  IRContext::kAnalysisInstrToBlockMapping);
+          uint32_t const_id =
+              ir_builder.GetUintConstant(new_member_idx)->result_id();
+          new_operands.emplace_back(Operand({SPV_OPERAND_TYPE_ID, {const_id}}));
+          modified = true;
+        } else {
+          new_operands.emplace_back(inst->GetInOperand(i));
+        }
+        // The type will have already been rewritten, so use the new member
         // index.
         type_id = type_inst->GetSingleWordInOperand(new_member_idx);
-        break;
+      } break;
       case SpvOpTypeArray:
       case SpvOpTypeRuntimeArray:
       case SpvOpTypeVector:
       case SpvOpTypeMatrix:
+        new_operands.emplace_back(inst->GetInOperand(i));
         type_id = type_inst->GetSingleWordInOperand(0);
         break;
       default:
         assert(false);
+        break;
     }
   }
 

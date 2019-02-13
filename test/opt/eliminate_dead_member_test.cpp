@@ -412,6 +412,117 @@ TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateInserExtract2) {
   SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
 }
 
+TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateInserExtract3) {
+  // Test that the members "x" and "z" are removed, and one member from the
+  // substruct. Update the OpCompositeExtract instruction. Update the
+  // OpCompositeInsert instruction.
+  const std::string text = R"(
+; CHECK: OpMemberName %type__Globals 0 "y"
+; CHECK: OpMemberDecorate %type__Globals 0 Offset 16
+; CHECK-NOT: OpMemberDecorate %type__Globals 1 Offset
+; CHECK: OpMemberDecorate [[struct:%\w+]] 0 Offset 4
+; CHECK: [[struct:%\w+]] = OpTypeStruct %float
+; CHECK: %type__Globals = OpTypeStruct [[struct]]
+; CHECK: [[ld:%\w+]] = OpLoad %type__Globals %_Globals
+; CHECK: [[ex:%\w+]] = OpCompositeExtract %float [[ld]] 0 0
+; CHECK: OpCompositeInsert %type__Globals [[ex]] [[ld]] 0 0
+; CHECK: OpReturn
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource HLSL 600
+               OpName %type__Globals "type.$Globals"
+               OpMemberName %type__Globals 0 "x"
+               OpMemberName %type__Globals 1 "y"
+               OpMemberName %type__Globals 2 "z"
+               OpName %_Globals "$Globals"
+               OpName %main "main"
+               OpDecorate %_Globals DescriptorSet 0
+               OpDecorate %_Globals Binding 0
+               OpMemberDecorate %type__Globals 0 Offset 0
+               OpMemberDecorate %type__Globals 1 Offset 16
+               OpMemberDecorate %type__Globals 2 Offset 24
+               OpMemberDecorate %_struct_6 0 Offset 0
+               OpMemberDecorate %_struct_6 1 Offset 4
+               OpDecorate %type__Globals Block
+      %float = OpTypeFloat 32
+  %_struct_6 = OpTypeStruct %float %float
+%type__Globals = OpTypeStruct %float %_struct_6 %float
+%_ptr_Uniform_type__Globals = OpTypePointer Uniform %type__Globals
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+   %_Globals = OpVariable %_ptr_Uniform_type__Globals Uniform
+       %main = OpFunction %void None %7
+          %8 = OpLabel
+          %9 = OpLoad %type__Globals %_Globals
+         %10 = OpCompositeExtract %float %9 1 1
+         %11 = OpCompositeInsert %type__Globals %10 %9 1 1
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
+}
+
+TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateInserExtract4) {
+  // Test that the members "x" and "z" are removed, and one member from the
+  // substruct. Update the OpCompositeExtract instruction. Update the
+  // OpCompositeInsert instruction.
+  const std::string text = R"(
+; CHECK: OpMemberName %type__Globals 0 "y"
+; CHECK: OpMemberDecorate %type__Globals 0 Offset 16
+; CHECK-NOT: OpMemberDecorate %type__Globals 1 Offset
+; CHECK: OpMemberDecorate [[struct:%\w+]] 0 Offset 4
+; CHECK: [[struct:%\w+]] = OpTypeStruct %float
+; CHECK: [[array:%\w+]] = OpTypeArray [[struct]]
+; CHECK: %type__Globals = OpTypeStruct [[array]]
+; CHECK: [[ld:%\w+]] = OpLoad %type__Globals %_Globals
+; CHECK: [[ex:%\w+]] = OpCompositeExtract %float [[ld]] 0 1 0
+; CHECK: OpCompositeInsert %type__Globals [[ex]] [[ld]] 0 1 0
+; CHECK: OpReturn
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource HLSL 600
+               OpName %type__Globals "type.$Globals"
+               OpMemberName %type__Globals 0 "x"
+               OpMemberName %type__Globals 1 "y"
+               OpMemberName %type__Globals 2 "z"
+               OpName %_Globals "$Globals"
+               OpName %main "main"
+               OpDecorate %_Globals DescriptorSet 0
+               OpDecorate %_Globals Binding 0
+               OpMemberDecorate %type__Globals 0 Offset 0
+               OpMemberDecorate %type__Globals 1 Offset 16
+               OpMemberDecorate %type__Globals 2 Offset 80
+               OpMemberDecorate %_struct_6 0 Offset 0
+               OpMemberDecorate %_struct_6 1 Offset 4
+               OpDecorate %array ArrayStride 16
+               OpDecorate %type__Globals Block
+       %uint = OpTypeInt 32 0                         ; 32-bit int, sign-less
+     %uint_4 = OpConstant %uint 4
+      %float = OpTypeFloat 32
+  %_struct_6 = OpTypeStruct %float %float
+  %array = OpTypeArray %_struct_6 %uint_4
+%type__Globals = OpTypeStruct %float %array %float
+%_ptr_Uniform_type__Globals = OpTypePointer Uniform %type__Globals
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+   %_Globals = OpVariable %_ptr_Uniform_type__Globals Uniform
+       %main = OpFunction %void None %7
+          %8 = OpLabel
+          %9 = OpLoad %type__Globals %_Globals
+         %10 = OpCompositeExtract %float %9 1 1 1
+         %11 = OpCompositeInsert %type__Globals %10 %9 1 1 1
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
+}
+
 TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateArrayLength) {
   // Test that the members "x" and "y" are removed.
   // Member "z" is live because of the OpArrayLength instruction.
@@ -623,6 +734,64 @@ TEST_F(EliminateDeadMemberTest, KeepMembersOpReturnValue) {
   auto result = SinglePassRunAndDisassemble<opt::EliminateDeadMembersPass>(
       text, /* skip_nop = */ true, /* do_validation = */ true);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
+TEST_F(EliminateDeadMemberTest, RemoveMemberAccessChainWithArrays) {
+  // Leave only 1 member in each of the structs.
+  // Update OpMemberName, OpMemberDecorate, and OpAccessChain.
+  const std::string text = R"(
+; CHECK: OpMemberName %type__Globals 0 "y"
+; CHECK: OpMemberDecorate %type__Globals 0 Offset 16
+; CHECK: OpMemberDecorate [[struct:%\w+]] 0 Offset 4
+; CHECK: [[struct]] = OpTypeStruct %float
+; CHECK: [[array:%\w+]] = OpTypeArray [[struct]]
+; CHECK: %type__Globals = OpTypeStruct [[array]]
+; CHECK: [[undef:%\w+]] = OpUndef %uint
+; CHECK: OpAccessChain %_ptr_Uniform_float %_Globals [[undef]] %uint_0 [[undef]] %uint_0
+               OpCapability Shader
+               OpCapability VariablePointersStorageBuffer
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource HLSL 600
+               OpName %type__Globals "type.$Globals"
+               OpMemberName %type__Globals 0 "x"
+               OpMemberName %type__Globals 1 "y"
+               OpMemberName %type__Globals 2 "z"
+               OpName %_Globals "$Globals"
+               OpName %main "main"
+               OpDecorate %_Globals DescriptorSet 0
+               OpDecorate %_Globals Binding 0
+               OpMemberDecorate %type__Globals 0 Offset 0
+               OpMemberDecorate %type__Globals 1 Offset 16
+               OpMemberDecorate %type__Globals 2 Offset 48
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpMemberDecorate %_struct_4 1 Offset 4
+               OpDecorate %_arr__struct_4_uint_2 ArrayStride 16
+               OpDecorate %type__Globals Block
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+      %float = OpTypeFloat 32
+  %_struct_4 = OpTypeStruct %float %float
+%_arr__struct_4_uint_2 = OpTypeArray %_struct_4 %uint_2
+%type__Globals = OpTypeStruct %float %_arr__struct_4_uint_2 %float
+%_arr_type__Globals_uint_3 = OpTypeArray %type__Globals %uint_3
+%_ptr_Uniform__arr_type__Globals_uint_3 = OpTypePointer Uniform %_arr_type__Globals_uint_3
+       %void = OpTypeVoid
+         %15 = OpTypeFunction %void
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+   %_Globals = OpVariable %_ptr_Uniform__arr_type__Globals_uint_3 Uniform
+       %main = OpFunction %void None %15
+         %17 = OpLabel
+         %18 = OpUndef %uint
+         %19 = OpAccessChain %_ptr_Uniform_float %_Globals %18 %uint_1 %18 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
 }
 
 TEST_F(EliminateDeadMemberTest, RemoveMemberInboundsAccessChain) {
