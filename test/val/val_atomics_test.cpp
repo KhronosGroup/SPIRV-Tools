@@ -225,6 +225,29 @@ TEST_F(ValidateAtomics, AtomicLoadKernelSuccess) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateAtomics, AtomicLoadFloatNotVulkanSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %f32 %f32_var %device %relaxed
+%val2 = OpAtomicLoad %f32 %f32_var %workgroup %acquire
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicLoadFloatVulkan) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %f32 %f32_var %device %relaxed
+%val2 = OpAtomicLoad %f32 %f32_var %workgroup %acquire
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("expected Result Type to be int scalar type"));
+}
+
 TEST_F(ValidateAtomics, AtomicLoadVulkanSuccess) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %u32 %u32_var %device %relaxed

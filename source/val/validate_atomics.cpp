@@ -55,7 +55,8 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
       if (_.HasCapability(SpvCapabilityKernel) &&
           (opcode == SpvOpAtomicLoad || opcode == SpvOpAtomicExchange ||
            opcode == SpvOpAtomicCompareExchange)) {
-        if (!_.IsFloatScalarType(result_type) &&
+        if (!(_.IsFloatScalarType(result_type) &&
+          !spvIsVulkanEnv(_.context()->target_env)) &&
             !_.IsIntScalarType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
