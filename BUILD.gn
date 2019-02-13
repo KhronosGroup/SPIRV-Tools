@@ -305,7 +305,6 @@ source_set("spvtools_headers") {
 
 static_library("spvtools") {
   deps = [
-    ":spvtools_core_enums_unified1",
     ":spvtools_core_tables_unified1",
     ":spvtools_generators_inc",
     ":spvtools_glsl_tables_glsl1-0",
@@ -376,6 +375,7 @@ static_library("spvtools") {
   ]
 
   public_deps = [
+    ":spvtools_core_enums_unified1",
     ":spvtools_headers",
   ]
 
