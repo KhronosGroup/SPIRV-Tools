@@ -1186,8 +1186,8 @@ spv_result_t CheckFPRoundingModeForShaders(ValidationState_t& vstate,
   for (const auto& use : inst.uses()) {
     const auto store = use.first;
     if (store->opcode() == SpvOpFConvert) continue;
-    if (store->opcode() == SpvOpDecorate) continue;
-    if (store->opcode() == SpvOpMemberDecorate) continue;
+    if (spvOpcodeIsDebug(store->opcode())) continue;
+    if (spvOpcodeIsDecoration(store->opcode())) continue;
     if (store->opcode() != SpvOpStore) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
              << "FPRoundingMode decoration can be applied only to the "

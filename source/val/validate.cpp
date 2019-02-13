@@ -398,6 +398,14 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   // Catch undefined forward references before performing further checks.
   if (auto error = ValidateForwardDecls(*vstate)) return error;
 
+  // ID usage needs be handled in its own iteration of the instructions,
+  // between the two others. It depends on the first loop to have been
+  // finished, so that all instructions have been registered. And the following
+  // loop depends on all of the usage data being populated. Thus it cannot live
+  // in either of those iterations.
+  // It should also live after the forward declaration check, since it will
+  // have problems with missing forward declarations, but give less useful error
+  // messages.
   for (size_t i = 0; i < vstate->ordered_instructions().size(); ++i) {
     auto& instruction = vstate->ordered_instructions()[i];
     if (auto error = UpdateIdUse(*vstate, &instruction)) return error;
