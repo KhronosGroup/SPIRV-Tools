@@ -2873,8 +2873,6 @@ TEST_F(ValidateDecorations,
             OpEntryPoint Fragment %1 "main"
             OpExecutionMode %1 OriginUpperLeft
 
-            OpDecorate %struct BufferBlock
-
     %void = OpTypeVoid
   %voidfn = OpTypeFunction %void
    %float = OpTypeFloat 32
