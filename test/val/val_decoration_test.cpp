@@ -1519,16 +1519,19 @@ TEST_F(ValidateDecorations, BlockCantAppearWithinABlockBad) {
                OpSource GLSL 450
                OpMemberDecorate %S 0 Offset 0
                OpMemberDecorate %S 1 Offset 16
-               OpMemberDecorate %S2 0 Offset 0
-               OpMemberDecorate %S2 1 Offset 12
+              OpMemberDecorate %S2 0 Offset 0
+               OpMemberDecorate %S2 1 Offset 16
+               OpMemberDecorate %S3 0 Offset 0
+               OpMemberDecorate %S3 1 Offset 12
                OpDecorate %S Block
-               OpDecorate %S2 Block
+               OpDecorate %S3 Block
                OpDecorate %B DescriptorSet 0
                OpDecorate %B Binding 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
-         %S2 = OpTypeStruct %float %float
+         %S3 = OpTypeStruct %float %float
+         %S2 = OpTypeStruct %float %S3
           %S = OpTypeStruct %float %S2
 %_ptr_Uniform_S = OpTypePointer Uniform %S
           %B = OpVariable %_ptr_Uniform_S Uniform
@@ -1542,9 +1545,7 @@ TEST_F(ValidateDecorations, BlockCantAppearWithinABlockBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Structure id 2 decorated as Block is a member of Structure id"
-                "1 which is decorated as Block"
-                "rules: A block cannot appear within a block"));
+      HasSubstr("rules: A block cannot appear within a block."));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {
