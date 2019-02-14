@@ -1543,9 +1543,8 @@ TEST_F(ValidateDecorations, BlockCantAppearWithinABlockBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("rules: A block cannot appear within a block."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("rules: A block cannot appear within a block."));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {
