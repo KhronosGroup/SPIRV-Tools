@@ -370,11 +370,10 @@ spv_result_t LimitCheckStruct(ValidationState_t& _, const Instruction* inst) {
       max_member_depth = std::max(
           max_member_depth, _.struct_nesting_depth(memberTypeInstr->id()));
 
-    if(_.HasDecoration(memberTypeInstr->id(), SpvDecorationBlock)
-     || _.HasNestedBlockOrBufferBlockStruct(memberTypeInstr->id()))
-      has_nested_blockOrBufferBlock_struct = true;
+      if (_.HasDecoration(memberTypeInstr->id(), SpvDecorationBlock) ||
+          _.HasNestedBlockOrBufferBlockStruct(memberTypeInstr->id()))
+        has_nested_blockOrBufferBlock_struct = true;
     }
-
   }
 
   const uint32_t depth_limit = _.options()->universal_limits_.max_struct_depth;
@@ -386,11 +385,15 @@ spv_result_t LimitCheckStruct(ValidationState_t& _, const Instruction* inst) {
            << ". Found " << cur_depth << ".";
   }
 
-  _.SetHasNestedBlockOrBufferBlockStruct(inst->id(), has_nested_blockOrBufferBlock_struct);
-  if(_.HasNestedBlockOrBufferBlockStruct(inst->id()) && _.HasDecoration(inst->id(), SpvDecorationBlock)){
+  _.SetHasNestedBlockOrBufferBlockStruct(inst->id(),
+                                         has_nested_blockOrBufferBlock_struct);
+  if (_.HasNestedBlockOrBufferBlockStruct(inst->id()) &&
+      _.HasDecoration(inst->id(), SpvDecorationBlock)) {
     int debug = 1;
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "A block decorated structure may not have a block decorated struct member " << debug;
+           << "A block decorated structure may not have a block decorated "
+              "struct member "
+           << debug;
   }
 
   return SPV_SUCCESS;
