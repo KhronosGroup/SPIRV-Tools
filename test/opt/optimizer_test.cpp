@@ -242,8 +242,42 @@ TEST(Optimizer, WebGPUModeSetsCorrectPasses) {
     EXPECT_EQ(registered_passes[i], expected_passes[i]);
 }
 
-TEST(Optimizer, WebGPUModeFlattenDecorationsRuns) {
-  const std::string input = R"(OpCapability Shader
+struct WebGPUPassCase {
+  // Input SPIR-V
+  std::string input;
+  // Expected result SPIR-V
+  std::string expected;
+  // Specific pass under test, used for logging messages.
+  std::string pass;
+};
+
+using WebGPUPassTest = PassTest<::testing::TestWithParam<WebGPUPassCase>>;
+
+TEST_P(WebGPUPassTest, Ran) {
+  SpirvTools tools(SPV_ENV_WEBGPU_0);
+  std::vector<uint32_t> binary;
+  tools.Assemble(GetParam().input, &binary);
+
+  Optimizer opt(SPV_ENV_WEBGPU_0);
+  opt.RegisterWebGPUPasses();
+
+  std::vector<uint32_t> optimized;
+  class ValidatorOptions validator_options;
+  ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized,
+                      validator_options, true));
+
+  std::string disassembly;
+  tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
+
+  EXPECT_EQ(GetParam().expected, disassembly)
+      << "Was expecting pass '" << GetParam().pass << "' to have been run.\n";
+}
+
+INSTANTIATE_TEST_SUITE_P(WebGPU, WebGPUPassTest,
+                         ::testing::ValuesIn(std::vector<WebGPUPassCase>{
+                             // FlattenDecorations
+                             {
+                                 R"(OpCapability Shader
 OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical VulkanKHR
@@ -263,9 +297,8 @@ OpDecorate %group NoPerspective
 %entry = OpLabel
 OpReturn
 OpFunctionEnd
-)";
-
-  const std::string expected = R"(OpCapability Shader
+)",
+                                 R"(OpCapability Shader
 OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical VulkanKHR
@@ -282,28 +315,11 @@ OpExecutionMode %1 OriginUpperLeft
 %10 = OpLabel
 OpReturn
 OpFunctionEnd
-)";
-
-  SpirvTools tools(SPV_ENV_WEBGPU_0);
-  std::vector<uint32_t> binary;
-  tools.Assemble(input, &binary);
-
-  Optimizer opt(SPV_ENV_WEBGPU_0);
-  opt.RegisterWebGPUPasses();
-
-  std::vector<uint32_t> optimized;
-  ValidatorOptions validator_options;
-  ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized,
-                      validator_options, true));
-
-  std::string disassembly;
-  tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
-
-  EXPECT_EQ(expected, disassembly);
-}
-
-TEST(Optimizer, WebGPUModeStripDebugRuns) {
-  const std::string input = R"(OpCapability Shader
+)",
+                                 "flatten-decorations"},
+                             // Strip Debug
+                             {
+                                 R"(OpCapability Shader
 OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical VulkanKHR
@@ -316,9 +332,8 @@ OpName %void_fn "void_fn"
 %label = OpLabel
 OpReturn
 OpFunctionEnd
-)";
-
-  const std::string expected = R"(OpCapability Shader
+)",
+                                 R"(OpCapability Shader
 OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical VulkanKHR
@@ -329,25 +344,8 @@ OpEntryPoint Vertex %1 "shader"
 %6 = OpLabel
 OpReturn
 OpFunctionEnd
-)";
-
-  SpirvTools tools(SPV_ENV_WEBGPU_0);
-  std::vector<uint32_t> binary;
-  tools.Assemble(input, &binary);
-
-  Optimizer opt(SPV_ENV_WEBGPU_0);
-  opt.RegisterWebGPUPasses();
-
-  std::vector<uint32_t> optimized;
-  ValidatorOptions validator_options;
-  ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized,
-                      validator_options, true));
-
-  std::string disassembly;
-  tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
-
-  EXPECT_EQ(expected, disassembly);
-}
+)",
+                                 "strip-debug"}}));
 
 }  // namespace
 }  // namespace opt
