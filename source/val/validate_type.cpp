@@ -237,6 +237,26 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  bool has_nested_blockOrBufferBlock_struct = false;
+  // Struct members start at word 2 of OpTypeStruct instruction.
+  for (size_t word_i = 2; word_i < inst->words().size(); ++word_i) {
+    auto member = inst->word(word_i);
+    auto memberTypeInstr = _.FindDef(member);
+    if (memberTypeInstr && SpvOpTypeStruct == memberTypeInstr->opcode()) {
+      if (_.HasDecoration(memberTypeInstr->id(), SpvDecorationBlock) ||
+          _.HasNestedBlockOrBufferBlockStruct(memberTypeInstr->id()))
+        has_nested_blockOrBufferBlock_struct = true;
+    }
+  }
+
+  _.SetHasNestedBlockOrBufferBlockStruct(inst->id(),
+                                         has_nested_blockOrBufferBlock_struct);
+  if (_.HasNestedBlockOrBufferBlockStruct(inst->id()) &&
+      _.HasDecoration(inst->id(), SpvDecorationBlock)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "rules: A block cannot appear within a block.";
+  }
+
   std::unordered_set<uint32_t> built_in_members;
   for (auto decoration : _.id_decorations(struct_id)) {
     if (decoration.dec_type() == SpvDecorationBuiltIn &&
