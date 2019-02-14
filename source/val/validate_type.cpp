@@ -244,6 +244,7 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
     auto memberTypeInstr = _.FindDef(member);
     if (memberTypeInstr && SpvOpTypeStruct == memberTypeInstr->opcode()) {
       if (_.HasDecoration(memberTypeInstr->id(), SpvDecorationBlock) ||
+          _.HasDecoration(memberTypeInstr->id(), SpvDecorationBufferBlock) ||
           _.HasNestedBlockOrBufferBlockStruct(memberTypeInstr->id()))
         has_nested_blockOrBufferBlock_struct = true;
     }
@@ -252,9 +253,11 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
   _.SetHasNestedBlockOrBufferBlockStruct(inst->id(),
                                          has_nested_blockOrBufferBlock_struct);
   if (_.HasNestedBlockOrBufferBlockStruct(inst->id()) &&
-      _.HasDecoration(inst->id(), SpvDecorationBlock)) {
+      (_.HasDecoration(inst->id(), SpvDecorationBufferBlock) ||
+       _.HasDecoration(inst->id(), SpvDecorationBlock))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "rules: A block cannot appear within a block.";
+           << "rules: A Block/BufferBlock cannot appear within a "
+              "Block/BufferBlock.";
   }
 
   std::unordered_set<uint32_t> built_in_members;
