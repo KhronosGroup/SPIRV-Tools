@@ -1,0 +1,11 @@
+#!/bin/bash
+
+find examples -name "*.h"  -exec clang-format -i {} \;
+find examples -name "*.cc"  -exec clang-format -i {} \;
+find source -name "*.h"  -exec clang-format -i {} \;
+find source -name "*.cc"  -exec clang-format -i {} \;
+find test -name "*.h"  -exec clang-format -i {} \;
+find test -name "*.cc"  -exec clang-format -i {} \;
+find tools -name "*.h"  -exec clang-format -i {} \;
+find tools -name "*.cc"  -exec clang-format -i {} \;
+find include -name "*.h"  -exec clang-format -i {} \;

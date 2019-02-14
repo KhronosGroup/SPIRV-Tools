@@ -52,9 +52,9 @@ class DecorationManager {
   // removed, then the |OpGroupDecorate| and
   // |OpGroupMemberDecorate| for the group will be killed, but not the defining
   // |OpDecorationGroup| instruction.
-  void RemoveDecorationsFrom(uint32_t id,
-                             std::function<bool(const Instruction&)> pred =
-                                 [](const Instruction&) { return true; });
+  void RemoveDecorationsFrom(
+      uint32_t id, std::function<bool(const Instruction&)> pred =
+                       [](const Instruction&) { return true; });
 
   // Removes all decorations from the result id of |inst|.
   //
