@@ -233,7 +233,7 @@ TEST(Optimizer, WebGPUModeSetsCorrectPasses) {
 
   std::vector<std::string> expected_passes = {
       "eliminate-dead-branches", "eliminate-dead-code-aggressive",
-      "flatten-decorations", "strip-debug"};
+      "flatten-decorations", "strip-debug", "strip-atomic-counter-memory"};
   std::sort(registered_passes.begin(), registered_passes.end());
   std::sort(expected_passes.begin(), expected_passes.end());
 
@@ -346,7 +346,33 @@ INSTANTIATE_TEST_SUITE_P(
          "OpReturn\n"
          "OpFunctionEnd\n",
          // pass
-         "strip-debug"}}));
+         "strip-debug"},
+        // Strip Atomic Counter Memory
+        {"OpCapability Shader\n"
+         "OpCapability VulkanMemoryModelKHR\n"
+         "OpExtension \"SPV_KHR_vulkan_memory_model\"\n"
+         "OpMemoryModel Logical VulkanKHR\n"
+         "OpEntryPoint Vertex %func \"shader\"\n"
+         "OpName %main \"main\"\n"
+         "OpName %void_fn \"void_fn\"\n"
+         "%void = OpTypeVoid\n"
+         "%void_f = OpTypeFunction %void\n"
+         "%func = OpFunction %void None %void_f\n"
+         "%label = OpLabel\n"
+         "OpReturn\n"
+         "OpFunctionEnd\n",
+         "OpCapability Shader\n"
+         "OpCapability VulkanMemoryModelKHR\n"
+         "OpExtension \"SPV_KHR_vulkan_memory_model\"\n"
+         "OpMemoryModel Logical VulkanKHR\n"
+         "OpEntryPoint Vertex %1 \"shader\"\n"
+         "%void = OpTypeVoid\n"
+         "%5 = OpTypeFunction %void\n"
+         "%1 = OpFunction %void None %5\n"
+         "%6 = OpLabel\n"
+         "OpReturn\n"
+         "OpFunctionEnd\n",
+         "--strip-atomic-counter-memory"}}));
 
 }  // namespace
 }  // namespace opt

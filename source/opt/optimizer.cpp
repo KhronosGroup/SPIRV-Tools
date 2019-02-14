@@ -219,6 +219,7 @@ Optimizer& Optimizer::RegisterSizePasses() {
 
 Optimizer& Optimizer::RegisterWebGPUPasses() {
   return RegisterPass(CreateStripDebugInfoPass())
+      .RegisterPass(CreateStripAtomicMemoryCounterPass())
       .RegisterPass(CreateFlattenDecorationPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass());
@@ -527,6 +528,11 @@ Optimizer& Optimizer::SetTimeReport(std::ostream* out) {
 
 Optimizer::PassToken CreateNullPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::NullPass>());
+}
+
+Optimizer::PassToken CreateStripAtomicMemoryCounterPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::StripAtomicCounterMemoryPass>());
 }
 
 Optimizer::PassToken CreateStripDebugInfoPass() {
