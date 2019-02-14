@@ -243,9 +243,8 @@ TEST_F(ValidateAtomics, AtomicLoadFloatVulkan) {
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("expected Result Type to be int scalar type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected Result Type to be int scalar type"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadVulkanSuccess) {
