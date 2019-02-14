@@ -177,7 +177,6 @@ void LoopFissionImpl::TraverseUseDef(Instruction* inst,
       traverser_functor(use);
     };
     def_use->ForEachUse(user, traverse_use);
-
   };
 
   // We start the traversal of the use def graph by invoking the above

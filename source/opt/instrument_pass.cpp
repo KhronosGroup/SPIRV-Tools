@@ -205,7 +205,9 @@ void InstrumentPass::GenStageStreamWriteCode(uint32_t stage_idx,
         GenFragCoordEltDebugOutputCode(
             base_offset_id, uint_frag_coord_inst->result_id(), u, builder);
     } break;
-    default: { assert(false && "unsupported stage"); } break;
+    default: {
+      assert(false && "unsupported stage");
+    } break;
   }
 }
 

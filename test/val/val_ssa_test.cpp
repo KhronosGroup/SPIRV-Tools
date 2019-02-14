@@ -614,7 +614,8 @@ TEST_F(ValidateSSA, EnqueueKernelGood) {
                     kKernelDefinition + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
-                )" + kKernelSetup + R"(
+                )" + kKernelSetup +
+                    R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -629,14 +630,15 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelGood) {
   std::string str = kHeader + kBasicTypes + kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
-                )" +
-                    kKernelSetup + R"(
+                )" + kKernelSetup +
+                    R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
                          OpReturn
                          OpFunctionEnd
-                 )" + kKernelDefinition;
+                 )" +
+                    kKernelDefinition;
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -646,7 +648,8 @@ TEST_F(ValidateSSA, EnqueueMissingFunctionBad) {
                     kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
-                )" + kKernelSetup + R"(
+                )" + kKernelSetup +
+                    R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize

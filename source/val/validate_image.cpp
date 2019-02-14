@@ -627,7 +627,9 @@ bool IsSparse(SpvOp opcode) {
       return true;
     }
 
-    default: { return false; }
+    default: {
+      return false;
+    }
   }
 
   return false;

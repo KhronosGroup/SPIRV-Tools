@@ -24,9 +24,8 @@ namespace {
 using spvtest::TextToBinaryTest;
 
 TEST_F(TextToBinaryTest, LiteralStringInPlaceOfLiteralNumber) {
-  EXPECT_EQ(
-      R"(Invalid unsigned integer literal: "I shouldn't be a string")",
-      CompileFailure(R"(OpSource GLSL "I shouldn't be a string")"));
+  EXPECT_EQ(R"(Invalid unsigned integer literal: "I shouldn't be a string")",
+            CompileFailure(R"(OpSource GLSL "I shouldn't be a string")"));
 }
 
 TEST_F(TextToBinaryTest, GarbageInPlaceOfLiteralString) {

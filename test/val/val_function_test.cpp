@@ -40,13 +40,13 @@ OpCapability Linkage
 OpCapability AtomicStorage
 )" + capabilities + R"(
 OpExtension "SPV_KHR_storage_buffer_storage_class"
-)" +
-                      extensions + R"(
+)" + extensions + R"(
 OpMemoryModel Logical GLSL450
 OpName %var "var"
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
-%ptr = OpTypePointer )" + storage_class + R"( %int
+%ptr = OpTypePointer )" +
+                      storage_class + R"( %int
 %caller_ty = OpTypeFunction %void
 %callee_ty = OpTypeFunction %void %ptr
 )";
@@ -87,13 +87,13 @@ OpCapability Linkage
 OpCapability AtomicStorage
 )" + capabilities + R"(
 OpExtension "SPV_KHR_storage_buffer_storage_class"
-)" +
-                      extensions + R"(
+)" + extensions + R"(
 OpMemoryModel Logical GLSL450
 OpName %p "p"
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
-%ptr = OpTypePointer )" + storage_class + R"( %int
+%ptr = OpTypePointer )" +
+                      storage_class + R"( %int
 %func_ty = OpTypeFunction %void %ptr
 %caller = OpFunction %void None %func_ty
 %p = OpFunctionParameter %ptr
@@ -120,8 +120,7 @@ OpCapability Linkage
 OpCapability AtomicStorage
 )" + capabilities + R"(
 OpExtension "SPV_KHR_storage_buffer_storage_class"
-)" +
-                      extensions + R"(
+)" + extensions + R"(
 OpMemoryModel Logical GLSL450
 OpName %var "var"
 OpName %gep "gep"
@@ -129,7 +128,8 @@ OpName %gep "gep"
 %int = OpTypeInt 32 0
 %int2 = OpTypeVector %int 2
 %int_0 = OpConstant %int 0
-%ptr = OpTypePointer )" + storage_class + R"( %int2
+%ptr = OpTypePointer )" +
+                      storage_class + R"( %int2
 %ptr2 = OpTypePointer )" +
                       storage_class + R"( %int
 %caller_ty = OpTypeFunction %void

@@ -63,7 +63,6 @@ using ValidateVulkanCombineBuiltInArrayedVariable = spvtest::ValidateBase<
 using ValidateWebGPUCombineBuiltInArrayedVariable = spvtest::ValidateBase<
     std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
 
-
 bool InitializerRequired(spv_target_env env, const char* const storage_class) {
   return spvIsWebGPUEnv(env) && (strncmp(storage_class, "Output", 6) == 0 ||
                                  strncmp(storage_class, "Private", 7) == 0 ||

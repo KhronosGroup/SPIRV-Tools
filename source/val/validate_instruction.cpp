@@ -305,7 +305,7 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
                     static_cast<spv_target_env>(min_version))
              << " at minimum.";
     }
-  // Otherwise, we only error out when no enabling extensions are registered.
+    // Otherwise, we only error out when no enabling extensions are registered.
   } else if (!_.HasAnyOfExtensions(exts)) {
     if (min_version == ~0u) {
       return _.diag(SPV_ERROR_MISSING_EXTENSION, inst)

@@ -28,8 +28,8 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using ::testing::Eq;
 using spvtest::GetIdBound;
+using ::testing::Eq;
 
 TEST(ModuleTest, SetIdBound) {
   Module m;

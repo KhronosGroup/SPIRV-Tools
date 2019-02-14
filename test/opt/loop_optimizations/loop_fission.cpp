@@ -681,22 +681,22 @@ OpReturn
 OpFunctionEnd
 )";
   // clang-format on
-std::unique_ptr<IRContext> context =
-    BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
-                SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-Module* module = context->module();
-EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                           << source << std::endl;
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, source,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << source << std::endl;
 
-SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected, true);
 
-// By passing 1 as argument we are using the constructor which makes the
-// critera to split the loop be if the registers in the loop exceede 1. By
-// using this constructor we are also enabling multiple passes (disabled by
-// default).
-SinglePassRunAndCheck<LoopFissionPass>(source, expected_multiple_passes, true,
-                                       1);
+  // By passing 1 as argument we are using the constructor which makes the
+  // critera to split the loop be if the registers in the loop exceede 1. By
+  // using this constructor we are also enabling multiple passes (disabled by
+  // default).
+  SinglePassRunAndCheck<LoopFissionPass>(source, expected_multiple_passes, true,
+                                         1);
 }
 
 /*

@@ -536,7 +536,6 @@ Loop* LoopUtils::CloneAndAttachLoopToHeader(LoopCloningResult* cloning_result) {
       [new_merge_block, this](Instruction* inst, uint32_t operand) {
         if (this->loop_->IsInsideLoop(inst))
           inst->SetOperand(operand, {new_merge_block});
-
       });
   new_loop->SetMergeBlock(new_exit_bb.get());
 

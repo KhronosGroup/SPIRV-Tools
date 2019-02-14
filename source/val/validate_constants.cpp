@@ -320,7 +320,7 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
 
   // The binary parser already ensures that the op is valid for *some*
   // environment.  Here we check restrictions.
-  switch(op) {
+  switch (op) {
     case SpvOpQuantizeToF16:
       if (!_.HasCapability(SpvCapabilityShader)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -365,7 +365,7 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
       }
       break;
 
-  default:
+    default:
       break;
   }
 

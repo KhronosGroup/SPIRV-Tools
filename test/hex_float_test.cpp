@@ -263,19 +263,17 @@ TEST_P(RoundTripDoubleTest, CanStoreAccurately) {
   EXPECT_THAT(GetParam(), Eq(res.getAsFloat()));
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    Float32StoreTests, RoundTripFloatTest,
-    ::testing::ValuesIn(std::vector<float>(
-        {// Value requiring more than 6 digits of precision to be
-         // represented accurately.
-         3.0000002f})));
+INSTANTIATE_TEST_SUITE_P(Float32StoreTests, RoundTripFloatTest,
+                         ::testing::ValuesIn(std::vector<float>(
+                             {// Value requiring more than 6 digits of precision
+                              // to be represented accurately.
+                              3.0000002f})));
 
-INSTANTIATE_TEST_SUITE_P(
-    Float64StoreTests, RoundTripDoubleTest,
-    ::testing::ValuesIn(std::vector<double>(
-        {// Value requiring more than 15 digits of precision to be
-         // represented accurately.
-         1.5000000000000002})));
+INSTANTIATE_TEST_SUITE_P(Float64StoreTests, RoundTripDoubleTest,
+                         ::testing::ValuesIn(std::vector<double>(
+                             {// Value requiring more than 15 digits of
+                              // precision to be represented accurately.
+                              1.5000000000000002})));
 
 TEST(HexFloatStreamTest, OperatorLeftShiftPreservesFloatAndFill) {
   std::stringstream s;

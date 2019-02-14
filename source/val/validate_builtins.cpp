@@ -96,7 +96,9 @@ SpvStorageClass GetStorageClass(const Instruction& inst) {
     case SpvOpGenericCastToPtrExplicit: {
       return SpvStorageClass(inst.word(4));
     }
-    default: { break; }
+    default: {
+      break;
+    }
   }
   return SpvStorageClassMax;
 }

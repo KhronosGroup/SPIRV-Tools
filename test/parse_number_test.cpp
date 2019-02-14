@@ -945,9 +945,9 @@ TEST(ParseAndEncodeNumber, Sample) {
 
   // Signed integer, should not touch the error message string.
   err_msg = "random content";
-  rc = ParseAndEncodeNumber("-1", type,
-                            [](uint32_t word) { EXPECT_EQ(0xffffffffu, word); },
-                            &err_msg);
+  rc = ParseAndEncodeNumber(
+      "-1", type, [](uint32_t word) { EXPECT_EQ(0xffffffffu, word); },
+      &err_msg);
   EXPECT_EQ(EncodeNumberStatus::kSuccess, rc);
   EXPECT_EQ("random content", err_msg);
 
@@ -959,9 +959,9 @@ TEST(ParseAndEncodeNumber, Sample) {
 
   // Float
   type = {32, SPV_NUMBER_FLOATING};
-  rc = ParseAndEncodeNumber("-1.0", type,
-                            [](uint32_t word) { EXPECT_EQ(0xbf800000, word); },
-                            nullptr);
+  rc = ParseAndEncodeNumber(
+      "-1.0", type, [](uint32_t word) { EXPECT_EQ(0xbf800000, word); },
+      nullptr);
   EXPECT_EQ(EncodeNumberStatus::kSuccess, rc);
 }
 

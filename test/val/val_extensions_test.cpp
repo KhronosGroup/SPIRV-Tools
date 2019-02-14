@@ -274,7 +274,8 @@ TEST_P(ValidateExtIntoCore, DoNotAskForExtensionInLaterVersion) {
                            GetParam().cap + R"(
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main" %builtin
-               OpDecorate %builtin BuiltIn )" + GetParam().builtin + R"(
+               OpDecorate %builtin BuiltIn )" +
+                           GetParam().builtin + R"(
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
         %int = OpTypeInt 32 1

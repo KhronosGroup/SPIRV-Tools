@@ -276,7 +276,9 @@ spv_result_t DataRulesPass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
     // TODO(ehsan): add more data rules validation here.
-    default: { break; }
+    default: {
+      break;
+    }
   }
 
   return SPV_SUCCESS;

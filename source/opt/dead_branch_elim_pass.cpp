@@ -55,7 +55,9 @@ bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
           GetConstCondition(cInst->GetSingleWordInOperand(0), &negVal);
       if (condIsConst) *condVal = !negVal;
     } break;
-    default: { condIsConst = false; } break;
+    default: {
+      condIsConst = false;
+    } break;
   }
   return condIsConst;
 }
