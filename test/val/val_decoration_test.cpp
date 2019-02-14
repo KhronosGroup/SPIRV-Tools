@@ -1510,7 +1510,6 @@ TEST_F(ValidateDecorations, BlockLayoutPermitsTightVec3ScalarPackingGood) {
       << getDiagnosticString();
 }
 
-
 TEST_F(ValidateDecorations, BlockCantAppearWithinABlockBad) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1587
   std::string spirv = R"(
