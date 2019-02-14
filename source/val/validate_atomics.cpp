@@ -56,7 +56,11 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
           (opcode == SpvOpAtomicLoad || opcode == SpvOpAtomicExchange ||
            opcode == SpvOpAtomicCompareExchange)) {
         if (!(_.IsFloatScalarType(result_type) &&
+<<<<<<< HEAD
               !spvIsVulkanEnv(_.context()->target_env)) &&
+=======
+            !spvIsVulkanEnv(_.context()->target_env)) &&
+>>>>>>> 734ccdb6fbe9aee7a7f7613f923d414ddb170384
             !_.IsIntScalarType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
