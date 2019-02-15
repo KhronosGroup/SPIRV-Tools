@@ -1002,4 +1002,30 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberInBoundsPtrAccessChain) {
   SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
 }
 
+TEST_F(EliminateDeadMemberTest, DontRemoveModfStructResultTypeMembers) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %PS_TerrainElevation "PS_TerrainElevation"
+               OpExecutionMode %PS_TerrainElevation OriginUpperLeft
+               OpSource HLSL 600
+      %float = OpTypeFloat 32
+       %void = OpTypeVoid
+         %21 = OpTypeFunction %void
+%ModfStructType = OpTypeStruct %float %float
+%PS_TerrainElevation = OpFunction %void None %21
+         %22 = OpLabel
+         %23 = OpUndef %float
+         %24 = OpExtInst %ModfStructType %1 ModfStruct %23
+         %25 = OpCompositeExtract %float %24 1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  auto result = SinglePassRunAndDisassemble<opt::EliminateDeadMembersPass>(
+      text, /* skip_nop = */ true, /* do_validation = */ true);
+  EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+}
+
 }  // namespace

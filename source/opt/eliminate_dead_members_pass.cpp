@@ -84,6 +84,7 @@ void EliminateDeadMembersPass::FindLiveMembers(const Instruction* inst) {
       break;
     case SpvOpLoad:
     case SpvOpCompositeInsert:
+    case SpvOpCompositeConstruct:
       break;
     default:
       // This path is here for safety.  All instructions that can reference
@@ -607,6 +608,10 @@ bool EliminateDeadMembersPass::UpdateOpArrayLength(Instruction* inst) {
 
 void EliminateDeadMembersPass::MarkStructOperandsAsFullyUsed(
     const Instruction* inst) {
+  if (inst->type_id() != 0) {
+    MarkTypeAsFullyUsed(inst->type_id());
+  }
+
   inst->ForEachInId([this](const uint32_t* id) {
     Instruction* instruction = get_def_use_mgr()->GetDef(*id);
     if (instruction->type_id() != 0) {
