@@ -915,7 +915,8 @@ TEST_F(ValidateCFG, WebGPUUnreachableContinueTerminatedBySpvOpUnreachable) {
       SpvCapabilityShader, SPV_ENV_WEBGPU_0, SpvOpUnreachable));
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must have a back edge to the loop instruction"));
+              HasSubstr("For WebGPU, unreachable continue-target must "
+                        "terminate with OpBranch.\n  %12 = OpLabel\n"));
 }
 
 TEST_F(ValidateCFG, WebGPUUnreachableContinueTerminatedBySpvOpKill) {
@@ -923,7 +924,8 @@ TEST_F(ValidateCFG, WebGPUUnreachableContinueTerminatedBySpvOpKill) {
       SpvCapabilityShader, SPV_ENV_WEBGPU_0, SpvOpKill));
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must have a back edge to the loop instruction"));
+              HasSubstr("For WebGPU, unreachable continue-target must "
+                        "terminate with OpBranch.\n  %12 = OpLabel\n"));
 }
 
 TEST_F(ValidateCFG, WebGPUUnreachableContinueTerminatedBySpvOpReturn) {
@@ -931,7 +933,8 @@ TEST_F(ValidateCFG, WebGPUUnreachableContinueTerminatedBySpvOpReturn) {
       SpvCapabilityShader, SPV_ENV_WEBGPU_0, SpvOpReturn));
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must have a back edge to the loop instruction"));
+              HasSubstr("For WebGPU, unreachable continue-target must "
+                        "terminate with OpBranch.\n  %12 = OpLabel\n"));
 }
 
 TEST_F(ValidateCFG, WebGPUUnreachableContinueTerminatedBySpvOpBranch) {
@@ -1161,8 +1164,8 @@ TEST_F(ValidateCFG, WebGPUUnreachableContinueWithComplexBody) {
       HasSubstr("must only contain an OpLabel and an OpBranch instruction"));
 }
 
-std::string GetUnreachableMergeWithMultipleUses(SpvCapability cap,
-                                                spv_target_env env) {
+std::string GetUnreachableMergeWithBranchUse(SpvCapability cap,
+                                             spv_target_env env) {
   std::string header =
       spvIsWebGPUEnv(env) ? GetWebGPUHeader() : GetDefaultHeader(cap);
 
@@ -1197,24 +1200,82 @@ std::string GetUnreachableMergeWithMultipleUses(SpvCapability cap,
   return str;
 }
 
+TEST_P(ValidateCFG, UnreachableMergeWithBranchUse) {
+  CompileSuccessfully(
+      GetUnreachableMergeWithBranchUse(GetParam(), SPV_ENV_UNIVERSAL_1_0));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, WebGPUUnreachableMergeWithBranchUse) {
+  CompileSuccessfully(
+      GetUnreachableMergeWithBranchUse(SpvCapabilityShader, SPV_ENV_WEBGPU_0));
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("cannot be the target of a branch."));
+}
+
+std::string GetUnreachableMergeWithMultipleUses(SpvCapability cap,
+                                                spv_target_env env) {
+  std::string header =
+      spvIsWebGPUEnv(env) ? GetWebGPUHeader() : GetDefaultHeader(cap);
+
+  Block entry("entry");
+  Block branch("branch", SpvOpBranchConditional);
+  Block t("t", SpvOpReturn);
+  Block f("f", SpvOpReturn);
+  Block merge("merge", SpvOpUnreachable);
+  Block duplicate("duplicate", SpvOpBranchConditional);
+
+  entry.AppendBody("%cond    = OpSLessThan %boolt %one %two\n");
+
+  std::string str = header;
+  if (spvIsWebGPUEnv(env)) {
+    str +=
+        "OpEntryPoint Fragment %func \"func\"\n"
+        "OpExecutionMode %func OriginUpperLeft\n";
+  }
+  if (cap == SpvCapabilityShader) {
+    branch.AppendBody("OpSelectionMerge %merge None\n");
+    duplicate.AppendBody("OpSelectionMerge %merge None\n");
+  }
+  if (!spvIsWebGPUEnv(env))
+    str += nameOps("branch", "merge", std::make_pair("func", "Main"));
+
+  str += types_consts();
+  str += "%func    = OpFunction %voidt None %funct\n";
+  str += entry >> branch;
+  str += branch >> std::vector<Block>({t, f});
+  str += duplicate >> std::vector<Block>({t, f});
+  str += t;
+  str += f;
+  str += merge;
+  str += "OpFunctionEnd\n";
+
+  return str;
+}
+
 TEST_P(ValidateCFG, UnreachableMergeWithMultipleUses) {
   CompileSuccessfully(
       GetUnreachableMergeWithMultipleUses(GetParam(), SPV_ENV_UNIVERSAL_1_0));
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  if (GetParam() == SpvCapabilityShader) {
+    ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("is already a merge block for another header"));
+  } else {
+    ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  }
 }
 
 TEST_F(ValidateCFG, WebGPUUnreachableMergeWithMultipleUses) {
   CompileSuccessfully(GetUnreachableMergeWithMultipleUses(SpvCapabilityShader,
                                                           SPV_ENV_WEBGPU_0));
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("unreachable merge-blocks must only be referenced by a single "
-                "merge instruction, and cannot be the target of an OpBranch"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("is already a merge block for another header"));
 }
 
-std::string GetUnreachableContinueWithMultipleUses(SpvCapability cap,
-                                                   spv_target_env env) {
+std::string GetUnreachableContinueWithBranchUse(SpvCapability cap,
+                                                spv_target_env env) {
   std::string header =
       spvIsWebGPUEnv(env) ? GetWebGPUHeader() : GetDefaultHeader(cap);
 
@@ -1255,25 +1316,141 @@ std::string GetUnreachableContinueWithMultipleUses(SpvCapability cap,
   return str;
 }
 
-TEST_P(ValidateCFG, UnreachableContinueWithMultipleUses) {
-  CompileSuccessfully(GetUnreachableContinueWithMultipleUses(
-      GetParam(), SPV_ENV_UNIVERSAL_1_0));
+TEST_P(ValidateCFG, UnreachableContinueWithBranchUse) {
+  CompileSuccessfully(
+      GetUnreachableContinueWithBranchUse(GetParam(), SPV_ENV_UNIVERSAL_1_0));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateCFG, WebGPUUnreachableContinueWithMultipleUses) {
-  fprintf(stderr, "%s\n",
-          GetUnreachableContinueWithMultipleUses(SpvCapabilityShader,
-                                                 SPV_ENV_WEBGPU_0)
-              .c_str());
-  CompileSuccessfully(GetUnreachableContinueWithMultipleUses(
-      SpvCapabilityShader, SPV_ENV_WEBGPU_0));
+TEST_F(ValidateCFG, WebGPUUnreachableContinueWithBranchUse) {
+  fprintf(
+      stderr, "%s\n",
+      GetUnreachableContinueWithBranchUse(SpvCapabilityShader, SPV_ENV_WEBGPU_0)
+          .c_str());
+  CompileSuccessfully(GetUnreachableContinueWithBranchUse(SpvCapabilityShader,
+                                                          SPV_ENV_WEBGPU_0));
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("cannot be the target of a branch."));
+}
+
+std::string GetReachableMergeAndContinue(SpvCapability cap,
+                                         spv_target_env env) {
+  std::string header =
+      spvIsWebGPUEnv(env) ? GetWebGPUHeader() : GetDefaultHeader(cap);
+
+  Block entry("entry");
+  Block branch("branch", SpvOpBranch);
+  Block merge("merge", SpvOpReturn);
+  Block target("target", SpvOpBranch);
+  Block body("body", SpvOpBranchConditional);
+  Block t("t", SpvOpBranch);
+  Block f("f", SpvOpBranch);
+
+  target >> branch;
+  body.SetBody("%cond    = OpSLessThan %boolt %one %two\n");
+  t >> merge;
+  f >> target;
+
+  std::string str = header;
+  if (spvIsWebGPUEnv(env)) {
+    str +=
+        "OpEntryPoint Fragment %func \"func\"\n"
+        "OpExecutionMode %func OriginUpperLeft\n";
+  }
+  if (cap == SpvCapabilityShader) {
+    branch.AppendBody("OpLoopMerge %merge %target None\n");
+    body.AppendBody("OpSelectionMerge %target None\n");
+  }
+
+  if (!spvIsWebGPUEnv(env))
+    str += nameOps("branch", "merge", "target", "body", "t", "f",
+                   std::make_pair("func", "Main"));
+
+  str += types_consts();
+  str += "%func    = OpFunction %voidt None %funct\n";
+  str += entry >> branch;
+  str += branch >> std::vector<Block>({body});
+  str += body >> std::vector<Block>({t, f});
+  str += t;
+  str += f;
+  str += merge;
+  str += target;
+  str += "OpFunctionEnd\n";
+
+  return str;
+}
+
+TEST_P(ValidateCFG, ReachableMergeAndContinue) {
+  CompileSuccessfully(
+      GetReachableMergeAndContinue(GetParam(), SPV_ENV_UNIVERSAL_1_0));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, WebGPUReachableMergeAndContinue) {
+  CompileSuccessfully(
+      GetReachableMergeAndContinue(SpvCapabilityShader, SPV_ENV_WEBGPU_0));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+}
+
+std::string GetUnreachableMergeAndContinue(SpvCapability cap,
+                                           spv_target_env env) {
+  std::string header =
+      spvIsWebGPUEnv(env) ? GetWebGPUHeader() : GetDefaultHeader(cap);
+
+  Block entry("entry");
+  Block branch("branch", SpvOpBranch);
+  Block merge("merge", SpvOpReturn);
+  Block target("target", SpvOpBranch);
+  Block body("body", SpvOpBranchConditional);
+  Block t("t", SpvOpReturn);
+  Block f("f", SpvOpReturn);
+
+  target >> branch;
+  body.SetBody("%cond    = OpSLessThan %boolt %one %two\n");
+
+  std::string str = header;
+  if (spvIsWebGPUEnv(env)) {
+    str +=
+        "OpEntryPoint Fragment %func \"func\"\n"
+        "OpExecutionMode %func OriginUpperLeft\n";
+  }
+  if (cap == SpvCapabilityShader) {
+    branch.AppendBody("OpLoopMerge %merge %target None\n");
+    body.AppendBody("OpSelectionMerge %target None\n");
+  }
+
+  if (!spvIsWebGPUEnv(env))
+    str += nameOps("branch", "merge", "target", "body", "t", "f",
+                   std::make_pair("func", "Main"));
+
+  str += types_consts();
+  str += "%func    = OpFunction %voidt None %funct\n";
+  str += entry >> branch;
+  str += branch >> std::vector<Block>({body});
+  str += body >> std::vector<Block>({t, f});
+  str += t;
+  str += f;
+  str += merge;
+  str += target;
+  str += "OpFunctionEnd\n";
+
+  return str;
+}
+
+TEST_P(ValidateCFG, UnreachableMergeAndContinue) {
+  CompileSuccessfully(
+      GetUnreachableMergeAndContinue(GetParam(), SPV_ENV_UNIVERSAL_1_0));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, WebGPUUnreachableMergeAndContinue) {
+  CompileSuccessfully(
+      GetUnreachableMergeAndContinue(SpvCapabilityShader, SPV_ENV_WEBGPU_0));
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions(SPV_ENV_WEBGPU_0));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "unreachable continue-target must only be referenced by a single "
-          "loop instruction, and cannot be the target of an OpBranch"));
+      HasSubstr("unreachable merge-blocks must terminate with OpUnreachable"));
 }
 
 std::string GetUnreachableBlock(SpvCapability cap, spv_target_env env) {

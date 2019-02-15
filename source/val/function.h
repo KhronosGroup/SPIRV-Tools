@@ -232,12 +232,26 @@ class Function {
     return function_call_targets_;
   }
 
+  // Returns the block containing the OpSelectionMerge or OpLoopMerge that
+  // references |merge_block|.
+  // Values of |merge_block_header_| inserted by CFGPass, so do not call before
+  // the first iteration of ordered instructions in
+  // ValidateBinaryUsingContextAndValidationState has completed.
   BasicBlock* GetMergeHeader(BasicBlock* merge_block) {
     return merge_block_header_[merge_block];
   }
 
-  BasicBlock* GetContinueHeader(BasicBlock* continue_target) {
-    return continue_target_header_[continue_target];
+  // Returns vector of the blocks containing a OpLoopMerge that references
+  // |continue_target|.
+  // Values of |continue_target_headers_| inserted by CFGPass, so do not call
+  // before the first iteration of ordered instructions in
+  // ValidateBinaryUsingContextAndValidationState has completed.
+  std::vector<BasicBlock*> GetContinueHeaders(BasicBlock* continue_target) {
+    if (continue_target_headers_.find(continue_target) ==
+        continue_target_headers_.end()) {
+      return {};
+    }
+    return continue_target_headers_[continue_target];
   }
 
  private:
@@ -348,8 +362,9 @@ class Function {
   /// This map provides the header block for a given merge block.
   std::unordered_map<BasicBlock*, BasicBlock*> merge_block_header_;
 
-  /// This map provides the header block for a given continue target.
-  std::unordered_map<BasicBlock*, BasicBlock*> continue_target_header_;
+  /// This map provides the header blocks for a given continue target.
+  std::unordered_map<BasicBlock*, std::vector<BasicBlock*>>
+      continue_target_headers_;
 
   /// Stores the control flow nesting depth of a given basic block
   std::unordered_map<BasicBlock*, int> block_depth_;
