@@ -232,10 +232,20 @@ class Function {
     return function_call_targets_;
   }
 
+  // Returns the block containing the OpSelectionMerge or OpLoopMerge that
+  // references |merge_block|.
+  // Values of |merge_block_header_| inserted by CFGPass, so do not call before
+  // the first iteration of ordered instructions in
+  // ValidateBinaryUsingContextAndValidationState has completed.
   BasicBlock* GetMergeHeader(BasicBlock* merge_block) {
     return merge_block_header_[merge_block];
   }
 
+  // Returns the block containing the OpLoopMerge that references
+  // |continue_target|.
+  // Values of |continue_target_header_| inserted by CFGPass, so do not call
+  // before the first iteration of ordered instructions in
+  // ValidateBinaryUsingContextAndValidationState has completed.
   BasicBlock* GetContinueHeader(BasicBlock* continue_target) {
     return continue_target_header_[continue_target];
   }
