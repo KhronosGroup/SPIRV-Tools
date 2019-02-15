@@ -22,12 +22,13 @@ namespace reduce {
 using namespace opt;
 
 RemoveBlockReductionOpportunity::RemoveBlockReductionOpportunity(
-    IRContext* context, Function* function, BasicBlock* block)
-    : context_(context),
-      function_(function),
-      block_(block) {
+    Function* function, BasicBlock* block)
+    : function_(function), block_(block) {
   // precondition:
-  assert(context->get_def_use_mgr()->NumUsers(block->id()) == 0);
+  assert(block_->begin() != block_->end() &&
+         block_->begin()->context()->get_def_use_mgr()->NumUsers(
+             block_->id()) == 0 &&
+         "RemoveBlockReductionOpportunity block must have 0 references");
 }
 
 bool RemoveBlockReductionOpportunity::PreconditionHolds() {

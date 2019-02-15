@@ -23,11 +23,11 @@ namespace spvtools {
 namespace reduce {
 
 // An opportunity to remove an unreferenced block.
+// See RemoveBlockReductionOpportunityFinder.
 class RemoveBlockReductionOpportunity : public ReductionOpportunity {
  public:
-  // Creates the opportunity to remove |block|.
-  RemoveBlockReductionOpportunity(opt::IRContext* context,
-                                  opt::Function* function,
+  // Creates the opportunity to remove |block| in |function| in |context|.
+  RemoveBlockReductionOpportunity(opt::Function* function,
                                   opt::BasicBlock* block);
 
   bool PreconditionHolds() override;
@@ -36,7 +36,6 @@ class RemoveBlockReductionOpportunity : public ReductionOpportunity {
   void Apply() override;
 
  private:
-  opt::IRContext* context_;
   opt::Function* function_;
   opt::BasicBlock* block_;
 };

@@ -21,7 +21,7 @@ namespace reduce {
 using namespace opt;
 
 std::string RemoveBlockReductionOpportunityFinder::GetName() const {
-  return "RemoveBlocksReductionOpportunityFinder";
+  return "RemoveBlockReductionOpportunityFinder";
 }
 
 std::vector<std::unique_ptr<ReductionOpportunity>>

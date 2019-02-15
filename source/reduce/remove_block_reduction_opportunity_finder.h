@@ -20,7 +20,9 @@
 namespace spvtools {
 namespace reduce {
 
-// A finder of opportunities to remove a block.
+// A finder of opportunities to remove a block. The optimizer can remove dead
+// code. However, the reducer needs to be able to remove at a fine-grained
+// level.
 class RemoveBlockReductionOpportunityFinder
     : public ReductionOpportunityFinder {
  public:
