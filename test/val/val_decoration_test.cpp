@@ -2101,8 +2101,7 @@ TEST_F(ValidateDecorations, BlockArrayBadAlignmentWithVulkan1_1StillBad) {
           "member 1 at offset 8 is not aligned to 16"));
 }
 
-TEST_F(ValidateDecorations,
-       VulkanBufferBlockOnStorageBufferBad) {
+TEST_F(ValidateDecorations, VulkanBufferBlockOnStorageBufferBad) {
   std::string spirv = R"(
             OpCapability Shader
             OpExtension "SPV_KHR_storage_buffer_storage_class"
@@ -2130,7 +2129,7 @@ TEST_F(ValidateDecorations,
             ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("In Vulkan, disallow BufferBlock on StorageBuffer"
-                "variables"));
+                        "variables"));
 }
 
 TEST_F(ValidateDecorations, PushConstantArrayBaseAlignmentGood) {

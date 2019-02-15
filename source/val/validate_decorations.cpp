@@ -909,8 +909,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                     : (push_constant ? "PushConstant" : "StorageBuffer");
 
         if (spvIsVulkanEnv(vstate.context()->target_env)) {
-
-          if(storage_buffer && hasDecoration(id, SpvDecorationBufferBlock, vstate)){
+          if (storage_buffer &&
+              hasDecoration(id, SpvDecorationBufferBlock, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                    << "Storage buffer id '" << var_id
                    << "In Vulkan, disallow BufferBlock on StorageBuffer"
