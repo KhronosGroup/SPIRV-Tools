@@ -57,7 +57,7 @@ RemoveSelectionReductionOpportunityFinder::GetAvailableOpportunities(
         // Add the opportunity to remove this selection construct, branching to
         // its former LHS or RHS.
         result.push_back(MakeUnique<RemoveSelectionReductionOpportunity>(
-            &block, choose_lhs));
+            &function, &block, choose_lhs));
       }
     }
   }

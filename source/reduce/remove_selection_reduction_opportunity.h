@@ -28,8 +28,9 @@ class RemoveSelectionReductionOpportunity : public ReductionOpportunity {
   // Constructs a reduction opportunity from |block|, which heads the selection
   // construct to be removed, and |choose_lhs|, which dictates whether the block
   // will jump straight to the former LHS or RHS of the selection construct.
-  RemoveSelectionReductionOpportunity(opt::BasicBlock* block, bool choose_lhs)
-      : block_(block), choose_lhs_(choose_lhs) {}
+  RemoveSelectionReductionOpportunity(opt::Function* function,
+                                      opt::BasicBlock* block, bool choose_lhs)
+      : function_(function), block_(block), choose_lhs_(choose_lhs) {}
 
   bool PreconditionHolds() override;
 
@@ -37,7 +38,12 @@ class RemoveSelectionReductionOpportunity : public ReductionOpportunity {
   void Apply() override;
 
  private:
+  // The function containing the selection.
+  opt::Function* function_;
+  // The block that heads the selection.
   opt::BasicBlock* block_;
+  // Determines whether the selection should be rewritten as a branch to the LHS
+  // or RHS.
   bool choose_lhs_;
 };
 

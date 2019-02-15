@@ -29,13 +29,44 @@ bool RemoveSelectionReductionOpportunity::PreconditionHolds() {
 }
 
 void RemoveSelectionReductionOpportunity::Apply() {
-  block_->GetMergeInst()->context()->KillInst(block_->GetMergeInst());
+  auto merge_instruction = block_->GetMergeInst();
+  auto merge_block_id = merge_instruction->GetSingleWordInOperand(0);
   auto terminator = block_->terminator();
+
   terminator->SetOpcode(SpvOpBranch);
   // Pick one of the former conditional branch operands depending on whether we
   // are choosing the LHS or RHS.
   terminator->SetInOperands({choose_lhs_ ? terminator->GetInOperand(1)
                                          : terminator->GetInOperand(2)});
+
+  // Go through the function looking for breaks out of the selection, i.e.
+  // conditional branches that can jump to the selection's merge block.  Rewrite
+  // these as unconditional branches.
+  for (auto& block : *function_) {
+    for (auto& inst : block) {
+      if (inst.opcode() != SpvOpBranchConditional) {
+        // This is not a conditional branch; move on.
+        continue;
+      }
+      const auto true_target = inst.GetSingleWordInOperand(1);
+      const auto false_target = inst.GetSingleWordInOperand(2);
+      if (true_target != merge_block_id && false_target != merge_block_id) {
+        // This conditional branch does not target the merge block for the
+        // selection; move on.
+        continue;
+      }
+      // Change the conditional branch to an unconditional branch; if one of the
+      // targets of the branch is not the merge block of the selection then
+      // favour that target.
+      inst.SetOpcode(SpvOpBranch);
+      uint32_t new_target =
+          true_target == merge_block_id ? false_target : true_target;
+      inst.SetInOperands({{SPV_OPERAND_TYPE_ID, {new_target}}});
+    }
+  }
+
+  // Remove the merge instruction.
+  merge_instruction->context()->KillInst(merge_instruction);
 }
 
 }  // namespace reduce

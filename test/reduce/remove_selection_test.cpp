@@ -74,6 +74,7 @@ TEST(RemoveSelectionTest, OneRemoval) {
 
   ASSERT_TRUE(ops[0]->PreconditionHolds());
   ops[0]->TryToApply();
+  CheckValid(env, context.get());
 
   std::string after = R"(
                  OpCapability Shader
@@ -174,6 +175,7 @@ TEST(RemoveSelectionTest, ChooseBetweenTwoRemovals) {
 
   // Taking the second opportunity should disable the first.
   ops[1]->TryToApply();
+  CheckValid(env, context.get());
   ASSERT_FALSE(ops[0]->PreconditionHolds());
 
   std::string after = R"(
@@ -297,10 +299,13 @@ TEST(RemoveSelectionTest, ManyRemovalsIdenticalTargets) {
 
   ASSERT_TRUE(ops[0]->PreconditionHolds());
   ops[0]->TryToApply();
+  CheckValid(env, context.get());
   ASSERT_TRUE(ops[1]->PreconditionHolds());
   ops[1]->TryToApply();
+  CheckValid(env, context.get());
   ASSERT_TRUE(ops[2]->PreconditionHolds());
   ops[2]->TryToApply();
+  CheckValid(env, context.get());
 
   std::string after = R"(
                OpCapability Shader
@@ -446,10 +451,13 @@ TEST(RemoveSelectionTest, ManyRemovalsDifferentTargets) {
   // disabled.
   ASSERT_TRUE(ops[0]->PreconditionHolds());
   ops[0]->TryToApply();
+  CheckValid(env, context.get());
   ASSERT_TRUE(ops[4]->PreconditionHolds());
   ops[4]->TryToApply();
+  CheckValid(env, context.get());
   ASSERT_TRUE(ops[2]->PreconditionHolds());
   ops[2]->TryToApply();
+  CheckValid(env, context.get());
   ASSERT_FALSE(ops[1]->PreconditionHolds());
   ASSERT_FALSE(ops[3]->PreconditionHolds());
   ASSERT_FALSE(ops[5]->PreconditionHolds());
@@ -519,6 +527,431 @@ TEST(RemoveSelectionTest, ManyRemovalsDifferentTargets) {
   // There should be no more opportunities left.
   ops = RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
       context.get());
+  ASSERT_EQ(0, ops.size());
+}
+
+TEST(RemoveSelectionTest, BreakOutOfSelection) {
+  // This is designed to check an edge case where there is a break out of the
+  // selection being removed.
+  std::string shader = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main"
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %8 "x"
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeInt 32 1
+            %7 = OpTypePointer Function %6
+            %9 = OpConstant %6 3
+           %11 = OpConstant %6 4
+           %12 = OpTypeBool
+           %20 = OpConstantTrue %12
+           %16 = OpConstant %6 1
+           %18 = OpConstant %6 2
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+            %8 = OpVariable %7 Function
+                 OpStore %8 %9
+           %10 = OpLoad %6 %8
+           %13 = OpSGreaterThan %12 %10 %11
+                 OpSelectionMerge %15 None
+                 OpBranchConditional %13 %14 %17
+           %14 = OpLabel
+                 OpStore %8 %16
+                 OpBranch %15
+           %17 = OpLabel
+                 OpStore %8 %18
+                 OpBranchConditional %20 %15 %19 ; Early-exit from the selection
+           %19 = OpLabel
+                 OpBranch %15
+           %15 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
+
+  auto ops =
+      RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
+          context.get());
+
+  ASSERT_EQ(2, ops.size());
+
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+  ops[0]->TryToApply();
+  CheckValid(env, context.get());
+
+  std::string after = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main"
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %8 "x"
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeInt 32 1
+            %7 = OpTypePointer Function %6
+            %9 = OpConstant %6 3
+           %11 = OpConstant %6 4
+           %12 = OpTypeBool
+           %20 = OpConstantTrue %12
+           %16 = OpConstant %6 1
+           %18 = OpConstant %6 2
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+            %8 = OpVariable %7 Function
+                 OpStore %8 %9
+           %10 = OpLoad %6 %8
+           %13 = OpSGreaterThan %12 %10 %11
+                 OpBranch %14
+           %14 = OpLabel
+                 OpStore %8 %16
+                 OpBranch %15
+           %17 = OpLabel
+                 OpStore %8 %18
+                 OpBranch %19
+           %19 = OpLabel
+                 OpBranch %15
+           %15 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+    )";
+  CheckEqual(env, after, context.get());
+
+  // There should be no more opportunities after we have applied the reduction.
+  ops = RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
+      context.get());
+  // No more opportunities should remain.
+  ASSERT_EQ(0, ops.size());
+}
+
+TEST(RemoveSelectionTest, BreakOutOfSelection2) {
+  // Another test designed to check correctness of this kind of reduction in the
+  // presence of a break from a selection.
+  std::string shader = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main"
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %8 "x"
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeInt 32 1
+            %7 = OpTypePointer Function %6
+            %9 = OpConstant %6 3
+           %11 = OpConstant %6 4
+           %12 = OpTypeBool
+           %20 = OpConstantTrue %12
+           %16 = OpConstant %6 1
+           %18 = OpConstant %6 2
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+            %8 = OpVariable %7 Function
+                 OpStore %8 %9
+           %10 = OpLoad %6 %8
+           %13 = OpSGreaterThan %12 %10 %11
+                 OpSelectionMerge %15 None
+                 OpBranchConditional %13 %14 %17
+           %14 = OpLabel
+                 OpStore %8 %16
+                 OpBranch %15
+           %17 = OpLabel
+                 OpStore %8 %18
+                 OpBranchConditional %20 %19 %15 ; Early-exit from the selection
+           %19 = OpLabel
+                 OpBranch %15
+           %15 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
+
+  auto ops =
+      RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
+          context.get());
+
+  ASSERT_EQ(2, ops.size());
+
+  ASSERT_TRUE(ops[1]->PreconditionHolds());
+  ops[1]->TryToApply();
+  CheckValid(env, context.get());
+
+  std::string after = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main"
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %8 "x"
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeInt 32 1
+            %7 = OpTypePointer Function %6
+            %9 = OpConstant %6 3
+           %11 = OpConstant %6 4
+           %12 = OpTypeBool
+           %20 = OpConstantTrue %12
+           %16 = OpConstant %6 1
+           %18 = OpConstant %6 2
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+            %8 = OpVariable %7 Function
+                 OpStore %8 %9
+           %10 = OpLoad %6 %8
+           %13 = OpSGreaterThan %12 %10 %11
+                 OpBranch %17
+           %14 = OpLabel
+                 OpStore %8 %16
+                 OpBranch %15
+           %17 = OpLabel
+                 OpStore %8 %18
+                 OpBranch %19
+           %19 = OpLabel
+                 OpBranch %15
+           %15 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+    )";
+  CheckEqual(env, after, context.get());
+
+  // There should be no more opportunities after we have applied the reduction.
+  ops = RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
+      context.get());
+  // No more opportunities should remain.
+  ASSERT_EQ(0, ops.size());
+}
+
+TEST(RemoveSelectionTest, BreakOutOfSelection3) {
+  // Test case where an unconditional break out of a selection is disguised as a
+  // conditional break, via a conditional for which both targets jump to the
+  // merge.
+  std::string shader = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main"
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %8 "x"
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeInt 32 1
+            %7 = OpTypePointer Function %6
+            %9 = OpConstant %6 3
+           %11 = OpConstant %6 4
+           %12 = OpTypeBool
+           %20 = OpConstantTrue %12
+           %16 = OpConstant %6 1
+           %18 = OpConstant %6 2
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+            %8 = OpVariable %7 Function
+                 OpStore %8 %9
+           %10 = OpLoad %6 %8
+           %13 = OpSGreaterThan %12 %10 %11
+                 OpSelectionMerge %15 None
+                 OpBranchConditional %13 %14 %17
+           %14 = OpLabel
+                 OpStore %8 %16
+                 OpBranch %15
+           %17 = OpLabel
+                 OpStore %8 %18
+                 OpBranchConditional %20 %15 %15 ; Both targets jump to the merge
+           %19 = OpLabel
+                 OpBranch %15
+           %15 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
+
+  auto ops =
+      RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
+          context.get());
+
+  ASSERT_EQ(2, ops.size());
+
+  ASSERT_TRUE(ops[1]->PreconditionHolds());
+  ops[1]->TryToApply();
+  CheckValid(env, context.get());
+
+  std::string after = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main"
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %8 "x"
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeInt 32 1
+            %7 = OpTypePointer Function %6
+            %9 = OpConstant %6 3
+           %11 = OpConstant %6 4
+           %12 = OpTypeBool
+           %20 = OpConstantTrue %12
+           %16 = OpConstant %6 1
+           %18 = OpConstant %6 2
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+            %8 = OpVariable %7 Function
+                 OpStore %8 %9
+           %10 = OpLoad %6 %8
+           %13 = OpSGreaterThan %12 %10 %11
+                 OpBranch %17
+           %14 = OpLabel
+                 OpStore %8 %16
+                 OpBranch %15
+           %17 = OpLabel
+                 OpStore %8 %18
+                 OpBranch %15
+           %19 = OpLabel
+                 OpBranch %15
+           %15 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+    )";
+  CheckEqual(env, after, context.get());
+
+  // There should be no more opportunities after we have applied the reduction.
+  ops = RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
+      context.get());
+  // No more opportunities should remain.
+  ASSERT_EQ(0, ops.size());
+}
+
+TEST(RemoveSelectionTest, RedundantBranchInsideConditional) {
+  // Check that the reduction succeeds in presence of the edge case where the
+  // conditional being removed contains an inner branch, such that both targets
+  // of the inner branch lead to the same node (so that the inner branch need
+  // not be preceded by a merge).
+  std::string shader = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main"
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %8 "x"
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeInt 32 1
+            %7 = OpTypePointer Function %6
+            %9 = OpConstant %6 3
+           %11 = OpConstant %6 4
+           %12 = OpTypeBool
+           %19 = OpConstantTrue %12
+           %16 = OpConstant %6 1
+           %18 = OpConstant %6 2
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+            %8 = OpVariable %7 Function
+                 OpStore %8 %9
+           %10 = OpLoad %6 %8
+           %13 = OpSGreaterThan %12 %10 %11
+                 OpSelectionMerge %15 None
+                 OpBranchConditional %13 %14 %17
+           %14 = OpLabel
+                 OpStore %8 %16
+                 OpBranch %15
+           %17 = OpLabel
+                 OpStore %8 %18
+                 OpBranchConditional %19 %20 %20
+           %20 = OpLabel
+                 OpBranch %15
+           %15 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+    )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
+  // Check that the initial SPIR-V is valid, as this is an edge case.
+  CheckValid(env, context.get());
+
+  auto ops =
+      RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
+          context.get());
+
+  ASSERT_EQ(2, ops.size());
+
+  ASSERT_TRUE(ops[1]->PreconditionHolds());
+  ops[1]->TryToApply();
+  CheckValid(env, context.get());
+
+  std::string after = R"(
+                 OpCapability Shader
+            %1 = OpExtInstImport "GLSL.std.450"
+                 OpMemoryModel Logical GLSL450
+                 OpEntryPoint Fragment %4 "main"
+                 OpExecutionMode %4 OriginUpperLeft
+                 OpSource ESSL 310
+                 OpName %4 "main"
+                 OpName %8 "x"
+            %2 = OpTypeVoid
+            %3 = OpTypeFunction %2
+            %6 = OpTypeInt 32 1
+            %7 = OpTypePointer Function %6
+            %9 = OpConstant %6 3
+           %11 = OpConstant %6 4
+           %12 = OpTypeBool
+           %19 = OpConstantTrue %12
+           %16 = OpConstant %6 1
+           %18 = OpConstant %6 2
+            %4 = OpFunction %2 None %3
+            %5 = OpLabel
+            %8 = OpVariable %7 Function
+                 OpStore %8 %9
+           %10 = OpLoad %6 %8
+           %13 = OpSGreaterThan %12 %10 %11
+                 OpBranch %17
+           %14 = OpLabel
+                 OpStore %8 %16
+                 OpBranch %15
+           %17 = OpLabel
+                 OpStore %8 %18
+                 OpBranchConditional %19 %20 %20
+           %20 = OpLabel
+                 OpBranch %15
+           %15 = OpLabel
+                 OpReturn
+                 OpFunctionEnd
+    )";
+  CheckEqual(env, after, context.get());
+
+  // There should be no more opportunities after we have applied the reduction.
+  ops = RemoveSelectionReductionOpportunityFinder().GetAvailableOpportunities(
+      context.get());
+  // No more opportunities should remain.
   ASSERT_EQ(0, ops.size());
 }
 
