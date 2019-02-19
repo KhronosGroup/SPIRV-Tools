@@ -913,7 +913,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
               hasDecoration(id, SpvDecorationBufferBlock, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                    << "Storage buffer id '" << var_id
-                   << " In Vulkan, BufferBlock is disallowed on variables in the StorageBuffer storage class";
+                   << " In Vulkan, BufferBlock is disallowed on variables in "
+                   "the StorageBuffer storage class";
           }
           // Vulkan 14.5.1: Check Block decoration for PushConstant variables.
           if (push_constant && !hasDecoration(id, SpvDecorationBlock, vstate)) {

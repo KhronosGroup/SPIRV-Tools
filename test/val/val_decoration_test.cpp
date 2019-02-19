@@ -2128,7 +2128,8 @@ TEST_F(ValidateDecorations, VulkanBufferBlockOnStorageBufferBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID,
             ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("In Vulkan, BufferBlock is disallowed on variables in the StorageBuffer storage class"));
+              HasSubstr("In Vulkan, BufferBlock is disallowed on variables in "
+                "the StorageBuffer storage class"));
 }
 
 TEST_F(ValidateDecorations, PushConstantArrayBaseAlignmentGood) {
