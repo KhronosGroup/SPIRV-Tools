@@ -84,7 +84,8 @@ class Reducer {
   // A status is returned.
   ReductionResultStatus Run(std::vector<uint32_t>&& binary_in,
                             std::vector<uint32_t>* binary_out,
-                            spv_const_reducer_options options) const;
+                            spv_const_reducer_options options,
+                            spv_validator_options validator_options) const;
 
  private:
   struct Impl;                  // Opaque struct for holding internal data.

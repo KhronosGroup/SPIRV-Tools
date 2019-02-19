@@ -160,8 +160,10 @@ TEST(ValidationDuringReductionTest, CheckInvalidPassMakesNoProgress) {
   std::vector<uint32_t> binary_out;
   spvtools::ReducerOptions reducer_options;
   reducer_options.set_step_limit(500);
+  spvtools::ValidatorOptions validator_options;
 
-  reducer.Run(std::move(binary_in), &binary_out, reducer_options);
+  reducer.Run(std::move(binary_in), &binary_out, reducer_options,
+              validator_options);
 
   // The reducer should have no impact.
   CheckEqual(env, original, binary_out);
@@ -365,8 +367,10 @@ TEST(ValidationDuringReductionTest, CheckNotAlwaysInvalidCanMakeProgress) {
   std::vector<uint32_t> binary_out;
   spvtools::ReducerOptions reducer_options;
   reducer_options.set_step_limit(500);
+  spvtools::ValidatorOptions validator_options;
 
-  reducer.Run(std::move(binary_in), &binary_out, reducer_options);
+  reducer.Run(std::move(binary_in), &binary_out, reducer_options,
+              validator_options);
   CheckEqual(env, expected, binary_out);
 }
 

@@ -53,7 +53,8 @@ void Reducer::SetInterestingnessFunction(
 
 Reducer::ReductionResultStatus Reducer::Run(
     std::vector<uint32_t>&& binary_in, std::vector<uint32_t>* binary_out,
-    spv_const_reducer_options options) const {
+    spv_const_reducer_options options,
+    spv_validator_options validator_options) const {
   std::vector<uint32_t> current_binary = binary_in;
 
   // Keeps track of how many reduction attempts have been tried.  Reduction
@@ -106,7 +107,9 @@ Reducer::ReductionResultStatus Reducer::Run(
                      << reductions_applied << ".";
         impl_->consumer(SPV_MSG_INFO, nullptr, {},
                         (stringstream.str().c_str()));
-        if (!spvtools::SpirvTools(impl_->target_env).Validate(maybe_result)) {
+        if (!spvtools::SpirvTools(impl_->target_env)
+                 .Validate(&maybe_result[0], maybe_result.size(),
+                           validator_options)) {
           // The reduction step went wrong and an invalid binary was produced.
           // By design, this shouldn't happen; this is a safeguard to stop an
           // invalid binary from being regarded as interesting.
