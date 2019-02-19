@@ -617,8 +617,7 @@ bool InstrumentPass::InstrumentFunction(Function* func, uint32_t stage_idx,
   // Start count after function and param instructions
   uint32_t instruction_idx = funcIdx2offset_[function_idx] + 1;
   func->ForEachParam(
-      [this, &instruction_idx](const Instruction* i) {
-        (void)i;
+      [&instruction_idx](const Instruction*) {
         ++instruction_idx;
       },
       true);
@@ -793,8 +792,7 @@ void InstrumentPass::InitializeInstrument() {
     // Count function, end and param instructions
     uint32_t func_size = 2;
     prev_fn->ForEachParam(
-        [this, &func_size](const Instruction* i) {
-          (void)i;
+        [&func_size](const Instruction*) {
           ++func_size;
         },
         true);
