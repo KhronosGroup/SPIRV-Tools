@@ -205,20 +205,6 @@ spv_result_t FunctionPass(ValidationState_t& _, const Instruction* inst);
 spv_result_t ValidateExecutionLimitations(ValidationState_t& _,
                                           const Instruction* inst);
 
-/// @brief Validate the ID's within a SPIR-V binary
-///
-/// @param[in] pInstructions array of instructions
-/// @param[in] count number of elements in instruction array
-/// @param[in] bound the binary header
-/// @param[in,out] position current word in the binary
-/// @param[in] consumer message consumer callback
-///
-/// @return result code
-spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
-                            const uint64_t count, const uint32_t bound,
-                            spv_position position,
-                            const MessageConsumer& consumer);
-
 // Performs validation for the SPIRV-V module binary.
 // The main difference between this API and spvValidateBinary is that the
 // "Validation State" is not destroyed upon function return; it lives on and is
