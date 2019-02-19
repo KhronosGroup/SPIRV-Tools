@@ -1029,9 +1029,9 @@ bool AtMostOncePerMember(SpvDecoration decoration) {
 const char* GetDecorationName(SpvDecoration decoration) {
   switch (decoration) {
     case SpvDecorationAliased:
-    return "Aliased";
+      return "Aliased";
     case SpvDecorationRestrict:
-    return "Restrict";
+      return "Restrict";
     case SpvDecorationArrayStride:
       return "ArrayStride";
     case SpvDecorationOffset:
