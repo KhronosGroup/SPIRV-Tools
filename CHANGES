@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2019.2-dev 2019-01-07
+v2019.2 2019-02-20
  - General:
    - Support SPV_EXT_physical_storage_buffer
    - A number of memory leak have been fixed.
