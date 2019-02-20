@@ -2303,10 +2303,10 @@ TEST_F(ValidateDecorations, MultiplePushConstantsSingleEntryPointGood) {
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2314,7 +2314,7 @@ TEST_F(ValidateDecorations, MultiplePushConstantsSingleEntryPointGood) {
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2341,10 +2341,10 @@ TEST_F(ValidateDecorations,
                 OpEntryPoint Vertex %1 "func1"
                 OpEntryPoint Fragment %2 "func2"
                 OpExecutionMode %2 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2352,7 +2352,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2383,10 +2383,10 @@ TEST_F(ValidateDecorations,
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2394,7 +2394,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2415,10 +2415,10 @@ TEST_F(ValidateDecorations, VulkanMultiplePushConstantsSingleEntryPointBad) {
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2426,7 +2426,7 @@ TEST_F(ValidateDecorations, VulkanMultiplePushConstantsSingleEntryPointBad) {
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -2460,10 +2460,10 @@ TEST_F(ValidateDecorations,
                 OpEntryPoint Vertex %1 "func1"
                 OpEntryPoint Fragment %2 "func2"
                 OpExecutionMode %2 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2471,10 +2471,10 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
- 
+
         %sub1 = OpFunction %void None %voidfn
   %label_sub1 = OpLabel
            %3 = OpAccessChain %ptr_float %pc1 %int_0
@@ -2514,10 +2514,10 @@ TEST_F(ValidateDecorations,
                 OpMemoryModel Logical GLSL450
                 OpEntryPoint Fragment %1 "main"
                 OpExecutionMode %1 OriginUpperLeft
-    
+
                 OpDecorate %struct Block
                 OpMemberDecorate %struct 0 Offset 0
-    
+
         %void = OpTypeVoid
       %voidfn = OpTypeFunction %void
        %float = OpTypeFloat 32
@@ -2525,7 +2525,7 @@ TEST_F(ValidateDecorations,
        %int_0 = OpConstant %int 0
       %struct = OpTypeStruct %float
          %ptr = OpTypePointer PushConstant %struct
-   %ptr_float = OpTypePointer PushConstant %float 
+   %ptr_float = OpTypePointer PushConstant %float
          %pc1 = OpVariable %ptr PushConstant
          %pc2 = OpVariable %ptr PushConstant
 
@@ -5095,6 +5095,37 @@ TEST_F(ValidateDecorations, NoUnsignedWrapExtInstGLSLGood) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, AliasedandRestrictBad) {
+  const std::string body = R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpSource GLSL 430
+OpMemberDecorate %Output 0 Offset 0
+OpDecorate %Output Restrict
+OpDecorate %Output Aliased
+OpDecorate %Output BufferBlock
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%Output = OpTypeStruct %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+%dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated with both Aliased and Restrict is not allowed"));
 }
 
 // TODO(dneto): For NoUnsignedWrap and NoUnsignedWrap, permit
