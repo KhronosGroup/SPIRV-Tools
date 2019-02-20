@@ -1323,10 +1323,6 @@ TEST_P(ValidateCFG, UnreachableContinueWithBranchUse) {
 }
 
 TEST_F(ValidateCFG, WebGPUUnreachableContinueWithBranchUse) {
-  fprintf(
-      stderr, "%s\n",
-      GetUnreachableContinueWithBranchUse(SpvCapabilityShader, SPV_ENV_WEBGPU_0)
-          .c_str());
   CompileSuccessfully(GetUnreachableContinueWithBranchUse(SpvCapabilityShader,
                                                           SPV_ENV_WEBGPU_0));
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions(SPV_ENV_WEBGPU_0));
