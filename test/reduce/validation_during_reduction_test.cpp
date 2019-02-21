@@ -52,6 +52,65 @@ class BlindlyRemoveGlobalValuesReductionOpportunityFinder
   }
 };
 
+// A dumb reduction opportunity that exists at the start of every function whose
+// first instruction is an OpVariable instruction. When applied, the OpVariable
+// instruction is duplicated (with a fresh result id). This allows each
+// reduction step to increase the number of variables to check if the validator
+// limits are enforced.
+class OpVariableDuplicatorReductionOpportunity : public ReductionOpportunity {
+ public:
+  OpVariableDuplicatorReductionOpportunity(Function* function_)
+      : function_(function_) {}
+
+  bool PreconditionHolds() override {
+    Instruction* first_instruction = &*function_->begin()[0].begin();
+    return first_instruction->opcode() == SpvOpVariable;
+  }
+
+ protected:
+  void Apply() override {
+    // Duplicate the first OpVariable instruction.
+
+    Instruction* first_instruction = &*function_->begin()[0].begin();
+    assert(first_instruction->opcode() == SpvOpVariable &&
+           "Expected first instruction to be OpVariable");
+    IRContext* context = first_instruction->context();
+    Instruction* cloned_instruction = first_instruction->Clone(context);
+    cloned_instruction->SetResultId(context->TakeNextId());
+    cloned_instruction->InsertBefore(first_instruction);
+  }
+
+ private:
+  Function* function_;
+};
+
+// A reduction opportunity finder that finds
+// OpVariableDuplicatorReductionOpportunity.
+class OpVariableDuplicatorReductionOpportunityFinder
+    : public ReductionOpportunityFinder {
+ public:
+  OpVariableDuplicatorReductionOpportunityFinder() = default;
+
+  ~OpVariableDuplicatorReductionOpportunityFinder() override = default;
+
+  std::string GetName() const final {
+    return "LocalVariableAdderReductionOpportunityFinder";
+  };
+
+  std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
+      opt::IRContext* context) const final {
+    std::vector<std::unique_ptr<ReductionOpportunity>> result;
+    for (auto& function : *context->module()) {
+      Instruction* first_instruction = &*function.begin()[0].begin();
+      if (first_instruction->opcode() == SpvOpVariable) {
+        result.push_back(
+            MakeUnique<OpVariableDuplicatorReductionOpportunity>(&function));
+      }
+    }
+    return result;
+  }
+};
+
 TEST(ValidationDuringReductionTest, CheckInvalidPassMakesNoProgress) {
   // A module whose global values are all referenced, so that any application of
   // MakeModuleInvalidPass will make the module invalid.
@@ -162,8 +221,7 @@ TEST(ValidationDuringReductionTest, CheckInvalidPassMakesNoProgress) {
   reducer_options.set_step_limit(500);
   spvtools::ValidatorOptions validator_options;
 
-  reducer.Run(std::move(binary_in), &binary_out, reducer_options,
-              validator_options);
+  reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
 
   // The reducer should have no impact.
   CheckEqual(env, original, binary_out);
@@ -372,6 +430,127 @@ TEST(ValidationDuringReductionTest, CheckNotAlwaysInvalidCanMakeProgress) {
   reducer.Run(std::move(binary_in), &binary_out, reducer_options,
               validator_options);
   CheckEqual(env, expected, binary_out);
+}
+
+// Sets up a Reducer for use in the CheckValidationOptions test; avoids
+// repetition.
+void setupReducerForCheckValidationOptions(Reducer* reducer) {
+  reducer->SetMessageConsumer(NopDiagnostic);
+
+  // Say that every module is interesting.
+  reducer->SetInterestingnessFunction(
+      [](const std::vector<uint32_t>&, uint32_t) -> bool { return true; });
+
+  // Each "reduction" step will duplicate the first OpVariable instruction in
+  // the function.
+  reducer->AddReductionPass(
+      MakeUnique<OpVariableDuplicatorReductionOpportunityFinder>());
+}
+
+TEST(ValidationDuringReductionTest, CheckValidationOptions) {
+  // A module that only validates when the "skip-block-layout" validator option
+  // is used. Also, the entry point's first instruction creates a local
+  // variable; this instruction will be duplicated on each reduction step.
+  std::string original = R"(
+               OpCapability Shader
+               OpCapability SampledBuffer
+               OpCapability StorageImageExtendedFormats
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "SceneLuminance" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource HLSL 600
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 1
+               OpDecorate %4 Binding 0
+               OpMemberDecorate %5 0 Offset 0
+               OpMemberDecorate %5 1 Offset 1072
+               OpMemberDecorate %6 0 Offset 0
+               OpDecorate %6 Block
+          %7 = OpTypeStruct
+          %8 = OpTypeFloat 32
+          %9 = OpTypeInt 32 1
+         %10 = OpConstant %9 0
+         %11 = OpTypeVector %8 4
+          %5 = OpTypeStruct %11 %7
+          %6 = OpTypeStruct %5
+         %12 = OpTypePointer Uniform %6
+         %13 = OpTypePointer Output %11
+         %14 = OpTypePointer Function %9
+         %15 = OpTypeVoid
+         %16 = OpTypeFunction %15
+          %4 = OpVariable %12 Uniform
+          %3 = OpVariable %13 Output
+         %17 = OpTypePointer Uniform %11
+          %2 = OpFunction %15 None %16
+         %18 = OpLabel
+         %19 = OpVariable %14 Function
+         %20 = OpAccessChain %17 %4 %10 %10
+         %21 = OpLoad %11 %20
+               OpStore %3 %21
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  std::vector<uint32_t> binary_in;
+  SpirvTools t(env);
+
+  ASSERT_TRUE(t.Assemble(original, &binary_in, kReduceAssembleOption));
+  std::vector<uint32_t> binary_out;
+  spvtools::ReducerOptions reducer_options;
+  spvtools::ValidatorOptions validator_options;
+
+  reducer_options.set_step_limit(3);
+
+  // Reduction should fail because the initial state is invalid without the
+  // "skip-block-layout" validator option. Note that the interestingness test
+  // always returns true.
+  {
+    Reducer reducer(env);
+    setupReducerForCheckValidationOptions(&reducer);
+
+    Reducer::ReductionResultStatus status =
+        reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+
+    // TODO: validator was changed so module validates without the validation
+    //  option. Re-enable this assertion when we get another SPIRV example.
+
+    (void)status;
+    //    ASSERT_EQ(status,
+    //              Reducer::ReductionResultStatus::kInitialStateNotInteresting);
+  }
+
+  // Try again with validator option.
+  validator_options.SetSkipBlockLayout(true);
+
+  // Reduction should hit step limit; module is seen as valid, interestingness
+  // test always succeeds, and the finder yields infinite opportunities.
+  {
+    Reducer reducer(env);
+    setupReducerForCheckValidationOptions(&reducer);
+
+    Reducer::ReductionResultStatus status =
+        reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+
+    ASSERT_EQ(status, Reducer::ReductionResultStatus::kReachedStepLimit);
+  }
+
+  // Now set a limit on the number of local variables.
+  validator_options.SetUniversalLimit(spv_validator_limit_max_local_variables,
+                                      2);
+
+  // Reduction should "complete"; after one step, a local variable is added and
+  // the module becomes "invalid" given the validator limits.
+  {
+    Reducer reducer(env);
+    setupReducerForCheckValidationOptions(&reducer);
+
+    Reducer::ReductionResultStatus status =
+        reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+
+    ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
+  }
 }
 
 }  // namespace
