@@ -547,7 +547,7 @@ ConstantFoldingRule FoldOpDotWithConstants() {
     for (int i = 0; i < 2; ++i) {
       if (constants[i]) {
         if (constants[i]->AsNullConstant() ||
-            (constants[i]->AsVectorConstant()->IsZero())) {
+            constants[i]->AsVectorConstant()->IsZero()) {
           has_zero_operand = true;
           break;
         }
