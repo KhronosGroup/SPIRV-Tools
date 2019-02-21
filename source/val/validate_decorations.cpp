@@ -26,7 +26,7 @@
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
-#include "source/val/validate.h"
+#include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -1265,26 +1265,6 @@ spv_result_t CheckFPRoundingModeForShaders(ValidationState_t& vstate,
   return SPV_SUCCESS;
 }
 
-// Returns true if the given value is a valid scope.
-bool IsValidScope(uint64_t scope) {
-  // Fail if any high bits are set.
-  if (scope >> 32) return false;
-  // Deliberately avoid a default case so we have to update the list when the
-  // scopes list changes.
-  switch (static_cast<SpvScope>(scope)) {
-    case SpvScopeCrossDevice:
-    case SpvScopeDevice:
-    case SpvScopeWorkgroup:
-    case SpvScopeSubgroup:
-    case SpvScopeInvocation:
-    case SpvScopeQueueFamilyKHR:
-      return true;
-    case SpvScopeMax:
-      break;
-  }
-  return false;
-}
-
 // Returns SPV_SUCCESS if validation rules are satisfied for the NonWritable
 // decoration.  Otherwise emits a diagnostic and returns something other than
 // SPV_SUCCESS.  The |inst| parameter is the object being decorated.  This must
@@ -1376,35 +1356,11 @@ spv_result_t CheckUniformDecoration(ValidationState_t& vstate,
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
              << dec_name << " decoration requires SPIR-V 1.4 or later";
     }
-    if (const Instruction* scope = vstate.FindDef(decoration.params()[0])) {
-      const auto scope_type_id = scope->type_id();
-      if (scope_type_id && vstate.IsIntScalarType(scope_type_id) &&
-          32 == vstate.GetBitWidth(scope_type_id)) {
-        uint64_t value = 0;
-        if (vstate.GetConstantValUint64(scope->id(), &value)) {
-          if (!IsValidScope(value)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-                   << "Invalid scope value:\n  " << vstate.Disassemble(*scope)
-                   << "\nfor UniformId decoration applied to:";
-          }
-        } else {
-          return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-                 << "Scope for a UniformId decoration must be a 32-bit "
-                    "integer scalar constant:\n  "
-                 << vstate.Disassemble(*scope) << "\napplied to:";
-        }
-      } else {
-        return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-               << "Scope for a UniformId decoration must be a 32-bit "
-                  "integer scalar constant:\n  "
-               << vstate.Disassemble(*scope) << "\napplied to:";
-      }
-    } else {
-      // Expect we never get here: Should have errored out earlier in validation
-      // flow.
-      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << "UniformId decoration with an undefined scope ID";
-    }
+
+    // The scope id is an execution scope.
+    if (auto error =
+            ValidateExecutionScope(vstate, &inst, decoration.params()[0]))
+      return error;
   }
 
   return SPV_SUCCESS;

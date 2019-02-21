@@ -131,23 +131,25 @@ INSTANTIATE_TEST_SUITE_P(
                 {CASE(Alignment), {16}},
             })));
 
-INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateSimpleV11, OpDecorateSimpleTest,
-                        Combine(Values(SPV_ENV_UNIVERSAL_1_1),
-                                Values(EnumCase<SpvDecoration>{
-                                    CASE(MaxByteOffset), {128}})), );
+INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateSimpleV11, OpDecorateSimpleTest,
+                         Combine(Values(SPV_ENV_UNIVERSAL_1_1),
+                                 Values(EnumCase<SpvDecoration>{
+                                     CASE(MaxByteOffset), {128}})));
 
-INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateSimpleV14, OpDecorateSimpleTest,
-                        Combine(Values(SPV_ENV_UNIVERSAL_1_4),
-                                ValuesIn(std::vector<EnumCase<SpvDecoration>>{
-                                    {CASE(Uniform), {}},
-                                })), );
-INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateSimpleIdV14, OpDecorateSimpleIdTest,
-                        Combine(Values(SPV_ENV_UNIVERSAL_1_4),
-                                ValuesIn(std::vector<EnumCase<SpvDecoration>>{
-                                    // In 1.4, UniformId decoration takes a
-                                    // scope Id.
-                                    {CASE(UniformId), {1}},
-                                })), );
+INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateSimpleV14, OpDecorateSimpleTest,
+                         Combine(Values(SPV_ENV_UNIVERSAL_1_4),
+                                 ValuesIn(std::vector<EnumCase<SpvDecoration>>{
+                                     {CASE(Uniform), {}},
+                                 })));
+
+INSTANTIATE_TEST_SUITE_P(TextToBinaryDecorateSimpleIdV14,
+                         OpDecorateSimpleIdTest,
+                         Combine(Values(SPV_ENV_UNIVERSAL_1_4),
+                                 ValuesIn(std::vector<EnumCase<SpvDecoration>>{
+                                     // In 1.4, UniformId decoration takes a
+                                     // scope Id.
+                                     {CASE(UniformId), {1}},
+                                 })));
 #undef CASE
 
 TEST_F(OpDecorateSimpleTest, WrongDecoration) {

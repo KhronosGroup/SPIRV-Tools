@@ -4845,12 +4845,11 @@ TEST_F(ValidateDecorations,
       ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %float0");
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Scope for a UniformId decoration must be a 32-bit "
-                        "integer scalar constant:\n"
-                        "  %float0 = OpConstantNull %float\napplied to:\n"
-                        "  %int0 = OpConstantNull %int"));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ConstantNull: expected Execution Scope to be a 32-bit int"));
 }
 
 TEST_F(ValidateDecorations,
@@ -4859,11 +4858,23 @@ TEST_F(ValidateDecorations,
       ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %int_99");
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Invalid scope value:\n %int_99 = OpConstant %int 99\n"));
+}
+
+TEST_F(ValidateDecorations, UniformDecorationWithScopeIdV14VulkanEnv) {
+  const std::string spirv =
+      ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %int0");
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1_SPIRV_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Invalid scope value:\n  %int_99 = OpConstant %int 99\n"
-                        "for UniformId decoration applied to:\n"
-                        "  %int0 = OpConstantNull %int"));
+              HasSubstr(": in Vulkan environment Execution Scope is limited to "
+                        "Workgroup and Subgroup"));
 }
 
 TEST_F(ValidateDecorations, UniformDecorationWithWrongInstructionBad) {
