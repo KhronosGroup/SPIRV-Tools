@@ -5106,9 +5106,9 @@ OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
 OpSource GLSL 430
 OpMemberDecorate %Output 0 Offset 0
-OpDecorate %Output Restrict
-OpDecorate %Output Aliased
 OpDecorate %Output BufferBlock
+OpDecorate %dataOutput Restrict
+OpDecorate %dataOutput Aliased
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
 %float = OpTypeFloat 32
