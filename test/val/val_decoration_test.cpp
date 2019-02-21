@@ -5126,6 +5126,37 @@ TEST_F(ValidateDecorations, NoUnsignedWrapExtInstGLSLGood) {
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
+TEST_F(ValidateDecorations, AliasedandRestrictBad) {
+  const std::string body = R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpSource GLSL 430
+OpMemberDecorate %Output 0 Offset 0
+OpDecorate %Output BufferBlock
+OpDecorate %dataOutput Restrict
+OpDecorate %dataOutput Aliased
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%Output = OpTypeStruct %float
+%_ptr_Uniform_Output = OpTypePointer Uniform %Output
+%dataOutput = OpVariable %_ptr_Uniform_Output Uniform
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated with both Aliased and Restrict is not allowed"));
+}
+
 // TODO(dneto): For NoUnsignedWrap and NoUnsignedWrap, permit
 // "OpExtInst for instruction numbers specified in the extended
 // instruction-set specifications as accepting this decoration."
