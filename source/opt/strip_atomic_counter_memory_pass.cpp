@@ -19,8 +19,39 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status StripAtomicCounterMemoryPass::Process() {
-  fprintf(stderr, "Ran StripAtomicCounterMemoryPass::Process()\n");
-  return Status::SuccessWithoutChange;
+  auto* def_use_mgr = context()->get_def_use_mgr();
+  auto* type_mgr = context()->get_type_mgr();
+  auto* constant_mgr = context()->get_constant_mgr();
+  bool changed = false;
+
+  context()->module()->ForEachInst([def_use_mgr, type_mgr, constant_mgr,
+                                    &changed](Instruction* inst) {
+    auto indices = spvOpcodeMemorySemanticsOperandIndices(inst->opcode());
+    if (indices.empty()) return;
+
+    for (auto idx : indices) {
+      auto mem_sem_id = inst->GetSingleWordOperand(idx);
+      const auto& mem_sem_inst = def_use_mgr->GetDef(mem_sem_id);
+      // The spec explicitly says that this id must be an OpConstant
+      auto mem_sem_val = mem_sem_inst->GetSingleWordOperand(2);
+      if (!(mem_sem_val & SpvMemorySemanticsAtomicCounterMemoryMask)) {
+        continue;
+      }
+      mem_sem_val &= ~SpvMemorySemanticsAtomicCounterMemoryMask;
+
+      analysis::Integer int_type(32, false);
+      const analysis::Type* uint32_type =
+          type_mgr->GetRegisteredType(&int_type);
+      auto* new_const = constant_mgr->GetConstant(uint32_type, {mem_sem_val});
+      auto* new_const_inst = constant_mgr->GetDefiningInstruction(new_const);
+      auto new_const_id = new_const_inst->result_id();
+
+      inst->SetOperand(idx, {new_const_id});
+      changed = true;
+    }
+  });
+
+  return changed ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 }  // namespace opt

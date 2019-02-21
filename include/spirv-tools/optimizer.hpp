@@ -213,7 +213,7 @@ Optimizer::PassToken CreateNullPass();
 // AtomicCounterMemory bit in Memory Semantics bitmasks. This bit is a no-op in
 // Vulkan, so isn't needed in that env. And the related capability is not
 // allowed in WebGPU, so it is not allowed in that env.
-Optimizer::PassToken CreateStripAtomicMemoryCounterPass();
+Optimizer::PassToken CreateStripAtomicCounterMemoryPass();
 
 // Creates a strip-debug-info pass.
 // A strip-debug-info pass removes all debug instructions (as documented in

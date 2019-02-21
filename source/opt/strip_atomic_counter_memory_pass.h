@@ -22,11 +22,26 @@
 namespace spvtools {
 namespace opt {
 
-// DNS: Write documentation
+// Removes the AtomicCounterMemory bit from the value being passed into memory
+// semantics. This bit being set is ignored in Vulkan environments and
+// forbidden WebGPU ones.
 class StripAtomicCounterMemoryPass : public Pass {
  public:
   const char* name() const override { return "strip-atomic-counter-memory"; }
   Status Process() override;
+
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
+           IRContext::kAnalysisCFG | IRContext::kAnalysisDominatorAnalysis |
+           IRContext::kAnalysisLoopAnalysis | IRContext::kAnalysisNameMap |
+           IRContext::kAnalysisScalarEvolution |
+           IRContext::kAnalysisRegisterPressure |
+           IRContext::kAnalysisValueNumberTable |
+           IRContext::kAnalysisStructuredCFG |
+           IRContext::kAnalysisBuiltinVarId |
+           IRContext::kAnalysisIdToFuncMapping | IRContext::kAnalysisTypes;
+  }
 };
 
 }  // namespace opt

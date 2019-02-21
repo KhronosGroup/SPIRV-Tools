@@ -219,7 +219,8 @@ Optimizer& Optimizer::RegisterSizePasses() {
 
 Optimizer& Optimizer::RegisterWebGPUPasses() {
   return RegisterPass(CreateStripDebugInfoPass())
-      .RegisterPass(CreateStripAtomicMemoryCounterPass())
+      .RegisterPass(CreateStripAtomicCounterMemoryPass())
+      .RegisterPass(CreateEliminateDeadConstantPass())
       .RegisterPass(CreateFlattenDecorationPass())
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass());
@@ -267,7 +268,9 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
   //
   // Both Pass::name() and Pass::desc() should be static class members so they
   // can be invoked without creating a pass instance.
-  if (pass_name == "strip-debug") {
+  if (pass_name == "strip-atomic-counter-memory") {
+    RegisterPass(CreateStripAtomicCounterMemoryPass());
+  } else if (pass_name == "strip-debug") {
     RegisterPass(CreateStripDebugInfoPass());
   } else if (pass_name == "strip-reflect") {
     RegisterPass(CreateStripReflectInfoPass());
@@ -530,7 +533,7 @@ Optimizer::PassToken CreateNullPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::NullPass>());
 }
 
-Optimizer::PassToken CreateStripAtomicMemoryCounterPass() {
+Optimizer::PassToken CreateStripAtomicCounterMemoryPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::StripAtomicCounterMemoryPass>());
 }
