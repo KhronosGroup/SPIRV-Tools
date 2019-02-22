@@ -40,7 +40,8 @@ class StripAtomicCounterMemoryPass : public Pass {
            IRContext::kAnalysisValueNumberTable |
            IRContext::kAnalysisStructuredCFG |
            IRContext::kAnalysisBuiltinVarId |
-           IRContext::kAnalysisIdToFuncMapping | IRContext::kAnalysisTypes;
+           IRContext::kAnalysisIdToFuncMapping | IRContext::kAnalysisTypes |
+           IRContext::kAnalysisDefUse | IRContext::kAnalysisConstants;
   }
 };
 
