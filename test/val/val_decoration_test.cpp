@@ -1541,8 +1541,8 @@ TEST_F(ValidateDecorations, BlockCantAppearWithinABlockBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("rules: A Block/BufferBlock cannot appear within a "
-                        "Block/BufferBlock."));
+              HasSubstr("rules: A Block or BufferBlock cannot be nested within "
+                        "another Block or BufferBlock."));
 }
 
 TEST_F(ValidateDecorations, BufferblockCantAppearWithinABufferblockBad) {
@@ -1579,8 +1579,8 @@ TEST_F(ValidateDecorations, BufferblockCantAppearWithinABufferblockBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("rules: A Block/BufferBlock cannot appear within a "
-                        "Block/BufferBlock."));
+              HasSubstr("rules: A Block or BufferBlock cannot be nested within "
+                        "another Block or BufferBlock."));
 }
 
 TEST_F(ValidateDecorations, BufferblockCantAppearWithinABlockBad) {
@@ -1617,8 +1617,8 @@ TEST_F(ValidateDecorations, BufferblockCantAppearWithinABlockBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("rules: A Block/BufferBlock cannot appear within a "
-                        "Block/BufferBlock."));
+              HasSubstr("rules: A Block or BufferBlock cannot be nested within "
+                        "another Block or BufferBlock."));
 }
 
 TEST_F(ValidateDecorations, BlockCantAppearWithinABufferblockBad) {
@@ -1658,8 +1658,8 @@ TEST_F(ValidateDecorations, BlockCantAppearWithinABufferblockBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("rules: A Block/BufferBlock cannot appear within a "
-                        "Block/BufferBlock."));
+              HasSubstr("rules: A Block or BufferBlock cannot be nested within "
+                        "another Block or BufferBlock."));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {

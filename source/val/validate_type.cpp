@@ -256,8 +256,8 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
       (_.HasDecoration(inst->id(), SpvDecorationBufferBlock) ||
        _.HasDecoration(inst->id(), SpvDecorationBlock))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "rules: A Block/BufferBlock cannot appear within a "
-              "Block/BufferBlock.";
+           << "rules: A Block or BufferBlock cannot be nested within another "
+              "Block or BufferBlock. ";
   }
 
   std::unordered_set<uint32_t> built_in_members;
