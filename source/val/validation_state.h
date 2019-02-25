@@ -552,6 +552,10 @@ class ValidationState_t {
   bool IsBoolVectorType(uint32_t id) const;
   bool IsBoolScalarOrVectorType(uint32_t id) const;
   bool IsPointerType(uint32_t id) const;
+  bool IsCooperativeMatrixType(uint32_t id) const;
+  bool IsFloatCooperativeMatrixType(uint32_t id) const;
+  bool IsIntCooperativeMatrixType(uint32_t id) const;
+  bool IsUnsignedIntCooperativeMatrixType(uint32_t id) const;
 
   // Gets value from OpConstant and OpSpecConstant as uint64.
   // Returns false on failure (no instruction, wrong instruction, not int).
@@ -635,13 +639,19 @@ class ValidationState_t {
   // Returns tuple <is_int32, is_const_int32, value>.
   // OpSpecConstant* return |is_const_int32| as false since their values cannot
   // be relied upon during validation.
-  std::tuple<bool, bool, uint32_t> EvalInt32IfConst(uint32_t id);
+  std::tuple<bool, bool, uint32_t> EvalInt32IfConst(uint32_t id) const;
 
   // Returns the disassembly string for the given instruction.
   std::string Disassemble(const Instruction& inst) const;
 
   // Returns the disassembly string for the given instruction.
   std::string Disassemble(const uint32_t* words, uint16_t num_words) const;
+
+  // Returns whether type m1 and type m2 are cooperative matrices with
+  // the same "shape" (matching scope, rows, cols). If any are specialization
+  // constants, we assume they can match because we can't prove they don't.
+  spv_result_t CooperativeMatrixShapesMatch(const Instruction* inst,
+                                            uint32_t m1, uint32_t m2);
 
  private:
   ValidationState_t(const ValidationState_t&);
