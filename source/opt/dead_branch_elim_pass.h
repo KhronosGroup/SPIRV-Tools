@@ -148,6 +148,9 @@ class DeadBranchElimPass : public MemPass {
                                                uint32_t merge_block_id,
                                                uint32_t loop_merge_id,
                                                uint32_t loop_continue_id);
+  void AddBlocksWithBackEdge(uint32_t cont_id, uint32_t header_id,
+                             uint32_t merge_id,
+                             std::unordered_set<BasicBlock*>* continues);
 };
 
 }  // namespace opt
