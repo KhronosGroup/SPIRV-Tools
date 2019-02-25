@@ -474,6 +474,18 @@ class ValidationState_t {
     return struct_nesting_depth_[id];
   }
 
+  /// Records the has a nested block/bufferblock decorated struct for a given
+  /// struct ID
+  void SetHasNestedBlockOrBufferBlockStruct(uint32_t id, bool has) {
+    struct_has_nested_blockorbufferblock_struct_[id] = has;
+  }
+
+  /// For a given struct ID returns true if it has a nested block/bufferblock
+  /// decorated struct
+  bool GetHasNestedBlockOrBufferBlockStruct(uint32_t id) {
+    return struct_has_nested_blockorbufferblock_struct_[id];
+  }
+
   /// Records that the structure type has a member decorated with a built-in.
   void RegisterStructTypeWithBuiltInMember(uint32_t id) {
     builtin_structs_.insert(id);
@@ -715,6 +727,10 @@ class ValidationState_t {
 
   /// Structure Nesting Depth
   std::unordered_map<uint32_t, uint32_t> struct_nesting_depth_;
+
+  /// Structure has nested blockorbufferblock struct
+  std::unordered_map<uint32_t, bool>
+      struct_has_nested_blockorbufferblock_struct_;
 
   /// Stores the list of decorations for a given <id>
   std::map<uint32_t, std::vector<Decoration>> id_decorations_;
