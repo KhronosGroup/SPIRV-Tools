@@ -55,7 +55,9 @@ bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
           GetConstCondition(cInst->GetSingleWordInOperand(0), &negVal);
       if (condIsConst) *condVal = !negVal;
     } break;
-    default: { condIsConst = false; } break;
+    default: {
+      condIsConst = false;
+    } break;
   }
   return condIsConst;
 }
@@ -553,7 +555,7 @@ Instruction* DeadBranchElimPass::FindFirstExitFromSelectionMerge(
 
 void DeadBranchElimPass::AddBlocksWithBackEdge(
     uint32_t cont_id, uint32_t header_id, uint32_t merge_id,
-    std::unordered_set<BasicBlock*>* continues) {
+    std::unordered_set<BasicBlock*>* blocks_with_back_edges) {
   std::unordered_set<uint32_t> visited;
   visited.insert(cont_id);
   visited.insert(header_id);
@@ -580,7 +582,7 @@ void DeadBranchElimPass::AddBlocksWithBackEdge(
     });
 
     if (has_back_edge) {
-      continues->insert(bb);
+      blocks_with_back_edges->insert(bb);
     }
   }
 }
