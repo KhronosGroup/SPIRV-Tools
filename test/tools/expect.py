@@ -18,15 +18,17 @@ as superclass and providing the expected_* variables required by the check_*()
 methods in the mixin classes.
 """
 import difflib
+import functools
 import os
 import re
 import subprocess
 from spirv_test_framework import SpirvTest
-
+from builtins import bytes
 
 def convert_to_unix_line_endings(source):
   """Converts all line endings in source to be unix line endings."""
-  return source.replace('\r\n', '\n').replace('\r', '\n')
+  result = source.decode('utf8').replace('\r\n', '\n').replace('\r', '\n')
+  return result
 
 
 def substitute_file_extension(filename, extension):
@@ -133,7 +135,7 @@ class CorrectBinaryLengthAndPreamble(SpirvTest):
       word = binary[index * 4:(index + 1) * 4]
       if little_endian:
         word = reversed(word)
-      return reduce(lambda w, b: (w << 8) | ord(b), word, 0)
+      return functools.reduce(lambda w, b: (w << 8) | b, word, 0)
 
     def check_endianness(binary):
       """Checks the endianness of the given SPIR-V binary.
@@ -564,11 +566,11 @@ class StdoutMatch(SpirvTest):
                        'Expected:\n{ex}'.format(
                            ac=status.stdout, ex=self.expected_stdout))
     else:
-      if not self.expected_stdout.search(
-          convert_to_unix_line_endings(status.stdout)):
+      converted = convert_to_unix_line_endings(status.stdout)
+      if not self.expected_stdout.search(converted):
         return False, ('Incorrect stdout output:\n{ac}\n'
                        'Expected to match regex:\n{ex}'.format(
-                           ac=status.stdout, ex=self.expected_stdout.pattern))
+                           ac=status.stdout.decode('utf8'), ex=self.expected_stdout.pattern))
     return True, ''
 
 
@@ -664,7 +666,7 @@ class ExecutedListOfPasses(SpirvTest):
     # Collect all the output lines containing a pass name.
     pass_names = []
     pass_name_re = re.compile(r'.*IR before pass (?P<pass_name>[\S]+)')
-    for line in status.stderr.splitlines():
+    for line in status.stderr.decode('utf8').splitlines():
       match = pass_name_re.match(line)
       if match:
         pass_names.append(match.group('pass_name'))
