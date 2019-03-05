@@ -21,6 +21,9 @@ set SRC=%cd%\github\SPIRV-Tools
 set BUILD_TYPE=%1
 set VS_VERSION=%2
 
+:: Force usage of python 2.7 rather than 3.6
+set PATH=C:\python36;%PATH%
+
 cd %SRC%
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
 git clone --depth=1 https://github.com/google/googletest          external/googletest
