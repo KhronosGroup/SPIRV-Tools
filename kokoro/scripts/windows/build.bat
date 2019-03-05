@@ -23,6 +23,7 @@ set VS_VERSION=%2
 
 :: Force usage of python 2.7 rather than 3.6
 set PATH=C:\python27;%PATH%
+pip install future
 
 cd %SRC%
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers

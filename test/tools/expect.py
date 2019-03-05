@@ -22,12 +22,13 @@ import functools
 import os
 import re
 import subprocess
+import traceback
 from spirv_test_framework import SpirvTest
 from builtins import bytes
 
 def convert_to_unix_line_endings(source):
   """Converts all line endings in source to be unix line endings."""
-  result = source.decode('utf8').replace('\r\n', '\n').replace('\r', '\n')
+  result = source.replace('\r\n', '\n').replace('\r', '\n')
   return result
 
 
@@ -481,7 +482,7 @@ class ErrorMessageSubstr(SpirvTest):
     if not status.stderr:
       return False, 'Expected error message, but no output on stderr'
     if self.expected_error_substr not in convert_to_unix_line_endings(
-        status.stderr):
+        status.stderr.decode('utf8')):
       return False, ('Incorrect stderr output:\n{act}\n'
                      'Expected substring not found in stderr:\n{exp}'.format(
                          act=status.stderr, exp=self.expected_error_substr))
@@ -501,7 +502,7 @@ class WarningMessage(SpirvTest):
                      ' command execution')
     if not status.stderr:
       return False, 'Expected warning message, but no output on stderr'
-    if self.expected_warning != convert_to_unix_line_endings(status.stderr):
+    if self.expected_warning != convert_to_unix_line_endings(status.stderr.decode('utf8')):
       return False, ('Incorrect stderr output:\n{act}\n'
                      'Expected:\n{exp}'.format(
                          act=status.stderr, exp=self.expected_warning))
@@ -561,12 +562,12 @@ class StdoutMatch(SpirvTest):
       if not status.stdout:
         return False, 'Expected something on stdout'
     elif type(self.expected_stdout) == str:
-      if self.expected_stdout != convert_to_unix_line_endings(status.stdout):
+      if self.expected_stdout != convert_to_unix_line_endings(status.stdout.decode('utf8')):
         return False, ('Incorrect stdout output:\n{ac}\n'
                        'Expected:\n{ex}'.format(
                            ac=status.stdout, ex=self.expected_stdout))
     else:
-      converted = convert_to_unix_line_endings(status.stdout)
+      converted = convert_to_unix_line_endings(status.stdout.decode('utf8'))
       if not self.expected_stdout.search(converted):
         return False, ('Incorrect stdout output:\n{ac}\n'
                        'Expected to match regex:\n{ex}'.format(
@@ -595,13 +596,13 @@ class StderrMatch(SpirvTest):
       if not status.stderr:
         return False, 'Expected something on stderr'
     elif type(self.expected_stderr) == str:
-      if self.expected_stderr != convert_to_unix_line_endings(status.stderr):
+      if self.expected_stderr != convert_to_unix_line_endings(status.stderr.decode('utf8')):
         return False, ('Incorrect stderr output:\n{ac}\n'
                        'Expected:\n{ex}'.format(
                            ac=status.stderr, ex=self.expected_stderr))
     else:
       if not self.expected_stderr.search(
-          convert_to_unix_line_endings(status.stderr)):
+          convert_to_unix_line_endings(status.stderr.decode('utf8'))):
         return False, ('Incorrect stderr output:\n{ac}\n'
                        'Expected to match regex:\n{ex}'.format(
                            ac=status.stderr, ex=self.expected_stderr.pattern))
