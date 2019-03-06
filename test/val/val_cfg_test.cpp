@@ -2852,6 +2852,41 @@ TEST_F(ValidateCFG, BranchTargetMustBeLabel) {
                         "be the ID of an OpLabel instruction"));
 }
 
+TEST_F(ValidateCFG, OneContinueTwoBackedges) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %1 "main"
+OpExecutionMode %1 LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%5 = OpTypeFunction %void
+%1 = OpFunction %void None %5
+%6 = OpLabel
+OpBranch %7
+%7 = OpLabel
+OpLoopMerge %8 %9 None
+OpBranch %10
+%10 = OpLabel
+OpLoopMerge %11 %9 None
+OpBranchConditional %true %11 %9
+%9 = OpLabel
+OpBranchConditional %true %10 %7
+%11 = OpLabel
+OpBranch %8
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("block <ID> 9 branches to the loop construct, but not "
+                        "to the loop header <ID> 7"));
+}
+
 /// TODO(umar): Nested CFG constructs
 
 }  // namespace
