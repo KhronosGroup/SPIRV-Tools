@@ -453,41 +453,51 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
   // variable; this instruction will be duplicated on each reduction step.
   std::string original = R"(
                OpCapability Shader
-               OpCapability SampledBuffer
-               OpCapability StorageImageExtendedFormats
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "SceneLuminance" %3
-               OpExecutionMode %2 OriginUpperLeft
+               OpEntryPoint Vertex %2 "Main" %3
                OpSource HLSL 600
-               OpDecorate %3 Location 0
-               OpDecorate %4 DescriptorSet 1
-               OpDecorate %4 Binding 0
-               OpMemberDecorate %5 0 Offset 0
-               OpMemberDecorate %5 1 Offset 1072
+               OpDecorate %3 BuiltIn Position
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 99
+               OpDecorate %5 ArrayStride 16
                OpMemberDecorate %6 0 Offset 0
+               OpMemberDecorate %6 1 Offset 32
+               OpMemberDecorate %6 1 MatrixStride 16
+               OpMemberDecorate %6 1 ColMajor
+               OpMemberDecorate %6 2 Offset 96
+               OpMemberDecorate %6 3 Offset 100
+               OpMemberDecorate %6 4 Offset 112
+               OpMemberDecorate %6 4 MatrixStride 16
+               OpMemberDecorate %6 4 ColMajor
+               OpMemberDecorate %6 5 Offset 176
                OpDecorate %6 Block
-          %7 = OpTypeStruct
-          %8 = OpTypeFloat 32
-          %9 = OpTypeInt 32 1
-         %10 = OpConstant %9 0
-         %11 = OpTypeVector %8 4
-          %5 = OpTypeStruct %11 %7
-          %6 = OpTypeStruct %5
-         %12 = OpTypePointer Uniform %6
-         %13 = OpTypePointer Output %11
-         %14 = OpTypePointer Function %9
-         %15 = OpTypeVoid
-         %16 = OpTypeFunction %15
-          %4 = OpVariable %12 Uniform
-          %3 = OpVariable %13 Output
-         %17 = OpTypePointer Uniform %11
-          %2 = OpFunction %15 None %16
-         %18 = OpLabel
-         %19 = OpVariable %14 Function
-         %20 = OpAccessChain %17 %4 %10 %10
-         %21 = OpLoad %11 %20
-               OpStore %3 %21
+          %7 = OpTypeFloat 32
+          %8 = OpTypeVector %7 4
+          %9 = OpTypeMatrix %8 4
+         %10 = OpTypeVector %7 2
+         %11 = OpTypeInt 32 1
+         %12 = OpTypeInt 32 0
+         %13 = OpConstant %12 2
+         %14 = OpConstant %11 1
+         %15 = OpConstant %11 5
+          %5 = OpTypeArray %8 %13
+          %6 = OpTypeStruct %5 %9 %12 %10 %9 %7
+         %16 = OpTypePointer Uniform %6
+         %17 = OpTypePointer Output %8
+         %18 = OpTypeVoid
+         %19 = OpTypeFunction %18
+         %20 = OpTypePointer Uniform %7
+          %4 = OpVariable %16 Uniform
+          %3 = OpVariable %17 Output
+         %21 = OpTypePointer Function %11
+          %2 = OpFunction %18 None %19
+         %22 = OpLabel
+         %23 = OpVariable %21 Function
+         %24 = OpAccessChain %20 %4 %15
+         %25 = OpLoad %7 %24
+         %26 = OpCompositeConstruct %8 %25 %25 %25 %25
+               OpStore %3 %26
                OpReturn
                OpFunctionEnd
   )";
@@ -513,12 +523,8 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
     Reducer::ReductionResultStatus status =
         reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
 
-    // TODO: validator was changed so module validates without the validation
-    //  option. Re-enable this assertion when we get another SPIRV example.
-
-    (void)status;
-    //    ASSERT_EQ(status,
-    //              Reducer::ReductionResultStatus::kInitialStateNotInteresting);
+    ASSERT_EQ(status,
+              Reducer::ReductionResultStatus::kInitialStateNotInteresting);
   }
 
   // Try again with validator option.
