@@ -1,4 +1,4 @@
-# SPIR-V Tools
+# SPIR-V Kools
 
 [![Build status](https://ci.appveyor.com/api/projects/status/gpue87cesrx3pi0d/branch/master?svg=true)](https://ci.appveyor.com/project/Khronoswebmaster/spirv-tools/branch/master)
 <img alt="Linux" src="kokoro/img/linux.png" width="20px" height="20px" hspace="2px"/>![Linux Build Status](https://storage.googleapis.com/spirv-tools/badges/build_status_linux_release.svg)
