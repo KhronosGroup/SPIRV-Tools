@@ -31,15 +31,16 @@ RemoveBlockReductionOpportunityFinder::GetAvailableOpportunities(
 
   // Consider every block in every function.
   for (auto& function : *context->module()) {
-    // Skip first block.
+
+    // Skip first block; we don't want to end up with no blocks.
     auto bi = function.begin();
     if (bi != function.end()) {
       ++bi;
       for (; bi != function.end(); ++bi) {
         if (context->get_def_use_mgr()->NumUsers(bi->id()) == 0) {
           result.push_back(
-              spvtools::MakeUnique<RemoveBlockReductionOpportunity>(
-                  context, &function, &*bi));
+              spvtools::MakeUnique<RemoveBlockReductionOpportunity>(&function,
+                                                                    &*bi));
         }
       }
     }
