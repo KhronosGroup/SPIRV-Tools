@@ -231,7 +231,10 @@ TEST(ReducerTest, ExprToConstantAndRemoveUnreferenced) {
   reducer_options.set_step_limit(500);
   spvtools::ValidatorOptions validator_options;
 
-  reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+  Reducer::ReductionResultStatus status = reducer.Run(
+      std::move(binary_in), &binary_out, reducer_options, validator_options);
+
+  ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
 
   CheckEqual(env, expected, binary_out);
 }
@@ -303,8 +306,8 @@ TEST(ReducerTest, RemoveOpnameAndRemoveUnreferenced) {
   reducer_options.set_step_limit(500);
   spvtools::ValidatorOptions validator_options;
 
-  Reducer::ReductionResultStatus status =
-      reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+  Reducer::ReductionResultStatus status = reducer.Run(
+      std::move(binary_in), &binary_out, reducer_options, validator_options);
 
   ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
 

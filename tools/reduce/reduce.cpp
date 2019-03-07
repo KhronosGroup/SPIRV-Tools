@@ -286,8 +286,8 @@ int main(int argc, const char** argv) {
   }
 
   std::vector<uint32_t> binary_out;
-  const auto reduction_status =
-      reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+  const auto reduction_status = reducer.Run(std::move(binary_in), &binary_out,
+                                            reducer_options, validator_options);
 
   if (reduction_status ==
           Reducer::ReductionResultStatus::kInitialStateNotInteresting ||

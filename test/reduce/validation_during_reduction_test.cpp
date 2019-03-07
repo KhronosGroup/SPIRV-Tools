@@ -221,7 +221,10 @@ TEST(ValidationDuringReductionTest, CheckInvalidPassMakesNoProgress) {
   reducer_options.set_step_limit(500);
   spvtools::ValidatorOptions validator_options;
 
-  reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+  Reducer::ReductionResultStatus status = reducer.Run(
+      std::move(binary_in), &binary_out, reducer_options, validator_options);
+
+  ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
 
   // The reducer should have no impact.
   CheckEqual(env, original, binary_out);
@@ -427,8 +430,11 @@ TEST(ValidationDuringReductionTest, CheckNotAlwaysInvalidCanMakeProgress) {
   reducer_options.set_step_limit(500);
   spvtools::ValidatorOptions validator_options;
 
-  reducer.Run(std::move(binary_in), &binary_out, reducer_options,
-              validator_options);
+  Reducer::ReductionResultStatus status = reducer.Run(
+      std::move(binary_in), &binary_out, reducer_options, validator_options);
+
+  ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
+
   CheckEqual(env, expected, binary_out);
 }
 
@@ -521,7 +527,8 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
     setupReducerForCheckValidationOptions(&reducer);
 
     Reducer::ReductionResultStatus status =
-        reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+        reducer.Run(std::vector<uint32_t>(binary_in), &binary_out,
+                    reducer_options, validator_options);
 
     ASSERT_EQ(status,
               Reducer::ReductionResultStatus::kInitialStateNotInteresting);
@@ -537,7 +544,8 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
     setupReducerForCheckValidationOptions(&reducer);
 
     Reducer::ReductionResultStatus status =
-        reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+        reducer.Run(std::vector<uint32_t>(binary_in), &binary_out,
+                    reducer_options, validator_options);
 
     ASSERT_EQ(status, Reducer::ReductionResultStatus::kReachedStepLimit);
   }
@@ -553,7 +561,8 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
     setupReducerForCheckValidationOptions(&reducer);
 
     Reducer::ReductionResultStatus status =
-        reducer.Run(binary_in, &binary_out, reducer_options, validator_options);
+        reducer.Run(std::vector<uint32_t>(binary_in), &binary_out,
+                    reducer_options, validator_options);
 
     ASSERT_EQ(status, Reducer::ReductionResultStatus::kComplete);
   }

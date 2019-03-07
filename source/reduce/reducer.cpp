@@ -52,10 +52,10 @@ void Reducer::SetInterestingnessFunction(
 }
 
 Reducer::ReductionResultStatus Reducer::Run(
-    const std::vector<uint32_t>& binary_in, std::vector<uint32_t>* binary_out,
+    std::vector<uint32_t>&& binary_in, std::vector<uint32_t>* binary_out,
     spv_const_reducer_options options,
     spv_validator_options validator_options) const {
-  std::vector<uint32_t> current_binary = binary_in;
+  std::vector<uint32_t> current_binary(std::move(binary_in));
 
   spvtools::SpirvTools tools(impl_->target_env);
   assert(tools.IsValid() && "Failed to create SPIRV-Tools interface");
