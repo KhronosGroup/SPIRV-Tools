@@ -608,13 +608,13 @@ bool spvOpcodeIsDebug(SpvOp opcode) {
 
 std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(SpvOp opcode) {
   switch (opcode) {
-    case SpvOpAtomicStore:
     case SpvOpMemoryBarrier:
-      return {2};
+      return {1};
+    case SpvOpAtomicStore:
     case SpvOpControlBarrier:
     case SpvOpAtomicFlagClear:
     case SpvOpMemoryNamedBarrier:
-      return {3};
+      return {2};
     case SpvOpAtomicLoad:
     case SpvOpAtomicExchange:
     case SpvOpAtomicIIncrement:
