@@ -502,6 +502,8 @@ static_library("spvtools_opt") {
     "source/opt/eliminate_dead_members_pass.h",
     "source/opt/feature_manager.cpp",
     "source/opt/feature_manager.h",
+    "source/opt/fix_storage_class.cpp",
+    "source/opt/fix_storage_class.h",
     "source/opt/flatten_decoration_pass.cpp",
     "source/opt/flatten_decoration_pass.h",
     "source/opt/fold.cpp",

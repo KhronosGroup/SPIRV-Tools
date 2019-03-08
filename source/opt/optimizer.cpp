@@ -21,7 +21,6 @@
 #include <vector>
 
 #include <source/spirv_optimizer_options.h>
-#include "code_sink.h"
 #include "source/opt/build_module.h"
 #include "source/opt/log.h"
 #include "source/opt/pass_manager.h"
@@ -116,6 +115,10 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           // Make private variable function scope
           .RegisterPass(CreateEliminateDeadFunctionsPass())
           .RegisterPass(CreatePrivateToLocalPass())
+          // Fix up the storage classes that DXC may have purposely generated
+          // incorrectly.  All functions are inlined, and a lot of dead code has
+          // been removed.
+          .RegisterPass(CreateFixStorageClassPass())
           // Propagate the value stored to the loads in very simple cases.
           .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
           .RegisterPass(CreateLocalSingleStoreElimPass())
@@ -451,6 +454,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateCCPPass());
   } else if (pass_name == "code-sink") {
     RegisterPass(CreateCodeSinkingPass());
+  } else if (pass_name == "fix-storage-class") {
+    RegisterPass(CreateFixStorageClassPass());
   } else if (pass_name == "O") {
     RegisterPerformancePasses();
   } else if (pass_name == "Os") {
@@ -832,6 +837,11 @@ Optimizer::PassToken CreateCodeSinkingPass() {
 Optimizer::PassToken CreateGenerateWebGPUInitializersPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::GenerateWebGPUInitializersPass>());
+}
+
+Optimizer::PassToken CreateFixStorageClassPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::FixStorageClass>());
 }
 
 }  // namespace spvtools

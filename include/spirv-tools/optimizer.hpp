@@ -753,6 +753,11 @@ Optimizer::PassToken CreateCodeSinkingPass();
 // variables to the first value stored in them, if that is a constant.
 Optimizer::PassToken CreateGenerateWebGPUInitializersPass();
 
+// Create a pass to fix incorrect storage classes.  In order to make code
+// generation simpler, DXC may generate code where the storage classes do not
+// match up correctly.  This pass will fix up any of these errors that is can.
+Optimizer::PassToken CreateFixStorageClassPass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
