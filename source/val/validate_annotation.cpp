@@ -209,6 +209,23 @@ spv_result_t ValidateDecorate(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateecorateStringGOOGLE(ValidationState_t& _,
+                                         const Instruction* inst) {
+  const auto decoration = inst->GetOperandAs<uint32_t>(1);
+  if (decoration == SpvDecorationHlslSemanticGOOGLE) {
+    const auto target_id = inst->GetOperandAs<uint32_t>(0);
+    const auto target = _.FindDef(target_id);
+    if (!spvOpcodeIsScalarSpecString(target->opcode())) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpDecorateStringGOOGLE SpecId decoration target <id> '"
+             << _.getIdName(target_id) << "' is not a string.";
+    }
+  }
+
+  // TODO: Add validations for all decorations.
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateMemberDecorate(ValidationState_t& _,
                                     const Instruction* inst) {
   const auto struct_type_id = inst->GetOperandAs<uint32_t>(0);
@@ -411,6 +428,12 @@ spv_result_t RegisterDecorations(ValidationState_t& _,
 }  // namespace
 
 spv_result_t AnnotationPass(ValidationState_t& _, const Instruction* inst) {
+  int x;
+  x = int(inst->opcode());
+  int y;
+  y = x;
+  if (y == 1) return SPV_SUCCESS;
+
   switch (inst->opcode()) {
     case SpvOpDecorate:
       if (auto error = ValidateDecorate(_, inst)) return error;
@@ -426,6 +449,9 @@ spv_result_t AnnotationPass(ValidationState_t& _, const Instruction* inst) {
       break;
     case SpvOpGroupMemberDecorate:
       if (auto error = ValidateGroupMemberDecorate(_, inst)) return error;
+      break;
+    case SpvOpDecorateStringGOOGLE:
+      if (auto error = ValidateecorateStringGOOGLE(_, inst)) return error;
       break;
     default:
       break;

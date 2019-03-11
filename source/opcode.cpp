@@ -254,6 +254,16 @@ bool spvOpcodeIsScalarSpecConstant(const SpvOp opcode) {
   }
 }
 
+bool spvOpcodeIsScalarSpecString(const SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpDecorateStringGOOGLE:
+    case SpvOpMemberDecorateStringGOOGLE:
+      return true;
+    default:
+      return false;
+  }
+}
+
 int32_t spvOpcodeIsComposite(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpTypeVector:

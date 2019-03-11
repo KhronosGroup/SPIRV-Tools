@@ -122,6 +122,28 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateOutOfBound) {
                         "members. Largest valid index is 0."));
 }
 
+TEST_F(ValidateDecorations, OpDecorateStringGOOGLEFalse) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpExtension "SPV_GOOGLE_hlsl_functionality1"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
+               OpSource GLSL 450
+               OpDecorateStringGOOGLE %void ArrayStride 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %4 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpDecorateStringGOOGLE SpecId decoration target"));
+}
+
 TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
   std::string spirv = R"(
                OpCapability Shader
