@@ -209,7 +209,7 @@ spv_result_t ValidateDecorate(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateecorateStringGOOGLE(ValidationState_t& _,
+spv_result_t ValidateDecorateStringGOOGLE(ValidationState_t& _,
                                          const Instruction* inst) {
   const auto decoration = inst->GetOperandAs<uint32_t>(1);
   if (decoration == SpvDecorationHlslSemanticGOOGLE) {
@@ -445,7 +445,7 @@ spv_result_t AnnotationPass(ValidationState_t& _, const Instruction* inst) {
       if (auto error = ValidateGroupMemberDecorate(_, inst)) return error;
       break;
     case SpvOpDecorateStringGOOGLE:
-      if (auto error = ValidateecorateStringGOOGLE(_, inst)) return error;
+      if (auto error = ValidateDecorateStringGOOGLE(_, inst)) return error;
       break;
     default:
       break;
