@@ -428,12 +428,6 @@ spv_result_t RegisterDecorations(ValidationState_t& _,
 }  // namespace
 
 spv_result_t AnnotationPass(ValidationState_t& _, const Instruction* inst) {
-  int x;
-  x = int(inst->opcode());
-  int y;
-  y = x;
-  if (y == 1) return SPV_SUCCESS;
-
   switch (inst->opcode()) {
     case SpvOpDecorate:
       if (auto error = ValidateDecorate(_, inst)) return error;
