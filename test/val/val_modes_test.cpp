@@ -657,8 +657,8 @@ INSTANTIATE_TEST_SUITE_P(
             Values("Geometry", "TessellationControl", "TessellationEvaluation",
                    "GLCompute", "Vertex", "Kernel"),
             Values("PixelCenterInteger", "OriginUpperLeft", "OriginLowerLeft",
-                   "EarlyFragmentTests", "DepthReplacing", "DepthLess",
-                   "DepthUnchanged"),
+                   "EarlyFragmentTests", "DepthReplacing", "DepthGreater",
+                   "DepthLess", "DepthUnchanged"),
             Values(SPV_ENV_UNIVERSAL_1_0)));
 
 INSTANTIATE_TEST_SUITE_P(ValidateModeKernelOnlyGoodSpv13, ValidateModeExecution,
