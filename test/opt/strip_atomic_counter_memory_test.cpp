@@ -367,11 +367,11 @@ TEST_P(MemorySemanticsModified, OpMemoryNamedBarrier) {
 // clang-format off
 INSTANTIATE_TEST_SUITE_P(
     StripAtomicCounterMemoryTest, MemorySemanticsModified,
-    ::testing::ValuesIn(std::vector<std::tuple<std::string, std::string>>({
-       { "1024", "0" },
-       { "5", "5" },
-       { "1288", "264" },
-       { "264", "264" }
+    ::testing::ValuesIn(std::vector<StripAtomicCounterMemoryParam>({
+       std::make_tuple("1024", "0"),
+       std::make_tuple("5", "5"),
+       std::make_tuple("1288", "264"),
+       std::make_tuple("264", "264")
     })));
 // clang-format on
 
