@@ -412,6 +412,21 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     }
   }
 
+  if (spvIsWebGPUEnv(_.context()->target_env)) {
+    if (mode != SpvExecutionModeOriginUpperLeft &&
+        mode != SpvExecutionModeDepthReplacing &&
+        mode != SpvExecutionModeDepthGreater &&
+        mode != SpvExecutionModeDepthLess &&
+        mode != SpvExecutionModeDepthUnchanged &&
+        mode != SpvExecutionModeLocalSize &&
+        mode != SpvExecutionModeLocalSizeHint) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Execution mode must be one of OriginUpperLeft, "
+                "DepthReplacing, DepthGreater, DepthLess, DepthUnchanged, "
+                "LocalSize, or LocalSizeHint for WebGPU environment.";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
