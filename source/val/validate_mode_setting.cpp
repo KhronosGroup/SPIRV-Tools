@@ -344,6 +344,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     case SpvExecutionModeOriginLowerLeft:
     case SpvExecutionModeEarlyFragmentTests:
     case SpvExecutionModeDepthReplacing:
+    case SpvExecutionModeDepthGreater:
     case SpvExecutionModeDepthLess:
     case SpvExecutionModeDepthUnchanged:
       if (!std::all_of(models->begin(), models->end(),
