@@ -6211,6 +6211,106 @@ INSTANTIATE_TEST_SUITE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoRes
         9, true)
 ));
 
+using EntryPointFoldingTest =
+::testing::TestWithParam<InstructionFoldingCase<bool>>;
+
+TEST_P(EntryPointFoldingTest, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  Instruction* inst = nullptr;
+  inst = &*context->module()->entry_points().begin();
+  assert(inst && "Invalid test.  Could not find entry point instruction to fold.");
+  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
+  EXPECT_EQ(succeeded, tc.expected_result);
+  if (succeeded) {
+    Match(tc.test_body, context.get());
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(OpEntryPointFoldingTest, EntryPointFoldingTest,
+::testing::Values(
+    // Test case 0: Basic test 1
+    InstructionFoldingCase<bool>(
+            R"(; CHECK: OpEntryPoint Fragment %2 "main" %3
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %3 %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpDecorate %3 Location 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float
+          %2 = OpFunction %void None %5
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd)",
+        9, true),
+    InstructionFoldingCase<bool>(
+            R"(; CHECK: OpEntryPoint Fragment %2 "main" %3 %4
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpDecorate %3 Location 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+          %4 = OpVariable %_ptr_Output_v4float Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float
+          %2 = OpFunction %void None %5
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd)",
+        9, true),
+    InstructionFoldingCase<bool>(
+            R"(; CHECK: OpEntryPoint Fragment %2 "main" %4 %3
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %4 %4 %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpDecorate %3 Location 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+          %4 = OpVariable %_ptr_Output_v4float Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float
+          %2 = OpFunction %void None %5
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd)",
+        9, true)
+));
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
