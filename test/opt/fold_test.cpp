@@ -6238,76 +6238,76 @@ TEST_P(EntryPointFoldingTest, Case) {
 INSTANTIATE_TEST_SUITE_P(OpEntryPointFoldingTest, EntryPointFoldingTest,
 ::testing::Values(
     // Test case 0: Basic test 1
-    InstructionFoldingCase<bool>(
-            R"(; CHECK: OpEntryPoint Fragment %2 "main" %3
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main" %3 %3 %3
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource GLSL 430
-               OpDecorate %3 Location 0
-       %void = OpTypeVoid
-          %5 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-    %v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-          %3 = OpVariable %_ptr_Output_v4float Output
-        %int = OpTypeInt 32 1
-      %int_0 = OpConstant %int 0
-%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float
-          %2 = OpFunction %void None %5
-         %12 = OpLabel
-               OpReturn
-               OpFunctionEnd)",
+    InstructionFoldingCase<bool>(std::string() +
+                    "; CHECK: OpEntryPoint Fragment %2 \"main\" %3\n" +
+                             "OpCapability Shader\n" +
+                        "%1 = OpExtInstImport \"GLSL.std.450\"\n" +
+                             "OpMemoryModel Logical GLSL450\n" +
+                             "OpEntryPoint Fragment %2 \"main\" %3 %3 %3\n" +
+                             "OpExecutionMode %2 OriginUpperLeft\n" +
+                             "OpSource GLSL 430\n" +
+                             "OpDecorate %3 Location 0\n" +
+                     "%void = OpTypeVoid\n" +
+                        "%5 = OpTypeFunction %void\n" +
+                    "%float = OpTypeFloat 32\n" +
+                  "%v4float = OpTypeVector %float 4\n" +
+      "%_ptr_Output_v4float = OpTypePointer Output %v4float\n" +
+                        "%3 = OpVariable %_ptr_Output_v4float Output\n" +
+                      "%int = OpTypeInt 32 1\n" +
+                    "%int_0 = OpConstant %int 0\n" +
+"%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float\n" +
+                        "%2 = OpFunction %void None %5\n" +
+                       "%12 = OpLabel\n" +
+                             "OpReturn\n" +
+                             "OpFunctionEnd\n",
         9, true),
-    InstructionFoldingCase<bool>(
-            R"(; CHECK: OpEntryPoint Fragment %2 "main" %3 %4
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main" %3 %4 %3
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource GLSL 430
-               OpDecorate %3 Location 0
-       %void = OpTypeVoid
-          %5 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-    %v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-          %3 = OpVariable %_ptr_Output_v4float Output
-          %4 = OpVariable %_ptr_Output_v4float Output
-        %int = OpTypeInt 32 1
-      %int_0 = OpConstant %int 0
-%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float
-          %2 = OpFunction %void None %5
-         %12 = OpLabel
-               OpReturn
-               OpFunctionEnd)",
+    InstructionFoldingCase<bool>(std::string() +
+                    "; CHECK: OpEntryPoint Fragment %2 \"main\" %3 %4\n" +
+                             "OpCapability Shader\n" +
+                        "%1 = OpExtInstImport \"GLSL.std.450\"\n" +
+                             "OpMemoryModel Logical GLSL450\n" +
+                             "OpEntryPoint Fragment %2 \"main\" %3 %4 %3\n" +
+                             "OpExecutionMode %2 OriginUpperLeft\n" +
+                             "OpSource GLSL 430\n" +
+                             "OpDecorate %3 Location 0\n" +
+                     "%void = OpTypeVoid\n" +
+                        "%5 = OpTypeFunction %void\n" +
+                    "%float = OpTypeFloat 32\n" +
+                  "%v4float = OpTypeVector %float 4\n" +
+      "%_ptr_Output_v4float = OpTypePointer Output %v4float\n" +
+                        "%3 = OpVariable %_ptr_Output_v4float Output\n" +
+                        "%4 = OpVariable %_ptr_Output_v4float Output\n" +
+                      "%int = OpTypeInt 32 1\n" +
+                    "%int_0 = OpConstant %int 0\n" +
+"%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float\n" +
+                        "%2 = OpFunction %void None %5\n" +
+                       "%12 = OpLabel\n" +
+                             "OpReturn\n" +
+                             "OpFunctionEnd\n",
         9, true),
-    InstructionFoldingCase<bool>(
-            R"(; CHECK: OpEntryPoint Fragment %2 "main" %4 %3
-               OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %2 "main" %4 %4 %3
-               OpExecutionMode %2 OriginUpperLeft
-               OpSource GLSL 430
-               OpDecorate %3 Location 0
-       %void = OpTypeVoid
-          %5 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-    %v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-          %3 = OpVariable %_ptr_Output_v4float Output
-          %4 = OpVariable %_ptr_Output_v4float Output
-        %int = OpTypeInt 32 1
-      %int_0 = OpConstant %int 0
-%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float
-          %2 = OpFunction %void None %5
-         %12 = OpLabel
-               OpReturn
-               OpFunctionEnd)",
+    InstructionFoldingCase<bool>(std::string() +
+                    "; CHECK: OpEntryPoint Fragment %2 \"main\" %4 %3\n" +
+                             "OpCapability Shader\n" +
+                        "%1 = OpExtInstImport \"GLSL.std.450\"\n" +
+                             "OpMemoryModel Logical GLSL450\n" +
+                             "OpEntryPoint Fragment %2 \"main\" %4 %4 %3\n" +
+                             "OpExecutionMode %2 OriginUpperLeft\n" +
+                             "OpSource GLSL 430\n" +
+                             "OpDecorate %3 Location 0\n" +
+                     "%void = OpTypeVoid\n" +
+                        "%5 = OpTypeFunction %void\n" +
+                    "%float = OpTypeFloat 32\n" +
+                  "%v4float = OpTypeVector %float 4\n" +
+      "%_ptr_Output_v4float = OpTypePointer Output %v4float\n" +
+                        "%3 = OpVariable %_ptr_Output_v4float Output\n" +
+                        "%4 = OpVariable %_ptr_Output_v4float Output\n" +
+                      "%int = OpTypeInt 32 1\n" +
+                    "%int_0 = OpConstant %int 0\n" +
+"%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float\n" +
+                        "%2 = OpFunction %void None %5\n" +
+                       "%12 = OpLabel\n" +
+                             "OpReturn\n" +
+                             "OpFunctionEnd\n",
         9, true)
 ));
 
