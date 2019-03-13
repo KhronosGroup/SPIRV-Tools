@@ -15,6 +15,7 @@
 #ifndef SOURCE_REDUCE_REMOVE_BLOCK_REDUCTION_OPPORTUNITY_FINDER_H_
 #define SOURCE_REDUCE_REMOVE_BLOCK_REDUCTION_OPPORTUNITY_FINDER_H_
 
+#include "source/opt/function.h"
 #include "source/reduce/reduction_opportunity_finder.h"
 
 namespace spvtools {
@@ -36,6 +37,16 @@ class RemoveBlockReductionOpportunityFinder
       opt::IRContext* context) const final;
 
  private:
+  // Returns true if the block |bi| in function |function| is a valid
+  // opportunity according to various restrictions.
+  static bool IsBlockValidOpportunity(opt::IRContext* context,
+                                      opt::Function& function,
+                                      opt::Function::iterator& bi);
+
+  // Returns true if the instructions (definitions) in block |bi| have no
+  // references, except for references from inside the block itself.
+  static bool BlockInstructionsHaveNoOutsideReferences(
+      opt::IRContext* context, const opt::Function::iterator& bi);
 };
 
 }  // namespace reduce

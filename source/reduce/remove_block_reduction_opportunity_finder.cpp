@@ -31,21 +31,65 @@ RemoveBlockReductionOpportunityFinder::GetAvailableOpportunities(
 
   // Consider every block in every function.
   for (auto& function : *context->module()) {
-
-    // Skip first block; we don't want to end up with no blocks.
-    auto bi = function.begin();
-    if (bi != function.end()) {
-      ++bi;
-      for (; bi != function.end(); ++bi) {
-        if (context->get_def_use_mgr()->NumUsers(bi->id()) == 0) {
-          result.push_back(
-              spvtools::MakeUnique<RemoveBlockReductionOpportunity>(&function,
-                                                                    &*bi));
-        }
+    for (auto bi = function.begin(); bi != function.end(); ++bi) {
+      if (IsBlockValidOpportunity(context, function, bi)) {
+        result.push_back(spvtools::MakeUnique<RemoveBlockReductionOpportunity>(
+            &function, &*bi));
       }
     }
   }
   return result;
+}
+
+bool RemoveBlockReductionOpportunityFinder::IsBlockValidOpportunity(
+    opt::IRContext* context, opt::Function& function,
+    opt::Function::iterator& bi) {
+  assert(bi != function.end() && "Block iterator was out of bounds");
+
+  // Don't remove first block; we don't want to end up with no blocks.
+  if (bi == function.begin()) {
+    return false;
+  }
+
+  // Don't remove blocks with references.
+  if (context->get_def_use_mgr()->NumUsers(bi->id()) > 0) {
+    return false;
+  }
+
+  // Don't remove blocks whose instructions have outside references.
+  if (!BlockInstructionsHaveNoOutsideReferences(context, bi)) {
+    return false;
+  }
+
+  return true;
+}
+
+bool RemoveBlockReductionOpportunityFinder::
+    BlockInstructionsHaveNoOutsideReferences(opt::IRContext* context,
+                                             const Function::iterator& bi) {
+  // Get all instructions in block.
+  std::unordered_set<uint32_t> instructions_in_block;
+  for (const Instruction& instruction : *bi) {
+    instructions_in_block.insert(instruction.unique_id());
+  }
+
+  // For each instruction...
+  for (const Instruction& instruction : *bi) {
+    // For each use of the instruction...
+    bool no_uses_outside_block = context->get_def_use_mgr()->WhileEachUser(
+        &instruction, [&instructions_in_block](Instruction* user) -> bool {
+          // If the use is in this block, continue (return true). Otherwise, we
+          // found an outside use; return false (and stop).
+          return instructions_in_block.find(user->unique_id()) !=
+                 instructions_in_block.end();
+        });
+
+    if (!no_uses_outside_block) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace reduce
