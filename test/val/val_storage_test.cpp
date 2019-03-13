@@ -189,6 +189,65 @@ TEST_F(ValidateStorage, GenericVariableInsideFunction) {
               HasSubstr("OpVariable storage class cannot be Generic"));
 }
 
+TEST_F(ValidateStorage, RelaxedLogicalPointerFunctionParam) {
+  const auto str = R"(
+          OpCapability Shader
+          OpCapability Linkage
+          OpMemoryModel Logical GLSL450
+%intt   = OpTypeInt 32 1
+%voidt  = OpTypeVoid
+%ptrt   = OpTypePointer Function %intt
+%vfunct = OpTypeFunction %voidt
+%vifunct = OpTypeFunction %voidt %ptrt
+%wgroupptrt = OpTypePointer Workgroup %intt
+%wgroup = OpVariable %wgroupptrt Workgroup
+%main   = OpFunction %voidt None %vfunct
+%mainl  = OpLabel
+%ret    = OpFunctionCall %voidt %func %wgroup
+          OpReturn
+          OpFunctionEnd
+%func   = OpFunction %voidt None %vifunct
+%arg    = OpFunctionParameter %ptrt
+%funcl  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+  CompileSuccessfully(str);
+  getValidatorOptions()->relax_logical_pointer = true;
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateStorage, RelaxedLogicalPointerFunctionParamBad) {
+  const auto str = R"(
+          OpCapability Shader
+          OpCapability Linkage
+          OpMemoryModel Logical GLSL450
+%floatt = OpTypeFloat 32
+%intt   = OpTypeInt 32 1
+%voidt  = OpTypeVoid
+%ptrt   = OpTypePointer Function %intt
+%vfunct = OpTypeFunction %voidt
+%vifunct = OpTypeFunction %voidt %ptrt
+%wgroupptrt = OpTypePointer Workgroup %floatt
+%wgroup = OpVariable %wgroupptrt Workgroup
+%main   = OpFunction %voidt None %vfunct
+%mainl  = OpLabel
+%ret    = OpFunctionCall %voidt %func %wgroup
+          OpReturn
+          OpFunctionEnd
+%func   = OpFunction %voidt None %vifunct
+%arg    = OpFunctionParameter %ptrt
+%funcl  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+  CompileSuccessfully(str);
+  getValidatorOptions()->relax_logical_pointer = true;
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpFunctionCall Argument <id> '"));
+}
+
 std::string GetVarDeclStr(const std::string& storage_class) {
   if (storage_class != "Output" && storage_class != "Private" &&
       storage_class != "Function") {
