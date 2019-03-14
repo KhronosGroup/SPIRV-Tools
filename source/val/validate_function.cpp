@@ -301,7 +301,8 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
               sc == SpvStorageClassStorageBuffer;
           const bool wg_vptr =
               _.features().variable_pointers && sc == SpvStorageClassWorkgroup;
-          if (!ssbo_vptr && !wg_vptr) {
+          const bool uc_ptr = sc == SpvStorageClassUniformConstant;
+          if (!ssbo_vptr && !wg_vptr && !uc_ptr) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "Pointer operand " << _.getIdName(argument_id)
                    << " must be a memory object declaration";
