@@ -628,6 +628,8 @@ OptStatus ParseFlags(int argc, const char** argv,
 
         optimizer->SetTargetEnv(SPV_ENV_WEBGPU_0);
         optimizer->RegisterWebGPUPasses();
+      } else if (0 == strcmp(cur_arg, "--validate-after-all")) {
+        optimizer->SetValidateAfterAll(true);
       } else {
         // Some passes used to accept the form '--pass arg', canonicalize them
         // to '--pass=arg'.
