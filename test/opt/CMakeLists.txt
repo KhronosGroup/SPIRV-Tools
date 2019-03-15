@@ -41,6 +41,7 @@ add_spvtools_unittest(TARGET opt
        fold_test.cpp
        freeze_spec_const_test.cpp
        function_test.cpp
+       generate_webgpu_initializers_test.cpp
        if_conversion_test.cpp
        inline_opaque_test.cpp
        inline_test.cpp

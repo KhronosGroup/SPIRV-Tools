@@ -220,6 +220,7 @@ Optimizer& Optimizer::RegisterSizePasses() {
 Optimizer& Optimizer::RegisterWebGPUPasses() {
   return RegisterPass(CreateStripDebugInfoPass())
       .RegisterPass(CreateStripAtomicCounterMemoryPass())
+      .RegisterPass(CreateGenerateWebGPUInitializersPass())
       .RegisterPass(CreateEliminateDeadConstantPass())
       .RegisterPass(CreateFlattenDecorationPass())
       .RegisterPass(CreateAggressiveDCEPass())
@@ -456,6 +457,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterSizePasses();
   } else if (pass_name == "legalize-hlsl") {
     RegisterLegalizationPasses();
+  } else if (pass_name == "generate-webgpu-initializers") {
+    RegisterPass(CreateGenerateWebGPUInitializersPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -817,6 +820,11 @@ Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
 Optimizer::PassToken CreateCodeSinkingPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CodeSinkingPass>());
+}
+
+Optimizer::PassToken CreateGenerateWebGPUInitializersPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::GenerateWebGPUInitializersPass>());
 }
 
 }  // namespace spvtools

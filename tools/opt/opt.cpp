@@ -178,6 +178,9 @@ Options (in lexicographical order):
   --freeze-spec-const
                Freeze the values of specialization constants to their default
                values.
+  --generate-webgpu-initializers
+               Adds initial values to OpVariable instructions that are missing
+               them, due to their storage type requiring them for WebGPU.
   --if-conversion
                Convert if-then-else like assignments into OpSelect.
   --inline-entry-points-exhaustive
