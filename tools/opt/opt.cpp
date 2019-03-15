@@ -384,6 +384,8 @@ Options (in lexicographical order):
                Current workarounds: Avoid OpUnreachable in loops.
   --unify-const
                Remove the duplicated constants.
+  --validate-after-all
+               Validate the module after each pass is performed.
   -h, --help
                Print this help.
   --version
