@@ -2129,38 +2129,6 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateIdWithMessage, OpVariablePointerAsOpArrayLengthOperandBad) {
-  const std::string spirv = R"(
-OpCapability Shader
-OpCapability Linkage
-OpCapability VariablePointersStorageBuffer
-OpExtension "SPV_KHR_variable_pointers"
-OpMemoryModel Logical GLSL450
-OpDecorate %block Block
-OpMemberDecorate %block 0 Offset 0
-%void = OpTypeVoid
-%int = OpTypeInt 32 0
-%run_arr = OpTypeRuntimeArray %int
-%block = OpTypeStruct %run_arr
-%ptr_ssbo_block = OpTypePointer StorageBuffer %block
-%null = OpConstantNull %ptr_ssbo_block
-%voidfn = OpTypeFunction %void
-%func = OpFunction %void None %voidfn
-%entry = OpLabel
-%length = OpArrayLength %int %null 0
-OpReturn
-OpFunctionEnd
-
-)";
-
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("A variable pointer with the Logical addressing model cannot"
-                "be an operand to an OpArrayLength instruction"));
-}
-
 TEST_F(ValidateIdWithMessage, OpVariablePointerNoVariablePointersBad) {
   const std::string spirv = R"(
 OpCapability Shader
