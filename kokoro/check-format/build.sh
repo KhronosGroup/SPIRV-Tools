@@ -21,7 +21,8 @@ set -e
 set -x
 
 BUILD_ROOT=$PWD
-SRC=$PWD/github/SPIRV-Tools
+SRC=/usr/local/google/home/sarahmashay/Desktop/SPIRV/spirv2
+
 
 # Get clang-format-5.0.0.
 # Once kokoro upgrades the Ubuntu VMs, we can use 'apt-get install clang-format'
@@ -30,10 +31,10 @@ tar xf clang-llvm.tar.xz
 export PATH=$PWD/clang+llvm-5.0.0-linux-x86_64-ubuntu14.04/bin:$PATH
 
 cd $SRC
-git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
-git clone --depth=1 https://github.com/google/googletest          external/googletest
-git clone --depth=1 https://github.com/google/effcee              external/effcee
-git clone --depth=1 https://github.com/google/re2                 external/re2
+# git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
+# git clone --depth=1 https://github.com/google/googletest          external/googletest
+# git clone --depth=1 https://github.com/google/effcee              external/effcee
+# git clone --depth=1 https://github.com/google/re2                 external/re2
 curl -L http://llvm.org/svn/llvm-project/cfe/trunk/tools/clang-format/clang-format-diff.py -o utils/clang-format-diff.py;
 
 echo $(date): Check formatting...
