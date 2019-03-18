@@ -1181,21 +1181,6 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
            << state.getIdName(inst->id()) << "' must be an OpTypeRuntimeArray.";
   }
 
-  const bool uses_variable_pointers =
-      state.features().variable_pointers ||
-      state.features().variable_pointers_storage_buffer;
-
-  if (!pointer_type ||
-      ((state.addressing_model() == SpvAddressingModelLogical) &&
-       ((!uses_variable_pointers &&
-         !spvOpcodeReturnsLogicalPointer(pointer->opcode())) ||
-        (uses_variable_pointers &&
-         spvOpcodeReturnsLogicalVariablePointer(pointer->opcode()))))) {
-    return state.diag(SPV_ERROR_INVALID_ID, inst)
-           << "A variable pointer with the Logical addressing model cannot"
-           << "be an operand to an OpArrayLength instruction";
-  }
-
   // The array member must the the index of the last element (the run time
   // array).
   if (inst->GetOperandAs<uint32_t>(3) != num_of_members - 1) {
