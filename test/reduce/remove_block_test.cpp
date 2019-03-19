@@ -213,7 +213,7 @@ TEST(RemoveBlockReductionPassTest, OneBlock) {
   ASSERT_EQ(0, ops.size());
 }
 
-TEST(RemoveBlockReductionPassTest, UnreachableBlocksWithIdUses) {
+TEST(RemoveBlockReductionPassTest, UnreachableBlocksWithOutsideIdUses) {
   // A function with two unreachable blocks A -> B. A defines ID %9 and B uses
   // %9. There are no references to A, but removing A would be invalid because
   // of B's use of %9, so there should be no opportunities.
@@ -249,6 +249,108 @@ TEST(RemoveBlockReductionPassTest, UnreachableBlocksWithIdUses) {
       RemoveBlockReductionOpportunityFinder().GetAvailableOpportunities(
           context.get());
   ASSERT_EQ(0, ops.size());
+}
+
+TEST(RemoveBlockReductionPassTest, UnreachableBlocksWithInsideIdUses) {
+  // Similar to the above test.
+
+  // A function with two unreachable blocks A -> B. Both blocks create and use
+  // IDs, but the uses are contained within each block, so A should be removed.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+          %3 = OpTypeVoid
+          %4 = OpTypeInt 32 1
+          %5 = OpTypeFunction %3
+          %6 = OpConstant %4 1
+          %2 = OpFunction %3 None %5
+          %7 = OpLabel
+               OpReturn
+          %8 = OpLabel                     ; A
+          %9 = OpUndef %4                  ; define %9
+         %10 = OpIAdd %4 %6 %9             ; use %9
+               OpBranch %11
+         %11 = OpLabel                     ; B
+         %12 = OpUndef %4                  ; define %12
+         %13 = OpIAdd %4 %6 %12            ; use %12
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, shader, kReduceAssembleOption);
+  auto ops = RemoveBlockReductionOpportunityFinder().GetAvailableOpportunities(
+      context.get());
+  ASSERT_EQ(1, ops.size());
+
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+
+  ops[0]->TryToApply();
+
+  // Same as above, but block A is removed.
+  std::string after_op_0 = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+          %3 = OpTypeVoid
+          %4 = OpTypeInt 32 1
+          %5 = OpTypeFunction %3
+          %6 = OpConstant %4 1
+          %2 = OpFunction %3 None %5
+          %7 = OpLabel
+               OpReturn
+         %11 = OpLabel
+         %12 = OpUndef %4
+         %13 = OpIAdd %4 %6 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CheckEqual(env, after_op_0, context.get());
+
+  // Find opportunities again. There are no reference to B. B should now be
+  // removed.
+
+  ops = RemoveBlockReductionOpportunityFinder().GetAvailableOpportunities(
+      context.get());
+
+  ASSERT_EQ(1, ops.size());
+
+  ASSERT_TRUE(ops[0]->PreconditionHolds());
+
+  ops[0]->TryToApply();
+
+  // Same as above, but block B is removed.
+  std::string after_op_0_again = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %2 "main"
+          %3 = OpTypeVoid
+          %4 = OpTypeInt 32 1
+          %5 = OpTypeFunction %3
+          %6 = OpConstant %4 1
+          %2 = OpFunction %3 None %5
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CheckEqual(env, after_op_0_again, context.get());
 }
 
 }  // namespace
