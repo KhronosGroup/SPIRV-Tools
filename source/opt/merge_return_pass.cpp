@@ -677,9 +677,9 @@ void MergeReturnPass::AddNewPhiNodes(BasicBlock* bb, BasicBlock* pred,
 void MergeReturnPass::MarkForNewPhiNodes(BasicBlock* block,
                                          BasicBlock* single_original_pred) {
   auto iter = new_merge_nodes_.find(block);
-  assert(iter == new_merge_nodes_.end() ||
-         iter->second == single_original_pred &&
-             "Inconsistent dominator information");
+  assert((iter == new_merge_nodes_.end() ||
+          iter->second == single_original_pred) &&
+         "Inconsistent dominator information");
   if (iter == new_merge_nodes_.end()) {
     new_merge_nodes_[block] = single_original_pred;
   }
