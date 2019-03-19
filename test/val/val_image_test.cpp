@@ -4452,7 +4452,7 @@ OpExtension "SPV_KHR_vulkan_memory_model"
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
-// This used to cause a seg fault on OpReturnValue, verifying it doesn't
+// This example used to cause a seg fault on OpReturnValue, verifying it doesn't
 // anymore.
 TEST_F(ValidateImage, Issue2463NoSegFault) {
   const std::string spirv = R"(
