@@ -830,6 +830,36 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
                << "' as an operand of <id> '"
                << _.getIdName(consumer_instr->id()) << "'.";
       }
+
+      if (consumer_opcode != SpvOpSampledImage &&
+          consumer_opcode != SpvOpImageSampleImplicitLod &&
+          consumer_opcode != SpvOpImageSampleExplicitLod &&
+          consumer_opcode != SpvOpImageSampleDrefImplicitLod &&
+          consumer_opcode != SpvOpImageSampleDrefExplicitLod &&
+          consumer_opcode != SpvOpImageSampleProjImplicitLod &&
+          consumer_opcode != SpvOpImageSampleProjExplicitLod &&
+          consumer_opcode != SpvOpImageSampleProjDrefImplicitLod &&
+          consumer_opcode != SpvOpImageSampleProjDrefExplicitLod &&
+          consumer_opcode != SpvOpImageGather &&
+          consumer_opcode != SpvOpImageDrefGather &&
+          consumer_opcode != SpvOpImage &&
+          consumer_opcode != SpvOpImageQueryLod &&
+          consumer_opcode != SpvOpImageSparseSampleImplicitLod &&
+          consumer_opcode != SpvOpImageSparseSampleExplicitLod &&
+          consumer_opcode != SpvOpImageSparseSampleDrefImplicitLod &&
+          consumer_opcode != SpvOpImageSparseSampleDrefExplicitLod &&
+          consumer_opcode != SpvOpImageSparseGather &&
+          consumer_opcode != SpvOpImageSparseDrefGather) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Result <id> from OpSampledImage instruction must not appear "
+                  "as operand for Op"
+               << spvOpcodeString(static_cast<SpvOp>(consumer_opcode))
+               << ", since it is not specificed as taking an "
+               << "OpTypeSampledImage."
+               << " Found result <id> '" << _.getIdName(inst->id())
+               << "' as an operand of <id> '"
+               << _.getIdName(consumer_instr->id()) << "'.";
+      }
     }
   }
   return SPV_SUCCESS;
