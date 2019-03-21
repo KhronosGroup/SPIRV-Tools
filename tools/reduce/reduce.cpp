@@ -172,9 +172,6 @@ ReduceStatus ParseFlags(int argc, const char** argv, const char** in_file,
       assert(!*interestingness_test);
       *interestingness_test = cur_arg;
       positional_arg_index++;
-
-      // TODO: Refactor. Repeated C++ code for parsing these options. Also
-      // consider removing repeated help text.
     } else if (0 == strcmp(cur_arg, "--relax-logical-pointer")) {
       validator_options->SetRelaxLogicalPointer(true);
     } else if (0 == strcmp(cur_arg, "--relax-block-layout")) {
