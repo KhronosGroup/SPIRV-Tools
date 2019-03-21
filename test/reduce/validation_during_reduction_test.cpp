@@ -530,8 +530,7 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
         reducer.Run(std::vector<uint32_t>(binary_in), &binary_out,
                     reducer_options, validator_options);
 
-    ASSERT_EQ(status,
-              Reducer::ReductionResultStatus::kInitialStateInvalid);
+    ASSERT_EQ(status, Reducer::ReductionResultStatus::kInitialStateInvalid);
   }
 
   // Try again with validator option.
