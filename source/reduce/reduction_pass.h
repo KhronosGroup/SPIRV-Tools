@@ -15,10 +15,11 @@
 #ifndef SOURCE_REDUCE_REDUCTION_PASS_H_
 #define SOURCE_REDUCE_REDUCTION_PASS_H_
 
-#include "spirv-tools/libspirv.hpp"
+#include <cstdint>
 
-#include "reduction_opportunity_finder.h"
 #include "source/opt/ir_context.h"
+#include "source/reduce/reduction_opportunity_finder.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace reduce {
