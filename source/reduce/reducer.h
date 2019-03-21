@@ -33,7 +33,8 @@ class Reducer {
   enum ReductionResultStatus {
     kInitialStateNotInteresting,
     kReachedStepLimit,
-    kComplete
+    kComplete,
+    kInitialStateInvalid
   };
 
   // The type for a function that will take a binary and return true if and

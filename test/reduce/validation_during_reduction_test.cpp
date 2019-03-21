@@ -531,7 +531,7 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
                     reducer_options, validator_options);
 
     ASSERT_EQ(status,
-              Reducer::ReductionResultStatus::kInitialStateNotInteresting);
+              Reducer::ReductionResultStatus::kInitialStateInvalid);
   }
 
   // Try again with validator option.

@@ -69,7 +69,7 @@ Reducer::ReductionResultStatus Reducer::Run(
                       validator_options)) {
     impl_->consumer(SPV_MSG_INFO, nullptr, {},
                     "Initial binary is invalid; stopping.");
-    return Reducer::ReductionResultStatus::kInitialStateNotInteresting;
+    return Reducer::ReductionResultStatus::kInitialStateInvalid;
   }
 
   // Initial state should be interesting.
