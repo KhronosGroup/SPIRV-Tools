@@ -15,7 +15,7 @@
 #ifndef SOURCE_REDUCE_REDUCTION_PASS_H_
 #define SOURCE_REDUCE_REDUCTION_PASS_H_
 
-#include <cstdint>
+#include <limits>
 
 #include "source/opt/ir_context.h"
 #include "source/reduce/reduction_opportunity_finder.h"
@@ -40,7 +40,7 @@ class ReductionPass {
       : target_env_(target_env),
         finder_(std::move(finder)),
         index_(0),
-        granularity_(UINT32_MAX) {}
+        granularity_(std::numeric_limits<uint32_t>::max()) {}
 
   // Applies the reduction pass to the given binary by applying a "chunk" of
   // reduction opportunities. Returns the new binary if a chunk was applied; in
