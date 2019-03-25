@@ -250,6 +250,10 @@ void StructuredLoopToSelectionReductionOpportunity::FixNonDominatedIdUses() {
       context_->get_def_use_mgr()->ForEachUse(&def, [this, &block, &def](
                                                         Instruction* use,
                                                         uint32_t index) {
+        // Ignore uses outside of blocks, such as in OpDecorate.
+        if (context_->get_instr_block(use) == nullptr) {
+          return;
+        }
         // If a use is not appropriately dominated by its definition,
         // replace the use with an OpUndef, unless the definition is an
         // access chain, in which case replace it with some (possibly fresh)
