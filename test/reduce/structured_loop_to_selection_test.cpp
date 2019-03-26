@@ -3511,7 +3511,7 @@ TEST(StructuredLoopToSelectionReductionPassTest, LoopyShaderWithOpDecorate) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
   const auto ops = StructuredLoopToSelectionReductionOpportunityFinder()
-      .GetAvailableOpportunities(context.get());
+                       .GetAvailableOpportunities(context.get());
   ASSERT_EQ(1, ops.size());
 
   ASSERT_TRUE(ops[0]->PreconditionHolds());
