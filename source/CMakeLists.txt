@@ -199,6 +199,7 @@ set_source_files_properties(
 add_subdirectory(comp)
 add_subdirectory(opt)
 add_subdirectory(reduce)
+add_subdirectory(fuzz)
 add_subdirectory(link)
 
 set(SPIRV_SOURCES
