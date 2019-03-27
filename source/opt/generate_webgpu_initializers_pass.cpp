@@ -54,12 +54,10 @@ bool NeedsWebGPUInitializer(const inst_iterator inst) {
 // |ensure_order| returns true if changes were needed to ensure the order,
 // otherwise false.
 
-bool AddNullInitializer(
-    IRContext* context, inst_iterator inst,
-    bool(ensure_order)(Module*, uint32_t, inst_iterator) =
-        [](Module*, uint32_t, InstructionList::iterator) -> bool {
-      return false;
-    }) {
+bool AddNullInitializer(IRContext* context, inst_iterator inst,
+                        bool(ensure_order)(Module*, uint32_t, inst_iterator) =
+                            [](Module*, uint32_t, InstructionList::iterator)
+                            -> bool { return false; }) {
   auto constant_mgr = context->get_constant_mgr();
 
   auto* constant_type =
@@ -112,7 +110,9 @@ Pass::Status GenerateWebGPUInitializersPass::Process() {
         if (!NeedsWebGPUInitializer(inst)) continue;
 
         changed = true;
-        // Do not need to check the return value, because the
+        // Do not need to check the return value, because the default for the
+        // |ensure_order| function pointer is a no-op, so it will never change
+        // the order of instructions.
         AddNullInitializer(context(), inst);
       }
     }
