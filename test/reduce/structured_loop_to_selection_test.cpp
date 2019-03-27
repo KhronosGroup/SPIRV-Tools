@@ -3587,6 +3587,40 @@ TEST(StructuredLoopToSelectionReductionPassTest, LoopyShaderWithOpDecorate) {
   CheckEqual(env, after_op_0, context.get());
 }
 
+TEST(StructuredLoopToSelectionReductionPassTest,
+     LoopWithCombinedHeaderAndContinue) {
+  // A shader containing a loop where the header is also the continue target.
+  // For now, we don't simplify such loops.
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+         %30 = OpConstantFalse %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %10
+         %10 = OpLabel                       ; loop header and continue target
+               OpLoopMerge %12 %10 None
+               OpBranchConditional %30 %10 %12
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto context = BuildModule(env, nullptr, shader, kReduceAssembleOption);
+  const auto ops = StructuredLoopToSelectionReductionOpportunityFinder()
+                       .GetAvailableOpportunities(context.get());
+  ASSERT_EQ(0, ops.size());
+}
+
 }  // namespace
 }  // namespace reduce
 }  // namespace spvtools
