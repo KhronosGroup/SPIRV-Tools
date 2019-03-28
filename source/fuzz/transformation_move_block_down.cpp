@@ -13,7 +13,77 @@
 // limitations under the License.
 
 #include "transformation_move_block_down.h"
+#include "source/opt/basic_block.h"
 
 namespace spvtools {
-namespace fuzz {}  // namespace fuzz
+namespace fuzz {
+
+using namespace opt;
+
+bool TransformationMoveBlockDown::IsApplicable(IRContext* context) {
+  // Go through every block in every function, looking for a block whose id
+  // matches that of the block we want to consider moving down.
+  for (auto& function : *context->module()) {
+    for (auto block_it = function.begin(); block_it != function.end();
+         ++block_it) {
+      if (block_it->id() == block_id_) {
+        // We have found a match.
+        if (block_it == function.begin()) {
+          // The block is the first one appearing in the function.  We are not
+          // allowed to move this block down.
+          return false;
+        }
+        // Record the block we would like to consider moving down.
+        BasicBlock* block_matching_id = &*block_it;
+        // Now see whether there is some block following that block in program
+        // order.
+        ++block_it;
+        if (block_it == function.end()) {
+          // There is no such block; i.e., the block we are considering moving
+          // is the last one in the function.  The transformation thus does not
+          // apply.
+          return false;
+        }
+        BasicBlock* next_block_in_program_order = &*block_it;
+        // We can move the block of interest down if and only if it does not
+        // dominate the block that comes next.
+        return !context->GetDominatorAnalysis(&function)->Dominates(
+            block_matching_id, next_block_in_program_order);
+      }
+    }
+  }
+
+  // We did not find a matching block, so the transformation is not applicable:
+  // there is no relevant block to move.
+  return false;
+}
+
+void TransformationMoveBlockDown::Apply(IRContext* context) {
+  // Go through every block in every function, looking for a block whose id
+  // matches that of the block we want to move down.
+  for (auto& function : *context->module()) {
+    for (auto block_it = function.begin(); block_it != function.end();
+         ++block_it) {
+      if (block_it->id() == block_id_) {
+        ++block_it;
+        assert(block_it != function.end() &&
+               "To be able to move a block down, it needs to have a "
+               "program-order successor.");
+        function.MoveBasicBlockToAfter(block_id_, &*block_it);
+        // It is prudent to invalidate analyses after changing block ordering in
+        // case any of them depend on it, but the ones that definitely do not
+        // depend on ordering can be preserved. These include the following,
+        // which can likely be extended.
+        context->InvalidateAnalysesExceptFor(
+            IRContext::Analysis::kAnalysisDefUse |
+            IRContext::Analysis::kAnalysisDominatorAnalysis);
+
+        return;
+      }
+    }
+  }
+  assert(false && "No block was found to move down.");
+}
+
+}  // namespace fuzz
 }  // namespace spvtools

@@ -15,10 +15,25 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_H_
 #define SOURCE_FUZZ_TRANSFORMATION_H_
 
+#include "source/opt/ir_context.h"
+
 namespace spvtools {
 namespace fuzz {
 
-class Transformation {};
+class Transformation {
+ public:
+  Transformation() = default;
+
+  virtual ~Transformation() = default;
+
+  // Determines whether the transformation can be cleanly applied to the SPIR-V
+  // module, such that semantics are preserved.
+  virtual bool IsApplicable(opt::IRContext* context) = 0;
+
+  // Requires that the transformation is applicable.  Applies the
+  // transformation, mutating the given SPIR-V module.
+  virtual void Apply(opt::IRContext* context) = 0;
+};
 
 }  // namespace fuzz
 }  // namespace spvtools
