@@ -20,7 +20,20 @@
 namespace spvtools {
 namespace fuzz {
 
-class TransformationMoveBlockDown : public Transformation {};
+class TransformationMoveBlockDown : public Transformation {
+ public:
+  TransformationMoveBlockDown(uint32_t block_id) : block_id_(block_id) {}
+
+  ~TransformationMoveBlockDown() override = default;
+
+  bool IsApplicable(opt::IRContext* context) override;
+
+  void Apply(opt::IRContext* context) override;
+
+ private:
+  // The id of the block to move down.
+  const uint32_t block_id_;
+};
 
 }  // namespace fuzz
 }  // namespace spvtools

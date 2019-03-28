@@ -17,11 +17,45 @@
 
 #include "gtest/gtest.h"
 
+#include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
-namespace fuzz {}  // namespace fuzz
+namespace fuzz {
+
+// Checks whether the given binaries are bit-wise equal.
+void CheckEqual(spv_target_env env,
+                const std::vector<uint32_t>& expected_binary,
+                const std::vector<uint32_t>& actual_binary);
+
+// Assembles the given text and check whether the resulting binary is bit-wise
+// equal to the given binary.
+void CheckEqual(spv_target_env env, const std::string& expected_text,
+                const std::vector<uint32_t>& actual_binary);
+
+// Assembles the given text and turns the given IR into binary, then checks
+// whether the resulting binaries are bit-wise equal.
+void CheckEqual(spv_target_env env, const std::string& expected_text,
+                const opt::IRContext* actual_ir);
+
+// Assembles the given IR context and checks whether the resulting binary is
+// valid.
+void CheckValid(spv_target_env env, const opt::IRContext* ir);
+
+// Assembles the given IR context, then returns its disassembly as a string.
+// Useful for debugging.
+std::string ToString(spv_target_env env, const opt::IRContext* ir);
+
+// Assembly options for writing fuzzer tests.  It simplifies matters if
+// numeric ids do not change.
+const uint32_t kFuzzAssembleOption =
+    SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
+// Disassembly options for writing fuzzer tests.
+const uint32_t kFuzzDisassembleOption =
+    SPV_BINARY_TO_TEXT_OPTION_NO_HEADER | SPV_BINARY_TO_TEXT_OPTION_INDENT;
+
+}  // namespace fuzz
 }  // namespace spvtools
 
 #endif  // TEST_FUZZ_FUZZ_TEST_UTIL_H_

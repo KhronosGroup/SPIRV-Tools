@@ -20,7 +20,20 @@
 namespace spvtools {
 namespace fuzz {
 
-class TransformationSplitBlock : public Transformation {};
+class TransformationSplitBlock : public Transformation {
+  TransformationSplitBlock(uint32_t result_id) : result_id_(result_id) {}
+
+  ~TransformationSplitBlock() override = default;
+
+  bool IsApplicable(opt::IRContext* context) override;
+
+  void Apply(opt::IRContext* context) override;
+
+ private:
+  // The result id of an instruction, such that the block containing this
+  // instruction should be split right after the instruction.
+  const uint32_t result_id_;
+};
 
 }  // namespace fuzz
 }  // namespace spvtools
