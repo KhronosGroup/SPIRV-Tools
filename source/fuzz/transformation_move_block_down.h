@@ -26,8 +26,14 @@ class TransformationMoveBlockDown : public Transformation {
 
   ~TransformationMoveBlockDown() override = default;
 
+  // - |block_id_| must be the id of a block b in the given module.
+  // - b must not be the first nor last block appearing, in program order,
+  //   in a function.
+  // - b must not dominate the block that follows it in program order.
   bool IsApplicable(opt::IRContext* context) override;
 
+  // The block with id |block_id_| is moved down; i.e. the program order
+  // between it and the block that follows it is swapped.
   void Apply(opt::IRContext* context) override;
 
  private:
