@@ -38,26 +38,14 @@ bool NeedsWebGPUInitializer(const inst_iterator inst) {
 }
 
 // Attempts to add a null initializer to the instruction. If the constant for
-// the null initializer is defined after the instruction, it will instead be
-// moved to be earlier and an early exit will occur.
-// Reordering instructions potentially breaks the iterators, so cannot complete
-// operation.
-// It is the responsibility of the caller to check the return value and re-run
-// iteration if a reordering has occured.
+// the null initializer is defined after the instruction, it will be
+// moved to be earlier and then the the null initialer will be added.
 // Caller is responsible for ensuring the instruction needs to have an
 // initializer added.
-//
-// Returns true, if the instruction has had the null initializer added.
-// Returns false, if the instructions were instead reordered, so iteration needs
-// to be restarted.
-//
-// |ensure_order| returns true if changes were needed to ensure the order,
-// otherwise false.
-
-bool AddNullInitializer(IRContext* context, inst_iterator inst,
-                        bool(ensure_order)(Module*, uint32_t, inst_iterator) =
+void AddNullInitializer(IRContext* context, inst_iterator inst,
+                        void(ensure_order)(Module*, uint32_t, inst_iterator) =
                             [](Module*, uint32_t, InstructionList::iterator)
-                            -> bool { return false; }) {
+                            -> void { }) {
   auto constant_mgr = context->get_constant_mgr();
 
   auto* constant_type =
@@ -66,15 +54,11 @@ bool AddNullInitializer(IRContext* context, inst_iterator inst,
   auto* constant_inst = constant_mgr->GetDefiningInstruction(constant);
   auto constant_id = constant_inst->result_id();
 
-  if (ensure_order(context->module(), constant_id, inst)) {
-    return false;
-  }
+  ensure_order(context->module(), constant_id, inst);
 
   inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {constant_id}));
   context->UpdateDefUse(&(*inst));
   context->UpdateDefUse(constant_inst);
-
-  return true;
 }
 
 }  // namespace
@@ -82,26 +66,20 @@ bool AddNullInitializer(IRContext* context, inst_iterator inst,
 Pass::Status GenerateWebGPUInitializersPass::Process() {
   auto* module = context()->module();
   bool changed = false;
-  bool instructions_stable;
 
   // Handle global/module scoped variables
-  do {
-    instructions_stable = true;
-    for (auto inst = module->types_values_begin();
-         inst != module->types_values_end(); ++inst) {
-      if (!NeedsWebGPUInitializer(inst)) continue;
+  for (auto inst = module->types_values_begin();
+       inst != module->types_values_end(); ++inst) {
+    if (!NeedsWebGPUInitializer(inst)) continue;
 
-      changed = true;
-      instructions_stable = AddNullInitializer(
-          context(), inst,
-          [](Module* inner_module, uint32_t constant_id,
-             InstructionList::iterator inner_inst) {
-            return inner_module->EnsureIdDefinedBeforeInstruction(constant_id,
-                                                                  inner_inst);
-          });
-      if (!instructions_stable) break;
-    }
-  } while (!instructions_stable);
+    changed = true;
+    AddNullInitializer(context(), inst,
+                       [](Module* inner_module, uint32_t constant_id,
+                          InstructionList::iterator inner_inst) {
+                         inner_module->EnsureIdDefinedBeforeInstruction(
+                             constant_id, inner_inst);
+                       });
+  }
 
   // Handle local/function scoped variables
   for (auto func = module->begin(); func != module->end(); ++func) {
@@ -110,9 +88,6 @@ Pass::Status GenerateWebGPUInitializersPass::Process() {
         if (!NeedsWebGPUInitializer(inst)) continue;
 
         changed = true;
-        // Do not need to check the return value, because the default for the
-        // |ensure_order| function pointer is a no-op, so it will never change
-        // the order of instructions.
         AddNullInitializer(context(), inst);
       }
     }

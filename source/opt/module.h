@@ -226,9 +226,7 @@ class Module {
 
   // Manipulate order of types, constants and global variables instructions.
   // Used to make sure ids are defined before instructions attempt to use them.
-  //
-  // Returns true if instructions needed to be reordered, otherwise false.
-  bool EnsureIdDefinedBeforeInstruction(uint32_t id, inst_iterator inst);
+  void EnsureIdDefinedBeforeInstruction(uint32_t id, inst_iterator inst);
 
   // Iterators for functions contained in this module.
   iterator begin() { return iterator(&functions_, functions_.begin()); }

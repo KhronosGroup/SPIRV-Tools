@@ -172,7 +172,7 @@ uint32_t Module::GetExtInstImportId(const char* extstr) {
   return 0;
 }
 
-bool Module::EnsureIdDefinedBeforeInstruction(uint32_t id, inst_iterator inst) {
+void Module::EnsureIdDefinedBeforeInstruction(uint32_t id, inst_iterator inst) {
   auto iter = types_values_.begin();
   bool after_inst = false;
   for (; iter != types_values_.end(); ++iter) {
@@ -180,13 +180,11 @@ bool Module::EnsureIdDefinedBeforeInstruction(uint32_t id, inst_iterator inst) {
     if (iter == inst) after_inst = true;
   }
 
-  if (iter == types_values_.end()) return false;
-  if (!after_inst) return false;
+  if (iter == types_values_.end()) return;
+  if (!after_inst) return;
 
   iter->RemoveFromList();
   iter->InsertBefore(&(*inst));
-
-  return true;
 }
 
 std::ostream& operator<<(std::ostream& str, const Module& module) {
