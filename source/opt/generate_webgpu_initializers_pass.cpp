@@ -22,7 +22,7 @@ using inst_iterator = InstructionList::iterator;
 
 namespace {
 
-bool NeedsWebGPUInitializer(const inst_iterator inst) {
+bool NeedsWebGPUInitializer(Instruction* inst) {
   if (inst->opcode() != SpvOpVariable) return false;
 
   auto storage_class = inst->GetSingleWordOperand(2);
@@ -37,63 +37,82 @@ bool NeedsWebGPUInitializer(const inst_iterator inst) {
   return true;
 }
 
-// Attempts to add a null initializer to the instruction. If the constant for
-// the null initializer is defined after the instruction, it will be
-// moved to be earlier and then the the null initialer will be added.
-// Caller is responsible for ensuring the instruction needs to have an
-// initializer added.
-void AddNullInitializer(IRContext* context, inst_iterator inst,
-                        void(ensure_order)(Module*, uint32_t, inst_iterator) =
-                            [](Module*, uint32_t, InstructionList::iterator)
-                            -> void { }) {
-  auto constant_mgr = context->get_constant_mgr();
-
-  auto* constant_type =
-      constant_mgr->GetType(&(*inst))->AsPointer()->pointee_type();
-  auto* constant = constant_mgr->GetConstant(constant_type, {});
-  auto* constant_inst = constant_mgr->GetDefiningInstruction(constant);
-  auto constant_id = constant_inst->result_id();
-
-  ensure_order(context->module(), constant_id, inst);
-
-  inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {constant_id}));
-  context->UpdateDefUse(&(*inst));
-  context->UpdateDefUse(constant_inst);
-}
-
 }  // namespace
 
 Pass::Status GenerateWebGPUInitializersPass::Process() {
+  auto constant_mgr = context()->get_constant_mgr();
   auto* module = context()->module();
   bool changed = false;
 
   // Handle global/module scoped variables
-  for (auto inst = module->types_values_begin();
-       inst != module->types_values_end(); ++inst) {
+  for (auto iter = module->types_values_begin();
+       iter != module->types_values_end(); ++iter) {
+    Instruction* inst = &(*iter);
+
+    if (inst->opcode() == SpvOpConstantNull) {
+      auto* type = constant_mgr->GetType(inst);
+      null_constant_type_map_[type] = inst;
+      seen_null_constants_.insert(inst);
+      continue;
+    }
+
     if (!NeedsWebGPUInitializer(inst)) continue;
 
     changed = true;
-    AddNullInitializer(context(), inst,
-                       [](Module* inner_module, uint32_t constant_id,
-                          InstructionList::iterator inner_inst) {
-                         inner_module->EnsureIdDefinedBeforeInstruction(
-                             constant_id, inner_inst);
-                       });
+
+    auto* constant_inst = GetNullConstantForVariable(inst);
+    if (seen_null_constants_.find(constant_inst) ==
+        seen_null_constants_.end()) {
+      constant_inst->RemoveFromList();
+      constant_inst->InsertBefore(inst);
+      auto* type = constant_mgr->GetType(constant_inst);
+      null_constant_type_map_[type] = inst;
+      seen_null_constants_.insert(inst);
+    }
+    AddNullInitializerToVariable(constant_inst, inst);
   }
 
   // Handle local/function scoped variables
   for (auto func = module->begin(); func != module->end(); ++func) {
-    for (auto block = func->begin(); block != func->end(); ++block) {
-      for (auto inst = block->begin(); inst != block->end(); ++inst) {
-        if (!NeedsWebGPUInitializer(inst)) continue;
+    auto block = func->entry().get();
+    for (auto iter = block->begin();
+         iter != block->end() && iter->opcode() == SpvOpVariable; ++iter) {
+      Instruction* inst = &(*iter);
+      if (!NeedsWebGPUInitializer(inst)) continue;
 
-        changed = true;
-        AddNullInitializer(context(), inst);
-      }
+      changed = true;
+      auto* constant_inst = GetNullConstantForVariable(inst);
+      AddNullInitializerToVariable(constant_inst, inst);
     }
   }
 
   return changed ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+Instruction* GenerateWebGPUInitializersPass::GetNullConstantForVariable(
+    Instruction* variable_inst) {
+  auto constant_mgr = context()->get_constant_mgr();
+  auto* constant_type = context()
+                            ->get_constant_mgr()
+                            ->GetType(variable_inst)
+                            ->AsPointer()
+                            ->pointee_type();
+
+  if (null_constant_type_map_.find(constant_type) ==
+      null_constant_type_map_.end()) {
+    auto* constant = constant_mgr->GetConstant(constant_type, {});
+    return constant_mgr->GetDefiningInstruction(constant);
+  } else {
+    return null_constant_type_map_[constant_type];
+  }
+}
+
+void GenerateWebGPUInitializersPass::AddNullInitializerToVariable(
+    Instruction* constant_inst, Instruction* variable_inst) {
+  auto constant_id = constant_inst->result_id();
+  variable_inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {constant_id}));
+  context()->UpdateDefUse(variable_inst);
+  context()->UpdateDefUse(constant_inst);
 }
 
 }  // namespace opt

@@ -172,21 +172,6 @@ uint32_t Module::GetExtInstImportId(const char* extstr) {
   return 0;
 }
 
-void Module::EnsureIdDefinedBeforeInstruction(uint32_t id, inst_iterator inst) {
-  auto iter = types_values_.begin();
-  bool after_inst = false;
-  for (; iter != types_values_.end(); ++iter) {
-    if (iter->result_id() == id) break;
-    if (iter == inst) after_inst = true;
-  }
-
-  if (iter == types_values_.end()) return;
-  if (!after_inst) return;
-
-  iter->RemoveFromList();
-  iter->InsertBefore(&(*inst));
-}
-
 std::ostream& operator<<(std::ostream& str, const Module& module) {
   module.ForEachInst([&str](const Instruction* inst) {
     str << *inst;

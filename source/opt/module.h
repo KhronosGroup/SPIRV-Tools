@@ -224,10 +224,6 @@ class Module {
   inline IteratorRange<inst_iterator> types_values();
   inline IteratorRange<const_inst_iterator> types_values() const;
 
-  // Manipulate order of types, constants and global variables instructions.
-  // Used to make sure ids are defined before instructions attempt to use them.
-  void EnsureIdDefinedBeforeInstruction(uint32_t id, inst_iterator inst);
-
   // Iterators for functions contained in this module.
   iterator begin() { return iterator(&functions_, functions_.begin()); }
   iterator end() { return iterator(&functions_, functions_.end()); }

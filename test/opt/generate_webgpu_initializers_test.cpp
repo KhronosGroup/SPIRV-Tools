@@ -23,10 +23,12 @@ namespace {
 
 typedef std::tuple<std::string, bool> GenerateWebGPUInitializersParam;
 
-using GlobalVariable =
+using GlobalVariableTest =
     PassTest<::testing::TestWithParam<GenerateWebGPUInitializersParam>>;
-using LocalVariable =
+using LocalVariableTest =
     PassTest<::testing::TestWithParam<GenerateWebGPUInitializersParam>>;
+
+using GenerateWebGPUInitializersTest = PassTest<::testing::Test>;
 
 void operator+=(std::vector<const char*>& lhs, const char* rhs) {
   lhs.push_back(rhs);
@@ -100,7 +102,7 @@ std::string GetInitializedGlobalVariableTestString(std::string storage_type) {
       GetGlobalVariableString(storage_type, true), GetNullConstantString());
 }
 
-TEST_P(GlobalVariable, Check) {
+TEST_P(GlobalVariableTest, Check) {
   std::string storage_class = std::get<0>(GetParam());
   bool changed = std::get<1>(GetParam());
 
@@ -114,7 +116,7 @@ TEST_P(GlobalVariable, Check) {
 
 // clang-format off
 INSTANTIATE_TEST_SUITE_P(
-    GenerateWebGPUInitializersTest, GlobalVariable,
+    GenerateWebGPUInitializers, GlobalVariableTest,
     ::testing::ValuesIn(std::vector<GenerateWebGPUInitializersParam>({
        std::make_tuple("Private", true),
        std::make_tuple("Output", true),
@@ -175,7 +177,7 @@ std::string GetInitializedLocalVariableTestString(std::string storage_type) {
                                     GetNullConstantString());
 }
 
-TEST_P(LocalVariable, Check) {
+TEST_P(LocalVariableTest, Check) {
   std::string storage_class = std::get<0>(GetParam());
   bool changed = std::get<1>(GetParam());
 
@@ -189,7 +191,7 @@ TEST_P(LocalVariable, Check) {
 
 // clang-format off
 INSTANTIATE_TEST_SUITE_P(
-    GenerateWebGPUInitializersTest, LocalVariable,
+    GenerateWebGPUInitializers, LocalVariableTest,
     ::testing::ValuesIn(std::vector<GenerateWebGPUInitializersParam>({
        std::make_tuple("Private", true),
        std::make_tuple("Output", true),
@@ -200,6 +202,32 @@ INSTANTIATE_TEST_SUITE_P(
        std::make_tuple("Workgroup", false)
     })));
 // clang-format on
+
+TEST_F(GenerateWebGPUInitializersTest, AlreadyInitializedUnchanged) {
+  std::vector<const char*> spirv = {
+      // clang-format off
+                       "OpCapability Shader",
+                       "OpCapability VulkanMemoryModelKHR",
+                       "OpExtension \"SPV_KHR_vulkan_memory_model\"",
+                       "OpMemoryModel Logical VulkanKHR",
+                       "OpEntryPoint Vertex %1 \"shader\"",
+               "%uint = OpTypeInt 32 0",
+  "%_ptr_Private_uint = OpTypePointer Private %uint",
+             "%uint_0 = OpConstant %uint 0",
+                  "%5 = OpVariable %_ptr_Private_uint Private %uint_0",
+               "%void = OpTypeVoid",
+                  "%7 = OpTypeFunction %void",
+                  "%1 = OpFunction %void None %7",
+                  "%8 = OpLabel",
+                       "OpReturn",
+                       "OpFunctionEnd"
+      // clang-format on
+  };
+  std::string str = JoinAllInsts(spirv);
+
+  SinglePassRunAndCheck<GenerateWebGPUInitializersPass>(str, str,
+                                                        /* skip_nop = */ false);
+}
 
 }  // namespace
 }  // namespace opt

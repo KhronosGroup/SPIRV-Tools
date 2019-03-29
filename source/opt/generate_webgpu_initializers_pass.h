@@ -45,6 +45,16 @@ class GenerateWebGPUInitializersPass : public Pass {
            IRContext::kAnalysisIdToFuncMapping | IRContext::kAnalysisTypes |
            IRContext::kAnalysisDefUse | IRContext::kAnalysisConstants;
   }
+
+ private:
+  using NullConstantTypeMap =
+      std::unordered_map<const analysis::Type*, Instruction*>;
+  NullConstantTypeMap null_constant_type_map_;
+  std::unordered_set<Instruction*> seen_null_constants_;
+
+  Instruction* GetNullConstantForVariable(Instruction* variable_inst);
+  void AddNullInitializerToVariable(Instruction* constant_inst,
+                                    Instruction* variable_inst);
 };
 
 }  // namespace opt
