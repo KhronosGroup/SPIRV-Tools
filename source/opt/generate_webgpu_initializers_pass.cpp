@@ -40,7 +40,6 @@ bool NeedsWebGPUInitializer(Instruction* inst) {
 }  // namespace
 
 Pass::Status GenerateWebGPUInitializersPass::Process() {
-  auto constant_mgr = context()->get_constant_mgr();
   auto* module = context()->module();
   bool changed = false;
 
@@ -50,8 +49,7 @@ Pass::Status GenerateWebGPUInitializersPass::Process() {
     Instruction* inst = &(*iter);
 
     if (inst->opcode() == SpvOpConstantNull) {
-      auto* type = constant_mgr->GetType(inst);
-      null_constant_type_map_[type] = inst;
+      null_constant_type_map_[inst->type_id()] = inst;
       seen_null_constants_.insert(inst);
       continue;
     }
@@ -63,10 +61,8 @@ Pass::Status GenerateWebGPUInitializersPass::Process() {
     auto* constant_inst = GetNullConstantForVariable(inst);
     if (seen_null_constants_.find(constant_inst) ==
         seen_null_constants_.end()) {
-      constant_inst->RemoveFromList();
       constant_inst->InsertBefore(inst);
-      auto* type = constant_mgr->GetType(constant_inst);
-      null_constant_type_map_[type] = inst;
+      null_constant_type_map_[inst->type_id()] = inst;
       seen_null_constants_.insert(inst);
     }
     AddNullInitializerToVariable(constant_inst, inst);
@@ -92,18 +88,16 @@ Pass::Status GenerateWebGPUInitializersPass::Process() {
 Instruction* GenerateWebGPUInitializersPass::GetNullConstantForVariable(
     Instruction* variable_inst) {
   auto constant_mgr = context()->get_constant_mgr();
-  auto* constant_type = context()
-                            ->get_constant_mgr()
-                            ->GetType(variable_inst)
-                            ->AsPointer()
-                            ->pointee_type();
+  auto* def_use_mgr = get_def_use_mgr();
 
-  if (null_constant_type_map_.find(constant_type) ==
-      null_constant_type_map_.end()) {
+  auto* ptr_inst = def_use_mgr->GetDef(variable_inst->type_id());
+  auto type_id = ptr_inst->GetInOperand(1).words[0];
+  if (null_constant_type_map_.find(type_id) == null_constant_type_map_.end()) {
+    auto* constant_type = context()->get_type_mgr()->GetType(type_id);
     auto* constant = constant_mgr->GetConstant(constant_type, {});
     return constant_mgr->GetDefiningInstruction(constant);
   } else {
-    return null_constant_type_map_[constant_type];
+    return null_constant_type_map_[type_id];
   }
 }
 
@@ -111,8 +105,7 @@ void GenerateWebGPUInitializersPass::AddNullInitializerToVariable(
     Instruction* constant_inst, Instruction* variable_inst) {
   auto constant_id = constant_inst->result_id();
   variable_inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {constant_id}));
-  context()->UpdateDefUse(variable_inst);
-  context()->UpdateDefUse(constant_inst);
+  get_def_use_mgr()->AnalyzeInstUse(variable_inst);
 }
 
 }  // namespace opt

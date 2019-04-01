@@ -47,8 +47,7 @@ class GenerateWebGPUInitializersPass : public Pass {
   }
 
  private:
-  using NullConstantTypeMap =
-      std::unordered_map<const analysis::Type*, Instruction*>;
+  using NullConstantTypeMap = std::unordered_map<uint32_t, Instruction*>;
   NullConstantTypeMap null_constant_type_map_;
   std::unordered_set<Instruction*> seen_null_constants_;
 

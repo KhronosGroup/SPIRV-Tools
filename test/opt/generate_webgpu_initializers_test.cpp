@@ -105,10 +105,11 @@ std::string GetInitializedGlobalVariableTestString(std::string storage_type) {
 TEST_P(GlobalVariableTest, Check) {
   std::string storage_class = std::get<0>(GetParam());
   bool changed = std::get<1>(GetParam());
-
   std::string input = GetUninitializedGlobalVariableTestString(storage_class);
   std::string expected =
       changed ? GetInitializedGlobalVariableTestString(storage_class) : input;
+
+  fprintf(stderr, "%s\n", input.c_str());
 
   SinglePassRunAndCheck<GenerateWebGPUInitializersPass>(input, expected,
                                                         /* skip_nop = */ false);
