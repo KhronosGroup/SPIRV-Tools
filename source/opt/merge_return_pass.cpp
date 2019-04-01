@@ -275,8 +275,9 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
 
     // There is at least one values that needs to be replaced.
     // First create the OpPhi instruction.
-    InstructionBuilder builder(context(), &*merge_block->begin(),
-                               IRContext::kAnalysisDefUse);
+    InstructionBuilder builder(
+        context(), &*merge_block->begin(),
+        IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
     uint32_t undef_id = Type2Undef(inst.type_id());
     std::vector<uint32_t> phi_operands;
 
