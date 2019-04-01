@@ -408,8 +408,14 @@ bool MergeReturnPass::BreakFromConstruct(
   // Forget about the edges leaving block.  They will be removed.
   cfg()->RemoveSuccessorEdges(block);
 
-  BasicBlock* old_body = block->SplitBasicBlock(context(), TakeNextId(), iter);
+  auto old_body_id = TakeNextId();
+  BasicBlock* old_body = block->SplitBasicBlock(context(), old_body_id, iter);
   predicated->insert(old_body);
+  // If a return block is being split, mark the new body block also as a return
+  // block.
+  if (return_blocks_.count(block->id())) {
+    return_blocks_.insert(old_body_id);
+  }
 
   // If |block| was a continue target for a loop |old_body| is now the correct
   // continue target.
