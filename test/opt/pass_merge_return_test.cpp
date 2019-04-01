@@ -1318,6 +1318,118 @@ TEST_F(MergeReturnPassTest, GeneratePhiInOuterLoop) {
   SinglePassRunAndMatch<MergeReturnPass>(before, false);
 }
 
+TEST_F(MergeReturnPassTest, SerialLoopsUpdateBlockMapping) {
+  // #2455: This test case triggers phi insertions that use previously inserted
+  // phis. Without the fix, it fails to validate.
+  const std::string spirv = R"(
+; CHECK: OpLoopMerge
+; CHECK: OpLoopMerge
+; CHECK: OpLoopMerge
+; CHECK: OpLoopMerge [[merge:%\w+]]
+; CHECK: [[def:%\w+]] = OpFOrdLessThan
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi {{%\w+}} [[def]]
+; CHECK: OpLoopMerge [[merge:%\w+]] [[cont:%\w+]]
+; CHECK: [[cont]] = OpLabel
+; CHECK-NEXT: OpBranchConditional [[phi]]
+; CHECK-NOT: [[def]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %53
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %20 RelaxedPrecision
+               OpDecorate %27 RelaxedPrecision
+               OpDecorate %53 BuiltIn FragCoord
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 3
+          %8 = OpTypeFunction %7
+         %11 = OpTypeBool
+         %12 = OpConstantFalse %11
+         %15 = OpConstant %6 1
+         %16 = OpConstantComposite %7 %15 %15 %15
+         %18 = OpTypeInt 32 1
+         %19 = OpTypePointer Function %18
+         %21 = OpConstant %18 1
+         %28 = OpConstant %18 0
+         %31 = OpTypePointer Function %11
+         %33 = OpConstantTrue %11
+         %51 = OpTypeVector %6 4
+         %52 = OpTypePointer Input %51
+         %53 = OpVariable %52 Input
+         %54 = OpTypeInt 32 0
+         %55 = OpConstant %54 0
+         %56 = OpTypePointer Input %6
+         %59 = OpConstant %6 0
+         %76 = OpUndef %18
+         %77 = OpUndef %11
+         %78 = OpUndef %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %75 = OpFunctionCall %7 %9
+               OpReturn
+               OpFunctionEnd
+          %9 = OpFunction %7 None %8
+         %10 = OpLabel
+         %20 = OpVariable %19 Function
+               OpBranch %14
+         %14 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+         %27 = OpLoad %18 %20
+               OpLoopMerge %24 %25 None
+               OpBranch %24
+         %25 = OpLabel
+               OpBranch %22
+         %24 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
+               OpLoopMerge %36 %40 None
+               OpBranch %35
+         %35 = OpLabel
+               OpSelectionMerge %40 None
+               OpBranchConditional %77 %39 %40
+         %39 = OpLabel
+               OpReturnValue %16
+         %40 = OpLabel
+               OpBranchConditional %12 %34 %36
+         %36 = OpLabel
+               OpBranch %43
+         %43 = OpLabel
+               OpLoopMerge %45 %49 None
+               OpBranch %44
+         %44 = OpLabel
+               OpSelectionMerge %49 None
+               OpBranchConditional %77 %48 %49
+         %48 = OpLabel
+               OpReturnValue %16
+         %49 = OpLabel
+         %60 = OpFOrdLessThan %11 %15 %59
+               OpBranchConditional %12 %43 %45
+         %45 = OpLabel
+               OpBranch %62
+         %62 = OpLabel
+               OpLoopMerge %64 %68 None
+               OpBranch %63
+         %63 = OpLabel
+               OpSelectionMerge %68 None
+               OpBranchConditional %77 %67 %68
+         %67 = OpLabel
+               OpReturnValue %16
+         %68 = OpLabel
+               OpBranchConditional %60 %62 %64
+         %64 = OpLabel
+               OpReturnValue %16
+               OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<MergeReturnPass>(spirv, true);
+}
+
 TEST_F(MergeReturnPassTest, InnerLoopMergeIsOuterLoopContinue) {
   const std::string before =
       R"(
