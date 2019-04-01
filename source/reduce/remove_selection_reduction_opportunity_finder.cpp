@@ -60,8 +60,8 @@ RemoveSelectionReductionOpportunityFinder::GetAvailableOpportunities(
           if (CanOpSelectionMergeBeRemoved(
                   context, block, merge_instruction,
                   merge_and_continue_blocks_from_loops)) {
-            result.push_back(MakeUnique<RemoveSelectionReductionOpportunity>(
-                &function, &block));
+            result.push_back(
+                MakeUnique<RemoveSelectionReductionOpportunity>(&block));
           }
         }
       }

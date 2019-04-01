@@ -28,9 +28,8 @@ class RemoveSelectionReductionOpportunity : public ReductionOpportunity {
  public:
   // Constructs a reduction opportunity from the selection header |block| in
   // |function|.
-  RemoveSelectionReductionOpportunity(opt::Function* function,
-                                      opt::BasicBlock* header_block)
-      : function_(function), header_block_(header_block) {}
+  RemoveSelectionReductionOpportunity(opt::BasicBlock* header_block)
+      : header_block_(header_block) {}
 
   bool PreconditionHolds() override;
 
@@ -38,8 +37,6 @@ class RemoveSelectionReductionOpportunity : public ReductionOpportunity {
   void Apply() override;
 
  private:
-  // The function containing the selection.
-  opt::Function* function_;
   // The header block of the selection.
   opt::BasicBlock* header_block_;
 };
