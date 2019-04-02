@@ -38,7 +38,7 @@ class RemoveSelectionReductionOpportunityFinder
   // Returns true if the OpSelectionMerge instruction |merge_instruction| in
   // block |header_block| can be removed.
   static bool CanOpSelectionMergeBeRemoved(
-      opt::IRContext* context, opt::BasicBlock& header_block,
+      opt::IRContext* context, const opt::BasicBlock& header_block,
       opt::Instruction* merge_instruction,
       std::unordered_set<uint32_t> merge_and_continue_blocks_from_loops);
 };

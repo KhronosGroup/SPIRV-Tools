@@ -71,7 +71,7 @@ RemoveSelectionReductionOpportunityFinder::GetAvailableOpportunities(
 }
 
 bool RemoveSelectionReductionOpportunityFinder::CanOpSelectionMergeBeRemoved(
-    opt::IRContext* context, opt::BasicBlock& header_block,
+    opt::IRContext* context, const opt::BasicBlock& header_block,
     opt::Instruction* merge_instruction,
     std::unordered_set<uint32_t> merge_and_continue_blocks_from_loops) {
   assert(header_block.GetMergeInst() == merge_instruction &&
@@ -120,7 +120,7 @@ bool RemoveSelectionReductionOpportunityFinder::CanOpSelectionMergeBeRemoved(
         merge_instruction->GetSingleWordOperand(kMergeNodeIndex);
     for (uint32_t predecessor_block_id :
          context->cfg()->preds(merge_block_id)) {
-      BasicBlock* predecessor_block =
+      const BasicBlock* predecessor_block =
           context->cfg()->block(predecessor_block_id);
       assert(predecessor_block);
       bool found_divergent_successor = false;
