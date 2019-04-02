@@ -95,7 +95,7 @@ Instruction* GenerateWebGPUInitializersPass::GetNullConstantForVariable(
   if (null_constant_type_map_.find(type_id) == null_constant_type_map_.end()) {
     auto* constant_type = context()->get_type_mgr()->GetType(type_id);
     auto* constant = constant_mgr->GetConstant(constant_type, {});
-    return constant_mgr->GetDefiningInstruction(constant);
+    return constant_mgr->GetDefiningInstruction(constant, type_id);
   } else {
     return null_constant_type_map_[type_id];
   }

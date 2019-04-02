@@ -109,8 +109,6 @@ TEST_P(GlobalVariableTest, Check) {
   std::string expected =
       changed ? GetInitializedGlobalVariableTestString(storage_class) : input;
 
-  fprintf(stderr, "%s\n", input.c_str());
-
   SinglePassRunAndCheck<GenerateWebGPUInitializersPass>(input, expected,
                                                         /* skip_nop = */ false);
 }
@@ -227,6 +225,120 @@ TEST_F(GenerateWebGPUInitializersTest, AlreadyInitializedUnchanged) {
   std::string str = JoinAllInsts(spirv);
 
   SinglePassRunAndCheck<GenerateWebGPUInitializersPass>(str, str,
+                                                        /* skip_nop = */ false);
+}
+
+TEST_F(GenerateWebGPUInitializersTest, AmbigiousArrays) {
+  std::vector<const char*> input_spirv = {
+      // clang-format off
+                                   "OpCapability Shader",
+                                   "OpCapability VulkanMemoryModelKHR",
+                                   "OpExtension \"SPV_KHR_vulkan_memory_model\"",
+                                   "OpMemoryModel Logical VulkanKHR",
+                                   "OpEntryPoint Vertex %1 \"shader\"",
+                           "%uint = OpTypeInt 32 0",
+                         "%uint_2 = OpConstant %uint 2",
+               "%_arr_uint_uint_2 = OpTypeArray %uint %uint_2",
+             "%_arr_uint_uint_2_0 = OpTypeArray %uint %uint_2",
+  "%_ptr_Private__arr_uint_uint_2 = OpTypePointer Private %_arr_uint_uint_2",
+"%_ptr_Private__arr_uint_uint_2_0 = OpTypePointer Private %_arr_uint_uint_2_0",
+                              "%8 = OpConstantNull %_arr_uint_uint_2_0",
+                              "%9 = OpVariable %_ptr_Private__arr_uint_uint_2 Private",
+                             "%10 = OpVariable %_ptr_Private__arr_uint_uint_2_0 Private %8",
+                           "%void = OpTypeVoid",
+                             "%12 = OpTypeFunction %void",
+                              "%1 = OpFunction %void None %12",
+                             "%13 = OpLabel",
+                                   "OpReturn",
+                                   "OpFunctionEnd"
+      // clang-format on
+  };
+  std::string input_str = JoinAllInsts(input_spirv);
+
+  std::vector<const char*> expected_spirv = {
+      // clang-format off
+                                   "OpCapability Shader",
+                                   "OpCapability VulkanMemoryModelKHR",
+                                   "OpExtension \"SPV_KHR_vulkan_memory_model\"",
+                                   "OpMemoryModel Logical VulkanKHR",
+                                   "OpEntryPoint Vertex %1 \"shader\"",
+                           "%uint = OpTypeInt 32 0",
+                         "%uint_2 = OpConstant %uint 2",
+               "%_arr_uint_uint_2 = OpTypeArray %uint %uint_2",
+             "%_arr_uint_uint_2_0 = OpTypeArray %uint %uint_2",
+  "%_ptr_Private__arr_uint_uint_2 = OpTypePointer Private %_arr_uint_uint_2",
+"%_ptr_Private__arr_uint_uint_2_0 = OpTypePointer Private %_arr_uint_uint_2_0",
+                              "%8 = OpConstantNull %_arr_uint_uint_2_0",
+                             "%14 = OpConstantNull %_arr_uint_uint_2",
+                              "%9 = OpVariable %_ptr_Private__arr_uint_uint_2 Private %14",
+                             "%10 = OpVariable %_ptr_Private__arr_uint_uint_2_0 Private %8",
+                           "%void = OpTypeVoid",
+                             "%12 = OpTypeFunction %void",
+                              "%1 = OpFunction %void None %12",
+                             "%13 = OpLabel",
+                                   "OpReturn",
+                                   "OpFunctionEnd"
+      // clang-format on
+  };
+  std::string expected_str = JoinAllInsts(expected_spirv);
+
+  SinglePassRunAndCheck<GenerateWebGPUInitializersPass>(input_str, expected_str,
+                                                        /* skip_nop = */ false);
+}
+
+TEST_F(GenerateWebGPUInitializersTest, AmbigiousStructs) {
+  std::vector<const char*> input_spirv = {
+      // clang-format off
+                          "OpCapability Shader",
+                          "OpCapability VulkanMemoryModelKHR",
+                          "OpExtension \"SPV_KHR_vulkan_memory_model\"",
+                          "OpMemoryModel Logical VulkanKHR",
+                          "OpEntryPoint Vertex %1 \"shader\"",
+                  "%uint = OpTypeInt 32 0",
+             "%_struct_3 = OpTypeStruct %uint",
+             "%_struct_4 = OpTypeStruct %uint",
+"%_ptr_Private__struct_3 = OpTypePointer Private %_struct_3",
+"%_ptr_Private__struct_4 = OpTypePointer Private %_struct_4",
+                     "%7 = OpConstantNull %_struct_3",
+                     "%8 = OpVariable %_ptr_Private__struct_3 Private %7",
+                     "%9 = OpVariable %_ptr_Private__struct_4 Private",
+                  "%void = OpTypeVoid",
+                    "%11 = OpTypeFunction %void",
+                     "%1 = OpFunction %void None %11",
+                    "%12 = OpLabel",
+                          "OpReturn",
+                          "OpFunctionEnd"
+      // clang-format on
+  };
+  std::string input_str = JoinAllInsts(input_spirv);
+
+  std::vector<const char*> expected_spirv = {
+      // clang-format off
+                          "OpCapability Shader",
+                          "OpCapability VulkanMemoryModelKHR",
+                          "OpExtension \"SPV_KHR_vulkan_memory_model\"",
+                          "OpMemoryModel Logical VulkanKHR",
+                          "OpEntryPoint Vertex %1 \"shader\"",
+                  "%uint = OpTypeInt 32 0",
+             "%_struct_3 = OpTypeStruct %uint",
+             "%_struct_4 = OpTypeStruct %uint",
+"%_ptr_Private__struct_3 = OpTypePointer Private %_struct_3",
+"%_ptr_Private__struct_4 = OpTypePointer Private %_struct_4",
+                     "%7 = OpConstantNull %_struct_3",
+                     "%8 = OpVariable %_ptr_Private__struct_3 Private %7",
+                    "%13 = OpConstantNull %_struct_4",
+                     "%9 = OpVariable %_ptr_Private__struct_4 Private %13",
+                  "%void = OpTypeVoid",
+                    "%11 = OpTypeFunction %void",
+                     "%1 = OpFunction %void None %11",
+                    "%12 = OpLabel",
+                          "OpReturn",
+                          "OpFunctionEnd"
+      // clang-format on
+  };
+  std::string expected_str = JoinAllInsts(expected_spirv);
+
+  SinglePassRunAndCheck<GenerateWebGPUInitializersPass>(input_str, expected_str,
                                                         /* skip_nop = */ false);
 }
 
