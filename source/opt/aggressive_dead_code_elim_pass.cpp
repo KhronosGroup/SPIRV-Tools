@@ -513,6 +513,26 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       AddBranch(mergeBlockId, *bi);
       for (++bi; (*bi)->id() != mergeBlockId; ++bi) {
       }
+
+      auto merge_terminator = (*bi)->terminator();
+      if (merge_terminator->opcode() == SpvOpUnreachable) {
+        // The merge was unreachable. This is undefined behaviour so just
+        // return (or return an undef). Then mark the new return as live.
+        auto func_ret_type_inst = get_def_use_mgr()->GetDef(func->type_id());
+        if (func_ret_type_inst->opcode() == SpvOpTypeVoid) {
+          merge_terminator->SetOpcode(SpvOpReturn);
+        } else {
+          // Find an undef for the return value and make sure it gets kept by
+          // the pass.
+          auto undef_id = Type2Undef(func->type_id());
+          auto undef = get_def_use_mgr()->GetDef(undef_id);
+          live_insts_.Set(undef->unique_id());
+          merge_terminator->SetOpcode(SpvOpReturnValue);
+          merge_terminator->SetInOperands({{SPV_OPERAND_TYPE_ID, {undef_id}}});
+          get_def_use_mgr()->AnalyzeInstUse(merge_terminator);
+        }
+        live_insts_.Set(merge_terminator->unique_id());
+      }
     } else {
       ++bi;
     }

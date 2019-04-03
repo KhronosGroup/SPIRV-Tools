@@ -6210,6 +6210,134 @@ TEST_F(AggressiveDCETest, Dead) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<AggressiveDCEPass>(test, true);
 }
+
+TEST_F(AggressiveDCETest, DeadInfiniteLoop) {
+  const std::string test = R"(
+; CHECK: OpSwitch {{%\w+}} {{%\w+}} {{\w+}} {{%\w+}} {{\w+}} [[block:%\w+]]
+; CHECK: [[block]] = OpLabel
+; CHECK-NEXT: OpBranch [[block:%\w+]]
+; CHECK: [[block]] = OpLabel
+; CHECK-NEXT: OpBranch [[block:%\w+]]
+; CHECK: [[block]] = OpLabel
+; CHECK-NEXT: OpReturn
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+          %6 = OpTypeVoid
+          %7 = OpTypeFunction %6
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %8 3
+         %10 = OpTypeFunction %9
+         %11 = OpConstant %8 1
+         %12 = OpConstantComposite %9 %11 %11 %11
+         %13 = OpTypeInt 32 1
+         %32 = OpUndef %13
+          %2 = OpFunction %6 None %7
+         %33 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
+               OpLoopMerge %35 %36 None
+               OpBranch %37
+         %37 = OpLabel
+         %38 = OpFunctionCall %9 %39
+               OpSelectionMerge %40 None
+               OpSwitch %32 %40 14 %41 58 %42
+         %42 = OpLabel
+               OpBranch %43
+         %43 = OpLabel
+               OpLoopMerge %44 %45 None
+               OpBranch %45
+         %45 = OpLabel
+               OpBranch %43
+         %44 = OpLabel
+               OpUnreachable
+         %41 = OpLabel
+               OpBranch %36
+         %40 = OpLabel
+               OpBranch %36
+         %36 = OpLabel
+               OpBranch %34
+         %35 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %39 = OpFunction %9 None %10
+         %46 = OpLabel
+               OpReturnValue %12
+               OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<AggressiveDCEPass>(test, true);
+}
+
+TEST_F(AggressiveDCETest, DeadInfiniteLoopReturnValue) {
+  const std::string test = R"(
+; CHECK: [[vec3:%\w+]] = OpTypeVector
+; CHECK: [[undef:%\w+]] = OpUndef [[vec3]]
+; CHECK: OpSwitch {{%\w+}} {{%\w+}} {{\w+}} {{%\w+}} {{\w+}} [[block:%\w+]]
+; CHECK: [[block]] = OpLabel
+; CHECK-NEXT: OpBranch [[block:%\w+]]
+; CHECK: [[block]] = OpLabel
+; CHECK-NEXT: OpBranch [[block:%\w+]]
+; CHECK: [[block]] = OpLabel
+; CHECK-NEXT: OpReturnValue [[undef]]
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+          %6 = OpTypeVoid
+          %7 = OpTypeFunction %6
+          %8 = OpTypeFloat 32
+          %9 = OpTypeVector %8 3
+         %10 = OpTypeFunction %9
+         %11 = OpConstant %8 1
+         %12 = OpConstantComposite %9 %11 %11 %11
+         %13 = OpTypeInt 32 1
+         %32 = OpUndef %13
+          %2 = OpFunction %6 None %7
+      %entry = OpLabel
+       %call = OpFunctionCall %9 %func
+               OpReturn
+               OpFunctionEnd
+       %func = OpFunction %9 None %10
+         %33 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
+               OpLoopMerge %35 %36 None
+               OpBranch %37
+         %37 = OpLabel
+         %38 = OpFunctionCall %9 %39
+               OpSelectionMerge %40 None
+               OpSwitch %32 %40 14 %41 58 %42
+         %42 = OpLabel
+               OpBranch %43
+         %43 = OpLabel
+               OpLoopMerge %44 %45 None
+               OpBranch %45
+         %45 = OpLabel
+               OpBranch %43
+         %44 = OpLabel
+               OpUnreachable
+         %41 = OpLabel
+               OpBranch %36
+         %40 = OpLabel
+               OpBranch %36
+         %36 = OpLabel
+               OpBranch %34
+         %35 = OpLabel
+               OpReturnValue %12
+               OpFunctionEnd
+         %39 = OpFunction %9 None %10
+         %46 = OpLabel
+               OpReturnValue %12
+               OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<AggressiveDCEPass>(test, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
