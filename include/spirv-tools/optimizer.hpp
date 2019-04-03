@@ -747,6 +747,12 @@ Optimizer::PassToken CreateUpgradeMemoryModelPass();
 // where an instruction is moved into a more deeply nested construct.
 Optimizer::PassToken CreateCodeSinkingPass();
 
+// Create a pass to adds initializers for OpVariable calls that require them
+// in WebGPU. Currently this pass naively initializes variables that are
+// missing an initializer with a null value. In the future it may initialize
+// variables to the first value stored in them, if that is a constant.
+Optimizer::PassToken CreateGenerateWebGPUInitializersPass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

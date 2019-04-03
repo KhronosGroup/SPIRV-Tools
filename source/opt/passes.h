@@ -35,6 +35,7 @@
 #include "source/opt/flatten_decoration_pass.h"
 #include "source/opt/fold_spec_constant_op_and_composite_pass.h"
 #include "source/opt/freeze_spec_constant_value_pass.h"
+#include "source/opt/generate_webgpu_initializers_pass.h"
 #include "source/opt/if_conversion.h"
 #include "source/opt/inline_exhaustive_pass.h"
 #include "source/opt/inline_opaque_pass.h"
