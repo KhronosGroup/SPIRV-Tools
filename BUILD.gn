@@ -514,6 +514,8 @@ static_library("spvtools_opt") {
     "source/opt/freeze_spec_constant_value_pass.h",
     "source/opt/function.cpp",
     "source/opt/function.h",
+    "source/opt/generate_webgpu_initializers_pass.cpp",
+    "source/opt/generate_webgpu_initializers_pass.hpp",
     "source/opt/if_conversion.cpp",
     "source/opt/if_conversion.h",
     "source/opt/inline_exhaustive_pass.cpp",
