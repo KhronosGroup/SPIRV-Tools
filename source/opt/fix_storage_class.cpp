@@ -79,17 +79,17 @@ bool FixStorageClass::PropagateStorageClass(Instruction* inst,
 }
 
 void FixStorageClass::FixInstruction(Instruction* inst,
-                                     SpvStorageClass stroage_class) {
+                                     SpvStorageClass storage_class) {
   assert(IsPointerResultType(inst) &&
          "The result type of the instruction must be a pointer.");
 
-  ChangeResultStorageClass(inst, stroage_class);
+  ChangeResultStorageClass(inst, storage_class);
 
   std::vector<Instruction*> uses;
   get_def_use_mgr()->ForEachUser(
       inst, [&uses](Instruction* use) { uses.push_back(use); });
   for (Instruction* use : uses) {
-    PropagateStorageClass(use, stroage_class);
+    PropagateStorageClass(use, storage_class);
   }
 }
 

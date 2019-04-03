@@ -53,7 +53,7 @@ class FixStorageClass : public Pass {
   // Is it assumed that the result type of |inst| is a pointer type.
   // Propagates the change to the users of |inst| as well.
   // Returns true of any changes were made.
-  void FixInstruction(Instruction* inst, SpvStorageClass stroage_class);
+  void FixInstruction(Instruction* inst, SpvStorageClass storage_class);
 
   // Changes the storage class of the result of |inst| to |storage_class|.  The
   // result type of |inst| must be a pointer.

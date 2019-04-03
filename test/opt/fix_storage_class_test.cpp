@@ -376,6 +376,70 @@ OpFunctionEnd
   SinglePassRunAndCheck<FixStorageClass>(text, text, false, false);
 }
 
+TEST_F(FixStorageClassTest, FixSelect) {
+  const std::string text = R"(
+; CHECK: OpSelect %_ptr_Workgroup_float
+; CHECK: OpAccessChain %_ptr_Workgroup_float
+; CHECK: OpAccessChain %_ptr_Uniform_float
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "testMain" %gl_GlobalInvocationID %gl_LocalInvocationID %gl_WorkGroupID
+               OpExecutionMode %1 LocalSize 8 8 1
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 0
+               OpDecorate %_runtimearr_float ArrayStride 4
+               OpMemberDecorate %_struct_7 0 Offset 0
+               OpDecorate %_struct_7 BufferBlock
+       %bool = OpTypeBool
+       %true = OpConstantTrue %bool
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %float = OpTypeFloat 32
+    %float_2 = OpConstant %float 2
+       %uint = OpTypeInt 32 0
+    %uint_10 = OpConstant %uint 10
+%_arr_float_uint_10 = OpTypeArray %float %uint_10
+%_ptr_Function__arr_float_uint_10 = OpTypePointer Function %_arr_float_uint_10
+%_arr__arr_float_uint_10_uint_10 = OpTypeArray %_arr_float_uint_10 %uint_10
+ %_struct_19 = OpTypeStruct %_arr__arr_float_uint_10_uint_10
+%_ptr_Workgroup__struct_19 = OpTypePointer Workgroup %_struct_19
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %_runtimearr_float
+%_ptr_Uniform__struct_7 = OpTypePointer Uniform %_struct_7
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+         %25 = OpTypeFunction %void
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+         %28 = OpVariable %_ptr_Workgroup__struct_19 Workgroup
+         %29 = OpVariable %_ptr_Workgroup__struct_19 Workgroup
+          %5 = OpVariable %_ptr_Uniform__struct_7 Uniform
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+%gl_WorkGroupID = OpVariable %_ptr_Input_v3uint Input
+          %1 = OpFunction %void None %25
+         %30 = OpLabel
+         %33 = OpSelect %_ptr_Function_float %true %28 %29
+         %34 = OpLoad %v3uint %gl_LocalInvocationID
+         %35 = OpAccessChain %_ptr_Function_float %33 %int_0 %int_0 %int_0
+         %36 = OpLoad %float %35
+         %37 = OpFMul %float %float_2 %36
+               OpStore %35 %37
+         %38 = OpLoad %float %35
+         %39 = OpCompositeExtract %uint %34 0
+         %40 = OpAccessChain %_ptr_Uniform_float %5 %int_0 %39
+               OpStore %40 %38
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FixStorageClass>(text, false);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

@@ -755,7 +755,7 @@ Optimizer::PassToken CreateGenerateWebGPUInitializersPass();
 
 // Create a pass to fix incorrect storage classes.  In order to make code
 // generation simpler, DXC may generate code where the storage classes do not
-// match up correctly.  This pass will fix up any of these errors that is can.
+// match up correctly.  This pass will fix the errors that it can.
 Optimizer::PassToken CreateFixStorageClassPass();
 
 }  // namespace spvtools
