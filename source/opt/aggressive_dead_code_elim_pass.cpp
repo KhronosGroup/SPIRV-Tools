@@ -566,11 +566,19 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // TODO(greg-lunarg): Handle additional capabilities
   if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
+
   // Current functionality assumes relaxed logical addressing (see
   // instruction.h)
   // TODO(greg-lunarg): Handle non-logical addressing
   if (context()->get_feature_mgr()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
+
+  // The variable pointer extension is no longer needed to use the capability,
+  // so we have to look for the capability.
+  if (context()->get_feature_mgr()->HasCapability(
+          SpvCapabilityVariablePointersStorageBuffer))
+    return Status::SuccessWithoutChange;
+
   // If any extensions in the module are not explicitly supported,
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;

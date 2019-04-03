@@ -6338,6 +6338,57 @@ TEST_F(AggressiveDCETest, DeadInfiniteLoopReturnValue) {
   SinglePassRunAndMatch<AggressiveDCEPass>(test, true);
 }
 
+TEST_F(AggressiveDCETest, TestVariablePointer) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability VariablePointers
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "main"
+OpExecutionMode %2 LocalSize 1 1 1
+OpSource GLSL 450
+OpMemberDecorate %_struct_3 0 Offset 0
+OpDecorate %_struct_3 Block
+OpDecorate %4 DescriptorSet 0
+OpDecorate %4 Binding 0
+OpDecorate %_ptr_StorageBuffer_int ArrayStride 4
+OpDecorate %_arr_int_int_128 ArrayStride 4
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_128 = OpConstant %int 128
+%_arr_int_int_128 = OpTypeArray %int %int_128
+%_struct_3 = OpTypeStruct %_arr_int_int_128
+%_ptr_StorageBuffer__struct_3 = OpTypePointer StorageBuffer %_struct_3
+%4 = OpVariable %_ptr_StorageBuffer__struct_3 StorageBuffer
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%_ptr_StorageBuffer_int = OpTypePointer StorageBuffer %int
+%2 = OpFunction %void None %8
+%16 = OpLabel
+%17 = OpAccessChain %_ptr_StorageBuffer_int %4 %int_0 %int_0
+OpBranch %18
+%18 = OpLabel
+%19 = OpPhi %_ptr_StorageBuffer_int %17 %16 %20 %21
+OpLoopMerge %22 %21 None
+OpBranchConditional %true %23 %22
+%23 = OpLabel
+OpStore %19 %int_0
+OpBranch %21
+%21 = OpLabel
+%20 = OpPtrAccessChain %_ptr_StorageBuffer_int %19 %int_1
+OpBranch %18
+%22 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<AggressiveDCEPass>(before, before, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
