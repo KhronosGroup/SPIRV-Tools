@@ -19,7 +19,8 @@
 namespace spvtools {
 namespace reduce {
 
-using namespace opt;
+using opt::BasicBlock;
+using opt::Function;
 
 RemoveBlockReductionOpportunity::RemoveBlockReductionOpportunity(
     Function* function, BasicBlock* block)

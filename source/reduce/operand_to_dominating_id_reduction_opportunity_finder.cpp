@@ -19,11 +19,13 @@
 namespace spvtools {
 namespace reduce {
 
-using namespace opt;
+using opt::Function;
+using opt::Instruction;
+using opt::IRContext;
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 OperandToDominatingIdReductionOpportunityFinder::GetAvailableOpportunities(
-    opt::IRContext* context) const {
+    IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
   // Go through every instruction in every block, considering it as a potential
@@ -58,9 +60,9 @@ OperandToDominatingIdReductionOpportunityFinder::GetAvailableOpportunities(
 void OperandToDominatingIdReductionOpportunityFinder::
     GetOpportunitiesForDominatingInst(
         std::vector<std::unique_ptr<ReductionOpportunity>>* opportunities,
-        opt::Instruction* candidate_dominator,
-        opt::Function::iterator candidate_dominator_block,
-        opt::Function* function, opt::IRContext* context) const {
+        Instruction* candidate_dominator,
+        Function::iterator candidate_dominator_block, Function* function,
+        IRContext* context) const {
   assert(candidate_dominator->HasResultId());
   assert(candidate_dominator->type_id());
   auto dominator_analysis = context->GetDominatorAnalysis(function);

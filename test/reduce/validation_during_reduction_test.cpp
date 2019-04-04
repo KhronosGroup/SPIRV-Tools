@@ -22,6 +22,10 @@ namespace spvtools {
 namespace reduce {
 namespace {
 
+using opt::Function;
+using opt::Instruction;
+using opt::IRContext;
+
 // A dumb reduction opportunity finder that finds opportunities to remove global
 // values regardless of whether they are referenced. This is very likely to make
 // the resulting module invalid.  We use this to test the reducer's behavior in
@@ -40,7 +44,7 @@ class BlindlyRemoveGlobalValuesReductionOpportunityFinder
   // referenced (directly or indirectly) from elsewhere in the module, each such
   // opportunity will make the module invalid.
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
-      opt::IRContext* context) const final {
+      IRContext* context) const final {
     std::vector<std::unique_ptr<ReductionOpportunity>> result;
     for (auto& inst : context->module()->types_values()) {
       if (inst.HasResultId()) {
@@ -59,8 +63,8 @@ class BlindlyRemoveGlobalValuesReductionOpportunityFinder
 // limits are enforced.
 class OpVariableDuplicatorReductionOpportunity : public ReductionOpportunity {
  public:
-  OpVariableDuplicatorReductionOpportunity(Function* function_)
-      : function_(function_) {}
+  OpVariableDuplicatorReductionOpportunity(Function* function)
+      : function_(function) {}
 
   bool PreconditionHolds() override {
     Instruction* first_instruction = &*function_->begin()[0].begin();
@@ -98,7 +102,7 @@ class OpVariableDuplicatorReductionOpportunityFinder
   };
 
   std::vector<std::unique_ptr<ReductionOpportunity>> GetAvailableOpportunities(
-      opt::IRContext* context) const final {
+      IRContext* context) const final {
     std::vector<std::unique_ptr<ReductionOpportunity>> result;
     for (auto& function : *context->module()) {
       Instruction* first_instruction = &*function.begin()[0].begin();
@@ -446,7 +450,7 @@ TEST(ValidationDuringReductionTest, CheckNotAlwaysInvalidCanMakeProgress) {
 
 // Sets up a Reducer for use in the CheckValidationOptions test; avoids
 // repetition.
-void setupReducerForCheckValidationOptions(Reducer* reducer) {
+void SetupReducerForCheckValidationOptions(Reducer* reducer) {
   reducer->SetMessageConsumer(NopDiagnostic);
 
   // Say that every module is interesting.
@@ -531,7 +535,7 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
   // always returns true.
   {
     Reducer reducer(env);
-    setupReducerForCheckValidationOptions(&reducer);
+    SetupReducerForCheckValidationOptions(&reducer);
 
     Reducer::ReductionResultStatus status =
         reducer.Run(std::vector<uint32_t>(binary_in), &binary_out,
@@ -547,7 +551,7 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
   // test always succeeds, and the finder yields infinite opportunities.
   {
     Reducer reducer(env);
-    setupReducerForCheckValidationOptions(&reducer);
+    SetupReducerForCheckValidationOptions(&reducer);
 
     Reducer::ReductionResultStatus status =
         reducer.Run(std::vector<uint32_t>(binary_in), &binary_out,
@@ -565,7 +569,7 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
   // validator limits.
   {
     Reducer reducer(env);
-    setupReducerForCheckValidationOptions(&reducer);
+    SetupReducerForCheckValidationOptions(&reducer);
 
     Reducer::ReductionResultStatus status =
         reducer.Run(std::vector<uint32_t>(binary_in), &binary_out,

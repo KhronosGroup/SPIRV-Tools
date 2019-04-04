@@ -18,7 +18,7 @@
 namespace spvtools {
 namespace reduce {
 
-using namespace opt;
+using opt::IRContext;
 
 namespace {
 const uint32_t kMergeNodeIndex = 0;
@@ -27,7 +27,7 @@ const uint32_t kContinueNodeIndex = 1;
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 StructuredLoopToSelectionReductionOpportunityFinder::GetAvailableOpportunities(
-    opt::IRContext* context) const {
+    IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
   std::set<uint32_t> merge_block_ids;

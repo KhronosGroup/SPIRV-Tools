@@ -19,7 +19,8 @@
 namespace spvtools {
 namespace reduce {
 
-using namespace opt;
+using opt::Instruction;
+using opt::IRContext;
 
 uint32_t FindOrCreateGlobalUndef(IRContext* context, uint32_t type_id) {
   for (auto& inst : context->module()->types_values()) {

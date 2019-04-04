@@ -20,7 +20,9 @@
 namespace spvtools {
 namespace reduce {
 
-using namespace opt;
+using opt::BasicBlock;
+using opt::Function;
+using opt::IRContext;
 
 MergeBlocksReductionOpportunity::MergeBlocksReductionOpportunity(
     IRContext* context, Function* function, BasicBlock* block) {
@@ -48,7 +50,8 @@ bool MergeBlocksReductionOpportunity::PreconditionHolds() {
          "predecessor must be present.");
   const uint32_t predecessor_id = predecessors[0];
   BasicBlock* predecessor_block = context_->get_instr_block(predecessor_id);
-  return blockmergeutil::CanMergeWithSuccessor(context_, predecessor_block);
+  return opt::blockmergeutil::CanMergeWithSuccessor(context_,
+                                                    predecessor_block);
 }
 
 void MergeBlocksReductionOpportunity::Apply() {
@@ -65,7 +68,7 @@ void MergeBlocksReductionOpportunity::Apply() {
   // We need an iterator pointing to the predecessor, hence the loop.
   for (auto bi = function_->begin(); bi != function_->end(); ++bi) {
     if (bi->id() == predecessor_id) {
-      blockmergeutil::MergeWithSuccessor(context_, function_, bi);
+      opt::blockmergeutil::MergeWithSuccessor(context_, function_, bi);
       // Block merging changes the control flow graph, so invalidate it.
       context_->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
       return;

@@ -18,7 +18,9 @@
 namespace spvtools {
 namespace reduce {
 
-using namespace opt;
+using opt::Function;
+using opt::Instruction;
+using opt::IRContext;
 
 std::string RemoveBlockReductionOpportunityFinder::GetName() const {
   return "RemoveBlockReductionOpportunityFinder";
@@ -26,7 +28,7 @@ std::string RemoveBlockReductionOpportunityFinder::GetName() const {
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 RemoveBlockReductionOpportunityFinder::GetAvailableOpportunities(
-    opt::IRContext* context) const {
+    IRContext* context) const {
   std::vector<std::unique_ptr<ReductionOpportunity>> result;
 
   // Consider every block in every function.
@@ -42,8 +44,7 @@ RemoveBlockReductionOpportunityFinder::GetAvailableOpportunities(
 }
 
 bool RemoveBlockReductionOpportunityFinder::IsBlockValidOpportunity(
-    opt::IRContext* context, opt::Function& function,
-    opt::Function::iterator& bi) {
+    IRContext* context, Function& function, Function::iterator& bi) {
   assert(bi != function.end() && "Block iterator was out of bounds");
 
   // Don't remove first block; we don't want to end up with no blocks.
@@ -65,7 +66,7 @@ bool RemoveBlockReductionOpportunityFinder::IsBlockValidOpportunity(
 }
 
 bool RemoveBlockReductionOpportunityFinder::
-    BlockInstructionsHaveNoOutsideReferences(opt::IRContext* context,
+    BlockInstructionsHaveNoOutsideReferences(IRContext* context,
                                              const Function::iterator& bi) {
   // Get all instructions in block.
   std::unordered_set<uint32_t> instructions_in_block;
