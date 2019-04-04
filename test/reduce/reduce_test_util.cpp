@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "reduce_test_util.h"
+#include "test/reduce/reduce_test_util.h"
 
 #include <iostream>
 

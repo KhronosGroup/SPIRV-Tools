@@ -15,8 +15,8 @@
 #ifndef SOURCE_REDUCE_CHANGE_OPERAND_REDUCTION_OPPORTUNITY_H_
 #define SOURCE_REDUCE_CHANGE_OPERAND_REDUCTION_OPPORTUNITY_H_
 
-#include "reduction_opportunity.h"
 #include "source/opt/instruction.h"
+#include "source/reduce/reduction_opportunity.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {

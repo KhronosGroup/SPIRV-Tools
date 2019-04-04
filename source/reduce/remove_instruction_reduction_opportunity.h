@@ -15,8 +15,8 @@
 #ifndef SOURCE_REDUCE_REMOVE_INSTRUCTION_REDUCTION_OPPORTUNITY_H_
 #define SOURCE_REDUCE_REMOVE_INSTRUCTION_REDUCTION_OPPORTUNITY_H_
 
-#include "reduction_opportunity.h"
 #include "source/opt/instruction.h"
+#include "source/reduce/reduction_opportunity.h"
 
 namespace spvtools {
 namespace reduce {

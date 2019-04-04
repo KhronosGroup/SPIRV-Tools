@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "remove_block_reduction_opportunity.h"
+#include "source/reduce/remove_block_reduction_opportunity.h"
 
 #include "source/opt/ir_context.h"
 

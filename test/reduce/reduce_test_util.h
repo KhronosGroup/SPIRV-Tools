@@ -16,7 +16,6 @@
 #define TEST_REDUCE_REDUCE_TEST_UTIL_H_
 
 #include "gtest/gtest.h"
-
 #include "source/opt/ir_context.h"
 #include "source/reduce/reduction_opportunity.h"
 #include "spirv-tools/libspirv.h"

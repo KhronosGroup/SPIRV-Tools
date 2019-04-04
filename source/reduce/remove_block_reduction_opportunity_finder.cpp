@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/reduce/remove_block_reduction_opportunity_finder.h"
+
 #include "source/reduce/remove_block_reduction_opportunity.h"
 
 namespace spvtools {
