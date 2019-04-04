@@ -63,6 +63,13 @@ void NopDiagnostic(spv_message_level_t /*level*/, const char* /*source*/,
 void CLIMessageConsumer(spv_message_level_t level, const char*,
                         const spv_position_t& position, const char* message);
 
+// Dumps the SPIRV-V module in |context| to file |filename|. Useful for
+// interactive debugging.
+void DumpShader(opt::IRContext* context, const char* filename);
+
+// Dumps |binary| to file |filename|. Useful for interactive debugging.
+void DumpShader(const std::vector<uint32_t>& binary, const char* filename);
+
 }  // namespace reduce
 }  // namespace spvtools
 
