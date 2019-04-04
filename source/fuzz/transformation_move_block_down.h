@@ -20,6 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
+// A transformation that moves a basic block to be one position lower in program
+// order.
 class TransformationMoveBlockDown : public Transformation {
  public:
   TransformationMoveBlockDown(uint32_t block_id) : block_id_(block_id) {}
