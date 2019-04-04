@@ -217,7 +217,7 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateAggressiveDCEPass());
 }
 
-Optimizer& Optimizer::RegisterWebGPUPasses() {
+Optimizer& Optimizer::RegisterVulkanToWebGPUPasses() {
   return RegisterPass(CreateStripDebugInfoPass())
       .RegisterPass(CreateStripAtomicCounterMemoryPass())
       .RegisterPass(CreateGenerateWebGPUInitializersPass())
@@ -226,6 +226,8 @@ Optimizer& Optimizer::RegisterWebGPUPasses() {
       .RegisterPass(CreateAggressiveDCEPass())
       .RegisterPass(CreateDeadBranchElimPass());
 }
+
+Optimizer& Optimizer::RegisterWebGPUToVulkanPasses() { return *this; }
 
 bool Optimizer::RegisterPassesFromFlags(const std::vector<std::string>& flags) {
   for (const auto& flag : flags) {

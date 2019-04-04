@@ -79,9 +79,15 @@ std::string GetSizePasses() {
   return GetListOfPassesAsString(optimizer);
 }
 
-std::string GetWebGPUPasses() {
+std::string GetVulkanToWebGPUPasses() {
   spvtools::Optimizer optimizer(SPV_ENV_WEBGPU_0);
-  optimizer.RegisterWebGPUPasses();
+  optimizer.RegisterVulkanToWebGPUPasses();
+  return GetListOfPassesAsString(optimizer);
+}
+
+std::string GetWebGPUToVulkanPasses() {
+  spvtools::Optimizer optimizer(SPV_ENV_VULKAN_1_1);
+  optimizer.RegisterWebGPUToVulkanPasses();
   return GetListOfPassesAsString(optimizer);
 }
 
@@ -370,13 +376,26 @@ Options (in lexicographical order):
                This pass looks for components of vectors that are unused, and
                removes them from the vector.  Note this would still leave around
                lots of dead code that a pass of ADCE will be able to remove.
-  --webgpu-mode
-               Turns on the prescribed passes for WebGPU and sets the target
-               environmet to webgpu0. Other passes may be turned on via
-               additional flags, but such combinations are not tested.
+  --vulkan-to-webgpu
+               Turns on the prescribed passes for converting from Vulkan to
+               WebGPU and sets the target environment to webgpu0. Other passes
+               may be turned on via additional flags, but such combinations are
+               not tested.
                Using --target-env with this flag is not allowed.
 
                This flag is the equivalent of passing in --target-env=webgpu0
+               and specifying the following optimization code names:
+               %s
+
+               NOTE: This flag is a WIP and its behaviour is subject to change.
+  --webgpu-to-vulkan
+               Turns on the prescribed passes for converting from WebGPU to
+               Vulkan and sets the target environment to vulkan1.1. Other passes
+               may be turned on via additional flags, but such combinations are
+               not tested.
+               Using --target-env with this flag is not allowed.
+
+               This flag is the equivalent of passing in --target-env=vulkan1.1
                and specifying the following optimization code names:
                %s
 
@@ -396,7 +415,7 @@ Options (in lexicographical order):
 )",
       program, program, GetLegalizationPasses().c_str(),
       GetOptimizationPasses().c_str(), GetSizePasses().c_str(),
-      GetWebGPUPasses().c_str());
+      GetVulkanToWebGPUPasses().c_str(), GetWebGPUToVulkanPasses().c_str());
 }
 
 // Reads command-line flags  the file specified in |oconfig_flag|. This string
@@ -547,7 +566,8 @@ OptStatus ParseFlags(int argc, const char** argv,
                      spvtools::OptimizerOptions* optimizer_options) {
   std::vector<std::string> pass_flags;
   bool target_env_set = false;
-  bool webgpu_mode_set = false;
+  bool vulkan_to_webgpu_set = false;
+  bool webgpu_to_vulkan_set = false;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
@@ -608,10 +628,16 @@ OptStatus ParseFlags(int argc, const char** argv,
                                              max_id_bound);
       } else if (0 == strncmp(cur_arg,
                               "--target-env=", sizeof("--target-env=") - 1)) {
-        if (webgpu_mode_set) {
+        if (vulkan_to_webgpu_set) {
           spvtools::Error(opt_diagnostic, nullptr, {},
-                          "Cannot use both --webgpu-mode and --target-env at "
-                          "the same time");
+                          "Cannot use both --vulkan-to-webgpu and --target-env "
+                          "at the same time");
+          return {OPT_STOP, 1};
+        }
+        if (webgpu_to_vulkan_set) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Cannot use both --webgpu-to-vulkan and --target-env "
+                          "at the same time");
           return {OPT_STOP, 1};
         }
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
@@ -623,16 +649,38 @@ OptStatus ParseFlags(int argc, const char** argv,
           return {OPT_STOP, 1};
         }
         optimizer->SetTargetEnv(target_env);
-      } else if (0 == strcmp(cur_arg, "--webgpu-mode")) {
+      } else if (0 == strcmp(cur_arg, "--vulkan-to-webgpu")) {
         if (target_env_set) {
           spvtools::Error(opt_diagnostic, nullptr, {},
-                          "Cannot use both --webgpu-mode and --target-env at "
-                          "the same time");
+                          "Cannot use both --vulkan-to-webgpu and --target-env "
+                          "at the same time");
+          return {OPT_STOP, 1};
+        }
+        if (webgpu_to_vulkan_set) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Cannot use both --vulkan-to-webgpu and "
+                          "--webgpu-to-vulkan at the same time");
           return {OPT_STOP, 1};
         }
 
         optimizer->SetTargetEnv(SPV_ENV_WEBGPU_0);
-        optimizer->RegisterWebGPUPasses();
+        optimizer->RegisterVulkanToWebGPUPasses();
+      } else if (0 == strcmp(cur_arg, "--webgpu-to-vulkan")) {
+        if (target_env_set) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Cannot use both --webgpu-to-vulkan and --target-env "
+                          "at the same time");
+          return {OPT_STOP, 1};
+        }
+        if (vulkan_to_webgpu_set) {
+          spvtools::Error(opt_diagnostic, nullptr, {},
+                          "Cannot use both --webgpu-to-vulkan and "
+                          "--vulkan-to-webgpu at the same time");
+          return {OPT_STOP, 1};
+        }
+
+        optimizer->SetTargetEnv(SPV_ENV_VULKAN_1_1);
+        optimizer->RegisterWebGPUToVulkanPasses();
       } else if (0 == strcmp(cur_arg, "--validate-after-all")) {
         optimizer->SetValidateAfterAll(true);
       } else {
