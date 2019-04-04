@@ -20,8 +20,8 @@ namespace spvtools {
 namespace reduce {
 
 using opt::BasicBlock;
-using opt::Instruction;
 using opt::IRContext;
+using opt::Instruction;
 
 namespace {
 const uint32_t kMergeNodeIndex = 0;

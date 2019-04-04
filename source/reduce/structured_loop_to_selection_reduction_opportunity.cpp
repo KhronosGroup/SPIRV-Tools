@@ -22,8 +22,8 @@ namespace spvtools {
 namespace reduce {
 
 using opt::BasicBlock;
-using opt::Instruction;
 using opt::IRContext;
+using opt::Instruction;
 using opt::Operand;
 
 namespace {

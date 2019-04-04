@@ -23,8 +23,8 @@ namespace reduce {
 namespace {
 
 using opt::Function;
-using opt::Instruction;
 using opt::IRContext;
+using opt::Instruction;
 
 // A dumb reduction opportunity finder that finds opportunities to remove global
 // values regardless of whether they are referenced. This is very likely to make

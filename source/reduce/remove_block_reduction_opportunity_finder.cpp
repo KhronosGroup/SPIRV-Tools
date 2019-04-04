@@ -20,8 +20,8 @@ namespace spvtools {
 namespace reduce {
 
 using opt::Function;
-using opt::Instruction;
 using opt::IRContext;
+using opt::Instruction;
 
 std::string RemoveBlockReductionOpportunityFinder::GetName() const {
   return "RemoveBlockReductionOpportunityFinder";

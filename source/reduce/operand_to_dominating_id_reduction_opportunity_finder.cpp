@@ -21,8 +21,8 @@ namespace spvtools {
 namespace reduce {
 
 using opt::Function;
-using opt::Instruction;
 using opt::IRContext;
+using opt::Instruction;
 
 std::vector<std::unique_ptr<ReductionOpportunity>>
 OperandToDominatingIdReductionOpportunityFinder::GetAvailableOpportunities(
