@@ -26,9 +26,6 @@
 #include "tools/io.h"
 #include "tools/util/cli_consumer.h"
 
-using namespace spvtools::reduce;
-using namespace spvtools::opt;
-
 namespace {
 
 using ErrorOrInt = std::pair<std::string, int>;
@@ -213,7 +210,7 @@ void DumpShader(const std::vector<uint32_t>& binary, const char* filename) {
 
 // Dumps the SPIRV-V module in |context| to file |filename|. Useful for
 // interactive debugging.
-void DumpShader(IRContext* context, const char* filename) {
+void DumpShader(spvtools::opt::IRContext* context, const char* filename) {
   std::vector<uint32_t> binary;
   context->module()->ToBinary(&binary, false);
   DumpShader(binary, filename);
@@ -242,7 +239,7 @@ int main(int argc, const char** argv) {
     return 2;
   }
 
-  Reducer reducer(target_env);
+  spvtools::reduce::Reducer reducer(target_env);
 
   reducer.SetInterestingnessFunction(
       [interestingness_test](std::vector<uint32_t> binary,
@@ -273,8 +270,8 @@ int main(int argc, const char** argv) {
   const auto reduction_status = reducer.Run(std::move(binary_in), &binary_out,
                                             reducer_options, validator_options);
 
-  if (reduction_status ==
-          Reducer::ReductionResultStatus::kInitialStateNotInteresting ||
+  if (reduction_status == spvtools::reduce::Reducer::ReductionResultStatus::
+                              kInitialStateNotInteresting ||
       !WriteFile<uint32_t>("_reduced_final.spv", "wb", binary_out.data(),
                            binary_out.size())) {
     return 1;
