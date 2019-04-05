@@ -222,9 +222,9 @@ TEST(Optimizer, CanRegisterPassesFromFlags) {
   EXPECT_EQ(msg_level, SPV_MSG_ERROR);
 }
 
-TEST(Optimizer, WebGPUModeSetsCorrectPasses) {
+TEST(Optimizer, VulkanToWebGPUModeSetsCorrectPasses) {
   Optimizer opt(SPV_ENV_WEBGPU_0);
-  opt.RegisterWebGPUPasses();
+  opt.RegisterVulkanToWebGPUPasses();
   std::vector<const char*> pass_names = opt.GetPassNames();
 
   std::vector<std::string> registered_passes;
@@ -246,7 +246,7 @@ TEST(Optimizer, WebGPUModeSetsCorrectPasses) {
     EXPECT_EQ(registered_passes[i], expected_passes[i]);
 }
 
-struct WebGPUPassCase {
+struct VulkanToWebGPUPassCase {
   // Input SPIR-V
   std::string input;
   // Expected result SPIR-V
@@ -255,15 +255,16 @@ struct WebGPUPassCase {
   std::string pass;
 };
 
-using WebGPUPassTest = PassTest<::testing::TestWithParam<WebGPUPassCase>>;
+using VulkanToWebGPUPassTest =
+    PassTest<::testing::TestWithParam<VulkanToWebGPUPassCase>>;
 
-TEST_P(WebGPUPassTest, Ran) {
+TEST_P(VulkanToWebGPUPassTest, Ran) {
   SpirvTools tools(SPV_ENV_WEBGPU_0);
   std::vector<uint32_t> binary;
   tools.Assemble(GetParam().input, &binary);
 
   Optimizer opt(SPV_ENV_WEBGPU_0);
-  opt.RegisterWebGPUPasses();
+  opt.RegisterVulkanToWebGPUPasses();
 
   std::vector<uint32_t> optimized;
   class ValidatorOptions validator_options;
@@ -277,8 +278,8 @@ TEST_P(WebGPUPassTest, Ran) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    Optimizer, WebGPUPassTest,
-    ::testing::ValuesIn(std::vector<WebGPUPassCase>{
+    Optimizer, VulkanToWebGPUPassTest,
+    ::testing::ValuesIn(std::vector<VulkanToWebGPUPassCase>{
         // FlattenDecorations
         {// input
          "OpCapability Shader\n"
