@@ -518,10 +518,20 @@ bool Optimizer::Run(const uint32_t* original_binary,
   impl_->pass_manager.SetValidatorOptions(&opt_options->val_options_);
   impl_->pass_manager.SetTargetEnv(impl_->target_env);
   auto status = impl_->pass_manager.Run(context.get());
-  if (status == opt::Pass::Status::SuccessWithChange ||
-      (status == opt::Pass::Status::SuccessWithoutChange &&
-       (optimized_binary->data() != original_binary ||
-        optimized_binary->size() != original_binary_size))) {
+
+  bool binary_changed = false;
+  if (status == opt::Pass::Status::SuccessWithChange) {
+    binary_changed = true;
+  } else if (status == opt::Pass::Status::SuccessWithoutChange) {
+    if (optimized_binary->size() != original_binary_size ||
+        (memcmp(optimized_binary->data(), original_binary, original_binary_size) != 0)) {
+      binary_changed = true;
+      Logf(consumer(), SPV_MSG_WARNING, nullptr, {},
+           "Binary unexpectedly changed despite optimizer saying there was no change");
+    }
+  }
+
+  if (binary_changed) {
     optimized_binary->clear();
     context->module()->ToBinary(optimized_binary, /* skip_nop = */ true);
   }
