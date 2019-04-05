@@ -102,15 +102,13 @@ class Optimizer {
   Optimizer& RegisterSizePasses();
 
   // Registers passes that have been prescribed for converting from Vulkan to
-  // WebGPU.
-  // This sequence of passes is subject to constant review and will change
-  // from time to time.
+  // WebGPU. This sequence of passes is subject to constant review and will
+  // change from time to time.
   Optimizer& RegisterVulkanToWebGPUPasses();
 
   // Registers passes that have been prescribed for converting from WebGPU to
-  // VulkanU.
-  // This sequence of passes is subject to constant review and will change
-  // from time to time.
+  // Vulkan. This sequence of passes is subject to constant review and will
+  // change from time to time.
   Optimizer& RegisterWebGPUToVulkanPasses();
 
   // Registers passes that attempt to legalize the generated code.
