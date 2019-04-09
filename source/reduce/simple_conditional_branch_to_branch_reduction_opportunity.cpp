@@ -33,7 +33,6 @@ bool SimpleConditionalBranchToBranchReductionOpportunity::PreconditionHolds() {
 }
 
 void SimpleConditionalBranchToBranchReductionOpportunity::Apply() {
-
   assert(conditional_branch_instruction_->opcode() == SpvOpBranchConditional &&
          "SimpleConditionalBranchToBranchReductionOpportunity: branch was not "
          "a conditional branch");
