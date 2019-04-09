@@ -281,7 +281,8 @@ suite. Version 2 or 3.
 
 We will be moving to Python3 only in the future.  If you are using Python2, you
 will need to install Python-future: 
-```pip install future
+```
+pip install future
 ```
 
 SPIRV-Tools is regularly tested with the the following compilers:
