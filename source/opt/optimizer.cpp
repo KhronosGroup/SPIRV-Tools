@@ -529,10 +529,12 @@ bool Optimizer::Run(const uint32_t* original_binary,
     binary_changed = true;
   } else if (status == opt::Pass::Status::SuccessWithoutChange) {
     if (optimized_binary->size() != original_binary_size ||
-        (memcmp(optimized_binary->data(), original_binary, original_binary_size) != 0)) {
+        (memcmp(optimized_binary->data(), original_binary,
+                original_binary_size) != 0)) {
       binary_changed = true;
-      Logf(consumer(), SPV_MSG_WARNING, nullptr, {},
-           "Binary unexpectedly changed despite optimizer saying there was no change");
+      Log(consumer(), SPV_MSG_WARNING, nullptr, {},
+          "Binary unexpectedly changed despite optimizer saying there was no "
+          "change");
     }
   }
 
