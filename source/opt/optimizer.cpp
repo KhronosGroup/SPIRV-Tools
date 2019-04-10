@@ -224,6 +224,7 @@ Optimizer& Optimizer::RegisterVulkanToWebGPUPasses() {
   return RegisterPass(CreateStripDebugInfoPass())
       .RegisterPass(CreateStripAtomicCounterMemoryPass())
       .RegisterPass(CreateGenerateWebGPUInitializersPass())
+      .RegisterPass(CreateLegalizeVectorShufflePass())
       .RegisterPass(CreateEliminateDeadConstantPass())
       .RegisterPass(CreateFlattenDecorationPass())
       .RegisterPass(CreateAggressiveDCEPass())
@@ -466,6 +467,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterLegalizationPasses();
   } else if (pass_name == "generate-webgpu-initializers") {
     RegisterPass(CreateGenerateWebGPUInitializersPass());
+  } else if (pass_name == "legalize-vector-shuffle") {
+    RegisterPass(CreateLegalizeVectorShufflePass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -854,6 +857,11 @@ Optimizer::PassToken CreateGenerateWebGPUInitializersPass() {
 Optimizer::PassToken CreateFixStorageClassPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::FixStorageClass>());
+}
+
+Optimizer::PassToken CreateLegalizeVectorShufflePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LegalizeVectorShufflePass>());
 }
 
 }  // namespace spvtools
