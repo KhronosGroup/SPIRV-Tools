@@ -140,6 +140,8 @@ function(spvtools_default_compile_options TARGET)
       if(NOT "${SPIRV_USE_SANITIZER}" STREQUAL "")
         target_compile_options(${TARGET} PRIVATE
           -fsanitize=${SPIRV_USE_SANITIZER})
+        set_target_properties(${TARGET} PROPERTIES
+          LINK_FLAGS -fsanitize=${SPIRV_USE_SANITIZER})
       endif()
       target_compile_options(${TARGET} PRIVATE
          -ftemplate-depth=1024)
