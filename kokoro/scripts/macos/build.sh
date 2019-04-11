@@ -41,7 +41,14 @@ mkdir build && cd $SRC/build
 # Invoke the build.
 BUILD_SHA=${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
 echo $(date): Starting build...
-cmake -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+# We need Python 3.  At the moment python3.7 is the newest Python on Kokoro.
+cmake \
+  -GNinja \
+  -DPYTHON_EXECUTABLE:FILEPATH=/usr/local/bin/python3.7 \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+  ..
 
 echo $(date): Build everything...
 ninja
