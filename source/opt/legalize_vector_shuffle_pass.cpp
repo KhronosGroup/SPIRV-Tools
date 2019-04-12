@@ -21,7 +21,7 @@ namespace opt {
 
 Pass::Status LegalizeVectorShufflePass::Process() {
   bool changed = false;
-  context()->module()->ForEachInst([this, &changed](Instruction* inst) {
+  context()->module()->ForEachInst([&changed](Instruction* inst) {
     if (inst->opcode() != SpvOpVectorShuffle) return;
 
     bool inner_changed = false;
@@ -32,9 +32,6 @@ Pass::Status LegalizeVectorShufflePass::Process() {
       inner_changed = true;
       inst->SetInOperand(idx, {0});
     }
-
-    if (!inner_changed) return;
-    context()->UpdateDefUse(inst);
   });
 
   return changed ? Status::SuccessWithChange : Status::SuccessWithoutChange;

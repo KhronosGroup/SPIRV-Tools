@@ -25,8 +25,8 @@ namespace opt {
 // Converts any usages of 0xFFFFFFFF for the literals in OpVectorShuffle to a
 // literal 0. This is needed because using OxFFFFFFFF is forbidden by the WebGPU
 // spec. 0xFFFFFFFF in the main spec indicates that the result for this
-// component has not source, thus is undefined. Since this is undefined
-// behaviour we are free to use that value 0.
+// component has no source, thus is undefined. Since this is undefined
+// behaviour we are free to use 0.
 class LegalizeVectorShufflePass : public Pass {
  public:
   const char* name() const override { return "legalize-vector-shuffle"; }
