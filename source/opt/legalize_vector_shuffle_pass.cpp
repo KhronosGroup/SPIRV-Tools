@@ -24,12 +24,10 @@ Pass::Status LegalizeVectorShufflePass::Process() {
   context()->module()->ForEachInst([&changed](Instruction* inst) {
     if (inst->opcode() != SpvOpVectorShuffle) return;
 
-    bool inner_changed = false;
     for (uint32_t idx = 2; idx < inst->NumInOperands(); ++idx) {
       auto literal = inst->GetSingleWordInOperand(idx);
       if (literal != 0xFFFFFFFF) continue;
       changed = true;
-      inner_changed = true;
       inst->SetInOperand(idx, {0});
     }
   });
