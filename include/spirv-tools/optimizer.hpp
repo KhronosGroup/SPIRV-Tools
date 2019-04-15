@@ -768,7 +768,7 @@ Optimizer::PassToken CreateFixStorageClassPass();
 // converts those literals to 0.
 Optimizer::PassToken CreateLegalizeVectorShufflePass();
 
-// Create a pass to decomposed initialized variables into a seperate variable
+// Create a pass to decompose initialized variables into a seperate variable
 // declaration and an initial store.
 Optimizer::PassToken CreateDecomposeInitializedVariablesPass();
 

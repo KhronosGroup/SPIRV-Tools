@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google Inc.
+// Copyright (c) 2019 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
   // Handle 'Function' variables
   for (auto func = module->begin(); func != module->end(); ++func) {
     auto block = func->entry().get();
-    std::queue<Instruction*> new_stores;
+    std::vector<Instruction*> new_stores;
 
     auto last_var = block->begin();
     for (auto iter = block->begin();
@@ -57,18 +57,15 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
       Instruction* store_inst = new Instruction(
           context(), SpvOpStore, 0, 0,
           {{SPV_OPERAND_TYPE_ID, {var_id}}, {SPV_OPERAND_TYPE_ID, {val_id}}});
-      new_stores.push(store_inst);
+      new_stores.push_back(store_inst);
       iter->RemoveOperand(3);
       get_def_use_mgr()->UpdateDefUse(&*iter);
     }
 
-    while (new_stores.size()) {
-      auto* store = new_stores.front();
-      new_stores.pop();
-      context()->AnalyzeDefUse(store);
-      context()->set_instr_block(store, block);
-      block->AddInstruction(std::unique_ptr<Instruction>(store));
-      store->InsertAfter(&*last_var);
+    for (auto store = new_stores.begin(); store != new_stores.end(); ++store) {
+      context()->AnalyzeDefUse(*store);
+      context()->set_instr_block(*store, block);
+      (*store)->InsertAfter(&*last_var);
     }
   }
 
