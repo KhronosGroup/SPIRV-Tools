@@ -37,15 +37,17 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
   bool changed = false;
 
   // TODO(zoddicus): Handle 'Output' variables
-
   // TODO(zoddicus): Handle 'Private' variables
 
   // Handle 'Function' variables
   for (auto func = module->begin(); func != module->end(); ++func) {
     auto block = func->entry().get();
     std::queue<Instruction*> new_stores;
-    auto iter = block->begin();
-    for (; iter != block->end() && iter->opcode() == SpvOpVariable; ++iter) {
+
+    auto last_var = block->begin();
+    for (auto iter = block->begin();
+         iter != block->end() && iter->opcode() == SpvOpVariable; ++iter) {
+      last_var = iter;
       Instruction* inst = &(*iter);
       if (!HasInitializer(inst)) continue;
 
@@ -57,6 +59,7 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
           {{SPV_OPERAND_TYPE_ID, {var_id}}, {SPV_OPERAND_TYPE_ID, {val_id}}});
       new_stores.push(store_inst);
       iter->RemoveOperand(3);
+      get_def_use_mgr()->UpdateDefUse(&*iter);
     }
 
     while (new_stores.size()) {
@@ -65,11 +68,7 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
       context()->AnalyzeDefUse(store);
       context()->set_instr_block(store, block);
       block->AddInstruction(std::unique_ptr<Instruction>(store));
-      if (iter != block->end()) {
-        store->InsertBefore(&*iter);
-      } else {
-        store->InsertBefore(&*block->rbegin());
-      }
+      store->InsertAfter(&*last_var);
     }
   }
 
