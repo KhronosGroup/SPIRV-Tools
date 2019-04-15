@@ -26,17 +26,35 @@ namespace fuzz {
 // be taken.
 class TransformationAddDeadBreak : public Transformation {
  public:
-  TransformationAddDeadBreak() {}
+  TransformationAddDeadBreak(uint32_t from_block, uint32_t to_block,
+                             uint32_t bool_id)
+      : from_block_(from_block), to_block_(to_block), bool_id_(bool_id) {}
 
   ~TransformationAddDeadBreak() override = default;
 
-  // TODO comment.
+  // - |from_block_| must be the id of a block a in the given module.
+  // - |to_block_| must be the id of a block b in the given module.
+  // - |bool_id_| must be the id of a boolean constant (OpConstantTrue or
+  //   OpConstantFalse)
+  // - b must be a merge block.
+  // - a must end with an unconditional branch to some block c.
+  // - replacing this branch with a conditional branch to b or c, with
+  //   |bool_id_| as the condition,
+  //   must maintain validity of the module.
   bool IsApplicable(opt::IRContext* context) override;
 
-  // TODO comment.
+  // Replaces the terminator of a with a conditional branch to b or c.
+  // |bool_id_| is used as the condition, and the order of b and c is
+  // arranged such that control is guaranteed to jump to c.
   void Apply(opt::IRContext* context) override;
 
  private:
+  // The block to break from
+  const uint32_t from_block_;
+  // The merge block to break to
+  const uint32_t to_block_;
+  // The id of a boolean constant
+  const uint32_t bool_id_;
 };
 
 }  // namespace fuzz
