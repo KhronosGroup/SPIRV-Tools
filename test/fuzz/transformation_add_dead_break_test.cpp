@@ -559,8 +559,8 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
   CheckEqual(env, after_transformation, context.get());
 }
 
-TEST(TransformationAddDeadBreakTest, BreakOutOfInnermostSwitch) {
-  // Checks some allowed and disallowed scenarios for a nested switch.
+TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
+  // Checks some allowed and disallowed scenarios for nests of switches.
 
   // The SPIR-V for this test is adapted from the following GLSL:
   //
@@ -975,8 +975,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfInnermostSwitch) {
 
 TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   // Checks some allowed and disallowed scenarios for a nest of loops, including
-  // breaking several loops simultaneously, and breaking from an if or switch
-  // right out of a loop.
+  // breaking from an if or switch right out of a loop.
 
   // The SPIR-V for this test is adapted from the following GLSL:
   //
