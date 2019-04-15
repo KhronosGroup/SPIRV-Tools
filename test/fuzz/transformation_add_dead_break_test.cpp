@@ -238,29 +238,324 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   CheckEqual(env, after_transformation, context.get());
 }
 
-TEST(TransformationAddDeadBreakTest, BreakOutOfInnermostIf) {
-  // Checks some allowed and disallowed scenarios for a nested if.
+TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
+  // Checks some allowed and disallowed scenarios for nests of ifs.
 
   // The SPIR-V for this test is adapted from the following GLSL:
   //
-  // TODO
+  // void main() {
+  //   int x;
+  //   int y;
+  //   x = 1;
+  //   if (x < y) {
+  //     x = 2;
+  //     x = 3;
+  //     if (x == y) {
+  //       y = 3;
+  //     }
+  //   } else {
+  //     y = 2;
+  //     y = 3;
+  //   }
+  //   if (x == y) {
+  //     x = 2;
+  //   }
+  //   x = y;
+  // }
 
   std::string shader = R"(
-               TODO
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "x"
+               OpName %11 "y"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %13 = OpTypeBool
+         %17 = OpConstant %6 2
+         %18 = OpConstant %6 3
+         %31 = OpConstantTrue %13
+         %32 = OpConstantFalse %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %11 = OpVariable %7 Function
+               OpStore %8 %9
+         %10 = OpLoad %6 %8
+         %12 = OpLoad %6 %11
+         %14 = OpSLessThan %13 %10 %12
+               OpSelectionMerge %16 None
+               OpBranchConditional %14 %15 %24
+         %15 = OpLabel
+               OpStore %8 %17
+               OpBranch %33
+         %33 = OpLabel
+               OpStore %8 %18
+         %19 = OpLoad %6 %8
+               OpBranch %34
+         %34 = OpLabel
+         %20 = OpLoad %6 %11
+         %21 = OpIEqual %13 %19 %20
+               OpSelectionMerge %23 None
+               OpBranchConditional %21 %22 %23
+         %22 = OpLabel
+               OpStore %11 %18
+               OpBranch %35
+         %35 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+               OpBranch %16
+         %24 = OpLabel
+               OpStore %11 %17
+               OpBranch %36
+         %36 = OpLabel
+               OpStore %11 %18
+               OpBranch %16
+         %16 = OpLabel
+         %25 = OpLoad %6 %8
+               OpBranch %37
+         %37 = OpLabel
+         %26 = OpLoad %6 %11
+         %27 = OpIEqual %13 %25 %26
+               OpSelectionMerge %29 None
+               OpBranchConditional %27 %28 %29
+         %28 = OpLabel
+               OpStore %8 %17
+               OpBranch %38
+         %38 = OpLabel
+               OpBranch %29
+         %29 = OpLabel
+         %30 = OpLoad %6 %11
+               OpStore %8 %30
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  // TODO: assert some applicable and inapplicable transformations.
+  // The booleans
+  const uint32_t true_constant = 31;
+  const uint32_t false_constant = 32;
 
-  // TODO: apply some transformations, checking validity after each one as
-  // follows:
+  // The merge blocks
+  const uint32_t merge_inner = 23;
+  const uint32_t merge_outer = 16;
+  const uint32_t merge_after = 29;
+
+  // The headers
+  const uint32_t header_inner = 34;
+  const uint32_t header_outer = 5;
+  const uint32_t header_after = 37;
+
+  // The non-merge-nor-header blocks in each construct
+  const uint32_t inner_block_1 = 22;
+  const uint32_t inner_block_2 = 35;
+  const uint32_t outer_block_1 = 15;
+  const uint32_t outer_block_2 = 33;
+  const uint32_t outer_block_3 = 24;
+  const uint32_t outer_block_4 = 36;
+  const uint32_t after_block_1 = 28;
+  const uint32_t after_block_2 = 38;
+
+  // Fine to break from a construct to its merge
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(inner_block_1, merge_inner, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(inner_block_2, merge_inner, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(outer_block_1, merge_outer, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(outer_block_2, merge_outer, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(outer_block_3, merge_outer, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(outer_block_4, merge_outer, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(after_block_1, merge_after, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(after_block_2, merge_after, false_constant)
+          .IsApplicable(context.get()));
+
+  // Not OK to break to the wrong merge (whether enclosing or not)
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(inner_block_1, merge_outer, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(inner_block_2, merge_after, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(outer_block_1, merge_inner, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(outer_block_2, merge_after, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(after_block_1, merge_inner, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(after_block_2, merge_outer, false_constant)
+          .IsApplicable(context.get()));
+
+  // Not OK to break from header (as it does not branch unconditionally)
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_inner, merge_inner, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_outer, merge_outer, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_after, merge_after, true_constant)
+          .IsApplicable(context.get()));
+
+  // Not OK to break to non-merge
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(inner_block_1, inner_block_2, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(outer_block_2, after_block_1, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(outer_block_1, header_after, true_constant)
+          .IsApplicable(context.get()));
+
+  auto transformation1 =
+      TransformationAddDeadBreak(inner_block_1, merge_inner, true_constant);
+  auto transformation2 =
+      TransformationAddDeadBreak(inner_block_2, merge_inner, false_constant);
+  auto transformation3 =
+      TransformationAddDeadBreak(outer_block_1, merge_outer, true_constant);
+  auto transformation4 =
+      TransformationAddDeadBreak(outer_block_2, merge_outer, false_constant);
+  auto transformation5 =
+      TransformationAddDeadBreak(outer_block_3, merge_outer, true_constant);
+  auto transformation6 =
+      TransformationAddDeadBreak(outer_block_4, merge_outer, false_constant);
+  auto transformation7 =
+      TransformationAddDeadBreak(after_block_1, merge_after, true_constant);
+  auto transformation8 =
+      TransformationAddDeadBreak(after_block_2, merge_after, false_constant);
+
+  ASSERT_TRUE(transformation1.IsApplicable(context.get()));
+  transformation1.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation2.IsApplicable(context.get()));
+  transformation2.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation3.IsApplicable(context.get()));
+  transformation3.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation4.IsApplicable(context.get()));
+  transformation4.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation5.IsApplicable(context.get()));
+  transformation5.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation6.IsApplicable(context.get()));
+  transformation6.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation7.IsApplicable(context.get()));
+  transformation7.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation8.IsApplicable(context.get()));
+  transformation8.Apply(context.get());
   CheckValid(env, context.get());
 
   std::string after_transformation = R"(
-               TODO
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "x"
+               OpName %11 "y"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %13 = OpTypeBool
+         %17 = OpConstant %6 2
+         %18 = OpConstant %6 3
+         %31 = OpConstantTrue %13
+         %32 = OpConstantFalse %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %11 = OpVariable %7 Function
+               OpStore %8 %9
+         %10 = OpLoad %6 %8
+         %12 = OpLoad %6 %11
+         %14 = OpSLessThan %13 %10 %12
+               OpSelectionMerge %16 None
+               OpBranchConditional %14 %15 %24
+         %15 = OpLabel
+               OpStore %8 %17
+               OpBranchConditional %31 %33 %16
+         %33 = OpLabel
+               OpStore %8 %18
+         %19 = OpLoad %6 %8
+               OpBranchConditional %32 %16 %34
+         %34 = OpLabel
+         %20 = OpLoad %6 %11
+         %21 = OpIEqual %13 %19 %20
+               OpSelectionMerge %23 None
+               OpBranchConditional %21 %22 %23
+         %22 = OpLabel
+               OpStore %11 %18
+               OpBranchConditional %31 %35 %23
+         %35 = OpLabel
+               OpBranchConditional %32 %23 %23
+         %23 = OpLabel
+               OpBranch %16
+         %24 = OpLabel
+               OpStore %11 %17
+               OpBranchConditional %31 %36 %16
+         %36 = OpLabel
+               OpStore %11 %18
+               OpBranch Conditional %32 %16 %16
+         %16 = OpLabel
+         %25 = OpLoad %6 %8
+               OpBranch %37
+         %37 = OpLabel
+         %26 = OpLoad %6 %11
+         %27 = OpIEqual %13 %25 %26
+               OpSelectionMerge %29 None
+               OpBranchConditional %27 %28 %29
+         %28 = OpLabel
+               OpStore %8 %17
+               OpBranchConditional %31 %38 %29
+         %38 = OpLabel
+               OpBranchConditional %32 %29 %29
+         %29 = OpLabel
+         %30 = OpLoad %6 %11
+               OpStore %8 %30
+               OpReturn
+               OpFunctionEnd
   )";
 
   CheckEqual(env, after_transformation, context.get());
