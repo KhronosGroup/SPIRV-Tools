@@ -238,6 +238,120 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   CheckEqual(env, after_transformation, context.get());
 }
 
+TEST(TransformationAddDeadBreakTest, BreakOutOfInnermostIf) {
+  // Checks some allowed and disallowed scenarios for a nested if.
+
+  // The SPIR-V for this test is adapted from the following GLSL:
+  //
+  // TODO
+
+  std::string shader = R"(
+               TODO
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  // TODO: assert some applicable and inapplicable transformations.
+
+  // TODO: apply some transformations, checking validity after each one as
+  // follows:
+  CheckValid(env, context.get());
+
+  std::string after_transformation = R"(
+               TODO
+  )";
+
+  CheckEqual(env, after_transformation, context.get());
+}
+
+TEST(TransformationAddDeadBreakTest, BreakOutOfInnermostSwitch) {
+  // Checks some allowed and disallowed scenarios for a nested switch.
+
+  // The SPIR-V for this test is adapted from the following GLSL:
+  //
+  // TODO
+
+  std::string shader = R"(
+               TODO
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  // TODO: assert some applicable and inapplicable transformations.
+
+  // TODO: apply some transformations, checking validity after each one as
+  // follows:
+  CheckValid(env, context.get());
+
+  std::string after_transformation = R"(
+               TODO
+  )";
+
+  CheckEqual(env, after_transformation, context.get());
+}
+
+TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
+  // Checks some allowed and disallowed scenarios for a nest of loops, including
+  // breaking several loops simultaneously, and breaking from an if or switch
+  // right out of a loop.
+
+  // The SPIR-V for this test is adapted from the following GLSL:
+  //
+  // TODO
+
+  std::string shader = R"(
+               TODO
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  // TODO: assert some applicable and inapplicable transformations.
+
+  // TODO: apply some transformations, checking validity after each one as
+  // follows:
+  CheckValid(env, context.get());
+
+  std::string after_transformation = R"(
+               TODO
+  )";
+
+  CheckEqual(env, after_transformation, context.get());
+}
+
+TEST(TransformationAddDeadBreakTest, PhiInstructions) {
+  // Checks that the transformation works in the presence of phi instructions.
+
+  // The SPIR-V for this test is adapted from the following GLSL:
+  //
+  // TODO
+
+  std::string shader = R"(
+               TODO
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  // TODO: assert some applicable and inapplicable transformations.
+
+  // TODO: apply some transformations, checking validity after each one as
+  // follows:
+  CheckValid(env, context.get());
+
+  std::string after_transformation = R"(
+               TODO
+  )";
+
+  CheckEqual(env, after_transformation, context.get());
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
