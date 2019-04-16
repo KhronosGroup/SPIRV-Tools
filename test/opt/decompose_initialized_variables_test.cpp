@@ -35,14 +35,15 @@ std::vector<const char*> header = {
     "OpMemoryModel Logical VulkanKHR",
     "OpEntryPoint Vertex %1 \"shader\"",
     "%uint = OpTypeInt 32 0",
-    "%3 = OpConstantNull %uint",
+    "%uint_1 = OpConstant %uint 1",
+    "%4 = OpConstantNull %uint",
     "%void = OpTypeVoid",
-    "%5 = OpTypeFunction %void"};
+    "%6 = OpTypeFunction %void"};
 
 std::string GetFunctionTest(std::vector<const char*> body) {
   auto result = header;
   result += {"%_ptr_Function_uint = OpTypePointer Function %uint",
-             "%1 = OpFunction %void None %5", "%7 = OpLabel"};
+             "%1 = OpFunction %void None %6", "%8 = OpLabel"};
   result += body;
   result += {"OpReturn", "OpFunctionEnd"};
   return JoinAllInsts(result);
@@ -50,9 +51,9 @@ std::string GetFunctionTest(std::vector<const char*> body) {
 
 TEST_F(DecomposeInitializedVariablesTest, FunctionChanged) {
   std::string input =
-      GetFunctionTest({"%8 = OpVariable %_ptr_Function_uint Function %3"});
+      GetFunctionTest({"%9 = OpVariable %_ptr_Function_uint Function %uint_1"});
   std::string expected = GetFunctionTest(
-      {"%8 = OpVariable %_ptr_Function_uint Function", "OpStore %8 %3"});
+      {"%9 = OpVariable %_ptr_Function_uint Function", "OpStore %9 %uint_1"});
 
   SinglePassRunAndCheck<DecomposeInitializedVariablesPass>(
       input, expected, /* skip_nop = */ false);
@@ -60,10 +61,23 @@ TEST_F(DecomposeInitializedVariablesTest, FunctionChanged) {
 
 TEST_F(DecomposeInitializedVariablesTest, FunctionUnchanged) {
   std::string input =
-      GetFunctionTest({"%8 = OpVariable %_ptr_Function_uint Function"});
+      GetFunctionTest({"%9 = OpVariable %_ptr_Function_uint Function"});
 
   SinglePassRunAndCheck<DecomposeInitializedVariablesPass>(
       input, input, /* skip_nop = */ false);
+}
+
+TEST_F(DecomposeInitializedVariablesTest, FunctionMultipleVariables) {
+  std::string input =
+      GetFunctionTest({"%9 = OpVariable %_ptr_Function_uint Function %uint_1",
+                       "%10 = OpVariable %_ptr_Function_uint Function %4"});
+  std::string expected =
+      GetFunctionTest({"%9 = OpVariable %_ptr_Function_uint Function",
+                       "%10 = OpVariable %_ptr_Function_uint Function",
+                       "OpStore %9 %uint_1", "OpStore %10 %4"});
+
+  SinglePassRunAndCheck<DecomposeInitializedVariablesPass>(
+      input, expected, /* skip_nop = */ false);
 }
 
 }  // namespace

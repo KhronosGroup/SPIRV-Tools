@@ -66,6 +66,7 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
       context()->AnalyzeDefUse(*store);
       context()->set_instr_block(*store, block);
       (*store)->InsertAfter(&*last_var);
+      last_var = *store;
     }
   }
 
