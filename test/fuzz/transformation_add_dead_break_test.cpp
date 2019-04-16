@@ -981,10 +981,148 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
 
   // The SPIR-V for this test is adapted from the following GLSL:
   //
-  // TODO
+  // void main() {
+  //   int x, y;
+  //   do {
+  //     x++;
+  //     for (int j = 0; j < 100; j++) {
+  //       y++;
+  //       if (x == y) {
+  //         x++;
+  //         if (x == 2) {
+  //           y++;
+  //         }
+  //         switch (x) {
+  //           case 0:
+  //             x = 2;
+  //           default:
+  //             break;
+  //         }
+  //       }
+  //     }
+  //   } while (x > y);
+  //
+  //   for (int i = 0; i < 100; i++) {
+  //     x++;
+  //   }
+  // }
 
   std::string shader = R"(
-               TODO
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %12 "x"
+               OpName %16 "j"
+               OpName %27 "y"
+               OpName %55 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeInt 32 1
+         %11 = OpTypePointer Function %10
+         %14 = OpConstant %10 1
+         %17 = OpConstant %10 0
+         %24 = OpConstant %10 100
+         %25 = OpTypeBool
+         %38 = OpConstant %10 2
+         %67 = OpConstantTrue %25
+         %68 = OpConstantFalse %25
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %12 = OpVariable %11 Function
+         %16 = OpVariable %11 Function
+         %27 = OpVariable %11 Function
+         %55 = OpVariable %11 Function
+               OpBranch %6
+          %6 = OpLabel
+               OpLoopMerge %8 %9 None
+               OpBranch %7
+          %7 = OpLabel
+         %13 = OpLoad %10 %12
+         %15 = OpIAdd %10 %13 %14
+               OpStore %12 %15
+               OpStore %16 %17
+               OpBranch %18
+         %18 = OpLabel
+               OpLoopMerge %20 %21 None
+               OpBranch %22
+         %22 = OpLabel
+         %23 = OpLoad %10 %16
+         %26 = OpSLessThan %25 %23 %24
+               OpBranchConditional %26 %19 %20
+         %19 = OpLabel
+         %28 = OpLoad %10 %27
+         %29 = OpIAdd %10 %28 %14
+               OpStore %27 %29
+         %30 = OpLoad %10 %12
+         %31 = OpLoad %10 %27
+         %32 = OpIEqual %25 %30 %31
+               OpSelectionMerge %34 None
+               OpBranchConditional %32 %33 %34
+         %33 = OpLabel
+         %35 = OpLoad %10 %12
+         %36 = OpIAdd %10 %35 %14
+               OpStore %12 %36
+         %37 = OpLoad %10 %12
+         %39 = OpIEqual %25 %37 %38
+               OpSelectionMerge %41 None
+               OpBranchConditional %39 %40 %41
+         %40 = OpLabel
+         %42 = OpLoad %10 %27
+         %43 = OpIAdd %10 %42 %14
+               OpStore %27 %43
+               OpBranch %41
+         %41 = OpLabel
+         %44 = OpLoad %10 %12
+               OpSelectionMerge %47 None
+               OpSwitch %44 %46 0 %45
+         %46 = OpLabel
+               OpBranch %47
+         %45 = OpLabel
+               OpStore %12 %38
+               OpBranch %46
+         %47 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+         %50 = OpLoad %10 %16
+         %51 = OpIAdd %10 %50 %14
+               OpStore %16 %51
+               OpBranch %18
+         %20 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+         %52 = OpLoad %10 %12
+         %53 = OpLoad %10 %27
+         %54 = OpSGreaterThan %25 %52 %53
+               OpBranchConditional %54 %6 %8
+          %8 = OpLabel
+               OpStore %55 %17
+               OpBranch %56
+         %56 = OpLabel
+               OpLoopMerge %58 %59 None
+               OpBranch %60
+         %60 = OpLabel
+         %61 = OpLoad %10 %55
+         %62 = OpSLessThan %25 %61 %24
+               OpBranchConditional %62 %57 %58
+         %57 = OpLabel
+         %63 = OpLoad %10 %12
+         %64 = OpIAdd %10 %63 %14
+               OpStore %12 %64
+               OpBranch %59
+         %59 = OpLabel
+         %65 = OpLoad %10 %55
+         %66 = OpIAdd %10 %65 %14
+               OpStore %55 %66
+               OpBranch %56
+         %58 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
@@ -992,14 +1130,253 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   CheckValid(env, context.get());
 
-  // TODO: assert some applicable and inapplicable transformations.
+  // The booleans
+  const uint32_t true_constant = 67;
+  const uint32_t false_constant = 68;
 
-  // TODO: apply some transformations, checking validity after each one as
-  // follows:
+  // The header and merge blocks
+  const uint32_t header_do_while = 6;
+  const uint32_t merge_do_while = 8;
+  const uint32_t header_for_j = 18;
+  const uint32_t merge_for_j = 20;
+  const uint32_t header_for_i = 56;
+  const uint32_t merge_for_i = 58;
+  const uint32_t header_switch = 41;
+  const uint32_t merge_switch = 47;
+  const uint32_t header_if_x_eq_y = 19;
+  const uint32_t merge_if_x_eq_y = 34;
+  const uint32_t header_if_x_eq_2 = 33;
+  const uint32_t merge_if_x_eq_2 = 41;
+
+  const uint32_t block_in_inner_if = 40;
+  const uint32_t block_switch_case = 46;
+  const uint32_t block_switch_default = 45;
+  const uint32_t block_in_for_i_loop = 57;
+
+  // Fine to break from any loop header to its merge
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(header_do_while, merge_do_while, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(header_for_i, merge_for_i, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(header_for_j, merge_for_j, true_constant)
+          .IsApplicable(context.get()));
+
+  // Fine to break from any of the blocks in constructs in the "for j" loop to
+  // that loop's merge
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(block_in_inner_if, merge_for_j, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(block_switch_case, merge_for_j, true_constant)
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(block_switch_default, merge_for_j,
+                                         false_constant)
+                  .IsApplicable(context.get()));
+
+  // Fine to break from the body of the "for i" loop to that loop's merge
+  ASSERT_TRUE(TransformationAddDeadBreak(block_in_for_i_loop, merge_for_i,
+                                         true_constant)
+                  .IsApplicable(context.get()));
+
+  // Not OK to break from multiple loops
+  ASSERT_FALSE(TransformationAddDeadBreak(block_in_inner_if, merge_do_while,
+                                          false_constant)
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(block_switch_case, merge_do_while,
+                                          true_constant)
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(block_switch_default, merge_do_while,
+                                          false_constant)
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_for_j, merge_do_while, true_constant)
+          .IsApplicable(context.get()));
+
+  // Not OK to break out of multiple non-loop constructs if not breaking to a
+  // loop merge
+  ASSERT_FALSE(TransformationAddDeadBreak(block_in_inner_if, merge_if_x_eq_y,
+                                          false_constant)
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(block_switch_case, merge_if_x_eq_y,
+                                          true_constant)
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(block_switch_default, merge_if_x_eq_y,
+                                          false_constant)
+                   .IsApplicable(context.get()));
+
+  // Some miscellaneous inapplicable transformations
+  ASSERT_FALSE(TransformationAddDeadBreak(header_if_x_eq_2, header_if_x_eq_y,
+                                          false_constant)
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(merge_if_x_eq_2, merge_switch, false_constant)
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_switch, header_switch, false_constant)
+          .IsApplicable(context.get()));
+
+  auto transformation1 = TransformationAddDeadBreak(
+      header_do_while, merge_do_while, true_constant);
+  auto transformation2 =
+      TransformationAddDeadBreak(header_for_i, merge_for_i, false_constant);
+  auto transformation3 =
+      TransformationAddDeadBreak(header_for_j, merge_for_j, true_constant);
+  auto transformation4 = TransformationAddDeadBreak(
+      block_in_inner_if, merge_for_j, false_constant);
+  auto transformation5 =
+      TransformationAddDeadBreak(block_switch_case, merge_for_j, true_constant);
+  auto transformation6 = TransformationAddDeadBreak(
+      block_switch_default, merge_for_j, false_constant);
+  auto transformation7 = TransformationAddDeadBreak(block_in_for_i_loop,
+                                                    merge_for_i, true_constant);
+
+  ASSERT_TRUE(transformation1.IsApplicable(context.get()));
+  transformation1.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation2.IsApplicable(context.get()));
+  transformation2.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation3.IsApplicable(context.get()));
+  transformation3.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation4.IsApplicable(context.get()));
+  transformation4.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation5.IsApplicable(context.get()));
+  transformation5.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation6.IsApplicable(context.get()));
+  transformation6.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation7.IsApplicable(context.get()));
+  transformation7.Apply(context.get());
   CheckValid(env, context.get());
 
   std::string after_transformation = R"(
-               TODO
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %12 "x"
+               OpName %16 "j"
+               OpName %27 "y"
+               OpName %55 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %10 = OpTypeInt 32 1
+         %11 = OpTypePointer Function %10
+         %14 = OpConstant %10 1
+         %17 = OpConstant %10 0
+         %24 = OpConstant %10 100
+         %25 = OpTypeBool
+         %38 = OpConstant %10 2
+         %67 = OpConstantTrue %25
+         %68 = OpConstantFalse %25
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %12 = OpVariable %11 Function
+         %16 = OpVariable %11 Function
+         %27 = OpVariable %11 Function
+         %55 = OpVariable %11 Function
+               OpBranch %6
+          %6 = OpLabel
+               OpLoopMerge %8 %9 None
+               OpBranchConditional %67 %7 %8
+          %7 = OpLabel
+         %13 = OpLoad %10 %12
+         %15 = OpIAdd %10 %13 %14
+               OpStore %12 %15
+               OpStore %16 %17
+               OpBranch %18
+         %18 = OpLabel
+               OpLoopMerge %20 %21 None
+               OpBranchConditional %67 %22 %20
+         %22 = OpLabel
+         %23 = OpLoad %10 %16
+         %26 = OpSLessThan %25 %23 %24
+               OpBranchConditional %26 %19 %20
+         %19 = OpLabel
+         %28 = OpLoad %10 %27
+         %29 = OpIAdd %10 %28 %14
+               OpStore %27 %29
+         %30 = OpLoad %10 %12
+         %31 = OpLoad %10 %27
+         %32 = OpIEqual %25 %30 %31
+               OpSelectionMerge %34 None
+               OpBranchConditional %32 %33 %34
+         %33 = OpLabel
+         %35 = OpLoad %10 %12
+         %36 = OpIAdd %10 %35 %14
+               OpStore %12 %36
+         %37 = OpLoad %10 %12
+         %39 = OpIEqual %25 %37 %38
+               OpSelectionMerge %41 None
+               OpBranchConditional %39 %40 %41
+         %40 = OpLabel
+         %42 = OpLoad %10 %27
+         %43 = OpIAdd %10 %42 %14
+               OpStore %27 %43
+               OpBranchConditional %68 %20 %41
+         %41 = OpLabel
+         %44 = OpLoad %10 %12
+               OpSelectionMerge %47 None
+               OpSwitch %44 %46 0 %45
+         %46 = OpLabel
+               OpBranchConditional %67 %47 %20
+         %45 = OpLabel
+               OpStore %12 %38
+               OpBranchConditional %68 %20 %46
+         %47 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+         %50 = OpLoad %10 %16
+         %51 = OpIAdd %10 %50 %14
+               OpStore %16 %51
+               OpBranch %18
+         %20 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+         %52 = OpLoad %10 %12
+         %53 = OpLoad %10 %27
+         %54 = OpSGreaterThan %25 %52 %53
+               OpBranchConditional %54 %6 %8
+          %8 = OpLabel
+               OpStore %55 %17
+               OpBranch %56
+         %56 = OpLabel
+               OpLoopMerge %58 %59 None
+               OpBranchConditional %68 %58 %60
+         %60 = OpLabel
+         %61 = OpLoad %10 %55
+         %62 = OpSLessThan %25 %61 %24
+               OpBranchConditional %62 %57 %58
+         %57 = OpLabel
+         %63 = OpLoad %10 %12
+         %64 = OpIAdd %10 %63 %14
+               OpStore %12 %64
+               OpBranchConditional %67 %59 %58
+         %59 = OpLabel
+         %65 = OpLoad %10 %55
+         %66 = OpIAdd %10 %65 %14
+               OpStore %55 %66
+               OpBranch %56
+         %58 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
 
   CheckEqual(env, after_transformation, context.get());
