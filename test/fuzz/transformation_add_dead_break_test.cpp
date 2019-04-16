@@ -99,6 +99,7 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context.get());
 
   const uint32_t merge_block = 16;
   const uint32_t true_constant = 25;
@@ -133,7 +134,7 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   // Inapplicable: 100 is not a block id.
   ASSERT_FALSE(TransformationAddDeadBreak(100, merge_block, true_constant)
                    .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(15, 100, true_constant)
+  ASSERT_FALSE(TransformationAddDeadBreak(15, 100, true_constant)
                   .IsApplicable(context.get()));
 
   // Inapplicable: 2 is not the id of a boolean constant.
@@ -341,6 +342,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context.get());
 
   // The booleans
   const uint32_t true_constant = 31;
@@ -535,7 +537,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
                OpBranchConditional %31 %36 %16
          %36 = OpLabel
                OpStore %11 %18
-               OpBranch Conditional %32 %16 %16
+               OpBranchConditional %32 %16 %16
          %16 = OpLabel
          %25 = OpLoad %6 %8
                OpBranch %37
@@ -573,7 +575,6 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
   //       case 0:
   //       case 1:
   //         if (x == y) {
-  //           break;
   //         }
   //         x = 2;
   //         break;
@@ -668,7 +669,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
                OpSelectionMerge %27 None
                OpBranchConditional %25 %26 %27
          %26 = OpLabel
-               OpBranch %22
+               OpBranch %27
          %27 = OpLabel
                OpStore %8 %29
                OpBranch %22
@@ -713,6 +714,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context.get());
 
   // The booleans
   const uint32_t true_constant = 60;
@@ -777,15 +779,14 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
                                          true_constant)
                   .IsApplicable(context.get()));
 
-  // OK to break out of a switch from a selection construct inside the switch
-  // (we think; the spec is not super-clear)
-  ASSERT_TRUE(TransformationAddDeadBreak(inner_if_1_block_1,
+  // Not OK to break out of a switch from a selection construct inside the switch.
+  ASSERT_FALSE(TransformationAddDeadBreak(inner_if_1_block_1,
                                          merge_then_outer_switch, true_constant)
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(
+  ASSERT_FALSE(TransformationAddDeadBreak(
                   inner_if_1_block_2, merge_then_outer_switch, false_constant)
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(inner_if_2_block_1,
+  ASSERT_FALSE(TransformationAddDeadBreak(inner_if_2_block_1,
                                          merge_then_outer_switch, true_constant)
                   .IsApplicable(context.get()));
 
@@ -823,9 +824,9 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
   auto transformation7 = TransformationAddDeadBreak(
       else_switch_block_3, merge_else_switch, false_constant);
   auto transformation8 = TransformationAddDeadBreak(
-      inner_if_1_block_1, merge_then_outer_switch, true_constant);
+      inner_if_1_block_1, merge_inner_if_1, true_constant);
   auto transformation9 = TransformationAddDeadBreak(
-      inner_if_1_block_2, merge_then_outer_switch, false_constant);
+      inner_if_1_block_2, merge_inner_if_1, false_constant);
   auto transformation10 = TransformationAddDeadBreak(
       inner_if_2_block_1, merge_inner_if_2, true_constant);
 
@@ -928,7 +929,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
                OpSelectionMerge %27 None
                OpBranchConditional %25 %26 %27
          %26 = OpLabel
-               OpBranchConditional %60 %22 %27
+               OpBranchConditional %60 %27 %27
          %27 = OpLabel
                OpStore %8 %29
                OpBranch %22
@@ -939,10 +940,10 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
                OpBranchConditional %33 %34 %35
          %34 = OpLabel
                OpStore %11 %29
-               OpBranchConditional %60 %62 %22
+               OpBranchConditional %60 %62 %35
          %62 = OpLabel
                OpStore %8 %36
-               OpBranchConditional %61 %22 %35
+               OpBranchConditional %61 %35 %35
          %35 = OpLabel
                OpBranch %20
          %20 = OpLabel
@@ -988,6 +989,7 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context.get());
 
   // TODO: assert some applicable and inapplicable transformations.
 
@@ -1016,6 +1018,7 @@ TEST(TransformationAddDeadBreakTest, PhiInstructions) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context.get());
 
   // TODO: assert some applicable and inapplicable transformations.
 
