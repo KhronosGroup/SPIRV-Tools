@@ -36,17 +36,32 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
   auto* module = context()->module();
   bool changed = false;
 
-  // TODO(zoddicus): Handle 'Output' variables
-  // TODO(zoddicus): Handle 'Private' variables
+  std::vector<std::tuple<uint32_t, uint32_t>> global_stores;
+  for (auto iter = module->types_values_begin();
+       iter != module->types_values_end(); ++iter) {
+    Instruction* inst = &(*iter);
+    if (!HasInitializer(inst)) continue;
 
-  // Handle 'Function' variables
+    changed = true;
+    auto var_id = inst->result_id();
+    auto val_id = inst->GetOperand(3).words[0];
+    global_stores.push_back(std::make_tuple(var_id, val_id));
+    iter->RemoveOperand(3);
+  }
+
+  std::unordered_set<uint32_t> entry_ids;
+  for (auto entry = module->entry_points().begin();
+       entry != module->entry_points().end(); ++entry) {
+    entry_ids.insert(entry->GetSingleWordInOperand(1));
+  }
+
   for (auto func = module->begin(); func != module->end(); ++func) {
-    auto block = func->entry().get();
-    std::vector<Instruction*> new_stores;
-
-    auto last_var = block->begin();
-    for (auto iter = block->begin();
-         iter != block->end() && iter->opcode() == SpvOpVariable; ++iter) {
+    std::vector<Instruction*> function_stores;
+    auto first_block = func->entry().get();
+    inst_iterator last_var = first_block->end();
+    for (auto iter = first_block->begin();
+         iter != first_block->end() && iter->opcode() == SpvOpVariable;
+         ++iter) {
       last_var = iter;
       Instruction* inst = &(*iter);
       if (!HasInitializer(inst)) continue;
@@ -57,20 +72,41 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
       Instruction* store_inst = new Instruction(
           context(), SpvOpStore, 0, 0,
           {{SPV_OPERAND_TYPE_ID, {var_id}}, {SPV_OPERAND_TYPE_ID, {val_id}}});
-      new_stores.push_back(store_inst);
+      function_stores.push_back(store_inst);
       iter->RemoveOperand(3);
-      get_def_use_mgr()->UpdateDefUse(&*iter);
     }
 
-    for (auto store = new_stores.begin(); store != new_stores.end(); ++store) {
+    if (entry_ids.find(func->result_id()) != entry_ids.end()) {
+      for (auto store_ids : global_stores) {
+        uint32_t var_id;
+        uint32_t val_id;
+        std::tie(var_id, val_id) = store_ids;
+        auto* store_inst = new Instruction(
+            context(), SpvOpStore, 0, 0,
+            {{SPV_OPERAND_TYPE_ID, {var_id}}, {SPV_OPERAND_TYPE_ID, {val_id}}});
+        context()->AnalyzeDefUse(store_inst);
+        context()->set_instr_block(store_inst, &*first_block);
+        first_block->AddInstruction(std::unique_ptr<Instruction>(store_inst));
+        if (last_var == first_block->end()) {
+          store_inst->InsertBefore(&*first_block->begin());
+        } else {
+          store_inst->InsertAfter(&*last_var);
+        }
+        last_var = store_inst;
+      }
+    }
+
+    for (auto store = function_stores.begin(); store != function_stores.end();
+         ++store) {
       context()->AnalyzeDefUse(*store);
-      context()->set_instr_block(*store, block);
+      context()->set_instr_block(*store, first_block);
       (*store)->InsertAfter(&*last_var);
       last_var = *store;
     }
   }
 
-  return changed ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+  return changed ? Pass::Status::SuccessWithChange
+                 : Pass::Status::SuccessWithoutChange;
 }
 
 }  // namespace opt
