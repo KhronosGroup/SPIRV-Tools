@@ -135,7 +135,7 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   ASSERT_FALSE(TransformationAddDeadBreak(100, merge_block, true_constant)
                    .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(15, 100, true_constant)
-                  .IsApplicable(context.get()));
+                   .IsApplicable(context.get()));
 
   // Inapplicable: 2 is not the id of a boolean constant.
   ASSERT_FALSE(TransformationAddDeadBreak(15, merge_block, 2)
@@ -779,16 +779,17 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
                                          true_constant)
                   .IsApplicable(context.get()));
 
-  // Not OK to break out of a switch from a selection construct inside the switch.
-  ASSERT_FALSE(TransformationAddDeadBreak(inner_if_1_block_1,
-                                         merge_then_outer_switch, true_constant)
-                  .IsApplicable(context.get()));
+  // Not OK to break out of a switch from a selection construct inside the
+  // switch.
   ASSERT_FALSE(TransformationAddDeadBreak(
-                  inner_if_1_block_2, merge_then_outer_switch, false_constant)
-                  .IsApplicable(context.get()));
-  ASSERT_FALSE(TransformationAddDeadBreak(inner_if_2_block_1,
-                                         merge_then_outer_switch, true_constant)
-                  .IsApplicable(context.get()));
+                   inner_if_1_block_1, merge_then_outer_switch, true_constant)
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(
+                   inner_if_1_block_2, merge_then_outer_switch, false_constant)
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(
+                   inner_if_2_block_1, merge_then_outer_switch, true_constant)
+                   .IsApplicable(context.get()));
 
   // Some miscellaneous inapplicable cases.
   ASSERT_FALSE(
