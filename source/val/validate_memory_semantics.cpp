@@ -65,8 +65,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "WebGPU spec disallows, for OpAtomic*, any bit masks in "
                   "Memory Semantics that are not UniformMemory, "
-                  "WorkgroupMemory, ImageMemory, OutputMemoryKHR, "
-                  "MakeAvailableKHR, or MakeVisibleKHR";
+                  "WorkgroupMemory, ImageMemory, or OutputMemoryKHR";
       } else {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "WebGPU spec disallows any bit masks in Memory Semantics "
