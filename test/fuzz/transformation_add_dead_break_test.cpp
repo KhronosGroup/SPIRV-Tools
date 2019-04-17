@@ -102,62 +102,50 @@ TEST(TransformationAddDeadBreakTest, BreaksOutOfSimpleIf) {
   CheckValid(env, context.get());
 
   const uint32_t merge_block = 16;
-  const uint32_t true_constant = 25;
-  const uint32_t false_constant = 26;
 
   // These are all possibilities.
-  ASSERT_TRUE(TransformationAddDeadBreak(15, merge_block, true_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(15, merge_block, true, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(15, merge_block, false_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(15, merge_block, false, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(21, merge_block, true_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(21, merge_block, true, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(21, merge_block, false_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(21, merge_block, false, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(22, merge_block, true_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(22, merge_block, true, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(22, merge_block, false_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(22, merge_block, false, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(19, merge_block, true_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(19, merge_block, true, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(19, merge_block, false_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(19, merge_block, false, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(23, merge_block, true_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(23, merge_block, true, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(23, merge_block, false_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(23, merge_block, false, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(24, merge_block, true_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(24, merge_block, true, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(24, merge_block, false_constant, {})
+  ASSERT_TRUE(TransformationAddDeadBreak(24, merge_block, false, {})
                   .IsApplicable(context.get()));
 
   // Inapplicable: 100 is not a block id.
-  ASSERT_FALSE(TransformationAddDeadBreak(100, merge_block, true_constant, {})
+  ASSERT_FALSE(TransformationAddDeadBreak(100, merge_block, true, {})
                    .IsApplicable(context.get()));
-  ASSERT_FALSE(TransformationAddDeadBreak(15, 100, true_constant, {})
-                   .IsApplicable(context.get()));
-
-  // Inapplicable: 2 is not the id of a boolean constant.
-  ASSERT_FALSE(TransformationAddDeadBreak(15, merge_block, 2, {})
+  ASSERT_FALSE(TransformationAddDeadBreak(15, 100, true, {})
                    .IsApplicable(context.get()));
 
   // Inapplicable: 24 is not a merge block.
-  ASSERT_FALSE(TransformationAddDeadBreak(15, 24, true_constant, {})
-                   .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(15, 24, true, {}).IsApplicable(context.get()));
 
   // These are the transformations we will apply.
-  auto transformation1 =
-      TransformationAddDeadBreak(15, merge_block, true_constant, {});
-  auto transformation2 =
-      TransformationAddDeadBreak(21, merge_block, false_constant, {});
-  auto transformation3 =
-      TransformationAddDeadBreak(22, merge_block, true_constant, {});
-  auto transformation4 =
-      TransformationAddDeadBreak(19, merge_block, false_constant, {});
-  auto transformation5 =
-      TransformationAddDeadBreak(23, merge_block, true_constant, {});
-  auto transformation6 =
-      TransformationAddDeadBreak(24, merge_block, false_constant, {});
+  auto transformation1 = TransformationAddDeadBreak(15, merge_block, true, {});
+  auto transformation2 = TransformationAddDeadBreak(21, merge_block, false, {});
+  auto transformation3 = TransformationAddDeadBreak(22, merge_block, true, {});
+  auto transformation4 = TransformationAddDeadBreak(19, merge_block, false, {});
+  auto transformation5 = TransformationAddDeadBreak(23, merge_block, true, {});
+  auto transformation6 = TransformationAddDeadBreak(24, merge_block, false, {});
 
   ASSERT_TRUE(transformation1.IsApplicable(context.get()));
   transformation1.Apply(context.get());
@@ -344,10 +332,6 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   CheckValid(env, context.get());
 
-  // The booleans
-  const uint32_t true_constant = 31;
-  const uint32_t false_constant = 32;
-
   // The header and merge blocks
   const uint32_t header_inner = 34;
   const uint32_t merge_inner = 23;
@@ -367,89 +351,71 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedIfs) {
   const uint32_t after_block_2 = 38;
 
   // Fine to break from a construct to its merge
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(inner_block_1, merge_inner, true_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(inner_block_2, merge_inner, false_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(outer_block_1, merge_outer, true_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(outer_block_2, merge_outer, false_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(outer_block_3, merge_outer, true_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(outer_block_4, merge_outer, false_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(after_block_1, merge_after, true_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(after_block_2, merge_after, false_constant, {})
-          .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(inner_block_1, merge_inner, true, {})
+                  .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(inner_block_2, merge_inner, false, {})
+                  .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(outer_block_1, merge_outer, true, {})
+                  .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(outer_block_2, merge_outer, false, {})
+                  .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(outer_block_3, merge_outer, true, {})
+                  .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(outer_block_4, merge_outer, false, {})
+                  .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(after_block_1, merge_after, true, {})
+                  .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(after_block_2, merge_after, false, {})
+                  .IsApplicable(context.get()));
 
   // Not OK to break to the wrong merge (whether enclosing or not)
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(inner_block_1, merge_outer, true_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(inner_block_2, merge_after, false_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(outer_block_1, merge_inner, true_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(outer_block_2, merge_after, false_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(after_block_1, merge_inner, true_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(after_block_2, merge_outer, false_constant, {})
-          .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(inner_block_1, merge_outer, true, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(inner_block_2, merge_after, false, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(outer_block_1, merge_inner, true, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(outer_block_2, merge_after, false, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(after_block_1, merge_inner, true, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(after_block_2, merge_outer, false, {})
+                   .IsApplicable(context.get()));
 
   // Not OK to break from header (as it does not branch unconditionally)
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(header_inner, merge_inner, true_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(header_outer, merge_outer, false_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(header_after, merge_after, true_constant, {})
-          .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(header_inner, merge_inner, true, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(header_outer, merge_outer, false, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(header_after, merge_after, true, {})
+                   .IsApplicable(context.get()));
 
   // Not OK to break to non-merge
-  ASSERT_FALSE(TransformationAddDeadBreak(inner_block_1, inner_block_2,
-                                          true_constant, {})
-                   .IsApplicable(context.get()));
-  ASSERT_FALSE(TransformationAddDeadBreak(outer_block_2, after_block_1,
-                                          false_constant, {})
-                   .IsApplicable(context.get()));
   ASSERT_FALSE(
-      TransformationAddDeadBreak(outer_block_1, header_after, true_constant, {})
+      TransformationAddDeadBreak(inner_block_1, inner_block_2, true, {})
           .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(outer_block_2, after_block_1, false, {})
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(outer_block_1, header_after, true, {})
+                   .IsApplicable(context.get()));
 
   auto transformation1 =
-      TransformationAddDeadBreak(inner_block_1, merge_inner, true_constant, {});
-  auto transformation2 = TransformationAddDeadBreak(inner_block_2, merge_inner,
-                                                    false_constant, {});
+      TransformationAddDeadBreak(inner_block_1, merge_inner, true, {});
+  auto transformation2 =
+      TransformationAddDeadBreak(inner_block_2, merge_inner, false, {});
   auto transformation3 =
-      TransformationAddDeadBreak(outer_block_1, merge_outer, true_constant, {});
-  auto transformation4 = TransformationAddDeadBreak(outer_block_2, merge_outer,
-                                                    false_constant, {});
+      TransformationAddDeadBreak(outer_block_1, merge_outer, true, {});
+  auto transformation4 =
+      TransformationAddDeadBreak(outer_block_2, merge_outer, false, {});
   auto transformation5 =
-      TransformationAddDeadBreak(outer_block_3, merge_outer, true_constant, {});
-  auto transformation6 = TransformationAddDeadBreak(outer_block_4, merge_outer,
-                                                    false_constant, {});
+      TransformationAddDeadBreak(outer_block_3, merge_outer, true, {});
+  auto transformation6 =
+      TransformationAddDeadBreak(outer_block_4, merge_outer, false, {});
   auto transformation7 =
-      TransformationAddDeadBreak(after_block_1, merge_after, true_constant, {});
-  auto transformation8 = TransformationAddDeadBreak(after_block_2, merge_after,
-                                                    false_constant, {});
+      TransformationAddDeadBreak(after_block_1, merge_after, true, {});
+  auto transformation8 =
+      TransformationAddDeadBreak(after_block_2, merge_after, false, {});
 
   ASSERT_TRUE(transformation1.IsApplicable(context.get()));
   transformation1.Apply(context.get());
@@ -716,10 +682,6 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   CheckValid(env, context.get());
 
-  // The booleans
-  const uint32_t true_constant = 60;
-  const uint32_t false_constant = 61;
-
   // The header and merge blocks
   const uint32_t header_outer_if = 5;
   const uint32_t merge_outer_if = 16;
@@ -748,94 +710,85 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfNestedSwitches) {
 
   // Fine to branch straight to direct merge block for a construct
   ASSERT_TRUE(TransformationAddDeadBreak(then_outer_switch_block_1,
-                                         merge_then_outer_switch, true_constant,
-                                         {})
+                                         merge_then_outer_switch, true, {})
                   .IsApplicable(context.get()));
   ASSERT_TRUE(TransformationAddDeadBreak(then_inner_switch_block_1,
-                                         merge_then_inner_switch,
-                                         false_constant, {})
+                                         merge_then_inner_switch, false, {})
                   .IsApplicable(context.get()));
   ASSERT_TRUE(TransformationAddDeadBreak(then_inner_switch_block_2,
-                                         merge_then_inner_switch, true_constant,
-                                         {})
+                                         merge_then_inner_switch, true, {})
                   .IsApplicable(context.get()));
   ASSERT_TRUE(TransformationAddDeadBreak(then_inner_switch_block_3,
-                                         merge_then_inner_switch, true_constant,
-                                         {})
+                                         merge_then_inner_switch, true, {})
                   .IsApplicable(context.get()));
   ASSERT_TRUE(TransformationAddDeadBreak(else_switch_block_1, merge_else_switch,
-                                         false_constant, {})
+                                         false, {})
                   .IsApplicable(context.get()));
   ASSERT_TRUE(TransformationAddDeadBreak(else_switch_block_2, merge_else_switch,
-                                         true_constant, {})
+                                         true, {})
                   .IsApplicable(context.get()));
   ASSERT_TRUE(TransformationAddDeadBreak(else_switch_block_3, merge_else_switch,
-                                         false_constant, {})
+                                         false, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(inner_if_1_block_1, merge_inner_if_1,
-                                         true_constant, {})
-                  .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(inner_if_1_block_1, merge_inner_if_1, true, {})
+          .IsApplicable(context.get()));
   ASSERT_TRUE(TransformationAddDeadBreak(inner_if_1_block_2, merge_inner_if_1,
-                                         false_constant, {})
+                                         false, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(inner_if_2_block_1, merge_inner_if_2,
-                                         true_constant, {})
-                  .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(inner_if_2_block_1, merge_inner_if_2, true, {})
+          .IsApplicable(context.get()));
 
   // Not OK to break out of a switch from a selection construct inside the
   // switch.
   ASSERT_FALSE(TransformationAddDeadBreak(inner_if_1_block_1,
-                                          merge_then_outer_switch,
-                                          true_constant, {})
+                                          merge_then_outer_switch, true, {})
                    .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(inner_if_1_block_2,
-                                          merge_then_outer_switch,
-                                          false_constant, {})
+                                          merge_then_outer_switch, false, {})
                    .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(inner_if_2_block_1,
-                                          merge_then_outer_switch,
-                                          true_constant, {})
+                                          merge_then_outer_switch, true, {})
                    .IsApplicable(context.get()));
 
   // Some miscellaneous inapplicable cases.
-  ASSERT_FALSE(TransformationAddDeadBreak(header_outer_if, merge_outer_if,
-                                          true_constant, {})
-                   .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_outer_if, merge_outer_if, true, {})
+          .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(header_inner_if_1, inner_if_1_block_2,
-                                          false_constant, {})
+                                          false, {})
                    .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(header_then_inner_switch,
-                                          header_then_outer_switch,
-                                          false_constant, {})
+                                          header_then_outer_switch, false, {})
                    .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(header_else_switch,
-                                          then_inner_switch_block_3,
-                                          false_constant, {})
+                                          then_inner_switch_block_3, false, {})
                    .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(header_inner_if_2, header_inner_if_2,
-                                          false_constant, {})
+                                          false, {})
                    .IsApplicable(context.get()));
 
   auto transformation1 = TransformationAddDeadBreak(
-      then_outer_switch_block_1, merge_then_outer_switch, true_constant, {});
+      then_outer_switch_block_1, merge_then_outer_switch, true, {});
   auto transformation2 = TransformationAddDeadBreak(
-      then_inner_switch_block_1, merge_then_inner_switch, false_constant, {});
+      then_inner_switch_block_1, merge_then_inner_switch, false, {});
   auto transformation3 = TransformationAddDeadBreak(
-      then_inner_switch_block_2, merge_then_inner_switch, true_constant, {});
+      then_inner_switch_block_2, merge_then_inner_switch, true, {});
   auto transformation4 = TransformationAddDeadBreak(
-      then_inner_switch_block_3, merge_then_inner_switch, true_constant, {});
+      then_inner_switch_block_3, merge_then_inner_switch, true, {});
   auto transformation5 = TransformationAddDeadBreak(
-      else_switch_block_1, merge_else_switch, false_constant, {});
+      else_switch_block_1, merge_else_switch, false, {});
   auto transformation6 = TransformationAddDeadBreak(
-      else_switch_block_2, merge_else_switch, true_constant, {});
+      else_switch_block_2, merge_else_switch, true, {});
   auto transformation7 = TransformationAddDeadBreak(
-      else_switch_block_3, merge_else_switch, false_constant, {});
-  auto transformation8 = TransformationAddDeadBreak(
-      inner_if_1_block_1, merge_inner_if_1, true_constant, {});
+      else_switch_block_3, merge_else_switch, false, {});
+  auto transformation8 = TransformationAddDeadBreak(inner_if_1_block_1,
+                                                    merge_inner_if_1, true, {});
   auto transformation9 = TransformationAddDeadBreak(
-      inner_if_1_block_2, merge_inner_if_1, false_constant, {});
+      inner_if_1_block_2, merge_inner_if_1, false, {});
   auto transformation10 = TransformationAddDeadBreak(
-      inner_if_2_block_1, merge_inner_if_2, true_constant, {});
+      inner_if_2_block_1, merge_inner_if_2, true, {});
 
   ASSERT_TRUE(transformation1.IsApplicable(context.get()));
   transformation1.Apply(context.get());
@@ -1136,10 +1089,6 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   CheckValid(env, context.get());
 
-  // The booleans
-  const uint32_t true_constant = 67;
-  const uint32_t false_constant = 68;
-
   // The header and merge blocks
   const uint32_t header_do_while = 6;
   const uint32_t merge_do_while = 8;
@@ -1160,84 +1109,82 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   const uint32_t block_in_for_i_loop = 57;
 
   // Fine to break from any loop header to its merge
-  ASSERT_TRUE(TransformationAddDeadBreak(header_do_while, merge_do_while,
-                                         true_constant, {})
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(header_do_while, merge_do_while, true, {})
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(header_for_i, merge_for_i, false, {})
                   .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(header_for_i, merge_for_i, false_constant, {})
-          .IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddDeadBreak(header_for_j, merge_for_j, true_constant, {})
-          .IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddDeadBreak(header_for_j, merge_for_j, true, {})
+                  .IsApplicable(context.get()));
 
   // Fine to break from any of the blocks in constructs in the "for j" loop to
   // that loop's merge
-  ASSERT_TRUE(TransformationAddDeadBreak(block_in_inner_if, merge_for_j,
-                                         false_constant, {})
-                  .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(block_switch_case, merge_for_j,
-                                         true_constant, {})
-                  .IsApplicable(context.get()));
-  ASSERT_TRUE(TransformationAddDeadBreak(block_switch_default, merge_for_j,
-                                         false_constant, {})
-                  .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(block_in_inner_if, merge_for_j, false, {})
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(block_switch_case, merge_for_j, true, {})
+          .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(block_switch_default, merge_for_j, false, {})
+          .IsApplicable(context.get()));
 
   // Fine to break from the body of the "for i" loop to that loop's merge
-  ASSERT_TRUE(TransformationAddDeadBreak(block_in_for_i_loop, merge_for_i,
-                                         true_constant, {})
-                  .IsApplicable(context.get()));
+  ASSERT_TRUE(
+      TransformationAddDeadBreak(block_in_for_i_loop, merge_for_i, true, {})
+          .IsApplicable(context.get()));
 
   // Not OK to break from multiple loops
-  ASSERT_FALSE(TransformationAddDeadBreak(block_in_inner_if, merge_do_while,
-                                          false_constant, {})
-                   .IsApplicable(context.get()));
-  ASSERT_FALSE(TransformationAddDeadBreak(block_switch_case, merge_do_while,
-                                          true_constant, {})
-                   .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(block_in_inner_if, merge_do_while, false, {})
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(block_switch_case, merge_do_while, true, {})
+          .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(block_switch_default, merge_do_while,
-                                          false_constant, {})
+                                          false, {})
                    .IsApplicable(context.get()));
-  ASSERT_FALSE(TransformationAddDeadBreak(header_for_j, merge_do_while,
-                                          true_constant, {})
-                   .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_for_j, merge_do_while, true, {})
+          .IsApplicable(context.get()));
 
   // Not OK to break out of multiple non-loop constructs if not breaking to a
   // loop merge
-  ASSERT_FALSE(TransformationAddDeadBreak(block_in_inner_if, merge_if_x_eq_y,
-                                          false_constant, {})
-                   .IsApplicable(context.get()));
-  ASSERT_FALSE(TransformationAddDeadBreak(block_switch_case, merge_if_x_eq_y,
-                                          true_constant, {})
-                   .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(block_in_inner_if, merge_if_x_eq_y, false, {})
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(block_switch_case, merge_if_x_eq_y, true, {})
+          .IsApplicable(context.get()));
   ASSERT_FALSE(TransformationAddDeadBreak(block_switch_default, merge_if_x_eq_y,
-                                          false_constant, {})
+                                          false, {})
                    .IsApplicable(context.get()));
 
   // Some miscellaneous inapplicable transformations
-  ASSERT_FALSE(TransformationAddDeadBreak(header_if_x_eq_2, header_if_x_eq_y,
-                                          false_constant, {})
-                   .IsApplicable(context.get()));
-  ASSERT_FALSE(TransformationAddDeadBreak(merge_if_x_eq_2, merge_switch,
-                                          false_constant, {})
-                   .IsApplicable(context.get()));
-  ASSERT_FALSE(TransformationAddDeadBreak(header_switch, header_switch,
-                                          false_constant, {})
-                   .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_if_x_eq_2, header_if_x_eq_y, false, {})
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(merge_if_x_eq_2, merge_switch, false, {})
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(header_switch, header_switch, false, {})
+          .IsApplicable(context.get()));
 
-  auto transformation1 = TransformationAddDeadBreak(
-      header_do_while, merge_do_while, true_constant, {});
+  auto transformation1 =
+      TransformationAddDeadBreak(header_do_while, merge_do_while, true, {});
   auto transformation2 =
-      TransformationAddDeadBreak(header_for_i, merge_for_i, false_constant, {});
+      TransformationAddDeadBreak(header_for_i, merge_for_i, false, {});
   auto transformation3 =
-      TransformationAddDeadBreak(header_for_j, merge_for_j, true_constant, {});
-  auto transformation4 = TransformationAddDeadBreak(
-      block_in_inner_if, merge_for_j, false_constant, {});
-  auto transformation5 = TransformationAddDeadBreak(
-      block_switch_case, merge_for_j, true_constant, {});
-  auto transformation6 = TransformationAddDeadBreak(
-      block_switch_default, merge_for_j, false_constant, {});
-  auto transformation7 = TransformationAddDeadBreak(
-      block_in_for_i_loop, merge_for_i, true_constant, {});
+      TransformationAddDeadBreak(header_for_j, merge_for_j, true, {});
+  auto transformation4 =
+      TransformationAddDeadBreak(block_in_inner_if, merge_for_j, false, {});
+  auto transformation5 =
+      TransformationAddDeadBreak(block_switch_case, merge_for_j, true, {});
+  auto transformation6 =
+      TransformationAddDeadBreak(block_switch_default, merge_for_j, false, {});
+  auto transformation7 =
+      TransformationAddDeadBreak(block_in_for_i_loop, merge_for_i, true, {});
 
   ASSERT_TRUE(transformation1.IsApplicable(context.get()));
   transformation1.Apply(context.get());
@@ -1503,37 +1450,41 @@ TEST(TransformationAddDeadBreakTest, PhiInstructions) {
   // Some inapplicable transformations
   // Not applicable because there is already an edge 19->20, so the OpPhis at 20
   // do not need to be updated
-  ASSERT_FALSE(TransformationAddDeadBreak(19, 20, 80, {13, 21})
+  ASSERT_FALSE(TransformationAddDeadBreak(19, 20, true, {13, 21})
                    .IsApplicable(context.get()));
   // Not applicable because two OpPhis (not zero) need to be updated at 20
   ASSERT_FALSE(
-      TransformationAddDeadBreak(23, 20, 80, {}).IsApplicable(context.get()));
+      TransformationAddDeadBreak(23, 20, true, {}).IsApplicable(context.get()));
   // Not applicable because two OpPhis (not just one) need to be updated at 20
-  ASSERT_FALSE(
-      TransformationAddDeadBreak(23, 20, 80, {13}).IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {13})
+                   .IsApplicable(context.get()));
   // Not applicable because only two OpPhis (not three) need to be updated at 20
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, 80, {13, 21, 22})
+  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {13, 21, 22})
                    .IsApplicable(context.get()));
   // Not applicable because the given ids do not have types that match the
   // OpPhis at 20, in order
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, 80, {21, 13})
+  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {21, 13})
                    .IsApplicable(context.get()));
   // Not applicable because id 23 is a label
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, 80, {21, 23})
+  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {21, 23})
                    .IsApplicable(context.get()));
   // Not applicable because 101 is not an id
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, 80, {21, 101})
+  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {21, 101})
                    .IsApplicable(context.get()));
   // Not applicable because ids 51 and 47 are not available at the end of block
   // 23
-  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, 80, {51, 47})
+  ASSERT_FALSE(TransformationAddDeadBreak(23, 20, true, {51, 47})
                    .IsApplicable(context.get()));
 
-  auto transformation1 = TransformationAddDeadBreak(19, 20, 80, {});
-  auto transformation2 = TransformationAddDeadBreak(23, 20, 80, {13, 21});
-  auto transformation3 = TransformationAddDeadBreak(70, 20, 80, {});
-  auto transformation4 = TransformationAddDeadBreak(30, 31, 80, {21, 13});
-  auto transformation5 = TransformationAddDeadBreak(75, 31, 80, {47, 51});
+  // Not applicable because OpConstantFalse is not present in the module
+  ASSERT_FALSE(TransformationAddDeadBreak(19, 20, false, {})
+                   .IsApplicable(context.get()));
+
+  auto transformation1 = TransformationAddDeadBreak(19, 20, true, {});
+  auto transformation2 = TransformationAddDeadBreak(23, 20, true, {13, 21});
+  auto transformation3 = TransformationAddDeadBreak(70, 20, true, {});
+  auto transformation4 = TransformationAddDeadBreak(30, 31, true, {21, 13});
+  auto transformation5 = TransformationAddDeadBreak(75, 31, true, {47, 51});
 
   ASSERT_TRUE(transformation1.IsApplicable(context.get()));
   transformation1.Apply(context.get());
