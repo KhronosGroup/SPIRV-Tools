@@ -68,6 +68,14 @@ class Transformation {
   // Requires that the transformation is applicable.  Applies the
   // transformation, mutating the given SPIR-V module.
   virtual void Apply(opt::IRContext* context) = 0;
+
+  // Returns true if and only if the module does not currently define the given
+  // id.
+  bool IsFreshId(opt::IRContext* context, uint32_t id);
+
+  // Update the module's id bound if needed so that it is large enough to
+  // account for the given id.
+  void UpdateModuleIdBound(opt::IRContext* context, uint32_t id);
 };
 
 }  // namespace fuzz
