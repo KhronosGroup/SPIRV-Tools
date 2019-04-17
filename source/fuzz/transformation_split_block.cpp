@@ -136,6 +136,8 @@ void TransformationSplitBlock::Apply(IRContext* context) {
                "one predecessor.");
         phi_inst->SetInOperand(1, {block.id()});
       });
+      // Invalidate all analyses
+      context->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
       return;
     }
   }
