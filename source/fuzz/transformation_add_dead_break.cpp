@@ -20,7 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
-using namespace opt;
+using opt::BasicBlock;
+using opt::IRContext;
+using opt::Instruction;
 
 BasicBlock* TransformationAddDeadBreak::MaybeFindBlock(
     IRContext* context, uint32_t maybe_block_id) {

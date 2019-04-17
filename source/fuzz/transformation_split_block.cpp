@@ -19,7 +19,10 @@
 namespace spvtools {
 namespace fuzz {
 
-using namespace opt;
+using opt::BasicBlock;
+using opt::IRContext;
+using opt::Instruction;
+using opt::Operand;
 
 std::pair<bool, BasicBlock::iterator>
 TransformationSplitBlock::FindInstToSplitBefore(BasicBlock* block) {
