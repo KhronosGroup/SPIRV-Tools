@@ -281,6 +281,12 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
            << "Invalid SPIR-V magic number.";
   }
 
+  if (spvIsWebGPUEnv(context.target_env) && endian != SPV_ENDIANNESS_LITTLE) {
+    return DiagnosticStream(position, context.consumer, "",
+                            SPV_ERROR_INVALID_BINARY)
+           << "WebGPU requires SPIR-V to be little endian.";
+  }
+
   spv_header_t header;
   if (spvBinaryHeaderGet(binary.get(), endian, &header)) {
     return DiagnosticStream(position, context.consumer, "",
