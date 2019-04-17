@@ -18,7 +18,8 @@
 namespace spvtools {
 namespace fuzz {
 
-using namespace opt;
+using opt::BasicBlock;
+using opt::IRContext;
 
 bool TransformationMoveBlockDown::IsApplicable(IRContext* context) {
   // Go through every block in every function, looking for a block whose id
