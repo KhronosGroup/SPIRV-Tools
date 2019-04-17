@@ -17,7 +17,6 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         transformation_move_block_down.h
         transformation_split_block.h
 
-        transformation.cpp
         transformation_add_dead_break.cpp
         transformation_move_block_down.cpp
         transformation_split_block.cpp
