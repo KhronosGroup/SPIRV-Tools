@@ -55,6 +55,24 @@ class TransformationAddDeadBreak : public Transformation {
   void Apply(opt::IRContext* context) override;
 
  private:
+  // Helper that retrieves the basic block for |maybe_block_id|, or nullptr if
+  // no such block exists.
+  opt::BasicBlock* MaybeFindBlock(opt::IRContext* context,
+                                  uint32_t maybe_block_id);
+
+  // Helper to check whether the contents of |phi_ids_| are suitable for
+  // extending the OpPhi instructions of |to_block_| if an edge
+  // |from_block_|->|to_block_| is added. |bb_from| and |bb_to| refer to the
+  // basic blocks for |from_block_| and |to_block_|.
+  bool PhiIdsOk(opt::IRContext* context, opt::BasicBlock* bb_from,
+                opt::BasicBlock* bb_to);
+
+  // Helper to check that adding the dead break would respect the rules of
+  // structured control flow.  |bb_From| is the basic block associated with
+  // |from_block_|.
+  bool AddingBreakRespectsStructuredControlFlow(opt::IRContext* context,
+                                                opt::BasicBlock* bb_from);
+
   // The block to break from
   const uint32_t from_block_;
   // The merge block to break to
