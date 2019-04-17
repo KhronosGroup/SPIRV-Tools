@@ -13,10 +13,13 @@
 # limitations under the License.
 set(SPIRV_TOOLS_FUZZ_SOURCES
         transformation.h
+        transformation_add_boolean_constant.h
         transformation_add_dead_break.h
         transformation_move_block_down.h
         transformation_split_block.h
 
+        transformation.cpp
+        transformation_add_boolean_constant.cpp
         transformation_add_dead_break.cpp
         transformation_move_block_down.cpp
         transformation_split_block.cpp
