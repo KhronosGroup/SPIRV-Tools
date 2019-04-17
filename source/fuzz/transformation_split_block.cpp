@@ -64,7 +64,7 @@ TransformationSplitBlock::FindInstToSplitBefore(BasicBlock* block) {
 }
 
 bool TransformationSplitBlock::IsApplicable(IRContext* context) {
-  if (context->get_def_use_mgr()->GetDef(fresh_id_)) {
+  if (!IsFreshId(context, fresh_id_)) {
     // We require the id for the new block to be unused.
     return false;
   }
@@ -119,8 +119,7 @@ void TransformationSplitBlock::Apply(IRContext* context) {
              "instruction to split on.");
       // We need to make sure the module's id bound is large enough to add the
       // fresh id.
-      context->module()->SetIdBound(
-          std::max(context->module()->id_bound(), fresh_id_ + 1));
+      UpdateModuleIdBound(context, fresh_id_);
       // Split the block.
       auto new_bb =
           block.SplitBasicBlock(context, fresh_id_, maybe_split_before.second);
