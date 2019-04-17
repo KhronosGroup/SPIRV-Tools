@@ -27,8 +27,11 @@ namespace fuzz {
 class TransformationAddDeadBreak : public Transformation {
  public:
   TransformationAddDeadBreak(uint32_t from_block, uint32_t to_block,
-                             uint32_t bool_id)
-      : from_block_(from_block), to_block_(to_block), bool_id_(bool_id) {}
+                             uint32_t bool_id, std::vector<uint32_t>&& phi_ids)
+      : from_block_(from_block),
+        to_block_(to_block),
+        bool_id_(bool_id),
+        phi_ids_(phi_ids) {}
 
   ~TransformationAddDeadBreak() override = default;
 
@@ -36,11 +39,14 @@ class TransformationAddDeadBreak : public Transformation {
   // - |to_block_| must be the id of a block b in the given module.
   // - |bool_id_| must be the id of a boolean constant (OpConstantTrue or
   //   OpConstantFalse)
+  // - |phi_ids_| must be a list of ids that are all available at |from_block_|
+  // - a and b must be in the same function.
   // - b must be a merge block.
   // - a must end with an unconditional branch to some block c.
   // - replacing this branch with a conditional branch to b or c, with
-  //   |bool_id_| as the condition,
-  //   must maintain validity of the module.
+  //   |bool_id_| as the condition, and the ids in |phi_ids_| used to extend
+  //   any OpPhi instructions at b as a result of the edge from a, must
+  //   maintain validity of the module.
   bool IsApplicable(opt::IRContext* context) override;
 
   // Replaces the terminator of a with a conditional branch to b or c.
@@ -55,6 +61,9 @@ class TransformationAddDeadBreak : public Transformation {
   const uint32_t to_block_;
   // The id of a boolean constant
   const uint32_t bool_id_;
+  // A sequence of ids suitable for extending OpPhi instructions as a result of
+  // the new break edge
+  std::vector<uint32_t> phi_ids_;
 };
 
 }  // namespace fuzz
