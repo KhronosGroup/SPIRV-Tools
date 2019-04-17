@@ -190,16 +190,19 @@ bool TransformationAddDeadBreak::AddingBreakRespectsStructuredControlFlow(
 }
 
 bool TransformationAddDeadBreak::IsApplicable(IRContext* context) {
-  // First, we check that |bool_id_| really is the id of OpConstantFalse
-  // or OpConstantTrue
-  auto inst = context->get_def_use_mgr()->GetDef(bool_id_);
-  if (inst == nullptr) {
-    // The id for the boolean constant is not defined.
+  // First, we check that a constant with the same value as
+  // |break_condition_value_| is present.
+  opt::analysis::Bool bool_type;
+  auto registered_bool_type =
+      context->get_type_mgr()->GetRegisteredType(&bool_type);
+  if (!registered_bool_type) {
     return false;
   }
-  if (!(inst->opcode() == SpvOpConstantTrue ||
-        inst->opcode() == SpvOpConstantFalse)) {
-    // The id for the boolean constant is not a boolean constant.
+  opt::analysis::BoolConstant bool_constant(registered_bool_type->AsBool(),
+                                            break_condition_value_);
+  if (!context->get_constant_mgr()->FindConstant(&bool_constant)) {
+    // The required constant is not present, so the transformation cannot be
+    // applied.
     return false;
   }
 
@@ -242,11 +245,17 @@ bool TransformationAddDeadBreak::IsApplicable(IRContext* context) {
 }
 
 void TransformationAddDeadBreak::Apply(IRContext* context) {
-  auto bool_constant = context->get_def_use_mgr()->GetDef(bool_id_);
+  // Get the id of the boolean constant to be used as the break condition.
+  opt::analysis::Bool bool_type;
+  opt::analysis::BoolConstant bool_constant(
+      context->get_type_mgr()->GetRegisteredType(&bool_type)->AsBool(),
+      break_condition_value_);
+  uint32_t bool_id = context->get_constant_mgr()->FindDeclaredConstant(
+      &bool_constant, context->get_type_mgr()->GetId(&bool_type));
+
   auto bb_from = context->cfg()->block(from_block_);
   auto bb_to = context->cfg()->block(to_block_);
   const bool from_to_edge_already_exists = bb_from->IsSuccessor(bb_to);
-  auto condition_is_true = bool_constant->opcode() == SpvOpConstantTrue;
   auto successor = bb_from->terminator()->GetSingleWordInOperand(0);
   assert(bb_from->terminator()->opcode() == SpvOpBranch &&
          "Precondition for the transformation requires that the source block "
@@ -257,9 +266,10 @@ void TransformationAddDeadBreak::Apply(IRContext* context) {
   // true or false.
   bb_from->terminator()->SetOpcode(SpvOpBranchConditional);
   bb_from->terminator()->SetInOperands(
-      {{SPV_OPERAND_TYPE_ID, {bool_id_}},
-       {SPV_OPERAND_TYPE_ID, {condition_is_true ? successor : to_block_}},
-       {SPV_OPERAND_TYPE_ID, {condition_is_true ? to_block_ : successor}}});
+      {{SPV_OPERAND_TYPE_ID, {bool_id}},
+       {SPV_OPERAND_TYPE_ID, {break_condition_value_ ? successor : to_block_}},
+       {SPV_OPERAND_TYPE_ID,
+        {break_condition_value_ ? to_block_ : successor}}});
 
   // Update OpPhi instructions in the target block if this break adds a
   // previously non-existent edge from source to target.

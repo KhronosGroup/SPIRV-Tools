@@ -27,18 +27,19 @@ namespace fuzz {
 class TransformationAddDeadBreak : public Transformation {
  public:
   TransformationAddDeadBreak(uint32_t from_block, uint32_t to_block,
-                             uint32_t bool_id, std::vector<uint32_t>&& phi_ids)
+                             bool break_condition_value,
+                             std::vector<uint32_t>&& phi_ids)
       : from_block_(from_block),
         to_block_(to_block),
-        bool_id_(bool_id),
+        break_condition_value_(break_condition_value),
         phi_ids_(phi_ids) {}
 
   ~TransformationAddDeadBreak() override = default;
 
   // - |from_block_| must be the id of a block a in the given module.
   // - |to_block_| must be the id of a block b in the given module.
-  // - |bool_id_| must be the id of a boolean constant (OpConstantTrue or
-  //   OpConstantFalse)
+  // - if |break_condition_value_| holds (does not hold) then OpConstantTrue
+  //   (OpConstantFalse) must be present in the module
   // - |phi_ids_| must be a list of ids that are all available at |from_block_|
   // - a and b must be in the same function.
   // - b must be a merge block.
@@ -77,8 +78,8 @@ class TransformationAddDeadBreak : public Transformation {
   const uint32_t from_block_;
   // The merge block to break to
   const uint32_t to_block_;
-  // The id of a boolean constant
-  const uint32_t bool_id_;
+  // Determines whether the break condition is true or false
+  const bool break_condition_value_;
   // A sequence of ids suitable for extending OpPhi instructions as a result of
   // the new break edge
   std::vector<uint32_t> phi_ids_;
