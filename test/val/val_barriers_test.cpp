@@ -258,13 +258,15 @@ OpControlBarrier %workgroup %workgroup %acquire_release_uniform_workgroup
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
 }
 
-TEST_F(ValidateBarriers, OpControlBarrierWebGPURelaxedSuccess) {
+TEST_F(ValidateBarriers, OpControlBarrierWebGPURelaxedFailure) {
   const std::string body = R"(
 OpControlBarrier %workgroup %workgroup %uniform_workgroup
 )";
 
   CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("WebGPU spec requires AcquireRelease to set"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierWebGPUAcquireFailure) {
@@ -675,13 +677,15 @@ OpMemoryBarrier %workgroup %acquire_release_uniform_workgroup
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
 }
 
-TEST_F(ValidateBarriers, OpMemoryBarrierWebGPURelaxedSuccess) {
+TEST_F(ValidateBarriers, OpMemoryBarrierWebGPURelaxedFailure) {
   const std::string body = R"(
 OpMemoryBarrier %workgroup %uniform_workgroup
 )";
 
   CompileSuccessfully(GenerateWebGPUShaderCode(body), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("WebGPU spec requires AcquireRelease to set"));
 }
 
 TEST_F(ValidateBarriers, OpMemoryBarrierWebGPUAcquireFailure) {

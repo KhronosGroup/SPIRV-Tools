@@ -72,6 +72,13 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
                   "MakeAvailableKHR, or MakeVisibleKHR";
       }
     }
+
+    if (!spvOpcodeIsAtomicOp(inst->opcode()) &&
+        !(value & SpvMemorySemanticsAcquireReleaseMask)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "WebGPU spec requires AcquireRelease to set in Memory "
+                "Semantics.";
+    }
   }
 
   const size_t num_memory_order_set_bits = spvtools::utils::CountSetBits(
