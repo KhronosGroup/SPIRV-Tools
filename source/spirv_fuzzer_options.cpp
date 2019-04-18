@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#include <cassert>
+#include <cstring>
 
-namespace spvtools {
-namespace fuzz {
+#include "source/spirv_fuzzer_options.h"
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
+SPIRV_TOOLS_EXPORT spv_fuzzer_options spvFuzzerOptionsCreate() {
+  return new spv_fuzzer_options_t();
 }
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
+SPIRV_TOOLS_EXPORT void spvFuzzerOptionsDestroy(spv_fuzzer_options options) {
+  delete options;
 }
 
-}  // namespace fuzz
-}  // namespace spvtools
+SPIRV_TOOLS_EXPORT void spvFuzzerOptionsSetRandomSeed(
+    spv_fuzzer_options options, uint32_t seed) {
+  options->has_random_seed = true;
+  options->random_seed = seed;
+}

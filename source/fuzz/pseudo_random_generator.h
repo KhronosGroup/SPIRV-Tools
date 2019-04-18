@@ -12,20 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#ifndef SOURCE_FUZZ_PSEUDO_RANDOM_GENERATOR_H_
+#define SOURCE_FUZZ_PSEUDO_RANDOM_GENERATOR_H_
+
+#include <random>
+
+#include "source/fuzz/random_generator.h"
 
 namespace spvtools {
 namespace fuzz {
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
-}
+// Generates random data from a pseudo-random number generator.
+class PseudoRandomGenerator : public RandomGenerator {
+ public:
+  explicit PseudoRandomGenerator(uint32_t seed) : mt_(seed) {}
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
-}
+  ~PseudoRandomGenerator() override = default;
+
+  uint32_t RandomUint32(uint32_t bound) override;
+
+  uint32_t RandomPercentage() override;
+
+  bool RandomBool() override;
+
+ private:
+  std::mt19937 mt_;
+};
 
 }  // namespace fuzz
 }  // namespace spvtools
+
+#endif  // SOURCE_FUZZ_PSEUDO_RANDOM_GENERATOR_H_

@@ -12,20 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#ifndef SOURCE_SPIRV_FUZZER_OPTIONS_H_
+#define SOURCE_SPIRV_FUZZER_OPTIONS_H_
 
-namespace spvtools {
-namespace fuzz {
+#include "spirv-tools/libspirv.h"
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
-}
+#include <string>
+#include <utility>
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
-}
+// Manages command line options passed to the SPIR-V Fuzzer. New struct
+// members may be added for any new option.
+struct spv_fuzzer_options_t {
+  spv_fuzzer_options_t() : has_random_seed(false), random_seed(0) {}
 
-}  // namespace fuzz
-}  // namespace spvtools
+  // See spvFuzzerOptionsSetRandomSeed.
+  bool has_random_seed;
+  uint32_t random_seed;
+};
+
+#endif  // SOURCE_SPIRV_FUZZER_OPTIONS_H_

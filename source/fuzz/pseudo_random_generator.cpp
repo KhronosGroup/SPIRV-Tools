@@ -12,19 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#include <cassert>
+
+#include "source/fuzz/pseudo_random_generator.h"
 
 namespace spvtools {
 namespace fuzz {
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
+uint32_t PseudoRandomGenerator::RandomUint32(uint32_t bound) {
+  assert(bound > 0 && "Bound must be positive");
+  return (uint32_t)std::uniform_int_distribution<>(0, bound - 1)(mt_);
 }
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
+bool PseudoRandomGenerator::RandomBool() {
+  return (bool)std::uniform_int_distribution<>(0, 1)(mt_);
+}
+
+uint32_t PseudoRandomGenerator::RandomPercentage() {
+  // We use 101 because we want a result in the closed interval [0, 100], and
+  // RandomUint32 is not inclusive of its bound.
+  return RandomUint32(101);
 }
 
 }  // namespace fuzz

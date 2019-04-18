@@ -15,7 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 #define SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 
-#include "transformation.h"
+#include "source/fuzz/transformation.h"
 
 namespace spvtools {
 namespace fuzz {

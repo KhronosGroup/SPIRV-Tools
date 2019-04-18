@@ -12,20 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#ifndef SOURCE_FUZZ_FUZZER_PASS_SPLIT_BLOCKS_
+#define SOURCE_FUZZ_FUZZER_PASS_SPLIT_BLOCKS_
+
+#include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
-}
+// A fuzzer pass for splitting blocks in the module, to create more blocks; this
+// can be very useful for giving other passes a chance to apply.
+class FuzzerPassSplitBlocks : public FuzzerPass {
+ public:
+  FuzzerPassSplitBlocks() = default;
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
-}
+  ~FuzzerPassSplitBlocks() override = default;
+
+  void Apply(
+      opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
+      std::vector<std::unique_ptr<Transformation>>* transformations) override;
+
+ private:
+};
 
 }  // namespace fuzz
 }  // namespace spvtools
+
+#endif  // #define SOURCE_FUZZ_FUZZER_PASS_SPLIT_BLOCKS_
