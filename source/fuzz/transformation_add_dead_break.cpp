@@ -108,6 +108,21 @@ bool TransformationAddDeadBreak::PhiIdsOk(IRContext* context,
   return phi_index == phi_ids_.size();
 }
 
+bool TransformationAddDeadBreak::FromBlockIsInLoopContinueConstruct(
+    IRContext* context, uint32_t maybe_loop_header) {
+  // We deem a block to be part of a loop's continue construct if the loop's
+  // continue target dominates the block.
+  auto containing_construct_block = context->cfg()->block(maybe_loop_header);
+  if (containing_construct_block->IsLoopHeader()) {
+    auto continue_target = containing_construct_block->ContinueBlockId();
+    if (context->GetDominatorAnalysis(containing_construct_block->GetParent())
+            ->Dominates(continue_target, from_block_)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool TransformationAddDeadBreak::AddingBreakRespectsStructuredControlFlow(
     IRContext* context, BasicBlock* bb_from) {
   // Look at the structured control flow associated with |from_block_| and
@@ -127,65 +142,42 @@ bool TransformationAddDeadBreak::AddingBreakRespectsStructuredControlFlow(
   // that it heads.
 
   // Consider case (1)
-  if (bb_from->IsLoopHeader() && bb_from->MergeBlockId() == to_block_) {
-    // This is an instance of case (1)
-    return true;
+  if (bb_from->IsLoopHeader()) {
+    // Case (1) holds if |to_block_| is the merge block for the loop;
+    // otherwise no case holds
+    return bb_from->MergeBlockId() == to_block_;
   }
 
   // Both cases (2) and (3) require that |from_block_| is inside some
   // structured control flow construct.
 
-  auto containing_construct_merge =
-      context->GetStructuredCFGAnalysis()->MergeBlock(from_block_);
-  if (!containing_construct_merge) {
+  auto containing_construct =
+      context->GetStructuredCFGAnalysis()->ContainingConstruct(from_block_);
+  if (!containing_construct) {
     // |from_block_| is not in a construct from which we can break.
     return false;
   }
 
   // Consider case (2)
-  if (!bb_from->IsLoopHeader() && containing_construct_merge == to_block_) {
-    // This is an instance of case (2)
-    return true;
+  if (to_block_ ==
+      context->cfg()->block(containing_construct)->MergeBlockId()) {
+    // This looks like an instance of case (2).
+    // However, the structured CFG analysis regards the continue construct of a
+    // loop as part of the loop, but it is not legal to jump from a loop's
+    // continue construct to the loop's merge, so we need to check for this
+    // case.
+    return !FromBlockIsInLoopContinueConstruct(context, containing_construct);
   }
 
-  // We are left with the possibility of case (3) holding.  We need to
-  // iterate backwards through the nest of constructs that contain
-  // |from_block_|.
-
-  auto closest_header =
-      context->GetStructuredCFGAnalysis()->ContainingConstruct(from_block_);
-  assert(closest_header &&
-         "We should only get here if |from_block_| is in some construct.");
-
-  // Iterate through structured constructs, from inside outwards, starting with
-  // the construct that contains the header of the construct immediately
-  // containing |from_block_|.
-  for (auto next_header =
-           context->GetStructuredCFGAnalysis()->ContainingConstruct(
-               closest_header);
-       next_header;
-       next_header = context->GetStructuredCFGAnalysis()->ContainingConstruct(
-           next_header)) {
-    auto header_block = context->cfg()->block(next_header);
-    auto next_merge = header_block->MergeBlockId();
-    assert(next_merge && "Every header must have a corresponding merge.");
-    if (to_block_ == next_merge) {
-      // We have found a match.  If the match is to a loop header, this is the
-      // innermost loop containing |from_block_|, which matches case (3).
-      // Otherwise this would be a break to some non-loop construct that does
-      // not immediately contain |from_block_|, which is not allowed.
-      return header_block->IsLoopHeader();
-    }
-
-    if (header_block->IsLoopHeader()) {
-      // We have reached a loop, and the break is not to the merge block for the
-      // loop. This means that either the block we want to branch to is not a
-      // merge block at all, or it is the merge block of some outer loop, which
-      // is no good.
-      return false;
-    }
+  // Case (3) holds if and only if |to_block_| is the merge block for this
+  // innermost loop that contains |from_block_|
+  auto containing_loop_header =
+      context->GetStructuredCFGAnalysis()->ContainingLoop(from_block_);
+  if (containing_loop_header &&
+      to_block_ ==
+          context->cfg()->block(containing_loop_header)->MergeBlockId()) {
+    return !FromBlockIsInLoopContinueConstruct(context, containing_loop_header);
   }
-  // We have reached the end of the next of constructs and not found a match.
   return false;
 }
 
