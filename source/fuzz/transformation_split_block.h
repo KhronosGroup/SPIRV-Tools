@@ -34,8 +34,7 @@ class TransformationSplitBlock : public Transformation {
   // - 'blk' must contain an instruction 'inst' located |offset_| instructions
   //   after 'inst' (if |offset_| = 0 then 'inst' = 'base').
   // - Splitting 'blk' at 'inst', so that all instructions from 'inst' onwards
-  // appear
-  //   in a new block that 'blk' directly jumps to must be valid.
+  //   appear in a new block that 'blk' directly jumps to must be valid.
   // - |fresh_id_| must not be used by the module.
   bool IsApplicable(opt::IRContext* context) override;
 
