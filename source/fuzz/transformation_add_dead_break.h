@@ -74,6 +74,11 @@ class TransformationAddDeadBreak : public Transformation {
   bool AddingBreakRespectsStructuredControlFlow(opt::IRContext* context,
                                                 opt::BasicBlock* bb_from);
 
+  // Helper to check whether |from_block_| is part of the continue construct
+  // of a loop headed at |maybe_loop_header|.
+  bool FromBlockIsInLoopContinueConstruct(opt::IRContext* context,
+                                          uint32_t maybe_loop_header);
+
   // The block to break from
   const uint32_t from_block_;
   // The merge block to break to
