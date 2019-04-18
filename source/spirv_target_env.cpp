@@ -64,6 +64,8 @@ const char* spvTargetEnvDescription(spv_target_env env) {
       return "SPIR-V 1.3 (under WIP WebGPU semantics)";
     case SPV_ENV_UNIVERSAL_1_4:
       return "SPIR-V 1.4";
+    case SPV_ENV_VULKAN_1_1_SPIRV_1_4:
+      return "SPIR-V 1.4 (under Vulkan 1.1 semantics)";
   }
   return "";
 }
@@ -95,6 +97,7 @@ uint32_t spvVersionForTargetEnv(spv_target_env env) {
     case SPV_ENV_WEBGPU_0:
       return SPV_SPIRV_VERSION_WORD(1, 3);
     case SPV_ENV_UNIVERSAL_1_4:
+    case SPV_ENV_VULKAN_1_1_SPIRV_1_4:
       return SPV_SPIRV_VERSION_WORD(1, 4);
   }
   return SPV_SPIRV_VERSION_WORD(0, 0);
@@ -104,7 +107,10 @@ bool spvParseTargetEnv(const char* s, spv_target_env* env) {
   auto match = [s](const char* b) {
     return s && (0 == strncmp(s, b, strlen(b)));
   };
-  if (match("vulkan1.0")) {
+  if (match("vulkan1.1spv1.4")) {
+    if (env) *env = SPV_ENV_VULKAN_1_1_SPIRV_1_4;
+    return true;
+  } else if (match("vulkan1.0")) {
     if (env) *env = SPV_ENV_VULKAN_1_0;
     return true;
   } else if (match("vulkan1.1")) {
@@ -218,6 +224,7 @@ bool spvIsOpenCLEnv(spv_target_env env) {
     case SPV_ENV_VULKAN_1_1:
     case SPV_ENV_WEBGPU_0:
     case SPV_ENV_UNIVERSAL_1_4:
+    case SPV_ENV_VULKAN_1_1_SPIRV_1_4:
       return false;
     case SPV_ENV_OPENCL_1_2:
     case SPV_ENV_OPENCL_EMBEDDED_1_2:
@@ -254,6 +261,7 @@ bool spvIsWebGPUEnv(spv_target_env env) {
     case SPV_ENV_OPENCL_2_1:
     case SPV_ENV_OPENCL_2_2:
     case SPV_ENV_UNIVERSAL_1_4:
+    case SPV_ENV_VULKAN_1_1_SPIRV_1_4:
       return false;
     case SPV_ENV_WEBGPU_0:
       return true;
@@ -285,7 +293,8 @@ std::string spvLogStringForEnv(spv_target_env env) {
       return "OpenGL";
     }
     case SPV_ENV_VULKAN_1_0:
-    case SPV_ENV_VULKAN_1_1: {
+    case SPV_ENV_VULKAN_1_1:
+    case SPV_ENV_VULKAN_1_1_SPIRV_1_4: {
       return "Vulkan";
     }
     case SPV_ENV_WEBGPU_0: {
@@ -294,7 +303,8 @@ std::string spvLogStringForEnv(spv_target_env env) {
     case SPV_ENV_UNIVERSAL_1_0:
     case SPV_ENV_UNIVERSAL_1_1:
     case SPV_ENV_UNIVERSAL_1_2:
-    case SPV_ENV_UNIVERSAL_1_3: {
+    case SPV_ENV_UNIVERSAL_1_3:
+    case SPV_ENV_UNIVERSAL_1_4: {
       return "Universal";
     }
   }

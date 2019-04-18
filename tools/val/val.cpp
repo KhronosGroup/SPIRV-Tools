@@ -105,7 +105,8 @@ int main(int argc, char** argv) {
       } else if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", spvSoftwareVersionDetailsString());
         printf(
-            "Targets:\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n",
+            "Targets:\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  "
+            "%s\n",
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0),
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2),
@@ -114,6 +115,7 @@ int main(int argc, char** argv) {
             spvTargetEnvDescription(SPV_ENV_OPENCL_2_2),
             spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
             spvTargetEnvDescription(SPV_ENV_VULKAN_1_1),
+            spvTargetEnvDescription(SPV_ENV_VULKAN_1_1_SPIRV_1_4),
             spvTargetEnvDescription(SPV_ENV_WEBGPU_0));
         continue_processing = false;
         return_code = 0;

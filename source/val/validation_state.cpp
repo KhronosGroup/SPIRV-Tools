@@ -463,7 +463,7 @@ void ValidationState_t::set_addressing_model(SpvAddressingModel am) {
       pointer_size_and_alignment_ = 4;
       break;
     default:
-      // fall through
+    // fall through
     case SpvAddressingModelPhysical64:
     case SpvAddressingModelPhysicalStorageBuffer64EXT:
       pointer_size_and_alignment_ = 8;
