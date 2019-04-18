@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "transformation_add_boolean_constant.h"
+#include "source/fuzz/transformation_add_boolean_constant.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/types.h"
 

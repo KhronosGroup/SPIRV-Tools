@@ -12,20 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef SOURCE_FUZZ_FUZZER_PASS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_H_
+
+#include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/transformation.h"
 
 namespace spvtools {
 namespace fuzz {
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
-}
+// Interface for applying a pass of transformations to a module.
+class FuzzerPass {
+ public:
+  FuzzerPass() = default;
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
-}
+  virtual ~FuzzerPass() = default;
+
+  // Applies the pass to the given module, |ir_context|, using |fuzzer_context|
+  // to guide the process. Appends to |transformations| all transformations that
+  // were applied during the pass.
+  virtual void Apply(
+      opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
+      std::vector<std::unique_ptr<Transformation>>* transformations) = 0;
+
+ private:
+};
 
 }  // namespace fuzz
 }  // namespace spvtools
+
+#endif  // #define SOURCE_FUZZ_FUZZER_PASS_H_

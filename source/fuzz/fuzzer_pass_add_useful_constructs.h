@@ -12,20 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_USEFUL_CONSTRUCTS_
+#define SOURCE_FUZZ_FUZZER_PASS_ADD_USEFUL_CONSTRUCTS_
+
+#include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
-}
+// An initial pass for adding useful ingredients to the module, such as boolean
+// constants, if they are not present.
+class FuzzerPassAddUsefulConstructs : public FuzzerPass {
+ public:
+  FuzzerPassAddUsefulConstructs() = default;
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
-}
+  ~FuzzerPassAddUsefulConstructs() override = default;
+
+  void Apply(
+      opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
+      std::vector<std::unique_ptr<Transformation>>* transformations) override;
+
+ private:
+};
 
 }  // namespace fuzz
 }  // namespace spvtools
+
+#endif  // #define SOURCE_FUZZ_FUZZER_PASS_ADD_USEFUL_CONSTRUCTS_

@@ -12,20 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_DEAD_BREAKS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_ADD_DEAD_BREAKS_H_
+
+#include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
-}
+// A fuzzer pass for adding dead break edges to the module.
+class FuzzerPassAddDeadBreaks : public FuzzerPass {
+ public:
+  FuzzerPassAddDeadBreaks() = default;
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
-}
+  ~FuzzerPassAddDeadBreaks() override = default;
+
+  void Apply(
+      opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
+      std::vector<std::unique_ptr<Transformation>>* transformations) override;
+
+ private:
+};
 
 }  // namespace fuzz
 }  // namespace spvtools
+
+#endif  // #define SOURCE_FUZZ_FUZZER_PASS_ADD_DEAD_BREAKS_H_

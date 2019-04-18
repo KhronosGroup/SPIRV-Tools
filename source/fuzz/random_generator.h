@@ -12,20 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#ifndef SOURCE_FUZZ_RANDOM_GENERATOR_H_
+#define SOURCE_FUZZ_RANDOM_GENERATOR_H_
+
+#include <stdint.h>
 
 namespace spvtools {
 namespace fuzz {
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
-}
+class RandomGenerator {
+ public:
+  RandomGenerator() = default;
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
-}
+  virtual ~RandomGenerator() = default;
+
+  // Returns a value in the half-open interval [0, bound).
+  virtual uint32_t RandomUint32(uint32_t bound) = 0;
+
+  // Returns a value in the closed interval [0, 100].
+  virtual uint32_t RandomPercentage() = 0;
+
+  // Returns a boolean.
+  virtual bool RandomBool() = 0;
+};
 
 }  // namespace fuzz
 }  // namespace spvtools
+
+#endif  // SOURCE_FUZZ_RANDOM_GENERATOR_H_

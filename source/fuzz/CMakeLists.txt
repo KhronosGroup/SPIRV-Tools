@@ -12,12 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set(SPIRV_TOOLS_FUZZ_SOURCES
+        fuzzer.h
+        fuzzer_context.h
+        fuzzer_pass.h
+        fuzzer_pass_add_dead_breaks.h
+        fuzzer_pass_add_useful_constructs.h
+        fuzzer_pass_permute_blocks.h
+        fuzzer_pass_split_blocks.h
+        pseudo_random_generator.h
+        random_generator.h
         transformation.h
         transformation_add_boolean_constant.h
         transformation_add_dead_break.h
         transformation_move_block_down.h
         transformation_split_block.h
 
+        fuzzer.cpp
+        fuzzer_context.cpp
+        fuzzer_pass_add_dead_breaks.cpp
+        fuzzer_pass_add_useful_constructs.cpp
+        fuzzer_pass_permute_blocks.cpp
+        fuzzer_pass_split_blocks.cpp
+        pseudo_random_generator.cpp
         transformation.cpp
         transformation_add_boolean_constant.cpp
         transformation_add_dead_break.cpp

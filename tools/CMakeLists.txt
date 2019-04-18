@@ -47,6 +47,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   if (NOT DEFINED IOS_PLATFORM) # iOS does not allow std::system calls which spirv-reduce requires
     add_spvtools_tool(TARGET spirv-reduce SRCS reduce/reduce.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-reduce ${SPIRV_TOOLS})
   endif()
+  add_spvtools_tool(TARGET spirv-fuzz SRCS fuzz/fuzz.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-fuzz ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-link SRCS link/linker.cpp LIBS SPIRV-Tools-link ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-cfg
                     SRCS cfg/cfg.cpp
@@ -55,7 +56,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
                     LIBS ${SPIRV_TOOLS})
   target_include_directories(spirv-cfg PRIVATE ${spirv-tools_SOURCE_DIR}
                                                ${SPIRV_HEADER_INCLUDE_DIR})
-  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt
+  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt spirv-fuzz
                             spirv-cfg spirv-link)
   if(NOT DEFINED IOS_PLATFORM)
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-reduce)
