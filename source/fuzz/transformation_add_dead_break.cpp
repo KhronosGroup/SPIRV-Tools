@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "transformation_add_dead_break.h"
+#include "source/fuzz/transformation_add_dead_break.h"
 #include "source/opt/basic_block.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/struct_cfg_analysis.h"

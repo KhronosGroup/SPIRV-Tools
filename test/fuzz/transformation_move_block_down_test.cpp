@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "fuzz_test_util.h"
-
 #include "source/fuzz/transformation_move_block_down.h"
+#include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
 namespace fuzz {
