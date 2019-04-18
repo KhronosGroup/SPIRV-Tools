@@ -1103,6 +1103,12 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   const uint32_t header_if_x_eq_2 = 33;
   const uint32_t merge_if_x_eq_2 = 41;
 
+  // Loop continue targets
+  const uint32_t continue_do_while = 9;
+  const uint32_t continue_for_j = 21;
+  const uint32_t continue_for_i = 59;
+
+  // Some blocks in these constructs
   const uint32_t block_in_inner_if = 40;
   const uint32_t block_switch_case = 46;
   const uint32_t block_switch_default = 45;
@@ -1147,6 +1153,16 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
   ASSERT_FALSE(
       TransformationAddDeadBreak(header_for_j, merge_do_while, true, {})
           .IsApplicable(context.get()));
+
+  // Not OK to break loop from its continue construct
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(continue_do_while, merge_do_while, true, {})
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(continue_for_j, merge_for_j, false, {})
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(continue_for_i, merge_for_i, true, {})
+                   .IsApplicable(context.get()));
 
   // Not OK to break out of multiple non-loop constructs if not breaking to a
   // loop merge
@@ -1328,6 +1344,466 @@ TEST(TransformationAddDeadBreakTest, BreakOutOfLoopNest) {
                OpStore %55 %66
                OpBranch %56
          %58 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CheckEqual(env, after_transformation, context.get());
+}
+
+TEST(TransformationAddDeadBreakTest, NoBreakFromContinueConstruct) {
+  // Checks that it is illegal to break straight from a continue construct.
+
+  // The SPIR-V for this test is adapted from the following GLSL:
+  //
+  // void main() {
+  //   for (int i = 0; i < 100; i++) {
+  //   }
+  // }
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i"
+               OpDecorate %8 RelaxedPrecision
+               OpDecorate %15 RelaxedPrecision
+               OpDecorate %19 RelaxedPrecision
+               OpDecorate %21 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 100
+         %17 = OpTypeBool
+         %22 = OpConstantTrue %17
+         %20 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+         %19 = OpLoad %6 %8
+         %21 = OpIAdd %6 %19 %20
+               OpBranch %23
+         %23 = OpLabel
+               OpStore %8 %21
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context.get());
+
+  // Not OK to break loop from its continue construct
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(13, 12, true, {}).IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(23, 12, true, {}).IsApplicable(context.get()));
+}
+
+TEST(TransformationAddDeadBreakTest, SelectionInContinueConstruct) {
+  // Considers some scenarios where there is a selection construct in a loop's
+  // continue construct.
+
+  // The SPIR-V for this test is adapted from the following GLSL:
+  //
+  // void main() {
+  //   for (int i = 0; i < 100; i = (i < 50 ? i + 2 : i + 1)) {
+  //   }
+  // }
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 100
+         %17 = OpTypeBool
+         %99 = OpConstantTrue %17
+         %20 = OpConstant %6 50
+         %26 = OpConstant %6 2
+         %30 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %22 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+         %19 = OpLoad %6 %8
+         %21 = OpSLessThan %17 %19 %20
+               OpSelectionMerge %24 None
+               OpBranchConditional %21 %23 %28
+         %23 = OpLabel
+         %25 = OpLoad %6 %8
+               OpBranch %100
+        %100 = OpLabel
+         %27 = OpIAdd %6 %25 %26
+               OpStore %22 %27
+               OpBranch %24
+         %28 = OpLabel
+         %29 = OpLoad %6 %8
+               OpBranch %101
+        %101 = OpLabel
+         %31 = OpIAdd %6 %29 %30
+               OpStore %22 %31
+               OpBranch %24
+         %24 = OpLabel
+         %32 = OpLoad %6 %22
+               OpStore %8 %32
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context.get());
+
+  const uint32_t loop_merge = 12;
+  const uint32_t selection_merge = 24;
+  const uint32_t in_selection_1 = 23;
+  const uint32_t in_selection_2 = 100;
+  const uint32_t in_selection_3 = 28;
+  const uint32_t in_selection_4 = 101;
+
+  // Not OK to jump from the selection to the loop merge, as this would break
+  // from the loop's continue construct.
+  ASSERT_FALSE(TransformationAddDeadBreak(in_selection_1, loop_merge, true, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(in_selection_2, loop_merge, true, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(in_selection_3, loop_merge, true, {})
+                   .IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddDeadBreak(in_selection_4, loop_merge, true, {})
+                   .IsApplicable(context.get()));
+
+  // But fine to jump from the selection to its merge.
+
+  auto transformation1 =
+      TransformationAddDeadBreak(in_selection_1, selection_merge, true, {});
+  auto transformation2 =
+      TransformationAddDeadBreak(in_selection_2, selection_merge, true, {});
+  auto transformation3 =
+      TransformationAddDeadBreak(in_selection_3, selection_merge, true, {});
+  auto transformation4 =
+      TransformationAddDeadBreak(in_selection_4, selection_merge, true, {});
+
+  ASSERT_TRUE(transformation1.IsApplicable(context.get()));
+  transformation1.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation2.IsApplicable(context.get()));
+  transformation2.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation3.IsApplicable(context.get()));
+  transformation3.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation4.IsApplicable(context.get()));
+  transformation4.Apply(context.get());
+  CheckValid(env, context.get());
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 100
+         %17 = OpTypeBool
+         %99 = OpConstantTrue %17
+         %20 = OpConstant %6 50
+         %26 = OpConstant %6 2
+         %30 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %22 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+         %19 = OpLoad %6 %8
+         %21 = OpSLessThan %17 %19 %20
+               OpSelectionMerge %24 None
+               OpBranchConditional %21 %23 %28
+         %23 = OpLabel
+         %25 = OpLoad %6 %8
+               OpBranchConditional %99 %100 %24
+        %100 = OpLabel
+         %27 = OpIAdd %6 %25 %26
+               OpStore %22 %27
+               OpBranchConditional %99 %24 %24
+         %28 = OpLabel
+         %29 = OpLoad %6 %8
+               OpBranchConditional %99 %101 %24
+        %101 = OpLabel
+         %31 = OpIAdd %6 %29 %30
+               OpStore %22 %31
+               OpBranchConditional %99 %24 %24
+         %24 = OpLabel
+         %32 = OpLoad %6 %22
+               OpStore %8 %32
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CheckEqual(env, after_transformation, context.get());
+}
+
+TEST(TransformationAddDeadBreakTest, LoopInContinueConstruct) {
+  // Considers some scenarios where there is a loop in a loop's continue
+  // construct.
+
+  // The SPIR-V for this test is adapted from the following GLSL, with inlining
+  // applied so that the loop from foo is in the main loop's continue construct:
+  //
+  // int foo() {
+  //   int result = 0;
+  //   for (int j = 0; j < 10; j++) {
+  //     result++;
+  //   }
+  //   return result;
+  // }
+  //
+  // void main() {
+  //   for (int i = 0; i < 100; i += foo()) {
+  //   }
+  // }
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %31 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFunction %6
+         %10 = OpTypePointer Function %6
+         %12 = OpConstant %6 0
+         %20 = OpConstant %6 10
+         %21 = OpTypeBool
+        %100 = OpConstantTrue %21
+         %24 = OpConstant %6 1
+         %38 = OpConstant %6 100
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %43 = OpVariable %10 Function
+         %44 = OpVariable %10 Function
+         %45 = OpVariable %10 Function
+         %31 = OpVariable %10 Function
+               OpStore %31 %12
+               OpBranch %32
+         %32 = OpLabel
+               OpLoopMerge %34 %35 None
+               OpBranch %36
+         %36 = OpLabel
+         %37 = OpLoad %6 %31
+         %39 = OpSLessThan %21 %37 %38
+               OpBranchConditional %39 %33 %34
+         %33 = OpLabel
+               OpBranch %35
+         %35 = OpLabel
+               OpStore %43 %12
+               OpStore %44 %12
+               OpBranch %46
+         %46 = OpLabel
+               OpLoopMerge %47 %48 None
+               OpBranch %49
+         %49 = OpLabel
+         %50 = OpLoad %6 %44
+         %51 = OpSLessThan %21 %50 %20
+               OpBranchConditional %51 %52 %47
+         %52 = OpLabel
+         %53 = OpLoad %6 %43
+               OpBranch %101
+        %101 = OpLabel
+         %54 = OpIAdd %6 %53 %24
+               OpStore %43 %54
+               OpBranch %48
+         %48 = OpLabel
+         %55 = OpLoad %6 %44
+         %56 = OpIAdd %6 %55 %24
+               OpStore %44 %56
+               OpBranch %46
+         %47 = OpLabel
+         %57 = OpLoad %6 %43
+               OpStore %45 %57
+         %40 = OpLoad %6 %45
+         %41 = OpLoad %6 %31
+         %42 = OpIAdd %6 %41 %40
+               OpStore %31 %42
+               OpBranch %32
+         %34 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context.get());
+
+  const uint32_t outer_loop_merge = 34;
+  const uint32_t outer_loop_block = 33;
+  const uint32_t inner_loop_merge = 47;
+  const uint32_t inner_loop_block = 52;
+
+  // Some inapplicable cases
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(inner_loop_block, outer_loop_merge, true, {})
+          .IsApplicable(context.get()));
+  ASSERT_FALSE(
+      TransformationAddDeadBreak(outer_loop_block, inner_loop_merge, true, {})
+          .IsApplicable(context.get()));
+
+  auto transformation1 =
+      TransformationAddDeadBreak(inner_loop_block, inner_loop_merge, true, {});
+  auto transformation2 =
+      TransformationAddDeadBreak(outer_loop_block, outer_loop_merge, true, {});
+
+  ASSERT_TRUE(transformation1.IsApplicable(context.get()));
+  transformation1.Apply(context.get());
+  CheckValid(env, context.get());
+
+  ASSERT_TRUE(transformation2.IsApplicable(context.get()));
+  transformation2.Apply(context.get());
+  CheckValid(env, context.get());
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %31 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFunction %6
+         %10 = OpTypePointer Function %6
+         %12 = OpConstant %6 0
+         %20 = OpConstant %6 10
+         %21 = OpTypeBool
+        %100 = OpConstantTrue %21
+         %24 = OpConstant %6 1
+         %38 = OpConstant %6 100
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %43 = OpVariable %10 Function
+         %44 = OpVariable %10 Function
+         %45 = OpVariable %10 Function
+         %31 = OpVariable %10 Function
+               OpStore %31 %12
+               OpBranch %32
+         %32 = OpLabel
+               OpLoopMerge %34 %35 None
+               OpBranch %36
+         %36 = OpLabel
+         %37 = OpLoad %6 %31
+         %39 = OpSLessThan %21 %37 %38
+               OpBranchConditional %39 %33 %34
+         %33 = OpLabel
+               OpBranchConditional %100 %35 %34
+         %35 = OpLabel
+               OpStore %43 %12
+               OpStore %44 %12
+               OpBranch %46
+         %46 = OpLabel
+               OpLoopMerge %47 %48 None
+               OpBranch %49
+         %49 = OpLabel
+         %50 = OpLoad %6 %44
+         %51 = OpSLessThan %21 %50 %20
+               OpBranchConditional %51 %52 %47
+         %52 = OpLabel
+         %53 = OpLoad %6 %43
+               OpBranchConditional %100 %101 %47
+        %101 = OpLabel
+         %54 = OpIAdd %6 %53 %24
+               OpStore %43 %54
+               OpBranch %48
+         %48 = OpLabel
+         %55 = OpLoad %6 %44
+         %56 = OpIAdd %6 %55 %24
+               OpStore %44 %56
+               OpBranch %46
+         %47 = OpLabel
+         %57 = OpLoad %6 %43
+               OpStore %45 %57
+         %40 = OpLoad %6 %45
+         %41 = OpLoad %6 %31
+         %42 = OpIAdd %6 %41 %40
+               OpStore %31 %42
+               OpBranch %32
+         %34 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
