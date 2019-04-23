@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 #define SOURCE_FUZZ_TRANSFORMATION_SPLIT_BLOCK_H_
 
+#include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "source/fuzz/transformation.h"
 
 namespace spvtools {
@@ -23,9 +24,17 @@ namespace fuzz {
 // A transformation that splits a basic block into two basic blocks.
 class TransformationSplitBlock : public Transformation {
  public:
+  // Constructs a transformation from given ids and offset.
   TransformationSplitBlock(uint32_t result_id, uint32_t offset,
                            uint32_t fresh_id)
       : result_id_(result_id), offset_(offset), fresh_id_(fresh_id) {}
+
+  // Constructs a transformation from a protobuf message.
+  explicit TransformationSplitBlock(
+      const protobufs::TransformationSplitBlock& message)
+      : result_id_(message.result_id()),
+        offset_(message.offset()),
+        fresh_id_(message.fresh_id()) {}
 
   ~TransformationSplitBlock() override = default;
 
@@ -44,6 +53,8 @@ class TransformationSplitBlock : public Transformation {
   //   block.
   // - 'blk' is made to jump unconditionally to the new block.
   void Apply(opt::IRContext* context) override;
+
+  protobufs::Transformation ToMessage() override;
 
  private:
   // The result id of an instruction.
