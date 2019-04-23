@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_split_block.h"
-
+#include "source/fuzz/fuzzer_util.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {
@@ -64,7 +64,7 @@ TransformationSplitBlock::FindInstToSplitBefore(BasicBlock* block) {
 }
 
 bool TransformationSplitBlock::IsApplicable(IRContext* context) {
-  if (!IsFreshId(context, fresh_id_)) {
+  if (!fuzzerutil::IsFreshId(context, fresh_id_)) {
     // We require the id for the new block to be unused.
     return false;
   }
@@ -119,7 +119,7 @@ void TransformationSplitBlock::Apply(IRContext* context) {
              "instruction to split on.");
       // We need to make sure the module's id bound is large enough to add the
       // fresh id.
-      UpdateModuleIdBound(context, fresh_id_);
+      fuzzerutil::UpdateModuleIdBound(context, fresh_id_);
       // Split the block.
       auto new_bb =
           block.SplitBasicBlock(context, fresh_id_, maybe_split_before.second);

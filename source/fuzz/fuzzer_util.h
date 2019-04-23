@@ -12,20 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation.h"
+#ifndef SOURCE_FUZZ_FUZZER_UTIL_H_
+#define SOURCE_FUZZ_FUZZER_UTIL_H_
+
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
 
-bool Transformation::IsFreshId(spvtools::opt::IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->GetDef(id);
-}
+// Provides global utility methods for use by the fuzzer
+namespace fuzzerutil {
 
-void Transformation::UpdateModuleIdBound(spvtools::opt::IRContext* context,
-                                         uint32_t id) {
-  context->module()->SetIdBound(
-      std::max(context->module()->id_bound(), id + 1));
-}
+// Returns true if and only if the module does not currently define the given
+// id.
+bool IsFreshId(opt::IRContext* context, uint32_t id);
+
+// Updates the module's id bound if needed so that it is large enough to
+// account for the given id.
+void UpdateModuleIdBound(opt::IRContext* context, uint32_t id);
+
+}  // namespace fuzzerutil
 
 }  // namespace fuzz
 }  // namespace spvtools
+
+#endif  // SOURCE_FUZZ_FUZZER_UTIL_H_
