@@ -28,7 +28,7 @@ namespace fuzz {
 // - Immutability: a transformation must be immutable.
 // - Ability to copy and serialize: to ensure that a copy of a transformation,
 //     possibly saved out to disk and read back again, is indistinguishable
-//     from the original transformation, thus a transformation must not depend
+//     from the original transformation, thus a transformation must depend
 //     only on well-defined pieces of state, such as instruction ids.  It must
 //     not rely on state such as pointers to instructions and blocks.
 // - Determinism: the effect of a transformation on a module be a deterministic
