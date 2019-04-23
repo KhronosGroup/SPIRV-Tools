@@ -86,5 +86,13 @@ void TransformationMoveBlockDown::Apply(IRContext* context) {
   assert(false && "No block was found to move down.");
 }
 
+protobufs::Transformation TransformationMoveBlockDown::ToMessage() {
+  auto move_block_down_message = new protobufs::TransformationMoveBlockDown;
+  move_block_down_message->set_block_id(block_id_);
+  protobufs::Transformation result;
+  result.set_allocated_move_block_down(move_block_down_message);
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

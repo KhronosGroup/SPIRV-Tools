@@ -148,5 +148,15 @@ void TransformationSplitBlock::Apply(IRContext* context) {
          "transformation.");
 }
 
+protobufs::Transformation TransformationSplitBlock::ToMessage() {
+  auto split_block_message = new protobufs::TransformationSplitBlock;
+  split_block_message->set_fresh_id(fresh_id_);
+  split_block_message->set_offset(offset_);
+  split_block_message->set_result_id(result_id_);
+  protobufs::Transformation result;
+  result.set_allocated_split_block(split_block_message);
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

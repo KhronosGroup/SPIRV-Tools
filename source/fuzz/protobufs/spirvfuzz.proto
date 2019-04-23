@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package spvtools.fuzz.protobufs;
+
+message TransformationSequence {
+  repeated Transformation transformations = 1;
+}
+
+message Transformation {
+  oneof transformation {
+    TransformationAddBooleanConstant add_boolean_constant = 1;
+    TransformationAddDeadBreak add_dead_break = 2;
+    TransformationMoveBlockDown move_block_down = 3;
+    TransformationSplitBlock split_block = 4;
+  }
+}
+
+message TransformationAddBooleanConstant {
+  uint32 fresh_id = 1;
+  bool is_true = 2;
+}
+
+message TransformationAddDeadBreak {
+  uint32 from_block = 1;
+  uint32 to_block = 2;
+  bool break_condition_value = 3;
+  repeated uint32 phi_ids = 4;
+}
+
+message TransformationMoveBlockDown {
+  uint32 block_id = 1;
+}
+
+message TransformationSplitBlock {
+  uint32 result_id = 1;
+  uint32 offset = 2;
+  uint32 fresh_id = 3;
+}

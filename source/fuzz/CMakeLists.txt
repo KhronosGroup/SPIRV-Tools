@@ -20,6 +20,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_split_blocks.h
         fuzzer_util.h
+        protobufs/spirvfuzz.pb.h
         pseudo_random_generator.h
         random_generator.h
         transformation.h
@@ -35,6 +36,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_split_blocks.cpp
         fuzzer_util.cpp
+        protobufs/spirvfuzz.pb.cc
         pseudo_random_generator.cpp
         transformation_add_boolean_constant.cpp
         transformation_add_dead_break.cpp
@@ -52,15 +54,23 @@ spvtools_pch(SPIRV_TOOLS_FUZZ_SOURCES pch_source_fuzz)
 add_library(SPIRV-Tools-fuzz ${SPIRV_TOOLS_FUZZ_SOURCES})
 
 spvtools_default_compile_options(SPIRV-Tools-fuzz)
+target_compile_definitions(SPIRV-Tools-fuzz PUBLIC -DGOOGLE_PROTOBUF_NO_RTTI)
+
+# We rely on CMake to find the protobuf libraries.
+include(FindProtobuf)
+find_package(Protobuf REQUIRED)
+
 target_include_directories(SPIRV-Tools-fuzz
         PUBLIC ${spirv-tools_SOURCE_DIR}/include
         PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
+        PUBLIC ${PROTOBUF_INCLUDE_DIR}
         PRIVATE ${spirv-tools_BINARY_DIR}
         )
 # The fuzzer reuses a lot of functionality from the SPIRV-Tools library.
 target_link_libraries(SPIRV-Tools-fuzz
         PUBLIC ${SPIRV_TOOLS}
-        PUBLIC SPIRV-Tools-opt)
+        PUBLIC SPIRV-Tools-opt
+        PUBLIC ${PROTOBUF_LIBRARY})
 
 set_property(TARGET SPIRV-Tools-fuzz PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(SPIRV-Tools-fuzz)

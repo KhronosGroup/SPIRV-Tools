@@ -285,5 +285,28 @@ void TransformationAddDeadBreak::Apply(IRContext* context) {
   context->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 }
 
+TransformationAddDeadBreak::TransformationAddDeadBreak(
+    const spvtools::fuzz::protobufs::TransformationAddDeadBreak& message)
+    : from_block_(message.from_block()),
+      to_block_(message.to_block()),
+      break_condition_value_(message.break_condition_value()) {
+  for (auto id : message.phi_ids()) {
+    phi_ids_.push_back(id);
+  }
+}
+
+protobufs::Transformation TransformationAddDeadBreak::ToMessage() {
+  auto add_dead_break_message = new protobufs::TransformationAddDeadBreak;
+  add_dead_break_message->set_break_condition_value(break_condition_value_);
+  add_dead_break_message->set_from_block(from_block_);
+  for (auto id : phi_ids_) {
+    add_dead_break_message->add_phi_ids(id);
+  }
+  add_dead_break_message->set_to_block(to_block_);
+  protobufs::Transformation result;
+  result.set_allocated_add_dead_break(add_dead_break_message);
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

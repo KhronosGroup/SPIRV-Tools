@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_MOVE_BLOCK_DOWN_H_
 #define SOURCE_FUZZ_TRANSFORMATION_MOVE_BLOCK_DOWN_H_
 
+#include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "source/fuzz/transformation.h"
 
 namespace spvtools {
@@ -24,7 +25,14 @@ namespace fuzz {
 // order.
 class TransformationMoveBlockDown : public Transformation {
  public:
-  TransformationMoveBlockDown(uint32_t block_id) : block_id_(block_id) {}
+  // Constructs a transformation from a given id.
+  explicit TransformationMoveBlockDown(uint32_t block_id)
+      : block_id_(block_id) {}
+
+  // Constructs a transformation from a protobuf message.
+  explicit TransformationMoveBlockDown(
+      const protobufs::TransformationMoveBlockDown& message)
+      : block_id_(message.block_id()) {}
 
   ~TransformationMoveBlockDown() override = default;
 
@@ -37,6 +45,8 @@ class TransformationMoveBlockDown : public Transformation {
   // The block with id |block_id_| is moved down; i.e. the program order
   // between it and the block that follows it is swapped.
   void Apply(opt::IRContext* context) override;
+
+  protobufs::Transformation ToMessage() override;
 
  private:
   // The id of the block to move down.

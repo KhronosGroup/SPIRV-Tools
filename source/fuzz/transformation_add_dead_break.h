@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_ADD_DEAD_BREAK_H_
 #define SOURCE_FUZZ_TRANSFORMATION_ADD_DEAD_BREAK_H_
 
+#include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "source/fuzz/transformation.h"
 
 namespace spvtools {
@@ -26,6 +27,7 @@ namespace fuzz {
 // be taken.
 class TransformationAddDeadBreak : public Transformation {
  public:
+  // Constructs a transformation from given ids and boolean.
   TransformationAddDeadBreak(uint32_t from_block, uint32_t to_block,
                              bool break_condition_value,
                              std::vector<uint32_t>&& phi_ids)
@@ -33,6 +35,10 @@ class TransformationAddDeadBreak : public Transformation {
         to_block_(to_block),
         break_condition_value_(break_condition_value),
         phi_ids_(phi_ids) {}
+
+  // Constructs a transformation from a protobuf message.
+  explicit TransformationAddDeadBreak(
+      const protobufs::TransformationAddDeadBreak& message);
 
   ~TransformationAddDeadBreak() override = default;
 
@@ -54,6 +60,8 @@ class TransformationAddDeadBreak : public Transformation {
   // |bool_id_| is used as the condition, and the order of b and c is
   // arranged such that control is guaranteed to jump to c.
   void Apply(opt::IRContext* context) override;
+
+  protobufs::Transformation ToMessage() override;
 
  private:
   // Helper that retrieves the basic block for |maybe_block_id|, or nullptr if
