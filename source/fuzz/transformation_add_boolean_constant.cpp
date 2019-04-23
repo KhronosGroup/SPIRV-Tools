@@ -52,5 +52,15 @@ void TransformationAddBooleanConstant::Apply(IRContext* context) {
   context->InvalidateAnalysesExceptFor(IRContext::Analysis::kAnalysisNone);
 }
 
+protobufs::Transformation TransformationAddBooleanConstant::ToMessage() {
+  auto add_boolean_constant_message =
+      new protobufs::TransformationAddBooleanConstant;
+  add_boolean_constant_message->set_fresh_id(fresh_id_);
+  add_boolean_constant_message->set_is_true(is_true_);
+  protobufs::Transformation result;
+  result.set_allocated_add_boolean_constant(add_boolean_constant_message);
+  return result;
+}
+
 }  // namespace fuzz
 }  // namespace spvtools

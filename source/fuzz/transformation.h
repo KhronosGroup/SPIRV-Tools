@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_H_
 #define SOURCE_FUZZ_TRANSFORMATION_H_
 
+#include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
@@ -68,6 +69,9 @@ class Transformation {
   // Requires that the transformation is applicable.  Applies the
   // transformation, mutating the given SPIR-V module.
   virtual void Apply(opt::IRContext* context) = 0;
+
+  // Obtain a protobuf message corresponding to the transformation.
+  virtual protobufs::Transformation ToMessage() = 0;
 };
 
 }  // namespace fuzz
