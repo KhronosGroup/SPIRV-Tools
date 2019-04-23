@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_boolean_constant.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/types.h"
 
@@ -43,7 +44,7 @@ void TransformationAddBooleanConstant::Apply(IRContext* context) {
   opt::analysis::Bool bool_type;
   // Add the boolean constant to the module, ensuring the module's id bound is
   // high enough.
-  UpdateModuleIdBound(context, fresh_id_);
+  fuzzerutil::UpdateModuleIdBound(context, fresh_id_);
   context->module()->AddGlobalValue(
       is_true_ ? SpvOpConstantTrue : SpvOpConstantFalse, fresh_id_,
       context->get_type_mgr()->GetId(&bool_type));

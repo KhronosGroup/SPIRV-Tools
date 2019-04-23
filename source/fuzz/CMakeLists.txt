@@ -19,6 +19,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_pass_add_useful_constructs.h
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_split_blocks.h
+        fuzzer_util.h
         pseudo_random_generator.h
         random_generator.h
         transformation.h
@@ -33,8 +34,8 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_pass_add_useful_constructs.cpp
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_split_blocks.cpp
+        fuzzer_util.cpp
         pseudo_random_generator.cpp
-        transformation.cpp
         transformation_add_boolean_constant.cpp
         transformation_add_dead_break.cpp
         transformation_move_block_down.cpp
