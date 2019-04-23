@@ -494,7 +494,7 @@ uint64_t ScalarReplacementPass::GetNumElements(const Instruction* type) const {
   const Operand& op = type->GetInOperand(1u);
   assert(op.words.size() <= 2);
   uint64_t len = 0;
-  for (uint64_t i = 0; i != op.words.size(); ++i) {
+  for (size_t i = 0; i != op.words.size(); ++i) {
     len |= (static_cast<uint64_t>(op.words[i]) << (32ull * i));
   }
   return len;
