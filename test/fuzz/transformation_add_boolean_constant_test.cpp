@@ -42,32 +42,34 @@ TEST(TransformationAddBooleanConstantTest, NeitherPresentInitiallyAddBoth) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   CheckValid(env, context.get());
 
+  FactManager fact_manager;
+
   // True and false can both be added as neither is present.
-  ASSERT_TRUE(
-      TransformationAddBooleanConstant(7, true).IsApplicable(context.get()));
-  ASSERT_TRUE(
-      TransformationAddBooleanConstant(7, false).IsApplicable(context.get()));
+  ASSERT_TRUE(TransformationAddBooleanConstant(7, true).IsApplicable(
+      context.get(), fact_manager));
+  ASSERT_TRUE(TransformationAddBooleanConstant(7, false).IsApplicable(
+      context.get(), fact_manager));
 
   // Id 5 is already taken.
-  ASSERT_FALSE(
-      TransformationAddBooleanConstant(5, true).IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddBooleanConstant(5, true).IsApplicable(
+      context.get(), fact_manager));
 
   auto add_true = TransformationAddBooleanConstant(7, true);
   auto add_false = TransformationAddBooleanConstant(8, false);
 
-  ASSERT_TRUE(add_true.IsApplicable(context.get()));
-  add_true.Apply(context.get());
+  ASSERT_TRUE(add_true.IsApplicable(context.get(), fact_manager));
+  add_true.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Having added true, we cannot add it again.
-  ASSERT_FALSE(add_true.IsApplicable(context.get()));
+  ASSERT_FALSE(add_true.IsApplicable(context.get(), fact_manager));
 
-  ASSERT_TRUE(add_false.IsApplicable(context.get()));
-  add_false.Apply(context.get());
+  ASSERT_TRUE(add_false.IsApplicable(context.get(), fact_manager));
+  add_false.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Having added false, we cannot add it again.
-  ASSERT_FALSE(add_false.IsApplicable(context.get()));
+  ASSERT_FALSE(add_false.IsApplicable(context.get(), fact_manager));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -113,11 +115,13 @@ TEST(TransformationAddBooleanConstantTest, NoOpTypeBoolPresent) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   CheckValid(env, context.get());
 
+  FactManager fact_manager;
+
   // Neither true nor false can be added as OpTypeBool is not present.
-  ASSERT_FALSE(
-      TransformationAddBooleanConstant(6, true).IsApplicable(context.get()));
-  ASSERT_FALSE(
-      TransformationAddBooleanConstant(6, false).IsApplicable(context.get()));
+  ASSERT_FALSE(TransformationAddBooleanConstant(6, true).IsApplicable(
+      context.get(), fact_manager));
+  ASSERT_FALSE(TransformationAddBooleanConstant(6, false).IsApplicable(
+      context.get(), fact_manager));
 }
 
 TEST(TransformationAddBooleanConstantTest, ProtobufMessage) {
@@ -142,18 +146,21 @@ TEST(TransformationAddBooleanConstantTest, ProtobufMessage) {
   const auto consumer = nullptr;
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   CheckValid(env, context1.get());
+  FactManager fact_manager1;
+
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   CheckValid(env, context2.get());
+  FactManager fact_manager2;
 
   auto transformation1 = TransformationAddBooleanConstant(7, true);
   auto transformation2 = TransformationAddBooleanConstant(
       transformation1.ToMessage().add_boolean_constant());
 
-  ASSERT_TRUE(transformation1.IsApplicable(context1.get()));
-  ASSERT_TRUE(transformation2.IsApplicable(context2.get()));
+  ASSERT_TRUE(transformation1.IsApplicable(context1.get(), fact_manager1));
+  ASSERT_TRUE(transformation2.IsApplicable(context2.get(), fact_manager2));
 
-  transformation1.Apply(context1.get());
-  transformation2.Apply(context2.get());
+  transformation1.Apply(context1.get(), &fact_manager1);
+  transformation2.Apply(context2.get(), &fact_manager2);
 
   CheckEqual(env, context1.get(), context2.get());
 }

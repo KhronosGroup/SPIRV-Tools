@@ -21,7 +21,8 @@ namespace fuzz {
 using opt::IRContext;
 
 void FuzzerPassPermuteBlocks::Apply(
-    IRContext* ir_context, FuzzerContext* fuzzer_context,
+    IRContext* ir_context, FactManager* fact_manager,
+    FuzzerContext* fuzzer_context,
     std::vector<std::unique_ptr<Transformation>>* transformations) {
   // For now we do something very simple: we randomly decide whether to move a
   // block, and for each block that we do move, we push it down as far as we
@@ -62,8 +63,8 @@ void FuzzerPassPermuteBlocks::Apply(
       while (true) {
         std::unique_ptr<TransformationMoveBlockDown> transformation =
             MakeUnique<TransformationMoveBlockDown>(*id);
-        if (transformation->IsApplicable(ir_context)) {
-          transformation->Apply(ir_context);
+        if (transformation->IsApplicable(ir_context, *fact_manager)) {
+          transformation->Apply(ir_context, fact_manager);
           transformations->push_back(std::move(transformation));
         } else {
           break;

@@ -40,11 +40,12 @@ class TransformationMoveBlockDown : public Transformation {
   // - b must not be the first nor last block appearing, in program order,
   //   in a function.
   // - b must not dominate the block that follows it in program order.
-  bool IsApplicable(opt::IRContext* context) override;
+  bool IsApplicable(opt::IRContext* context,
+                    const FactManager& fact_manager) override;
 
   // The block with id |block_id_| is moved down; i.e. the program order
   // between it and the block that follows it is swapped.
-  void Apply(opt::IRContext* context) override;
+  void Apply(opt::IRContext* context, FactManager* fact_manager) override;
 
   protobufs::Transformation ToMessage() override;
 

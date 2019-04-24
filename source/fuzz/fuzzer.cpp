@@ -89,20 +89,25 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(
   // reduction.
   std::vector<std::unique_ptr<Transformation>> transformations_applied;
 
+  // An empty fact manager.
+  // TODO: settle on a way to provide initial facts.
+  FactManager fact_manager;
+
   // Add some essential ingredients to the module if they are not already
   // present, such as boolean constants.
-  FuzzerPassAddUsefulConstructs().Apply(ir_context.get(), &fuzzer_context,
+  FuzzerPassAddUsefulConstructs().Apply(ir_context.get(), &fact_manager,
+                                        &fuzzer_context,
                                         &transformations_applied);
 
   // Apply some semantics-preserving passes.
-  FuzzerPassSplitBlocks().Apply(ir_context.get(), &fuzzer_context,
-                                &transformations_applied);
-  FuzzerPassAddDeadBreaks().Apply(ir_context.get(), &fuzzer_context,
-                                  &transformations_applied);
+  FuzzerPassSplitBlocks().Apply(ir_context.get(), &fact_manager,
+                                &fuzzer_context, &transformations_applied);
+  FuzzerPassAddDeadBreaks().Apply(ir_context.get(), &fact_manager,
+                                  &fuzzer_context, &transformations_applied);
 
   // Finally, give the blocks in the module a good shake-up.
-  FuzzerPassPermuteBlocks().Apply(ir_context.get(), &fuzzer_context,
-                                  &transformations_applied);
+  FuzzerPassPermuteBlocks().Apply(ir_context.get(), &fact_manager,
+                                  &fuzzer_context, &transformations_applied);
 
   // Write out the module as a binary.
   ir_context->module()->ToBinary(binary_out, false);

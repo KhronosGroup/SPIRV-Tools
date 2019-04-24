@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set(SPIRV_TOOLS_FUZZ_SOURCES
+        fact_manager.h
         fuzzer.h
         fuzzer_context.h
         fuzzer_pass.h
@@ -30,6 +31,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         transformation_move_block_down.h
         transformation_split_block.h
 
+        fact_manager.cpp
         fuzzer.cpp
         fuzzer_context.cpp
         fuzzer_pass_add_dead_breaks.cpp

@@ -181,7 +181,8 @@ bool TransformationAddDeadBreak::AddingBreakRespectsStructuredControlFlow(
   return false;
 }
 
-bool TransformationAddDeadBreak::IsApplicable(IRContext* context) {
+bool TransformationAddDeadBreak::IsApplicable(IRContext* context,
+                                              const FactManager& /*unused*/) {
   // First, we check that a constant with the same value as
   // |break_condition_value_| is present.
   opt::analysis::Bool bool_type;
@@ -236,7 +237,8 @@ bool TransformationAddDeadBreak::IsApplicable(IRContext* context) {
   return AddingBreakRespectsStructuredControlFlow(context, bb_from);
 }
 
-void TransformationAddDeadBreak::Apply(IRContext* context) {
+void TransformationAddDeadBreak::Apply(IRContext* context,
+                                       FactManager* /*unused*/) {
   // Get the id of the boolean constant to be used as the break condition.
   opt::analysis::Bool bool_type;
   opt::analysis::BoolConstant bool_constant(

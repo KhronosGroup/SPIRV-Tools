@@ -63,7 +63,8 @@ TransformationSplitBlock::FindInstToSplitBefore(BasicBlock* block) {
   return {false, block->end()};
 }
 
-bool TransformationSplitBlock::IsApplicable(IRContext* context) {
+bool TransformationSplitBlock::IsApplicable(IRContext* context,
+                                            const FactManager& /*unused*/) {
   if (!fuzzerutil::IsFreshId(context, fresh_id_)) {
     // We require the id for the new block to be unused.
     return false;
@@ -107,7 +108,8 @@ bool TransformationSplitBlock::IsApplicable(IRContext* context) {
   return false;
 }
 
-void TransformationSplitBlock::Apply(IRContext* context) {
+void TransformationSplitBlock::Apply(IRContext* context,
+                                     FactManager* /*unused*/) {
   for (auto& function : *context->module()) {
     for (auto& block : function) {
       auto maybe_split_before = FindInstToSplitBefore(&block);
