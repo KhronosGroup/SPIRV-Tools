@@ -2065,6 +2065,131 @@ TEST(TransformationAddDeadBreakTest, PhiInstructions) {
   CheckEqual(env, after_transformation, context.get());
 }
 
+TEST(TransformationAddDeadBreakTest, Protobuf) {
+  // Checks that the transformation works in the presence of phi instructions.
+
+  // The SPIR-V for this test is adapted from the following GLSL, with a bit of
+  // extra and artificial work to get some interesting uses of OpPhi:
+  //
+  // void main() {
+  //   int x; int y;
+  //   float f;
+  //   x = 2;
+  //   f = 3.0;
+  //   if (x > y) {
+  //     x = 3;
+  //     f = 4.0;
+  //   } else {
+  //     x = x + 2;
+  //     f = f + 10.0;
+  //   }
+  //   while (x < y) {
+  //     x = x + 1;
+  //     f = f + 1.0;
+  //   }
+  //   y = x;
+  //   f = f + 3.0;
+  // }
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "x"
+               OpName %12 "f"
+               OpName %15 "y"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %10 = OpTypeFloat 32
+         %11 = OpTypePointer Function %10
+         %13 = OpConstant %10 3
+         %17 = OpTypeBool
+         %80 = OpConstantTrue %17
+         %21 = OpConstant %6 3
+         %22 = OpConstant %10 4
+         %27 = OpConstant %10 10
+         %38 = OpConstant %6 1
+         %41 = OpConstant %10 1
+         %46 = OpUndef %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %12 = OpVariable %11 Function
+         %15 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %12 %13
+         %18 = OpSGreaterThan %17 %9 %46
+               OpSelectionMerge %20 None
+               OpBranchConditional %18 %19 %23
+         %19 = OpLabel
+               OpStore %8 %21
+               OpStore %12 %22
+               OpBranch %20
+         %23 = OpLabel
+         %25 = OpIAdd %6 %9 %9
+               OpStore %8 %25
+               OpBranch %70
+         %70 = OpLabel
+         %28 = OpFAdd %10 %13 %27
+               OpStore %12 %28
+               OpBranch %20
+         %20 = OpLabel
+         %52 = OpPhi %10 %22 %19 %28 %70
+         %48 = OpPhi %6 %21 %19 %25 %70
+               OpBranch %29
+         %29 = OpLabel
+         %51 = OpPhi %10 %52 %20 %42 %32
+         %47 = OpPhi %6 %48 %20 %39 %32
+               OpLoopMerge %31 %32 None
+               OpBranch %33
+         %33 = OpLabel
+         %36 = OpSLessThan %17 %47 %46
+               OpBranchConditional %36 %30 %31
+         %30 = OpLabel
+         %39 = OpIAdd %6 %47 %38
+               OpStore %8 %39
+               OpBranch %75
+         %75 = OpLabel
+         %42 = OpFAdd %10 %51 %41
+               OpStore %12 %42
+               OpBranch %32
+         %32 = OpLabel
+               OpBranch %29
+         %31 = OpLabel
+         %71 = OpPhi %6 %47 %33
+         %72 = OpPhi %10 %51 %33
+               OpStore %15 %71
+         %45 = OpFAdd %10 %72 %13
+               OpStore %12 %45
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  auto transformation1 = TransformationAddDeadBreak(30, 31, true, {21, 13});
+  auto transformation2 =
+      TransformationAddDeadBreak(transformation1.ToMessage().add_dead_break());
+
+  ASSERT_TRUE(transformation1.IsApplicable(context1.get()));
+  ASSERT_TRUE(transformation2.IsApplicable(context2.get()));
+
+  transformation1.Apply(context1.get());
+  transformation2.Apply(context2.get());
+
+  CheckEqual(env, context1.get(), context2.get());
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

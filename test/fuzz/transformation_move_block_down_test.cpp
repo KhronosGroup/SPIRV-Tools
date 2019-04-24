@@ -688,6 +688,56 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   ASSERT_FALSE(move_down_20.IsApplicable(context.get()));
 }
 
+TEST(TransformationMoveBlockDownTest, Protobuf) {
+  // Block 11 can be moved down as it does not dominate block 12 (both are
+  // unreachable).
+  std::string before_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %8 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %10 = OpConstant %6 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %8 %10
+               OpReturn
+         %11 = OpLabel
+               OpReturn
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context1 =
+      BuildModule(env, consumer, before_transformation, kFuzzAssembleOption);
+  const auto context2 =
+      BuildModule(env, consumer, before_transformation, kFuzzAssembleOption);
+
+  auto transformation1 = TransformationMoveBlockDown(11);
+  auto transformation2 = TransformationMoveBlockDown(
+      transformation1.ToMessage().move_block_down());
+
+  ASSERT_TRUE(transformation1.IsApplicable(context1.get()));
+  ASSERT_TRUE(transformation2.IsApplicable(context2.get()));
+
+  transformation1.Apply(context1.get());
+  transformation2.Apply(context2.get());
+
+  CheckEqual(env, context1.get(), context2.get());
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
