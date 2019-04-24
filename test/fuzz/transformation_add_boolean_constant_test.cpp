@@ -120,6 +120,44 @@ TEST(TransformationAddBooleanConstantTest, NoOpTypeBoolPresent) {
       TransformationAddBooleanConstant(6, false).IsApplicable(context.get()));
 }
 
+TEST(TransformationAddBooleanConstantTest, ProtobufMessage) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+          %2 = OpTypeVoid
+          %6 = OpTypeBool
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context1.get());
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  CheckValid(env, context2.get());
+
+  auto transformation1 = TransformationAddBooleanConstant(7, true);
+  auto transformation2 = TransformationAddBooleanConstant(
+      transformation1.ToMessage().add_boolean_constant());
+
+  ASSERT_TRUE(transformation1.IsApplicable(context1.get()));
+  ASSERT_TRUE(transformation2.IsApplicable(context2.get()));
+
+  transformation1.Apply(context1.get());
+  transformation2.Apply(context2.get());
+
+  CheckEqual(env, context1.get(), context2.get());
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

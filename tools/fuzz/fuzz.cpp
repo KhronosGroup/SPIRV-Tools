@@ -15,9 +15,12 @@
 #include <cassert>
 #include <cerrno>
 #include <cstring>
+#include <fstream>
 #include <functional>
 
 #include "source/fuzz/fuzzer.h"
+#include "source/fuzz/protobufs/spirvfuzz.pb.h"
+#include "source/fuzz/replayer.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/log.h"
@@ -26,10 +29,12 @@
 #include "tools/io.h"
 #include "tools/util/cli_consumer.h"
 
+#include "google/protobuf/util/json_util.h"
+
 namespace {
 
 // Status and actions to perform after parsing command-line arguments.
-enum FuzzActions { FUZZ_CONTINUE, FUZZ_STOP };
+enum FuzzActions { FUZZ_CONTINUE, FUZZ_REPLAY, FUZZ_STOP };
 
 struct FuzzStatus {
   FuzzActions action;
@@ -51,6 +56,9 @@ Options (in lexicographical order):
 
   -h, --help
                Print this help.
+  --replay
+               File from which to read a sequence of transformations to replay
+               (instead of fuzzing)
   --seed
                Unsigned 32-bit integer seed to control random number
                generation.
@@ -73,6 +81,7 @@ void FuzzDiagnostic(spv_message_level_t level, const char* /*source*/,
 }
 
 FuzzStatus ParseFlags(int argc, const char** argv, const char** in_file,
+                      std::unique_ptr<char>* replay_transformations_file,
                       spvtools::FuzzerOptions* fuzzer_options) {
   uint32_t positional_arg_index = 0;
 
@@ -86,7 +95,12 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_file,
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         PrintUsage(argv[0]);
         return {FUZZ_STOP, 0};
-      } else if (0 == strcmp(cur_arg, "--seed")) {
+      } else if (0 == strncmp(cur_arg, "--replay=", sizeof("--replay=") - 1)) {
+        const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
+        *replay_transformations_file =
+            std::unique_ptr<char>(new char[split_flag.second.size() + 1]);
+        strcpy(replay_transformations_file->get(), split_flag.second.c_str());
+      } else if (0 == strncmp(cur_arg, "--seed=", sizeof("--seed=") - 1)) {
         const auto split_flag = spvtools::utils::SplitFlagArgs(cur_arg);
         char* end = nullptr;
         errno = 0;
@@ -99,6 +113,7 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_file,
         // this if there was a compelling use case.
         PrintUsage(argv[0]);
         return {FUZZ_STOP, 0};
+      } else {
       }
     } else if (positional_arg_index == 0) {
       // Input file name
@@ -117,6 +132,10 @@ FuzzStatus ParseFlags(int argc, const char** argv, const char** in_file,
     return {FUZZ_STOP, 1};
   }
 
+  if (*replay_transformations_file) {
+    return {FUZZ_REPLAY, 0};
+  }
+
   return {FUZZ_CONTINUE, 0};
 }
 
@@ -126,32 +145,82 @@ const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_3;
 
 int main(int argc, const char** argv) {
   const char* in_file = nullptr;
+  std::unique_ptr<char> replay_transformations_file = nullptr;
 
   spv_target_env target_env = kDefaultEnvironment;
   spvtools::FuzzerOptions fuzzer_options;
 
-  FuzzStatus status = ParseFlags(argc, argv, &in_file, &fuzzer_options);
+  FuzzStatus status = ParseFlags(argc, argv, &in_file,
+                                 &replay_transformations_file, &fuzzer_options);
 
   if (status.action == FUZZ_STOP) {
     return status.code;
   }
 
-  spvtools::fuzz::Fuzzer fuzzer(target_env);
-
-  fuzzer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
-
   std::vector<uint32_t> binary_in;
   if (!ReadFile<uint32_t>(in_file, "rb", &binary_in)) {
     return 1;
   }
-
   std::vector<uint32_t> binary_out;
-  fuzzer.Run(std::move(binary_in), &binary_out, fuzzer_options);
+  spvtools::fuzz::protobufs::TransformationSequence transformations_applied;
 
-  if (!WriteFile<uint32_t>("_fuzzed.spv", "wb", binary_out.data(),
+  if (status.action == FUZZ_REPLAY) {
+    std::ifstream existing_transformations_file;
+    existing_transformations_file.open(replay_transformations_file.get(),
+                                       std::ios::in | std::ios::binary);
+    spvtools::fuzz::protobufs::TransformationSequence
+        existing_transformation_sequence;
+    auto parse_success = existing_transformation_sequence.ParseFromIstream(
+        &existing_transformations_file);
+    existing_transformations_file.close();
+    if (!parse_success) {
+      return 1;
+    }
+    spvtools::fuzz::Replayer replayer(target_env);
+    replayer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
+    auto replay_result_status =
+        replayer.Run(binary_in, existing_transformation_sequence, &binary_out,
+                     &transformations_applied);
+    if (replay_result_status !=
+        spvtools::fuzz::Replayer::ReplayerResultStatus::kComplete) {
+      return 1;
+    }
+  } else {
+    spvtools::fuzz::Fuzzer fuzzer(target_env);
+    fuzzer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
+    auto fuzz_result_status = fuzzer.Run(
+        binary_in, &binary_out, &transformations_applied, fuzzer_options);
+    if (fuzz_result_status !=
+        spvtools::fuzz::Fuzzer::FuzzerResultStatus::kComplete) {
+      return 1;
+    }
+  }
+
+  if (!WriteFile<uint32_t>("_spirvfuzzoutput.spv", "wb", binary_out.data(),
                            binary_out.size())) {
     return 1;
   }
 
-  return 0;
+  std::ofstream transformations_file;
+  transformations_file.open("_spirvfuzzoutput.transformations",
+                            std::ios::out | std::ios::binary);
+  bool success =
+      transformations_applied.SerializeToOstream(&transformations_file);
+  transformations_file.close();
+  if (!success) {
+    return 2;
+  }
+
+  std::string json_string;
+  auto json_options = google::protobuf::util::JsonOptions();
+  json_options.add_whitespace = true;
+  auto json_generation_status = google::protobuf::util::MessageToJsonString(
+      transformations_applied, &json_string, json_options);
+  if (json_generation_status != google::protobuf::util::Status::OK) {
+    return 3;
+  }
+
+  std::ofstream transformations_json_file("_spirvfuzzoutput.json");
+  transformations_json_file << json_string;
+  transformations_json_file.close();
 }

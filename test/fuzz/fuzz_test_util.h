@@ -39,6 +39,11 @@ void CheckEqual(spv_target_env env, const std::string& expected_text,
 void CheckEqual(spv_target_env env, const std::string& expected_text,
                 const opt::IRContext* actual_ir);
 
+// Turns the given IRs into binaries, then checks whether the resulting binaries
+// are bit-wise equal.
+void CheckEqual(spv_target_env env, const opt::IRContext* ir_1,
+                const opt::IRContext* ir_2);
+
 // Assembles the given IR context and checks whether the resulting binary is
 // valid.
 void CheckValid(spv_target_env env, const opt::IRContext* ir);

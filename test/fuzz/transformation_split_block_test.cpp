@@ -724,6 +724,76 @@ TEST(TransformationSplitBlockTest, SplitOpPhiWithSinglePredecessor) {
   CheckEqual(env, after_split, context.get());
 }
 
+TEST(TransformationSplitBlockTest, Protobuf) {
+  // The SPIR-V in this test came from the following fragment shader:
+  //
+  // void main() {
+  //   int a;
+  //   int b;
+  //   a = 1;
+  //   b = a;
+  //   a = b;
+  //   b = 2;
+  //   b++;
+  // }
+
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "a"
+               OpName %10 "b"
+               OpDecorate %8 RelaxedPrecision
+               OpDecorate %10 RelaxedPrecision
+               OpDecorate %11 RelaxedPrecision
+               OpDecorate %12 RelaxedPrecision
+               OpDecorate %14 RelaxedPrecision
+               OpDecorate %15 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 1
+         %13 = OpConstant %6 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+               OpStore %8 %9
+         %11 = OpLoad %6 %8
+               OpStore %10 %11
+         %12 = OpLoad %6 %10
+               OpStore %8 %12
+               OpStore %10 %13
+         %14 = OpLoad %6 %10
+         %15 = OpIAdd %6 %14 %9
+               OpStore %10 %15
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  auto transformation1 = TransformationSplitBlock(5, 3, 100);
+  auto transformation2 =
+      TransformationSplitBlock(transformation1.ToMessage().split_block());
+
+  ASSERT_TRUE(transformation1.IsApplicable(context1.get()));
+  ASSERT_TRUE(transformation2.IsApplicable(context2.get()));
+
+  transformation1.Apply(context1.get());
+  transformation2.Apply(context2.get());
+
+  CheckEqual(env, context1.get(), context2.get());
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
