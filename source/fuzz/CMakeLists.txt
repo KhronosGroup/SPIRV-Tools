@@ -23,6 +23,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         protobufs/spirvfuzz.pb.h
         pseudo_random_generator.h
         random_generator.h
+        replayer.h
         transformation.h
         transformation_add_boolean_constant.h
         transformation_add_dead_break.h
@@ -38,6 +39,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_util.cpp
         protobufs/spirvfuzz.pb.cc
         pseudo_random_generator.cpp
+        replayer.cpp
         transformation_add_boolean_constant.cpp
         transformation_add_dead_break.cpp
         transformation_move_block_down.cpp
@@ -63,14 +65,14 @@ find_package(Protobuf REQUIRED)
 target_include_directories(SPIRV-Tools-fuzz
         PUBLIC ${spirv-tools_SOURCE_DIR}/include
         PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
-        PUBLIC ${PROTOBUF_INCLUDE_DIR}
+        PUBLIC ${Protobuf_INCLUDE_DIR}
         PRIVATE ${spirv-tools_BINARY_DIR}
         )
 # The fuzzer reuses a lot of functionality from the SPIRV-Tools library.
 target_link_libraries(SPIRV-Tools-fuzz
         PUBLIC ${SPIRV_TOOLS}
         PUBLIC SPIRV-Tools-opt
-        PUBLIC ${PROTOBUF_LIBRARY})
+        PUBLIC ${Protobuf_LIBRARY})
 
 set_property(TARGET SPIRV-Tools-fuzz PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(SPIRV-Tools-fuzz)
@@ -81,3 +83,19 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
+
+
+set(SPIRV_TOOLS_FUZZ_PROTOBUF_DIR "${CMAKE_CURRENT_SOURCE_DIR}/protobufs")
+set(SPIRV_TOOLS_FUZZ_PROTOBUF_INPUT "${SPIRV_TOOLS_FUZZ_PROTOBUF_DIR}/spirvfuzz.proto")
+
+add_custom_command(
+        OUTPUT ${SPIRV_TOOLS_FUZZ_PROTOBUF_DIR}/spirvfuzz.pb.cc
+               ${SPIRV_TOOLS_FUZZ_PROTOBUF_DIR}/spirvfuzz.pb.h
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+            -I=${SPIRV_TOOLS_FUZZ_PROTOBUF_DIR}
+            --cpp_out=${SPIRV_TOOLS_FUZZ_PROTOBUF_DIR}
+            ${SPIRV_TOOLS_FUZZ_PROTOBUF_INPUT}
+        DEPENDS ${SPIRV_TOOLS_FUZZ_PROTOBUF_INPUT}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generate protobuf sources from proto definition file."
+)

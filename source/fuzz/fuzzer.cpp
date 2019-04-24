@@ -22,6 +22,7 @@
 #include "source/fuzz/fuzzer_pass_add_useful_constructs.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
+#include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/opt/build_module.h"
 #include "source/spirv_fuzzer_options.h"
@@ -45,9 +46,14 @@ void Fuzzer::SetMessageConsumer(MessageConsumer c) {
   impl_->consumer = std::move(c);
 }
 
-Fuzzer::FuzzerResultStatus Fuzzer::Run(std::vector<uint32_t>&& binary_in,
-                                       std::vector<uint32_t>* binary_out,
-                                       spv_const_fuzzer_options options) const {
+Fuzzer::FuzzerResultStatus Fuzzer::Run(
+    const std::vector<uint32_t>& binary_in, std::vector<uint32_t>* binary_out,
+    protobufs::TransformationSequence* transformation_sequence_out,
+    spv_const_fuzzer_options options) const {
+  // Check compatibility between the library version being linked with and the
+  // header files being used.
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
   spvtools::SpirvTools tools(impl_->target_env);
   assert(tools.IsValid() && "Failed to create SPIRV-Tools interface");
 
@@ -98,7 +104,14 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(std::vector<uint32_t>&& binary_in,
   FuzzerPassPermuteBlocks().Apply(ir_context.get(), &fuzzer_context,
                                   &transformations_applied);
 
+  // Write out the module as a binary.
   ir_context->module()->ToBinary(binary_out, false);
+
+  // Turn all the transformations into a proto message.
+  for (auto& transformation : transformations_applied) {
+    *transformation_sequence_out->add_transformations() =
+        transformation->ToMessage();
+  }
 
   return Fuzzer::FuzzerResultStatus::kComplete;
 }

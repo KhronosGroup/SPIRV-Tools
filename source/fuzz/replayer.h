@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_H_
-#define SOURCE_FUZZ_FUZZER_H_
+#ifndef SOURCE_FUZZ_REPLAYER_H_
+#define SOURCE_FUZZ_REPLAYER_H_
 
 #include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "spirv-tools/libspirv.hpp"
@@ -22,38 +22,40 @@ namespace spvtools {
 namespace fuzz {
 
 // Transforms a SPIR-V module into a semantically equivalent SPIR-V module by
-// running a number of randomized fuzzer passes.
-class Fuzzer {
+// applying a series of pre-defined transformations.
+class Replayer {
  public:
-  // Possible statuses that can result from running the fuzzer.
-  enum FuzzerResultStatus {
+  // Possible statuses that can result from running the replayer.
+  enum ReplayerResultStatus {
     kComplete,
     kInitialBinaryInvalid,
   };
 
-  // Constructs a fuzzer from the given target environment.
-  explicit Fuzzer(spv_target_env env);
+  // Constructs a replayer from the given target environment.
+  explicit Replayer(spv_target_env env);
 
   // Disables copy/move constructor/assignment operations.
-  Fuzzer(const Fuzzer&) = delete;
-  Fuzzer(Fuzzer&&) = delete;
-  Fuzzer& operator=(const Fuzzer&) = delete;
-  Fuzzer& operator=(Fuzzer&&) = delete;
+  Replayer(const Replayer&) = delete;
+  Replayer(Replayer&&) = delete;
+  Replayer& operator=(const Replayer&) = delete;
+  Replayer& operator=(Replayer&&) = delete;
 
   // Destructs this instance.
-  ~Fuzzer();
+  ~Replayer();
 
   // Sets the message consumer to the given |consumer|. The |consumer| will be
   // invoked once for each message communicated from the library.
   void SetMessageConsumer(MessageConsumer consumer);
 
-  // Transforms |binary_in| to |binary_out| by running a number of randomized
-  // fuzzer passes, controlled via |options|.  The transformation sequence that
-  // was applied is returned via |transformation_sequence_out|.
-  FuzzerResultStatus Run(
-      const std::vector<uint32_t>& binary_in, std::vector<uint32_t>* binary_out,
-      protobufs::TransformationSequence* transformation_sequence_out,
-      spv_const_fuzzer_options options) const;
+  // Transforms |binary_in| to |binary_out| by attempting to apply the
+  // transformations from |transformation_sequence_in|.  The transformations
+  // that were successfully applied are returned via
+  // |transformation_sequence_out|.
+  ReplayerResultStatus Run(
+      const std::vector<uint32_t>& binary_in,
+      const protobufs::TransformationSequence& transformation_sequence_in,
+      std::vector<uint32_t>* binary_out,
+      protobufs::TransformationSequence* transformation_sequence_out) const;
 
  private:
   struct Impl;                  // Opaque struct for holding internal data.
@@ -63,4 +65,4 @@ class Fuzzer {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_H_
+#endif  // SOURCE_FUZZ_REPLAYER_H_
