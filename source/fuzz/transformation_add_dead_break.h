@@ -54,12 +54,13 @@ class TransformationAddDeadBreak : public Transformation {
   //   |bool_id_| as the condition, and the ids in |phi_ids_| used to extend
   //   any OpPhi instructions at b as a result of the edge from a, must
   //   maintain validity of the module.
-  bool IsApplicable(opt::IRContext* context) override;
+  bool IsApplicable(opt::IRContext* context,
+                    const FactManager& fact_manager) override;
 
   // Replaces the terminator of a with a conditional branch to b or c.
   // |bool_id_| is used as the condition, and the order of b and c is
   // arranged such that control is guaranteed to jump to c.
-  void Apply(opt::IRContext* context) override;
+  void Apply(opt::IRContext* context, FactManager* fact_manager) override;
 
   protobufs::Transformation ToMessage() override;
 

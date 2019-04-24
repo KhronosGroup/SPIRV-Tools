@@ -21,7 +21,8 @@ namespace fuzz {
 using opt::IRContext;
 
 void FuzzerPassSplitBlocks::Apply(
-    IRContext* ir_context, FuzzerContext* fuzzer_context,
+    IRContext* ir_context, FactManager* fact_manager,
+    FuzzerContext* fuzzer_context,
     std::vector<std::unique_ptr<Transformation>>* transformations) {
   // Collect up all the blocks in the module.
   std::vector<opt::BasicBlock*> available_blocks;
@@ -76,8 +77,8 @@ void FuzzerPassSplitBlocks::Apply(
             base_offset.first, base_offset.second, fuzzer_context->FreshId());
     // If the position we have chosen turns out to be a valid place to split the
     // block, we apply the split. Otherwise the block just doesn't get split.
-    if (transformation->IsApplicable(ir_context)) {
-      transformation->Apply(ir_context);
+    if (transformation->IsApplicable(ir_context, *fact_manager)) {
+      transformation->Apply(ir_context, fact_manager);
       transformations->push_back(std::move(transformation));
     }
   }

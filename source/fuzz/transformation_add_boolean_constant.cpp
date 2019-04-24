@@ -22,7 +22,8 @@ namespace fuzz {
 
 using opt::IRContext;
 
-bool TransformationAddBooleanConstant::IsApplicable(IRContext* context) {
+bool TransformationAddBooleanConstant::IsApplicable(
+    IRContext* context, const FactManager& /*unused*/) {
   opt::analysis::Bool bool_type;
   if (!context->get_type_mgr()->GetId(&bool_type)) {
     // No OpTypeBool is present.
@@ -40,7 +41,8 @@ bool TransformationAddBooleanConstant::IsApplicable(IRContext* context) {
   return true;
 }
 
-void TransformationAddBooleanConstant::Apply(IRContext* context) {
+void TransformationAddBooleanConstant::Apply(IRContext* context,
+                                             FactManager* /*unused*/) {
   opt::analysis::Bool bool_type;
   // Add the boolean constant to the module, ensuring the module's id bound is
   // high enough.

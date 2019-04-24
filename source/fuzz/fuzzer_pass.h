@@ -28,11 +28,13 @@ class FuzzerPass {
 
   virtual ~FuzzerPass() = default;
 
-  // Applies the pass to the given module, |ir_context|, using |fuzzer_context|
-  // to guide the process. Appends to |transformations| all transformations that
-  // were applied during the pass.
+  // Applies the pass to the given module, |ir_context|, assuming and updating
+  // facts from |fact_manager|, and using |fuzzer_context| to guide the process.
+  // Appends to |transformations| all transformations that were applied during
+  // the pass.
   virtual void Apply(
-      opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
       std::vector<std::unique_ptr<Transformation>>* transformations) = 0;
 
  private:

@@ -45,14 +45,15 @@ class TransformationSplitBlock : public Transformation {
   // - Splitting 'blk' at 'inst', so that all instructions from 'inst' onwards
   //   appear in a new block that 'blk' directly jumps to must be valid.
   // - |fresh_id_| must not be used by the module.
-  bool IsApplicable(opt::IRContext* context) override;
+  bool IsApplicable(opt::IRContext* context,
+                    const FactManager& fact_manager) override;
 
   // - A new block with label |fresh_id_| is inserted right after 'blk' in
   //   program order.
   // - All instructions of 'blk' from 'inst' onwards are moved into the new
   //   block.
   // - 'blk' is made to jump unconditionally to the new block.
-  void Apply(opt::IRContext* context) override;
+  void Apply(opt::IRContext* context, FactManager* fact_manager) override;
 
   protobufs::Transformation ToMessage() override;
 

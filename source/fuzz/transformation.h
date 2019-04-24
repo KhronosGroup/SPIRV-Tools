@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_H_
 #define SOURCE_FUZZ_TRANSFORMATION_H_
 
+#include "source/fuzz/fact_manager.h"
 #include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "source/opt/ir_context.h"
 
@@ -64,11 +65,15 @@ class Transformation {
   // applied to the SPIR-V module, such that semantics are preserved.
   // Subclasses must document the precondition in their header file using
   // precise English.
-  virtual bool IsApplicable(opt::IRContext* context) = 0;
+  // The fact manager is used to provide access to facts about the module that
+  // are known to be true, on which the precondition may depend.
+  virtual bool IsApplicable(opt::IRContext* context,
+                            const FactManager& fact_manager) = 0;
 
   // Requires that the transformation is applicable.  Applies the
-  // transformation, mutating the given SPIR-V module.
-  virtual void Apply(opt::IRContext* context) = 0;
+  // transformation, mutating the given SPIR-V module and possibly updating the
+  // fact manager with new facts established by the transformation.
+  virtual void Apply(opt::IRContext* context, FactManager* fact_manager) = 0;
 
   // Obtain a protobuf message corresponding to the transformation.
   virtual protobufs::Transformation ToMessage() = 0;
