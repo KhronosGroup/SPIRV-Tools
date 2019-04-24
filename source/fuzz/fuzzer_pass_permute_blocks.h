@@ -29,7 +29,8 @@ class FuzzerPassPermuteBlocks : public FuzzerPass {
   ~FuzzerPassPermuteBlocks() override = default;
 
   void Apply(
-      opt::IRContext* ir_context, FuzzerContext* fuzzer_context,
+      opt::IRContext* ir_context, FactManager* fact_manager,
+      FuzzerContext* fuzzer_context,
       std::vector<std::unique_ptr<Transformation>>* transformations) override;
 
  private:

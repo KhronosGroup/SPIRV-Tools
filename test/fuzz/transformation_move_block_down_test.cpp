@@ -52,8 +52,10 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible1) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
+  FactManager fact_manager;
+
   auto transformation = TransformationMoveBlockDown(11);
-  ASSERT_FALSE(transformation.IsApplicable(context.get()));
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMoveBlockDownTest, NoMovePossible2) {
@@ -87,8 +89,10 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible2) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
+  FactManager fact_manager;
+
   auto transformation = TransformationMoveBlockDown(5);
-  ASSERT_FALSE(transformation.IsApplicable(context.get()));
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMoveBlockDownTest, NoMovePossible3) {
@@ -124,8 +128,10 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible3) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
+  FactManager fact_manager;
+
   auto transformation = TransformationMoveBlockDown(100);
-  ASSERT_FALSE(transformation.IsApplicable(context.get()));
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMoveBlockDownTest, NoMovePossible4) {
@@ -165,8 +171,10 @@ TEST(TransformationMoveBlockDownTest, NoMovePossible4) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
+  FactManager fact_manager;
+
   auto transformation = TransformationMoveBlockDown(12);
-  ASSERT_FALSE(transformation.IsApplicable(context.get()));
+  ASSERT_FALSE(transformation.IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMoveBlockDownTest, MovePossible) {
@@ -231,9 +239,11 @@ TEST(TransformationMoveBlockDownTest, MovePossible) {
   const auto context =
       BuildModule(env, consumer, before_transformation, kFuzzAssembleOption);
 
+  FactManager fact_manager;
+
   auto transformation = TransformationMoveBlockDown(11);
-  ASSERT_TRUE(transformation.IsApplicable(context.get()));
-  transformation.Apply(context.get());
+  ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
+  transformation.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
   CheckEqual(env, after_transformation, context.get());
 }
@@ -337,6 +347,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   const auto context =
       BuildModule(env, consumer, before_transformation, kFuzzAssembleOption);
 
+  FactManager fact_manager;
+
   // The block ids are: 5 14 20 23 21 25 29 32 30 15
   // We make a transformation to move each of them down, plus a transformation
   // to move a non-block, 27, down.
@@ -365,110 +377,110 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   // 15 dominates nothing
 
   // Current ordering: 5 14 20 23 21 25 29 32 30 15
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_20.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_15.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_20.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_15.IsApplicable(context.get(), fact_manager));
 
   // Let's bubble 20 all the way down.
 
-  move_down_20.Apply(context.get());
+  move_down_20.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 23 20 21 25 29 32 30 15
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_20.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_15.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_20.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_15.IsApplicable(context.get(), fact_manager));
 
-  move_down_20.Apply(context.get());
+  move_down_20.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 23 21 20 25 29 32 30 15
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_20.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_15.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_20.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_15.IsApplicable(context.get(), fact_manager));
 
-  move_down_20.Apply(context.get());
+  move_down_20.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 23 21 25 20 29 32 30 15
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_20.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_15.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_20.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_15.IsApplicable(context.get(), fact_manager));
 
-  move_down_20.Apply(context.get());
+  move_down_20.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 23 21 25 29 20 32 30 15
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_20.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_15.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_20.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_15.IsApplicable(context.get(), fact_manager));
 
-  move_down_20.Apply(context.get());
+  move_down_20.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 23 21 25 29 32 20 30 15
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_20.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_15.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_20.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_15.IsApplicable(context.get(), fact_manager));
 
-  move_down_20.Apply(context.get());
+  move_down_20.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 23 21 25 29 32 30 20 15
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_20.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_15.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_20.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_15.IsApplicable(context.get(), fact_manager));
 
-  move_down_20.Apply(context.get());
+  move_down_20.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   std::string after_bubbling_20_down = R"(
@@ -544,63 +556,63 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   CheckEqual(env, after_bubbling_20_down, context.get());
 
   // Current ordering: 5 14 23 21 25 29 32 30 15 20
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_15.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_20.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_15.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_20.IsApplicable(context.get(), fact_manager));
 
-  move_down_23.Apply(context.get());
+  move_down_23.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 21 23 25 29 32 30 15 20
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_15.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_20.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_15.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_20.IsApplicable(context.get(), fact_manager));
 
-  move_down_23.Apply(context.get());
+  move_down_23.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 21 25 23 29 32 30 15 20
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_15.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_20.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_15.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_20.IsApplicable(context.get(), fact_manager));
 
-  move_down_21.Apply(context.get());
+  move_down_21.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   // Current ordering: 5 14 25 21 23 29 32 30 15 20
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_25.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_15.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_20.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_15.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_20.IsApplicable(context.get(), fact_manager));
 
-  move_down_14.Apply(context.get());
+  move_down_14.Apply(context.get(), &fact_manager);
   CheckValid(env, context.get());
 
   std::string after_more_shuffling = R"(
@@ -676,16 +688,16 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   CheckEqual(env, after_more_shuffling, context.get());
 
   // Final ordering: 5 25 14 21 23 29 32 30 15 20
-  ASSERT_FALSE(move_down_5.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_25.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_14.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_21.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_23.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_29.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_32.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_30.IsApplicable(context.get()));
-  ASSERT_TRUE(move_down_15.IsApplicable(context.get()));
-  ASSERT_FALSE(move_down_20.IsApplicable(context.get()));
+  ASSERT_FALSE(move_down_5.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_25.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_14.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_21.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_23.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_29.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_32.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_30.IsApplicable(context.get(), fact_manager));
+  ASSERT_TRUE(move_down_15.IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(move_down_20.IsApplicable(context.get(), fact_manager));
 }
 
 TEST(TransformationMoveBlockDownTest, Protobuf) {
@@ -724,16 +736,18 @@ TEST(TransformationMoveBlockDownTest, Protobuf) {
       BuildModule(env, consumer, before_transformation, kFuzzAssembleOption);
   const auto context2 =
       BuildModule(env, consumer, before_transformation, kFuzzAssembleOption);
+  FactManager fact_manager1;
+  FactManager fact_manager2;
 
   auto transformation1 = TransformationMoveBlockDown(11);
   auto transformation2 = TransformationMoveBlockDown(
       transformation1.ToMessage().move_block_down());
 
-  ASSERT_TRUE(transformation1.IsApplicable(context1.get()));
-  ASSERT_TRUE(transformation2.IsApplicable(context2.get()));
+  ASSERT_TRUE(transformation1.IsApplicable(context1.get(), fact_manager1));
+  ASSERT_TRUE(transformation2.IsApplicable(context2.get(), fact_manager2));
 
-  transformation1.Apply(context1.get());
-  transformation2.Apply(context2.get());
+  transformation1.Apply(context1.get(), &fact_manager1);
+  transformation2.Apply(context2.get(), &fact_manager2);
 
   CheckEqual(env, context1.get(), context2.get());
 }

@@ -21,7 +21,8 @@ namespace fuzz {
 using opt::IRContext;
 
 void FuzzerPassAddDeadBreaks::Apply(
-    IRContext* ir_context, FuzzerContext* fuzzer_context,
+    IRContext* ir_context, FactManager* fact_manager,
+    FuzzerContext* fuzzer_context,
     std::vector<std::unique_ptr<Transformation>>* transformations) {
   // We first collect up lots of possibly-applicable transformations.
   std::vector<std::unique_ptr<TransformationAddDeadBreak>>
@@ -49,7 +50,7 @@ void FuzzerPassAddDeadBreaks::Apply(
             block.id(), merge_block_id,
             fuzzer_context->GetRandomGenerator()->RandomBool(),
             std::move(phi_ids));
-        if (candidate_transformation->IsApplicable(ir_context)) {
+        if (candidate_transformation->IsApplicable(ir_context, *fact_manager)) {
           // Only consider a transformation as a candidate if it is applicable.
           candidate_transformations.push_back(
               std::move(candidate_transformation));
@@ -70,8 +71,8 @@ void FuzzerPassAddDeadBreaks::Apply(
         fuzzer_context->GetChanceOfAddingDeadBreak()) {
       continue;
     }
-    if (transformation->IsApplicable(ir_context)) {
-      transformation->Apply(ir_context);
+    if (transformation->IsApplicable(ir_context, *fact_manager)) {
+      transformation->Apply(ir_context, fact_manager);
       transformations->push_back(std::move(transformation));
     }
   }

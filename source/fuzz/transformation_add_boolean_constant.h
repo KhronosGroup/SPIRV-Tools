@@ -40,11 +40,12 @@ class TransformationAddBooleanConstant : public Transformation {
   // - The module must already contain OpTypeBool.
   // - The module must not already contain an OpConstantTrue (OpConstantFalse)
   // instruction if is_true_ holds (does not hold).
-  bool IsApplicable(opt::IRContext* context) override;
+  bool IsApplicable(opt::IRContext* context,
+                    const FactManager& fact_manager) override;
 
   // - Adds OpConstantTrue (OpConstantFalse) to the module with id |fresh_id_|
   // if is_true_ holds (does not hold).
-  void Apply(opt::IRContext* context) override;
+  void Apply(opt::IRContext* context, FactManager* fact_manager) override;
 
   protobufs::Transformation ToMessage() override;
 

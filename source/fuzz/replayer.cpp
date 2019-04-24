@@ -87,17 +87,21 @@ Replayer::ReplayerResultStatus Replayer::Run(
       impl_->target_env, impl_->consumer, binary_in.data(), binary_in.size());
   assert(ir_context);
 
+  // An empty fact manager.
+  // TODO: settle on a way to provide initial facts.
+  FactManager fact_manager;
+
   // Consider the transformation proto messages in turn.
   for (auto& transformation_message :
        transformation_sequence_in.transformations()) {
     // Create a transformation from the transformation proto message.
     auto transformation = FromMessage(transformation_message);
     // Check whether the transformation can be applied.
-    if (transformation->IsApplicable(ir_context.get())) {
+    if (transformation->IsApplicable(ir_context.get(), fact_manager)) {
       // The transformation is applicable, so apply it, and copy its proto
       // message to the sequence of proto messages for transformations that were
       // applied.
-      transformation->Apply(ir_context.get());
+      transformation->Apply(ir_context.get(), &fact_manager);
       *transformation_sequence_out->add_transformations() =
           transformation_message;
     }

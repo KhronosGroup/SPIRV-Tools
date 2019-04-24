@@ -21,7 +21,8 @@ namespace fuzz {
 using opt::BasicBlock;
 using opt::IRContext;
 
-bool TransformationMoveBlockDown::IsApplicable(IRContext* context) {
+bool TransformationMoveBlockDown::IsApplicable(IRContext* context,
+                                               const FactManager& /*unused*/) {
   // Go through every block in every function, looking for a block whose id
   // matches that of the block we want to consider moving down.
   for (auto& function : *context->module()) {
@@ -59,7 +60,8 @@ bool TransformationMoveBlockDown::IsApplicable(IRContext* context) {
   return false;
 }
 
-void TransformationMoveBlockDown::Apply(IRContext* context) {
+void TransformationMoveBlockDown::Apply(IRContext* context,
+                                        FactManager* /*unused*/) {
   // Go through every block in every function, looking for a block whose id
   // matches that of the block we want to move down.
   for (auto& function : *context->module()) {
