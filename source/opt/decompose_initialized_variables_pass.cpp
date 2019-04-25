@@ -62,7 +62,7 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
     for (auto iter = first_block->begin();
          iter != first_block->end() && iter->opcode() == SpvOpVariable;
          ++iter) {
-      // For valid SPIRV-V, there is guaranteed to be atleast one instruction
+      // For valid SPIRV-V, there is guaranteed to be at least one instruction
       // after the OpVariable instructions.
       insert_point = (*iter).NextNode();
       Instruction* inst = &(*iter);
