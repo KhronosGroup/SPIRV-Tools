@@ -84,21 +84,15 @@ std::string GetGlobalTest(std::string storage_class, bool initialized,
             storage_class + " %uint\n";
   if (initialized) {
     result += "%8 = OpVariable %_ptr_" + storage_class + "_uint " +
-              storage_class + " %3\n";
+              storage_class + " %4\n";
   } else {
     result += "%8 = OpVariable %_ptr_" + storage_class + "_uint " +
               storage_class + "\n";
   }
-  if (decomposed) {
-    result += R"(%1 = OpFunction %void None %10
-%10 = OpLabel
-OpStore %8 %9
-)";
-  } else {
-    result += R"(%1 = OpFunction %void None %9
+  result += R"(%1 = OpFunction %void None %9
 %9 = OpLabel
 )";
-  }
+  if (decomposed) result += "OpStore %8 %4\n";
   result += R"(OpReturn
 OpFunctionEnd
 )";
@@ -155,29 +149,20 @@ std::string GetGlobalMultipleEntryTest(std::string storage_class,
     result += "%8 = OpVariable %_ptr_" + storage_class + "_uint " +
               storage_class + "\n";
   }
-  if (decomposed) {
-    result += R"(%1 = OpFunction %void None %9
+  result += R"(%1 = OpFunction %void None %9
 %9 = OpLabel
-OpStore %8 %4
-OpReturn
+)";
+  if (decomposed) result += "OpStore %8 %4\n";
+  result += R"(OpReturn
 OpFunctionEnd
 %2 = OpFunction %void None %10
 %10 = OpLabel
-OpStore %8 %4
-OpReturn
+)";
+  if (decomposed) result += "OpStore %8 %4\n";
+  result += R"(OpReturn
 OpFunctionEnd
 )";
-  } else {
-    result += R"(%1 = OpFunction %void None %9
-%9 = OpLabel
-OpReturn
-OpFunctionEnd
-%2 = OpFunction %void None %10
-%10 = OpLabel
-OpReturn
-OpFunctionEnd
-)";
-  }
+
   return result;
 }
 
@@ -214,33 +199,23 @@ std::string GetGlobalWithNonEntryPointTest(std::string storage_class,
             storage_class + " %uint\n";
   if (initialized) {
     result += "%8 = OpVariable %_ptr_" + storage_class + "_uint " +
-              storage_class + " %3\n";
+              storage_class + " %4\n";
   } else {
     result += "%8 = OpVariable %_ptr_" + storage_class + "_uint " +
               storage_class + "\n";
   }
-  if (decomposed) {
-    result += R"(%1 = OpFunction %void None %10
-%10 = OpLabel
-OpStore %8 %9
-OpReturn
-OpFunctionEnd
-%11 = OpFunction %void None %12
-%12 = OpLabel
-OpReturn
-OpFunctionEnd
-)";
-  } else {
-    result += R"(%1 = OpFunction %void None %9
+  result += R"(%1 = OpFunction %void None %9
 %9 = OpLabel
-OpReturn
+)";
+  if (decomposed) result += "OpStore %8 %4\n";
+  result += R"(OpReturn
 OpFunctionEnd
 %10 = OpFunction %void None %11
 %11 = OpLabel
 OpReturn
 OpFunctionEnd
 )";
-  }
+
   return result;
 }
 

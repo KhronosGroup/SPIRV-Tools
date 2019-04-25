@@ -34,7 +34,7 @@ bool HasInitializer(Instruction* inst) {
 
 Pass::Status DecomposeInitializedVariablesPass::Process() {
   auto* module = context()->module();
-  bool changed = false;
+  std::unordered_set<Instruction*> changed;
 
   std::vector<std::tuple<uint32_t, uint32_t>> global_stores;
   for (auto iter = module->types_values_begin();
@@ -42,11 +42,11 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
     Instruction* inst = &(*iter);
     if (!HasInitializer(inst)) continue;
 
-    changed = true;
     auto var_id = inst->result_id();
     auto val_id = inst->GetOperand(3).words[0];
     global_stores.push_back(std::make_tuple(var_id, val_id));
     iter->RemoveOperand(3);
+    changed.insert(&*iter);
   }
 
   std::unordered_set<uint32_t> entry_ids;
@@ -58,15 +58,16 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
   for (auto func = module->begin(); func != module->end(); ++func) {
     std::vector<Instruction*> function_stores;
     auto first_block = func->entry().get();
-    inst_iterator last_var = first_block->end();
+    inst_iterator insert_point = first_block->begin();
     for (auto iter = first_block->begin();
          iter != first_block->end() && iter->opcode() == SpvOpVariable;
          ++iter) {
-      last_var = iter;
+      // For valid SPIRV-V, there is guaranteed to be atleast one instruction
+      // after the OpVariable instructions.
+      insert_point = (*iter).NextNode();
       Instruction* inst = &(*iter);
       if (!HasInitializer(inst)) continue;
 
-      changed = true;
       auto var_id = inst->result_id();
       auto val_id = inst->GetOperand(3).words[0];
       Instruction* store_inst = new Instruction(
@@ -74,6 +75,7 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
           {{SPV_OPERAND_TYPE_ID, {var_id}}, {SPV_OPERAND_TYPE_ID, {val_id}}});
       function_stores.push_back(store_inst);
       iter->RemoveOperand(3);
+      changed.insert(&*iter);
     }
 
     if (entry_ids.find(func->result_id()) != entry_ids.end()) {
@@ -84,29 +86,26 @@ Pass::Status DecomposeInitializedVariablesPass::Process() {
         auto* store_inst = new Instruction(
             context(), SpvOpStore, 0, 0,
             {{SPV_OPERAND_TYPE_ID, {var_id}}, {SPV_OPERAND_TYPE_ID, {val_id}}});
-        context()->AnalyzeDefUse(store_inst);
         context()->set_instr_block(store_inst, &*first_block);
         first_block->AddInstruction(std::unique_ptr<Instruction>(store_inst));
-        if (last_var == first_block->end()) {
-          store_inst->InsertBefore(&*first_block->begin());
-        } else {
-          store_inst->InsertAfter(&*last_var);
-        }
-        last_var = store_inst;
+        store_inst->InsertBefore(&*insert_point);
+        changed.insert(store_inst);
       }
     }
 
     for (auto store = function_stores.begin(); store != function_stores.end();
          ++store) {
-      context()->AnalyzeDefUse(*store);
       context()->set_instr_block(*store, first_block);
-      (*store)->InsertAfter(&*last_var);
-      last_var = *store;
+      (*store)->InsertBefore(&*insert_point);
+      changed.insert(*store);
     }
   }
 
-  return changed ? Pass::Status::SuccessWithChange
-                 : Pass::Status::SuccessWithoutChange;
+  auto* def_use_mgr = get_def_use_mgr();
+  for (auto* inst : changed) def_use_mgr->UpdateDefUse(inst);
+
+  return !changed.empty() ? Pass::Status::SuccessWithChange
+                          : Pass::Status::SuccessWithoutChange;
 }
 
 }  // namespace opt
