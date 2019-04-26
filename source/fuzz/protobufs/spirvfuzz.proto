@@ -11,7 +11,8 @@ message Transformation {
     TransformationAddBooleanConstant add_boolean_constant = 1;
     TransformationAddDeadBreak add_dead_break = 2;
     TransformationMoveBlockDown move_block_down = 3;
-    TransformationSplitBlock split_block = 4;
+    TransformationReplaceConstantWithUniform replace_constant_with_uniform = 4;
+    TransformationSplitBlock split_block = 5;
   }
 }
 
@@ -29,6 +30,9 @@ message TransformationAddDeadBreak {
 
 message TransformationMoveBlockDown {
   uint32 block_id = 1;
+}
+
+message TransformationReplaceConstantWithUniform {
 }
 
 message TransformationSplitBlock {
