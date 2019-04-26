@@ -230,7 +230,7 @@ bool ScalarReplacementPass::ReplaceAccessChain(
     // Out of bounds access, this is illegal IR.
     return false;
   } else {
-    const Instruction* var = replacements[indexValue];
+    const Instruction* var = replacements[static_cast<size_t>(indexValue)];
     if (chain->NumInOperands() > 2) {
       // Replace input access chain with another access chain.
       BasicBlock::iterator chainIter(chain);
