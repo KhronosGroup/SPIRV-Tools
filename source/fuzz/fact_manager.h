@@ -1,3 +1,5 @@
+#include <utility>
+
 // Copyright (c) 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +17,8 @@
 #ifndef SOURCE_FUZZ_FACT_MANAGER_H_
 #define SOURCE_FUZZ_FACT_MANAGER_H_
 
+#include "source/opt/constants.h"
+
 namespace spvtools {
 namespace fuzz {
 
@@ -29,11 +33,70 @@ namespace fuzz {
 // the module.
 class FactManager {
  public:
+  // Represents a data element inside a uniform buffer via the result id
+  // of a uniform variable instruction, and a series of indices to follow,
+  // in order to drill through composite structures in the uniform buffer
+  // to get to an element.
+  struct UniformBufferElementDescriptor {
+    UniformBufferElementDescriptor(uint32_t uniform_variable_id_arg,
+                                   std::vector<uint32_t>&& indices_arg)
+        : uniform_variable_id(uniform_variable_id_arg),
+          indices(std::move(indices_arg)) {}
+
+    bool operator==(const UniformBufferElementDescriptor& rhs) const {
+      return uniform_variable_id == rhs.uniform_variable_id &&
+             indices == rhs.indices;
+    }
+
+    // The result id of a uniform variable.
+    uint32_t uniform_variable_id;
+    // An ordered sequence of indices through composite structures in the
+    // uniform buffer.
+    std::vector<uint32_t> indices;
+  };
+
   FactManager() = default;
 
   virtual ~FactManager() = default;
 
+  void AddUniformFloatValueFact(uint32_t width, std::vector<uint32_t>&& data,
+                                UniformBufferElementDescriptor&& descriptor);
+  void AddUniformIntValueFact(uint32_t width, bool is_signed,
+                              std::vector<uint32_t>&& data,
+                              UniformBufferElementDescriptor&& descriptor);
+  void AddUniformBoolValueFact(bool value,
+                               UniformBufferElementDescriptor&& descriptor);
+
+  std::vector<const opt::analysis::Constant*>
+  ConstantsAvailableFromUniformsForType(const opt::analysis::Type& type);
+
+  const std::vector<UniformBufferElementDescriptor>*
+  GetUniformDescriptorsForConstant(const opt::analysis::Constant& constant);
+
+  const opt::analysis::Constant* GetConstantFromUniformDescriptor(
+      const UniformBufferElementDescriptor& uniform_descriptor) const;
+
  private:
+  const opt::analysis::Type* FindOrRegisterType(
+      const opt::analysis::Type* type);
+  const opt::analysis::Constant* FindOrRegisterConstant(
+      const opt::analysis::Constant* constant);
+  void AddUniformConstantFact(const opt::analysis::Constant* constant,
+                              UniformBufferElementDescriptor&& descriptor);
+
+  std::unordered_set<const opt::analysis::Type*, opt::analysis::HashTypePointer,
+                     opt::analysis::CompareTypePointers>
+      type_pool_;
+  std::vector<std::unique_ptr<opt::analysis::Type>> owned_types_;
+
+  std::unordered_set<const opt::analysis::Constant*,
+                     opt::analysis::ConstantHash, opt::analysis::ConstantEqual>
+      constant_pool_;
+  std::vector<std::unique_ptr<opt::analysis::Constant>> owned_constants_;
+
+  std::map<const opt::analysis::Constant*,
+           std::vector<UniformBufferElementDescriptor>>
+      constant_to_uniform_descriptors_;
 };
 
 }  // namespace fuzz

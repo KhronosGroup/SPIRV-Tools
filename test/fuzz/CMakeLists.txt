@@ -13,11 +13,15 @@
 # limitations under the License.
 
 add_spvtools_unittest(TARGET fuzz
-        SRCS fuzz_test_util.cpp
+        SRCS
         fuzz_test_util.h
+
+        fact_manager_test.cpp
+        fuzz_test_util.cpp
         transformation_add_boolean_constant_test.cpp
         transformation_add_dead_break_test.cpp
         transformation_move_block_down_test.cpp
+        transformation_replace_constant_with_uniform_test.cpp
         transformation_split_block_test.cpp
         LIBS SPIRV-Tools-fuzz
         )
