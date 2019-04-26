@@ -33,12 +33,11 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
            << "OpEntryPoint Entry Point <id> '" << _.getIdName(entry_point_id)
            << "' is not a function.";
   }
-  // don't check kernel function signatures
+
+  // Only check the shader execution models
   const SpvExecutionModel execution_model =
       inst->GetOperandAs<SpvExecutionModel>(0);
   if (execution_model != SpvExecutionModelKernel) {
-    // TODO: Check the entry point signature is void main(void), may be subject
-    // to change
     const auto entry_point_type_id = entry_point->GetOperandAs<uint32_t>(3);
     const auto entry_point_type = _.FindDef(entry_point_type_id);
     if (!entry_point_type || 3 != entry_point_type->words().size()) {
