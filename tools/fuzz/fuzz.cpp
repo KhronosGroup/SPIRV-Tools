@@ -51,7 +51,8 @@ Options (in lexicographical order):
 
   -h, --help
                Print this help.
-  --seed       Unsigned 32-bit integer seed to control random number
+  --seed
+               Unsigned 32-bit integer seed to control random number
                generation.
   --version
                Display fuzzer version information.
