@@ -52,7 +52,13 @@ class TransformationSplitBlock : public Transformation {
   // right before the instruction |offset_| instructions after |result_id_|.
   const uint32_t offset_;
   // An id that must not yet be used by the module to which this transformation
-  // is applied.
+  // is applied.  Rather than having the transformation choose a suitable id on
+  // application, we require the id to be given upfront in order to facilitate
+  // reducing fuzzed shaders by removing transformations.  The reason is that
+  // future transformations may refer to the fresh id introduced by this
+  // transformation, and if we end up changing what that id is, due to removing
+  // earlier transformations, it may inhibit later transformations from
+  // applying.
   const uint32_t fresh_id_;
 
   // Returns (true, block.end()) if the relevant instruction is in this block
