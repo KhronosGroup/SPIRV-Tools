@@ -72,6 +72,8 @@ Fuzzer::FuzzerResultStatus Fuzzer::Run(std::vector<uint32_t>&& binary_in,
   // gives the smallest id that can be used for this purpose.  We add an offset
   // to this so that there is a sizeable gap between the ids used in the
   // original module and the ids used for fuzzing, as a readability aid.
+  //
+  // TODO(2541) consider the case where the maximum id bound is reached.
   auto minimum_fresh_id = ir_context->module()->id_bound() + 100;
   FuzzerContext fuzzer_context(&random_generator, minimum_fresh_id);
 
