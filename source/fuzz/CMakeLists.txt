@@ -21,6 +21,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_split_blocks.h
         fuzzer_util.h
+        id_use_descriptor.h
         protobufs/spirvfuzz.pb.h
         pseudo_random_generator.h
         random_generator.h
@@ -29,6 +30,7 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         transformation_add_boolean_constant.h
         transformation_add_dead_break.h
         transformation_move_block_down.h
+        transformation_replace_constant_with_uniform.h
         transformation_split_block.h
 
         fact_manager.cpp
@@ -39,12 +41,14 @@ set(SPIRV_TOOLS_FUZZ_SOURCES
         fuzzer_pass_permute_blocks.cpp
         fuzzer_pass_split_blocks.cpp
         fuzzer_util.cpp
+        id_use_descriptor.cpp
         protobufs/spirvfuzz.pb.cc
         pseudo_random_generator.cpp
         replayer.cpp
         transformation_add_boolean_constant.cpp
         transformation_add_dead_break.cpp
         transformation_move_block_down.cpp
+        transformation_replace_constant_with_uniform.cpp
         transformation_split_block.cpp
         )
 
