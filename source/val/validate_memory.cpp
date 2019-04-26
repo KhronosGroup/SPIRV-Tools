@@ -427,6 +427,27 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       }
     }
   }
+  // Vulkan Appendix A: Validation Rules within a Module
+  // Check when VK_KHR_shader_float16_int8 is enabled but
+  // VK_KHR_8bit_storage or VK_KHR_16bit_storage are not.
+  if (_.IncludesIntOrFloatOfWidth(result_type->word(3), SpvOpTypeInt, 8) &&
+      !_.HasCapability(SpvCapabilityStorageBuffer8BitAccess) &&
+      (storage_class == SpvStorageClassUniform ||
+       storage_class == SpvStorageClassPushConstant ||
+       storage_class == SpvStorageClassStorageBuffer)) {
+    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+           << "Variables can not point to an 8-bit integer "
+              "without 8-bit storage capabilities";
+  }
+  if (_.IncludesIntOrFloatOfWidth(result_type->word(3), SpvOpTypeFloat, 16) &&
+      !_.HasCapability(SpvCapabilityStorageBuffer16BitAccess) &&
+      (storage_class == SpvStorageClassUniform ||
+       storage_class == SpvStorageClassPushConstant ||
+       storage_class == SpvStorageClassStorageBuffer)) {
+    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+           << "Variables can not point to a 16-bit float "
+              "without 16-bit storage capabilities";
+  }
 
   // Vulkan 14.5.1: Check type of PushConstant variables.
   // Vulkan 14.5.2: Check type of UniformConstant and Uniform variables.

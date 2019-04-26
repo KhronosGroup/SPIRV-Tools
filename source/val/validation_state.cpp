@@ -839,12 +839,18 @@ bool ValidationState_t::IncludesIntOrFloatOfWidth(uint32_t id, SpvOp check_type,
   switch (inst->opcode()) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
-    case SpvOpTypeBool:
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-    case SpvOpTypeArray:
-      return GetComponentType(inst->id()) == check_type &&
+    case SpvOpTypeBool: {
+      return inst->opcode() == check_type &&
              GetBitWidth(inst->id()) == check_width;
+    }
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector:
+    case SpvOpTypeArray:
+    case SpvOpTypeRuntimeArray: {
+      if (IncludesIntOrFloatOfWidth(inst->word(2), check_type, check_width)) {
+        return true;
+      }
+    }
     case SpvOpTypeStruct: {
       std::vector<uint32_t> member_types;
       GetStructMemberTypes(inst->id(), &member_types);
