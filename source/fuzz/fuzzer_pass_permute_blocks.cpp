@@ -38,8 +38,19 @@ void FuzzerPassPermuteBlocks::Apply(
     for (auto& block : function) {
       block_ids.push_back(block.id());
     }
-    // Now consider each block id.
-    for (auto id : block_ids) {
+    // Now consider each block id.  We consider block ids in reverse, because
+    // e.g. in code generated from the following:
+    //
+    // if (...) {
+    //   A
+    //   B
+    // } else {
+    //   C
+    // }
+    //
+    // block A cannot be moved down, but B has freedom to move and that movement
+    // would provide more freedom for A to move.
+    for (auto id = block_ids.rbegin(); id != block_ids.rend(); ++id) {
       // Randomly decide whether to ignore the block id.
       if (fuzzer_context->GetRandomGenerator()->RandomPercentage() >
           fuzzer_context->GetChanceOfMovingBlockDown()) {
@@ -50,7 +61,7 @@ void FuzzerPassPermuteBlocks::Apply(
       // down indefinitely.
       while (true) {
         std::unique_ptr<TransformationMoveBlockDown> transformation =
-            MakeUnique<TransformationMoveBlockDown>(id);
+            MakeUnique<TransformationMoveBlockDown>(*id);
         if (transformation->IsApplicable(ir_context)) {
           transformation->Apply(ir_context);
           transformations->push_back(std::move(transformation));
