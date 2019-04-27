@@ -431,7 +431,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   // Check when VK_KHR_shader_float16_int8 is enabled but
   // VK_KHR_8bit_storage or VK_KHR_16bit_storage are not.
   if (_.IncludesIntOrFloatOfWidth(result_type->word(3), SpvOpTypeInt, 8) &&
-      !_.HasCapability(SpvCapabilityStorageBuffer8BitAccess) &&
+      !_.HasExtension(kSPV_KHR_8bit_storage) &&
       (storage_class == SpvStorageClassUniform ||
        storage_class == SpvStorageClassPushConstant ||
        storage_class == SpvStorageClassStorageBuffer)) {
@@ -440,7 +440,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
               "without 8-bit storage capabilities";
   }
   if (_.IncludesIntOrFloatOfWidth(result_type->word(3), SpvOpTypeFloat, 16) &&
-      !_.HasCapability(SpvCapabilityStorageBuffer16BitAccess) &&
+      !_.HasExtension(kSPV_KHR_16bit_storage) &&
       (storage_class == SpvStorageClassUniform ||
        storage_class == SpvStorageClassPushConstant ||
        storage_class == SpvStorageClassStorageBuffer)) {
