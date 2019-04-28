@@ -1122,6 +1122,7 @@ std::set<uint32_t> ValidationState_t::EntryPointReferences(uint32_t id) const {
 }
 
 std::string ValidationState_t::Disassemble(const Instruction& inst) const {
+  // TODO(fjhenigman): is there a reason for this copy?
   const spv_parsed_instruction_t& c_inst(inst.c_inst());
   return Disassemble(c_inst.words, c_inst.num_words);
 }

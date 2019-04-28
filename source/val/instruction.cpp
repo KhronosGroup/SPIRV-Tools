@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/val/instruction.h"
+#include "spirv-tools/instructions.hpp"
 
 #include <utility>
 
@@ -20,11 +21,27 @@ namespace spvtools {
 namespace val {
 
 Instruction::Instruction(const spv_parsed_instruction_t* inst)
-    : words_(inst->words, inst->words + inst->num_words),
-      operands_(inst->operands, inst->operands + inst->num_operands),
-      inst_({words_.data(), inst->num_words, inst->opcode, inst->ext_inst_type,
-             inst->type_id, inst->result_id, operands_.data(),
-             inst->num_operands}) {}
+    : inst_(spvtools::Instruction::Make(inst)) {
+  assert(inst_);
+}
+
+uint32_t Instruction::word(size_t index) const { return inst_->words()[index]; }
+
+const std::vector<uint32_t>& Instruction::words() const {
+  return inst_->words();
+}
+
+const spv_parsed_operand_t& Instruction::operand(size_t idx) const {
+  return inst_->operands()[idx];
+}
+
+const std::vector<spv_parsed_operand_t>& Instruction::operands() const {
+  return inst_->operands();
+}
+
+const spv_parsed_instruction_t& Instruction::c_inst() const {
+  return inst_->c_inst();
+}
 
 void Instruction::RegisterUse(const Instruction* inst, uint32_t index) {
   uses_.push_back(std::make_pair(inst, index));

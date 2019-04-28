@@ -16,6 +16,7 @@ set(GRAMMAR_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_grammar_
 set(VIMSYNTAX_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_vim_syntax.py")
 set(XML_REGISTRY_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_registry_tables.py")
 set(LANG_HEADER_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_language_headers.py")
+set(INSTRUCTION_API_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_instruction_api.py")
 
 # For now, assume the DebugInfo grammar file is in the current directory.
 # It might migrate to SPIRV-Headers.
@@ -130,6 +131,21 @@ macro(spvtools_extinst_lang_headers NAME GRAMMAR_FILE)
   list(APPEND EXTINST_CPP_DEPENDS spirv-tools-header-${NAME})
 endmacro(spvtools_extinst_lang_headers)
 
+macro(spvtools_instruction_api OUT_DIR OUT_TYPE)
+  set(OUT_FILE ${OUT_DIR}/instructions.${OUT_TYPE}.inc)
+  add_custom_command(OUTPUT ${OUT_FILE}
+    COMMAND ${PYTHON_EXECUTABLE} ${INSTRUCTION_API_PROCESSING_SCRIPT}
+      "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/spirv.json"
+      "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/spirv.core.grammar.json"
+      ${OUT_TYPE}
+      > ${OUT_FILE}
+    DEPENDS ${INSTRUCTION_API_PROCESSING_SCRIPT}
+      "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/spirv.json"
+      "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/spirv.core.grammar.json"
+  )
+  add_custom_target(instructions-${OUT_TYPE}-inc DEPENDS ${OUT_FILE})
+endmacro(spvtools_instruction_api)
+
 spvtools_core_tables("unified1")
 spvtools_enum_string_mapping("unified1")
 spvtools_opencl_tables("unified1")
@@ -140,6 +156,8 @@ spvtools_vendor_tables("spv-amd-gcn-shader" "spv-amd-gs")
 spvtools_vendor_tables("spv-amd-shader-ballot" "spv-amd-sb")
 spvtools_vendor_tables("debuginfo" "debuginfo")
 spvtools_extinst_lang_headers("DebugInfo" ${DEBUGINFO_GRAMMAR_JSON_FILE})
+spvtools_instruction_api(${spirv-tools_SOURCE_DIR}/include/spirv-tools "hpp")
+spvtools_instruction_api(${spirv-tools_SOURCE_DIR}/source "cpp")
 
 spvtools_vimsyntax("unified1" "1.0")
 add_custom_target(spirv-tools-vimsyntax DEPENDS ${VIMSYNTAX_FILE})
@@ -203,6 +221,8 @@ add_subdirectory(link)
 
 set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
+  ${spirv-tools_SOURCE_DIR}/include/spirv-tools/instructions.hpp
+  ${spirv-tools_SOURCE_DIR}/include/spirv-tools/instructions.hpp.inc
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bitutils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_vector.h
@@ -255,6 +275,8 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/id_descriptor.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/instructions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/instructions.cpp.inc
   ${CMAKE_CURRENT_SOURCE_DIR}/libspirv.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/name_mapper.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/opcode.cpp
