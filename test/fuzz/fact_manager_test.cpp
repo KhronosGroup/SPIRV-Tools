@@ -320,10 +320,17 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   ASSERT_EQ(FactManager::UniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}),
             (*descriptors_for_double_20)[0]);
 
-  ASSERT_TRUE(opt::analysis::ConstantEqual()(
-      double_constants[0],
-      fact_manager.GetConstantFromUniformDescriptor(
-          FactManager::UniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}))));
+  auto constant_1 = fact_manager.GetConstantFromUniformDescriptor(
+      FactManager::UniformBufferElementDescriptor(18, {9, 9, 2}));
+  ASSERT_TRUE(constant_1 != nullptr);
+
+  auto constant_2 = fact_manager.GetConstantFromUniformDescriptor(
+      FactManager::UniformBufferElementDescriptor(19, {0, 0, 0, 0, 0}));
+  ASSERT_TRUE(constant_2 != nullptr);
+
+  ASSERT_TRUE(opt::analysis::ConstantEqual()(double_constants[0], constant_1));
+
+  ASSERT_TRUE(opt::analysis::ConstantEqual()(double_constants[1], constant_2));
 }
 
 }  // namespace
