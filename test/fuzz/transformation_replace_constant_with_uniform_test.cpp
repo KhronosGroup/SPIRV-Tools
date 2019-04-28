@@ -101,7 +101,7 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   IdUseDescriptor use_of_11_in_add(11, SpvOpIAdd, 1, 12, 0);
   IdUseDescriptor use_of_14_in_add(14, SpvOpIAdd, 0, 15, 0);
 
-  // These transformatios work: they match the facts.
+  // These transformations work: they match the facts.
   ASSERT_TRUE(
       TransformationReplaceConstantWithUniform(use_of_9_in_store, blockname_a)
           .IsApplicable(context.get(), fact_manager));
