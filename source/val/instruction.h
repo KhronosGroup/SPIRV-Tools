@@ -25,13 +25,16 @@
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
+
+class Instruction;
+
 namespace val {
 
 class BasicBlock;
 class Function;
 
-/// Wraps the spv_parsed_instruction struct along with use and definition of the
-/// instruction's result id
+/// Contains a spvtools::Instruction plus all validator-specific per-instruction
+/// data and methods.
 class Instruction {
  public:
   explicit Instruction(const spv_parsed_instruction_t* inst);
@@ -39,9 +42,9 @@ class Instruction {
   /// Registers the use of the Instruction in instruction \p inst at \p index
   void RegisterUse(const Instruction* inst, uint32_t index);
 
-  uint32_t id() const { return inst_.result_id; }
-  uint32_t type_id() const { return inst_.type_id; }
-  SpvOp opcode() const { return static_cast<SpvOp>(inst_.opcode); }
+  uint32_t id() const { return c_inst().result_id; }
+  uint32_t type_id() const { return c_inst().type_id; }
+  SpvOp opcode() const { return static_cast<SpvOp>(c_inst().opcode); }
 
   /// Returns the Function where the instruction was defined. nullptr if it was
   /// defined outside of a Function
@@ -61,46 +64,47 @@ class Instruction {
     return uses_;
   }
 
+  size_t LineNum() const { return line_num_; }
+  void SetLineNum(size_t pos) { line_num_ = pos; }
+
+  const spvtools::Instruction* inst() const { return inst_.get(); };
+
+  // TODO(fjhenigman): eliminate usage of the following methods and delete them.
+  // The are not specific to the validator and we can use the
+  // spvtools::Instruction interfaces instead.
+
   /// The word used to define the Instruction
-  uint32_t word(size_t index) const { return words_[index]; }
+  uint32_t word(size_t index) const;
 
   /// The words used to define the Instruction
-  const std::vector<uint32_t>& words() const { return words_; }
+  const std::vector<uint32_t>& words() const;
 
   /// Returns the operand at |idx|.
-  const spv_parsed_operand_t& operand(size_t idx) const {
-    return operands_[idx];
-  }
+  const spv_parsed_operand_t& operand(size_t idx) const;
 
   /// The operands of the Instruction
-  const std::vector<spv_parsed_operand_t>& operands() const {
-    return operands_;
-  }
+  const std::vector<spv_parsed_operand_t>& operands() const;
 
   /// Provides direct access to the stored C instruction object.
-  const spv_parsed_instruction_t& c_inst() const { return inst_; }
+  const spv_parsed_instruction_t& c_inst() const;
 
   /// Provides direct access to instructions spv_ext_inst_type_t object.
   const spv_ext_inst_type_t& ext_inst_type() const {
-    return inst_.ext_inst_type;
+    return c_inst().ext_inst_type;
   }
 
   // Casts the words belonging to the operand under |index| to |T| and returns.
   template <typename T>
   T GetOperandAs(size_t index) const {
-    const spv_parsed_operand_t& o = operands_.at(index);
+    const spv_parsed_operand_t& o = operands().at(index);
     assert(o.num_words * 4 >= sizeof(T));
-    assert(o.offset + o.num_words <= inst_.num_words);
-    return *reinterpret_cast<const T*>(&words_[o.offset]);
+    assert(o.offset + o.num_words <= c_inst().num_words);
+    return *reinterpret_cast<const T*>(&words()[o.offset]);
   }
 
-  size_t LineNum() const { return line_num_; }
-  void SetLineNum(size_t pos) { line_num_ = pos; }
-
  private:
-  const std::vector<uint32_t> words_;
-  const std::vector<spv_parsed_operand_t> operands_;
-  spv_parsed_instruction_t inst_;
+  std::shared_ptr<const spvtools::Instruction> inst_;
+
   size_t line_num_ = 0;
 
   /// The function in which this instruction was declared

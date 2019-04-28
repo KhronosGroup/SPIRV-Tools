@@ -35,6 +35,7 @@
 #include "source/val/decoration.h"
 #include "source/val/function.h"
 #include "source/val/instruction.h"
+#include "spirv-tools/instructions.hpp"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
@@ -432,6 +433,14 @@ class ValidationState_t {
   /// Finds id's def, if it exists.  If found, returns the definition otherwise
   /// nullptr
   Instruction* FindDef(uint32_t id);
+
+  /// Return instruction with given type and id, else nullptr.
+  template <typename T>
+  const T* FindInst(uint32_t id) const {
+    const Instruction* inst = FindDef(id);
+    if (inst) return inst->inst()->Get<T>();
+    return nullptr;
+  }
 
   /// Returns the instructions in the order they appear in the binary
   const std::vector<Instruction>& ordered_instructions() const {
