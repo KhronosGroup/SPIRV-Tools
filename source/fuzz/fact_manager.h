@@ -55,6 +55,24 @@ class FactManager {
     std::vector<uint32_t> indices;
   };
 
+  struct UniformBufferElementHash {
+    size_t operator()(const UniformBufferElementDescriptor* descriptor) const {
+      std::u32string data;
+      data.push_back(descriptor->uniform_variable_id);
+      for (auto id : descriptor->indices) {
+        data.push_back(id);
+      }
+      return std::hash<std::u32string>()(data);
+    }
+  };
+
+  struct UniformBufferElementEquals {
+    bool operator()(const UniformBufferElementDescriptor* first,
+                    const UniformBufferElementDescriptor* second) const {
+      return *first == *second;
+    }
+  };
+
   FactManager() = default;
 
   virtual ~FactManager() = default;
@@ -97,6 +115,11 @@ class FactManager {
   std::map<const opt::analysis::Constant*,
            std::vector<UniformBufferElementDescriptor>>
       constant_to_uniform_descriptors_;
+
+  std::unordered_map<const UniformBufferElementDescriptor*,
+                     const opt::analysis::Constant*, UniformBufferElementHash,
+                     UniformBufferElementEquals>
+      uniform_descriptor_to_constant_;
 };
 
 }  // namespace fuzz

@@ -55,6 +55,12 @@ void FactManager::AddUniformConstantFact(
   }
   constant_to_uniform_descriptors_.find(registered_constant)
       ->second.push_back(descriptor);
+  const UniformBufferElementDescriptor* descriptor_ptr =
+      &constant_to_uniform_descriptors_.find(registered_constant)
+           ->second.back();
+  assert(uniform_descriptor_to_constant_.find(descriptor_ptr) ==
+         uniform_descriptor_to_constant_.end());
+  uniform_descriptor_to_constant_[descriptor_ptr] = registered_constant;
 }
 
 void FactManager::AddUniformFloatValueFact(
@@ -115,9 +121,11 @@ FactManager::GetUniformDescriptorsForConstant(
 const opt::analysis::Constant* FactManager::GetConstantFromUniformDescriptor(
     const spvtools::fuzz::FactManager::UniformBufferElementDescriptor&
         uniform_descriptor) const {
-  (void)(uniform_descriptor);
-  assert(false && "TODO");
-  return nullptr;
+  if (uniform_descriptor_to_constant_.find(&uniform_descriptor) ==
+      uniform_descriptor_to_constant_.end()) {
+    return nullptr;
+  }
+  return uniform_descriptor_to_constant_.at(&uniform_descriptor);
 }
 
 }  // namespace fuzz
