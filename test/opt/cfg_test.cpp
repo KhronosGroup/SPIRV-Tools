@@ -190,9 +190,9 @@ OpFunctionEnd
   Module* module = context->module();
   Function* function = &*module->begin();
   std::vector<uint32_t> order;
-  cfg->ForEachBlockInPostOrder(&*function->begin(), [&order](BasicBlock* bb) {
-    order.push_back(bb->id());
-  });
+  cfg->ForEachBlockInReversePostOrder(
+      &*function->begin(),
+      [&order](BasicBlock* bb) { order.push_back(bb->id()); });
 
   std::vector<uint32_t> expected_result1 = {8, 9, 10, 11};
   std::vector<uint32_t> expected_result2 = {8, 9, 11, 10};
