@@ -65,7 +65,7 @@ void FactManager::AddUniformConstantFact(
 
 void FactManager::AddUniformFloatValueFact(
     uint32_t width, std::vector<uint32_t>&& data,
-    UniformBufferElementDescriptor&& descriptor) {
+    UniformBufferElementDescriptor descriptor) {
   opt::analysis::Float float_type = opt::analysis::Float(width);
   opt::analysis::FloatConstant float_constant = opt::analysis::FloatConstant(
       FindOrRegisterType(&float_type)->AsFloat(), data);
@@ -74,20 +74,12 @@ void FactManager::AddUniformFloatValueFact(
 
 void FactManager::AddUniformIntValueFact(
     uint32_t width, bool is_signed, std::vector<uint32_t>&& data,
-    UniformBufferElementDescriptor&& descriptor) {
+    UniformBufferElementDescriptor descriptor) {
   opt::analysis::Integer integer_type =
       opt::analysis::Integer(width, is_signed);
   opt::analysis::IntConstant int_constant = opt::analysis::IntConstant(
       FindOrRegisterType(&integer_type)->AsInteger(), data);
   AddUniformConstantFact(&int_constant, std::move(descriptor));
-}
-
-void FactManager::AddUniformBoolValueFact(
-    bool value, UniformBufferElementDescriptor&& descriptor) {
-  opt::analysis::Bool bool_type;
-  opt::analysis::BoolConstant bool_constant = opt::analysis::BoolConstant(
-      FindOrRegisterType(&bool_type)->AsBool(), value);
-  AddUniformConstantFact(&bool_constant, std::move(descriptor));
 }
 
 std::vector<const opt::analysis::Constant*>

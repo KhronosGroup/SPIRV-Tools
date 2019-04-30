@@ -28,9 +28,15 @@ class TransformationReplaceConstantWithUniform : public Transformation {
   // TODO.
   TransformationReplaceConstantWithUniform(
       module_navigation::IdUseDescriptor id_use_descriptor,
-      FactManager::UniformBufferElementDescriptor uniform_descriptor)
+      FactManager::UniformBufferElementDescriptor uniform_descriptor,
+      uint32_t fresh_id_for_access_chain, uint32_t fresh_id_for_load)
       : id_use_descriptor_(id_use_descriptor),
-        uniform_descriptor_(uniform_descriptor) {}
+        uniform_descriptor_(uniform_descriptor),
+        fresh_id_for_access_chain_(fresh_id_for_access_chain),
+        fresh_id_for_load_(fresh_id_for_load) {
+    assert(fresh_id_for_access_chain_ != fresh_id_for_load_ &&
+           "Fresh ids for access chain and load result cannot be the same.");
+  }
 
   // Constructs a transformation from a protobuf message.
   explicit TransformationReplaceConstantWithUniform(
@@ -53,6 +59,10 @@ class TransformationReplaceConstantWithUniform : public Transformation {
 
   // Uniform descriptor to identify which uniform value to choose.
   const FactManager::UniformBufferElementDescriptor uniform_descriptor_;
+
+  const uint32_t fresh_id_for_access_chain_;
+
+  const uint32_t fresh_id_for_load_;
 };
 
 }  // namespace fuzz

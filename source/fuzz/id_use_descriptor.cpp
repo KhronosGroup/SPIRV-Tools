@@ -20,6 +20,10 @@ namespace module_navigation {
 
 uint32_t IdUseDescriptor::GetIdOfInterest() const { return id_of_interest_; }
 
+uint32_t IdUseDescriptor::GetInOperandIndex() const {
+  return in_operand_index_;
+}
+
 opt::Instruction* IdUseDescriptor::FindInstruction(
     spvtools::opt::IRContext* context) const {
   for (auto& function : *context->module()) {
