@@ -41,6 +41,8 @@ class IdUseDescriptor {
 
   uint32_t GetIdOfInterest() const;
 
+  uint32_t GetInOperandIndex() const;
+
  private:
   // An id that we would like to be able to find a use of.
   const uint32_t id_of_interest_;

@@ -179,12 +179,8 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   Float type_float_snd(32);
   Float type_double_fst(64);
   Float type_double_snd(64);
-  Bool type_bool_fst;
-  Bool type_bool_snd;
 
   // Initially there should be no facts about uniforms.
-  ASSERT_TRUE(fact_manager.ConstantsAvailableFromUniformsForType(type_bool_fst)
-                  .empty());
   ASSERT_TRUE(
       fact_manager.ConstantsAvailableFromUniformsForType(type_uint32_snd)
           .empty());
@@ -231,10 +227,6 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   fact_manager.AddUniformFloatValueFact(
       64, {buffer_double_20[0], buffer_double_20[1]}, {19, {0, 0, 0, 0, 0}});
 
-  fact_manager.AddUniformBoolValueFact(true, {20, {0}});
-
-  fact_manager.AddUniformBoolValueFact(true, {21, {3}});
-
   // The available constants should be the same regardless of which version of
   // each type we use.
   ASSERT_EQ(fact_manager.ConstantsAvailableFromUniformsForType(type_int32_fst),
@@ -258,9 +250,6 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
       fact_manager.ConstantsAvailableFromUniformsForType(type_double_fst),
       fact_manager.ConstantsAvailableFromUniformsForType(type_double_snd));
 
-  ASSERT_EQ(fact_manager.ConstantsAvailableFromUniformsForType(type_bool_fst),
-            fact_manager.ConstantsAvailableFromUniformsForType(type_bool_snd));
-
   ASSERT_EQ(2,
             fact_manager.ConstantsAvailableFromUniformsForType(type_int32_fst)
                 .size());
@@ -279,9 +268,6 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
   ASSERT_EQ(2,
             fact_manager.ConstantsAvailableFromUniformsForType(type_double_fst)
                 .size());
-  ASSERT_EQ(
-      1,
-      fact_manager.ConstantsAvailableFromUniformsForType(type_bool_fst).size());
 
   ASSERT_EQ(
       std::numeric_limits<int64_t>::max(),
@@ -296,10 +282,6 @@ TEST(FactManagerTest, ConstantsAvailableViaUniforms) {
                        .ConstantsAvailableFromUniformsForType(type_float_fst)[0]
                        ->AsFloatConstant()
                        ->GetFloat());
-  ASSERT_EQ(true, fact_manager
-                      .ConstantsAvailableFromUniformsForType(type_bool_fst)[0]
-                      ->AsBoolConstant()
-                      ->value());
   const std::vector<const Constant*>& double_constants =
       fact_manager.ConstantsAvailableFromUniformsForType(type_double_fst);
   ASSERT_EQ(10.0, double_constants[0]->AsFloatConstant()->GetDouble());
