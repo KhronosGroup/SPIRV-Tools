@@ -61,8 +61,10 @@ void FuzzerPassPermuteBlocks::Apply(
       // The loop is guaranteed to terminate because a block cannot be pushed
       // down indefinitely.
       while (true) {
+        protobufs::TransformationMoveBlockDown message;
+        message.set_block_id(*id);
         std::unique_ptr<TransformationMoveBlockDown> transformation =
-            MakeUnique<TransformationMoveBlockDown>(*id);
+            MakeUnique<TransformationMoveBlockDown>(message);
         if (transformation->IsApplicable(ir_context, *fact_manager)) {
           transformation->Apply(ir_context, fact_manager);
           transformations->push_back(std::move(transformation));

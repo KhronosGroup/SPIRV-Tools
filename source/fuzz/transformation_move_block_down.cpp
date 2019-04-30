@@ -21,14 +21,15 @@ namespace fuzz {
 using opt::BasicBlock;
 using opt::IRContext;
 
-bool TransformationMoveBlockDown::IsApplicable(IRContext* context,
-                                               const FactManager& /*unused*/) {
+bool transformation::IsApplicable(
+    const protobufs::TransformationMoveBlockDown& message, IRContext* context,
+    const FactManager& /*unused*/) {
   // Go through every block in every function, looking for a block whose id
   // matches that of the block we want to consider moving down.
   for (auto& function : *context->module()) {
     for (auto block_it = function.begin(); block_it != function.end();
          ++block_it) {
-      if (block_it->id() == block_id_) {
+      if (block_it->id() == message.block_id()) {
         // We have found a match.
         if (block_it == function.begin()) {
           // The block is the first one appearing in the function.  We are not
@@ -60,19 +61,20 @@ bool TransformationMoveBlockDown::IsApplicable(IRContext* context,
   return false;
 }
 
-void TransformationMoveBlockDown::Apply(IRContext* context,
-                                        FactManager* /*unused*/) {
+void transformation::Apply(
+    const protobufs::TransformationMoveBlockDown& message, IRContext* context,
+    FactManager* /*unused*/) {
   // Go through every block in every function, looking for a block whose id
   // matches that of the block we want to move down.
   for (auto& function : *context->module()) {
     for (auto block_it = function.begin(); block_it != function.end();
          ++block_it) {
-      if (block_it->id() == block_id_) {
+      if (block_it->id() == message.block_id()) {
         ++block_it;
         assert(block_it != function.end() &&
                "To be able to move a block down, it needs to have a "
                "program-order successor.");
-        function.MoveBasicBlockToAfter(block_id_, &*block_it);
+        function.MoveBasicBlockToAfter(message.block_id(), &*block_it);
         // It is prudent to invalidate analyses after changing block ordering in
         // case any of them depend on it, but the ones that definitely do not
         // depend on ordering can be preserved. These include the following,
@@ -88,11 +90,17 @@ void TransformationMoveBlockDown::Apply(IRContext* context,
   assert(false && "No block was found to move down.");
 }
 
+protobufs::TransformationMoveBlockDown
+transformation::MakeTransformationMoveBlockDown(uint32_t id) {
+  protobufs::TransformationMoveBlockDown result;
+  result.set_block_id(id);
+  return result;
+}
+
 protobufs::Transformation TransformationMoveBlockDown::ToMessage() {
-  auto move_block_down_message = new protobufs::TransformationMoveBlockDown;
-  move_block_down_message->set_block_id(block_id_);
   protobufs::Transformation result;
-  result.set_allocated_move_block_down(move_block_down_message);
+  result.set_allocated_move_block_down(
+      new protobufs::TransformationMoveBlockDown(message_));
   return result;
 }
 

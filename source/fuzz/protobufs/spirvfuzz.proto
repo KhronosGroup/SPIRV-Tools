@@ -29,6 +29,7 @@ message TransformationAddDeadBreak {
 }
 
 message TransformationMoveBlockDown {
+  // The id of the block to move down.
   uint32 block_id = 1;
 }
 
