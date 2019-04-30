@@ -17,6 +17,7 @@
 #ifndef SOURCE_FUZZ_FACT_MANAGER_H_
 #define SOURCE_FUZZ_FACT_MANAGER_H_
 
+#include "source/fuzz/protobufs/spirvfuzz.pb.h"
 #include "source/opt/constants.h"
 
 namespace spvtools {
@@ -33,43 +34,29 @@ namespace fuzz {
 // the module.
 class FactManager {
  public:
-  // Represents a data element inside a uniform buffer via the result id
-  // of a uniform variable instruction, and a series of indices to follow,
-  // in order to drill through composite structures in the uniform buffer
-  // to get to an element.
-  struct UniformBufferElementDescriptor {
-    UniformBufferElementDescriptor(uint32_t uniform_variable_id_arg,
-                                   std::vector<uint32_t>&& indices_arg)
-        : uniform_variable_id(uniform_variable_id_arg),
-          indices(std::move(indices_arg)) {}
+  static protobufs::UniformBufferElementDescriptor
+  MakeUniformBufferElementDescriptor(uint32_t uniform_variable_id,
+                                     std::vector<uint32_t>&& indices);
 
-    bool operator==(const UniformBufferElementDescriptor& rhs) const {
-      return uniform_variable_id == rhs.uniform_variable_id &&
-             indices == rhs.indices;
-    }
-
-    // The result id of a uniform variable.
-    uint32_t uniform_variable_id;
-    // An ordered sequence of indices through composite structures in the
-    // uniform buffer.
-    std::vector<uint32_t> indices;
-  };
-
-  struct UniformBufferElementHash {
-    size_t operator()(const UniformBufferElementDescriptor* descriptor) const {
+  struct UniformBufferElementDescriptorHash {
+    size_t operator()(
+        const protobufs::UniformBufferElementDescriptor* descriptor) const {
       std::u32string data;
-      data.push_back(descriptor->uniform_variable_id);
-      for (auto id : descriptor->indices) {
+      data.push_back(descriptor->uniform_variable_id());
+      for (auto id : descriptor->indices()) {
         data.push_back(id);
       }
       return std::hash<std::u32string>()(data);
     }
   };
 
-  struct UniformBufferElementEquals {
-    bool operator()(const UniformBufferElementDescriptor* first,
-                    const UniformBufferElementDescriptor* second) const {
-      return *first == *second;
+  struct UniformBufferElementDescriptorEquals {
+    bool operator()(
+        const protobufs::UniformBufferElementDescriptor* first,
+        const protobufs::UniformBufferElementDescriptor* second) const {
+      return first->uniform_variable_id() == second->uniform_variable_id() &&
+             std::equal(first->indices().begin(), first->indices().end(),
+                        second->indices().begin());
     }
   };
 
@@ -77,28 +64,31 @@ class FactManager {
 
   virtual ~FactManager() = default;
 
-  void AddUniformFloatValueFact(uint32_t width, std::vector<uint32_t>&& data,
-                                UniformBufferElementDescriptor descriptor);
-  void AddUniformIntValueFact(uint32_t width, bool is_signed,
-                              std::vector<uint32_t>&& data,
-                              UniformBufferElementDescriptor descriptor);
+  void AddUniformFloatValueFact(
+      uint32_t width, std::vector<uint32_t>&& data,
+      protobufs::UniformBufferElementDescriptor descriptor);
+  void AddUniformIntValueFact(
+      uint32_t width, bool is_signed, std::vector<uint32_t>&& data,
+      protobufs::UniformBufferElementDescriptor descriptor);
 
   std::vector<const opt::analysis::Constant*>
   ConstantsAvailableFromUniformsForType(const opt::analysis::Type& type);
 
-  const std::vector<UniformBufferElementDescriptor>*
+  const std::vector<protobufs::UniformBufferElementDescriptor>*
   GetUniformDescriptorsForConstant(const opt::analysis::Constant& constant);
 
   const opt::analysis::Constant* GetConstantFromUniformDescriptor(
-      const UniformBufferElementDescriptor& uniform_descriptor) const;
+      const protobufs::UniformBufferElementDescriptor& uniform_descriptor)
+      const;
 
  private:
   const opt::analysis::Type* FindOrRegisterType(
       const opt::analysis::Type* type);
   const opt::analysis::Constant* FindOrRegisterConstant(
       const opt::analysis::Constant* constant);
-  void AddUniformConstantFact(const opt::analysis::Constant* constant,
-                              UniformBufferElementDescriptor&& descriptor);
+  void AddUniformConstantFact(
+      const opt::analysis::Constant* constant,
+      protobufs::UniformBufferElementDescriptor descriptor);
 
   std::unordered_set<const opt::analysis::Type*, opt::analysis::HashTypePointer,
                      opt::analysis::CompareTypePointers>
@@ -111,12 +101,13 @@ class FactManager {
   std::vector<std::unique_ptr<opt::analysis::Constant>> owned_constants_;
 
   std::map<const opt::analysis::Constant*,
-           std::vector<UniformBufferElementDescriptor>>
+           std::vector<protobufs::UniformBufferElementDescriptor>>
       constant_to_uniform_descriptors_;
 
-  std::unordered_map<const UniformBufferElementDescriptor*,
-                     const opt::analysis::Constant*, UniformBufferElementHash,
-                     UniformBufferElementEquals>
+  std::unordered_map<const protobufs::UniformBufferElementDescriptor*,
+                     const opt::analysis::Constant*,
+                     UniformBufferElementDescriptorHash,
+                     UniformBufferElementDescriptorEquals>
       uniform_descriptor_to_constant_;
 };
 

@@ -22,47 +22,47 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace transformation {
+
+bool IsApplicable(
+    const protobufs::TransformationReplaceConstantWithUniform& message,
+    opt::IRContext* context, const FactManager& fact_manager);
+void Apply(const protobufs::TransformationReplaceConstantWithUniform& message,
+           opt::IRContext* context, FactManager* fact_manager);
+
+protobufs::TransformationReplaceConstantWithUniform
+MakeTransformationReplaceConstantWithUniform(
+    protobufs::IdUseDescriptor id_use,
+    protobufs::UniformBufferElementDescriptor uniform_descriptor,
+    uint32_t fresh_id_for_access_chain, uint32_t fresh_id_for_load);
+
+}  // namespace transformation
+
 // TODO.
 class TransformationReplaceConstantWithUniform : public Transformation {
  public:
-  // TODO.
-  TransformationReplaceConstantWithUniform(
-      module_navigation::IdUseDescriptor id_use_descriptor,
-      FactManager::UniformBufferElementDescriptor uniform_descriptor,
-      uint32_t fresh_id_for_access_chain, uint32_t fresh_id_for_load)
-      : id_use_descriptor_(id_use_descriptor),
-        uniform_descriptor_(uniform_descriptor),
-        fresh_id_for_access_chain_(fresh_id_for_access_chain),
-        fresh_id_for_load_(fresh_id_for_load) {
-    assert(fresh_id_for_access_chain_ != fresh_id_for_load_ &&
-           "Fresh ids for access chain and load result cannot be the same.");
-  }
-
   // Constructs a transformation from a protobuf message.
   explicit TransformationReplaceConstantWithUniform(
-      const protobufs::TransformationReplaceConstantWithUniform& message);
+      const protobufs::TransformationReplaceConstantWithUniform& message)
+      : message_(message) {}
 
   ~TransformationReplaceConstantWithUniform() override = default;
 
   // TODO
   bool IsApplicable(opt::IRContext* context,
-                    const FactManager& fact_manager) override;
+                    const FactManager& fact_manager) override {
+    return transformation::IsApplicable(message_, context, fact_manager);
+  }
 
   // TODO
-  void Apply(opt::IRContext* context, FactManager* fact_manager) override;
+  void Apply(opt::IRContext* context, FactManager* fact_manager) override {
+    return transformation::Apply(message_, context, fact_manager);
+  }
 
   protobufs::Transformation ToMessage() override;
 
  private:
-  // A descriptor for the id we would like to replace
-  const module_navigation::IdUseDescriptor id_use_descriptor_;
-
-  // Uniform descriptor to identify which uniform value to choose.
-  const FactManager::UniformBufferElementDescriptor uniform_descriptor_;
-
-  const uint32_t fresh_id_for_access_chain_;
-
-  const uint32_t fresh_id_for_load_;
+  const protobufs::TransformationReplaceConstantWithUniform message_;
 };
 
 }  // namespace fuzz

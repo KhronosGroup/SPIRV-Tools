@@ -19,8 +19,6 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-using module_navigation::IdUseDescriptor;
-
 TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   // This test came from the following GLSL:
   //
@@ -92,9 +90,12 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
   CheckValid(env, context.get());
 
   FactManager fact_manager;
-  FactManager::UniformBufferElementDescriptor blockname_a = {18, {0}};
-  FactManager::UniformBufferElementDescriptor blockname_b = {18, {1}};
-  FactManager::UniformBufferElementDescriptor blockname_c = {18, {2}};
+  protobufs::UniformBufferElementDescriptor blockname_a =
+      FactManager::MakeUniformBufferElementDescriptor(18, {0});
+  protobufs::UniformBufferElementDescriptor blockname_b =
+      FactManager::MakeUniformBufferElementDescriptor(18, {1});
+  protobufs::UniformBufferElementDescriptor blockname_c =
+      FactManager::MakeUniformBufferElementDescriptor(18, {2});
 
   fact_manager.AddUniformIntValueFact(32, true, {1}, blockname_a);
   fact_manager.AddUniformIntValueFact(32, true, {2}, blockname_b);
@@ -102,65 +103,82 @@ TEST(TransformationReplaceConstantWithUniformTest, BasicReplacements) {
 
   // The constant ids are 9, 11 and 14, for 1, 2 and 3 respectively.
 
-  IdUseDescriptor use_of_9_in_store(9, SpvOpStore, 1, 8, 0);
-  IdUseDescriptor use_of_11_in_add(11, SpvOpIAdd, 1, 12, 0);
-  IdUseDescriptor use_of_14_in_add(14, SpvOpIAdd, 0, 15, 0);
+  protobufs::IdUseDescriptor use_of_9_in_store =
+      module_navigation::MakeIdUseDescriptor(9, SpvOpStore, 1, 8, 0);
+  protobufs::IdUseDescriptor use_of_11_in_add =
+      module_navigation::MakeIdUseDescriptor(11, SpvOpIAdd, 1, 12, 0);
+  protobufs::IdUseDescriptor use_of_14_in_add =
+      module_navigation::MakeIdUseDescriptor(14, SpvOpIAdd, 0, 15, 0);
 
   // These transformations work: they match the facts.
   auto transformation_use_of_9_in_store =
-      TransformationReplaceConstantWithUniform(use_of_9_in_store, blockname_a,
-                                               100, 101);
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_9_in_store, blockname_a, 100, 101));
   ASSERT_TRUE(transformation_use_of_9_in_store.IsApplicable(context.get(),
                                                             fact_manager));
   auto transformation_use_of_11_in_add =
-      TransformationReplaceConstantWithUniform(use_of_11_in_add, blockname_b,
-                                               102, 103);
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_11_in_add, blockname_b, 102, 103));
   ASSERT_TRUE(transformation_use_of_11_in_add.IsApplicable(context.get(),
                                                            fact_manager));
   auto transformation_use_of_14_in_add =
-      TransformationReplaceConstantWithUniform(use_of_14_in_add, blockname_c,
-                                               104, 105);
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_14_in_add, blockname_c, 104, 105));
   ASSERT_TRUE(transformation_use_of_14_in_add.IsApplicable(context.get(),
                                                            fact_manager));
 
   // The transformations are not applicable if we change which uniforms are
   // applied to which constants.
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_9_in_store,
-                                                        blockname_b, 101, 102)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_9_in_store, blockname_b, 101, 102))
                    .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_11_in_add,
-                                                        blockname_c, 101, 102)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_11_in_add, blockname_c, 101, 102))
                    .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_14_in_add,
-                                                        blockname_a, 101, 102)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_14_in_add, blockname_a, 101, 102))
                    .IsApplicable(context.get(), fact_manager));
 
   // The following transformations do not apply because the uniform descriptors
   // are not sensible.
-  FactManager::UniformBufferElementDescriptor nonsense_uniform_descriptor1 = {
-      19, {0}};
-  FactManager::UniformBufferElementDescriptor nonsense_uniform_descriptor2 = {
-      18, {5}};
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   use_of_9_in_store, nonsense_uniform_descriptor1, 101, 102)
-                   .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   use_of_9_in_store, nonsense_uniform_descriptor2, 101, 102)
-                   .IsApplicable(context.get(), fact_manager));
+  protobufs::UniformBufferElementDescriptor nonsense_uniform_descriptor1 =
+      FactManager::MakeUniformBufferElementDescriptor(19, {0});
+  protobufs::UniformBufferElementDescriptor nonsense_uniform_descriptor2 =
+      FactManager::MakeUniformBufferElementDescriptor(18, {5});
+  ASSERT_FALSE(
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_9_in_store, nonsense_uniform_descriptor1, 101, 102))
+          .IsApplicable(context.get(), fact_manager));
+  ASSERT_FALSE(
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_9_in_store, nonsense_uniform_descriptor2, 101, 102))
+          .IsApplicable(context.get(), fact_manager));
 
   // The following transformation does not apply because the id descriptor is
   // not sensible.
-  IdUseDescriptor nonsense_id_use_descriptor(9, SpvOpIAdd, 0, 15, 0);
+  protobufs::IdUseDescriptor nonsense_id_use_descriptor =
+      module_navigation::MakeIdUseDescriptor(9, SpvOpIAdd, 0, 15, 0);
   ASSERT_FALSE(TransformationReplaceConstantWithUniform(
-                   nonsense_id_use_descriptor, blockname_a, 101, 102)
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       nonsense_id_use_descriptor, blockname_a, 101, 102))
                    .IsApplicable(context.get(), fact_manager));
 
   // The following transformations do not apply because the ids are not fresh.
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_11_in_add,
-                                                        blockname_b, 15, 103)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_11_in_add, blockname_b, 15, 103))
                    .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_11_in_add,
-                                                        blockname_b, 102, 15)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_11_in_add, blockname_b, 102, 15))
                    .IsApplicable(context.get(), fact_manager));
 
   // Apply the use of 9 in a store.
@@ -444,10 +462,14 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   CheckValid(env, context.get());
 
   FactManager fact_manager;
-  FactManager::UniformBufferElementDescriptor blockname_1 = {28, {0}};
-  FactManager::UniformBufferElementDescriptor blockname_2 = {28, {1, 1}};
-  FactManager::UniformBufferElementDescriptor blockname_3 = {28, {1, 0, 0}};
-  FactManager::UniformBufferElementDescriptor blockname_4 = {28, {1, 0, 1, 0}};
+  protobufs::UniformBufferElementDescriptor blockname_1 =
+      FactManager::MakeUniformBufferElementDescriptor(28, {0});
+  protobufs::UniformBufferElementDescriptor blockname_2 =
+      FactManager::MakeUniformBufferElementDescriptor(28, {1, 1});
+  protobufs::UniformBufferElementDescriptor blockname_3 =
+      FactManager::MakeUniformBufferElementDescriptor(28, {1, 0, 0});
+  protobufs::UniformBufferElementDescriptor blockname_4 =
+      FactManager::MakeUniformBufferElementDescriptor(28, {1, 0, 1, 0});
 
   fact_manager.AddUniformIntValueFact(32, true, {1}, blockname_1);
   fact_manager.AddUniformIntValueFact(32, true, {2}, blockname_2);
@@ -455,30 +477,38 @@ TEST(TransformationReplaceConstantWithUniformTest, NestedStruct) {
   fact_manager.AddUniformIntValueFact(32, true, {4}, blockname_4);
 
   // The constant ids are 13, 15, 17 and 20, for 1, 2, 3 and 4 respectively.
-  IdUseDescriptor use_of_13_in_store(13, SpvOpStore, 1, 21, 0);
-  IdUseDescriptor use_of_15_in_add(15, SpvOpIAdd, 1, 16, 0);
-  IdUseDescriptor use_of_17_in_add(17, SpvOpIAdd, 0, 19, 0);
-  IdUseDescriptor use_of_20_in_store(20, SpvOpStore, 1, 19, 1);
+  protobufs::IdUseDescriptor use_of_13_in_store =
+      module_navigation::MakeIdUseDescriptor(13, SpvOpStore, 1, 21, 0);
+  protobufs::IdUseDescriptor use_of_15_in_add =
+      module_navigation::MakeIdUseDescriptor(15, SpvOpIAdd, 1, 16, 0);
+  protobufs::IdUseDescriptor use_of_17_in_add =
+      module_navigation::MakeIdUseDescriptor(17, SpvOpIAdd, 0, 19, 0);
+  protobufs::IdUseDescriptor use_of_20_in_store =
+      module_navigation::MakeIdUseDescriptor(20, SpvOpStore, 1, 19, 1);
 
   // These transformations work: they match the facts.
   auto transformation_use_of_13_in_store =
-      TransformationReplaceConstantWithUniform(use_of_13_in_store, blockname_1,
-                                               100, 101);
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_13_in_store, blockname_1, 100, 101));
   ASSERT_TRUE(transformation_use_of_13_in_store.IsApplicable(context.get(),
                                                              fact_manager));
   auto transformation_use_of_15_in_add =
-      TransformationReplaceConstantWithUniform(use_of_15_in_add, blockname_2,
-                                               102, 103);
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_15_in_add, blockname_2, 102, 103));
   ASSERT_TRUE(transformation_use_of_15_in_add.IsApplicable(context.get(),
                                                            fact_manager));
   auto transformation_use_of_17_in_add =
-      TransformationReplaceConstantWithUniform(use_of_17_in_add, blockname_3,
-                                               104, 105);
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_17_in_add, blockname_3, 104, 105));
   ASSERT_TRUE(transformation_use_of_17_in_add.IsApplicable(context.get(),
                                                            fact_manager));
   auto transformation_use_of_20_in_store =
-      TransformationReplaceConstantWithUniform(use_of_20_in_store, blockname_4,
-                                               106, 107);
+      TransformationReplaceConstantWithUniform(
+          transformation::MakeTransformationReplaceConstantWithUniform(
+              use_of_20_in_store, blockname_4, 106, 107));
   ASSERT_TRUE(transformation_use_of_20_in_store.IsApplicable(context.get(),
                                                              fact_manager));
 
@@ -671,17 +701,20 @@ TEST(TransformationReplaceConstantWithUniformTest, NoUniformIntPointerPresent) {
   CheckValid(env, context.get());
 
   FactManager fact_manager;
-  FactManager::UniformBufferElementDescriptor blockname_0 = {12, {0}};
+  protobufs::UniformBufferElementDescriptor blockname_0 =
+      FactManager::MakeUniformBufferElementDescriptor(12, {0});
 
   fact_manager.AddUniformIntValueFact(32, true, {0}, blockname_0);
 
   // The constant id is 9 for 0.
-  IdUseDescriptor use_of_9_in_store(9, SpvOpStore, 1, 8, 0);
+  protobufs::IdUseDescriptor use_of_9_in_store =
+      module_navigation::MakeIdUseDescriptor(9, SpvOpStore, 1, 8, 0);
 
   // This transformation is not available because no uniform pointer to integer
   // type is present:
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_9_in_store,
-                                                        blockname_0, 100, 101)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_9_in_store, blockname_0, 100, 101))
                    .IsApplicable(context.get(), fact_manager));
 }
 
@@ -742,18 +775,22 @@ TEST(TransformationReplaceConstantWithUniformTest, NoConstantPresentForIndex) {
   CheckValid(env, context.get());
 
   FactManager fact_manager;
-  FactManager::UniformBufferElementDescriptor blockname_0 = {12, {0}};
-  FactManager::UniformBufferElementDescriptor blockname_9 = {12, {1}};
+  protobufs::UniformBufferElementDescriptor blockname_0 =
+      FactManager::MakeUniformBufferElementDescriptor(12, {0});
+  protobufs::UniformBufferElementDescriptor blockname_9 =
+      FactManager::MakeUniformBufferElementDescriptor(12, {1});
 
   fact_manager.AddUniformIntValueFact(32, true, {9}, blockname_9);
 
   // The constant id is 9 for 9.
-  IdUseDescriptor use_of_9_in_store(9, SpvOpStore, 1, 8, 0);
+  protobufs::IdUseDescriptor use_of_9_in_store =
+      module_navigation::MakeIdUseDescriptor(9, SpvOpStore, 1, 8, 0);
 
   // This transformation is not available because no constant is present for the
   // index 1 required to index into the uniform buffer:
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_9_in_store,
-                                                        blockname_9, 100, 101)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_9_in_store, blockname_9, 100, 101))
                    .IsApplicable(context.get(), fact_manager));
 }
 
@@ -811,7 +848,8 @@ TEST(TransformationReplaceConstantWithUniformTest,
   CheckValid(env, context.get());
 
   FactManager fact_manager;
-  FactManager::UniformBufferElementDescriptor blockname_3 = {12, {0}};
+  protobufs::UniformBufferElementDescriptor blockname_3 =
+      FactManager::MakeUniformBufferElementDescriptor(12, {0});
 
   uint32_t float_data[1];
   float temp = 3.0;
@@ -819,12 +857,14 @@ TEST(TransformationReplaceConstantWithUniformTest,
   fact_manager.AddUniformFloatValueFact(32, {float_data[0]}, blockname_3);
 
   // The constant id is 9 for 3.0.
-  IdUseDescriptor use_of_9_in_store(9, SpvOpStore, 1, 8, 0);
+  protobufs::IdUseDescriptor use_of_9_in_store =
+      module_navigation::MakeIdUseDescriptor(9, SpvOpStore, 1, 8, 0);
 
   // This transformation is not available because no integer type is present to
   // allow a constant index to be expressed:
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_9_in_store,
-                                                        blockname_3, 100, 101)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_9_in_store, blockname_3, 100, 101))
                    .IsApplicable(context.get(), fact_manager));
 }
 
@@ -894,31 +934,39 @@ TEST(TransformationReplaceConstantWithUniformTest,
   CheckValid(env, context.get());
 
   FactManager fact_manager;
-  FactManager::UniformBufferElementDescriptor blockname_9 = {14, {0}};
-  FactManager::UniformBufferElementDescriptor blockname_10 = {14, {1}};
+  protobufs::UniformBufferElementDescriptor blockname_9 =
+      FactManager::MakeUniformBufferElementDescriptor(14, {0});
+  protobufs::UniformBufferElementDescriptor blockname_10 =
+      FactManager::MakeUniformBufferElementDescriptor(14, {1});
 
   fact_manager.AddUniformIntValueFact(32, true, {9}, blockname_9);
   fact_manager.AddUniformIntValueFact(32, true, {10}, blockname_10);
 
   // The constant ids for 9 and 10 are 9 and 11 respectively
-  IdUseDescriptor use_of_9_in_store(9, SpvOpStore, 1, 10, 0);
-  IdUseDescriptor use_of_11_in_store(11, SpvOpStore, 1, 10, 1);
+  protobufs::IdUseDescriptor use_of_9_in_store =
+      module_navigation::MakeIdUseDescriptor(9, SpvOpStore, 1, 10, 0);
+  protobufs::IdUseDescriptor use_of_11_in_store =
+      module_navigation::MakeIdUseDescriptor(11, SpvOpStore, 1, 10, 1);
 
   // These are right:
-  ASSERT_TRUE(TransformationReplaceConstantWithUniform(use_of_9_in_store,
-                                                       blockname_9, 100, 101)
+  ASSERT_TRUE(TransformationReplaceConstantWithUniform(
+                  transformation::MakeTransformationReplaceConstantWithUniform(
+                      use_of_9_in_store, blockname_9, 100, 101))
                   .IsApplicable(context.get(), fact_manager));
-  ASSERT_TRUE(TransformationReplaceConstantWithUniform(use_of_11_in_store,
-                                                       blockname_10, 102, 103)
+  ASSERT_TRUE(TransformationReplaceConstantWithUniform(
+                  transformation::MakeTransformationReplaceConstantWithUniform(
+                      use_of_11_in_store, blockname_10, 102, 103))
                   .IsApplicable(context.get(), fact_manager));
 
   // These are wrong because the constants do not match the facts about
   // uniforms.
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_11_in_store,
-                                                        blockname_9, 100, 101)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_11_in_store, blockname_9, 100, 101))
                    .IsApplicable(context.get(), fact_manager));
-  ASSERT_FALSE(TransformationReplaceConstantWithUniform(use_of_9_in_store,
-                                                        blockname_10, 102, 103)
+  ASSERT_FALSE(TransformationReplaceConstantWithUniform(
+                   transformation::MakeTransformationReplaceConstantWithUniform(
+                       use_of_9_in_store, blockname_10, 102, 103))
                    .IsApplicable(context.get(), fact_manager));
 }
 
@@ -1112,27 +1160,43 @@ TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
   uint32_t float_vector_data[3];
   memcpy(&float_vector_data, &float_vector_values, sizeof(float_vector_values));
 
-  FactManager::UniformBufferElementDescriptor uniform_f_a_0(65, {0, 0, 0});
-  FactManager::UniformBufferElementDescriptor uniform_f_a_1(65, {0, 0, 1});
-  FactManager::UniformBufferElementDescriptor uniform_f_a_2(65, {0, 0, 2});
-  FactManager::UniformBufferElementDescriptor uniform_f_a_3(65, {0, 0, 3});
-  FactManager::UniformBufferElementDescriptor uniform_f_a_4(65, {0, 0, 4});
+  protobufs::UniformBufferElementDescriptor uniform_f_a_0 =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 0});
+  protobufs::UniformBufferElementDescriptor uniform_f_a_1 =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 1});
+  protobufs::UniformBufferElementDescriptor uniform_f_a_2 =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 2});
+  protobufs::UniformBufferElementDescriptor uniform_f_a_3 =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 3});
+  protobufs::UniformBufferElementDescriptor uniform_f_a_4 =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 0, 4});
 
-  FactManager::UniformBufferElementDescriptor uniform_f_b_x(65, {0, 1, 0});
-  FactManager::UniformBufferElementDescriptor uniform_f_b_y(65, {0, 1, 1});
-  FactManager::UniformBufferElementDescriptor uniform_f_b_z(65, {0, 1, 2});
-  FactManager::UniformBufferElementDescriptor uniform_f_b_w(65, {0, 1, 3});
+  protobufs::UniformBufferElementDescriptor uniform_f_b_x =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 1, 0});
+  protobufs::UniformBufferElementDescriptor uniform_f_b_y =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 1, 1});
+  protobufs::UniformBufferElementDescriptor uniform_f_b_z =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 1, 2});
+  protobufs::UniformBufferElementDescriptor uniform_f_b_w =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 1, 3});
 
-  FactManager::UniformBufferElementDescriptor uniform_f_c_x(65, {0, 2, 0});
-  FactManager::UniformBufferElementDescriptor uniform_f_c_y(65, {0, 2, 1});
-  FactManager::UniformBufferElementDescriptor uniform_f_c_z(65, {0, 2, 2});
+  protobufs::UniformBufferElementDescriptor uniform_f_c_x =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 2, 0});
+  protobufs::UniformBufferElementDescriptor uniform_f_c_y =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 2, 1});
+  protobufs::UniformBufferElementDescriptor uniform_f_c_z =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 2, 2});
 
-  FactManager::UniformBufferElementDescriptor uniform_f_d(65, {0, 3});
+  protobufs::UniformBufferElementDescriptor uniform_f_d =
+      FactManager::MakeUniformBufferElementDescriptor(65, {0, 3});
 
-  FactManager::UniformBufferElementDescriptor uniform_g(65, {1});
+  protobufs::UniformBufferElementDescriptor uniform_g =
+      FactManager::MakeUniformBufferElementDescriptor(65, {1});
 
-  FactManager::UniformBufferElementDescriptor uniform_h_x(65, {2, 0});
-  FactManager::UniformBufferElementDescriptor uniform_h_y(65, {2, 1});
+  protobufs::UniformBufferElementDescriptor uniform_h_x =
+      FactManager::MakeUniformBufferElementDescriptor(65, {2, 0});
+  protobufs::UniformBufferElementDescriptor uniform_h_y =
+      FactManager::MakeUniformBufferElementDescriptor(65, {2, 1});
 
   fact_manager.AddUniformFloatValueFact(32, {float_array_data[0]},
                                         uniform_f_a_0);
@@ -1167,42 +1231,74 @@ TEST(TransformationMoveBlockDownTest, ComplexReplacements) {
   std::vector<TransformationReplaceConstantWithUniform> transformations;
 
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(18, SpvOpStore, 1, 20, 0), uniform_f_a_4, 200, 201));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(18, SpvOpStore, 1, 20, 0),
+          uniform_f_a_4, 200, 201)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(22, SpvOpStore, 1, 23, 0), uniform_f_a_3, 202, 203));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(22, SpvOpStore, 1, 23, 0),
+          uniform_f_a_3, 202, 203)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(25, SpvOpStore, 1, 26, 0), uniform_f_a_2, 204, 205));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(25, SpvOpStore, 1, 26, 0),
+          uniform_f_a_2, 204, 205)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(28, SpvOpStore, 1, 29, 0), uniform_f_a_1, 206, 207));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(28, SpvOpStore, 1, 29, 0),
+          uniform_f_a_1, 206, 207)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(31, SpvOpStore, 1, 32, 0), uniform_f_a_0, 208, 209));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(31, SpvOpStore, 1, 32, 0),
+          uniform_f_a_0, 208, 209)));
 
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(30, SpvOpStore, 1, 35, 0), uniform_f_b_w, 210, 211));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(30, SpvOpStore, 1, 35, 0),
+          uniform_f_b_w, 210, 211)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(27, SpvOpStore, 1, 37, 0), uniform_f_b_z, 212, 213));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(27, SpvOpStore, 1, 37, 0),
+          uniform_f_b_z, 212, 213)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(24, SpvOpStore, 1, 39, 0), uniform_f_b_y, 214, 215));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(24, SpvOpStore, 1, 39, 0),
+          uniform_f_b_y, 214, 215)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(21, SpvOpStore, 1, 41, 0), uniform_f_b_x, 216, 217));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(21, SpvOpStore, 1, 41, 0),
+          uniform_f_b_x, 216, 217)));
 
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(44, SpvOpStore, 1, 45, 0), uniform_f_c_z, 220, 221));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(44, SpvOpStore, 1, 45, 0),
+          uniform_f_c_z, 220, 221)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(46, SpvOpStore, 1, 47, 0), uniform_f_c_y, 222, 223));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(46, SpvOpStore, 1, 47, 0),
+          uniform_f_c_y, 222, 223)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(48, SpvOpStore, 1, 49, 0), uniform_f_c_x, 224, 225));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(48, SpvOpStore, 1, 49, 0),
+          uniform_f_c_x, 224, 225)));
 
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(50, SpvOpStore, 1, 52, 0), uniform_f_d, 226, 227));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(50, SpvOpStore, 1, 52, 0),
+          uniform_f_d, 226, 227)));
 
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(53, SpvOpStore, 1, 54, 0), uniform_h_x, 228, 229));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(53, SpvOpStore, 1, 54, 0),
+          uniform_h_x, 228, 229)));
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(55, SpvOpStore, 1, 56, 0), uniform_h_y, 230, 231));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(55, SpvOpStore, 1, 56, 0),
+          uniform_h_y, 230, 231)));
 
   transformations.emplace_back(TransformationReplaceConstantWithUniform(
-      IdUseDescriptor(42, SpvOpStore, 1, 43, 0), uniform_g, 218, 219));
+      transformation::MakeTransformationReplaceConstantWithUniform(
+          module_navigation::MakeIdUseDescriptor(42, SpvOpStore, 1, 43, 0),
+          uniform_g, 218, 219)));
 
   for (auto& transformation : transformations) {
     ASSERT_TRUE(transformation.IsApplicable(context.get(), fact_manager));
